@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Globe } from 'lucide-react';
+import { Menu, X, Globe, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
 import bicLogo from '@/assets/bic-logo.png';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [language, setLanguage] = useState('fr');
+  const { user, profile, signOut, loading } = useAuth();
 
   const navigation = [
     { name: 'Accueil', href: '/' },
@@ -47,8 +49,53 @@ const Navigation = () => {
             ))}
           </div>
 
-          {/* Language Toggle & Mobile Menu Button */}
+          {/* Auth & Language Toggle & Mobile Menu Button */}
           <div className="flex items-center space-x-2">
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <div className="hidden sm:flex items-center space-x-2">
+                      <span className="text-sm text-muted-foreground">
+                        {profile?.full_name || user.email}
+                      </span>
+                      {profile?.role === 'admin' && (
+                        <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
+                          Admin
+                        </span>
+                      )}
+                      {profile?.role === 'partner' && (
+                        <span className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded">
+                          Partenaire
+                        </span>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={signOut}
+                      className="hidden sm:flex items-center space-x-1"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      <span>Déconnexion</span>
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    asChild
+                    className="hidden sm:flex"
+                  >
+                    <Link to="/auth">
+                      <User className="h-4 w-4 mr-1" />
+                      Connexion
+                    </Link>
+                  </Button>
+                )}
+              </>
+            )}
+            
             <Button
               variant="ghost"
               size="sm"
@@ -87,12 +134,51 @@ const Navigation = () => {
                 {item.name}
               </Link>
             ))}
-            <div className="border-t border-border pt-2 mt-2">
+            <div className="border-t border-border pt-2 mt-2 space-y-1">
+              {!loading && (
+                <>
+                  {user ? (
+                    <>
+                      <div className="px-3 py-2">
+                        <p className="text-sm font-medium">{profile?.full_name || user.email}</p>
+                        {profile?.role && (
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {profile.role === 'admin' ? 'Administrateur' : 
+                             profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
+                          </p>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={signOut}
+                        className="flex items-center space-x-1 px-3 py-2 w-full justify-start"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Déconnexion</span>
+                      </Button>
+                    </>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                      className="flex items-center space-x-1 px-3 py-2 w-full justify-start"
+                    >
+                      <Link to="/auth" onClick={() => setIsOpen(false)}>
+                        <User className="h-4 w-4" />
+                        <span>Connexion</span>
+                      </Link>
+                    </Button>
+                  )}
+                </>
+              )}
+              
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-                className="flex items-center space-x-1 px-3 py-2"
+                className="flex items-center space-x-1 px-3 py-2 w-full justify-start"
               >
                 <Globe className="h-4 w-4" />
                 <span className="text-xs font-semibold">{language.toUpperCase()}</span>
