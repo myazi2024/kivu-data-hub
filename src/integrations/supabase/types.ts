@@ -50,6 +50,87 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          address: string
+          area_sqm: number
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string
+          contact_email: string | null
+          contact_phone: string | null
+          country: string
+          created_at: string
+          created_by: string | null
+          currency: string
+          description: string | null
+          features: string[] | null
+          id: string
+          image_urls: string[] | null
+          is_available: boolean
+          latitude: number
+          longitude: number
+          parking_spaces: number | null
+          price: number
+          property_type: string
+          province: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          area_sqm: number
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image_urls?: string[] | null
+          is_available?: boolean
+          latitude: number
+          longitude: number
+          parking_spaces?: number | null
+          price: number
+          property_type: string
+          province?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          area_sqm?: number
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          country?: string
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          description?: string | null
+          features?: string[] | null
+          id?: string
+          image_urls?: string[] | null
+          is_available?: boolean
+          latitude?: number
+          longitude?: number
+          parking_spaces?: number | null
+          price?: number
+          property_type?: string
+          province?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

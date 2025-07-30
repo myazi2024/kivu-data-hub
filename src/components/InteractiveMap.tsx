@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import { Icon, LatLng } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MapPin, Search, BarChart3, Home } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 // Fix for default markers in React Leaflet
 import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
@@ -24,45 +25,86 @@ const DefaultIcon = new Icon({
 });
 
 interface Property {
-  id: number;
-  coordinates: [number, number];
-  type: string;
-  price: string;
-  area: string;
+  id: string;
   title: string;
+  description?: string;
+  property_type: string;
+  price: number;
+  currency: string;
+  area_sqm: number;
+  latitude: number;
+  longitude: number;
+  address: string;
+  city: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  features?: string[];
 }
 
 const InteractiveMap = () => {
   const mapRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  const sampleProperties: Property[] = [
-    {
-      id: 1,
-      coordinates: [29.2348, -1.6792],
-      type: 'Résidentiel',
-      price: '$250,000',
-      area: '150m²',
-      title: 'Villa Moderne - Centre Goma'
-    },
-    {
-      id: 2,
-      coordinates: [29.2400, -1.6850],
-      type: 'Commercial',
-      price: '$500,000',
-      area: '300m²',
-      title: 'Bureau Commercial - Quartier Industriel'
-    },
-    {
-      id: 3,
-      coordinates: [29.2280, -1.6720],
-      type: 'Résidentiel',
-      price: '$180,000',
-      area: '120m²',
-      title: 'Maison Familiale - Quartier Résidentiel'
+  const fetchProperties = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('is_available', true);
+
+      if (error) throw error;
+      setProperties(data || []);
+    } catch (error) {
+      console.error('Erreur lors du chargement des propriétés:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de charger les propriétés",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  useEffect(() => {
+    fetchProperties();
+  }, []);
+
+  const formatPrice = (price: number, currency: string) => {
+    return new Intl.NumberFormat('fr-FR', {
+      style: 'currency',
+      currency: currency === 'CDF' ? 'USD' : currency,
+      minimumFractionDigits: 0,
+    }).format(price);
+  };
+
+  const getPropertyTypeLabel = (type: string) => {
+    const labels: { [key: string]: string } = {
+      'residential': 'Résidentiel',
+      'commercial': 'Commercial',
+      'industrial': 'Industriel',
+      'land': 'Terrain'
+    };
+    return labels[type] || type;
+  };
+
+  const calculateStats = () => {
+    if (properties.length === 0) return { count: 0, avgPrice: 0, avgArea: 0 };
+    
+    const avgPrice = properties.reduce((sum, p) => sum + p.price, 0) / properties.length;
+    const avgArea = properties.reduce((sum, p) => sum + p.area_sqm, 0) / properties.length;
+    
+    return {
+      count: properties.length,
+      avgPrice: Math.round(avgPrice),
+      avgArea: Math.round(avgArea)
+    };
+  };
+
+  const stats = calculateStats();
 
   const handleSearch = () => {
     if (!searchQuery) return;
@@ -142,15 +184,15 @@ const InteractiveMap = () => {
               <div className="text-xs">
                 <div className="flex justify-between">
                   <span>Propriétés visualisées:</span>
-                  <span className="font-semibold">{sampleProperties.length}</span>
+                  <span className="font-semibold">{loading ? '...' : stats.count}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Prix moyen:</span>
-                  <span className="font-semibold">$310,000</span>
+                  <span className="font-semibold">{loading ? '...' : formatPrice(stats.avgPrice, 'USD')}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Surface moyenne:</span>
-                  <span className="font-semibold">190m²</span>
+                  <span className="font-semibold">{loading ? '...' : `${stats.avgArea}m²`}</span>
                 </div>
               </div>
             </CardContent>
@@ -171,18 +213,34 @@ const InteractiveMap = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               
-              {sampleProperties.map((property) => (
+              {!loading && properties.map((property) => (
                 <Marker
                   key={property.id}
-                  position={[property.coordinates[1], property.coordinates[0]]}
+                  position={[property.latitude, property.longitude]}
                   icon={DefaultIcon}
                 >
                   <Popup>
-                    <div className="p-2">
+                    <div className="p-2 min-w-[200px]">
                       <h3 className="font-semibold text-sm mb-2">{property.title}</h3>
-                      <p className="text-xs text-gray-600 mb-1">Type: {property.type}</p>
-                      <p className="text-xs text-gray-600 mb-1">Surface: {property.area}</p>
-                      <p className="text-xs font-semibold text-primary">{property.price}</p>
+                      <p className="text-xs text-gray-600 mb-1">Type: {getPropertyTypeLabel(property.property_type)}</p>
+                      <p className="text-xs text-gray-600 mb-1">Surface: {property.area_sqm}m²</p>
+                      {property.bedrooms && (
+                        <p className="text-xs text-gray-600 mb-1">Chambres: {property.bedrooms}</p>
+                      )}
+                      <p className="text-xs text-gray-600 mb-2">Adresse: {property.address}</p>
+                      <p className="text-xs font-semibold text-primary">{formatPrice(property.price, property.currency)}</p>
+                      {property.features && property.features.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-xs text-gray-500">Équipements:</p>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {property.features.slice(0, 3).map((feature, index) => (
+                              <span key={index} className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                                {feature}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </Popup>
                 </Marker>
