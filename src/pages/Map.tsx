@@ -1,7 +1,7 @@
 import React from 'react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
-import InteractiveMap from '@/components/InteractiveMap';
+import TerritorialMap from '@/components/TerritorialMap';
 
 const Map = () => {
   return (
@@ -18,9 +18,7 @@ const Map = () => {
             </p>
           </div>
           
-          <div className="bg-card rounded-lg shadow-lg overflow-hidden">
-            <InteractiveMap />
-          </div>
+          <TerritorialMap />
         </div>
       </main>
       <Footer />
