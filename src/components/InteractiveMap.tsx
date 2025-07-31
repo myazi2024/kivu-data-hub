@@ -5,7 +5,9 @@ import 'leaflet/dist/leaflet.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { MapPin, Search, BarChart3, Home } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { MapPin, Search, BarChart3, Home, Filter } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -45,7 +47,13 @@ const InteractiveMap = () => {
   const mapRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [properties, setProperties] = useState<Property[]>([]);
+  const [filteredProperties, setFilteredProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    propertyType: 'all',
+    priceRange: [0, 1000000],
+    bedrooms: 'all'
+  });
   const { toast } = useToast();
 
   const fetchProperties = async () => {
@@ -72,6 +80,29 @@ const InteractiveMap = () => {
   useEffect(() => {
     fetchProperties();
   }, []);
+
+  // Filter properties based on current filters
+  useEffect(() => {
+    let filtered = [...properties];
+
+    // Filter by property type
+    if (filters.propertyType !== 'all') {
+      filtered = filtered.filter(p => p.property_type === filters.propertyType);
+    }
+
+    // Filter by price range
+    filtered = filtered.filter(p => 
+      p.price >= filters.priceRange[0] && p.price <= filters.priceRange[1]
+    );
+
+    // Filter by bedrooms
+    if (filters.bedrooms !== 'all') {
+      const bedroomCount = parseInt(filters.bedrooms);
+      filtered = filtered.filter(p => p.bedrooms === bedroomCount);
+    }
+
+    setFilteredProperties(filtered);
+  }, [properties, filters]);
 
   const formatPrice = (price: number, currency: string) => {
     return new Intl.NumberFormat('fr-FR', {
@@ -157,6 +188,68 @@ const InteractiveMap = () => {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-sm">
+                <Filter className="w-4 h-4" />
+                Filtres
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-xs font-medium mb-1 block">Type de propriété</label>
+                <Select 
+                  value={filters.propertyType} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, propertyType: value }))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les types</SelectItem>
+                    <SelectItem value="residential">Résidentiel</SelectItem>
+                    <SelectItem value="commercial">Commercial</SelectItem>
+                    <SelectItem value="industrial">Industriel</SelectItem>
+                    <SelectItem value="land">Terrain</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-2 block">
+                  Prix ({formatPrice(filters.priceRange[0], 'USD')} - {formatPrice(filters.priceRange[1], 'USD')})
+                </label>
+                <Slider
+                  value={filters.priceRange}
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, priceRange: value }))}
+                  max={1000000}
+                  min={0}
+                  step={10000}
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-medium mb-1 block">Nombre de chambres</label>
+                <Select 
+                  value={filters.bedrooms} 
+                  onValueChange={(value) => setFilters(prev => ({ ...prev, bedrooms: value }))}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes</SelectItem>
+                    <SelectItem value="1">1 chambre</SelectItem>
+                    <SelectItem value="2">2 chambres</SelectItem>
+                    <SelectItem value="3">3 chambres</SelectItem>
+                    <SelectItem value="4">4+ chambres</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-sm">
                 <MapPin className="w-4 h-4" />
                 Navigation Rapide
               </CardTitle>
@@ -213,7 +306,7 @@ const InteractiveMap = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               
-              {!loading && properties.map((property) => (
+              {!loading && filteredProperties.map((property) => (
                 <Marker
                   key={property.id}
                   position={[property.latitude, property.longitude]}
