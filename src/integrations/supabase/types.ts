@@ -131,6 +131,74 @@ export type Database = {
         }
         Relationships: []
       }
+      territorial_zones: {
+        Row: {
+          coordinates: Json
+          created_at: string
+          densite_residentielle: number
+          id: string
+          indice_pression_fonciere: string
+          name: string
+          parent_zone_id: string | null
+          population_locative_estimee: number
+          prix_moyen_loyer: number
+          prix_moyen_vente_m2: number
+          recettes_locatives_theoriques_usd: number
+          taux_vacance_locative: number
+          typologie_dominante: string
+          updated_at: string
+          variation_loyer_3mois_pct: number
+          volume_annonces_mois: number
+          zone_type: string
+        }
+        Insert: {
+          coordinates: Json
+          created_at?: string
+          densite_residentielle?: number
+          id?: string
+          indice_pression_fonciere?: string
+          name: string
+          parent_zone_id?: string | null
+          population_locative_estimee?: number
+          prix_moyen_loyer?: number
+          prix_moyen_vente_m2?: number
+          recettes_locatives_theoriques_usd?: number
+          taux_vacance_locative?: number
+          typologie_dominante?: string
+          updated_at?: string
+          variation_loyer_3mois_pct?: number
+          volume_annonces_mois?: number
+          zone_type: string
+        }
+        Update: {
+          coordinates?: Json
+          created_at?: string
+          densite_residentielle?: number
+          id?: string
+          indice_pression_fonciere?: string
+          name?: string
+          parent_zone_id?: string | null
+          population_locative_estimee?: number
+          prix_moyen_loyer?: number
+          prix_moyen_vente_m2?: number
+          recettes_locatives_theoriques_usd?: number
+          taux_vacance_locative?: number
+          typologie_dominante?: string
+          updated_at?: string
+          variation_loyer_3mois_pct?: number
+          volume_annonces_mois?: number
+          zone_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "territorial_zones_parent_zone_id_fkey"
+            columns: ["parent_zone_id"]
+            isOneToOne: false
+            referencedRelation: "territorial_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
