@@ -34,23 +34,35 @@ export const useZoneData = (zoomLevel: string) => {
         }
 
         // Transformer les données pour correspondre à l'interface ZoneData
-        const transformedZones: ZoneData[] = (data || []).map(zone => ({
-          id: zone.id,
-          name: zone.name,
-          type: zone.zone_type as 'province' | 'ville' | 'commune' | 'quartier' | 'avenue',
-          coordinates: Array.isArray(zone.coordinates) ? zone.coordinates as number[][] : [],
-          prixmoyenloyer: Number(zone.prix_moyen_loyer),
-          prixmoyenvente_m2: Number(zone.prix_moyen_vente_m2),
-          tauxvacancelocative: Number(zone.taux_vacance_locative),
-          densite_residentielle: zone.densite_residentielle,
-          populationlocativeestimee: zone.population_locative_estimee,
-          recetteslocativestheoriques_usd: Number(zone.recettes_locatives_theoriques_usd),
-          variationloyer3mois_pct: Number(zone.variation_loyer_3mois_pct),
-          volumeannoncesmois: zone.volume_annonces_mois,
-          typologie_dominante: zone.typologie_dominante,
-          indicepressionfonciere: zone.indice_pression_fonciere as 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé',
-          parent_id: zone.parent_zone_id
-        }));
+        const transformedZones: ZoneData[] = (data || []).map(zone => {
+          // Validation et parsing des coordonnées
+          let coordinates: number[][] = [];
+          try {
+            if (zone.coordinates && Array.isArray(zone.coordinates)) {
+              coordinates = zone.coordinates as number[][];
+            }
+          } catch (error) {
+            console.warn(`Erreur parsing coordonnées pour ${zone.name}:`, error);
+          }
+
+          return {
+            id: zone.id,
+            name: zone.name,
+            type: zone.zone_type as 'province' | 'ville' | 'commune' | 'quartier' | 'avenue',
+            coordinates,
+            prixmoyenloyer: Number(zone.prix_moyen_loyer) || 0,
+            prixmoyenvente_m2: Number(zone.prix_moyen_vente_m2) || 0,
+            tauxvacancelocative: Number(zone.taux_vacance_locative) || 0,
+            densite_residentielle: zone.densite_residentielle || 0,
+            populationlocativeestimee: zone.population_locative_estimee || 0,
+            recetteslocativestheoriques_usd: Number(zone.recettes_locatives_theoriques_usd) || 0,
+            variationloyer3mois_pct: Number(zone.variation_loyer_3mois_pct) || 0,
+            volumeannoncesmois: zone.volume_annonces_mois || 0,
+            typologie_dominante: zone.typologie_dominante || 'Usage mixte',
+            indicepressionfonciere: zone.indice_pression_fonciere as 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé',
+            parent_id: zone.parent_zone_id
+          };
+        });
         
         setZones(transformedZones);
       } catch (err) {

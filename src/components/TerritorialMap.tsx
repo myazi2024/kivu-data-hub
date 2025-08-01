@@ -104,8 +104,12 @@ const TerritorialMap = () => {
   const handleZoneClick = (zone: ZoneData) => {
     setSelectedZone(zone);
     if (mapRef.current && zone.coordinates.length > 0) {
-      const bounds = zone.coordinates.map(coord => new LatLng(coord[0], coord[1]));
-      mapRef.current.fitBounds(bounds);
+      try {
+        const bounds = zone.coordinates.map(coord => new LatLng(coord[0], coord[1]));
+        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+      } catch (error) {
+        console.error('Erreur lors du centrage sur la zone:', error);
+      }
     }
   };
 
@@ -230,21 +234,33 @@ const TerritorialMap = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               
-              {!loading && filteredZones.map((zone) => (
-                <Polygon
-                  key={zone.id}
-                  positions={zone.coordinates.map(coord => [coord[0], coord[1]] as [number, number])}
-                  pathOptions={{
-                    fillColor: getZoneColor(zone.tauxvacancelocative),
-                    fillOpacity: 0.4,
-                    color: getZoneColor(zone.tauxvacancelocative),
-                    weight: 2,
-                    opacity: 0.8
-                  }}
-                  eventHandlers={{
-                    click: () => handleZoneClick(zone),
-                  }}
-                >
+              {!loading && filteredZones.map((zone) => {
+                if (!zone.coordinates || zone.coordinates.length === 0) {
+                  console.warn(`Zone ${zone.name} n'a pas de coordonnées valides`);
+                  return null;
+                }
+                
+                return (
+                  <Polygon
+                    key={zone.id}
+                    positions={zone.coordinates.map(coord => [coord[0], coord[1]] as [number, number])}
+                    pathOptions={{
+                      fillColor: getZoneColor(zone.tauxvacancelocative),
+                      fillOpacity: 0.4,
+                      color: getZoneColor(zone.tauxvacancelocative),
+                      weight: 2,
+                      opacity: 0.8
+                    }}
+                    eventHandlers={{
+                      click: () => handleZoneClick(zone),
+                      mouseover: (e) => {
+                        e.target.setStyle({ weight: 3, fillOpacity: 0.6 });
+                      },
+                      mouseout: (e) => {
+                        e.target.setStyle({ weight: 2, fillOpacity: 0.4 });
+                      }
+                    }}
+                  >
                   <Popup>
                     <div className="p-3 min-w-[300px]">
                       <div className="flex items-center gap-2 mb-3">
@@ -312,8 +328,9 @@ const TerritorialMap = () => {
                       </Button>
                     </div>
                   </Popup>
-                </Polygon>
-              ))}
+                  </Polygon>
+                );
+              })}
             </MapContainer>
           </div>
         </div>
