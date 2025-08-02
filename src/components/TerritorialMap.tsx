@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { MapContainer, TileLayer, Polygon, Popup } from 'react-leaflet';
+import React, { useState, useEffect } from 'react';
+import { MapContainer, TileLayer, Polygon, Popup, useMap } from 'react-leaflet';
 import { LatLng } from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,8 +43,25 @@ export interface ZoneData {
   parent_id?: string;
 }
 
+// MapController component pour gérer la carte sans ref
+const MapController = ({ selectedZone }: { selectedZone: ZoneData | null }) => {
+  const map = useMap();
+  
+  useEffect(() => {
+    if (selectedZone && selectedZone.coordinates.length > 0) {
+      try {
+        const coordinates = selectedZone.coordinates.map(coord => [coord[0], coord[1]] as [number, number]);
+        map.fitBounds(coordinates, { padding: [20, 20] });
+      } catch (error) {
+        console.error('Erreur lors du centrage sur la zone:', error);
+      }
+    }
+  }, [selectedZone, map]);
+
+  return null;
+};
+
 const TerritorialMap = () => {
-  const mapRef = useRef<any>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedZone, setSelectedZone] = useState<ZoneData | null>(null);
   const [zoomLevel, setZoomLevel] = useState('ville');
@@ -103,14 +120,6 @@ const TerritorialMap = () => {
 
   const handleZoneClick = (zone: ZoneData) => {
     setSelectedZone(zone);
-    if (mapRef.current && zone.coordinates.length > 0) {
-      try {
-        const bounds = zone.coordinates.map(coord => new LatLng(coord[0], coord[1]));
-        mapRef.current.fitBounds(bounds, { padding: [20, 20] });
-      } catch (error) {
-        console.error('Erreur lors du centrage sur la zone:', error);
-      }
-    }
   };
 
   const formatCurrency = (value: number) => {
@@ -180,44 +189,6 @@ const TerritorialMap = () => {
 
           {/* Zone Indicators */}
           <ZoneIndicators zones={filteredZones} />
-
-          {/* Navigation */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Home className="w-4 h-4" />
-                Zones principales
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => {
-                  if (mapRef.current) {
-                    mapRef.current.setView(new LatLng(-1.6792, 29.2348), 12);
-                  }
-                }}
-                className="w-full justify-start"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Goma
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => {
-                  if (mapRef.current) {
-                    mapRef.current.setView(new LatLng(-4.4419, 15.2663), 10);
-                  }
-                }}
-                className="w-full justify-start"
-              >
-                <Building2 className="w-4 h-4 mr-2" />
-                Kinshasa
-              </Button>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Map Container */}
@@ -227,12 +198,12 @@ const TerritorialMap = () => {
               center={[-1.6792, 29.2348]}
               zoom={12}
               style={{ height: '100%', width: '100%' }}
-              ref={mapRef}
             >
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
+              <MapController selectedZone={selectedZone} />
               
               {!loading && filteredZones.map((zone) => {
                 if (!zone.coordinates || zone.coordinates.length === 0) {
