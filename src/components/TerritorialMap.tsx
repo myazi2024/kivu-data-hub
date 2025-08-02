@@ -261,73 +261,73 @@ const TerritorialMap = () => {
                       }
                     }}
                   >
-                  <Popup>
-                    <div className="p-3 min-w-[300px]">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-2xl">{getTypologyIcon(zone.typologie_dominante)}</span>
-                        <div>
-                          <h3 className="font-semibold text-sm">{zone.name}</h3>
-                          <Badge variant="outline" className="text-xs">
-                            {zone.type}
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                          <p className="text-muted-foreground">Prix moyen loyer</p>
-                          <p className="font-semibold">{formatCurrency(zone.prixmoyenloyer)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Prix m² vente</p>
-                          <p className="font-semibold">{formatCurrency(zone.prixmoyenvente_m2)}</p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground">Taux vacance</p>
-                          <div className="flex items-center gap-1">
-                            <div 
-                              className="w-2 h-2 rounded-full" 
-                              style={{ backgroundColor: getZoneColor(zone.tauxvacancelocative) }}
-                            />
-                            <span className="font-semibold">{formatPercentage(zone.tauxvacancelocative)}</span>
+                    <Popup>
+                      <div className="p-3 min-w-[300px]">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-2xl">{getTypologyIcon(zone.typologie_dominante)}</span>
+                          <div>
+                            <h3 className="font-semibold text-sm">{zone.name}</h3>
+                            <Badge variant="outline" className="text-xs">
+                              {zone.type}
+                            </Badge>
                           </div>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Variation 3 mois</p>
-                          <div className="flex items-center gap-1">
-                            {getVariationIcon(zone.variationloyer3mois_pct)}
-                            <span className="font-semibold">{formatPercentage(zone.variationloyer3mois_pct)}</span>
+                        
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div>
+                            <p className="text-muted-foreground">Prix moyen loyer</p>
+                            <p className="font-semibold">{formatCurrency(zone.prixmoyenloyer)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Prix m² vente</p>
+                            <p className="font-semibold">{formatCurrency(zone.prixmoyenvente_m2)}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Taux vacance</p>
+                            <div className="flex items-center gap-1">
+                              <div 
+                                className="w-2 h-2 rounded-full" 
+                                style={{ backgroundColor: getZoneColor(zone.tauxvacancelocative) }}
+                              />
+                              <span className="font-semibold">{formatPercentage(zone.tauxvacancelocative)}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Variation 3 mois</p>
+                            <div className="flex items-center gap-1">
+                              {getVariationIcon(zone.variationloyer3mois_pct)}
+                              <span className="font-semibold">{formatPercentage(zone.variationloyer3mois_pct)}</span>
+                            </div>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Population locative</p>
+                            <p className="font-semibold">{zone.populationlocativeestimee.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Pression foncière</p>
+                            <Badge 
+                              style={{ backgroundColor: getPressureColor(zone.indicepressionfonciere) }}
+                              className="text-white text-xs"
+                            >
+                              {zone.indicepressionfonciere}
+                            </Badge>
                           </div>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Population locative</p>
-                          <p className="font-semibold">{zone.populationlocativeestimee.toLocaleString()}</p>
+                        
+                        <div className="mt-3 pt-3 border-t">
+                          <p className="text-xs text-muted-foreground">Typologie dominante</p>
+                          <p className="text-xs font-medium">{zone.typologie_dominante}</p>
                         </div>
-                        <div>
-                          <p className="text-muted-foreground">Pression foncière</p>
-                          <Badge 
-                            style={{ backgroundColor: getPressureColor(zone.indicepressionfonciere) }}
-                            className="text-white text-xs"
-                          >
-                            {zone.indicepressionfonciere}
-                          </Badge>
-                        </div>
+                        
+                        <Button 
+                          size="sm" 
+                          className="w-full mt-3"
+                          onClick={() => setSelectedZone(zone)}
+                        >
+                          Voir détails complets
+                        </Button>
                       </div>
-                      
-                      <div className="mt-3 pt-3 border-t">
-                        <p className="text-xs text-muted-foreground">Typologie dominante</p>
-                        <p className="text-xs font-medium">{zone.typologie_dominante}</p>
-                      </div>
-                      
-                      <Button 
-                        size="sm" 
-                        className="w-full mt-3"
-                        onClick={() => setSelectedZone(zone)}
-                      >
-                        Voir détails complets
-                      </Button>
-                    </div>
-                  </Popup>
+                    </Popup>
                   </Polygon>
                 );
               })}
