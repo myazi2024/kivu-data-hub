@@ -14,6 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      payments: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          id: string
+          payment_method: string
+          payment_provider: string | null
+          phone_number: string | null
+          publication_id: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          amount_usd: number
+          created_at?: string
+          id?: string
+          payment_method?: string
+          payment_provider?: string | null
+          phone_number?: string | null
+          publication_id?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          payment_method?: string
+          payment_provider?: string | null
+          phone_number?: string | null
+          publication_id?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -126,6 +176,102 @@ export type Database = {
           price?: number
           property_type?: string
           province?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      publication_downloads: {
+        Row: {
+          downloaded_at: string
+          id: string
+          ip_address: string | null
+          payment_id: string | null
+          publication_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          downloaded_at?: string
+          id?: string
+          ip_address?: string | null
+          payment_id?: string | null
+          publication_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          downloaded_at?: string
+          id?: string
+          ip_address?: string | null
+          payment_id?: string | null
+          publication_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "publication_downloads_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "publication_downloads_publication_id_fkey"
+            columns: ["publication_id"]
+            isOneToOne: false
+            referencedRelation: "publications"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      publications: {
+        Row: {
+          category: string
+          content: string | null
+          cover_image_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          download_count: number
+          featured: boolean
+          file_url: string | null
+          id: string
+          price_usd: number
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          content?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          download_count?: number
+          featured?: boolean
+          file_url?: string | null
+          id?: string
+          price_usd?: number
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          content?: string | null
+          cover_image_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          download_count?: number
+          featured?: boolean
+          file_url?: string | null
+          id?: string
+          price_usd?: number
+          status?: string
+          tags?: string[] | null
           title?: string
           updated_at?: string
         }
