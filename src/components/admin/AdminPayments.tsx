@@ -14,18 +14,18 @@ interface Payment {
   publication_id: string;
   amount_usd: number;
   payment_method: string;
-  transaction_id: string;
-  phone_number: string;
+  transaction_id: string | null;
+  phone_number: string | null;
   status: string;
-  payment_provider: string;
+  payment_provider: string | null;
   created_at: string;
-  profiles?: {
+  profiles: {
     full_name: string;
     email: string;
-  };
-  publications?: {
+  } | null;
+  publications: {
     title: string;
-  };
+  } | null;
 }
 
 interface AdminPaymentsProps {
@@ -43,14 +43,14 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
 
   const fetchPayments = async () => {
     try {
-      const { data, error } = await supabase
-        .from('payments')
-        .select(`
-          *,
-          profiles!payments_user_id_fkey (full_name, email),
-          publications!payments_publication_id_fkey (title)
-        `)
-        .order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('payments')
+          .select(`
+            *,
+            profiles(full_name, email),
+            publications(title)
+          `)
+          .order('created_at', { ascending: false });
 
       if (error) throw error;
       setPayments(data || []);

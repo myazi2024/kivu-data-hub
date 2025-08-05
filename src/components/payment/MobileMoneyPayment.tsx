@@ -50,11 +50,10 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
         .insert([{
           user_id: user?.id,
           publication_id: publicationId,
-          amount: amount * 100, // Convertir en centimes
-          currency,
+          amount_usd: amount,
           payment_method: 'mobile_money',
-          mobile_money_provider: paymentData.provider,
-          mobile_money_number: paymentData.phoneNumber,
+          payment_provider: paymentData.provider,
+          phone_number: paymentData.phoneNumber,
           status: 'pending'
         }])
         .select()

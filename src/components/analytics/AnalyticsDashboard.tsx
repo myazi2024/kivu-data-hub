@@ -56,15 +56,15 @@ const AnalyticsDashboard = () => {
         // Revenus et paiements
         supabase
           .from('payments')
-          .select('amount, currency, created_at, publication_id')
+          .select('amount_usd, created_at, publication_id')
           .eq('status', 'completed')
           .gte('created_at', startDate.toISOString()),
         
         // Téléchargements
         supabase
           .from('publication_downloads')
-          .select('created_at, publication_id, publications(title)')
-          .gte('created_at', startDate.toISOString()),
+          .select('downloaded_at, publication_id, publications(title)')
+          .gte('downloaded_at', startDate.toISOString()),
         
         // Utilisateurs
         supabase
@@ -76,12 +76,12 @@ const AnalyticsDashboard = () => {
         supabase
           .from('publications')
           .select('*')
-          .eq('is_published', true),
+          .eq('status', 'published'),
         
         // Statistiques mensuelles
         supabase
           .from('payments')
-          .select('amount, created_at')
+          .select('amount_usd, created_at')
           .eq('status', 'completed')
           .gte('created_at', new Date(Date.now() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString())
       ]);
@@ -93,7 +93,7 @@ const AnalyticsDashboard = () => {
       const publications = publicationsResult.data || [];
 
       // Calculs des totaux
-      const totalRevenue = payments.reduce((sum, p) => sum + (p.amount / 100), 0);
+      const totalRevenue = payments.reduce((sum, p) => sum + p.amount_usd, 0);
       const totalDownloads = downloads.length;
       const totalUsers = users.length;
       const totalPublications = publications.length;
@@ -104,12 +104,12 @@ const AnalyticsDashboard = () => {
       
       const previousPayments = await supabase
         .from('payments')
-        .select('amount')
+        .select('amount_usd')
         .eq('status', 'completed')
         .gte('created_at', previousPeriodStart.toISOString())
         .lt('created_at', startDate.toISOString());
 
-      const previousRevenue = (previousPayments.data || []).reduce((sum, p) => sum + (p.amount / 100), 0);
+      const previousRevenue = (previousPayments.data || []).reduce((sum, p) => sum + p.amount_usd, 0);
       const revenueGrowth = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
 
       // Données mensuelles
@@ -129,7 +129,7 @@ const AnalyticsDashboard = () => {
         
         const payment = payments.find(p => p.publication_id === pubId);
         if (payment) {
-          acc[pubId].revenue += payment.amount / 100;
+          acc[pubId].revenue += payment.amount_usd;
         }
         
         return acc;
@@ -172,18 +172,22 @@ const AnalyticsDashboard = () => {
     }
   };
 
-  const processMonthlyData = (payments: any[]) => {
+  const processMonthlyData = (payments: any[]): Array<{ month: string; revenue: number; downloads: number }> => {
+    if (!payments || payments.length === 0) {
+      return [];
+    }
+    
     const monthlyStats = payments.reduce((acc, payment) => {
       const month = new Date(payment.created_at).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
       if (!acc[month]) {
         acc[month] = { month, revenue: 0, downloads: 0 };
       }
-      acc[month].revenue += payment.amount / 100;
+      acc[month].revenue += payment.amount_usd || 0;
       acc[month].downloads += 1;
       return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, { month: string; revenue: number; downloads: number }>);
 
-    return Object.values(monthlyStats).slice(-6); // Derniers 6 mois
+    return Object.values(monthlyStats).slice(-6);
   };
 
   const generateUserActivity = (users: any[], days: number) => {
