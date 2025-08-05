@@ -10,7 +10,7 @@ import { Plus, Users, FileText, CreditCard, BarChart } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminPublications from '@/components/admin/AdminPublications';
 import AdminPayments from '@/components/admin/AdminPayments';
-import AdminAnalytics from '@/components/admin/AdminAnalytics';
+import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 import AdminUsers from '@/components/admin/AdminUsers';
 
 const Admin = () => {
@@ -156,7 +156,7 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <AdminAnalytics />
+            <AnalyticsDashboard />
           </TabsContent>
         </Tabs>
       </div>
