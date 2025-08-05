@@ -43,17 +43,31 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
 
   const fetchPayments = async () => {
     try {
-        const { data, error } = await supabase
-          .from('payments')
-          .select(`
-            *,
-            profiles(full_name, email),
-            publications(title)
-          `)
-          .order('created_at', { ascending: false });
+      // Récupérer les paiements d'abord
+      const { data: paymentsData, error } = await supabase
+        .from('payments')
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setPayments(data || []);
+
+      // Récupérer les profils et publications séparément
+      const userIds = [...new Set(paymentsData?.map(p => p.user_id).filter(Boolean))];
+      const publicationIds = [...new Set(paymentsData?.map(p => p.publication_id).filter(Boolean))];
+
+      const [profilesResult, publicationsResult] = await Promise.all([
+        userIds.length > 0 ? supabase.from('profiles').select('user_id, full_name, email').in('user_id', userIds) : { data: [] },
+        publicationIds.length > 0 ? supabase.from('publications').select('id, title').in('id', publicationIds) : { data: [] }
+      ]);
+
+      // Combiner les données
+      const paymentsWithDetails = paymentsData?.map(payment => ({
+        ...payment,
+        profiles: profilesResult.data?.find(p => p.user_id === payment.user_id) || null,
+        publications: publicationsResult.data?.find(p => p.id === payment.publication_id) || null
+      })) || [];
+
+      setPayments(paymentsWithDetails);
     } catch (error) {
       console.error('Erreur lors du chargement des paiements:', error);
       toast.error('Erreur lors du chargement des paiements');

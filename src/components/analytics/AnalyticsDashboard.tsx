@@ -113,7 +113,7 @@ const AnalyticsDashboard = () => {
       const revenueGrowth = previousRevenue > 0 ? ((totalRevenue - previousRevenue) / previousRevenue) * 100 : 0;
 
       // Données mensuelles
-      const monthlyData = processMonthlyData(monthlyStatsResult.data || []);
+      const monthlyData = processMonthlyData(monthlyStatsResult.data || []) as Array<{ month: string; revenue: number; downloads: number }>;
 
       // Top publications
       const publicationStats = downloads.reduce((acc, download) => {
@@ -187,7 +187,7 @@ const AnalyticsDashboard = () => {
       return acc;
     }, {} as Record<string, { month: string; revenue: number; downloads: number }>);
 
-    return Object.values(monthlyStats).slice(-6);
+    return Object.values(monthlyStats).slice(-6) as Array<{ month: string; revenue: number; downloads: number }>;
   };
 
   const generateUserActivity = (users: any[], days: number) => {
