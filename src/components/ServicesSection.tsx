@@ -19,49 +19,49 @@ const ServicesSection = () => {
       icon: Map,
       title: "Cartographie dynamique",
       description: "Visualisation des loyers et taux de vacance par zone géographique",
-      color: "text-blue-600"
+      variant: "primary"
     },
     {
       icon: BarChart3,
       title: "Estimation de population",
       description: "Calcul de la population locative et superficie occupée",
-      color: "text-green-600"
+      variant: "secondary"
     },
     {
       icon: Calculator,
       title: "Recettes fiscales",
       description: "Estimation des recettes fiscales locatives théoriques",
-      color: "text-purple-600"
+      variant: "accent"
     },
     {
       icon: TrendingUp,
       title: "Analyse comparative",
       description: "Diagnostic par quartier, commune et province",
-      color: "text-orange-600"
+      variant: "muted"
     },
     {
       icon: FileText,
       title: "Diagnostic foncier",
       description: "Analyse des titres, risques et régularité administrative",
-      color: "text-red-600"
+      variant: "primary"
     },
     {
       icon: Building2,
       title: "Projets immobiliers",
       description: "Appui en faisabilité, développement et data urbaine",
-      color: "text-indigo-600"
+      variant: "secondary"
     },
     {
       icon: GraduationCap,
       title: "Formation",
       description: "Collecte mobile, SIG, analyse territoriale et gestion d'indicateurs",
-      color: "text-teal-600"
+      variant: "accent"
     },
     {
       icon: Users,
       title: "Conseil stratégique",
       description: "Accompagnement des acteurs publics et privés",
-      color: "text-pink-600"
+      variant: "muted"
     }
   ];
 
@@ -83,12 +83,27 @@ const ServicesSection = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {services.map((service, index) => {
             const IconComponent = service.icon;
+            const getIconColor = (variant: string) => {
+              switch (variant) {
+                case 'primary':
+                  return 'text-primary';
+                case 'secondary':
+                  return 'text-primary/80';
+                case 'accent':
+                  return 'text-primary/60';
+                case 'muted':
+                  return 'text-muted-foreground';
+                default:
+                  return 'text-primary';
+              }
+            };
+            
             return (
               <Card key={index} className="group hover:shadow-card transition-all duration-300 border-border hover:border-primary/20">
                 <CardHeader className="text-center pb-4">
                   <div className="flex justify-center mb-3">
                     <div className="p-3 rounded-full bg-secondary group-hover:bg-primary/10 transition-colors duration-300">
-                      <IconComponent className={`h-6 w-6 ${service.color} group-hover:text-primary transition-colors duration-300`} />
+                      <IconComponent className={`h-6 w-6 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
                     </div>
                   </div>
                   <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300">

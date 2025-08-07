@@ -98,9 +98,9 @@ const TerritorialMap = () => {
   };
 
   const getVariationIcon = (variation: number) => {
-    if (variation > 2) return <TrendingUp className="w-3 h-3 text-green-600" />;
-    if (variation < -2) return <TrendingDown className="w-3 h-3 text-red-600" />;
-    return <Minus className="w-3 h-3 text-gray-600" />;
+    if (variation > 2) return <TrendingUp className="w-3 h-3 text-primary" />;
+    if (variation < -2) return <TrendingDown className="w-3 h-3 text-destructive" />;
+    return <Minus className="w-3 h-3 text-muted-foreground" />;
   };
 
   const filteredZones = zones.filter(zone => {

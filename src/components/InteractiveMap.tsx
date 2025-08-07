@@ -315,16 +315,16 @@ const InteractiveMap = () => {
                   <Popup>
                     <div className="p-2 min-w-[200px]">
                       <h3 className="font-semibold text-sm mb-2">{property.title}</h3>
-                      <p className="text-xs text-gray-600 mb-1">Type: {getPropertyTypeLabel(property.property_type)}</p>
-                      <p className="text-xs text-gray-600 mb-1">Surface: {property.area_sqm}m²</p>
-                      {property.bedrooms && (
-                        <p className="text-xs text-gray-600 mb-1">Chambres: {property.bedrooms}</p>
-                      )}
-                      <p className="text-xs text-gray-600 mb-2">Adresse: {property.address}</p>
+                       <p className="text-xs text-muted-foreground mb-1">Type: {getPropertyTypeLabel(property.property_type)}</p>
+                       <p className="text-xs text-muted-foreground mb-1">Surface: {property.area_sqm}m²</p>
+                       {property.bedrooms && (
+                         <p className="text-xs text-muted-foreground mb-1">Chambres: {property.bedrooms}</p>
+                       )}
+                       <p className="text-xs text-muted-foreground mb-2">Adresse: {property.address}</p>
                       <p className="text-xs font-semibold text-primary">{formatPrice(property.price, property.currency)}</p>
                       {property.features && property.features.length > 0 && (
                         <div className="mt-2">
-                          <p className="text-xs text-gray-500">Équipements:</p>
+                          <p className="text-xs text-muted-foreground/80">Équipements:</p>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {property.features.slice(0, 3).map((feature, index) => (
                               <span key={index} className="text-xs bg-gray-100 px-1 py-0.5 rounded">

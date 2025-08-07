@@ -97,7 +97,7 @@ export const ZoneIndicators: React.FC<ZoneIndicatorsProps> = ({ zones }) => {
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Variation moyenne:</span>
             <div className="flex items-center gap-1">
-              <TrendingUp className={`w-3 h-3 ${stats.avgVariation >= 0 ? 'text-green-600' : 'text-red-600'}`} />
+              <TrendingUp className={`w-3 h-3 ${stats.avgVariation >= 0 ? 'text-primary' : 'text-destructive'}`} />
               <span className="font-semibold">{stats.avgVariation > 0 ? '+' : ''}{stats.avgVariation}%</span>
             </div>
           </div>

@@ -245,16 +245,16 @@ const AnalyticsDashboard = () => {
                 <p className="text-2xl font-bold">${analytics.totalRevenue.toFixed(2)}</p>
                 <div className="flex items-center mt-1">
                   {analytics.revenueGrowth >= 0 ? (
-                    <TrendingUp className="w-4 h-4 text-green-600 mr-1" />
+                    <TrendingUp className="w-4 h-4 text-primary mr-1" />
                   ) : (
-                    <TrendingDown className="w-4 h-4 text-red-600 mr-1" />
+                    <TrendingDown className="w-4 h-4 text-destructive mr-1" />
                   )}
-                  <span className={`text-sm ${analytics.revenueGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`text-sm ${analytics.revenueGrowth >= 0 ? 'text-primary' : 'text-destructive'}`}>
                     {Math.abs(analytics.revenueGrowth).toFixed(1)}%
                   </span>
                 </div>
               </div>
-              <DollarSign className="w-8 h-8 text-green-600" />
+              <DollarSign className="w-8 h-8 text-primary" />
             </div>
           </CardContent>
         </Card>
@@ -269,7 +269,7 @@ const AnalyticsDashboard = () => {
                   Période actuelle
                 </Badge>
               </div>
-              <Download className="w-8 h-8 text-blue-600" />
+              <Download className="w-8 h-8 text-primary/80" />
             </div>
           </CardContent>
         </Card>
@@ -284,7 +284,7 @@ const AnalyticsDashboard = () => {
                   Période actuelle
                 </Badge>
               </div>
-              <Users className="w-8 h-8 text-purple-600" />
+              <Users className="w-8 h-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
@@ -299,7 +299,7 @@ const AnalyticsDashboard = () => {
                   Total actif
                 </Badge>
               </div>
-              <FileText className="w-8 h-8 text-orange-600" />
+              <FileText className="w-8 h-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>

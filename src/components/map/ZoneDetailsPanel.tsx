@@ -35,9 +35,9 @@ export const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({ zone, onClos
   };
 
   const getVariationIcon = (variation: number) => {
-    if (variation > 2) return <TrendingUp className="w-4 h-4 text-green-600" />;
-    if (variation < -2) return <TrendingDown className="w-4 h-4 text-red-600" />;
-    return <Minus className="w-4 h-4 text-gray-600" />;
+    if (variation > 2) return <TrendingUp className="w-4 h-4 text-primary" />;
+    if (variation < -2) return <TrendingDown className="w-4 h-4 text-destructive" />;
+    return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
   const getZoneColor = (tauxVacance: number) => {
