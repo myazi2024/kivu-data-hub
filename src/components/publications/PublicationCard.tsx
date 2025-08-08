@@ -2,9 +2,10 @@ import React from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, ShoppingCart, MapPin, Calendar, BookOpen } from 'lucide-react';
+import { Download, FileText, ShoppingCart, MapPin, Calendar, CreditCard, Minus } from 'lucide-react';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Publication {
   id: string;
@@ -25,7 +26,7 @@ interface PublicationCardProps {
 }
 
 export const PublicationCard: React.FC<PublicationCardProps> = ({ publication }) => {
-  const { addToCart, isInCart } = useCart();
+  const { addToCart, removeFromCart, isInCart } = useCart();
   const { toast } = useToast();
 
   // Extract metadata from description or tags
@@ -76,6 +77,50 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
       title: "Ajouté au panier",
       description: `${publication.title} a été ajouté à votre panier`,
     });
+  };
+
+  const handleBuyNow = async () => {
+    if (publication.price_usd === 0) {
+      // Free download
+      if (publication.file_url) {
+        window.open(publication.file_url, '_blank');
+      }
+      return;
+    }
+
+    // Create cart item for immediate purchase
+    const cartItem: CartItem = {
+      id: publication.id,
+      title: publication.title,
+      price: publication.price_usd,
+      cover_image_url: publication.cover_image_url,
+      description: publication.description,
+      period: getPeriod(),
+      zone: getZone(),
+      pages: getPages(),
+    };
+
+    // Direct purchase without adding to cart
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment', {
+        body: {
+          items: [cartItem],
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: "Erreur de paiement",
+        description: "Une erreur est survenue lors du traitement du paiement",
+        variant: "destructive",
+      });
+    }
   };
 
   const isAlreadyInCart = isInCart(publication.id);
@@ -146,32 +191,59 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
             </div>
           </div>
 
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1">
+          <div className="space-y-2">
+            {/* Preview/Summary Button */}
+            <Button variant="outline" size="sm" className="w-full">
               <Download className="mr-2 h-4 w-4" />
-              Résumé
+              Aperçu gratuit
             </Button>
-            <Button
-              onClick={handleAddToCart}
-              disabled={!isAvailable || isAlreadyInCart}
-              size="sm"
-              className="flex-1"
-              variant={isFree ? "default" : "default"}
-            >
-              {isFree ? (
-                <>
-                  <Download className="mr-2 h-4 w-4" />
-                  Télécharger
-                </>
-              ) : isAlreadyInCart ? (
-                "Dans le panier"
-              ) : (
-                <>
-                  <ShoppingCart className="mr-2 h-4 w-4" />
-                  Ajouter
-                </>
-              )}
-            </Button>
+            
+            {/* Action Buttons */}
+            {isFree ? (
+              <Button
+                onClick={handleAddToCart}
+                disabled={!isAvailable}
+                size="sm"
+                className="w-full"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Télécharger gratuitement
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                {/* Add/Remove from Cart Button */}
+                <Button
+                  onClick={isAlreadyInCart ? () => removeFromCart(publication.id) : handleAddToCart}
+                  disabled={!isAvailable}
+                  variant={isAlreadyInCart ? "secondary" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                >
+                  {isAlreadyInCart ? (
+                    <>
+                      <Minus className="mr-2 h-4 w-4" />
+                      Retirer
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingCart className="mr-2 h-4 w-4" />
+                      Panier
+                    </>
+                  )}
+                </Button>
+                
+                {/* Buy Now Button */}
+                <Button
+                  onClick={handleBuyNow}
+                  disabled={!isAvailable}
+                  size="sm"
+                  className="flex-1"
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Acheter
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

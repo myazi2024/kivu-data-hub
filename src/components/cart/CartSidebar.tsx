@@ -13,7 +13,11 @@ import {
   AlertDescription,
 } from '@/components/ui/alert';
 
-export const CartSidebar = () => {
+interface CartSidebarProps {
+  onClose?: () => void;
+}
+
+export const CartSidebar = ({ onClose }: CartSidebarProps) => {
   const { cartItems, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();

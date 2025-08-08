@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
@@ -15,9 +15,10 @@ import { CartSidebar } from './CartSidebar';
 export const CartButton = () => {
   const { getItemCount } = useCart();
   const itemCount = getItemCount();
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <Sheet>
+    <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" size="sm" className="relative">
           <ShoppingCart className="h-4 w-4" />
@@ -35,7 +36,7 @@ export const CartButton = () => {
             Gérez vos rapports sélectionnés avant achat
           </SheetDescription>
         </SheetHeader>
-        <CartSidebar />
+        <CartSidebar onClose={() => setIsOpen(false)} />
       </SheetContent>
     </Sheet>
   );

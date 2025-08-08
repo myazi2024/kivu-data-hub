@@ -31,7 +31,7 @@ export const useCart = () => {
     localStorage.setItem('bic-cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
-  const addToCart = (item: CartItem) => {
+  const addToCart = (item: CartItem, openCart?: () => void) => {
     setCartItems(prev => {
       // Check if item already exists
       const existingIndex = prev.findIndex(cartItem => cartItem.id === item.id);
@@ -41,6 +41,11 @@ export const useCart = () => {
       }
       return [...prev, item];
     });
+    
+    // Open cart sidebar if callback provided
+    if (openCart) {
+      setTimeout(() => openCart(), 100);
+    }
   };
 
   const removeFromCart = (itemId: string) => {
