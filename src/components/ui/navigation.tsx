@@ -23,7 +23,7 @@ const Navigation = () => {
         { name: 'Nos services', href: '/services' }
       ]
     },
-    { name: 'Publications', href: '/publications' },
+    { name: 'Kiosque', href: '/publications' },
     { name: 'Plateforme Myazi', href: '/myazi' },
     { name: 'Cartographie', href: '/map' },
     { name: 'Partenariat', href: '/partnership' },
