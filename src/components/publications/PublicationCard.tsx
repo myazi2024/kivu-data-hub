@@ -7,6 +7,10 @@ import { useCart, CartItem } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import reportThumbnail from '@/assets/report-card-thumbnail.webp';
+import thumbMarket from '@/assets/thumb-market.webp';
+import thumbUrban from '@/assets/thumb-urban.webp';
+import thumbTax from '@/assets/thumb-tax.webp';
+import thumbTerritory from '@/assets/thumb-territory.webp';
 
 interface Publication {
   id: string;
@@ -53,6 +57,33 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
     }
   };
 
+  const getCategoryThumbnail = (): { src: string; alt: string } => {
+    const text = `${publication.title} ${publication.description ?? ''} ${(publication.tags ?? []).join(' ')}`.toLowerCase();
+
+    if (/(fiscal|imp[ôo]t|tax)/.test(text)) {
+      return { src: thumbTax, alt: 'Miniature fiscalité locale — impôts et budget' };
+    }
+    if (/(urban|urbain|urbanisation|ville|quartier|logement)/.test(text)) {
+      return { src: thumbUrban, alt: 'Miniature urbanisation — ville et aménagement' };
+    }
+    if (/(territoire|carte|map|zone|parcelle|cadastre|donn[eé]es)/.test(text)) {
+      return { src: thumbTerritory, alt: 'Miniature données territoriales — carte et indicateurs' };
+    }
+    if (/(march[ée]|market|prix|loyer)/.test(text)) {
+      return { src: thumbMarket, alt: 'Miniature marché immobilier — bâtiments et tendance' };
+    }
+
+    switch (publication.category) {
+      case 'analysis':
+        return { src: thumbMarket, alt: 'Miniature marché immobilier — bâtiments et tendance' };
+      case 'research':
+        return { src: thumbUrban, alt: 'Miniature urbanisation — ville et aménagement' };
+      case 'report':
+        return { src: thumbTerritory, alt: 'Miniature données territoriales — carte et indicateurs' };
+      default:
+        return { src: reportThumbnail, alt: 'Miniature de rapport — marché immobilier et données territoriales' };
+    }
+  };
   const handleAddToCart = () => {
     if (publication.price_usd === 0) {
       // Free download
@@ -127,6 +158,7 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
   const isAlreadyInCart = isInCart(publication.id);
   const isFree = publication.price_usd === 0;
   const isAvailable = publication.status === 'published';
+  const thumb = getCategoryThumbnail();
 
   return (
     <Card className="border-border hover:border-primary/20 transition-all duration-300 h-full flex flex-col">
@@ -142,8 +174,8 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
           />
         ) : (
           <img
-            src={reportThumbnail}
-            alt="Miniature de rapport — marché immobilier et données territoriales"
+            src={thumb.src}
+            alt={thumb.alt}
             className="w-full h-full object-cover"
             loading="lazy"
             decoding="async"
