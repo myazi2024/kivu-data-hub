@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter } from 'lucide-react';
 import { PublicationCard } from '@/components/publications/PublicationCard';
-import { CartButton } from '@/components/cart/CartButton';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -70,17 +69,14 @@ const Publications = () => {
       <Navigation />
       <main className="pt-20 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header with Cart */}
-          <div className="flex justify-between items-start mb-8">
-            <div className="text-center flex-1">
+          {/* Header */}
+          <div className="flex justify-center items-start mb-8">
+            <div className="text-center max-w-3xl">
               <h1 className="text-4xl font-bold text-foreground mb-6">Kiosque Publications</h1>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+              <p className="text-lg text-muted-foreground">
                 Le BIC publie régulièrement des rapports d'analyse urbaine et immobilière basés sur des données collectées localement. 
                 Chaque rapport contient des tableaux, cartes interactives, notes méthodologiques et projections fiscales territorialisées.
               </p>
-            </div>
-            <div className="ml-4">
-              <CartButton />
             </div>
           </div>
 

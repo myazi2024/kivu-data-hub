@@ -83,6 +83,14 @@ export const CartSidebar = ({ onClose }: CartSidebarProps) => {
       <div className="flex-1 space-y-4 mt-6">
         {cartItems.map((item) => (
           <div key={item.id} className="flex items-start gap-3 p-3 border border-border rounded-lg">
+            {item.cover_image_url && (
+              <img
+                src={item.cover_image_url}
+                alt={`Couverture ${item.title}`}
+                className="h-16 w-16 rounded-md object-cover"
+                loading="lazy"
+              />
+            )}
             <div className="flex-1">
               <h4 className="font-medium text-sm">{item.title}</h4>
               {item.period && (
@@ -141,7 +149,7 @@ export const CartSidebar = ({ onClose }: CartSidebarProps) => {
           className="w-full"
         >
           <CreditCard className="mr-2 h-4 w-4" />
-          {isProcessing ? 'Traitement...' : 'Payer avec Stripe'}
+          {isProcessing ? 'Traitement...' : 'Passer au paiement'}
         </Button>
       </div>
     </div>
