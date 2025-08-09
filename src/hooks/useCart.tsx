@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 export interface CartItem {
   id: string;
@@ -11,7 +11,19 @@ export interface CartItem {
   pages?: number;
 }
 
-export const useCart = () => {
+interface CartContextType {
+  cartItems: CartItem[];
+  addToCart: (item: CartItem, openCart?: () => void) => void;
+  removeFromCart: (itemId: string) => void;
+  clearCart: () => void;
+  getTotalPrice: () => number;
+  getItemCount: () => number;
+  isInCart: (itemId: string) => boolean;
+}
+
+const CartContext = createContext<CartContextType | undefined>(undefined);
+
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   // Load cart from localStorage on mount
@@ -26,49 +38,31 @@ export const useCart = () => {
     }
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Persist cart to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem('bic-cart', JSON.stringify(cartItems));
   }, [cartItems]);
 
   const addToCart = (item: CartItem, openCart?: () => void) => {
     setCartItems(prev => {
-      // Check if item already exists
-      const existingIndex = prev.findIndex(cartItem => cartItem.id === item.id);
-      if (existingIndex >= 0) {
-        // Item already in cart, don't add duplicate
-        return prev;
-      }
+      const exists = prev.some(ci => ci.id === item.id);
+      if (exists) return prev;
       return [...prev, item];
     });
-    
-    // Open cart sidebar if callback provided
-    if (openCart) {
-      setTimeout(() => openCart(), 100);
-    }
+    if (openCart) setTimeout(() => openCart(), 100);
   };
 
   const removeFromCart = (itemId: string) => {
     setCartItems(prev => prev.filter(item => item.id !== itemId));
   };
 
-  const clearCart = () => {
-    setCartItems([]);
-  };
+  const clearCart = () => setCartItems([]);
 
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + item.price, 0);
-  };
+  const getTotalPrice = () => cartItems.reduce((t, i) => t + i.price, 0);
+  const getItemCount = () => cartItems.length;
+  const isInCart = (itemId: string) => cartItems.some(i => i.id === itemId);
 
-  const getItemCount = () => {
-    return cartItems.length;
-  };
-
-  const isInCart = (itemId: string) => {
-    return cartItems.some(item => item.id === itemId);
-  };
-
-  return {
+  const value: CartContextType = {
     cartItems,
     addToCart,
     removeFromCart,
@@ -77,4 +71,14 @@ export const useCart = () => {
     getItemCount,
     isInCart,
   };
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+};
+
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error('useCart must be used within a CartProvider');
+  }
+  return context;
 };
