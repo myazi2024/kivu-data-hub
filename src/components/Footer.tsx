@@ -103,12 +103,14 @@ const Footer = () => {
               </p>
             </div>
             <div className="flex space-x-2">
-              <Button 
-                variant="secondary" 
-                className="bg-white text-bic-blue hover:bg-white/90"
-              >
-                S'abonner aux publications
-              </Button>
+              <Link to="/publications#newsletter">
+                <Button 
+                  variant="secondary" 
+                  className="bg-white text-bic-blue hover:bg-white/90"
+                >
+                  S'abonner aux publications
+                </Button>
+              </Link>
             </div>
           </div>
         </div>

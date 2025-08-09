@@ -3,6 +3,7 @@ import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, Users, TrendingUp, Heart } from 'lucide-react';
 
@@ -111,9 +112,11 @@ const Careers = () => {
                   </CardHeader>
                   <CardContent>
                     <p className="text-muted-foreground mb-4">{position.description}</p>
-                    <Button>
-                      Postuler
-                    </Button>
+                    <Link to={`/contact?subject=${encodeURIComponent(`Candidature - ${position.title}`)}#contact-form`}>
+                      <Button>
+                        Postuler
+                      </Button>
+                    </Link>
                   </CardContent>
                 </Card>
               ))}
@@ -129,9 +132,11 @@ const Careers = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <Button size="lg" className="mt-4">
-                Candidature Spontanée
-              </Button>
+              <Link to="/contact?subject=Candidature%20spontanée#contact-form">
+                <Button size="lg" className="mt-4">
+                  Candidature Spontanée
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         </div>

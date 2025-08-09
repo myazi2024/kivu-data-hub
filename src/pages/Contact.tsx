@@ -7,8 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { MapPin, Phone, Mail, Clock } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 const Contact = () => {
+  const [searchParams] = useSearchParams();
+  const subjectParam = searchParams.get('subject') || '';
   return (
     <div className="min-h-screen">
       <Navigation />
@@ -89,7 +92,7 @@ const Contact = () => {
             <div>
               <h2 className="text-2xl font-semibold text-foreground mb-8">Envoyez-nous un message</h2>
               
-              <Card className="border-border">
+              <Card className="border-border" id="contact-form">
                 <CardContent className="p-6">
                   <form className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -115,7 +118,7 @@ const Contact = () => {
                     
                     <div>
                       <Label htmlFor="subject">Sujet</Label>
-                      <Input id="subject" placeholder="Objet de votre message" />
+                      <Input id="subject" placeholder="Objet de votre message" defaultValue={subjectParam} />
                     </div>
                     
                     <div>

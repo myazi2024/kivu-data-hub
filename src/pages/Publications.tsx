@@ -15,6 +15,7 @@ const Publications = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [email, setEmail] = useState('');
   const { toast } = useToast();
 
   // Fetch publications from Supabase
@@ -63,6 +64,15 @@ const Publications = () => {
 
     setFilteredPublications(filtered);
   }, [publications, searchTerm, categoryFilter]);
+
+  const handleSubscribe = () => {
+    if (!email) return;
+    toast({
+      title: "Inscription enregistrée",
+      description: "Merci de votre abonnement. Vous recevrez nos prochaines publications.",
+    });
+    setEmail('');
+  };
 
   return (
     <div className="min-h-screen">
@@ -136,14 +146,25 @@ const Publications = () => {
           )}
 
           {/* Newsletter Section */}
-          <div className="bg-secondary/50 rounded-lg p-8 text-center">
+          <div id="newsletter" className="bg-secondary/50 rounded-lg p-8 text-center">
             <h3 className="text-xl font-semibold text-foreground mb-4">
               Restez informé de nos dernières publications
             </h3>
             <p className="text-muted-foreground mb-6">
               Inscrivez-vous à notre newsletter pour recevoir nos rapports dès leur publication.
             </p>
-            <Button>S'abonner aux notifications</Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-md mx-auto">
+              <Input
+                type="email"
+                placeholder="Votre email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <Button onClick={handleSubscribe} disabled={!email}>S'abonner aux notifications</Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-3">
+              En vous abonnant, vous acceptez de recevoir nos communications. Vous pouvez vous désabonner à tout moment.
+            </p>
           </div>
         </div>
       </main>
