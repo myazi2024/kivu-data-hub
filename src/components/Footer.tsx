@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Mail, Globe } from 'lucide-react';
 import bicLogo from '@/assets/bic-logo.png';
+import footerPictogram from '@/assets/footer-pictogram.webp';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -35,6 +36,7 @@ const Footer = () => {
                 <h3 className="text-xl font-bold">Bureau de l'Immobilier du Congo</h3>
                 <p className="text-white/80 text-sm">BIC</p>
               </div>
+              <img src={footerPictogram} alt="Pictogramme immobilier et territorial" className="h-8 w-auto opacity-80 hidden md:block" />
             </div>
             
             <p className="text-white/90 mb-6 leading-relaxed max-w-md">

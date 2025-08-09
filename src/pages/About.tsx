@@ -1,6 +1,7 @@
 import React from 'react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
+import territorialMapIllustration from '@/assets/territorial-map-illustration.webp';
 
 const About = () => {
   return (
@@ -16,6 +17,15 @@ const About = () => {
               Fondé par des experts en droit, données urbaines et innovation numérique, le BIC (Bureau de l'Immobilier du Congo) 
               est né pour répondre à un besoin urgent : Comprendre les réalités foncières et locatives à travers des données concrètes et contextualisées.
             </p>
+            <figure className="mt-4">
+              <img
+                src={territorialMapIllustration}
+                alt="Illustration de carte territoriale et données urbaines"
+                loading="lazy"
+                decoding="async"
+                className="w-full rounded-lg shadow"
+              />
+            </figure>
           </section>
 
           <section className="mb-12">

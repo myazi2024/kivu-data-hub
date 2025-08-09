@@ -6,6 +6,7 @@ import { Download, FileText, ShoppingCart, MapPin, Calendar, CreditCard, Minus }
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import reportThumbnail from '@/assets/report-card-thumbnail.webp';
 
 interface Publication {
   id: string;
@@ -136,11 +137,17 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
             src={publication.cover_image_url}
             alt={publication.title}
             className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center">
-            <FileText className="h-16 w-16 text-muted-foreground" />
-          </div>
+          <img
+            src={reportThumbnail}
+            alt="Miniature de rapport — marché immobilier et données territoriales"
+            className="w-full h-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
         )}
         {publication.featured && (
           <Badge className="absolute top-2 right-2" variant="default">

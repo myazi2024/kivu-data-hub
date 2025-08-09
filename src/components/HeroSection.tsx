@@ -2,17 +2,19 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, MapPin, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import gomaHeroImage from '@/assets/goma-city-hero.jpg';
+import heroSkyline from '@/assets/hero-skyline.webp';
 
 const HeroSection = () => {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
       <div className="absolute inset-0">
-        <img 
-          src={gomaHeroImage} 
-          alt="Vue aérienne de Goma"
+        <img
+          src={heroSkyline}
+          alt="Illustration urbaine stylisée — skyline et données territoriales"
           className="w-full h-full object-cover"
+          loading="eager"
+          decoding="async"
         />
         <div className="absolute inset-0 bg-gradient-to-br from-bic-blue/90 via-bic-blue/70 to-bic-blue-light/80"></div>
       </div>
