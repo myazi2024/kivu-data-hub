@@ -3,7 +3,6 @@ import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
 import { Users, Building, TrendingUp, Globe } from 'lucide-react';
 
 const Partnership = () => {
@@ -68,11 +67,9 @@ const Partnership = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="text-center">
-              <Link to="/contact?subject=Partenariat#contact-form">
-                <Button size="lg" className="mt-4">
-                  Devenir Partenaire
-                </Button>
-              </Link>
+              <Button size="lg" className="mt-4">
+                Devenir Partenaire
+              </Button>
             </CardContent>
           </Card>
         </div>
