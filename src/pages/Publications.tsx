@@ -8,10 +8,6 @@ import { Search, Filter } from 'lucide-react';
 import { PublicationCard } from '@/components/publications/PublicationCard';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import thumbMarket from '@/assets/thumb-market.webp';
-import thumbUrban from '@/assets/thumb-urban.webp';
-import thumbTax from '@/assets/thumb-tax.webp';
-import thumbTerritory from '@/assets/thumb-territory.webp';
 
 const Publications = () => {
   const [publications, setPublications] = useState([]);
@@ -81,25 +77,6 @@ const Publications = () => {
                 Le BIC publie régulièrement des rapports d'analyse urbaine et immobilière basés sur des données collectées localement. 
                 Chaque rapport contient des tableaux, cartes interactives, notes méthodologiques et projections fiscales territorialisées.
               </p>
-              {/* Category legend */}
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 justify-items-center">
-                <div className="flex items-center gap-2 bg-secondary/30 px-3 py-2 rounded-md">
-                  <img src={thumbMarket} alt="Icône marché immobilier — catégorie Analyse" className="h-6 w-6 rounded-sm" loading="lazy" decoding="async" />
-                  <span className="text-sm text-muted-foreground">Marché</span>
-                </div>
-                <div className="flex items-center gap-2 bg-secondary/30 px-3 py-2 rounded-md">
-                  <img src={thumbUrban} alt="Icône urbanisation — catégorie Recherche" className="h-6 w-6 rounded-sm" loading="lazy" decoding="async" />
-                  <span className="text-sm text-muted-foreground">Urbanisation</span>
-                </div>
-                <div className="flex items-center gap-2 bg-secondary/30 px-3 py-2 rounded-md">
-                  <img src={thumbTax} alt="Icône fiscalité locale — impôts et budget" className="h-6 w-6 rounded-sm" loading="lazy" decoding="async" />
-                  <span className="text-sm text-muted-foreground">Fiscalité</span>
-                </div>
-                <div className="flex items-center gap-2 bg-secondary/30 px-3 py-2 rounded-md">
-                  <img src={thumbTerritory} alt="Icône données territoriales — carte et zones" className="h-6 w-6 rounded-sm" loading="lazy" decoding="async" />
-                  <span className="text-sm text-muted-foreground">Territoires</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -124,24 +101,9 @@ const Publications = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Toutes catégories</SelectItem>
-                  <SelectItem value="research">
-                    <span className="flex items-center gap-2">
-                      <img src={thumbUrban} alt="Catégorie Recherche — urbanisation et ville" className="h-4 w-4 rounded-sm" loading="lazy" decoding="async" />
-                      Recherche
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="analysis">
-                    <span className="flex items-center gap-2">
-                      <img src={thumbMarket} alt="Catégorie Analyse — marché immobilier" className="h-4 w-4 rounded-sm" loading="lazy" decoding="async" />
-                      Analyse
-                    </span>
-                  </SelectItem>
-                  <SelectItem value="report">
-                    <span className="flex items-center gap-2">
-                      <img src={thumbTerritory} alt="Catégorie Rapport — données territoriales" className="h-4 w-4 rounded-sm" loading="lazy" decoding="async" />
-                      Rapport
-                    </span>
-                  </SelectItem>
+                  <SelectItem value="research">Recherche</SelectItem>
+                  <SelectItem value="analysis">Analyse</SelectItem>
+                  <SelectItem value="report">Rapport</SelectItem>
                 </SelectContent>
               </Select>
             </div>
