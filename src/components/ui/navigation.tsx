@@ -65,7 +65,7 @@ const Navigation = () => {
                   </button>
                   <div
                     className={cn(
-                      "absolute top-full left-0 mt-1 w-48 bg-background border border-border rounded-md shadow-lg transition-all duration-200 z-50",
+                      "absolute top-full left-0 mt-1 w-48 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-hover transition-all duration-200 z-50",
                       (index === 1 && aboutDropdown) || (index === 6 && joinDropdown) 
                         ? "opacity-100 visible" 
                         : "opacity-0 invisible"
@@ -77,7 +77,7 @@ const Navigation = () => {
                       <Link
                         key={subItem.name}
                         to={subItem.href}
-                        className="block px-4 py-2 text-sm text-foreground hover:text-primary hover:bg-secondary/50 transition-colors duration-200 first:rounded-t-md last:rounded-b-md"
+                        className="block px-4 py-2 text-sm text-foreground hover:text-white hover:bg-seloger-red/90 transition-colors duration-200 first:rounded-t-md last:rounded-b-md font-medium"
                       >
                         {subItem.name}
                       </Link>
@@ -167,10 +167,10 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         <div className={cn(
-          "lg:hidden transition-all duration-300 ease-in-out overflow-hidden",
+          "lg:hidden transition-all duration-300 ease-in-out overflow-hidden bg-background/95 backdrop-blur-sm border-t border-border",
           isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         )}>
-          <div className="pb-4 space-y-1">
+          <div className="pb-4 space-y-1 px-2">
             {navigation.map((item) => (
               item.isDropdown ? (
                 <div key={item.name} className="space-y-1">
@@ -181,7 +181,7 @@ const Navigation = () => {
                     <Link
                       key={subItem.name}
                       to={subItem.href}
-                      className="block px-6 py-2 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-secondary/50 rounded-md transition-colors duration-200"
+                      className="block px-6 py-2 text-sm font-medium text-muted-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
                       onClick={() => setIsOpen(false)}
                     >
                       {subItem.name}
@@ -192,7 +192,7 @@ const Navigation = () => {
                 <Link
                   key={item.name}
                   to={item.href}
-                  className="block px-3 py-2 text-sm font-medium text-foreground hover:text-primary hover:bg-secondary/50 rounded-md transition-colors duration-200"
+                  className="block px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
                   onClick={() => setIsOpen(false)}
                 >
                   {item.name}

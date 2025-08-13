@@ -16,7 +16,7 @@ const HeroSection = () => {
           loading="eager"
           decoding="async"
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-bic-blue/90 via-bic-blue/70 to-bic-blue-light/80"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-seloger-red/90 via-seloger-red/70 to-seloger-red-light/80"></div>
       </div>
 
       {/* Content */}
@@ -48,7 +48,7 @@ const HeroSection = () => {
           <Link to="/publications">
             <Button 
               size="lg" 
-              className="bg-white text-bic-blue hover:bg-white/90 font-semibold px-8 py-3 text-lg group transition-all duration-300"
+              className="bg-white text-seloger-red hover:bg-white/90 font-semibold px-8 py-3 text-lg group transition-all duration-300"
             >
               Nos Publications
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
@@ -59,7 +59,7 @@ const HeroSection = () => {
             <Button 
               variant="outline" 
               size="lg"
-              className="bg-transparent border-white text-white hover:bg-white hover:text-bic-blue font-semibold px-8 py-3 text-lg transition-all duration-300"
+              className="bg-transparent border-white text-white hover:bg-white hover:text-seloger-red font-semibold px-8 py-3 text-lg transition-all duration-300"
             >
               <MapPin className="mr-2 h-5 w-5" />
               Cartographie Interactive
