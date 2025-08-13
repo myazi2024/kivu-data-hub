@@ -12,6 +12,7 @@ import AdminPublications from '@/components/admin/AdminPublications';
 import AdminPayments from '@/components/admin/AdminPayments';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 import AdminUsers from '@/components/admin/AdminUsers';
+import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -136,11 +137,12 @@ const Admin = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="publications" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="publications">Publications</TabsTrigger>
             <TabsTrigger value="payments">Paiements</TabsTrigger>
             <TabsTrigger value="users">Utilisateurs</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
+            <TabsTrigger value="territorial">Zones</TabsTrigger>
           </TabsList>
 
           <TabsContent value="publications">
@@ -157,6 +159,10 @@ const Admin = () => {
 
           <TabsContent value="analytics">
             <AnalyticsDashboard />
+          </TabsContent>
+
+          <TabsContent value="territorial">
+            <AdminTerritorialZones />
           </TabsContent>
         </Tabs>
       </div>
