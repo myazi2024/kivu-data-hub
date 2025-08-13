@@ -85,16 +85,18 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
           if (province) {
             onProvinceHover(provinceId);
             setHoveredProvinceData(province);
-            
-            // Calculer la position adaptative
-            const mouseEvent = event as MouseEvent;
-            const position = calculateTooltipPosition(mouseEvent.clientX, mouseEvent.clientY);
-            setTooltipPosition({ x: position.x, y: position.y });
-            setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
-            
             setShowTooltip(true);
             target.setAttribute('fill', 'hsl(348, 100%, 54%)');
           }
+        }
+      };
+
+      const handlePathMouseMove = (event: Event) => {
+        const mouseEvent = event as MouseEvent;
+        if (showTooltip) {
+          const position = calculateTooltipPosition(mouseEvent.clientX, mouseEvent.clientY);
+          setTooltipPosition({ x: position.x, y: position.y });
+          setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
         }
       };
 
@@ -125,6 +127,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       // Attacher les événements à chaque path
       paths.forEach(path => {
         path.addEventListener('mouseover', handlePathMouseOver);
+        path.addEventListener('mousemove', handlePathMouseMove);
         path.addEventListener('mouseout', handlePathMouseOut);
         path.addEventListener('click', handlePathClick);
       });
@@ -133,6 +136,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       return () => {
         paths.forEach(path => {
           path.removeEventListener('mouseover', handlePathMouseOver);
+          path.removeEventListener('mousemove', handlePathMouseMove);
           path.removeEventListener('mouseout', handlePathMouseOut);
           path.removeEventListener('click', handlePathClick);
         });
@@ -142,43 +146,58 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
 
   const calculateTooltipPosition = (mouseX: number, mouseY: number) => {
     const rect = mapRef.current?.getBoundingClientRect();
-    if (!rect) return { x: mouseX, y: mouseY, horizontal: 'right', vertical: 'top' };
+    if (!rect) return { x: mouseX, y: mouseY, horizontal: 'right', vertical: 'bottom' };
 
-    // Dimensions de l'infobulle (approximatives)
-    const tooltipWidth = 240; // 60 * 4 (w-60 = 240px)
-    const tooltipHeight = 280; // hauteur approximative
+    // Dimensions de l'infobulle (ajustées à la taille réelle)
+    const tooltipWidth = 240; // w-60 = 240px
+    const tooltipHeight = 280; // hauteur approximative avec toutes les données
+    const offset = 12; // distance du curseur
 
     // Position relative dans le conteneur
-    const relativeX = mouseX - rect.left;
-    const relativeY = mouseY - rect.top;
+    let relativeX = mouseX - rect.left;
+    let relativeY = mouseY - rect.top;
 
-    // Déterminer l'alignement horizontal
+    // Détermine l'alignement en fonction de l'espace disponible
     const spaceRight = rect.width - relativeX;
     const spaceLeft = relativeX;
-    const horizontal = spaceRight >= tooltipWidth ? 'right' : 'left';
-
-    // Déterminer l'alignement vertical  
     const spaceBelow = rect.height - relativeY;
     const spaceAbove = relativeY;
-    const vertical = spaceBelow >= tooltipHeight ? 'bottom' : 'top';
 
-    // Calculer la position finale
+    // Prioriser l'affichage à droite et en bas du curseur
+    let horizontal: 'left' | 'right' = 'right';
+    let vertical: 'top' | 'bottom' = 'bottom';
+
+    // Ajuster horizontal si pas assez d'espace à droite
+    if (spaceRight < tooltipWidth + offset && spaceLeft > tooltipWidth + offset) {
+      horizontal = 'left';
+    }
+
+    // Ajuster vertical si pas assez d'espace en bas
+    if (spaceBelow < tooltipHeight + offset && spaceAbove > tooltipHeight + offset) {
+      vertical = 'top';
+    }
+
+    // Calculer la position finale avec contraintes
     let finalX = relativeX;
     let finalY = relativeY;
 
-    // Ajustement horizontal
+    // Position horizontale
     if (horizontal === 'right') {
-      finalX = Math.min(relativeX + 10, rect.width - tooltipWidth - 10);
+      finalX = Math.min(relativeX + offset, rect.width - tooltipWidth - 10);
     } else {
-      finalX = Math.max(relativeX - tooltipWidth - 10, 10);
+      finalX = Math.max(relativeX - offset - tooltipWidth, 10);
     }
 
-    // Ajustement vertical
+    // Position verticale
     if (vertical === 'bottom') {
-      finalY = Math.min(relativeY + 10, rect.height - tooltipHeight - 10);
+      finalY = Math.min(relativeY + offset, rect.height - tooltipHeight - 10);
     } else {
-      finalY = Math.max(relativeY - tooltipHeight - 10, 10);
+      finalY = Math.max(relativeY - offset - tooltipHeight, 10);
     }
+
+    // S'assurer que l'infobulle reste dans les limites
+    finalX = Math.max(10, Math.min(finalX, rect.width - tooltipWidth - 10));
+    finalY = Math.max(10, Math.min(finalY, rect.height - tooltipHeight - 10));
 
     return {
       x: finalX,
@@ -211,11 +230,12 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       {/* Infobulle adaptative */}
       {showTooltip && hoveredProvinceData && (
         <div
-          className="absolute z-50 pointer-events-none transition-all duration-150 ease-out"
+          className="absolute z-50 pointer-events-none transition-all duration-100 ease-out"
           style={{
             left: tooltipPosition.x,
             top: tooltipPosition.y,
-            transform: `translate(${tooltipAlignment.horizontal === 'left' ? '-100%' : '0'}, ${tooltipAlignment.vertical === 'top' ? '-100%' : '0'})`,
+            opacity: showTooltip ? 1 : 0,
+            transform: `scale(${showTooltip ? 1 : 0.95})`,
             transformOrigin: `${tooltipAlignment.horizontal === 'left' ? 'right' : 'left'} ${tooltipAlignment.vertical === 'top' ? 'bottom' : 'top'}`
           }}
         >

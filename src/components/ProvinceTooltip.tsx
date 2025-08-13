@@ -29,65 +29,65 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province }) => {
   };
 
   return (
-    <div className="w-60 p-2 bg-card border border-border shadow-lg rounded-md">
-      <div className="space-y-1">
-        <h3 className="font-semibold text-xs text-foreground border-b border-border pb-0.5">
-          Province : {province.name}
+    <div className="w-64 p-3 bg-background/95 backdrop-blur-sm border border-border shadow-xl rounded-lg">
+      <div className="space-y-2">
+        <h3 className="font-semibold text-sm text-foreground border-b border-border pb-1 mb-2">
+          {province.name}
         </h3>
         
-        <div className="space-y-0.5 text-[10px]">
+        <div className="grid grid-cols-1 gap-1.5 text-xs">
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Vente au m² :</span>
-            <span className="font-medium text-foreground text-[10px]">{formatCurrency(province.prixMoyenVenteM2)} USD/m²</span>
+            <span className="text-muted-foreground">Vente au m² :</span>
+            <span className="font-medium text-foreground">{formatCurrency(province.prixMoyenVenteM2)} USD/m²</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Location au m² :</span>
-            <span className="font-medium text-foreground text-[10px]">{formatCurrency(province.prixMoyenLoyer)} USD/m²</span>
+            <span className="text-muted-foreground">Location au m² :</span>
+            <span className="font-medium text-foreground">{formatCurrency(province.prixMoyenLoyer)} USD/m²</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Taux d'occupation :</span>
-            <span className="font-medium text-foreground text-[10px]">{province.tauxOccupationLocatif}%</span>
+            <span className="text-muted-foreground">Taux d'occupation :</span>
+            <span className="font-medium text-emerald-600">{province.tauxOccupationLocatif}%</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Durée mise en location :</span>
-            <span className="font-medium text-foreground text-[10px]">{formatDuration(province.dureeMoyenneMiseLocationJours)}</span>
+            <span className="text-muted-foreground">Durée mise en location :</span>
+            <span className="font-medium text-foreground">{formatDuration(province.dureeMoyenneMiseLocationJours)}</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Population estimée :</span>
-            <span className="font-medium text-foreground text-[10px]">{formatNumber(province.populationLocativeEstimee)} hab.</span>
+            <span className="text-muted-foreground">Population estimée :</span>
+            <span className="font-medium text-blue-600">{formatNumber(province.populationLocativeEstimee)} hab.</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Taux de vacance :</span>
-            <span className="font-medium text-foreground text-[10px]">{province.tauxVacanceLocative}%</span>
+            <span className="text-muted-foreground">Taux de vacance :</span>
+            <span className="font-medium text-orange-500">{province.tauxVacanceLocative}%</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Recettes locatives :</span>
-            <span className="font-medium text-foreground text-[10px]">{formatCurrency(province.recettesLocativesUsd)} USD</span>
+            <span className="text-muted-foreground">Recettes locatives :</span>
+            <span className="font-medium text-green-600">{formatCurrency(province.recettesLocativesUsd)} USD</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Recettes fiscales :</span>
-            <span className="font-medium text-foreground text-[10px]">{formatCurrency(province.recettesFiscalesUsd)} USD</span>
+            <span className="text-muted-foreground">Recettes fiscales :</span>
+            <span className="font-medium text-green-700">{formatCurrency(province.recettesFiscalesUsd)} USD</span>
           </div>
           
           <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Valeur foncière :</span>
-            <span className="font-medium text-foreground text-[10px]">{formatCurrency(province.valeurFonciereParcelleUsd)} USD</span>
+            <span className="text-muted-foreground">Valeur foncière :</span>
+            <span className="font-medium text-purple-600">{formatCurrency(province.valeurFonciereParcelleUsd)} USD</span>
           </div>
           
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground text-[10px]">Pression locative :</span>
-            <span className={`font-medium text-[10px] ${
-              province.indicePresionLocative === 'Très élevé' ? 'text-destructive' :
-              province.indicePresionLocative === 'Élevé' ? 'text-orange-500' :
-              province.indicePresionLocative === 'Modéré' ? 'text-yellow-500' :
-              'text-emerald-500'
+          <div className="flex justify-between items-center pt-1 border-t border-border/50">
+            <span className="text-muted-foreground">Pression locative :</span>
+            <span className={`font-semibold px-2 py-0.5 rounded-full text-xs ${
+              province.indicePresionLocative === 'Très élevé' ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' :
+              province.indicePresionLocative === 'Élevé' ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300' :
+              province.indicePresionLocative === 'Modéré' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300' :
+              'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
             }`}>
               {province.indicePresionLocative}
             </span>
