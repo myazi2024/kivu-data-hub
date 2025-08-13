@@ -555,112 +555,86 @@ const DRCInteractiveMap: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Section - Compact */}
-      <div className="bg-gradient-hero text-white py-6">
-        <div className="container mx-auto px-4">
-          <div className="text-center space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Carte interactive du marché immobilier RDC
-            </h1>
-            <p className="text-sm text-white/90 max-w-2xl mx-auto">
-              Explorez les indicateurs immobiliers par province
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="container mx-auto px-4 py-4">
-        {/* Compact Controls Section */}
-        <div className="mb-4">
-          <Card className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex flex-wrap gap-4 items-center justify-between">
-                {/* Transaction Type Toggle - Compact */}
-                <div className="flex bg-muted rounded-lg p-1">
-                  <button
-                    onClick={() => setTransactionType('location')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                      transactionType === 'location'
-                        ? 'bg-white text-seloger-red shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Location
-                  </button>
-                  <button
-                    onClick={() => setTransactionType('vente')}
-                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                      transactionType === 'vente'
-                        ? 'bg-white text-seloger-red shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    Vente
-                  </button>
-                </div>
-
-                {/* Price Range Filter */}
-                <Select value={priceFilter} onValueChange={setPriceFilter}>
-                  <SelectTrigger className="w-[170px]">
-                    <SelectValue placeholder="Filtre prix" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Toutes les provinces</SelectItem>
-                    <SelectItem value="high-price">Prix élevés (&gt;600 USD)</SelectItem>
-                    <SelectItem value="medium-price">Prix moyens (300-600 USD)</SelectItem>
-                    <SelectItem value="low-price">Prix bas (&lt;300 USD)</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {/* Legend Inline */}
-                <div className="flex items-center gap-3 text-xs">
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(348, 100%, 44%)' }}></div>
-                    <span>Très élevé</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(20, 90%, 56%)' }}></div>
-                    <span>Élevé</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(45, 93%, 47%)' }}></div>
-                    <span>Moyen</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }}></div>
-                    <span>Bas</span>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Map and Data Container */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
-          {/* Map Section */}
-          <div className="xl:col-span-3">
-            <Card className="shadow-card overflow-hidden">
-              <CardContent className="p-0">
-                <div className="bg-seloger-gray/30 p-3 border-b">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-lg font-semibold text-foreground">République Démocratique du Congo</h2>
-                      <p className="text-muted-foreground text-xs mt-1">
-                        Survolez ou cliquez sur une province
-                      </p>
+      <div className="container mx-auto px-4 py-2">
+        {/* Map Section avec contrôles intégrés */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 h-[calc(100vh-100px)]">
+          <div className="xl:col-span-3 h-full">
+            <Card className="shadow-card overflow-hidden h-full flex flex-col">
+              <CardContent className="p-0 flex-1 flex flex-col">
+                {/* Contrôles intégrés dans l'en-tête de la carte */}
+                <div className="bg-seloger-gray/30 p-3 border-b flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-semibold text-foreground">RDC - Marché Immobilier</h2>
+                    
+                    {/* Transaction Type Toggle */}
+                    <div className="flex bg-muted rounded-lg p-1">
+                      <button
+                        onClick={() => setTransactionType('location')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                          transactionType === 'location'
+                            ? 'bg-white text-seloger-red shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        Location
+                      </button>
+                      <button
+                        onClick={() => setTransactionType('vente')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                          transactionType === 'vente'
+                            ? 'bg-white text-seloger-red shadow-sm'
+                            : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                      >
+                        Vente
+                      </button>
                     </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Price Range Filter */}
+                    <Select value={priceFilter} onValueChange={setPriceFilter}>
+                      <SelectTrigger className="w-[140px] h-8">
+                        <SelectValue placeholder="Filtre prix" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Toutes</SelectItem>
+                        <SelectItem value="high-price">Prix élevés</SelectItem>
+                        <SelectItem value="medium-price">Prix moyens</SelectItem>
+                        <SelectItem value="low-price">Prix bas</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Legend Inline */}
+                    <div className="flex items-center gap-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(348, 100%, 44%)' }}></div>
+                        <span>Très élevé</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(20, 90%, 56%)' }}></div>
+                        <span>Élevé</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(45, 93%, 47%)' }}></div>
+                        <span>Moyen</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }}></div>
+                        <span>Bas</span>
+                      </div>
+                    </div>
+                    
                     <div className="text-right">
                       <div className="text-sm font-medium text-foreground">
                         {filteredProvinces.length} / 26 provinces
                       </div>
-                      <p className="text-xs text-muted-foreground">
-                        {transactionType === 'location' ? 'Location' : 'Vente'} au m²
-                      </p>
                     </div>
                   </div>
                 </div>
-                <div className="p-3 h-[500px] lg:h-[600px]">
+                
+                {/* Carte pleine hauteur */}
+                <div className="flex-1 min-h-0 p-3">
                   <DRCMapWithTooltip
                     provincesData={filteredProvinces}
                     selectedProvince={selectedProvince?.id || null}
