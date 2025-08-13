@@ -48,8 +48,8 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             const province = provincesData.find(p => p.id === provinceId);
             
             if (province) {
-              const color = getProvinceColor(province);
-              path.setAttribute('fill', color);
+              // Couleur uniforme pour toutes les provinces
+              path.setAttribute('fill', 'hsl(210, 40%, 85%)'); // gris-bleu clair uniforme
               path.setAttribute('stroke', '#ffffff');
               path.setAttribute('stroke-width', '2');
               path.setAttribute('cursor', 'pointer');
@@ -163,7 +163,8 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       
       const province = provincesData.find(p => p.id === provinceId);
       if (province) {
-        target.setAttribute('fill', getProvinceColor(province));
+        // Restaurer la couleur uniforme
+        target.setAttribute('fill', 'hsl(210, 40%, 85%)');
       }
     }
   };
