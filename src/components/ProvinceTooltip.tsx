@@ -29,7 +29,7 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province }) => {
   };
 
   return (
-    <div className="w-64 p-3 bg-background/95 backdrop-blur-sm border border-border shadow-xl rounded-lg">
+    <div className="w-48 sm:w-56 md:w-64 p-2 sm:p-3 bg-background/95 backdrop-blur-sm border border-border shadow-xl rounded-lg">{/* Responsive width */}
       <div className="space-y-2">
         <h3 className="font-semibold text-sm text-foreground border-b border-border pb-1 mb-2">
           {province.name}

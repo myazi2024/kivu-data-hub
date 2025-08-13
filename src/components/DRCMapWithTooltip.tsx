@@ -148,9 +148,10 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
     const rect = mapRef.current?.getBoundingClientRect();
     if (!rect) return { x: mouseX, y: mouseY, horizontal: 'right', vertical: 'bottom' };
 
-    // Dimensions de l'infobulle (ajustées à la taille réelle)
-    const tooltipWidth = 240; // w-60 = 240px
-    const tooltipHeight = 280; // hauteur approximative avec toutes les données
+    // Dimensions adaptatives de l'infobulle selon la taille d'écran
+    const isSmallScreen = window.innerWidth < 640; // sm breakpoint
+    const tooltipWidth = isSmallScreen ? 192 : 256; // w-48 vs w-64
+    const tooltipHeight = isSmallScreen ? 240 : 280;
     const offset = 12; // distance du curseur
 
     // Position relative dans le conteneur
@@ -211,7 +212,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
     <div className="relative w-full h-full">
       <div 
         ref={mapRef}
-        className="w-full h-full flex items-center justify-center"
+        className="w-full h-full flex items-center justify-center touch-pan-x touch-pan-y"
         style={{ maxWidth: '100%', maxHeight: '100%', overflow: 'hidden' }}
       >
         <div 

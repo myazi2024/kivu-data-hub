@@ -135,50 +135,53 @@ const TerritorialMap = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Controls Panel */}
-        <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-6 p-2 sm:p-0">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6">
+        {/* Controls Panel - Responsive */}
+        <div className="space-y-3 sm:space-y-4 order-2 lg:order-1">
           {/* Search */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Search className="w-4 h-4" />
-                Recherche territoriale
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-xs sm:text-sm">
+                <Search className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Recherche territoriale</span>
+                <span className="sm:hidden">Recherche</span>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2 sm:space-y-3 p-3 sm:p-6 pt-0">
               <div className="flex gap-2">
                 <Input
-                  placeholder="Rechercher une zone..."
+                  placeholder="Rechercher..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  className="text-sm"
                 />
-                <Button size="sm">
-                  <Search className="w-4 h-4" />
+                <Button size="sm" className="px-2 sm:px-4">
+                  <Search className="w-3 h-3 sm:w-4 sm:h-4" />
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* Zoom Level */}
+          {/* Zoom Level - Responsive */}
           <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4" />
-                Niveau de zoom
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="flex items-center gap-2 text-xs sm:text-sm">
+                <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Niveau de zoom</span>
+                <span className="sm:hidden">Zoom</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6 pt-0">
               <Tabs value={zoomLevel} onValueChange={setZoomLevel}>
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="province" className="text-xs">Province</TabsTrigger>
-                  <TabsTrigger value="ville" className="text-xs">Ville</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-2 h-8 sm:h-10">
+                  <TabsTrigger value="province" className="text-[10px] sm:text-xs">Province</TabsTrigger>
+                  <TabsTrigger value="ville" className="text-[10px] sm:text-xs">Ville</TabsTrigger>
                 </TabsList>
-                <TabsList className="grid w-full grid-cols-3 mt-2">
-                  <TabsTrigger value="commune" className="text-xs">Commune</TabsTrigger>
-                  <TabsTrigger value="quartier" className="text-xs">Quartier</TabsTrigger>
-                  <TabsTrigger value="avenue" className="text-xs">Avenue</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 mt-2 h-8 sm:h-10">
+                  <TabsTrigger value="commune" className="text-[10px] sm:text-xs">Commune</TabsTrigger>
+                  <TabsTrigger value="quartier" className="text-[10px] sm:text-xs">Quartier</TabsTrigger>
+                  <TabsTrigger value="avenue" className="text-[10px] sm:text-xs">Avenue</TabsTrigger>
                 </TabsList>
               </Tabs>
             </CardContent>
@@ -191,9 +194,9 @@ const TerritorialMap = () => {
           <ZoneIndicators zones={filteredZones} />
         </div>
 
-        {/* Map Container */}
-        <div className="lg:col-span-3">
-          <div className="w-full h-[700px] rounded-lg border border-border overflow-hidden">
+        {/* Map Container - Responsive */}
+        <div className="lg:col-span-3 order-1 lg:order-2">
+          <div className="w-full h-[50vh] sm:h-[60vh] lg:h-[700px] rounded-lg border border-border overflow-hidden">{/* Responsive height */}
             <MapContainer
               center={[-1.6792, 29.2348]}
               zoom={12}

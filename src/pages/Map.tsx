@@ -12,10 +12,16 @@ const Map = () => {
       <main className="pt-16">
         <Tabs defaultValue="drc-map" className="h-[calc(100vh-64px)]">
           <div className="bg-muted/30 border-b">
-            <div className="max-w-7xl mx-auto px-4">
-              <TabsList className="grid w-full max-w-md grid-cols-2 h-12">
-                <TabsTrigger value="drc-map" className="text-sm">Carte RDC</TabsTrigger>
-                <TabsTrigger value="territorial-map" className="text-sm">Cartographie Territoriale</TabsTrigger>
+            <div className="max-w-7xl mx-auto px-2 sm:px-4">
+              <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-10 sm:h-12 mx-auto">
+                <TabsTrigger value="drc-map" className="text-xs sm:text-sm px-2 sm:px-4">
+                  <span className="hidden sm:inline">Carte RDC</span>
+                  <span className="sm:hidden">RDC</span>
+                </TabsTrigger>
+                <TabsTrigger value="territorial-map" className="text-xs sm:text-sm px-2 sm:px-4">
+                  <span className="hidden sm:inline">Cartographie Territoriale</span>
+                  <span className="sm:hidden">Territorial</span>
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
