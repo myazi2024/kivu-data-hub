@@ -7,6 +7,7 @@ import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, B
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import { ProvinceData } from '@/types/province';
 
+// Composant carte interactive RDC - simplifié
 const DRCInteractiveMap: React.FC = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
