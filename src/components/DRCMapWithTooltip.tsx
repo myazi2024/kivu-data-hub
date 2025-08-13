@@ -69,7 +69,76 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         }
       })
       .catch(console.error);
-  }, [provincesData, getProvinceColor]);
+  }, [provincesData]);
+
+  // Attacher les événements après que le SVG soit rendu
+  useEffect(() => {
+    if (svgContent && mapRef.current) {
+      const paths = mapRef.current.querySelectorAll('path[data-province]');
+      
+      const handlePathMouseOver = (event: Event) => {
+        const target = event.target as SVGElement;
+        const provinceId = target.getAttribute('data-province');
+        
+        if (provinceId && provinceId !== 'unknown') {
+          const province = provincesData.find(p => p.id === provinceId);
+          if (province) {
+            onProvinceHover(provinceId);
+            setHoveredProvinceData(province);
+            
+            // Calculer la position adaptative
+            const mouseEvent = event as MouseEvent;
+            const position = calculateTooltipPosition(mouseEvent.clientX, mouseEvent.clientY);
+            setTooltipPosition({ x: position.x, y: position.y });
+            setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
+            
+            setShowTooltip(true);
+            target.setAttribute('fill', 'hsl(348, 100%, 54%)');
+          }
+        }
+      };
+
+      const handlePathMouseOut = (event: Event) => {
+        const target = event.target as SVGElement;
+        
+        // Remettre à zéro tous les états
+        onProvinceHover(null);
+        setShowTooltip(false);
+        setHoveredProvinceData(null);
+        
+        // Restaurer la couleur uniforme
+        target.setAttribute('fill', 'hsl(210, 40%, 85%)');
+      };
+
+      const handlePathClick = (event: Event) => {
+        const target = event.target as SVGElement;
+        const provinceId = target.getAttribute('data-province');
+        
+        if (provinceId && provinceId !== 'unknown') {
+          const province = provincesData.find(p => p.id === provinceId);
+          if (province) {
+            onProvinceSelect(province);
+          }
+        }
+      };
+
+      // Attacher les événements à chaque path
+      paths.forEach(path => {
+        path.addEventListener('mouseover', handlePathMouseOver);
+        path.addEventListener('mouseout', handlePathMouseOut);
+        path.addEventListener('click', handlePathClick);
+      });
+
+      // Cleanup function
+      return () => {
+        paths.forEach(path => {
+          path.removeEventListener('mouseover', handlePathMouseOver);
+          path.removeEventListener('mouseout', handlePathMouseOut);
+          path.removeEventListener('click', handlePathClick);
+        });
+      };
+    }
+  }, [svgContent, provincesData, onProvinceHover, onProvinceSelect]);
 
   const calculateTooltipPosition = (mouseX: number, mouseY: number) => {
     const rect = mapRef.current?.getBoundingClientRect();
@@ -119,75 +188,12 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
     };
   };
 
-  const handleMapClick = (event: React.MouseEvent) => {
-    const target = event.target as SVGElement;
-    const provinceId = target.getAttribute('data-province');
-    
-    if (provinceId && provinceId !== 'unknown') {
-      const province = provincesData.find(p => p.id === provinceId);
-      if (province) {
-        onProvinceSelect(province);
-      }
-    }
-  };
-
-  const handleMapMouseOver = (event: React.MouseEvent) => {
-    const target = event.target as SVGElement;
-    const provinceId = target.getAttribute('data-province');
-    
-    if (provinceId && provinceId !== 'unknown') {
-      const province = provincesData.find(p => p.id === provinceId);
-      if (province) {
-        onProvinceHover(provinceId);
-        setHoveredProvinceData(province);
-        
-        // Calculer la position adaptative
-        const position = calculateTooltipPosition(event.clientX, event.clientY);
-        setTooltipPosition({ x: position.x, y: position.y });
-        setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
-        
-        setShowTooltip(true);
-        target.setAttribute('fill', 'hsl(348, 100%, 54%)');
-      }
-    }
-  };
-
-  const handleMapMouseOut = (event: React.MouseEvent) => {
-    const target = event.target as SVGElement;
-    
-    // Remettre à zéro tous les états
-    onProvinceHover(null);
-    setShowTooltip(false);
-    setHoveredProvinceData(null);
-    
-    // Restaurer la couleur uniforme pour TOUTES les provinces
-    if (mapRef.current) {
-      const allPaths = mapRef.current.querySelectorAll('path[data-province]');
-      allPaths.forEach(path => {
-        path.setAttribute('fill', 'hsl(210, 40%, 85%)');
-      });
-    }
-  };
-
-  const handleMapMouseMove = (event: React.MouseEvent) => {
-    if (showTooltip && hoveredProvinceData) {
-      // Mettre à jour la position adaptative en temps réel
-      const position = calculateTooltipPosition(event.clientX, event.clientY);
-      setTooltipPosition({ x: position.x, y: position.y });
-      setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
-    }
-  };
-
   return (
     <div className="relative w-full h-full">
       <div 
         ref={mapRef}
         className="w-full h-full flex items-center justify-center"
         style={{ maxWidth: '100%', maxHeight: '100%', overflow: 'hidden' }}
-        onClick={handleMapClick}
-        onMouseOver={handleMapMouseOver}
-        onMouseOut={handleMapMouseOut}
-        onMouseMove={handleMapMouseMove}
       >
         <div 
           className="w-full h-full"
