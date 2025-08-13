@@ -300,8 +300,8 @@ const TerritorialMap = () => {
                       </div>
                     </Popup>
                   </Polygon>
-                );
-              })}
+                  );
+                })}
             </MapContainer>
           </div>
         </div>
