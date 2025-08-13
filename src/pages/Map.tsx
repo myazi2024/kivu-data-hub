@@ -9,34 +9,26 @@ const Map = () => {
   return (
     <div className="min-h-screen">
       <Navigation />
-      <main className="pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-4">
-              Cartographie Interactive
-            </h1>
-            <p className="text-muted-foreground text-lg">
-              Explorez les données immobilières de Goma et de la RDC à travers notre cartographie interactive
-            </p>
+      <main className="pt-16">
+        <Tabs defaultValue="drc-map" className="h-[calc(100vh-64px)]">
+          <div className="bg-muted/30 border-b">
+            <div className="max-w-7xl mx-auto px-4">
+              <TabsList className="grid w-full max-w-md grid-cols-2 h-12">
+                <TabsTrigger value="drc-map" className="text-sm">Carte RDC</TabsTrigger>
+                <TabsTrigger value="territorial-map" className="text-sm">Cartographie Territoriale</TabsTrigger>
+              </TabsList>
+            </div>
           </div>
           
-          <Tabs defaultValue="drc-map" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="drc-map">Carte RDC</TabsTrigger>
-              <TabsTrigger value="territorial-map">Cartographie Territoriale</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="drc-map">
-              <DRCInteractiveMap />
-            </TabsContent>
-            
-            <TabsContent value="territorial-map">
-              <TerritorialMap />
-            </TabsContent>
-          </Tabs>
-        </div>
+          <TabsContent value="drc-map" className="h-full m-0 data-[state=active]:h-full">
+            <DRCInteractiveMap />
+          </TabsContent>
+          
+          <TabsContent value="territorial-map" className="h-full m-0 data-[state=active]:h-full">
+            <TerritorialMap />
+          </TabsContent>
+        </Tabs>
       </main>
-      <Footer />
     </div>
   );
 };
