@@ -154,15 +154,18 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
 
   const handleMapMouseOut = (event: React.MouseEvent) => {
     const target = event.target as SVGElement;
-    const provinceId = target.getAttribute('data-province');
     
-    if (provinceId) {
-      onProvinceHover(null);
-      setShowTooltip(false);
-      setHoveredProvinceData(null);
-      
-      // Restaurer la couleur uniforme pour TOUTES les provinces
-      target.setAttribute('fill', 'hsl(210, 40%, 85%)');
+    // Remettre à zéro tous les états
+    onProvinceHover(null);
+    setShowTooltip(false);
+    setHoveredProvinceData(null);
+    
+    // Restaurer la couleur uniforme pour TOUTES les provinces
+    if (mapRef.current) {
+      const allPaths = mapRef.current.querySelectorAll('path[data-province]');
+      allPaths.forEach(path => {
+        path.setAttribute('fill', 'hsl(210, 40%, 85%)');
+      });
     }
   };
 
