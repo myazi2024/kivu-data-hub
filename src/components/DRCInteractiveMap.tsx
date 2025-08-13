@@ -236,7 +236,7 @@ const DRCInteractiveMap: React.FC = () => {
                     Cliquez sur une province pour afficher ses indicateurs détaillés
                   </p>
                 </div>
-                <div className="p-6">
+                <div className="p-6 h-96 lg:h-[500px]">
                   <DRCMap
                     provincesData={provincesData}
                     selectedProvince={selectedProvince?.id || null}

@@ -126,12 +126,17 @@ const DRCMap: React.FC<DRCMapProps> = ({
 
   return (
     <div 
-      className="w-full"
+      className="w-full h-full max-w-full max-h-full overflow-hidden flex items-center justify-center"
       onClick={handleMapClick}
       onMouseOver={handleMapMouseOver}
       onMouseOut={handleMapMouseOut}
-      dangerouslySetInnerHTML={{ __html: svgContent }}
-    />
+    >
+      <div 
+        className="w-full h-auto max-w-full"
+        style={{ aspectRatio: '16/10' }}
+        dangerouslySetInnerHTML={{ __html: svgContent }}
+      />
+    </div>
   );
 };
 
