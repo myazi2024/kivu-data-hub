@@ -10,8 +10,6 @@ import { ProvinceData } from '@/types/province';
 const DRCInteractiveMap: React.FC = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
-  const [transactionType, setTransactionType] = useState<'location' | 'vente'>('location');
-  const [priceFilter, setPriceFilter] = useState<string>('all');
 
   // Complete data for all 26 provinces of DRC with correct SVG IDs
   const provincesData: ProvinceData[] = [
@@ -240,33 +238,9 @@ const DRCInteractiveMap: React.FC = () => {
     return new Intl.NumberFormat('fr-FR').format(value);
   };
 
-  // Filter provinces based on current filters
-  const filteredProvinces = provincesData.filter(province => {
-    if (priceFilter === 'all') return true;
-    
-    const priceToCheck = transactionType === 'location' 
-      ? province.prixMoyenLoyer 
-      : province.prixMoyenVenteM2;
-    
-    switch (priceFilter) {
-      case 'high-price': return priceToCheck > 600;
-      case 'medium-price': return priceToCheck >= 300 && priceToCheck <= 600;
-      case 'low-price': return priceToCheck < 300;
-      default: return true;
-    }
-  });
-
-  // Get color based on current transaction type and price
-  const getProvinceColor = (province: ProvinceData) => {
-    const price = transactionType === 'location' 
-      ? province.prixMoyenLoyer 
-      : province.prixMoyenVenteM2;
-    
-    if (price > 600) return 'hsl(348, 100%, 44%)'; // red - high price
-    if (price >= 450) return 'hsl(20, 90%, 56%)'; // orange - medium-high
-    if (price >= 300) return 'hsl(45, 93%, 47%)'; // amber - medium
-    if (price >= 150) return 'hsl(142, 71%, 45%)'; // emerald - low
-    return 'hsl(0, 0%, 45%)'; // gray - very low
+  // Simple color for provinces
+  const getProvinceColor = () => {
+    return 'hsl(142, 71%, 45%)'; // emerald
   };
 
   return (
@@ -277,87 +251,19 @@ const DRCInteractiveMap: React.FC = () => {
           <div className="xl:col-span-3 h-full">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
-                {/* Contrôles intégrés dans l'en-tête de la carte */}
-                <div className="bg-seloger-gray/30 p-3 border-b flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-semibold text-foreground">RDC - Marché Immobilier</h2>
-                    
-                    {/* Transaction Type Toggle */}
-                    <div className="flex bg-muted rounded-lg p-1">
-                      <button
-                        onClick={() => setTransactionType('location')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                          transactionType === 'location'
-                            ? 'bg-white text-seloger-red shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        Location
-                      </button>
-                      <button
-                        onClick={() => setTransactionType('vente')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
-                          transactionType === 'vente'
-                            ? 'bg-white text-seloger-red shadow-sm'
-                            : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                      >
-                        Vente
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    {/* Price Range Filter */}
-                    <Select value={priceFilter} onValueChange={setPriceFilter}>
-                      <SelectTrigger className="w-[140px] h-8">
-                        <SelectValue placeholder="Filtre prix" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">Toutes</SelectItem>
-                        <SelectItem value="high-price">Prix élevés</SelectItem>
-                        <SelectItem value="medium-price">Prix moyens</SelectItem>
-                        <SelectItem value="low-price">Prix bas</SelectItem>
-                      </SelectContent>
-                    </Select>
-
-                    {/* Legend Inline */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(348, 100%, 44%)' }}></div>
-                        <span>Très élevé</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(20, 90%, 56%)' }}></div>
-                        <span>Élevé</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(45, 93%, 47%)' }}></div>
-                        <span>Moyen</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }}></div>
-                        <span>Bas</span>
-                      </div>
-                    </div>
-                    
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-foreground">
-                        {filteredProvinces.length} / 26 provinces
-                      </div>
-                    </div>
-                  </div>
+                {/* En-tête simple */}
+                <div className="bg-muted/30 p-3 border-b">
+                  <h2 className="text-lg font-semibold text-foreground">RDC - Marché Immobilier</h2>
                 </div>
                 
                 {/* Carte pleine hauteur */}
                 <div className="flex-1 min-h-0 p-3">
                   <DRCMapWithTooltip
-                    provincesData={filteredProvinces}
+                    provincesData={provincesData}
                     selectedProvince={selectedProvince?.id || null}
                     onProvinceSelect={setSelectedProvince}
                     onProvinceHover={setHoveredProvince}
                     hoveredProvince={hoveredProvince}
-                    transactionType={transactionType}
                     getProvinceColor={getProvinceColor}
                   />
                 </div>

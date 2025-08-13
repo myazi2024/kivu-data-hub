@@ -8,7 +8,6 @@ interface DRCMapWithTooltipProps {
   onProvinceSelect: (province: ProvinceData) => void;
   onProvinceHover: (provinceId: string | null) => void;
   hoveredProvince: string | null;
-  transactionType: 'location' | 'vente';
   getProvinceColor: (province: ProvinceData) => string;
 }
 
@@ -18,7 +17,6 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   onProvinceSelect,
   onProvinceHover,
   hoveredProvince,
-  transactionType,
   getProvinceColor
 }) => {
   const [svgContent, setSvgContent] = useState<string>('');
