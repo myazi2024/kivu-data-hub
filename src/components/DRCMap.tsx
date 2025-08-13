@@ -53,6 +53,13 @@ const DRCMap: React.FC<DRCMapProps> = ({
         const svg = svgDoc.querySelector('svg');
         
         if (svg) {
+          // Force SVG to be responsive by removing fixed dimensions
+          svg.removeAttribute('width');
+          svg.removeAttribute('height');
+          svg.setAttribute('width', '100%');
+          svg.setAttribute('height', '100%');
+          svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+          
           // Find all path elements and add province data
           const paths = svg.querySelectorAll('path[id]');
           paths.forEach(path => {
@@ -126,14 +133,21 @@ const DRCMap: React.FC<DRCMapProps> = ({
 
   return (
     <div 
-      className="w-full h-full max-w-full max-h-full overflow-hidden flex items-center justify-center"
+      className="w-full h-full flex items-center justify-center"
+      style={{ maxWidth: '100%', maxHeight: '100%', overflow: 'hidden' }}
       onClick={handleMapClick}
       onMouseOver={handleMapMouseOver}
       onMouseOut={handleMapMouseOut}
     >
       <div 
-        className="w-full h-auto max-w-full"
-        style={{ aspectRatio: '16/10' }}
+        className="w-full h-full"
+        style={{ 
+          maxWidth: '100%', 
+          maxHeight: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}
         dangerouslySetInnerHTML={{ __html: svgContent }}
       />
     </div>
