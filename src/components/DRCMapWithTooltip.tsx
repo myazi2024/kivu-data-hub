@@ -24,6 +24,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   const [svgContent, setSvgContent] = useState<string>('');
   const [hoveredProvinceData, setHoveredProvinceData] = useState<ProvinceData | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [tooltipAlignment, setTooltipAlignment] = useState({ horizontal: 'right', vertical: 'top' });
   const [showTooltip, setShowTooltip] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
@@ -72,6 +73,54 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       .catch(console.error);
   }, [provincesData, getProvinceColor]);
 
+  const calculateTooltipPosition = (mouseX: number, mouseY: number) => {
+    const rect = mapRef.current?.getBoundingClientRect();
+    if (!rect) return { x: mouseX, y: mouseY, horizontal: 'right', vertical: 'top' };
+
+    // Dimensions de l'infobulle (approximatives)
+    const tooltipWidth = 240; // 60 * 4 (w-60 = 240px)
+    const tooltipHeight = 280; // hauteur approximative
+
+    // Position relative dans le conteneur
+    const relativeX = mouseX - rect.left;
+    const relativeY = mouseY - rect.top;
+
+    // Déterminer l'alignement horizontal
+    const spaceRight = rect.width - relativeX;
+    const spaceLeft = relativeX;
+    const horizontal = spaceRight >= tooltipWidth ? 'right' : 'left';
+
+    // Déterminer l'alignement vertical  
+    const spaceBelow = rect.height - relativeY;
+    const spaceAbove = relativeY;
+    const vertical = spaceBelow >= tooltipHeight ? 'bottom' : 'top';
+
+    // Calculer la position finale
+    let finalX = relativeX;
+    let finalY = relativeY;
+
+    // Ajustement horizontal
+    if (horizontal === 'right') {
+      finalX = Math.min(relativeX + 10, rect.width - tooltipWidth - 10);
+    } else {
+      finalX = Math.max(relativeX - tooltipWidth - 10, 10);
+    }
+
+    // Ajustement vertical
+    if (vertical === 'bottom') {
+      finalY = Math.min(relativeY + 10, rect.height - tooltipHeight - 10);
+    } else {
+      finalY = Math.max(relativeY - tooltipHeight - 10, 10);
+    }
+
+    return {
+      x: finalX,
+      y: finalY,
+      horizontal,
+      vertical
+    };
+  };
+
   const handleMapClick = (event: React.MouseEvent) => {
     const target = event.target as SVGElement;
     const provinceId = target.getAttribute('data-province');
@@ -94,14 +143,10 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         onProvinceHover(provinceId);
         setHoveredProvinceData(province);
         
-        // Calculate tooltip position
-        const rect = mapRef.current?.getBoundingClientRect();
-        if (rect) {
-          setTooltipPosition({
-            x: event.clientX - rect.left,
-            y: event.clientY - rect.top
-          });
-        }
+        // Calculer la position adaptative
+        const position = calculateTooltipPosition(event.clientX, event.clientY);
+        setTooltipPosition({ x: position.x, y: position.y });
+        setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
         
         setShowTooltip(true);
         target.setAttribute('fill', 'hsl(348, 100%, 54%)');
@@ -126,14 +171,11 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   };
 
   const handleMapMouseMove = (event: React.MouseEvent) => {
-    if (showTooltip) {
-      const rect = mapRef.current?.getBoundingClientRect();
-      if (rect) {
-        setTooltipPosition({
-          x: event.clientX - rect.left,
-          y: event.clientY - rect.top
-        });
-      }
+    if (showTooltip && hoveredProvinceData) {
+      // Mettre à jour la position adaptative en temps réel
+      const position = calculateTooltipPosition(event.clientX, event.clientY);
+      setTooltipPosition({ x: position.x, y: position.y });
+      setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
     }
   };
 
@@ -161,14 +203,15 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         />
       </div>
       
-      {/* Custom Tooltip */}
+      {/* Infobulle adaptative */}
       {showTooltip && hoveredProvinceData && (
         <div
-          className="absolute z-50 pointer-events-none"
+          className="absolute z-50 pointer-events-none transition-all duration-150 ease-out"
           style={{
-            left: tooltipPosition.x + 10,
-            top: tooltipPosition.y - 10,
-            transform: 'translateY(-100%)'
+            left: tooltipPosition.x,
+            top: tooltipPosition.y,
+            transform: `translate(${tooltipAlignment.horizontal === 'left' ? '-100%' : '0'}, ${tooltipAlignment.vertical === 'top' ? '-100%' : '0'})`,
+            transformOrigin: `${tooltipAlignment.horizontal === 'left' ? 'right' : 'left'} ${tooltipAlignment.vertical === 'top' ? 'bottom' : 'top'}`
           }}
         >
           <ProvinceTooltip province={hoveredProvinceData} />
