@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { CookieManager } from '@/lib/cookies';
-import { useCookies } from '@/hooks/useCookies';
 
 export interface CartItem {
   id: string;
@@ -27,36 +26,43 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const { consent, preferences } = useCookies();
+
+  // Fonction pour vérifier le consentement aux cookies
+  const getConsentStatus = (): boolean | null => {
+    const consent = CookieManager.get('bic-consent');
+    return consent === null ? null : consent === 'true';
+  };
 
   // Load cart from localStorage/cookies on mount
   useEffect(() => {
+    const consent = getConsentStatus();
     if (consent === false) return; // Ne pas charger si consentement refusé
     
     // Essayer de charger depuis localStorage d'abord (plus rapide)
-    const savedCart = localStorage.getItem('bic-cart');
-    if (savedCart) {
-      try {
+    try {
+      const savedCart = localStorage.getItem('bic-cart');
+      if (savedCart) {
         setCartItems(JSON.parse(savedCart));
         return;
-      } catch (error) {
-        console.error('Error loading cart from localStorage:', error);
       }
+    } catch (error) {
+      console.error('Error loading cart from localStorage:', error);
     }
     
     // Fallback vers les cookies si localStorage échoue
-    const cartCookie = CookieManager.get('bic-cart');
-    if (cartCookie) {
-      try {
+    try {
+      const cartCookie = CookieManager.get('bic-cart');
+      if (cartCookie) {
         setCartItems(JSON.parse(cartCookie));
-      } catch (error) {
-        console.error('Error loading cart from cookies:', error);
       }
+    } catch (error) {
+      console.error('Error loading cart from cookies:', error);
     }
-  }, [consent]);
+  }, []);
 
   // Persist cart to localStorage/cookies whenever it changes
   useEffect(() => {
+    const consent = getConsentStatus();
     if (consent === false) return; // Ne pas sauvegarder si consentement refusé
     
     const cartData = JSON.stringify(cartItems);
@@ -72,7 +78,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sameSite: 'lax'
       });
     }
-  }, [cartItems, consent]);
+  }, [cartItems]);
 
   const addToCart = (item: CartItem, openCart?: () => void) => {
     setCartItems(prev => {

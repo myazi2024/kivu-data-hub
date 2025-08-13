@@ -4,6 +4,10 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CartProvider } from '@/hooks/useCart';
+import { CookieProvider } from "@/hooks/useCookies";
+import CookieBanner from "@/components/CookieBanner";
+import { CartButton } from '@/components/cart/CartButton';
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -19,38 +23,38 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-import { CartButton } from '@/components/cart/CartButton';
-import { CartProvider } from '@/hooks/useCart';
-
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <CartProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/publications" element={<Publications />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/map" element={<Map />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/partnership" element={<Partnership />} />
-              <Route path="/myazi" element={<Myazi />} />
-              <Route path="/careers" element={<Careers />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-            {/* Global floating cart button */}
-            <CartButton />
-          </BrowserRouter>
-        </TooltipProvider>
-      </CartProvider>
-    </AuthProvider>
+    <CookieProvider>
+      <AuthProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/services" element={<Services />} />
+                <Route path="/publications" element={<Publications />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/map" element={<Map />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/partnership" element={<Partnership />} />
+                <Route path="/myazi" element={<Myazi />} />
+                <Route path="/careers" element={<Careers />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+              {/* Global floating cart button */}
+              <CartButton />
+              <CookieBanner />
+            </BrowserRouter>
+          </TooltipProvider>
+        </CartProvider>
+      </AuthProvider>
+    </CookieProvider>
   </QueryClientProvider>
 );
 

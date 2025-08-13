@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { CookieManager } from '@/lib/cookies';
 
 interface CookieContextType {
@@ -72,7 +72,15 @@ export const CookieProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 export const useCookies = () => {
   const context = useContext(CookieContext);
   if (!context) {
-    throw new Error('useCookies must be used within a CookieProvider');
+    // Fallback gracieux si utilisé en dehors du provider
+    return {
+      consent: null,
+      preferences: { essential: true, analytics: false, marketing: false },
+      giveConsent: () => {},
+      revokeConsent: () => {},
+      updatePreferences: () => {},
+      isConsentRequired: false
+    };
   }
   return context;
 };
