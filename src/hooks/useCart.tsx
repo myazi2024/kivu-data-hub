@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { CookieManager } from '@/lib/cookies';
+import { useCookies } from '@/hooks/useCookies';
 
 export interface CartItem {
   id: string;
@@ -25,23 +27,52 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const { consent, preferences } = useCookies();
 
-  // Load cart from localStorage on mount
+  // Load cart from localStorage/cookies on mount
   useEffect(() => {
+    if (consent === false) return; // Ne pas charger si consentement refusé
+    
+    // Essayer de charger depuis localStorage d'abord (plus rapide)
     const savedCart = localStorage.getItem('bic-cart');
     if (savedCart) {
       try {
         setCartItems(JSON.parse(savedCart));
+        return;
       } catch (error) {
         console.error('Error loading cart from localStorage:', error);
       }
     }
-  }, []);
+    
+    // Fallback vers les cookies si localStorage échoue
+    const cartCookie = CookieManager.get('bic-cart');
+    if (cartCookie) {
+      try {
+        setCartItems(JSON.parse(cartCookie));
+      } catch (error) {
+        console.error('Error loading cart from cookies:', error);
+      }
+    }
+  }, [consent]);
 
-  // Persist cart to localStorage whenever it changes
+  // Persist cart to localStorage/cookies whenever it changes
   useEffect(() => {
-    localStorage.setItem('bic-cart', JSON.stringify(cartItems));
-  }, [cartItems]);
+    if (consent === false) return; // Ne pas sauvegarder si consentement refusé
+    
+    const cartData = JSON.stringify(cartItems);
+    
+    // Sauvegarder dans localStorage (priorité)
+    try {
+      localStorage.setItem('bic-cart', cartData);
+    } catch (error) {
+      console.warn('localStorage unavailable, using cookies:', error);
+      // Fallback vers les cookies si localStorage n'est pas disponible
+      CookieManager.set('bic-cart', cartData, {
+        maxAge: 7 * 24 * 60 * 60, // 7 jours
+        sameSite: 'lax'
+      });
+    }
+  }, [cartItems, consent]);
 
   const addToCart = (item: CartItem, openCart?: () => void) => {
     setCartItems(prev => {
