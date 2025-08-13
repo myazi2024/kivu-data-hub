@@ -311,7 +311,7 @@ const DRCInteractiveMap: React.FC = () => {
       typologieDominante: 'Maisons individuelles'
     },
     {
-      id: 'CDTN',
+      id: 'CDTA',
       name: 'Tanganyika',
       prixMoyenLoyer: 138,
       prixMoyenVenteM2: 322,
