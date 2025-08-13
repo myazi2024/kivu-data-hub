@@ -47,13 +47,13 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province }) => {
   };
 
   return (
-    <div className="w-80 p-4 bg-card border border-border shadow-lg rounded-lg">
-      <div className="space-y-3">
-        <h3 className="font-semibold text-lg text-foreground border-b border-border pb-2">
+    <div className="w-64 p-3 bg-card border border-border shadow-lg rounded-lg">
+      <div className="space-y-2">
+        <h3 className="font-semibold text-base text-foreground border-b border-border pb-1">
           {province.name}
         </h3>
         
-        <div className="grid grid-cols-1 gap-2 text-sm">
+        <div className="grid grid-cols-1 gap-1.5 text-xs">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Prix moyen vente au m²:</span>
             <span className="font-medium text-foreground">{formatCurrency(province.prixMoyenVenteM2)} USD/m²</span>
