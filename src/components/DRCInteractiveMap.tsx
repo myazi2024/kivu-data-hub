@@ -37,8 +37,9 @@ const DRCInteractiveMap: React.FC = () => {
   const [transactionType, setTransactionType] = useState<'location' | 'vente'>('location');
   const [priceFilter, setPriceFilter] = useState<string>('all');
 
-  // Complete data for all major provinces of DRC
+  // Complete data for all 26 provinces of DRC with correct SVG IDs
   const provincesData: ProvinceData[] = [
+    // Kinshasa - Capitale économique
     {
       id: 'CDKN',
       name: 'Kinshasa',
@@ -57,24 +58,7 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 5.1,
       typologieDominante: 'Usage mixte'
     },
-    {
-      id: 'CDBC',
-      name: 'Kongo-Central',
-      prixMoyenLoyer: 180,
-      prixMoyenVenteM2: 420,
-      valeurFonciereParcelleUsd: 6500,
-      tauxOccupationLocatif: 67.9,
-      dureeMoyenneMiseLocationJours: 45,
-      tauxVacanceLocative: 32.1,
-      indicePresionLocative: 'Modéré',
-      volumeAnnoncesImmobilieres: 2100,
-      nombreTransactionsEstimees: 1250,
-      populationLocativeEstimee: 89000,
-      recettesLocativesUsd: 289000,
-      recettesFiscalesUsd: 45000,
-      variationLoyer3Mois: 2.3,
-      typologieDominante: 'Maisons individuelles'
-    },
+    // Haut-Katanga - Centre minier important
     {
       id: 'CDHK',
       name: 'Haut-Katanga',
@@ -93,6 +77,7 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 4.8,
       typologieDominante: 'Usage mixte'
     },
+    // Nord-Kivu - Goma et région active
     {
       id: 'CDNK',
       name: 'Nord-Kivu',
@@ -111,6 +96,7 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 3.8,
       typologieDominante: 'Usage mixte'
     },
+    // Sud-Kivu - Bukavu
     {
       id: 'CDSK',
       name: 'Sud-Kivu',
@@ -129,6 +115,7 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 3.2,
       typologieDominante: 'Maisons urbaines'
     },
+    // Lualaba - Région minière
     {
       id: 'CDLU',
       name: 'Lualaba',
@@ -147,6 +134,26 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 4.1,
       typologieDominante: 'Usage mixte'
     },
+    // Kongo-Central - Proche de Kinshasa
+    {
+      id: 'CDBC',
+      name: 'Kongo-Central',
+      prixMoyenLoyer: 180,
+      prixMoyenVenteM2: 420,
+      valeurFonciereParcelleUsd: 6500,
+      tauxOccupationLocatif: 67.9,
+      dureeMoyenneMiseLocationJours: 45,
+      tauxVacanceLocative: 32.1,
+      indicePresionLocative: 'Modéré',
+      volumeAnnoncesImmobilieres: 2100,
+      nombreTransactionsEstimees: 1250,
+      populationLocativeEstimee: 89000,
+      recettesLocativesUsd: 289000,
+      recettesFiscalesUsd: 45000,
+      variationLoyer3Mois: 2.3,
+      typologieDominante: 'Maisons individuelles'
+    },
+    // Kasaï-Central
     {
       id: 'CDKC',
       name: 'Kasaï-Central',
@@ -165,8 +172,9 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 2.1,
       typologieDominante: 'Maisons urbaines'
     },
+    // Kasaï-Oriental
     {
-      id: 'CDKO',
+      id: 'CDKE',
       name: 'Kasaï-Oriental',
       prixMoyenLoyer: 160,
       prixMoyenVenteM2: 380,
@@ -183,27 +191,10 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 1.8,
       typologieDominante: 'Maisons urbaines'
     },
+    // Tshopo - Kisangani
     {
-      id: 'CDMA',
-      name: 'Maniema',
-      prixMoyenLoyer: 140,
-      prixMoyenVenteM2: 320,
-      valeurFonciereParcelleUsd: 4200,
-      tauxOccupationLocatif: 65.8,
-      dureeMoyenneMiseLocationJours: 42,
-      tauxVacanceLocative: 34.2,
-      indicePresionLocative: 'Faible',
-      volumeAnnoncesImmobilieres: 980,
-      nombreTransactionsEstimees: 650,
-      populationLocativeEstimee: 45000,
-      recettesLocativesUsd: 145000,
-      recettesFiscalesUsd: 22000,
-      variationLoyer3Mois: 1.2,
-      typologieDominante: 'Maisons individuelles'
-    },
-    {
-      id: 'CDOR',
-      name: 'Orientale',
+      id: 'CDTO',
+      name: 'Tshopo',
       prixMoyenLoyer: 190,
       prixMoyenVenteM2: 450,
       valeurFonciereParcelleUsd: 6800,
@@ -219,6 +210,7 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 2.7,
       typologieDominante: 'Usage mixte'
     },
+    // Équateur
     {
       id: 'CDEQ',
       name: 'Équateur',
@@ -237,9 +229,29 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 1.5,
       typologieDominante: 'Maisons individuelles'
     },
+    // Maniema
     {
-      id: 'CDBN',
-      name: 'Bandundu',
+      id: 'CDMA',
+      name: 'Maniema',
+      prixMoyenLoyer: 140,
+      prixMoyenVenteM2: 320,
+      valeurFonciereParcelleUsd: 4200,
+      tauxOccupationLocatif: 65.8,
+      dureeMoyenneMiseLocationJours: 42,
+      tauxVacanceLocative: 34.2,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 980,
+      nombreTransactionsEstimees: 650,
+      populationLocativeEstimee: 45000,
+      recettesLocativesUsd: 145000,
+      recettesFiscalesUsd: 22000,
+      variationLoyer3Mois: 1.2,
+      typologieDominante: 'Maisons individuelles'
+    },
+    // Kwilu
+    {
+      id: 'CDKL',
+      name: 'Kwilu',
       prixMoyenLoyer: 145,
       prixMoyenVenteM2: 340,
       valeurFonciereParcelleUsd: 4500,
@@ -255,6 +267,7 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 1.1,
       typologieDominante: 'Maisons individuelles'
     },
+    // Bas-Uele
     {
       id: 'CDBU',
       name: 'Bas-Uele',
@@ -273,6 +286,7 @@ const DRCInteractiveMap: React.FC = () => {
       variationLoyer3Mois: 0.8,
       typologieDominante: 'Maisons rurales'
     },
+    // Haut-Uele
     {
       id: 'CDHU',
       name: 'Haut-Uele',
@@ -289,6 +303,234 @@ const DRCInteractiveMap: React.FC = () => {
       recettesLocativesUsd: 108000,
       recettesFiscalesUsd: 18000,
       variationLoyer3Mois: 0.9,
+      typologieDominante: 'Maisons rurales'
+    },
+    // Ituri
+    {
+      id: 'CDIT',
+      name: 'Ituri',
+      prixMoyenLoyer: 165,
+      prixMoyenVenteM2: 385,
+      valeurFonciereParcelleUsd: 5500,
+      tauxOccupationLocatif: 70.8,
+      dureeMoyenneMiseLocationJours: 36,
+      tauxVacanceLocative: 29.2,
+      indicePresionLocative: 'Modéré',
+      volumeAnnoncesImmobilieres: 1600,
+      nombreTransactionsEstimees: 1100,
+      populationLocativeEstimee: 72000,
+      recettesLocativesUsd: 215000,
+      recettesFiscalesUsd: 35000,
+      variationLoyer3Mois: 2.0,
+      typologieDominante: 'Usage mixte'
+    },
+    // Haut-Lomami
+    {
+      id: 'CDHL',
+      name: 'Haut-Lomami',
+      prixMoyenLoyer: 175,
+      prixMoyenVenteM2: 410,
+      valeurFonciereParcelleUsd: 6200,
+      tauxOccupationLocatif: 72.4,
+      dureeMoyenneMiseLocationJours: 34,
+      tauxVacanceLocative: 27.6,
+      indicePresionLocative: 'Modéré',
+      volumeAnnoncesImmobilieres: 1850,
+      nombreTransactionsEstimees: 1300,
+      populationLocativeEstimee: 75000,
+      recettesLocativesUsd: 245000,
+      recettesFiscalesUsd: 40000,
+      variationLoyer3Mois: 2.5,
+      typologieDominante: 'Maisons urbaines'
+    },
+    // Lomami
+    {
+      id: 'CDLO',
+      name: 'Lomami',
+      prixMoyenLoyer: 150,
+      prixMoyenVenteM2: 350,
+      valeurFonciereParcelleUsd: 4600,
+      tauxOccupationLocatif: 67.8,
+      dureeMoyenneMiseLocationJours: 41,
+      tauxVacanceLocative: 32.2,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 1200,
+      nombreTransactionsEstimees: 800,
+      populationLocativeEstimee: 55000,
+      recettesLocativesUsd: 175000,
+      recettesFiscalesUsd: 26000,
+      variationLoyer3Mois: 1.4,
+      typologieDominante: 'Maisons individuelles'
+    },
+    // Tanganyika
+    {
+      id: 'CDTA',
+      name: 'Tanganyika',
+      prixMoyenLoyer: 185,
+      prixMoyenVenteM2: 430,
+      valeurFonciereParcelleUsd: 6000,
+      tauxOccupationLocatif: 75.2,
+      dureeMoyenneMiseLocationJours: 30,
+      tauxVacanceLocative: 24.8,
+      indicePresionLocative: 'Modéré',
+      volumeAnnoncesImmobilieres: 2200,
+      nombreTransactionsEstimees: 1600,
+      populationLocativeEstimee: 95000,
+      recettesLocativesUsd: 295000,
+      recettesFiscalesUsd: 48000,
+      variationLoyer3Mois: 2.8,
+      typologieDominante: 'Usage mixte'
+    },
+    // Kasaï
+    {
+      id: 'CDKS',
+      name: 'Kasaï',
+      prixMoyenLoyer: 135,
+      prixMoyenVenteM2: 315,
+      valeurFonciereParcelleUsd: 4000,
+      tauxOccupationLocatif: 64.5,
+      dureeMoyenneMiseLocationJours: 43,
+      tauxVacanceLocative: 35.5,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 950,
+      nombreTransactionsEstimees: 620,
+      populationLocativeEstimee: 42000,
+      recettesLocativesUsd: 135000,
+      recettesFiscalesUsd: 20000,
+      variationLoyer3Mois: 1.0,
+      typologieDominante: 'Maisons rurales'
+    },
+    // Sankuru
+    {
+      id: 'CDSA',
+      name: 'Sankuru',
+      prixMoyenLoyer: 130,
+      prixMoyenVenteM2: 305,
+      valeurFonciereParcelleUsd: 3800,
+      tauxOccupationLocatif: 63.8,
+      dureeMoyenneMiseLocationJours: 45,
+      tauxVacanceLocative: 36.2,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 850,
+      nombreTransactionsEstimees: 550,
+      populationLocativeEstimee: 38000,
+      recettesLocativesUsd: 125000,
+      recettesFiscalesUsd: 18000,
+      variationLoyer3Mois: 0.9,
+      typologieDominante: 'Maisons rurales'
+    },
+    // Kwango
+    {
+      id: 'CDKG',
+      name: 'Kwango',
+      prixMoyenLoyer: 128,
+      prixMoyenVenteM2: 300,
+      valeurFonciereParcelleUsd: 3600,
+      tauxOccupationLocatif: 62.8,
+      dureeMoyenneMiseLocationJours: 47,
+      tauxVacanceLocative: 37.2,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 780,
+      nombreTransactionsEstimees: 500,
+      populationLocativeEstimee: 35000,
+      recettesLocativesUsd: 115000,
+      recettesFiscalesUsd: 16000,
+      variationLoyer3Mois: 0.7,
+      typologieDominante: 'Maisons rurales'
+    },
+    // Maï-Ndombe
+    {
+      id: 'CDMN',
+      name: 'Maï-Ndombe',
+      prixMoyenLoyer: 115,
+      prixMoyenVenteM2: 270,
+      valeurFonciereParcelleUsd: 3200,
+      tauxOccupationLocatif: 60.5,
+      dureeMoyenneMiseLocationJours: 50,
+      tauxVacanceLocative: 39.5,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 580,
+      nombreTransactionsEstimees: 380,
+      populationLocativeEstimee: 25000,
+      recettesLocativesUsd: 85000,
+      recettesFiscalesUsd: 12000,
+      variationLoyer3Mois: 0.5,
+      typologieDominante: 'Maisons rurales'
+    },
+    // Mongala
+    {
+      id: 'CDMO',
+      name: 'Mongala',
+      prixMoyenLoyer: 122,
+      prixMoyenVenteM2: 285,
+      valeurFonciereParcelleUsd: 3400,
+      tauxOccupationLocatif: 61.8,
+      dureeMoyenneMiseLocationJours: 49,
+      tauxVacanceLocative: 38.2,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 680,
+      nombreTransactionsEstimees: 450,
+      populationLocativeEstimee: 30000,
+      recettesLocativesUsd: 98000,
+      recettesFiscalesUsd: 14000,
+      variationLoyer3Mois: 0.6,
+      typologieDominante: 'Maisons rurales'
+    },
+    // Nord-Ubangi
+    {
+      id: 'CDNU',
+      name: 'Nord-Ubangi',
+      prixMoyenLoyer: 110,
+      prixMoyenVenteM2: 260,
+      valeurFonciereParcelleUsd: 3000,
+      tauxOccupationLocatif: 59.2,
+      dureeMoyenneMiseLocationJours: 52,
+      tauxVacanceLocative: 40.8,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 520,
+      nombreTransactionsEstimees: 340,
+      populationLocativeEstimee: 22000,
+      recettesLocativesUsd: 75000,
+      recettesFiscalesUsd: 10000,
+      variationLoyer3Mois: 0.4,
+      typologieDominante: 'Maisons rurales'
+    },
+    // Sud-Ubangi
+    {
+      id: 'CDSU',
+      name: 'Sud-Ubangi',
+      prixMoyenLoyer: 118,
+      prixMoyenVenteM2: 275,
+      valeurFonciereParcelleUsd: 3300,
+      tauxOccupationLocatif: 60.8,
+      dureeMoyenneMiseLocationJours: 51,
+      tauxVacanceLocative: 39.2,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 620,
+      nombreTransactionsEstimees: 410,
+      populationLocativeEstimee: 27000,
+      recettesLocativesUsd: 88000,
+      recettesFiscalesUsd: 13000,
+      variationLoyer3Mois: 0.5,
+      typologieDominante: 'Maisons rurales'
+    },
+    // Tshuapa
+    {
+      id: 'CDTU',
+      name: 'Tshuapa',
+      prixMoyenLoyer: 125,
+      prixMoyenVenteM2: 295,
+      valeurFonciereParcelleUsd: 3500,
+      tauxOccupationLocatif: 62.5,
+      dureeMoyenneMiseLocationJours: 48,
+      tauxVacanceLocative: 37.5,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 750,
+      nombreTransactionsEstimees: 480,
+      populationLocativeEstimee: 33000,
+      recettesLocativesUsd: 105000,
+      recettesFiscalesUsd: 15000,
+      variationLoyer3Mois: 0.8,
       typologieDominante: 'Maisons rurales'
     }
   ];
