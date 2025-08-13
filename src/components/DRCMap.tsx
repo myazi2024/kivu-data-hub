@@ -66,9 +66,13 @@ const DRCMap: React.FC<DRCMapProps> = ({
           
           // Find all path elements and add province data
           const paths = svg.querySelectorAll('path[id]');
+          console.log(`Found ${paths.length} provinces in SVG`);
+          
           paths.forEach(path => {
             const provinceId = path.getAttribute('id');
             const province = provincesData.find(p => p.id === provinceId);
+            
+            console.log(`Processing province: ${provinceId}, found data: ${!!province}`);
             
             if (province) {
               // Set color based on current filters and transaction type
@@ -81,6 +85,15 @@ const DRCMap: React.FC<DRCMapProps> = ({
               // Add data attributes
               path.setAttribute('data-province', province.id);
               path.setAttribute('data-name', province.name);
+            } else {
+              // Make non-data provinces still clickable with default styling
+              path.setAttribute('fill', 'hsl(0, 0%, 75%)');
+              path.setAttribute('stroke', '#ffffff');
+              path.setAttribute('stroke-width', '1');
+              path.setAttribute('cursor', 'pointer');
+              path.setAttribute('data-province', provinceId || 'unknown');
+              path.setAttribute('data-name', `Province ${provinceId}`);
+              console.warn(`No data found for province: ${provinceId}`);
             }
           });
           
@@ -104,10 +117,15 @@ const DRCMap: React.FC<DRCMapProps> = ({
     const target = event.target as SVGElement;
     const provinceId = target.getAttribute('data-province');
     
-    if (provinceId) {
+    console.log('Clicked province:', provinceId);
+    
+    if (provinceId && provinceId !== 'unknown') {
       const province = provincesData.find(p => p.id === provinceId);
       if (province) {
+        console.log('Found province data:', province.name);
         onProvinceSelect(province);
+      } else {
+        console.warn('No data available for province:', provinceId);
       }
     }
   };

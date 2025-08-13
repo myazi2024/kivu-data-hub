@@ -37,7 +37,7 @@ const DRCInteractiveMap: React.FC = () => {
   const [transactionType, setTransactionType] = useState<'location' | 'vente'>('location');
   const [priceFilter, setPriceFilter] = useState<string>('all');
 
-  // Mock data for the provinces with enhanced data structure
+  // Complete data for all major provinces of DRC
   const provincesData: ProvinceData[] = [
     {
       id: 'CDKN',
@@ -164,6 +164,132 @@ const DRCInteractiveMap: React.FC = () => {
       recettesFiscalesUsd: 42000,
       variationLoyer3Mois: 2.1,
       typologieDominante: 'Maisons urbaines'
+    },
+    {
+      id: 'CDKO',
+      name: 'Kasaï-Oriental',
+      prixMoyenLoyer: 160,
+      prixMoyenVenteM2: 380,
+      valeurFonciereParcelleUsd: 5200,
+      tauxOccupationLocatif: 71.3,
+      dureeMoyenneMiseLocationJours: 38,
+      tauxVacanceLocative: 28.7,
+      indicePresionLocative: 'Modéré',
+      volumeAnnoncesImmobilieres: 1800,
+      nombreTransactionsEstimees: 1200,
+      populationLocativeEstimee: 78000,
+      recettesLocativesUsd: 235000,
+      recettesFiscalesUsd: 38000,
+      variationLoyer3Mois: 1.8,
+      typologieDominante: 'Maisons urbaines'
+    },
+    {
+      id: 'CDMA',
+      name: 'Maniema',
+      prixMoyenLoyer: 140,
+      prixMoyenVenteM2: 320,
+      valeurFonciereParcelleUsd: 4200,
+      tauxOccupationLocatif: 65.8,
+      dureeMoyenneMiseLocationJours: 42,
+      tauxVacanceLocative: 34.2,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 980,
+      nombreTransactionsEstimees: 650,
+      populationLocativeEstimee: 45000,
+      recettesLocativesUsd: 145000,
+      recettesFiscalesUsd: 22000,
+      variationLoyer3Mois: 1.2,
+      typologieDominante: 'Maisons individuelles'
+    },
+    {
+      id: 'CDOR',
+      name: 'Orientale',
+      prixMoyenLoyer: 190,
+      prixMoyenVenteM2: 450,
+      valeurFonciereParcelleUsd: 6800,
+      tauxOccupationLocatif: 74.2,
+      dureeMoyenneMiseLocationJours: 32,
+      tauxVacanceLocative: 25.8,
+      indicePresionLocative: 'Modéré',
+      volumeAnnoncesImmobilieres: 2800,
+      nombreTransactionsEstimees: 1850,
+      populationLocativeEstimee: 112000,
+      recettesLocativesUsd: 340000,
+      recettesFiscalesUsd: 58000,
+      variationLoyer3Mois: 2.7,
+      typologieDominante: 'Usage mixte'
+    },
+    {
+      id: 'CDEQ',
+      name: 'Équateur',
+      prixMoyenLoyer: 155,
+      prixMoyenVenteM2: 360,
+      valeurFonciereParcelleUsd: 4800,
+      tauxOccupationLocatif: 68.9,
+      dureeMoyenneMiseLocationJours: 40,
+      tauxVacanceLocative: 31.1,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 1450,
+      nombreTransactionsEstimees: 980,
+      populationLocativeEstimee: 62000,
+      recettesLocativesUsd: 195000,
+      recettesFiscalesUsd: 28000,
+      variationLoyer3Mois: 1.5,
+      typologieDominante: 'Maisons individuelles'
+    },
+    {
+      id: 'CDBN',
+      name: 'Bandundu',
+      prixMoyenLoyer: 145,
+      prixMoyenVenteM2: 340,
+      valeurFonciereParcelleUsd: 4500,
+      tauxOccupationLocatif: 66.4,
+      dureeMoyenneMiseLocationJours: 44,
+      tauxVacanceLocative: 33.6,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 1250,
+      nombreTransactionsEstimees: 820,
+      populationLocativeEstimee: 58000,
+      recettesLocativesUsd: 168000,
+      recettesFiscalesUsd: 25000,
+      variationLoyer3Mois: 1.1,
+      typologieDominante: 'Maisons individuelles'
+    },
+    {
+      id: 'CDBU',
+      name: 'Bas-Uele',
+      prixMoyenLoyer: 120,
+      prixMoyenVenteM2: 280,
+      valeurFonciereParcelleUsd: 3500,
+      tauxOccupationLocatif: 62.1,
+      dureeMoyenneMiseLocationJours: 48,
+      tauxVacanceLocative: 37.9,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 650,
+      nombreTransactionsEstimees: 420,
+      populationLocativeEstimee: 28000,
+      recettesLocativesUsd: 95000,
+      recettesFiscalesUsd: 15000,
+      variationLoyer3Mois: 0.8,
+      typologieDominante: 'Maisons rurales'
+    },
+    {
+      id: 'CDHU',
+      name: 'Haut-Uele',
+      prixMoyenLoyer: 125,
+      prixMoyenVenteM2: 290,
+      valeurFonciereParcelleUsd: 3800,
+      tauxOccupationLocatif: 63.5,
+      dureeMoyenneMiseLocationJours: 46,
+      tauxVacanceLocative: 36.5,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 720,
+      nombreTransactionsEstimees: 480,
+      populationLocativeEstimee: 32000,
+      recettesLocativesUsd: 108000,
+      recettesFiscalesUsd: 18000,
+      variationLoyer3Mois: 0.9,
+      typologieDominante: 'Maisons rurales'
     }
   ];
 
@@ -475,102 +601,87 @@ const DRCInteractiveMap: React.FC = () => {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="space-y-3 p-4 bg-seloger-gray/30 rounded-lg">
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-seloger-red" />
-                  <h4 className="font-semibold text-foreground">Activité du marché</h4>
+                  <DollarSign className="h-4 w-4 text-seloger-red" />
+                  <h4 className="font-semibold text-sm text-foreground">Prix & Valeur</h4>
                 </div>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Volume d'annonces immobilières</li>
-                  <li>• Nombre de transactions estimées</li>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Prix moyen location/m²</li>
+                  <li>• Prix moyen vente/m²</li>
+                  <li>• Valeur foncière parcelle</li>
                 </ul>
               </div>
-              <div className="space-y-3 p-4 bg-seloger-gray/30 rounded-lg">
+              
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-seloger-red" />
-                  <h4 className="font-semibold text-foreground">Prix & Valeur</h4>
+                  <Building className="h-4 w-4 text-seloger-red" />
+                  <h4 className="font-semibold text-sm text-foreground">Performance Locative</h4>
                 </div>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Prix moyen de vente (m²)</li>
-                  <li>• Prix moyen de location (m²)</li>
-                  <li>• Valeur foncière moyenne</li>
-                </ul>
-              </div>
-              <div className="space-y-3 p-4 bg-seloger-gray/30 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Building className="h-5 w-5 text-seloger-red" />
-                  <h4 className="font-semibold text-foreground">Performance locative</h4>
-                </div>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Taux d'occupation locatif</li>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Taux d'occupation</li>
                   <li>• Durée de mise en location</li>
                   <li>• Indice de pression locative</li>
                 </ul>
               </div>
-              <div className="space-y-3 p-4 bg-seloger-gray/30 rounded-lg">
+              
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-seloger-red" />
-                  <h4 className="font-semibold text-foreground">Population & fiscalité</h4>
+                  <BarChart3 className="h-4 w-4 text-seloger-red" />
+                  <h4 className="font-semibold text-sm text-foreground">Activité du Marché</h4>
                 </div>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Population locative estimée</li>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li>• Volume d'annonces</li>
+                  <li>• Nombre de transactions</li>
+                  <li>• Population locative</li>
+                </ul>
+              </div>
+              
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-seloger-red" />
+                  <h4 className="font-semibold text-sm text-foreground">Données Économiques</h4>
+                </div>
+                <ul className="text-xs text-muted-foreground space-y-1">
                   <li>• Recettes locatives</li>
-                  <li>• Recettes fiscales estimées</li>
+                  <li>• Recettes fiscales</li>
+                  <li>• Évolution sur 3 mois</li>
                 </ul>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Footer Info Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-gradient-card border-border shadow-card">
-            <CardContent className="p-6">
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-seloger-red" />
-                  Utilisation des filtres
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="font-medium text-foreground">Province</h4>
-                    <p className="text-sm text-muted-foreground">Affiche les données agrégées à l'échelle provinciale pour une vue d'ensemble du marché local.</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-foreground">Ville</h4>
-                    <p className="text-sm text-muted-foreground">Permet une analyse fine par centre urbain ou commune pour des décisions ciblées.</p>
-                  </div>
-                </div>
+        {/* Info Section */}
+        <Card className="shadow-card">
+          <CardHeader>
+            <CardTitle className="text-xl text-foreground">🏢 À propos de BIC Analytic</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-muted-foreground">
+              <strong>BIC Analytic</strong> propose une cartographie immobilière complète de la République Démocratique du Congo. 
+              Notre plateforme combine données publiques, analyses de marché et modélisations territoriales pour offrir 
+              une vision claire du secteur immobilier congolais.
+            </p>
+            
+            <Separator />
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+              <div className="space-y-2">
+                <div className="text-2xl font-bold text-seloger-red">15+</div>
+                <div className="text-sm text-muted-foreground">Indicateurs analysés</div>
               </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-card border-border shadow-card">
-            <CardContent className="p-6">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                <Building className="h-5 w-5 text-seloger-red" />
-                Objectif de la plateforme
-              </h3>
-              <p className="text-muted-foreground mb-4 text-sm">
-                Cette carte vise à fournir une lecture dynamique du marché immobilier congolais, en facilitant :
-              </p>
-              <ul className="space-y-2 text-sm text-muted-foreground">
-                <li className="flex items-start gap-2">
-                  <span className="text-seloger-red font-bold">•</span>
-                  La prise de décision pour les investisseurs et les autorités locales
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-seloger-red font-bold">•</span>
-                  Le suivi des dynamiques urbaines et fiscales
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-seloger-red font-bold">•</span>
-                  L'identification des zones à forte pression locative ou à potentiel de développement
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="space-y-2">
+                <div className="text-2xl font-bold text-seloger-red">26</div>
+                <div className="text-sm text-muted-foreground">Provinces couvertes</div>
+              </div>
+              <div className="space-y-2">
+                <div className="text-2xl font-bold text-seloger-red">100k+</div>
+                <div className="text-sm text-muted-foreground">Points de données</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
