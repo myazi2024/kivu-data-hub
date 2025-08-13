@@ -147,7 +147,7 @@ const DRCInteractiveMap: React.FC = () => {
       typologieDominante: 'Maisons individuelles'
     },
     {
-      id: 'CDLK',
+      id: 'CDLU',
       name: 'Lualaba',
       prixMoyenLoyer: 185,
       prixMoyenVenteM2: 420,
