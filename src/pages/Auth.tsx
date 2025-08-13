@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Building2 } from "lucide-react";
+import { Loader2, Building2, ArrowLeft } from "lucide-react";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -153,6 +153,17 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center p-4">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-6 flex items-center space-x-2 text-muted-foreground hover:text-foreground transition-colors z-10"
+      >
+        <ArrowLeft className="h-4 w-4" />
+        <span className="hidden sm:inline">Retour à l'accueil</span>
+      </Button>
+
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
