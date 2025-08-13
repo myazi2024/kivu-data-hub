@@ -555,209 +555,112 @@ const DRCInteractiveMap: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header Section */}
-      <div className="bg-gradient-hero text-white py-12">
+      {/* Header Section - Compact */}
+      <div className="bg-gradient-hero text-white py-6">
         <div className="container mx-auto px-4">
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold tracking-tight">
+          <div className="text-center space-y-2">
+            <h1 className="text-2xl font-bold tracking-tight">
               Carte interactive du marché immobilier RDC
             </h1>
-            <p className="text-lg text-white/90 max-w-3xl mx-auto">
-              Sélectionnez une province pour explorer les indicateurs immobiliers locaux. 
-              Les données affichées sont issues d'analyses périodiques et de modélisations territoriales.
+            <p className="text-sm text-white/90 max-w-2xl mx-auto">
+              Explorez les indicateurs immobiliers par province
             </p>
           </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Price Filters Section */}
-        <div className="mb-8">
+      <div className="container mx-auto px-4 py-4">
+        {/* Compact Controls Section */}
+        <div className="mb-4">
           <Card className="shadow-card">
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <DollarSign className="h-5 w-5 text-seloger-red" />
-                  <div>
-                    <h3 className="font-semibold text-foreground">Prix de l'immobilier au m²</h3>
-                    <p className="text-sm text-muted-foreground">Comparez les prix de location et de vente</p>
-                  </div>
+            <CardContent className="p-4">
+              <div className="flex flex-wrap gap-4 items-center justify-between">
+                {/* Transaction Type Toggle - Compact */}
+                <div className="flex bg-muted rounded-lg p-1">
+                  <button
+                    onClick={() => setTransactionType('location')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      transactionType === 'location'
+                        ? 'bg-white text-seloger-red shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Location
+                  </button>
+                  <button
+                    onClick={() => setTransactionType('vente')}
+                    className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                      transactionType === 'vente'
+                        ? 'bg-white text-seloger-red shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Vente
+                  </button>
                 </div>
-                
-                <div className="flex flex-wrap gap-4 items-center">
-                  {/* Transaction Type Toggle */}
-                  <div className="flex bg-muted rounded-lg p-1">
-                    <button
-                      onClick={() => setTransactionType('location')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                        transactionType === 'location'
-                          ? 'bg-white text-seloger-red shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Location
-                    </button>
-                    <button
-                      onClick={() => setTransactionType('vente')}
-                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                        transactionType === 'vente'
-                          ? 'bg-white text-seloger-red shadow-sm'
-                          : 'text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Vente
-                    </button>
-                  </div>
 
-                  {/* Price Range Filter */}
-                  <Select value={priceFilter} onValueChange={setPriceFilter}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder="Fourchette de prix" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toutes les provinces</SelectItem>
-                      <SelectItem value="high-price">Prix élevés (&gt;600 USD)</SelectItem>
-                      <SelectItem value="medium-price">Prix moyens (300-600 USD)</SelectItem>
-                      <SelectItem value="low-price">Prix bas (&lt;300 USD)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Price Range Filter */}
+                <Select value={priceFilter} onValueChange={setPriceFilter}>
+                  <SelectTrigger className="w-[170px]">
+                    <SelectValue placeholder="Filtre prix" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les provinces</SelectItem>
+                    <SelectItem value="high-price">Prix élevés (&gt;600 USD)</SelectItem>
+                    <SelectItem value="medium-price">Prix moyens (300-600 USD)</SelectItem>
+                    <SelectItem value="low-price">Prix bas (&lt;300 USD)</SelectItem>
+                  </SelectContent>
+                </Select>
 
-                  {/* Market Activity Filter */}
-                  <Select value="activity" onValueChange={() => {}}>
-                    <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Activité marché" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toutes</SelectItem>
-                      <SelectItem value="high">Très active</SelectItem>
-                      <SelectItem value="moderate">Active</SelectItem>
-                      <SelectItem value="low">Faible</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Color Legend Section */}
-        <div className="mb-8">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="text-lg text-foreground flex items-center gap-2">
-                🎨 Légende des couleurs
-                <Badge variant="outline" className="text-xs">
-                  {transactionType === 'location' ? 'Prix location' : 'Prix vente'} par m²
-                </Badge>
-              </CardTitle>
-              <p className="text-muted-foreground text-sm">
-                Code couleur basé sur les prix de {transactionType} au mètre carré
-              </p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div 
-                    className="w-6 h-6 rounded border-2 border-white" 
-                    style={{ backgroundColor: 'hsl(348, 100%, 44%)' }}
-                  ></div>
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">Prix très élevés</div>
-                    <div className="text-xs text-muted-foreground">&gt; 600 USD/m²</div>
+                {/* Legend Inline */}
+                <div className="flex items-center gap-3 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(348, 100%, 44%)' }}></div>
+                    <span>Très élevé</span>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div 
-                    className="w-6 h-6 rounded border-2 border-white" 
-                    style={{ backgroundColor: 'hsl(20, 90%, 56%)' }}
-                  ></div>
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">Prix élevés</div>
-                    <div className="text-xs text-muted-foreground">450-600 USD/m²</div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(20, 90%, 56%)' }}></div>
+                    <span>Élevé</span>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div 
-                    className="w-6 h-6 rounded border-2 border-white" 
-                    style={{ backgroundColor: 'hsl(45, 93%, 47%)' }}
-                  ></div>
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">Prix moyens</div>
-                    <div className="text-xs text-muted-foreground">300-450 USD/m²</div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(45, 93%, 47%)' }}></div>
+                    <span>Moyen</span>
                   </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div 
-                    className="w-6 h-6 rounded border-2 border-white" 
-                    style={{ backgroundColor: 'hsl(142, 71%, 45%)' }}
-                  ></div>
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">Prix bas</div>
-                    <div className="text-xs text-muted-foreground">150-300 USD/m²</div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
-                  <div 
-                    className="w-6 h-6 rounded border-2 border-white" 
-                    style={{ backgroundColor: 'hsl(0, 0%, 45%)' }}
-                  ></div>
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">Prix très bas</div>
-                    <div className="text-xs text-muted-foreground">&lt; 150 USD/m²</div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 rounded" style={{ backgroundColor: 'hsl(142, 71%, 45%)' }}></div>
+                    <span>Bas</span>
                   </div>
                 </div>
               </div>
-              
-              {/* Active Filter Indicator */}
-              {priceFilter !== 'all' && (
-                <div className="mt-4 p-3 bg-seloger-red/10 border border-seloger-red/20 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-seloger-red" />
-                    <span className="text-sm font-medium text-foreground">
-                      Filtre actif: 
-                      {priceFilter === 'high-price' && ' Prix élevés (>600 USD)'}
-                      {priceFilter === 'medium-price' && ' Prix moyens (300-600 USD)'}
-                      {priceFilter === 'low-price' && ' Prix bas (<300 USD)'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Seules les provinces correspondant à ce critère sont affichées sur la carte
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
 
         {/* Map and Data Container */}
-        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 mb-8">
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
           {/* Map Section */}
           <div className="xl:col-span-3">
             <Card className="shadow-card overflow-hidden">
               <CardContent className="p-0">
-                <div className="bg-seloger-gray/30 p-4 border-b">
+                <div className="bg-seloger-gray/30 p-3 border-b">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h2 className="text-xl font-semibold text-foreground">République Démocratique du Congo</h2>
-                      <p className="text-muted-foreground text-sm mt-1">
-                        Cliquez sur une province pour afficher ses indicateurs détaillés
+                      <h2 className="text-lg font-semibold text-foreground">République Démocratique du Congo</h2>
+                      <p className="text-muted-foreground text-xs mt-1">
+                        Survolez ou cliquez sur une province
                       </p>
                     </div>
                     <div className="text-right">
                       <div className="text-sm font-medium text-foreground">
-                        Mode: {transactionType === 'location' ? 'Location' : 'Vente'}
+                        {filteredProvinces.length} / 26 provinces
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {filteredProvinces.length} provinces affichées
-                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {transactionType === 'location' ? 'Location' : 'Vente'} au m²
+                      </p>
                     </div>
                   </div>
                 </div>
-                <div className="p-6 h-96 lg:h-[500px]">
+                <div className="p-3 h-[500px] lg:h-[600px]">
                   <DRCMapWithTooltip
                     provincesData={filteredProvinces}
                     selectedProvince={selectedProvince?.id || null}
@@ -771,7 +674,6 @@ const DRCInteractiveMap: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-
           {/* Info Panel */}
           <div className="space-y-6">
             {selectedProvince ? (
