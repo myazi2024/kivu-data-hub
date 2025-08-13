@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import DRCMap from './DRCMap';
 import { 
   MapPin, 
   TrendingUp, 
@@ -27,10 +28,10 @@ interface ProvinceData {
   nombreTransactions: number;
 }
 
-// Données des provinces avec coordonnées simplifiées pour le SVG
-const provincesData: (ProvinceData & { path: string })[] = [
+// Données des provinces avec mapping vers les codes simplemaps
+const provincesData: ProvinceData[] = [
   {
-    id: 'kinshasa',
+    id: 'CDKN',
     name: 'Kinshasa',
     prixMoyenLoyer: 380,
     prixMoyenVenteM2: 820,
@@ -39,12 +40,11 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 5.1,
     indicePresion: 'Très élevé',
     typologieDominante: 'Usage mixte',
-    nombreTransactions: 8964,
-    path: 'M200,350 L240,350 L240,380 L200,380 Z'
+    nombreTransactions: 8964
   },
   {
-    id: 'kongo-central',
-    name: 'Kongo Central',
+    id: 'CDBC',
+    name: 'Kongo-Central',
     prixMoyenLoyer: 180,
     prixMoyenVenteM2: 420,
     tauxVacanceLocative: 32.1,
@@ -52,11 +52,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 2.3,
     indicePresion: 'Modéré',
     typologieDominante: 'Maisons individuelles',
-    nombreTransactions: 1250,
-    path: 'M160,350 L200,350 L200,380 L160,380 Z'
+    nombreTransactions: 1250
   },
   {
-    id: 'kwango',
+    id: 'CDKG',
     name: 'Kwango',
     prixMoyenLoyer: 120,
     prixMoyenVenteM2: 280,
@@ -65,11 +64,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -1.2,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 680,
-    path: 'M200,320 L240,320 L240,350 L200,350 Z'
+    nombreTransactions: 680
   },
   {
-    id: 'kwilu',
+    id: 'CDKL',
     name: 'Kwilu',
     prixMoyenLoyer: 140,
     prixMoyenVenteM2: 320,
@@ -78,12 +76,11 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 0.8,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 890,
-    path: 'M240,320 L280,320 L280,350 L240,350 Z'
+    nombreTransactions: 890
   },
   {
-    id: 'mai-ndombe',
-    name: 'Mai-Ndombe',
+    id: 'CDMN',
+    name: 'Maï-Ndombe',
     prixMoyenLoyer: 110,
     prixMoyenVenteM2: 250,
     tauxVacanceLocative: 52.3,
@@ -91,11 +88,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -2.1,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 420,
-    path: 'M280,320 L320,320 L320,350 L280,350 Z'
+    nombreTransactions: 420
   },
   {
-    id: 'kasai',
+    id: 'CDKS',
     name: 'Kasaï',
     prixMoyenLoyer: 160,
     prixMoyenVenteM2: 380,
@@ -104,12 +100,11 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 1.5,
     indicePresion: 'Modéré',
     typologieDominante: 'Maisons urbaines',
-    nombreTransactions: 1340,
-    path: 'M320,290 L360,290 L360,320 L320,320 Z'
+    nombreTransactions: 1340
   },
   {
-    id: 'kasai-central',
-    name: 'Kasaï Central',
+    id: 'CDKC',
+    name: 'Kasaï-Central',
     prixMoyenLoyer: 170,
     prixMoyenVenteM2: 390,
     tauxVacanceLocative: 26.4,
@@ -117,12 +112,11 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 2.1,
     indicePresion: 'Modéré',
     typologieDominante: 'Maisons urbaines',
-    nombreTransactions: 1450,
-    path: 'M360,290 L400,290 L400,320 L360,320 Z'
+    nombreTransactions: 1450
   },
   {
-    id: 'kasai-oriental',
-    name: 'Kasaï Oriental',
+    id: 'CDKE',
+    name: 'Kasaï-Oriental',
     prixMoyenLoyer: 185,
     prixMoyenVenteM2: 430,
     tauxVacanceLocative: 24.1,
@@ -130,11 +124,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 2.8,
     indicePresion: 'Modéré',
     typologieDominante: 'Maisons urbaines',
-    nombreTransactions: 1580,
-    path: 'M400,290 L440,290 L440,320 L400,320 Z'
+    nombreTransactions: 1580
   },
   {
-    id: 'sankuru',
+    id: 'CDSA',
     name: 'Sankuru',
     prixMoyenLoyer: 130,
     prixMoyenVenteM2: 300,
@@ -143,11 +136,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -0.5,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 720,
-    path: 'M320,260 L360,260 L360,290 L320,290 Z'
+    nombreTransactions: 720
   },
   {
-    id: 'maniema',
+    id: 'CDMA',
     name: 'Maniema',
     prixMoyenLoyer: 145,
     prixMoyenVenteM2: 340,
@@ -156,11 +148,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 0.3,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 810,
-    path: 'M400,260 L440,260 L440,290 L400,290 Z'
+    nombreTransactions: 810
   },
   {
-    id: 'sud-kivu',
+    id: 'CDSK',
     name: 'Sud-Kivu',
     prixMoyenLoyer: 200,
     prixMoyenVenteM2: 480,
@@ -169,11 +160,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 3.2,
     indicePresion: 'Élevé',
     typologieDominante: 'Maisons urbaines',
-    nombreTransactions: 2150,
-    path: 'M440,260 L480,260 L480,290 L440,290 Z'
+    nombreTransactions: 2150
   },
   {
-    id: 'nord-kivu',
+    id: 'CDNK',
     name: 'Nord-Kivu',
     prixMoyenLoyer: 250,
     prixMoyenVenteM2: 580,
@@ -182,11 +172,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 3.8,
     indicePresion: 'Élevé',
     typologieDominante: 'Usage mixte',
-    nombreTransactions: 4349,
-    path: 'M440,230 L480,230 L480,260 L440,260 Z'
+    nombreTransactions: 4349
   },
   {
-    id: 'ituri',
+    id: 'CDIT',
     name: 'Ituri',
     prixMoyenLoyer: 175,
     prixMoyenVenteM2: 410,
@@ -195,11 +184,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 1.8,
     indicePresion: 'Modéré',
     typologieDominante: 'Maisons urbaines',
-    nombreTransactions: 1290,
-    path: 'M400,200 L440,200 L440,230 L400,230 Z'
+    nombreTransactions: 1290
   },
   {
-    id: 'haut-uele',
+    id: 'CDHU',
     name: 'Haut-Uélé',
     prixMoyenLoyer: 125,
     prixMoyenVenteM2: 290,
@@ -208,11 +196,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -1.8,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 560,
-    path: 'M360,170 L400,170 L400,200 L360,200 Z'
+    nombreTransactions: 560
   },
   {
-    id: 'bas-uele',
+    id: 'CDBU',
     name: 'Bas-Uélé',
     prixMoyenLoyer: 115,
     prixMoyenVenteM2: 270,
@@ -221,11 +208,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -2.3,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 480,
-    path: 'M320,170 L360,170 L360,200 L320,200 Z'
+    nombreTransactions: 480
   },
   {
-    id: 'tshopo',
+    id: 'CDTO',
     name: 'Tshopo',
     prixMoyenLoyer: 155,
     prixMoyenVenteM2: 360,
@@ -234,11 +220,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 0.9,
     indicePresion: 'Faible',
     typologieDominante: 'Maisons urbaines',
-    nombreTransactions: 950,
-    path: 'M320,200 L360,200 L360,230 L320,230 Z'
+    nombreTransactions: 950
   },
   {
-    id: 'mongala',
+    id: 'CDMO',
     name: 'Mongala',
     prixMoyenLoyer: 135,
     prixMoyenVenteM2: 310,
@@ -247,11 +232,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -0.8,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 630,
-    path: 'M280,170 L320,170 L320,200 L280,200 Z'
+    nombreTransactions: 630
   },
   {
-    id: 'nord-ubangi',
+    id: 'CDNU',
     name: 'Nord-Ubangi',
     prixMoyenLoyer: 105,
     prixMoyenVenteM2: 240,
@@ -260,11 +244,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -2.8,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 380,
-    path: 'M240,140 L280,140 L280,170 L240,170 Z'
+    nombreTransactions: 380
   },
   {
-    id: 'sud-ubangi',
+    id: 'CDSU',
     name: 'Sud-Ubangi',
     prixMoyenLoyer: 118,
     prixMoyenVenteM2: 265,
@@ -273,11 +256,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -1.5,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 520,
-    path: 'M240,170 L280,170 L280,200 L240,200 Z'
+    nombreTransactions: 520
   },
   {
-    id: 'equateur',
+    id: 'CDEQ',
     name: 'Équateur',
     prixMoyenLoyer: 142,
     prixMoyenVenteM2: 330,
@@ -286,11 +268,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 0.2,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 750,
-    path: 'M240,200 L280,200 L280,230 L240,230 Z'
+    nombreTransactions: 750
   },
   {
-    id: 'tshuapa',
+    id: 'CDTU',
     name: 'Tshuapa',
     prixMoyenLoyer: 128,
     prixMoyenVenteM2: 295,
@@ -299,11 +280,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: -1.1,
     indicePresion: 'Faible',
     typologieDominante: 'Habitat rural',
-    nombreTransactions: 590,
-    path: 'M280,230 L320,230 L320,260 L280,260 Z'
+    nombreTransactions: 590
   },
   {
-    id: 'lomami',
+    id: 'CDLO',
     name: 'Lomami',
     prixMoyenLoyer: 165,
     prixMoyenVenteM2: 385,
@@ -312,11 +292,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 1.2,
     indicePresion: 'Modéré',
     typologieDominante: 'Maisons urbaines',
-    nombreTransactions: 1180,
-    path: 'M360,260 L400,260 L400,290 L360,290 Z'
+    nombreTransactions: 1180
   },
   {
-    id: 'haut-lomami',
+    id: 'CDHL',
     name: 'Haut-Lomami',
     prixMoyenLoyer: 190,
     prixMoyenVenteM2: 440,
@@ -325,11 +304,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 2.5,
     indicePresion: 'Modéré',
     typologieDominante: 'Maisons urbaines',
-    nombreTransactions: 1520,
-    path: 'M400,320 L440,320 L440,350 L400,350 Z'
+    nombreTransactions: 1520
   },
   {
-    id: 'lualaba',
+    id: 'CDLU',
     name: 'Lualaba',
     prixMoyenLoyer: 220,
     prixMoyenVenteM2: 510,
@@ -338,11 +316,10 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 4.1,
     indicePresion: 'Élevé',
     typologieDominante: 'Usage mixte',
-    nombreTransactions: 2480,
-    path: 'M360,320 L400,320 L400,350 L360,350 Z'
+    nombreTransactions: 2480
   },
   {
-    id: 'haut-katanga',
+    id: 'CDHK',
     name: 'Haut-Katanga',
     prixMoyenLoyer: 280,
     prixMoyenVenteM2: 650,
@@ -351,14 +328,33 @@ const provincesData: (ProvinceData & { path: string })[] = [
     variationLoyer3Mois: 4.8,
     indicePresion: 'Très élevé',
     typologieDominante: 'Usage mixte',
-    nombreTransactions: 5280,
-    path: 'M440,320 L480,320 L480,350 L440,350 Z'
+    nombreTransactions: 5280
+  },
+  {
+    id: 'CDTA',
+    name: 'Tanganyika',
+    prixMoyenLoyer: 175,
+    prixMoyenVenteM2: 400,
+    tauxVacanceLocative: 28.5,
+    populationLocativeEstimee: 82000,
+    variationLoyer3Mois: 2.2,
+    indicePresion: 'Modéré',
+    typologieDominante: 'Maisons urbaines',
+    nombreTransactions: 1380
   }
 ];
 
 const DRCInteractiveMap = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
+
+  const handleProvinceSelect = (province: ProvinceData) => {
+    setSelectedProvince(province);
+  };
+
+  const handleProvinceHover = (provinceId: string | null) => {
+    setHoveredProvince(provinceId);
+  };
 
   const getColorByPressure = (pression: string) => {
     switch (pression) {
@@ -397,60 +393,34 @@ const DRCInteractiveMap = () => {
           </CardHeader>
           <CardContent>
             <div className="relative bg-gradient-to-b from-sky-100 to-sky-50 rounded-lg p-4">
-              <svg
-                viewBox="0 0 600 500"
-                className="w-full h-auto"
-                style={{ maxHeight: '600px' }}
-              >
-                {/* Titre de la carte */}
-                <text
-                  x="300"
-                  y="30"
-                  textAnchor="middle"
-                  className="fill-primary text-lg font-semibold"
-                >
-                  République Démocratique du Congo
-                </text>
-                
-                {/* Légende */}
-                <g transform="translate(20, 50)">
-                  <text x="0" y="0" className="fill-foreground text-sm font-medium">
-                    Indice de pression foncière:
-                  </text>
-                  <rect x="0" y="10" width="15" height="10" fill="#16a34a" />
-                  <text x="20" y="18" className="fill-foreground text-xs">Faible</text>
-                  <rect x="70" y="10" width="15" height="10" fill="#ca8a04" />
-                  <text x="90" y="18" className="fill-foreground text-xs">Modéré</text>
-                  <rect x="140" y="10" width="15" height="10" fill="#ea580c" />
-                  <text x="160" y="18" className="fill-foreground text-xs">Élevé</text>
-                  <rect x="190" y="10" width="15" height="10" fill="#dc2626" />
-                  <text x="210" y="18" className="fill-foreground text-xs">Très élevé</text>
-                </g>
-                
-                {/* Provinces */}
-                {provincesData.map((province) => (
-                  <g key={province.id}>
-                    <path
-                      d={province.path}
-                      fill={hoveredProvince === province.id ? '#3b82f6' : getColorByPressure(province.indicePresion)}
-                      stroke="#ffffff"
-                      strokeWidth="2"
-                      className="cursor-pointer transition-all duration-200"
-                      onMouseEnter={() => setHoveredProvince(province.id)}
-                      onMouseLeave={() => setHoveredProvince(null)}
-                      onClick={() => setSelectedProvince(province)}
-                    />
-                    <text
-                      x={parseInt(province.path.split(' ')[1].split(',')[0]) + 20}
-                      y={parseInt(province.path.split(' ')[1].split(',')[1]) + 20}
-                      className="fill-white text-xs font-medium pointer-events-none"
-                      textAnchor="middle"
-                    >
-                      {province.name.length > 12 ? province.name.substring(0, 12) + '...' : province.name}
-                    </text>
-                  </g>
-                ))}
-              </svg>
+              {/* Légende */}
+              <div className="mb-4 flex flex-wrap gap-4 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-green-600 rounded"></div>
+                  <span>Faible</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-yellow-600 rounded"></div>
+                  <span>Modéré</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-orange-600 rounded"></div>
+                  <span>Élevé</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 bg-red-600 rounded"></div>
+                  <span>Très élevé</span>
+                </div>
+              </div>
+              
+              {/* Carte interactive */}
+              <DRCMap
+                provincesData={provincesData}
+                selectedProvince={selectedProvince?.id || null}
+                onProvinceSelect={handleProvinceSelect}
+                onProvinceHover={handleProvinceHover}
+                hoveredProvince={hoveredProvince}
+              />
             </div>
           </CardContent>
         </Card>
