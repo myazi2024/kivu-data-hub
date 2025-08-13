@@ -5,31 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3 } from 'lucide-react';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
-
-interface ProvinceData {
-  id: string;
-  name: string;
-  // Prix & Valeur
-  prixMoyenLoyer: number;
-  prixMoyenVenteM2: number;
-  valeurFonciereParcelleUsd: number;
-  // Performance locative
-  tauxOccupationLocatif: number;
-  dureeMoyenneMiseLocationJours: number;
-  tauxVacanceLocative: number;
-  indicePresionLocative: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
-  // Activité du marché
-  volumeAnnoncesImmobilieres: number;
-  nombreTransactionsEstimees: number;
-  // Population & usage
-  populationLocativeEstimee: number;
-  // Recettes & fiscalité
-  recettesLocativesUsd: number;
-  recettesFiscalesUsd: number;
-  // Autres
-  variationLoyer3Mois: number;
-  typologieDominante: string;
-}
+import { ProvinceData } from '@/types/province';
 
 const DRCInteractiveMap: React.FC = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);

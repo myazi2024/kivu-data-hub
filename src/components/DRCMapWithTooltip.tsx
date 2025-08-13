@@ -1,24 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ProvinceTooltip from './ProvinceTooltip';
-
-interface ProvinceData {
-  id: string;
-  name: string;
-  prixMoyenLoyer: number;
-  prixMoyenVenteM2: number;
-  valeurFonciereParcelleUsd: number;
-  tauxOccupationLocatif: number;
-  dureeMoyenneMiseLocationJours: number;
-  tauxVacanceLocative: number;
-  indicePresionLocative: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
-  volumeAnnoncesImmobilieres: number;
-  nombreTransactionsEstimees: number;
-  populationLocativeEstimee: number;
-  recettesLocativesUsd: number;
-  recettesFiscalesUsd: number;
-  variationLoyer3Mois: number;
-  typologieDominante: string;
-}
+import { ProvinceData } from '@/types/province';
 
 interface DRCMapWithTooltipProps {
   provincesData: ProvinceData[];
