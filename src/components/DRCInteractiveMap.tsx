@@ -343,12 +343,12 @@ const DRCInteractiveMap: React.FC = () => {
                         <span className="text-muted-foreground text-sm">Variation loyer (3 mois)</span>
                         <div className="flex items-center gap-2">
                           {selectedProvince.variationLoyer3Mois >= 0 ? (
-                            <TrendingUp className="h-4 w-4 text-green-600" />
+                            <TrendingUp className="h-4 w-4 text-emerald-600" />
                           ) : (
-                            <TrendingDown className="h-4 w-4 text-red-600" />
+                            <TrendingDown className="h-4 w-4 text-seloger-red" />
                           )}
                           <span className={`font-semibold ${
-                            selectedProvince.variationLoyer3Mois >= 0 ? 'text-green-600' : 'text-red-600'
+                            selectedProvince.variationLoyer3Mois >= 0 ? 'text-emerald-600' : 'text-seloger-red'
                           }`}>
                             {selectedProvince.variationLoyer3Mois >= 0 ? '+' : ''}{formatPercentage(selectedProvince.variationLoyer3Mois)}
                           </span>
@@ -450,11 +450,11 @@ const DRCInteractiveMap: React.FC = () => {
 
         {/* Footer Info Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50 border-blue-200 shadow-card">
+          <Card className="bg-gradient-card border-border shadow-card">
             <CardContent className="p-6">
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-blue-600" />
+                  <MapPin className="h-5 w-5 text-seloger-red" />
                   Utilisation des filtres
                 </h3>
                 <div className="space-y-3">
@@ -471,10 +471,10 @@ const DRCInteractiveMap: React.FC = () => {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-green-100/50 border-green-200 shadow-card">
+          <Card className="bg-gradient-card border-border shadow-card">
             <CardContent className="p-6">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2 mb-4">
-                <Building className="h-5 w-5 text-green-600" />
+                <Building className="h-5 w-5 text-seloger-red" />
                 Objectif de la plateforme
               </h3>
               <p className="text-muted-foreground mb-4 text-sm">
@@ -482,15 +482,15 @@ const DRCInteractiveMap: React.FC = () => {
               </p>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 font-bold">•</span>
+                  <span className="text-seloger-red font-bold">•</span>
                   La prise de décision pour les investisseurs et les autorités locales
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 font-bold">•</span>
+                  <span className="text-seloger-red font-bold">•</span>
                   Le suivi des dynamiques urbaines et fiscales
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="text-green-600 font-bold">•</span>
+                  <span className="text-seloger-red font-bold">•</span>
                   L'identification des zones à forte pression locative ou à potentiel de développement
                 </li>
               </ul>

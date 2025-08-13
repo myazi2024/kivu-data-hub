@@ -81,11 +81,11 @@ const DRCMap: React.FC<DRCMapProps> = ({
 
   const getColorByPressure = (pression: string) => {
     switch (pression) {
-      case 'Très élevé': return '#dc2626';
-      case 'Élevé': return '#ea580c';
-      case 'Modéré': return '#ca8a04';
-      case 'Faible': return '#16a34a';
-      default: return '#6b7280';
+      case 'Très élevé': return 'hsl(348, 100%, 44%)'; // seloger-red
+      case 'Élevé': return 'hsl(20, 90%, 56%)'; // orange
+      case 'Modéré': return 'hsl(45, 93%, 47%)'; // amber
+      case 'Faible': return 'hsl(142, 71%, 45%)'; // emerald
+      default: return 'hsl(0, 0%, 45%)'; // gray
     }
   };
 
@@ -107,7 +107,7 @@ const DRCMap: React.FC<DRCMapProps> = ({
     
     if (provinceId) {
       onProvinceHover(provinceId);
-      target.setAttribute('fill', '#3b82f6');
+      target.setAttribute('fill', 'hsl(348, 100%, 54%)');
     }
   };
 
