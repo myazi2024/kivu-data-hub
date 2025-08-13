@@ -20,13 +20,19 @@ interface TerritorialZone {
   prix_moyen_loyer: number;
   prix_moyen_vente_m2: number;
   taux_vacance_locative: number;
+  taux_occupation_locatif: number;
   densite_residentielle: number;
   population_locative_estimee: number;
   recettes_locatives_theoriques_usd: number;
+  recettes_fiscales_estimees_usd: number;
   variation_loyer_3mois_pct: number;
   volume_annonces_mois: number;
+  nombre_transactions_estimees: number;
+  duree_moyenne_mise_location_jours: number;
+  valeur_fonciere_moyenne_parcelle_usd: number;
   typologie_dominante: string;
   indice_pression_fonciere: string;
+  indice_pression_locative: string;
   parent_zone_id?: string;
   created_at: string;
   updated_at: string;
@@ -47,13 +53,19 @@ const AdminTerritorialZones = () => {
     prix_moyen_loyer: 0,
     prix_moyen_vente_m2: 0,
     taux_vacance_locative: 0,
+    taux_occupation_locatif: 0,
     densite_residentielle: 0,
     population_locative_estimee: 0,
     recettes_locatives_theoriques_usd: 0,
+    recettes_fiscales_estimees_usd: 0,
     variation_loyer_3mois_pct: 0,
     volume_annonces_mois: 0,
+    nombre_transactions_estimees: 0,
+    duree_moyenne_mise_location_jours: 0,
+    valeur_fonciere_moyenne_parcelle_usd: 0,
     typologie_dominante: 'Usage mixte',
     indice_pression_fonciere: 'Modéré',
+    indice_pression_locative: 'Modéré',
     coordinates: '[]'
   });
 
@@ -99,11 +111,16 @@ const AdminTerritorialZones = () => {
         prix_moyen_loyer: Number(formData.prix_moyen_loyer),
         prix_moyen_vente_m2: Number(formData.prix_moyen_vente_m2),
         taux_vacance_locative: Number(formData.taux_vacance_locative),
+        taux_occupation_locatif: Number(formData.taux_occupation_locatif),
         densite_residentielle: Number(formData.densite_residentielle),
         population_locative_estimee: Number(formData.population_locative_estimee),
         recettes_locatives_theoriques_usd: Number(formData.recettes_locatives_theoriques_usd),
+        recettes_fiscales_estimees_usd: Number(formData.recettes_fiscales_estimees_usd),
         variation_loyer_3mois_pct: Number(formData.variation_loyer_3mois_pct),
         volume_annonces_mois: Number(formData.volume_annonces_mois),
+        nombre_transactions_estimees: Number(formData.nombre_transactions_estimees),
+        duree_moyenne_mise_location_jours: Number(formData.duree_moyenne_mise_location_jours),
+        valeur_fonciere_moyenne_parcelle_usd: Number(formData.valeur_fonciere_moyenne_parcelle_usd),
       };
 
       if (editingZone) {
@@ -153,13 +170,19 @@ const AdminTerritorialZones = () => {
       prix_moyen_loyer: zone.prix_moyen_loyer,
       prix_moyen_vente_m2: zone.prix_moyen_vente_m2,
       taux_vacance_locative: zone.taux_vacance_locative,
+      taux_occupation_locatif: zone.taux_occupation_locatif || 100 - zone.taux_vacance_locative,
       densite_residentielle: zone.densite_residentielle,
       population_locative_estimee: zone.population_locative_estimee,
       recettes_locatives_theoriques_usd: zone.recettes_locatives_theoriques_usd,
+      recettes_fiscales_estimees_usd: zone.recettes_fiscales_estimees_usd || 0,
       variation_loyer_3mois_pct: zone.variation_loyer_3mois_pct,
       volume_annonces_mois: zone.volume_annonces_mois,
+      nombre_transactions_estimees: zone.nombre_transactions_estimees || 0,
+      duree_moyenne_mise_location_jours: zone.duree_moyenne_mise_location_jours || 0,
+      valeur_fonciere_moyenne_parcelle_usd: zone.valeur_fonciere_moyenne_parcelle_usd || 0,
       typologie_dominante: zone.typologie_dominante,
       indice_pression_fonciere: zone.indice_pression_fonciere,
+      indice_pression_locative: zone.indice_pression_locative || 'Modéré',
       coordinates: JSON.stringify(zone.coordinates)
     });
     setIsDialogOpen(true);
@@ -199,13 +222,19 @@ const AdminTerritorialZones = () => {
       prix_moyen_loyer: 0,
       prix_moyen_vente_m2: 0,
       taux_vacance_locative: 0,
+      taux_occupation_locatif: 0,
       densite_residentielle: 0,
       population_locative_estimee: 0,
       recettes_locatives_theoriques_usd: 0,
+      recettes_fiscales_estimees_usd: 0,
       variation_loyer_3mois_pct: 0,
       volume_annonces_mois: 0,
+      nombre_transactions_estimees: 0,
+      duree_moyenne_mise_location_jours: 0,
+      valeur_fonciere_moyenne_parcelle_usd: 0,
       typologie_dominante: 'Usage mixte',
       indice_pression_fonciere: 'Modéré',
+      indice_pression_locative: 'Modéré',
       coordinates: '[]'
     });
   };
@@ -214,13 +243,18 @@ const AdminTerritorialZones = () => {
     const csvContent = zones.map(zone => ({
       Nom: zone.name,
       Type: zone.zone_type,
-      'Prix moyen loyer': zone.prix_moyen_loyer,
-      'Prix m² vente': zone.prix_moyen_vente_m2,
-      'Taux vacance': zone.taux_vacance_locative,
-      'Densité résidentielle': zone.densite_residentielle,
+      'Volume annonces': zone.volume_annonces_mois,
+      'Nb transactions estimées': zone.nombre_transactions_estimees || 0,
+      'Prix moyen vente (m²)': zone.prix_moyen_vente_m2,
+      'Prix moyen location (m²)': zone.prix_moyen_loyer,
+      'Taux occupation': (zone.taux_occupation_locatif || 100 - zone.taux_vacance_locative).toFixed(1) + '%',
+      'Durée moy. location (jours)': zone.duree_moyenne_mise_location_jours || 0,
       'Population locative': zone.population_locative_estimee,
-      'Typologie dominante': zone.typologie_dominante,
-      'Pression foncière': zone.indice_pression_fonciere
+      'Taux vacance': zone.taux_vacance_locative.toFixed(1) + '%',
+      'Recettes locatives': zone.recettes_locatives_theoriques_usd,
+      'Recettes fiscales': zone.recettes_fiscales_estimees_usd || 0,
+      'Valeur foncière moy.': zone.valeur_fonciere_moyenne_parcelle_usd || 0,
+      'Indice pression locative': zone.indice_pression_locative || 'Modéré'
     }));
 
     const csvString = [
@@ -232,7 +266,7 @@ const AdminTerritorialZones = () => {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'zones_territoriales.csv';
+    a.download = 'donnees_immobilieres_rdc.csv';
     a.click();
     window.URL.revokeObjectURL(url);
   };
@@ -301,7 +335,8 @@ const AdminTerritorialZones = () => {
               <Tabs defaultValue="general" className="space-y-4">
                 <TabsList>
                   <TabsTrigger value="general">Général</TabsTrigger>
-                  <TabsTrigger value="economique">Économique</TabsTrigger>
+                  <TabsTrigger value="economique">Marché</TabsTrigger>
+                  <TabsTrigger value="financier">Financier</TabsTrigger>
                   <TabsTrigger value="geographique">Géographique</TabsTrigger>
                 </TabsList>
                 
@@ -359,22 +394,45 @@ const AdminTerritorialZones = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="indice_pression_locative">Pression locative</Label>
+                      <Select value={formData.indice_pression_locative} onValueChange={(value) => setFormData({...formData, indice_pression_locative: value})}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Faible">Faible</SelectItem>
+                          <SelectItem value="Modéré">Modéré</SelectItem>
+                          <SelectItem value="Élevé">Élevé</SelectItem>
+                          <SelectItem value="Très élevé">Très élevé</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </TabsContent>
                 
                 <TabsContent value="economique" className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="prix_moyen_loyer">Prix moyen loyer (USD)</Label>
+                      <Label htmlFor="volume_annonces_mois">Volume annonces/mois</Label>
                       <Input
-                        id="prix_moyen_loyer"
+                        id="volume_annonces_mois"
                         type="number"
-                        value={formData.prix_moyen_loyer}
-                        onChange={(e) => setFormData({...formData, prix_moyen_loyer: Number(e.target.value)})}
+                        value={formData.volume_annonces_mois}
+                        onChange={(e) => setFormData({...formData, volume_annonces_mois: Number(e.target.value)})}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="prix_moyen_vente_m2">Prix m² vente (USD)</Label>
+                      <Label htmlFor="nombre_transactions_estimees">Nb transactions estimées/an</Label>
+                      <Input
+                        id="nombre_transactions_estimees"
+                        type="number"
+                        value={formData.nombre_transactions_estimees}
+                        onChange={(e) => setFormData({...formData, nombre_transactions_estimees: Number(e.target.value)})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="prix_moyen_vente_m2">Prix moyen vente (m² bâti)</Label>
                       <Input
                         id="prix_moyen_vente_m2"
                         type="number"
@@ -383,27 +441,35 @@ const AdminTerritorialZones = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="taux_vacance_locative">Taux vacance (%)</Label>
+                      <Label htmlFor="prix_moyen_loyer">Prix moyen location (m² bâti)</Label>
                       <Input
-                        id="taux_vacance_locative"
+                        id="prix_moyen_loyer"
                         type="number"
-                        step="0.1"
-                        value={formData.taux_vacance_locative}
-                        onChange={(e) => setFormData({...formData, taux_vacance_locative: Number(e.target.value)})}
+                        value={formData.prix_moyen_loyer}
+                        onChange={(e) => setFormData({...formData, prix_moyen_loyer: Number(e.target.value)})}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="variation_loyer_3mois_pct">Variation 3 mois (%)</Label>
+                      <Label htmlFor="taux_occupation_locatif">Taux d'occupation locatif (%)</Label>
                       <Input
-                        id="variation_loyer_3mois_pct"
+                        id="taux_occupation_locatif"
                         type="number"
                         step="0.1"
-                        value={formData.variation_loyer_3mois_pct}
-                        onChange={(e) => setFormData({...formData, variation_loyer_3mois_pct: Number(e.target.value)})}
+                        value={formData.taux_occupation_locatif}
+                        onChange={(e) => setFormData({...formData, taux_occupation_locatif: Number(e.target.value)})}
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="population_locative_estimee">Population locative</Label>
+                      <Label htmlFor="duree_moyenne_mise_location_jours">Durée moy. mise en location (jours)</Label>
+                      <Input
+                        id="duree_moyenne_mise_location_jours"
+                        type="number"
+                        value={formData.duree_moyenne_mise_location_jours}
+                        onChange={(e) => setFormData({...formData, duree_moyenne_mise_location_jours: Number(e.target.value)})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="population_locative_estimee">Population locative estimée</Label>
                       <Input
                         id="population_locative_estimee"
                         type="number"
@@ -412,12 +478,55 @@ const AdminTerritorialZones = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="volume_annonces_mois">Volume annonces/mois</Label>
+                      <Label htmlFor="taux_vacance_locative">Taux de vacance locative (%)</Label>
                       <Input
-                        id="volume_annonces_mois"
+                        id="taux_vacance_locative"
                         type="number"
-                        value={formData.volume_annonces_mois}
-                        onChange={(e) => setFormData({...formData, volume_annonces_mois: Number(e.target.value)})}
+                        step="0.1"
+                        value={formData.taux_vacance_locative}
+                        onChange={(e) => setFormData({...formData, taux_vacance_locative: Number(e.target.value)})}
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="financier" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="recettes_locatives_theoriques_usd">Recettes locatives (USD)</Label>
+                      <Input
+                        id="recettes_locatives_theoriques_usd"
+                        type="number"
+                        value={formData.recettes_locatives_theoriques_usd}
+                        onChange={(e) => setFormData({...formData, recettes_locatives_theoriques_usd: Number(e.target.value)})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="recettes_fiscales_estimees_usd">Recettes fiscales estimées (USD)</Label>
+                      <Input
+                        id="recettes_fiscales_estimees_usd"
+                        type="number"
+                        value={formData.recettes_fiscales_estimees_usd}
+                        onChange={(e) => setFormData({...formData, recettes_fiscales_estimees_usd: Number(e.target.value)})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="valeur_fonciere_moyenne_parcelle_usd">Valeur foncière moy./parcelle (USD)</Label>
+                      <Input
+                        id="valeur_fonciere_moyenne_parcelle_usd"
+                        type="number"
+                        value={formData.valeur_fonciere_moyenne_parcelle_usd}
+                        onChange={(e) => setFormData({...formData, valeur_fonciere_moyenne_parcelle_usd: Number(e.target.value)})}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="variation_loyer_3mois_pct">Variation loyer 3 mois (%)</Label>
+                      <Input
+                        id="variation_loyer_3mois_pct"
+                        type="number"
+                        step="0.1"
+                        value={formData.variation_loyer_3mois_pct}
+                        onChange={(e) => setFormData({...formData, variation_loyer_3mois_pct: Number(e.target.value)})}
                       />
                     </div>
                   </div>

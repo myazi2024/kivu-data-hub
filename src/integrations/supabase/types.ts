@@ -321,17 +321,23 @@ export type Database = {
           coordinates: Json
           created_at: string
           densite_residentielle: number
+          duree_moyenne_mise_location_jours: number | null
           id: string
           indice_pression_fonciere: string
+          indice_pression_locative: string | null
           name: string
+          nombre_transactions_estimees: number | null
           parent_zone_id: string | null
           population_locative_estimee: number
           prix_moyen_loyer: number
           prix_moyen_vente_m2: number
+          recettes_fiscales_estimees_usd: number | null
           recettes_locatives_theoriques_usd: number
+          taux_occupation_locatif: number | null
           taux_vacance_locative: number
           typologie_dominante: string
           updated_at: string
+          valeur_fonciere_moyenne_parcelle_usd: number | null
           variation_loyer_3mois_pct: number
           volume_annonces_mois: number
           zone_type: string
@@ -340,17 +346,23 @@ export type Database = {
           coordinates: Json
           created_at?: string
           densite_residentielle?: number
+          duree_moyenne_mise_location_jours?: number | null
           id?: string
           indice_pression_fonciere?: string
+          indice_pression_locative?: string | null
           name: string
+          nombre_transactions_estimees?: number | null
           parent_zone_id?: string | null
           population_locative_estimee?: number
           prix_moyen_loyer?: number
           prix_moyen_vente_m2?: number
+          recettes_fiscales_estimees_usd?: number | null
           recettes_locatives_theoriques_usd?: number
+          taux_occupation_locatif?: number | null
           taux_vacance_locative?: number
           typologie_dominante?: string
           updated_at?: string
+          valeur_fonciere_moyenne_parcelle_usd?: number | null
           variation_loyer_3mois_pct?: number
           volume_annonces_mois?: number
           zone_type: string
@@ -359,17 +371,23 @@ export type Database = {
           coordinates?: Json
           created_at?: string
           densite_residentielle?: number
+          duree_moyenne_mise_location_jours?: number | null
           id?: string
           indice_pression_fonciere?: string
+          indice_pression_locative?: string | null
           name?: string
+          nombre_transactions_estimees?: number | null
           parent_zone_id?: string | null
           population_locative_estimee?: number
           prix_moyen_loyer?: number
           prix_moyen_vente_m2?: number
+          recettes_fiscales_estimees_usd?: number | null
           recettes_locatives_theoriques_usd?: number
+          taux_occupation_locatif?: number | null
           taux_vacance_locative?: number
           typologie_dominante?: string
           updated_at?: string
+          valeur_fonciere_moyenne_parcelle_usd?: number | null
           variation_loyer_3mois_pct?: number
           volume_annonces_mois?: number
           zone_type?: string
