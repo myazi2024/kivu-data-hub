@@ -185,7 +185,7 @@ const DRCInteractiveMap: React.FC = () => {
     },
     {
       id: 'CDMN',
-      name: 'Maniema',
+      name: 'Mai-Ndombe',
       prixMoyenLoyer: 140,
       prixMoyenVenteM2: 320,
       valeurFonciereParcelleUsd: 4200,
@@ -348,7 +348,7 @@ const DRCInteractiveMap: React.FC = () => {
     },
     {
       id: 'CDMA',
-      name: 'Mai-Ndombe',
+      name: 'Maniema',
       prixMoyenLoyer: 115,
       prixMoyenVenteM2: 270,
       valeurFonciereParcelleUsd: 3300,
