@@ -47,61 +47,36 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province }) => {
   };
 
   return (
-    <div className="w-64 p-3 bg-card border border-border shadow-lg rounded-lg">
-      <div className="space-y-2">
-        <h3 className="font-semibold text-base text-foreground border-b border-border pb-1">
+    <div className="w-48 p-2 bg-card border border-border shadow-lg rounded-md">
+      <div className="space-y-1">
+        <h3 className="font-medium text-sm text-foreground border-b border-border pb-1">
           {province.name}
         </h3>
         
-        <div className="grid grid-cols-1 gap-1.5 text-xs">
+        <div className="space-y-0.5 text-xs">
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Prix moyen vente au m²:</span>
+            <span className="text-muted-foreground">Vente:</span>
             <span className="font-medium text-foreground">{formatCurrency(province.prixMoyenVenteM2)} USD/m²</span>
           </div>
           
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Prix moyen location au m²:</span>
+            <span className="text-muted-foreground">Location:</span>
             <span className="font-medium text-foreground">{formatCurrency(province.prixMoyenLoyer)} USD/m²</span>
           </div>
           
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Taux d'occupation locatif:</span>
+            <span className="text-muted-foreground">Occupation:</span>
             <span className="font-medium text-foreground">{province.tauxOccupationLocatif}%</span>
           </div>
           
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Durée moyenne mise en location:</span>
-            <span className="font-medium text-foreground">{formatDuration(province.dureeMoyenneMiseLocationJours)}</span>
+            <span className="text-muted-foreground">Population:</span>
+            <span className="font-medium text-foreground">{formatNumber(province.populationLocativeEstimee)}</span>
           </div>
           
           <div className="flex justify-between">
-            <span className="text-muted-foreground">Population locative estimée:</span>
-            <span className="font-medium text-foreground">{formatNumber(province.populationLocativeEstimee)} habitants</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Taux de vacance locative:</span>
-            <span className="font-medium text-foreground">{province.tauxVacanceLocative}%</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Recettes locatives:</span>
-            <span className="font-medium text-foreground">{formatCurrency(province.recettesLocativesUsd)} USD</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Recettes fiscales estimées:</span>
-            <span className="font-medium text-foreground">{formatCurrency(province.recettesFiscalesUsd)} USD</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Valeur foncière moyenne:</span>
-            <span className="font-medium text-foreground">{formatCurrency(province.valeurFonciereParcelleUsd)} USD</span>
-          </div>
-          
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Indice de pression locative:</span>
-            <span className={`font-medium ${
+            <span className="text-muted-foreground">Pression:</span>
+            <span className={`font-medium text-xs ${
               province.indicePresionLocative === 'Très élevé' ? 'text-destructive' :
               province.indicePresionLocative === 'Élevé' ? 'text-orange-500' :
               province.indicePresionLocative === 'Modéré' ? 'text-yellow-500' :
