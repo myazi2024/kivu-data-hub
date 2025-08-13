@@ -111,7 +111,7 @@ const DRCInteractiveMap: React.FC = () => {
     },
     // Autres provinces avec des données réalistes...
     {
-      id: 'CDKW',
+      id: 'CDKAO',
       name: 'Kasaï-Occidental',
       prixMoyenLoyer: 145,
       prixMoyenVenteM2: 335,
@@ -365,7 +365,7 @@ const DRCInteractiveMap: React.FC = () => {
       typologieDominante: 'Maisons rurales'
     },
     {
-      id: 'CDKW',
+      id: 'CDKL',
       name: 'Kwilu',
       prixMoyenLoyer: 128,
       prixMoyenVenteM2: 295,
