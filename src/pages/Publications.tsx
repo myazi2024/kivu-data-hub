@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
@@ -6,54 +6,23 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Filter } from 'lucide-react';
 import { PublicationCard } from '@/components/publications/PublicationCard';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { usePublications } from '@/hooks/usePublications';
 
 const Publications = () => {
-  const [publications, setPublications] = useState([]);
-  const [filteredPublications, setFilteredPublications] = useState([]);
+  const { publications, loading, error } = usePublications();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
-  // Fetch publications from Supabase
-  useEffect(() => {
-    const fetchPublications = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('publications')
-          .select('*')
-          .eq('status', 'published')
-          .order('featured', { ascending: false })
-          .order('created_at', { ascending: false });
-
-        if (error) throw error;
-        setPublications(data || []);
-        setFilteredPublications(data || []);
-      } catch (error) {
-        console.error('Error fetching publications:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les publications",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPublications();
-  }, []);
-
-  // Filter publications based on search and category
-  useEffect(() => {
+  // Optimized filtering with useMemo
+  const filteredPublications = useMemo(() => {
     let filtered = publications;
 
     if (searchTerm) {
+      const searchLower = searchTerm.toLowerCase();
       filtered = filtered.filter(pub =>
-        pub.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        pub.description?.toLowerCase().includes(searchTerm.toLowerCase())
+        pub.title.toLowerCase().includes(searchLower) ||
+        pub.description?.toLowerCase().includes(searchLower) ||
+        pub.tags?.some(tag => tag.toLowerCase().includes(searchLower))
       );
     }
 
@@ -61,7 +30,7 @@ const Publications = () => {
       filtered = filtered.filter(pub => pub.category === categoryFilter);
     }
 
-    setFilteredPublications(filtered);
+    return filtered;
   }, [publications, searchTerm, categoryFilter]);
 
   return (

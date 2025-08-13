@@ -85,7 +85,13 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
       // Free download
       if (publication.file_url) {
         window.open(publication.file_url, '_blank');
+        return;
       }
+      toast({
+        title: "Téléchargement indisponible",
+        description: "Le fichier n'est pas encore disponible",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -113,6 +119,8 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
 
       if (data?.url) {
         window.open(data.url, '_blank');
+      } else {
+        throw new Error('URL de paiement non reçue');
       }
     } catch (error) {
       console.error('Payment error:', error);

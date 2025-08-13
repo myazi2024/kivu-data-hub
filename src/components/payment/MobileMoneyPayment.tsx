@@ -3,34 +3,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
+import { usePayment, PaymentData } from '@/hooks/usePayment';
 import { Smartphone, DollarSign, CheckCircle } from 'lucide-react';
+import { CartItem } from '@/hooks/useCart';
 
 interface MobileMoneyPaymentProps {
-  publicationId: string;
-  amount: number;
+  item: CartItem;
   currency: string;
   onPaymentSuccess: () => void;
 }
 
 const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
-  publicationId,
-  amount,
+  item,
   currency,
   onPaymentSuccess
 }) => {
-  const [paymentData, setPaymentData] = useState({
+  const [paymentData, setPaymentData] = useState<PaymentData>({
     provider: '',
     phoneNumber: '',
     name: ''
   });
-  const [loading, setLoading] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'success'>('form');
 
-  const { user } = useAuth();
-  const { toast } = useToast();
+  const { loading, paymentStep, createPayment, resetPaymentState } = usePayment();
 
   const providers = [
     { value: 'airtel_money', label: 'Airtel Money', prefix: '+243 97' },
@@ -40,73 +34,13 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setPaymentStep('processing');
-
-    try {
-      // Créer l'enregistrement de paiement
-      const { data: paymentRecord, error: paymentError } = await supabase
-        .from('payments')
-        .insert([{
-          user_id: user?.id,
-          publication_id: publicationId,
-          amount_usd: amount,
-          payment_method: 'mobile_money',
-          payment_provider: paymentData.provider,
-          phone_number: paymentData.phoneNumber,
-          status: 'pending'
-        }])
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      // Simuler le processus de paiement mobile money
-      // En production, ceci ferait appel à l'API du fournisseur
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      // Mise à jour du statut du paiement
-      const { error: updateError } = await supabase
-        .from('payments')
-        .update({ 
-          status: 'completed',
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', paymentRecord.id);
-
-      if (updateError) throw updateError;
-
-      // Créer l'enregistrement de téléchargement
-      const { error: downloadError } = await supabase
-        .from('publication_downloads')
-        .insert([{
-          user_id: user?.id,
-          publication_id: publicationId,
-          payment_id: paymentRecord.id
-        }]);
-
-      if (downloadError) throw downloadError;
-
-      setPaymentStep('success');
-      toast({
-        title: "Paiement réussi",
-        description: "Votre publication est maintenant disponible pour téléchargement"
-      });
-
+    
+    const result = await createPayment(item, paymentData);
+    
+    if (result) {
       setTimeout(() => {
         onPaymentSuccess();
       }, 2000);
-
-    } catch (error) {
-      console.error('Erreur de paiement:', error);
-      toast({
-        title: "Erreur de paiement",
-        description: "Une erreur s'est produite lors du traitement de votre paiement",
-        variant: "destructive"
-      });
-      setPaymentStep('form');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -159,7 +93,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
         </CardTitle>
         <div className="flex items-center gap-2 text-lg font-semibold">
           <DollarSign className="w-5 h-5" />
-          {amount} {currency}
+          {item.price} {currency}
         </div>
       </CardHeader>
       <CardContent>
