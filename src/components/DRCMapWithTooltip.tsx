@@ -43,23 +43,23 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
           
           const paths = svg.querySelectorAll('path[id]');
           
+          // Couleur uniforme pour TOUTES les provinces
+          const uniformColor = 'hsl(210, 40%, 85%)'; // gris-bleu clair uniforme
+          
           paths.forEach(path => {
             const provinceId = path.getAttribute('id');
             const province = provincesData.find(p => p.id === provinceId);
             
+            // Appliquer la couleur uniforme à TOUTES les provinces
+            path.setAttribute('fill', uniformColor);
+            path.setAttribute('stroke', '#ffffff');
+            path.setAttribute('stroke-width', '2');
+            path.setAttribute('cursor', 'pointer');
+            
             if (province) {
-              // Couleur uniforme pour toutes les provinces
-              path.setAttribute('fill', 'hsl(210, 40%, 85%)'); // gris-bleu clair uniforme
-              path.setAttribute('stroke', '#ffffff');
-              path.setAttribute('stroke-width', '2');
-              path.setAttribute('cursor', 'pointer');
               path.setAttribute('data-province', province.id);
               path.setAttribute('data-name', province.name);
             } else {
-              path.setAttribute('fill', 'hsl(0, 0%, 75%)');
-              path.setAttribute('stroke', '#ffffff');
-              path.setAttribute('stroke-width', '1');
-              path.setAttribute('cursor', 'pointer');
               path.setAttribute('data-province', provinceId || 'unknown');
               path.setAttribute('data-name', `Province ${provinceId}`);
             }
@@ -161,11 +161,8 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       setShowTooltip(false);
       setHoveredProvinceData(null);
       
-      const province = provincesData.find(p => p.id === provinceId);
-      if (province) {
-        // Restaurer la couleur uniforme
-        target.setAttribute('fill', 'hsl(210, 40%, 85%)');
-      }
+      // Restaurer la couleur uniforme pour TOUTES les provinces
+      target.setAttribute('fill', 'hsl(210, 40%, 85%)');
     }
   };
 
