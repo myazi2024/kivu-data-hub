@@ -422,6 +422,99 @@ const DRCInteractiveMap: React.FC = () => {
           </Card>
         </div>
 
+        {/* Color Legend Section */}
+        <div className="mb-8">
+          <Card className="shadow-card">
+            <CardHeader>
+              <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                🎨 Légende des couleurs
+                <Badge variant="outline" className="text-xs">
+                  {transactionType === 'location' ? 'Prix location' : 'Prix vente'} par m²
+                </Badge>
+              </CardTitle>
+              <p className="text-muted-foreground text-sm">
+                Code couleur basé sur les prix de {transactionType} au mètre carré
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                  <div 
+                    className="w-6 h-6 rounded border-2 border-white" 
+                    style={{ backgroundColor: 'hsl(348, 100%, 44%)' }}
+                  ></div>
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">Prix très élevés</div>
+                    <div className="text-xs text-muted-foreground">&gt; 600 USD/m²</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                  <div 
+                    className="w-6 h-6 rounded border-2 border-white" 
+                    style={{ backgroundColor: 'hsl(20, 90%, 56%)' }}
+                  ></div>
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">Prix élevés</div>
+                    <div className="text-xs text-muted-foreground">450-600 USD/m²</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                  <div 
+                    className="w-6 h-6 rounded border-2 border-white" 
+                    style={{ backgroundColor: 'hsl(45, 93%, 47%)' }}
+                  ></div>
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">Prix moyens</div>
+                    <div className="text-xs text-muted-foreground">300-450 USD/m²</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                  <div 
+                    className="w-6 h-6 rounded border-2 border-white" 
+                    style={{ backgroundColor: 'hsl(142, 71%, 45%)' }}
+                  ></div>
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">Prix bas</div>
+                    <div className="text-xs text-muted-foreground">150-300 USD/m²</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                  <div 
+                    className="w-6 h-6 rounded border-2 border-white" 
+                    style={{ backgroundColor: 'hsl(0, 0%, 45%)' }}
+                  ></div>
+                  <div>
+                    <div className="font-semibold text-sm text-foreground">Prix très bas</div>
+                    <div className="text-xs text-muted-foreground">&lt; 150 USD/m²</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Active Filter Indicator */}
+              {priceFilter !== 'all' && (
+                <div className="mt-4 p-3 bg-seloger-red/10 border border-seloger-red/20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-seloger-red" />
+                    <span className="text-sm font-medium text-foreground">
+                      Filtre actif: 
+                      {priceFilter === 'high-price' && ' Prix élevés (>600 USD)'}
+                      {priceFilter === 'medium-price' && ' Prix moyens (300-600 USD)'}
+                      {priceFilter === 'low-price' && ' Prix bas (<300 USD)'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Seules les provinces correspondant à ce critère sont affichées sur la carte
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Map and Data Container */}
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8 mb-8">
           {/* Map Section */}
@@ -429,10 +522,22 @@ const DRCInteractiveMap: React.FC = () => {
             <Card className="shadow-card overflow-hidden">
               <CardContent className="p-0">
                 <div className="bg-seloger-gray/30 p-4 border-b">
-                  <h2 className="text-xl font-semibold text-foreground">République Démocratique du Congo</h2>
-                  <p className="text-muted-foreground text-sm mt-1">
-                    Cliquez sur une province pour afficher ses indicateurs détaillés
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h2 className="text-xl font-semibold text-foreground">République Démocratique du Congo</h2>
+                      <p className="text-muted-foreground text-sm mt-1">
+                        Cliquez sur une province pour afficher ses indicateurs détaillés
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-foreground">
+                        Mode: {transactionType === 'location' ? 'Location' : 'Vente'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {filteredProvinces.length} provinces affichées
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="p-6 h-96 lg:h-[500px]">
                   <DRCMap
