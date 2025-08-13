@@ -197,25 +197,67 @@ const DRCInteractiveMap: React.FC = () => {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Filters Section */}
+        {/* Price Filters Section */}
         <div className="mb-8">
           <Card className="shadow-card">
             <CardContent className="p-6">
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <MapPin className="h-5 w-5 text-seloger-red" />
-                  <span className="font-medium text-foreground">Filtrage géographique :</span>
+              <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-5 w-5 text-seloger-red" />
+                  <div>
+                    <h3 className="font-semibold text-foreground">Prix de l'immobilier au m²</h3>
+                    <p className="text-sm text-muted-foreground">Comparez les prix de location et de vente</p>
+                  </div>
                 </div>
-                <div className="flex gap-4">
-                  <Select value={selectedFilter} onValueChange={setSelectedFilter}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Sélectionner un filtre" />
+                
+                <div className="flex flex-wrap gap-4 items-center">
+                  {/* Transaction Type Toggle */}
+                  <div className="flex bg-muted rounded-lg p-1">
+                    <button
+                      onClick={() => setSelectedFilter('location')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                        selectedFilter === 'location'
+                          ? 'bg-white text-seloger-red shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Location
+                    </button>
+                    <button
+                      onClick={() => setSelectedFilter('vente')}
+                      className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                        selectedFilter === 'vente'
+                          ? 'bg-white text-seloger-red shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      Vente
+                    </button>
+                  </div>
+
+                  {/* Price Range Filter */}
+                  <Select value={selectedFilter === 'location' || selectedFilter === 'vente' ? 'all' : selectedFilter} onValueChange={setSelectedFilter}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Fourchette de prix" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Toutes les provinces</SelectItem>
-                      <SelectItem value="high-pressure">Forte pression locative</SelectItem>
-                      <SelectItem value="high-price">Prix élevés</SelectItem>
-                      <SelectItem value="high-activity">Forte activité</SelectItem>
+                      <SelectItem value="high-price">Prix élevés (&gt;600 USD)</SelectItem>
+                      <SelectItem value="medium-price">Prix moyens (300-600 USD)</SelectItem>
+                      <SelectItem value="low-price">Prix bas (&lt;300 USD)</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Additional Filter */}
+                  <Select value="pressure" onValueChange={() => {}}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue placeholder="Pression locative" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Toutes</SelectItem>
+                      <SelectItem value="high">Très élevée</SelectItem>
+                      <SelectItem value="moderate">Élevée</SelectItem>
+                      <SelectItem value="low">Modérée</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
