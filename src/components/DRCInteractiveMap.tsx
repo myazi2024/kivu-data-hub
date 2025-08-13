@@ -473,7 +473,7 @@ const DRCInteractiveMap: React.FC = () => {
       typologieDominante: 'Maisons rurales'
     },
     {
-      id: 'CDTS',
+      id: 'CDTU',
       name: 'Tshuapa',
       prixMoyenLoyer: 114,
       prixMoyenVenteM2: 268,
