@@ -167,7 +167,7 @@ const DRCInteractiveMap: React.FC = () => {
     // Ajout des autres provinces...
     {
       id: 'CDBC',
-      name: 'Bas-Congo',
+      name: 'Kongo-Central',
       prixMoyenLoyer: 160,
       prixMoyenVenteM2: 375,
       valeurFonciereParcelleUsd: 5800,
@@ -184,8 +184,8 @@ const DRCInteractiveMap: React.FC = () => {
       typologieDominante: 'Maisons individuelles'
     },
     {
-      id: 'CDMN',
-      name: 'Mai-Ndombe',
+      id: 'CDMA',
+      name: 'Maniema',
       prixMoyenLoyer: 140,
       prixMoyenVenteM2: 320,
       valeurFonciereParcelleUsd: 4200,
@@ -347,8 +347,8 @@ const DRCInteractiveMap: React.FC = () => {
       typologieDominante: 'Maisons individuelles'
     },
     {
-      id: 'CDMA',
-      name: 'Maniema',
+      id: 'CDMN',
+      name: 'Maï-Ndombe',
       prixMoyenLoyer: 115,
       prixMoyenVenteM2: 270,
       valeurFonciereParcelleUsd: 3300,
@@ -419,7 +419,7 @@ const DRCInteractiveMap: React.FC = () => {
       typologieDominante: 'Maisons rurales'
     },
     {
-      id: 'CDMU',
+      id: 'CDMO',
       name: 'Mongala',
       prixMoyenLoyer: 112,
       prixMoyenVenteM2: 265,
