@@ -189,9 +189,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             transform: 'translateY(-100%)'
           }}
         >
-          <div className="bg-card border border-border rounded-lg shadow-lg p-4 w-80 max-w-sm">
-            <ProvinceTooltip province={hoveredProvinceData} />
-          </div>
+          <ProvinceTooltip province={hoveredProvinceData} />
         </div>
       )}
     </div>

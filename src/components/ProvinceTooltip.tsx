@@ -1,5 +1,4 @@
 import React from 'react';
-import { TooltipContent } from '@/components/ui/tooltip';
 
 interface ProvinceData {
   id: string;
@@ -48,7 +47,7 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province }) => {
   };
 
   return (
-    <TooltipContent className="w-80 p-4 bg-card border border-border shadow-lg">
+    <div className="w-80 p-4 bg-card border border-border shadow-lg rounded-lg">
       <div className="space-y-3">
         <h3 className="font-semibold text-lg text-foreground border-b border-border pb-2">
           {province.name}
@@ -113,7 +112,7 @@ const ProvinceTooltip: React.FC<ProvinceTooltipProps> = ({ province }) => {
           </div>
         </div>
       </div>
-    </TooltipContent>
+    </div>
   );
 };
 
