@@ -31,6 +31,8 @@ interface DRCMapProps {
   onProvinceSelect: (province: ProvinceData) => void;
   onProvinceHover: (provinceId: string | null) => void;
   hoveredProvince: string | null;
+  transactionType: 'location' | 'vente';
+  getProvinceColor: (province: ProvinceData) => string;
 }
 
 const DRCMap: React.FC<DRCMapProps> = ({
@@ -38,7 +40,9 @@ const DRCMap: React.FC<DRCMapProps> = ({
   selectedProvince,
   onProvinceSelect,
   onProvinceHover,
-  hoveredProvince
+  hoveredProvince,
+  transactionType,
+  getProvinceColor
 }) => {
   const [svgContent, setSvgContent] = useState<string>('');
 
@@ -67,8 +71,8 @@ const DRCMap: React.FC<DRCMapProps> = ({
             const province = provincesData.find(p => p.id === provinceId);
             
             if (province) {
-              // Set color based on pressure index
-              const color = getColorByPressure(province.indicePresionLocative);
+              // Set color based on current filters and transaction type
+              const color = getProvinceColor(province);
               path.setAttribute('fill', color);
               path.setAttribute('stroke', '#ffffff');
               path.setAttribute('stroke-width', '2');
@@ -126,7 +130,7 @@ const DRCMap: React.FC<DRCMapProps> = ({
       onProvinceHover(null);
       const province = provincesData.find(p => p.id === provinceId);
       if (province) {
-        target.setAttribute('fill', getColorByPressure(province.indicePresionLocative));
+        target.setAttribute('fill', getProvinceColor(province));
       }
     }
   };

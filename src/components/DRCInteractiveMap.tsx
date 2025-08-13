@@ -34,7 +34,8 @@ interface ProvinceData {
 const DRCInteractiveMap: React.FC = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
-  const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [transactionType, setTransactionType] = useState<'location' | 'vente'>('location');
+  const [priceFilter, setPriceFilter] = useState<string>('all');
 
   // Mock data for the provinces with enhanced data structure
   const provincesData: ProvinceData[] = [
@@ -179,6 +180,35 @@ const DRCInteractiveMap: React.FC = () => {
     return `${value.toFixed(1)}%`;
   };
 
+  // Filter provinces based on current filters
+  const filteredProvinces = provincesData.filter(province => {
+    if (priceFilter === 'all') return true;
+    
+    const priceToCheck = transactionType === 'location' 
+      ? province.prixMoyenLoyer 
+      : province.prixMoyenVenteM2;
+    
+    switch (priceFilter) {
+      case 'high-price': return priceToCheck > 600;
+      case 'medium-price': return priceToCheck >= 300 && priceToCheck <= 600;
+      case 'low-price': return priceToCheck < 300;
+      default: return true;
+    }
+  });
+
+  // Get color based on current transaction type and price
+  const getProvinceColor = (province: ProvinceData) => {
+    const price = transactionType === 'location' 
+      ? province.prixMoyenLoyer 
+      : province.prixMoyenVenteM2;
+    
+    if (price > 600) return 'hsl(348, 100%, 44%)'; // red - high price
+    if (price >= 450) return 'hsl(20, 90%, 56%)'; // orange - medium-high
+    if (price >= 300) return 'hsl(45, 93%, 47%)'; // amber - medium
+    if (price >= 150) return 'hsl(142, 71%, 45%)'; // emerald - low
+    return 'hsl(0, 0%, 45%)'; // gray - very low
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header Section */}
@@ -214,9 +244,9 @@ const DRCInteractiveMap: React.FC = () => {
                   {/* Transaction Type Toggle */}
                   <div className="flex bg-muted rounded-lg p-1">
                     <button
-                      onClick={() => setSelectedFilter('location')}
+                      onClick={() => setTransactionType('location')}
                       className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                        selectedFilter === 'location'
+                        transactionType === 'location'
                           ? 'bg-white text-seloger-red shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
@@ -224,9 +254,9 @@ const DRCInteractiveMap: React.FC = () => {
                       Location
                     </button>
                     <button
-                      onClick={() => setSelectedFilter('vente')}
+                      onClick={() => setTransactionType('vente')}
                       className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                        selectedFilter === 'vente'
+                        transactionType === 'vente'
                           ? 'bg-white text-seloger-red shadow-sm'
                           : 'text-muted-foreground hover:text-foreground'
                       }`}
@@ -236,7 +266,7 @@ const DRCInteractiveMap: React.FC = () => {
                   </div>
 
                   {/* Price Range Filter */}
-                  <Select value={selectedFilter === 'location' || selectedFilter === 'vente' ? 'all' : selectedFilter} onValueChange={setSelectedFilter}>
+                  <Select value={priceFilter} onValueChange={setPriceFilter}>
                     <SelectTrigger className="w-[180px]">
                       <SelectValue placeholder="Fourchette de prix" />
                     </SelectTrigger>
@@ -248,16 +278,16 @@ const DRCInteractiveMap: React.FC = () => {
                     </SelectContent>
                   </Select>
 
-                  {/* Additional Filter */}
-                  <Select value="pressure" onValueChange={() => {}}>
+                  {/* Market Activity Filter */}
+                  <Select value="activity" onValueChange={() => {}}>
                     <SelectTrigger className="w-[160px]">
-                      <SelectValue placeholder="Pression locative" />
+                      <SelectValue placeholder="Activité marché" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Toutes</SelectItem>
-                      <SelectItem value="high">Très élevée</SelectItem>
-                      <SelectItem value="moderate">Élevée</SelectItem>
-                      <SelectItem value="low">Modérée</SelectItem>
+                      <SelectItem value="high">Très active</SelectItem>
+                      <SelectItem value="moderate">Active</SelectItem>
+                      <SelectItem value="low">Faible</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -280,11 +310,13 @@ const DRCInteractiveMap: React.FC = () => {
                 </div>
                 <div className="p-6 h-96 lg:h-[500px]">
                   <DRCMap
-                    provincesData={provincesData}
+                    provincesData={filteredProvinces}
                     selectedProvince={selectedProvince?.id || null}
                     onProvinceSelect={setSelectedProvince}
                     onProvinceHover={setHoveredProvince}
                     hoveredProvince={hoveredProvince}
+                    transactionType={transactionType}
+                    getProvinceColor={getProvinceColor}
                   />
                 </div>
               </CardContent>
