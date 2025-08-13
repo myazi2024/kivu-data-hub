@@ -489,6 +489,25 @@ const DRCInteractiveMap: React.FC = () => {
       recettesFiscalesUsd: 12000,
       variationLoyer3Mois: 0.5,
       typologieDominante: 'Maisons rurales'
+    },
+    // Kasaï
+    {
+      id: 'CDKS',
+      name: 'Kasaï',
+      prixMoyenLoyer: 130,
+      prixMoyenVenteM2: 300,
+      valeurFonciereParcelleUsd: 3800,
+      tauxOccupationLocatif: 63.2,
+      dureeMoyenneMiseLocationJours: 45,
+      tauxVacanceLocative: 36.8,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 720,
+      nombreTransactionsEstimees: 480,
+      populationLocativeEstimee: 32000,
+      recettesLocativesUsd: 105000,
+      recettesFiscalesUsd: 16000,
+      variationLoyer3Mois: 0.9,
+      typologieDominante: 'Maisons individuelles'
     }
   ];
 
