@@ -1,33 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Tooltip, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import React, { useState, useEffect, useRef } from 'react';
 import ProvinceTooltip from './ProvinceTooltip';
 
 interface ProvinceData {
   id: string;
   name: string;
-  // Prix & Valeur
   prixMoyenLoyer: number;
   prixMoyenVenteM2: number;
   valeurFonciereParcelleUsd: number;
-  // Performance locative
   tauxOccupationLocatif: number;
   dureeMoyenneMiseLocationJours: number;
   tauxVacanceLocative: number;
   indicePresionLocative: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
-  // Activité du marché
   volumeAnnoncesImmobilieres: number;
   nombreTransactionsEstimees: number;
-  // Population & usage
   populationLocativeEstimee: number;
-  // Recettes & fiscalité
   recettesLocativesUsd: number;
   recettesFiscalesUsd: number;
-  // Autres
   variationLoyer3Mois: number;
   typologieDominante: string;
 }
 
-interface DRCMapProps {
+interface DRCMapWithTooltipProps {
   provincesData: ProvinceData[];
   selectedProvince: string | null;
   onProvinceSelect: (province: ProvinceData) => void;
@@ -37,7 +30,7 @@ interface DRCMapProps {
   getProvinceColor: (province: ProvinceData) => string;
 }
 
-const DRCMap: React.FC<DRCMapProps> = ({
+const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   provincesData,
   selectedProvince,
   onProvinceSelect,
@@ -47,55 +40,47 @@ const DRCMap: React.FC<DRCMapProps> = ({
   getProvinceColor
 }) => {
   const [svgContent, setSvgContent] = useState<string>('');
+  const [hoveredProvinceData, setHoveredProvinceData] = useState<ProvinceData | null>(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
+  const [showTooltip, setShowTooltip] = useState(false);
+  const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Load the SVG file
     fetch('/drc-provinces.svg')
       .then(response => response.text())
       .then(svgText => {
-        // Process the SVG to add interactivity
         const parser = new DOMParser();
         const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
         const svg = svgDoc.querySelector('svg');
         
         if (svg) {
-          // Force SVG to be responsive by removing fixed dimensions
           svg.removeAttribute('width');
           svg.removeAttribute('height');
           svg.setAttribute('width', '100%');
           svg.setAttribute('height', '100%');
           svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
           
-          // Find all path elements and add province data
           const paths = svg.querySelectorAll('path[id]');
-          console.log(`Found ${paths.length} provinces in SVG`);
           
           paths.forEach(path => {
             const provinceId = path.getAttribute('id');
             const province = provincesData.find(p => p.id === provinceId);
             
-            console.log(`Processing province: ${provinceId}, found data: ${!!province}`);
-            
             if (province) {
-              // Set color based on current filters and transaction type
               const color = getProvinceColor(province);
               path.setAttribute('fill', color);
               path.setAttribute('stroke', '#ffffff');
               path.setAttribute('stroke-width', '2');
               path.setAttribute('cursor', 'pointer');
-              
-              // Add data attributes
               path.setAttribute('data-province', province.id);
               path.setAttribute('data-name', province.name);
             } else {
-              // Make non-data provinces still clickable with default styling
               path.setAttribute('fill', 'hsl(0, 0%, 75%)');
               path.setAttribute('stroke', '#ffffff');
               path.setAttribute('stroke-width', '1');
               path.setAttribute('cursor', 'pointer');
               path.setAttribute('data-province', provinceId || 'unknown');
               path.setAttribute('data-name', `Province ${provinceId}`);
-              console.warn(`No data found for province: ${provinceId}`);
             }
           });
           
@@ -103,31 +88,16 @@ const DRCMap: React.FC<DRCMapProps> = ({
         }
       })
       .catch(console.error);
-  }, [provincesData]);
-
-  const getColorByPressure = (pression: string) => {
-    switch (pression) {
-      case 'Très élevé': return 'hsl(348, 100%, 44%)'; // seloger-red
-      case 'Élevé': return 'hsl(20, 90%, 56%)'; // orange
-      case 'Modéré': return 'hsl(45, 93%, 47%)'; // amber
-      case 'Faible': return 'hsl(142, 71%, 45%)'; // emerald
-      default: return 'hsl(0, 0%, 45%)'; // gray
-    }
-  };
+  }, [provincesData, getProvinceColor]);
 
   const handleMapClick = (event: React.MouseEvent) => {
     const target = event.target as SVGElement;
     const provinceId = target.getAttribute('data-province');
     
-    console.log('Clicked province:', provinceId);
-    
     if (provinceId && provinceId !== 'unknown') {
       const province = provincesData.find(p => p.id === provinceId);
       if (province) {
-        console.log('Found province data:', province.name);
         onProvinceSelect(province);
-      } else {
-        console.warn('No data available for province:', provinceId);
       }
     }
   };
@@ -136,9 +106,24 @@ const DRCMap: React.FC<DRCMapProps> = ({
     const target = event.target as SVGElement;
     const provinceId = target.getAttribute('data-province');
     
-    if (provinceId) {
-      onProvinceHover(provinceId);
-      target.setAttribute('fill', 'hsl(348, 100%, 54%)');
+    if (provinceId && provinceId !== 'unknown') {
+      const province = provincesData.find(p => p.id === provinceId);
+      if (province) {
+        onProvinceHover(provinceId);
+        setHoveredProvinceData(province);
+        
+        // Calculate tooltip position
+        const rect = mapRef.current?.getBoundingClientRect();
+        if (rect) {
+          setTooltipPosition({
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+          });
+        }
+        
+        setShowTooltip(true);
+        target.setAttribute('fill', 'hsl(348, 100%, 54%)');
+      }
     }
   };
 
@@ -148,6 +133,9 @@ const DRCMap: React.FC<DRCMapProps> = ({
     
     if (provinceId) {
       onProvinceHover(null);
+      setShowTooltip(false);
+      setHoveredProvinceData(null);
+      
       const province = provincesData.find(p => p.id === provinceId);
       if (province) {
         target.setAttribute('fill', getProvinceColor(province));
@@ -155,11 +143,28 @@ const DRCMap: React.FC<DRCMapProps> = ({
     }
   };
 
+  const handleMapMouseMove = (event: React.MouseEvent) => {
+    if (showTooltip) {
+      const rect = mapRef.current?.getBoundingClientRect();
+      if (rect) {
+        setTooltipPosition({
+          x: event.clientX - rect.left,
+          y: event.clientY - rect.top
+        });
+      }
+    }
+  };
+
   return (
-    <TooltipProvider>
+    <div className="relative w-full h-full">
       <div 
+        ref={mapRef}
         className="w-full h-full flex items-center justify-center"
         style={{ maxWidth: '100%', maxHeight: '100%', overflow: 'hidden' }}
+        onClick={handleMapClick}
+        onMouseOver={handleMapMouseOver}
+        onMouseOut={handleMapMouseOut}
+        onMouseMove={handleMapMouseMove}
       >
         <div 
           className="w-full h-full"
@@ -170,38 +175,27 @@ const DRCMap: React.FC<DRCMapProps> = ({
             alignItems: 'center',
             justifyContent: 'center'
           }}
-        >
-          {svgContent && (
-            <div
-              onClick={handleMapClick}
-              onMouseOver={handleMapMouseOver}
-              onMouseOut={handleMapMouseOut}
-              dangerouslySetInnerHTML={{ __html: svgContent }}
-            />
-          )}
-          
-          {/* Tooltips for each province */}
-          {provincesData.map((province) => (
-            <Tooltip key={province.id}>
-              <TooltipTrigger asChild>
-                <div
-                  style={{
-                    position: 'absolute',
-                    pointerEvents: 'none',
-                    opacity: 0,
-                    width: 1,
-                    height: 1,
-                  }}
-                  data-province={province.id}
-                />
-              </TooltipTrigger>
-              <ProvinceTooltip province={province} />
-            </Tooltip>
-          ))}
-        </div>
+          dangerouslySetInnerHTML={{ __html: svgContent }}
+        />
       </div>
-    </TooltipProvider>
+      
+      {/* Custom Tooltip */}
+      {showTooltip && hoveredProvinceData && (
+        <div
+          className="absolute z-50 pointer-events-none"
+          style={{
+            left: tooltipPosition.x + 10,
+            top: tooltipPosition.y - 10,
+            transform: 'translateY(-100%)'
+          }}
+        >
+          <div className="bg-card border border-border rounded-lg shadow-lg p-4 w-80 max-w-sm">
+            <ProvinceTooltip province={hoveredProvinceData} />
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
-export default DRCMap;
+export default DRCMapWithTooltip;

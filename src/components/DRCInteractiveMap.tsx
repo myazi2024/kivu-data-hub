@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3 } from 'lucide-react';
-import DRCMap from './DRCMap';
+import DRCMapWithTooltip from './DRCMapWithTooltip';
 
 interface ProvinceData {
   id: string;
@@ -782,7 +782,7 @@ const DRCInteractiveMap: React.FC = () => {
                   </div>
                 </div>
                 <div className="p-6 h-96 lg:h-[500px]">
-                  <DRCMap
+                  <DRCMapWithTooltip
                     provincesData={filteredProvinces}
                     selectedProvince={selectedProvince?.id || null}
                     onProvinceSelect={setSelectedProvince}
