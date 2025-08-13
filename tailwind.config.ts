@@ -18,6 +18,9 @@ export default {
 			}
 		},
 		extend: {
+			fontFamily: {
+				roboto: ['Roboto', 'sans-serif'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -62,11 +65,14 @@ export default {
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
 				},
-				bic: {
-					blue: 'hsl(var(--bic-blue))',
-					'blue-light': 'hsl(var(--bic-blue-light))',
-					gray: 'hsl(var(--bic-gray))',
-					'gray-dark': 'hsl(var(--bic-gray-dark))'
+				seloger: {
+					red: 'hsl(var(--seloger-red))',
+					'red-light': 'hsl(var(--seloger-red-light))',
+					'red-dark': 'hsl(var(--seloger-red-dark))',
+					gray: 'hsl(var(--seloger-gray))',
+					'gray-medium': 'hsl(var(--seloger-gray-medium))',
+					'gray-dark': 'hsl(var(--seloger-gray-dark))',
+					dark: 'hsl(var(--seloger-dark))'
 				}
 			},
 			backgroundImage: {
@@ -75,10 +81,12 @@ export default {
 			},
 			boxShadow: {
 				'elegant': 'var(--shadow-elegant)',
-				'card': 'var(--shadow-card)'
+				'card': 'var(--shadow-card)',
+				'hover': 'var(--shadow-hover)'
 			},
 			transitionTimingFunction: {
-				'smooth': 'var(--transition-smooth)'
+				'smooth': 'var(--transition-smooth)',
+				'fast': 'var(--transition-fast)'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
