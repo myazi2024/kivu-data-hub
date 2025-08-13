@@ -92,7 +92,7 @@ const DRCInteractiveMap: React.FC = () => {
     },
     // Kasaï-Oriental
     {
-      id: 'CDKO',
+      id: 'CDKE',
       name: 'Kasaï-Oriental',
       prixMoyenLoyer: 155,
       prixMoyenVenteM2: 360,
