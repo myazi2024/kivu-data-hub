@@ -3,14 +3,26 @@ import React, { useState, useEffect } from 'react';
 interface ProvinceData {
   id: string;
   name: string;
+  // Prix & Valeur
   prixMoyenLoyer: number;
   prixMoyenVenteM2: number;
+  valeurFonciereParcelleUsd: number;
+  // Performance locative
+  tauxOccupationLocatif: number;
+  dureeMoyenneMiseLocationJours: number;
   tauxVacanceLocative: number;
+  indicePresionLocative: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
+  // Activité du marché
+  volumeAnnoncesImmobilieres: number;
+  nombreTransactionsEstimees: number;
+  // Population & usage
   populationLocativeEstimee: number;
+  // Recettes & fiscalité
+  recettesLocativesUsd: number;
+  recettesFiscalesUsd: number;
+  // Autres
   variationLoyer3Mois: number;
-  indicePresion: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
   typologieDominante: string;
-  nombreTransactions: number;
 }
 
 interface DRCMapProps {
@@ -49,7 +61,7 @@ const DRCMap: React.FC<DRCMapProps> = ({
             
             if (province) {
               // Set color based on pressure index
-              const color = getColorByPressure(province.indicePresion);
+              const color = getColorByPressure(province.indicePresionLocative);
               path.setAttribute('fill', color);
               path.setAttribute('stroke', '#ffffff');
               path.setAttribute('stroke-width', '2');
@@ -107,7 +119,7 @@ const DRCMap: React.FC<DRCMapProps> = ({
       onProvinceHover(null);
       const province = provincesData.find(p => p.id === provinceId);
       if (province) {
-        target.setAttribute('fill', getColorByPressure(province.indicePresion));
+        target.setAttribute('fill', getColorByPressure(province.indicePresionLocative));
       }
     }
   };
