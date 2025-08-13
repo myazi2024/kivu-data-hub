@@ -2,6 +2,8 @@ import React from 'react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import TerritorialMap from '@/components/TerritorialMap';
+import DRCInteractiveMap from '@/components/DRCInteractiveMap';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Map = () => {
   return (
@@ -18,7 +20,20 @@ const Map = () => {
             </p>
           </div>
           
-          <TerritorialMap />
+          <Tabs defaultValue="drc-map" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="drc-map">Carte RDC</TabsTrigger>
+              <TabsTrigger value="territorial-map">Cartographie Territoriale</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="drc-map">
+              <DRCInteractiveMap />
+            </TabsContent>
+            
+            <TabsContent value="territorial-map">
+              <TerritorialMap />
+            </TabsContent>
+          </Tabs>
         </div>
       </main>
       <Footer />
