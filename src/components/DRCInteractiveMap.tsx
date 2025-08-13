@@ -437,7 +437,7 @@ const DRCInteractiveMap: React.FC = () => {
       typologieDominante: 'Maisons rurales'
     },
     {
-      id: 'CDNO',
+      id: 'CDNU',
       name: 'Nord-Ubangi',
       prixMoyenLoyer: 108,
       prixMoyenVenteM2: 255,
