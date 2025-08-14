@@ -538,8 +538,8 @@ const DRCInteractiveMap: React.FC = () => {
     <div className="w-full h-full">
       {/* Onglets de sélection intégrés */}
       <div className="bg-muted/30 border-b border-border/20">
-        <div className="px-2 sm:px-4 py-1">
-          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-8 mx-auto">
+        <div className="px-2 sm:px-4 py-0.5">
+          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-7 mx-auto">
             <TabsTrigger value="drc-map" className="text-xs px-2 sm:px-4">
               <span className="hidden sm:inline">Carte RDC</span>
               <span className="sm:hidden">RDC</span>
@@ -552,9 +552,9 @@ const DRCInteractiveMap: React.FC = () => {
         </div>
       </div>
       
-      <div className="px-2 sm:px-4 py-1 h-[calc(100%-48px)]">
+      <div className="px-1 sm:px-2 h-[calc(100%-40px)]">
         {/* Layout responsive avec mobile-first */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full">
           <div className="lg:col-span-3 h-full order-2 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">

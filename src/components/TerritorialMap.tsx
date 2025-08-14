@@ -138,8 +138,8 @@ const TerritorialMap = () => {
     <div className="w-full h-full">
       {/* Onglets de sélection intégrés */}
       <div className="bg-muted/30 border-b border-border/20">
-        <div className="px-2 sm:px-4 py-1">
-          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-8 mx-auto">
+        <div className="px-2 sm:px-4 py-0.5">
+          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-7 mx-auto">
             <TabsTrigger value="drc-map" className="text-xs px-2 sm:px-4">
               <span className="hidden sm:inline">Carte RDC</span>
               <span className="sm:hidden">RDC</span>
@@ -152,10 +152,10 @@ const TerritorialMap = () => {
         </div>
       </div>
       
-      <div className="space-y-3 sm:space-y-6 p-2 sm:p-4 h-[calc(100%-48px)] overflow-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 h-full">
-        {/* Controls Panel - Responsive */}
-        <div className="space-y-3 sm:space-y-4 order-2 lg:order-1">
+      <div className="p-1 sm:p-2 h-[calc(100%-40px)] overflow-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full">
+          {/* Controls Panel - Responsive */}
+          <div className="space-y-2 sm:space-y-3 order-2 lg:order-1">
           {/* Search */}
           <Card>
             <CardHeader className="p-3 sm:p-6">
@@ -212,8 +212,8 @@ const TerritorialMap = () => {
         </div>
 
         {/* Map Container - Responsive */}
-        <div className="lg:col-span-3 order-1 lg:order-2">
-          <div className="w-full h-[50vh] sm:h-[60vh] lg:h-[700px] rounded-lg border border-border overflow-hidden">{/* Responsive height */}
+        <div className="lg:col-span-3 order-1 lg:order-2 h-full">
+          <div className="w-full h-full rounded-lg border border-border overflow-hidden">
             <MapContainer
               center={[-1.6792, 29.2348]}
               zoom={12}
