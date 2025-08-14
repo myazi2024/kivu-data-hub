@@ -534,10 +534,10 @@ const DRCInteractiveMap: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-2 sm:px-4 py-2">
+    <div className="w-full">
+      <div className="px-2 sm:px-4 py-2">
         {/* Layout responsive avec mobile-first */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 h-[calc(100vh-100px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 min-h-[calc(100vh-200px)]">
           <div className="lg:col-span-3 h-full order-2 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
