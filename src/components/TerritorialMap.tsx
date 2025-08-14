@@ -215,13 +215,13 @@ const TerritorialMap = () => {
 
         {/* Map Container - Responsive */}
         <div className="lg:col-span-3 order-1 lg:order-2 h-full">
-          <div className="w-full h-full rounded-lg border border-border overflow-hidden relative">
+          <div className="w-full h-full rounded-lg border border-border overflow-visible relative">
             {/* Contrôles de zoom */}
-            <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
+            <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
               <Button
                 size="sm"
                 variant="outline"
-                className="w-8 h-8 p-0 bg-background shadow-md hover:bg-muted"
+                className="w-10 h-10 p-0 bg-white shadow-lg hover:bg-gray-50 border-2"
                 onClick={() => {
                   const map = document.querySelector('.leaflet-container');
                   if (map) {
@@ -231,12 +231,12 @@ const TerritorialMap = () => {
                   }
                 }}
               >
-                <ZoomIn className="w-4 h-4" />
+                <ZoomIn className="w-5 h-5" />
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                className="w-8 h-8 p-0 bg-background shadow-md hover:bg-muted"
+                className="w-10 h-10 p-0 bg-white shadow-lg hover:bg-gray-50 border-2"
                 onClick={() => {
                   const map = document.querySelector('.leaflet-container');
                   if (map) {
@@ -246,7 +246,7 @@ const TerritorialMap = () => {
                   }
                 }}
               >
-                <ZoomOut className="w-4 h-4" />
+                <ZoomOut className="w-5 h-5" />
               </Button>
             </div>
             <MapContainer

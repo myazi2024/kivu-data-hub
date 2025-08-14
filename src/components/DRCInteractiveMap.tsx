@@ -557,42 +557,42 @@ const DRCInteractiveMap: React.FC = () => {
         {/* Layout responsive avec mobile-first */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full">
           <div className="lg:col-span-3 h-full order-2 lg:order-1">
-            <Card className="shadow-card overflow-hidden h-full flex flex-col">
-              {/* Contrôles de zoom */}
-              <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-8 h-8 p-0 bg-background shadow-md hover:bg-muted"
-                  onClick={() => {
-                    const map = document.querySelector('.leaflet-container');
-                    if (map) {
-                      // @ts-ignore
-                      const leafletMap = map._leaflet_map;
-                      if (leafletMap) leafletMap.zoomIn();
-                    }
-                  }}
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="w-8 h-8 p-0 bg-background shadow-md hover:bg-muted"
-                  onClick={() => {
-                    const map = document.querySelector('.leaflet-container');
-                    if (map) {
-                      // @ts-ignore
-                      const leafletMap = map._leaflet_map;
-                      if (leafletMap) leafletMap.zoomOut();
-                    }
-                  }}
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </Button>
-              </div>
-              
-              <CardContent className="p-0 flex-1 flex flex-col">
+            <Card className="shadow-card overflow-visible h-full flex flex-col relative">
+              <CardContent className="p-0 flex-1 flex flex-col relative">
+                {/* Contrôles de zoom - repositionnés */}
+                <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-10 h-10 p-0 bg-white shadow-lg hover:bg-gray-50 border-2"
+                    onClick={() => {
+                      const map = document.querySelector('.leaflet-container');
+                      if (map) {
+                        // @ts-ignore
+                        const leafletMap = map._leaflet_map;
+                        if (leafletMap) leafletMap.zoomIn();
+                      }
+                    }}
+                  >
+                    <ZoomIn className="w-5 h-5" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-10 h-10 p-0 bg-white shadow-lg hover:bg-gray-50 border-2"
+                    onClick={() => {
+                      const map = document.querySelector('.leaflet-container');
+                      if (map) {
+                        // @ts-ignore
+                        const leafletMap = map._leaflet_map;
+                        if (leafletMap) leafletMap.zoomOut();
+                      }
+                    }}
+                  >
+                    <ZoomOut className="w-5 h-5" />
+                  </Button>
+                </div>
+                
                 {/* En-tête responsive */}
                 <div className="bg-muted/30 p-2 sm:p-3 border-b">
                   <h2 className="text-sm sm:text-lg font-semibold text-foreground">
