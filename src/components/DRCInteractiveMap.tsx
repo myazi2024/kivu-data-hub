@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3 } from 'lucide-react';
@@ -534,10 +535,26 @@ const DRCInteractiveMap: React.FC = () => {
   };
 
   return (
-    <div className="w-full">
-      <div className="px-2 sm:px-4 py-2">
+    <div className="w-full h-full">
+      {/* Onglets de sélection intégrés */}
+      <div className="bg-muted/30 border-b border-border/20">
+        <div className="px-2 sm:px-4 py-2">
+          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-8 sm:h-10 mx-auto">
+            <TabsTrigger value="drc-map" className="text-xs sm:text-sm px-2 sm:px-4">
+              <span className="hidden sm:inline">Carte RDC</span>
+              <span className="sm:hidden">RDC</span>
+            </TabsTrigger>
+            <TabsTrigger value="territorial-map" className="text-xs sm:text-sm px-2 sm:px-4">
+              <span className="hidden sm:inline">Cartographie Territoriale</span>
+              <span className="sm:hidden">Territorial</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
+      </div>
+      
+      <div className="px-2 sm:px-4 py-2 h-[calc(100%-60px)]">
         {/* Layout responsive avec mobile-first */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 h-[calc(100vh-140px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 h-full">
           <div className="lg:col-span-3 h-full order-2 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
