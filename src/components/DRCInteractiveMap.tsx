@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3, ZoomIn, ZoomOut } from 'lucide-react';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
+import { ProvinceAnalytics } from './charts/ProvinceAnalytics';
 import { useMapEvents } from 'react-leaflet';
 import { ProvinceData } from '@/types/province';
 
@@ -557,7 +558,7 @@ const DRCInteractiveMap = () => {
       
       <div className="px-1 sm:px-2 h-full">
         {/* Layout responsive avec mobile-first */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full max-h-[75vh]">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-2 sm:gap-4 h-full max-h-[75vh]">
           <div className="lg:col-span-3 h-full order-2 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
@@ -608,7 +609,7 @@ const DRCInteractiveMap = () => {
           </div>
           
             {/* Panneau d'informations responsive */}
-            <div className="space-y-3 sm:space-y-4 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
+            <div className="lg:col-span-2 space-y-3 sm:space-y-4 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
               {/* Message d'instruction sur mobile/tablette */}
               {!selectedProvince && (
               <Card className="shadow-hover lg:hidden">
@@ -712,6 +713,12 @@ const DRCInteractiveMap = () => {
                 </CardContent>
               </Card>
             )}
+            
+            {/* Graphiques analytiques */}
+            <ProvinceAnalytics 
+              provincesData={provincesData}
+              selectedProvince={selectedProvince}
+            />
           </div>
         </div>
       </div>
