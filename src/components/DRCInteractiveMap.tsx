@@ -4,7 +4,8 @@ import { Badge } from '@/components/ui/badge';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3, ZoomIn, ZoomOut } from 'lucide-react';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import { ProvinceData } from '@/types/province';
 
@@ -557,6 +558,40 @@ const DRCInteractiveMap: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full">
           <div className="lg:col-span-3 h-full order-2 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
+              {/* Contrôles de zoom */}
+              <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-8 h-8 p-0 bg-background shadow-md hover:bg-muted"
+                  onClick={() => {
+                    const map = document.querySelector('.leaflet-container');
+                    if (map) {
+                      // @ts-ignore
+                      const leafletMap = map._leaflet_map;
+                      if (leafletMap) leafletMap.zoomIn();
+                    }
+                  }}
+                >
+                  <ZoomIn className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-8 h-8 p-0 bg-background shadow-md hover:bg-muted"
+                  onClick={() => {
+                    const map = document.querySelector('.leaflet-container');
+                    if (map) {
+                      // @ts-ignore
+                      const leafletMap = map._leaflet_map;
+                      if (leafletMap) leafletMap.zoomOut();
+                    }
+                  }}
+                >
+                  <ZoomOut className="w-4 h-4" />
+                </Button>
+              </div>
+              
               <CardContent className="p-0 flex-1 flex flex-col">
                 {/* En-tête responsive */}
                 <div className="bg-muted/30 p-2 sm:p-3 border-b">

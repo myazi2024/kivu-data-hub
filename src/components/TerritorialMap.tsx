@@ -18,7 +18,9 @@ import {
   Users, 
   TrendingUp,
   TrendingDown,
-  Minus
+  Minus,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import { ZoneIndicators } from './map/ZoneIndicators';
 import { ZoneDetailsPanel } from './map/ZoneDetailsPanel';
@@ -213,7 +215,40 @@ const TerritorialMap = () => {
 
         {/* Map Container - Responsive */}
         <div className="lg:col-span-3 order-1 lg:order-2 h-full">
-          <div className="w-full h-full rounded-lg border border-border overflow-hidden">
+          <div className="w-full h-full rounded-lg border border-border overflow-hidden relative">
+            {/* Contrôles de zoom */}
+            <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-8 h-8 p-0 bg-background shadow-md hover:bg-muted"
+                onClick={() => {
+                  const map = document.querySelector('.leaflet-container');
+                  if (map) {
+                    // @ts-ignore
+                    const leafletMap = map._leaflet_map;
+                    if (leafletMap) leafletMap.zoomIn();
+                  }
+                }}
+              >
+                <ZoomIn className="w-4 h-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="w-8 h-8 p-0 bg-background shadow-md hover:bg-muted"
+                onClick={() => {
+                  const map = document.querySelector('.leaflet-container');
+                  if (map) {
+                    // @ts-ignore
+                    const leafletMap = map._leaflet_map;
+                    if (leafletMap) leafletMap.zoomOut();
+                  }
+                }}
+              >
+                <ZoomOut className="w-4 h-4" />
+              </Button>
+            </div>
             <MapContainer
               center={[-1.6792, 29.2348]}
               zoom={12}
