@@ -215,151 +215,164 @@ const TerritorialMap = () => {
 
         {/* Map Container - Responsive */}
         <div className="lg:col-span-3 order-1 lg:order-2 h-full">
-          <div className="w-full h-full rounded-lg border border-border overflow-visible relative">
-            {/* Contrôles de zoom */}
-            <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-10 h-10 p-0 bg-white shadow-lg hover:bg-gray-50 border-2"
-                onClick={() => {
-                  const map = document.querySelector('.leaflet-container');
-                  if (map) {
-                    // @ts-ignore
-                    const leafletMap = map._leaflet_map;
-                    if (leafletMap) leafletMap.zoomIn();
-                  }
-                }}
-              >
-                <ZoomIn className="w-5 h-5" />
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-10 h-10 p-0 bg-white shadow-lg hover:bg-gray-50 border-2"
-                onClick={() => {
-                  const map = document.querySelector('.leaflet-container');
-                  if (map) {
-                    // @ts-ignore
-                    const leafletMap = map._leaflet_map;
-                    if (leafletMap) leafletMap.zoomOut();
-                  }
-                }}
-              >
-                <ZoomOut className="w-5 h-5" />
-              </Button>
-            </div>
-            <MapContainer
-              center={[-1.6792, 29.2348]}
-              zoom={12}
-              style={{ height: '100%', width: '100%' }}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <MapController selectedZone={selectedZone} />
-              
-              {!loading && filteredZones.map((zone) => {
-                if (!zone.coordinates || zone.coordinates.length === 0) {
-                  console.warn(`Zone ${zone.name} n'a pas de coordonnées valides`);
-                  return null;
-                }
+          <div className="w-full h-full rounded-lg border border-border overflow-hidden">
+            <div className="h-full flex flex-col">
+              {/* En-tête avec contrôles de zoom */}
+              <div className="bg-muted/30 border-b p-2 flex items-center justify-between">
+                <h3 className="text-sm font-medium text-foreground">Cartographie Territoriale</h3>
                 
-                return (
-                  <Polygon
-                    key={zone.id}
-                    positions={zone.coordinates.map(coord => [coord[0], coord[1]] as [number, number])}
-                    pathOptions={{
-                      fillColor: getZoneColor(zone.tauxvacancelocative),
-                      fillOpacity: 0.4,
-                      color: getZoneColor(zone.tauxvacancelocative),
-                      weight: 2,
-                      opacity: 0.8
-                    }}
-                    eventHandlers={{
-                      click: () => handleZoneClick(zone),
-                      mouseover: (e) => {
-                        e.target.setStyle({ weight: 3, fillOpacity: 0.6 });
-                      },
-                      mouseout: (e) => {
-                        e.target.setStyle({ weight: 2, fillOpacity: 0.4 });
+                {/* Contrôles de zoom dans l'en-tête */}
+                <div className="flex gap-1">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      const map = document.querySelector('.leaflet-container');
+                      if (map) {
+                        // @ts-ignore
+                        const leafletMap = map._leaflet_map;
+                        if (leafletMap) leafletMap.zoomIn();
                       }
                     }}
+                    title="Zoom avant"
                   >
-                    <Popup>
-                      <div className="p-3 min-w-[300px]">
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-2xl">{getTypologyIcon(zone.typologie_dominante)}</span>
-                          <div>
-                            <h3 className="font-semibold text-sm">{zone.name}</h3>
-                            <Badge variant="outline" className="text-xs">
-                              {zone.type}
-                            </Badge>
-                          </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 gap-3 text-xs">
-                          <div>
-                            <p className="text-muted-foreground">Prix moyen loyer</p>
-                            <p className="font-semibold">{formatCurrency(zone.prixmoyenloyer)}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Prix m² vente</p>
-                            <p className="font-semibold">{formatCurrency(zone.prixmoyenvente_m2)}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Taux vacance</p>
-                            <div className="flex items-center gap-1">
-                              <div 
-                                className="w-2 h-2 rounded-full" 
-                                style={{ backgroundColor: getZoneColor(zone.tauxvacancelocative) }}
-                              />
-                              <span className="font-semibold">{formatPercentage(zone.tauxvacancelocative)}</span>
+                    <ZoomIn className="w-4 h-4" />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                    onClick={() => {
+                      const map = document.querySelector('.leaflet-container');
+                      if (map) {
+                        // @ts-ignore
+                        const leafletMap = map._leaflet_map;
+                        if (leafletMap) leafletMap.zoomOut();
+                      }
+                    }}
+                    title="Zoom arrière"
+                  >
+                    <ZoomOut className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Contenu de la carte */}
+              <div className="flex-1">
+                <MapContainer
+                  center={[-1.6792, 29.2348]}
+                  zoom={12}
+                  style={{ height: '100%', width: '100%' }}
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <MapController selectedZone={selectedZone} />
+                  
+                  {!loading && filteredZones.map((zone) => {
+                    if (!zone.coordinates || zone.coordinates.length === 0) {
+                      console.warn(`Zone ${zone.name} n'a pas de coordonnées valides`);
+                      return null;
+                    }
+                    
+                    return (
+                      <Polygon
+                        key={zone.id}
+                        positions={zone.coordinates.map(coord => [coord[0], coord[1]] as [number, number])}
+                        pathOptions={{
+                          fillColor: getZoneColor(zone.tauxvacancelocative),
+                          fillOpacity: 0.4,
+                          color: getZoneColor(zone.tauxvacancelocative),
+                          weight: 2,
+                          opacity: 0.8
+                        }}
+                        eventHandlers={{
+                          click: () => handleZoneClick(zone),
+                          mouseover: (e) => {
+                            e.target.setStyle({ weight: 3, fillOpacity: 0.6 });
+                          },
+                          mouseout: (e) => {
+                            e.target.setStyle({ weight: 2, fillOpacity: 0.4 });
+                          }
+                        }}
+                      >
+                        <Popup>
+                          <div className="p-3 min-w-[300px]">
+                            <div className="flex items-center gap-2 mb-3">
+                              <span className="text-2xl">{getTypologyIcon(zone.typologie_dominante)}</span>
+                              <div>
+                                <h3 className="font-semibold text-sm">{zone.name}</h3>
+                                <Badge variant="outline" className="text-xs">
+                                  {zone.type}
+                                </Badge>
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Variation 3 mois</p>
-                            <div className="flex items-center gap-1">
-                              {getVariationIcon(zone.variationloyer3mois_pct)}
-                              <span className="font-semibold">{formatPercentage(zone.variationloyer3mois_pct)}</span>
+                            
+                            <div className="grid grid-cols-2 gap-3 text-xs">
+                              <div>
+                                <p className="text-muted-foreground">Prix moyen loyer</p>
+                                <p className="font-semibold">{formatCurrency(zone.prixmoyenloyer)}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Prix m² vente</p>
+                                <p className="font-semibold">{formatCurrency(zone.prixmoyenvente_m2)}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Taux vacance</p>
+                                <div className="flex items-center gap-1">
+                                  <div 
+                                    className="w-2 h-2 rounded-full" 
+                                    style={{ backgroundColor: getZoneColor(zone.tauxvacancelocative) }}
+                                  />
+                                  <span className="font-semibold">{formatPercentage(zone.tauxvacancelocative)}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Variation 3 mois</p>
+                                <div className="flex items-center gap-1">
+                                  {getVariationIcon(zone.variationloyer3mois_pct)}
+                                  <span className="font-semibold">{formatPercentage(zone.variationloyer3mois_pct)}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Population locative</p>
+                                <p className="font-semibold">{zone.populationlocativeestimee.toLocaleString()}</p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Pression foncière</p>
+                                <Badge 
+                                  style={{ backgroundColor: getPressureColor(zone.indicepressionfonciere) }}
+                                  className="text-white text-xs"
+                                >
+                                  {zone.indicepressionfonciere}
+                                </Badge>
+                              </div>
                             </div>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Population locative</p>
-                            <p className="font-semibold">{zone.populationlocativeestimee.toLocaleString()}</p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground">Pression foncière</p>
-                            <Badge 
-                              style={{ backgroundColor: getPressureColor(zone.indicepressionfonciere) }}
-                              className="text-white text-xs"
+                            
+                            <div className="mt-3 pt-3 border-t">
+                              <p className="text-xs text-muted-foreground">Typologie dominante</p>
+                              <p className="text-xs font-medium">{zone.typologie_dominante}</p>
+                            </div>
+                            
+                            <Button 
+                              size="sm" 
+                              className="w-full mt-3"
+                              onClick={() => setSelectedZone(zone)}
                             >
-                              {zone.indicepressionfonciere}
-                            </Badge>
+                              Voir détails complets
+                            </Button>
                           </div>
-                        </div>
-                        
-                        <div className="mt-3 pt-3 border-t">
-                          <p className="text-xs text-muted-foreground">Typologie dominante</p>
-                          <p className="text-xs font-medium">{zone.typologie_dominante}</p>
-                        </div>
-                        
-                        <Button 
-                          size="sm" 
-                          className="w-full mt-3"
-                          onClick={() => setSelectedZone(zone)}
-                        >
-                          Voir détails complets
-                        </Button>
-                      </div>
-                    </Popup>
-                  </Polygon>
-                  );
-                })}
-            </MapContainer>
+                        </Popup>
+                      </Polygon>
+                      );
+                    })}
+                </MapContainer>
+              </div>
+            </div>
           </div>
-        </div>
+          </div>
         </div>
         
         {/* Zone Details Panel */}

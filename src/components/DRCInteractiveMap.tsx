@@ -557,48 +557,50 @@ const DRCInteractiveMap: React.FC = () => {
         {/* Layout responsive avec mobile-first */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full">
           <div className="lg:col-span-3 h-full order-2 lg:order-1">
-            <Card className="shadow-card overflow-visible h-full flex flex-col relative">
-              <CardContent className="p-0 flex-1 flex flex-col relative">
-                {/* Contrôles de zoom - repositionnés */}
-                <div className="absolute top-4 right-4 z-50 flex flex-col gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-10 h-10 p-0 bg-white shadow-lg hover:bg-gray-50 border-2"
-                    onClick={() => {
-                      const map = document.querySelector('.leaflet-container');
-                      if (map) {
-                        // @ts-ignore
-                        const leafletMap = map._leaflet_map;
-                        if (leafletMap) leafletMap.zoomIn();
-                      }
-                    }}
-                  >
-                    <ZoomIn className="w-5 h-5" />
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="w-10 h-10 p-0 bg-white shadow-lg hover:bg-gray-50 border-2"
-                    onClick={() => {
-                      const map = document.querySelector('.leaflet-container');
-                      if (map) {
-                        // @ts-ignore
-                        const leafletMap = map._leaflet_map;
-                        if (leafletMap) leafletMap.zoomOut();
-                      }
-                    }}
-                  >
-                    <ZoomOut className="w-5 h-5" />
-                  </Button>
-                </div>
-                
-                {/* En-tête responsive */}
-                <div className="bg-muted/30 p-2 sm:p-3 border-b">
+            <Card className="shadow-card overflow-hidden h-full flex flex-col">
+              <CardContent className="p-0 flex-1 flex flex-col">
+                {/* En-tête responsive avec contrôles de zoom */}
+                <div className="bg-muted/30 p-2 sm:p-3 border-b flex items-center justify-between">
                   <h2 className="text-sm sm:text-lg font-semibold text-foreground">
                     <span className="hidden sm:inline">RDC - Marché Immobilier</span>
                     <span className="sm:hidden">Marché Immobilier RDC</span>
                   </h2>
+                  
+                  {/* Contrôles de zoom dans l'en-tête */}
+                  <div className="flex gap-1">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        const map = document.querySelector('.leaflet-container');
+                        if (map) {
+                          // @ts-ignore
+                          const leafletMap = map._leaflet_map;
+                          if (leafletMap) leafletMap.zoomIn();
+                        }
+                      }}
+                      title="Zoom avant"
+                    >
+                      <ZoomIn className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      onClick={() => {
+                        const map = document.querySelector('.leaflet-container');
+                        if (map) {
+                          // @ts-ignore
+                          const leafletMap = map._leaflet_map;
+                          if (leafletMap) leafletMap.zoomOut();
+                        }
+                      }}
+                      title="Zoom arrière"
+                    >
+                      <ZoomOut className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
                 
                 {/* Carte responsive */}
