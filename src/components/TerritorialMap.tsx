@@ -138,13 +138,13 @@ const TerritorialMap = () => {
     <div className="w-full h-full">
       {/* Onglets de sélection intégrés */}
       <div className="bg-muted/30 border-b border-border/20">
-        <div className="px-2 sm:px-4 py-2">
-          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-8 sm:h-10 mx-auto">
-            <TabsTrigger value="drc-map" className="text-xs sm:text-sm px-2 sm:px-4">
+        <div className="px-2 sm:px-4 py-1">
+          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-8 mx-auto">
+            <TabsTrigger value="drc-map" className="text-xs px-2 sm:px-4">
               <span className="hidden sm:inline">Carte RDC</span>
               <span className="sm:hidden">RDC</span>
             </TabsTrigger>
-            <TabsTrigger value="territorial-map" className="text-xs sm:text-sm px-2 sm:px-4">
+            <TabsTrigger value="territorial-map" className="text-xs px-2 sm:px-4">
               <span className="hidden sm:inline">Cartographie Territoriale</span>
               <span className="sm:hidden">Territorial</span>
             </TabsTrigger>
@@ -152,7 +152,7 @@ const TerritorialMap = () => {
         </div>
       </div>
       
-      <div className="space-y-3 sm:space-y-6 p-2 sm:p-4 h-[calc(100%-60px)] overflow-auto">
+      <div className="space-y-3 sm:space-y-6 p-2 sm:p-4 h-[calc(100%-48px)] overflow-auto">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-6 h-full">
         {/* Controls Panel - Responsive */}
         <div className="space-y-3 sm:space-y-4 order-2 lg:order-1">

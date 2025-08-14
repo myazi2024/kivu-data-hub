@@ -9,8 +9,8 @@ const Map = () => {
   return (
     <div className="min-h-screen">
       <Navigation />
-      <main className="pt-16 h-[calc(100vh-64px)]">
-        <Tabs defaultValue="drc-map" className="h-full">
+      <main className="h-screen pt-16">
+        <Tabs defaultValue="drc-map" className="h-[calc(100vh-64px)]">
           <TabsContent value="drc-map" className="h-full m-0 data-[state=active]:h-full">
             <DRCInteractiveMap />
           </TabsContent>
