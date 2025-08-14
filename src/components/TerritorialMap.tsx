@@ -155,10 +155,10 @@ const TerritorialMap = () => {
         </div>
       </div>
       
-      <div className="p-1 sm:p-2 h-[calc(100%-40px)] overflow-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full">
+      <div className="p-1 sm:p-2 h-full overflow-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full max-h-[75vh]">
           {/* Controls Panel - Responsive */}
-          <div className="space-y-2 sm:space-y-3 order-2 lg:order-1">
+          <div className="space-y-2 sm:space-y-3 order-2 lg:order-1 max-h-[75vh] overflow-y-auto">
           {/* Search */}
           <Card>
             <CardHeader className="p-3 sm:p-6">
@@ -215,7 +215,7 @@ const TerritorialMap = () => {
         </div>
 
         {/* Map Container - Responsive */}
-        <div className="lg:col-span-3 order-1 lg:order-2 h-full">
+        <div className="lg:col-span-3 order-1 lg:order-2 h-full max-h-[75vh]">
           <div className="w-full h-full rounded-lg border border-border overflow-hidden">
             <div className="h-full flex flex-col">
               {/* En-tête avec contrôles de zoom */}

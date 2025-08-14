@@ -555,9 +555,9 @@ const DRCInteractiveMap = () => {
         </div>
       </div>
       
-      <div className="px-1 sm:px-2 h-[calc(100%-40px)]">
+      <div className="px-1 sm:px-2 h-full">
         {/* Layout responsive avec mobile-first */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full max-h-[75vh]">
           <div className="lg:col-span-3 h-full order-2 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
@@ -592,7 +592,7 @@ const DRCInteractiveMap = () => {
                 </div>
                 
                 {/* Carte responsive */}
-                <div className="flex-1 min-h-0 p-2 sm:p-3">
+                <div className="flex-1 min-h-0 p-2 sm:p-3 max-h-[65vh] overflow-hidden">
                   <DRCMapWithTooltip
                     provincesData={provincesData}
                     selectedProvince={selectedProvince?.id || null}
@@ -607,10 +607,10 @@ const DRCInteractiveMap = () => {
             </Card>
           </div>
           
-          {/* Panneau d'informations responsive */}
-          <div className="space-y-3 sm:space-y-4 order-1 lg:order-2">
-            {/* Message d'instruction sur mobile/tablette */}
-            {!selectedProvince && (
+            {/* Panneau d'informations responsive */}
+            <div className="space-y-3 sm:space-y-4 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
+              {/* Message d'instruction sur mobile/tablette */}
+              {!selectedProvince && (
               <Card className="shadow-hover lg:hidden">
                 <CardContent className="p-3 sm:p-4 text-center">
                   <p className="text-sm text-muted-foreground">
