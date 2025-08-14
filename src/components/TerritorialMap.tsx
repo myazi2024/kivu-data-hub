@@ -67,6 +67,7 @@ const TerritorialMap = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedZone, setSelectedZone] = useState<ZoneData | null>(null);
   const [zoomLevel, setZoomLevel] = useState('ville');
+  const [mapInstance, setMapInstance] = useState<any>(null);
   const [filters, setFilters] = useState({
     zoneType: 'all',
     typologieDominante: 'all',
@@ -227,14 +228,7 @@ const TerritorialMap = () => {
                     size="sm"
                     variant="ghost"
                     className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-                    onClick={() => {
-                      const map = document.querySelector('.leaflet-container');
-                      if (map) {
-                        // @ts-ignore
-                        const leafletMap = map._leaflet_map;
-                        if (leafletMap) leafletMap.zoomIn();
-                      }
-                    }}
+                    onClick={() => mapInstance?.zoomIn()}
                     title="Zoom avant"
                   >
                     <ZoomIn className="w-4 h-4" />
@@ -243,14 +237,7 @@ const TerritorialMap = () => {
                     size="sm"
                     variant="ghost"
                     className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-                    onClick={() => {
-                      const map = document.querySelector('.leaflet-container');
-                      if (map) {
-                        // @ts-ignore
-                        const leafletMap = map._leaflet_map;
-                        if (leafletMap) leafletMap.zoomOut();
-                      }
-                    }}
+                    onClick={() => mapInstance?.zoomOut()}
                     title="Zoom arrière"
                   >
                     <ZoomOut className="w-4 h-4" />
@@ -264,6 +251,9 @@ const TerritorialMap = () => {
                   center={[-1.6792, 29.2348]}
                   zoom={12}
                   style={{ height: '100%', width: '100%' }}
+                  ref={(mapRef: any) => {
+                    if (mapRef) setMapInstance(mapRef);
+                  }}
                 >
                   <TileLayer
                     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

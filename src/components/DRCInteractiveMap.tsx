@@ -7,12 +7,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3, ZoomIn, ZoomOut } from 'lucide-react';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
+import { useMapEvents } from 'react-leaflet';
 import { ProvinceData } from '@/types/province';
 
 // Composant carte interactive RDC - simplifié
-const DRCInteractiveMap: React.FC = () => {
+const DRCInteractiveMap = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
+  const [mapInstance, setMapInstance] = useState<any>(null);
 
   // Complete data for all 26 provinces of DRC with correct SVG IDs
   const provincesData: ProvinceData[] = [
@@ -572,14 +574,7 @@ const DRCInteractiveMap: React.FC = () => {
                       size="sm"
                       variant="ghost"
                       className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        const map = document.querySelector('.leaflet-container');
-                        if (map) {
-                          // @ts-ignore
-                          const leafletMap = map._leaflet_map;
-                          if (leafletMap) leafletMap.zoomIn();
-                        }
-                      }}
+                      onClick={() => mapInstance?.zoomIn()}
                       title="Zoom avant"
                     >
                       <ZoomIn className="w-4 h-4" />
@@ -588,14 +583,7 @@ const DRCInteractiveMap: React.FC = () => {
                       size="sm"
                       variant="ghost"
                       className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-                      onClick={() => {
-                        const map = document.querySelector('.leaflet-container');
-                        if (map) {
-                          // @ts-ignore
-                          const leafletMap = map._leaflet_map;
-                          if (leafletMap) leafletMap.zoomOut();
-                        }
-                      }}
+                      onClick={() => mapInstance?.zoomOut()}
                       title="Zoom arrière"
                     >
                       <ZoomOut className="w-4 h-4" />
@@ -612,6 +600,7 @@ const DRCInteractiveMap: React.FC = () => {
                     onProvinceHover={setHoveredProvince}
                     hoveredProvince={hoveredProvince}
                     getProvinceColor={getProvinceColor}
+                    onMapReady={setMapInstance}
                   />
                 </div>
               </CardContent>
