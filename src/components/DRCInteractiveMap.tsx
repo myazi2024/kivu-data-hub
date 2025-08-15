@@ -608,26 +608,8 @@ const DRCInteractiveMap = () => {
             </Card>
           </div>
           
-          {/* Cadre des graphiques */}
-          <div className="lg:col-span-2 h-full order-1 lg:order-2">
-            <Card className="shadow-card h-full overflow-hidden">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-seloger-red" />
-                  Analyses de données
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-full overflow-y-auto max-h-[65vh]">
-                <ProvinceAnalytics 
-                  provincesData={provincesData}
-                  selectedProvince={selectedProvince}
-                />
-              </CardContent>
-            </Card>
-          </div>
-
           {/* Panneau sélection province */}
-          <div className="lg:col-span-1 space-y-3 sm:space-y-4 order-3 lg:order-3 max-h-[75vh] overflow-y-auto">
+          <div className="lg:col-span-1 space-y-4 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
             {/* Message d'instruction sur mobile/tablette */}
             {!selectedProvince && (
             <Card className="shadow-hover lg:hidden">
@@ -640,56 +622,56 @@ const DRCInteractiveMap = () => {
           )}
           {selectedProvince ? (
             <Card className="shadow-hover">
-              <CardHeader className="bg-gradient-card p-3 sm:p-6">
-                <CardTitle className="flex items-center gap-2 text-foreground text-sm sm:text-base">
-                  <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-seloger-red" />
+               <CardHeader className="bg-gradient-card px-4 py-3 sm:px-6 sm:py-4">
+                <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg font-bold">
+                  <MapPin className="h-5 w-5 text-seloger-red" />
                   <span className="truncate">{selectedProvince.name}</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-3 sm:p-4 space-y-3 sm:space-y-4 max-h-[60vh] lg:max-h-none overflow-y-auto lg:overflow-visible">
+              <CardContent className="px-4 py-3 sm:px-6 sm:py-4 space-y-4 max-h-[60vh] lg:max-h-none overflow-y-auto lg:overflow-visible">
                 {/* Prix & Valeur */}
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2 text-xs sm:text-sm">
-                    <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-seloger-red" />
+                <div className="space-y-3">
+                  <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
+                    <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-seloger-red" />
                     Prix & Valeur
                   </h3>
-                  <div className="bg-muted/50 rounded-lg p-2 sm:p-3 space-y-1.5 sm:space-y-2">
+                  <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-[10px] sm:text-xs">Prix vente (m²)</span>
-                      <span className="font-semibold text-foreground text-[10px] sm:text-xs">{formatCurrency(selectedProvince.prixMoyenVenteM2)}</span>
+                      <span className="text-muted-foreground text-sm font-medium">Prix vente (m²)</span>
+                      <span className="font-bold text-foreground text-sm">{formatCurrency(selectedProvince.prixMoyenVenteM2)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-[10px] sm:text-xs">Prix location (m²)</span>
-                      <span className="font-semibold text-foreground text-[10px] sm:text-xs">{formatCurrency(selectedProvince.prixMoyenLoyer)}</span>
+                      <span className="text-muted-foreground text-sm font-medium">Prix location (m²)</span>
+                      <span className="font-bold text-foreground text-sm">{formatCurrency(selectedProvince.prixMoyenLoyer)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-[10px] sm:text-xs">Valeur foncière</span>
-                      <span className="font-semibold text-foreground text-[10px] sm:text-xs">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</span>
+                      <span className="text-muted-foreground text-sm font-medium">Valeur foncière</span>
+                      <span className="font-bold text-foreground text-sm">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Performance locative */}
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
-                    <Building className="h-4 w-4 text-seloger-red" />
+                <div className="space-y-3">
+                  <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
+                    <Building className="h-4 w-4 sm:h-5 sm:w-5 text-seloger-red" />
                     Performance
                   </h3>
-                  <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                  <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Taux d'occupation</span>
-                      <span className="font-semibold text-foreground text-xs">{formatPercentage(selectedProvince.tauxOccupationLocatif)}</span>
+                      <span className="text-muted-foreground text-sm font-medium">Taux d'occupation</span>
+                      <span className="font-bold text-foreground text-sm">{formatPercentage(selectedProvince.tauxOccupationLocatif)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Mise en location</span>
-                      <span className="font-semibold text-foreground text-xs">{selectedProvince.dureeMoyenneMiseLocationJours}j</span>
+                      <span className="text-muted-foreground text-sm font-medium">Mise en location</span>
+                      <span className="font-bold text-foreground text-sm">{selectedProvince.dureeMoyenneMiseLocationJours}j</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Pression locative</span>
+                      <span className="text-muted-foreground text-sm font-medium">Pression locative</span>
                       <Badge 
                         variant={selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' : 
                                 selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' : 'outline'}
-                        className="text-xs"
+                        className="text-sm font-semibold"
                       >
                         {selectedProvince.indicePresionLocative}
                       </Badge>
@@ -698,23 +680,23 @@ const DRCInteractiveMap = () => {
                 </div>
 
                 {/* Activité */}
-                <div className="space-y-2">
-                  <h3 className="font-semibold text-foreground flex items-center gap-2 text-sm">
-                    <BarChart3 className="h-4 w-4 text-seloger-red" />
+                <div className="space-y-3">
+                  <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
+                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-seloger-red" />
                     Activité
                   </h3>
-                  <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                  <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Annonces/mois</span>
-                      <span className="font-semibold text-foreground text-xs">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</span>
+                      <span className="text-muted-foreground text-sm font-medium">Annonces/mois</span>
+                      <span className="font-bold text-foreground text-sm">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Transactions</span>
-                      <span className="font-semibold text-foreground text-xs">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</span>
+                      <span className="text-muted-foreground text-sm font-medium">Transactions</span>
+                      <span className="font-bold text-foreground text-sm">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-xs">Population</span>
-                      <span className="font-semibold text-foreground text-xs">{formatNumber(selectedProvince.populationLocativeEstimee)}</span>
+                      <span className="text-muted-foreground text-sm font-medium">Population</span>
+                      <span className="font-bold text-foreground text-sm">{formatNumber(selectedProvince.populationLocativeEstimee)}</span>
                     </div>
                   </div>
                 </div>
@@ -731,6 +713,24 @@ const DRCInteractiveMap = () => {
               </CardContent>
             </Card>
           )}
+          
+          {/* Cadre des graphiques */}
+          <div className="lg:col-span-2 h-full order-3 lg:order-3">
+            <Card className="shadow-card h-full overflow-hidden">
+              <CardHeader className="pb-4 px-6 pt-6">
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
+                  <BarChart3 className="h-6 w-6 text-seloger-red" />
+                  Analyses de données
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-full overflow-y-auto max-h-[65vh] px-6 pb-6">
+                <ProvinceAnalytics 
+                  provincesData={provincesData}
+                  selectedProvince={selectedProvince}
+                />
+              </CardContent>
+            </Card>
+          </div>
         </div>
         </div>
       </div>
