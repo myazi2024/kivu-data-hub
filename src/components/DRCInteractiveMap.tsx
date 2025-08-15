@@ -608,8 +608,26 @@ const DRCInteractiveMap = () => {
             </Card>
           </div>
           
+          {/* Cadre des graphiques */}
+          <div className="lg:col-span-2 h-full order-2 lg:order-2">
+            <Card className="shadow-card h-full overflow-hidden">
+              <CardHeader className="pb-4 px-6 pt-6">
+                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
+                  <BarChart3 className="h-6 w-6 text-seloger-red" />
+                  Analyses de données
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-full overflow-y-auto max-h-[65vh] px-6 pb-6">
+                <ProvinceAnalytics 
+                  provincesData={provincesData}
+                  selectedProvince={selectedProvince}
+                />
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Panneau sélection province */}
-          <div className="lg:col-span-1 space-y-4 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
+          <div className="lg:col-span-1 space-y-4 order-1 lg:order-3 max-h-[75vh] overflow-y-auto">
             {/* Message d'instruction sur mobile/tablette */}
             {!selectedProvince && (
             <Card className="shadow-hover lg:hidden">
@@ -713,25 +731,7 @@ const DRCInteractiveMap = () => {
               </CardContent>
             </Card>
           )}
-          
-          {/* Cadre des graphiques */}
-          <div className="lg:col-span-2 h-full order-3 lg:order-3">
-            <Card className="shadow-card h-full overflow-hidden">
-              <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
-                  <BarChart3 className="h-6 w-6 text-seloger-red" />
-                  Analyses de données
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-full overflow-y-auto max-h-[65vh] px-6 pb-6">
-                <ProvinceAnalytics 
-                  provincesData={provincesData}
-                  selectedProvince={selectedProvince}
-                />
-              </CardContent>
-            </Card>
           </div>
-        </div>
         </div>
       </div>
     </div>
