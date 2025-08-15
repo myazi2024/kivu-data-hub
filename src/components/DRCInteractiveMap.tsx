@@ -559,14 +559,15 @@ const DRCInteractiveMap = () => {
       <div className="px-1 sm:px-2 h-full">
         {/* Layout responsive avec mobile-first */}
         <div className="grid grid-cols-1 lg:grid-cols-6 gap-2 sm:gap-4 h-full max-h-[75vh]">
-          <div className="lg:col-span-3 h-full order-2 lg:order-1">
+          {/* Carte interactive - 2/6 largeur */}
+          <div className="lg:col-span-2 h-full order-3 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
                 {/* En-tête responsive avec contrôles de zoom */}
                 <div className="bg-muted/30 p-2 sm:p-3 border-b flex items-center justify-between">
-                  <h2 className="text-sm sm:text-lg font-semibold text-foreground">
+                  <h2 className="text-sm sm:text-base font-semibold text-foreground">
                     <span className="hidden sm:inline">RDC - Marché Immobilier</span>
-                    <span className="sm:hidden">Marché Immobilier RDC</span>
+                    <span className="sm:hidden">Marché RDC</span>
                   </h2>
                   
                   {/* Contrôles de zoom dans l'en-tête */}
@@ -574,26 +575,26 @@ const DRCInteractiveMap = () => {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      className="w-6 h-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
                       onClick={() => mapInstance?.zoomIn()}
                       title="Zoom avant"
                     >
-                      <ZoomIn className="w-4 h-4" />
+                      <ZoomIn className="w-3 h-3" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      className="w-6 h-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
                       onClick={() => mapInstance?.zoomOut()}
                       title="Zoom arrière"
                     >
-                      <ZoomOut className="w-4 h-4" />
+                      <ZoomOut className="w-3 h-3" />
                     </Button>
                   </div>
                 </div>
                 
                 {/* Carte responsive */}
-                <div className="flex-1 min-h-0 p-2 sm:p-3 max-h-[65vh] overflow-hidden">
+                <div className="flex-1 min-h-0 p-1 sm:p-2 max-h-[65vh] overflow-hidden">
                   <DRCMapWithTooltip
                     provincesData={provincesData}
                     selectedProvince={selectedProvince?.id || null}
@@ -607,27 +608,9 @@ const DRCInteractiveMap = () => {
               </CardContent>
             </Card>
           </div>
-          
-          {/* Cadre des graphiques */}
-          <div className="lg:col-span-2 h-full order-2 lg:order-2">
-            <Card className="shadow-card h-full overflow-hidden">
-              <CardHeader className="pb-4 px-6 pt-6">
-                <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
-                  <BarChart3 className="h-6 w-6 text-seloger-red" />
-                  Analyses de données
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-full overflow-y-auto max-h-[65vh] px-6 pb-6">
-                <ProvinceAnalytics 
-                  provincesData={provincesData}
-                  selectedProvince={selectedProvince}
-                />
-              </CardContent>
-            </Card>
-          </div>
 
-          {/* Panneau sélection province */}
-          <div className="lg:col-span-1 space-y-4 order-1 lg:order-3 max-h-[75vh] overflow-y-auto">
+          {/* Panneau sélection province - 2/6 largeur au milieu */}
+          <div className="lg:col-span-2 space-y-3 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
             {/* Message d'instruction sur mobile/tablette */}
             {!selectedProvince && (
             <Card className="shadow-hover lg:hidden">
@@ -639,57 +622,57 @@ const DRCInteractiveMap = () => {
             </Card>
           )}
           {selectedProvince ? (
-            <Card className="shadow-hover">
-               <CardHeader className="bg-gradient-card px-4 py-3 sm:px-6 sm:py-4">
-                <CardTitle className="flex items-center gap-2 text-foreground text-base sm:text-lg font-bold">
-                  <MapPin className="h-5 w-5 text-seloger-red" />
+            <Card className="shadow-hover border border-border/40">
+               <CardHeader className="bg-gradient-card px-5 py-4">
+                <CardTitle className="flex items-center gap-3 text-foreground text-lg font-bold">
+                  <MapPin className="h-6 w-6 text-seloger-red" />
                   <span className="truncate">{selectedProvince.name}</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="px-4 py-3 sm:px-6 sm:py-4 space-y-4 max-h-[60vh] lg:max-h-none overflow-y-auto lg:overflow-visible">
+              <CardContent className="px-5 py-4 space-y-5 max-h-[60vh] lg:max-h-none overflow-y-auto lg:overflow-visible">
                 {/* Prix & Valeur */}
                 <div className="space-y-3">
-                  <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
-                    <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-seloger-red" />
+                  <h3 className="font-bold text-foreground flex items-center gap-3 text-base">
+                    <DollarSign className="h-5 w-5 text-seloger-red" />
                     Prix & Valeur
                   </h3>
-                  <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Prix vente (m²)</span>
-                      <span className="font-bold text-foreground text-sm">{formatCurrency(selectedProvince.prixMoyenVenteM2)}</span>
+                  <div className="bg-muted/60 rounded-lg p-4 space-y-3.5 border border-border/20">
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Prix vente (m²)</span>
+                      <span className="font-bold text-foreground text-base">{formatCurrency(selectedProvince.prixMoyenVenteM2)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Prix location (m²)</span>
-                      <span className="font-bold text-foreground text-sm">{formatCurrency(selectedProvince.prixMoyenLoyer)}</span>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Prix location (m²)</span>
+                      <span className="font-bold text-foreground text-base">{formatCurrency(selectedProvince.prixMoyenLoyer)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Valeur foncière</span>
-                      <span className="font-bold text-foreground text-sm">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</span>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Valeur foncière</span>
+                      <span className="font-bold text-foreground text-base">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Performance locative */}
                 <div className="space-y-3">
-                  <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
-                    <Building className="h-4 w-4 sm:h-5 sm:w-5 text-seloger-red" />
+                  <h3 className="font-bold text-foreground flex items-center gap-3 text-base">
+                    <Building className="h-5 w-5 text-seloger-red" />
                     Performance
                   </h3>
-                  <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Taux d'occupation</span>
-                      <span className="font-bold text-foreground text-sm">{formatPercentage(selectedProvince.tauxOccupationLocatif)}</span>
+                  <div className="bg-muted/60 rounded-lg p-4 space-y-3.5 border border-border/20">
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Taux d'occupation</span>
+                      <span className="font-bold text-foreground text-base">{formatPercentage(selectedProvince.tauxOccupationLocatif)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Mise en location</span>
-                      <span className="font-bold text-foreground text-sm">{selectedProvince.dureeMoyenneMiseLocationJours}j</span>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Mise en location</span>
+                      <span className="font-bold text-foreground text-base">{selectedProvince.dureeMoyenneMiseLocationJours}j</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Pression locative</span>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Pression locative</span>
                       <Badge 
                         variant={selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' : 
                                 selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' : 'outline'}
-                        className="text-sm font-semibold"
+                        className="text-sm font-semibold px-3 py-1"
                       >
                         {selectedProvince.indicePresionLocative}
                       </Badge>
@@ -699,38 +682,56 @@ const DRCInteractiveMap = () => {
 
                 {/* Activité */}
                 <div className="space-y-3">
-                  <h3 className="font-bold text-foreground flex items-center gap-2 text-sm sm:text-base">
-                    <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-seloger-red" />
+                  <h3 className="font-bold text-foreground flex items-center gap-3 text-base">
+                    <BarChart3 className="h-5 w-5 text-seloger-red" />
                     Activité
                   </h3>
-                  <div className="bg-muted/50 rounded-lg p-3 sm:p-4 space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Annonces/mois</span>
-                      <span className="font-bold text-foreground text-sm">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</span>
+                  <div className="bg-muted/60 rounded-lg p-4 space-y-3.5 border border-border/20">
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Annonces/mois</span>
+                      <span className="font-bold text-foreground text-base">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Transactions</span>
-                      <span className="font-bold text-foreground text-sm">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</span>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Transactions</span>
+                      <span className="font-bold text-foreground text-base">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</span>
                     </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-muted-foreground text-sm font-medium">Population</span>
-                      <span className="font-bold text-foreground text-sm">{formatNumber(selectedProvince.populationLocativeEstimee)}</span>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-muted-foreground font-medium leading-relaxed">Population</span>
+                      <span className="font-bold text-foreground text-base">{formatNumber(selectedProvince.populationLocativeEstimee)}</span>
                     </div>
                   </div>
                 </div>
               </CardContent>
             </Card>
           ) : (
-            <Card className="shadow-card">
-              <CardContent className="p-6 text-center">
-                <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="font-semibold text-foreground mb-2">Sélectionnez une province</h3>
-                <p className="text-muted-foreground text-sm">
+            <Card className="shadow-card border border-border/40">
+              <CardContent className="p-8 text-center">
+                <MapPin className="h-16 w-16 text-muted-foreground mx-auto mb-5" />
+                <h3 className="font-bold text-foreground mb-3 text-lg">Sélectionnez une province</h3>
+                <p className="text-muted-foreground leading-relaxed">
                   Cliquez sur une province pour afficher ses indicateurs détaillés
                 </p>
               </CardContent>
             </Card>
           )}
+          </div>
+
+          {/* Cadre des graphiques - 2/6 largeur à droite */}
+          <div className="lg:col-span-2 h-full order-2 lg:order-3">
+            <Card className="shadow-card h-full overflow-hidden">
+              <CardHeader className="pb-3 px-4 pt-4">
+                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-seloger-red" />
+                  Analyses de données
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="h-full overflow-y-auto max-h-[65vh] px-4 pb-4">
+                <ProvinceAnalytics 
+                  provincesData={provincesData}
+                  selectedProvince={selectedProvince}
+                />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
