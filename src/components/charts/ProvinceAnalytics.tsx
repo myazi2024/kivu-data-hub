@@ -69,51 +69,58 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
   return (
     <div className="space-y-4">
       {/* Statistiques globales */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-3">
+      <div className="grid grid-cols-2 gap-2">
+        <Card className="p-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Prix moyen national</p>
-              <p className="text-lg font-bold text-foreground">
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Prix moyen national
+                <span className="block text-[9px] opacity-70">(moyenne pondérée)</span>
+              </p>
+              <p className="text-sm font-bold text-foreground">
                 {formatCurrency(provincesData.reduce((sum, p) => sum + p.prixMoyenLoyer, 0) / provincesData.length)}
               </p>
             </div>
-            <DollarSign className="h-8 w-8 text-primary" />
+            <DollarSign className="h-6 w-6 text-primary" />
           </div>
         </Card>
         
-        <Card className="p-3">
+        <Card className="p-2">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs text-muted-foreground">Population totale</p>
-              <p className="text-lg font-bold text-foreground">
+              <p className="text-[10px] text-muted-foreground leading-tight">
+                Population totale
+                <span className="block text-[9px] opacity-70">(locataires estimés)</span>
+              </p>
+              <p className="text-sm font-bold text-foreground">
                 {Math.round(provincesData.reduce((sum, p) => sum + p.populationLocativeEstimee, 0) / 1000000 * 10) / 10}M
               </p>
             </div>
-            <Users className="h-8 w-8 text-primary" />
+            <Users className="h-6 w-6 text-primary" />
           </div>
         </Card>
       </div>
 
       {/* Top 5 provinces par prix de loyer */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <TrendingUp className="h-4 w-4" />
+        <CardHeader className="pb-1">
+          <CardTitle className="text-xs flex items-center gap-1">
+            <TrendingUp className="h-3 w-3" />
             Top 5 - Prix de loyer
+            <span className="text-[9px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={140}>
             <BarChart data={topRentProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <YAxis 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <Tooltip 
@@ -121,7 +128,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
-                  fontSize: '12px'
+                  fontSize: '10px'
                 }}
                 formatter={(value: number, name, props) => [
                   formatCurrency(value), 
@@ -136,25 +143,26 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
 
       {/* Distribution de la pression locative */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Building2 className="h-4 w-4" />
+        <CardHeader className="pb-1">
+          <CardTitle className="text-xs flex items-center gap-1">
+            <Building2 className="h-3 w-3" />
             Pression locative
+            <span className="text-[9px] font-normal text-muted-foreground ml-1">(répartition par niveau)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={160}>
+          <ResponsiveContainer width="100%" height={120}>
             <PieChart>
               <Pie
                 data={pressureDistribution}
                 cx="50%"
                 cy="50%"
-                outerRadius={60}
+                outerRadius={45}
                 fill="hsl(var(--primary))"
                 dataKey="value"
                 label={({ name, value }) => `${name}: ${value}`}
                 labelLine={false}
-                fontSize={10}
+                fontSize={8}
               >
                 {pressureDistribution.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -165,7 +173,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
-                  fontSize: '12px'
+                  fontSize: '10px'
                 }}
               />
             </PieChart>
@@ -175,23 +183,24 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
 
       {/* Top 5 population */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Users className="h-4 w-4" />
+        <CardHeader className="pb-1">
+          <CardTitle className="text-xs flex items-center gap-1">
+            <Users className="h-3 w-3" />
             Top 5 - Population
+            <span className="text-[9px] font-normal text-muted-foreground ml-1">(milliers d'habitants)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={180}>
+          <ResponsiveContainer width="100%" height={140}>
             <AreaChart data={topPopulationProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <YAxis 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <Tooltip 
@@ -199,7 +208,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
                   borderRadius: '6px',
-                  fontSize: '12px'
+                  fontSize: '10px'
                 }}
                 formatter={(value: number, name, props) => [
                   formatPopulation(value), 
@@ -221,23 +230,24 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
       {/* Évolution des prix pour la province sélectionnée */}
       {selectedProvince && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
+          <CardHeader className="pb-1">
+            <CardTitle className="text-xs flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
               Évolution - {selectedProvince.name}
+              <span className="text-[9px] font-normal text-muted-foreground ml-1">(tendance 3 mois)</span>
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={120}>
               <LineChart data={priceEvolution} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="mois" 
-                  tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                 />
                 <Tooltip 
@@ -245,9 +255,9 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                     backgroundColor: 'hsl(var(--background))', 
                     border: '1px solid hsl(var(--border))',
                     borderRadius: '6px',
-                    fontSize: '12px'
+                    fontSize: '10px'
                   }}
-                  formatter={(value: number) => [formatCurrency(value), 'Prix']}
+                  formatter={(value: number) => [formatCurrency(value), 'Prix loyer/m²']}
                 />
                 <Line 
                   type="monotone" 

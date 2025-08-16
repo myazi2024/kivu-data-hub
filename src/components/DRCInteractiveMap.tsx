@@ -610,128 +610,133 @@ const DRCInteractiveMap = () => {
           </div>
 
           {/* Panneau sélection province - 2/6 largeur au milieu */}
-          <div className="lg:col-span-2 space-y-3 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
-            {/* Message d'instruction sur mobile/tablette */}
-            {!selectedProvince && (
-            <Card className="shadow-hover lg:hidden">
-              <CardContent className="p-3 sm:p-4 text-center">
-                <p className="text-sm text-muted-foreground">
-                  Touchez une province sur la carte pour voir ses détails
-                </p>
-              </CardContent>
-            </Card>
-          )}
-          {selectedProvince ? (
-            <Card className="shadow-hover border border-border/40">
-               <CardHeader className="bg-gradient-card px-5 py-4">
-                <CardTitle className="flex items-center gap-3 text-foreground text-lg font-bold">
-                  <MapPin className="h-6 w-6 text-seloger-red" />
-                  <span className="truncate">{selectedProvince.name}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-5 py-4 space-y-5 max-h-[60vh] lg:max-h-none overflow-y-auto lg:overflow-visible">
-                {/* Prix & Valeur */}
-                <div className="space-y-3">
-                  <h3 className="font-bold text-foreground flex items-center gap-3 text-base">
-                    <DollarSign className="h-5 w-5 text-seloger-red" />
-                    Prix & Valeur
-                  </h3>
-                  <div className="bg-muted/60 rounded-lg p-4 space-y-3.5 border border-border/20">
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Prix vente (m²)</span>
-                      <span className="font-bold text-foreground text-base">{formatCurrency(selectedProvince.prixMoyenVenteM2)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Prix location (m²)</span>
-                      <span className="font-bold text-foreground text-base">{formatCurrency(selectedProvince.prixMoyenLoyer)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Valeur foncière</span>
-                      <span className="font-bold text-foreground text-base">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</span>
-                    </div>
-                  </div>
-                </div>
+          <div className="lg:col-span-2 space-y-2 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
+            <div className="p-2 bg-background border border-border rounded-lg shadow-sm">
+              <h3 className="text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Sélection de Province
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Sélectionnez une province pour afficher ses indicateurs immobiliers détaillés et son évolution temporelle.
+              </p>
+              
+              <div className="space-y-3">
+                <Select onValueChange={(value) => {
+                  const province = provincesData.find(p => p.id === value);
+                  setSelectedProvince(province || null);
+                }}>
+                  <SelectTrigger className="w-full text-sm">
+                    <SelectValue placeholder="Choisir une province..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {provincesData.map((province) => (
+                      <SelectItem key={province.id} value={province.id} className="text-sm">
+                        {province.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-                {/* Performance locative */}
-                <div className="space-y-3">
-                  <h3 className="font-bold text-foreground flex items-center gap-3 text-base">
-                    <Building className="h-5 w-5 text-seloger-red" />
-                    Performance
-                  </h3>
-                  <div className="bg-muted/60 rounded-lg p-4 space-y-3.5 border border-border/20">
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Taux d'occupation</span>
-                      <span className="font-bold text-foreground text-base">{formatPercentage(selectedProvince.tauxOccupationLocatif)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Mise en location</span>
-                      <span className="font-bold text-foreground text-base">{selectedProvince.dureeMoyenneMiseLocationJours}j</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Pression locative</span>
-                      <Badge 
-                        variant={selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' : 
-                                selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' : 'outline'}
-                        className="text-sm font-semibold px-3 py-1"
-                      >
-                        {selectedProvince.indicePresionLocative}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+                {selectedProvince && (
+                  <div className="space-y-2">
+                    <div className="border-t pt-2">
+                      <h4 className="font-semibold text-sm mb-2 text-foreground">{selectedProvince.name}</h4>
+                      
+                      <div className="grid grid-cols-1 gap-2">
+                        {/* Prix & Valeur */}
+                        <div className="space-y-1">
+                          <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            💰 Prix & Valeur
+                            <span className="text-[10px] opacity-70">(USD par m²)</span>
+                          </h5>
+                          <div className="grid grid-cols-2 gap-1 text-[10px]">
+                            <div className="p-1.5 bg-muted/50 rounded">
+                              <span className="text-muted-foreground">Loyer:</span>
+                              <span className="font-semibold ml-1">${selectedProvince.prixMoyenLoyer}</span>
+                            </div>
+                            <div className="p-1.5 bg-muted/50 rounded">
+                              <span className="text-muted-foreground">Vente:</span>
+                              <span className="font-semibold ml-1">${selectedProvince.prixMoyenVenteM2}</span>
+                            </div>
+                          </div>
+                        </div>
 
-                {/* Activité */}
-                <div className="space-y-3">
-                  <h3 className="font-bold text-foreground flex items-center gap-3 text-base">
-                    <BarChart3 className="h-5 w-5 text-seloger-red" />
-                    Activité
-                  </h3>
-                  <div className="bg-muted/60 rounded-lg p-4 space-y-3.5 border border-border/20">
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Annonces/mois</span>
-                      <span className="font-bold text-foreground text-base">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Transactions</span>
-                      <span className="font-bold text-foreground text-base">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</span>
-                    </div>
-                    <div className="flex justify-between items-center py-1">
-                      <span className="text-muted-foreground font-medium leading-relaxed">Population</span>
-                      <span className="font-bold text-foreground text-base">{formatNumber(selectedProvince.populationLocativeEstimee)}</span>
+                        {/* Performance locative */}
+                        <div className="space-y-1">
+                          <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            📊 Performance Locative
+                            <span className="text-[10px] opacity-70">(efficacité du marché)</span>
+                          </h5>
+                          <div className="grid grid-cols-2 gap-1 text-[10px]">
+                            <div className="p-1.5 bg-muted/50 rounded">
+                              <span className="text-muted-foreground">Taux occ.:</span>
+                              <span className="font-semibold ml-1 text-green-600">{selectedProvince.tauxOccupationLocatif}%</span>
+                            </div>
+                            <div className="p-1.5 bg-muted/50 rounded">
+                              <span className="text-muted-foreground">Durée loc.:</span>
+                              <span className="font-semibold ml-1">{selectedProvince.dureeMoyenneMiseLocationJours}j</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Population & activité */}
+                        <div className="space-y-1">
+                          <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            👥 Marché Locatif
+                            <span className="text-[10px] opacity-70">(population concernée)</span>
+                          </h5>
+                          <div className="p-1.5 bg-muted/50 rounded text-[10px]">
+                            <span className="text-muted-foreground">Pop. locative:</span>
+                            <span className="font-semibold ml-1 text-blue-600">
+                              {(selectedProvince.populationLocativeEstimee / 1000).toFixed(0)}k hab.
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Pression locative */}
+                        <div className="space-y-1">
+                          <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                            🔥 Tension du Marché
+                            <span className="text-[10px] opacity-70">(demande vs offre)</span>
+                          </h5>
+                          <div className="p-1.5 bg-muted/50 rounded">
+                            <Badge 
+                              variant={
+                                selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' :
+                                selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' :
+                                selectedProvince.indicePresionLocative === 'Modéré' ? 'outline' : 'default'
+                              }
+                              className="text-[10px] px-1.5 py-0.5"
+                            >
+                              {selectedProvince.indicePresionLocative}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="shadow-card border border-border/40">
-              <CardContent className="p-8 text-center">
-                <MapPin className="h-16 w-16 text-muted-foreground mx-auto mb-5" />
-                <h3 className="font-bold text-foreground mb-3 text-lg">Sélectionnez une province</h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  Cliquez sur une province pour afficher ses indicateurs détaillés
-                </p>
-              </CardContent>
-            </Card>
-          )}
+                )}
+              </div>
+            </div>
           </div>
 
-          {/* Cadre des graphiques - 2/6 largeur à droite */}
-          <div className="lg:col-span-2 h-full order-2 lg:order-3">
-            <Card className="shadow-card h-full overflow-hidden">
-              <CardHeader className="pb-3 px-4 pt-4">
-                <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5 text-seloger-red" />
-                  Analyses de données
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="h-full overflow-y-auto max-h-[65vh] px-4 pb-4">
+          {/* Panneau Analytics - 2/6 largeur à droite */}
+          <div className="lg:col-span-2 space-y-2 order-2 lg:order-3 max-h-[75vh] overflow-y-auto">
+            <div className="p-2 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
+              <h3 className="text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Analytics Immobilier
+              </h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
+              </p>
+              <div className="max-h-[500px] overflow-y-auto">
                 <ProvinceAnalytics 
-                  provincesData={provincesData}
+                  provincesData={provincesData} 
                   selectedProvince={selectedProvince}
                 />
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
         </div>
       </div>
