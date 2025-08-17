@@ -23,16 +23,13 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
       fullName: p.name
     }));
 
-  // Distribution des indices de pression locative
-  const pressureDistribution = provincesData.reduce((acc, province) => {
-    const existing = acc.find(item => item.name === province.indicePresionLocative);
-    if (existing) {
-      existing.value += 1;
-    } else {
-      acc.push({ name: province.indicePresionLocative, value: 1 });
-    }
-    return acc;
-  }, [] as { name: string; value: number }[]);
+  // Données pour le graphique de pression locative (bar chart plus lisible)
+  const pressureData = [
+    { niveau: 'Faible', nombre: provincesData.filter(p => p.indicePresionLocative === 'Faible').length, color: '#10b981' },
+    { niveau: 'Modéré', nombre: provincesData.filter(p => p.indicePresionLocative === 'Modéré').length, color: '#f59e0b' },
+    { niveau: 'Élevé', nombre: provincesData.filter(p => p.indicePresionLocative === 'Élevé').length, color: '#f97316' },
+    { niveau: 'Très élevé', nombre: provincesData.filter(p => p.indicePresionLocative === 'Très élevé').length, color: '#ef4444' }
+  ];
 
   // Top 5 provinces par population locative
   const topPopulationProvinces = provincesData
@@ -44,12 +41,36 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
       fullName: p.name
     }));
 
-  // Évolution des prix (simulation avec variation)
+  // Évolution des prix de location et vente (simulation avec variation)
   const priceEvolution = selectedProvince ? [
-    { mois: 'Il y a 3 mois', prix: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 100)) },
-    { mois: 'Il y a 2 mois', prix: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 200)) },
-    { mois: 'Il y a 1 mois', prix: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 300)) },
-    { mois: 'Aujourd\'hui', prix: selectedProvince.prixMoyenLoyer }
+    { 
+      periode: 'Il y a 3 mois', 
+      location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 100)),
+      vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 150))
+    },
+    { 
+      periode: 'Il y a 2 mois', 
+      location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 200)),
+      vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 300))
+    },
+    { 
+      periode: 'Il y a 1 mois', 
+      location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 300)),
+      vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 450))
+    },
+    { 
+      periode: 'Aujourd\'hui', 
+      location: selectedProvince.prixMoyenLoyer,
+      vente: selectedProvince.prixMoyenVenteM2
+    }
+  ] : [];
+
+  // Évolution du nombre de locataires (simulation)
+  const tenantsEvolution = selectedProvince ? [
+    { periode: 'Il y a 3 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.92) },
+    { periode: 'Il y a 2 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.95) },
+    { periode: 'Il y a 1 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.98) },
+    { periode: 'Aujourd\'hui', locataires: selectedProvince.populationLocativeEstimee }
   ] : [];
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
@@ -141,33 +162,28 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardContent>
       </Card>
 
-      {/* Distribution de la pression locative */}
+      {/* Répartition de la pression locative */}
       <Card>
         <CardHeader className="pb-1">
           <CardTitle className="text-xs flex items-center gap-1">
             <Building2 className="h-3 w-3" />
-            Pression locative
-            <span className="text-[9px] font-normal text-muted-foreground ml-1">(répartition par niveau)</span>
+            Niveaux de pression
+            <span className="text-[9px] font-normal text-muted-foreground ml-1">(nombre de provinces)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
           <ResponsiveContainer width="100%" height={120}>
-            <PieChart>
-              <Pie
-                data={pressureDistribution}
-                cx="50%"
-                cy="50%"
-                outerRadius={45}
-                fill="hsl(var(--primary))"
-                dataKey="value"
-                label={({ name, value }) => `${name}: ${value}`}
-                labelLine={false}
-                fontSize={8}
-              >
-                {pressureDistribution.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
+            <BarChart data={pressureData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <XAxis 
+                dataKey="niveau" 
+                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
+              />
+              <YAxis 
+                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                axisLine={{ stroke: 'hsl(var(--border))' }}
+              />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
@@ -175,8 +191,14 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                   borderRadius: '6px',
                   fontSize: '10px'
                 }}
+                formatter={(value: number) => [`${value} provinces`, 'Nombre']}
               />
-            </PieChart>
+              <Bar dataKey="nombre" radius={[2, 2, 0, 0]}>
+                {pressureData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Bar>
+            </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
@@ -229,47 +251,102 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
 
       {/* Évolution des prix pour la province sélectionnée */}
       {selectedProvince && (
-        <Card>
-          <CardHeader className="pb-1">
-            <CardTitle className="text-xs flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              Évolution - {selectedProvince.name}
-              <span className="text-[9px] font-normal text-muted-foreground ml-1">(tendance 3 mois)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <ResponsiveContainer width="100%" height={120}>
-              <LineChart data={priceEvolution} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="mois" 
-                  tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                />
-                <YAxis 
-                  tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                    fontSize: '10px'
-                  }}
-                  formatter={(value: number) => [formatCurrency(value), 'Prix loyer/m²']}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="prix" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))' }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <>
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs flex items-center gap-1">
+                <TrendingUp className="h-3 w-3" />
+                Évolution des prix - {selectedProvince.name}
+                <span className="text-[9px] font-normal text-muted-foreground ml-1">(location vs vente)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ResponsiveContainer width="100%" height={120}>
+                <LineChart data={priceEvolution} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="periode" 
+                    tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      fontSize: '10px'
+                    }}
+                    formatter={(value: number, name: string) => [
+                      formatCurrency(value), 
+                      name === 'location' ? 'Prix location/m²' : 'Prix vente/m²'
+                    ]}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="location" 
+                    stroke="hsl(var(--primary))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--primary))' }}
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="vente" 
+                    stroke="hsl(var(--secondary))" 
+                    strokeWidth={2}
+                    dot={{ fill: 'hsl(var(--secondary))' }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+
+          {/* Évolution du nombre de locataires */}
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-xs flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                Évolution locataires - {selectedProvince.name}
+                <span className="text-[9px] font-normal text-muted-foreground ml-1">(nombre d'habitants)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <ResponsiveContainer width="100%" height={120}>
+                <AreaChart data={tenantsEvolution} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="periode" 
+                    tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      fontSize: '10px'
+                    }}
+                    formatter={(value: number) => [formatPopulation(Math.round(value / 1000)), 'Population locative']}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="locataires" 
+                    stroke="hsl(var(--accent))" 
+                    fill="hsl(var(--accent))" 
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );

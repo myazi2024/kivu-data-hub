@@ -10,16 +10,10 @@ const Map = () => {
     <div className="min-h-screen">
       <Navigation />
       <main className="pt-16 min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-6">
-          <Tabs defaultValue="drc-map" className="h-[80vh]">
-            <TabsContent value="drc-map" className="h-full m-0 data-[state=active]:h-full">
-              <DRCInteractiveMap />
-            </TabsContent>
-            
-            <TabsContent value="territorial-map" className="h-full m-0 data-[state=active]:h-full">
-              <TerritorialMap />
-            </TabsContent>
-          </Tabs>
+        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+          <div className="h-[85vh]">
+            <DRCInteractiveMap />
+          </div>
         </div>
       </main>
     </div>
