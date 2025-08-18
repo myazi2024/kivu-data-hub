@@ -22,3 +22,24 @@ export interface ProvinceData {
   variationLoyer3Mois: number;
   typologieDominante: string;
 }
+
+// Interface standardisée pour la cohérence des données territoriales
+export interface StandardizedZoneMetrics {
+  // Métriques financières
+  prixMoyenLoyer: number;
+  prixMoyenVenteM2: number;
+  recettesTheorique: number;
+  
+  // Métriques marché
+  tauxVacanceLocative: number;
+  variationPrix3Mois: number;
+  volumeAnnonces: number;
+  
+  // Métriques démographiques
+  populationLocative: number;
+  densiteResidentielle: number;
+  
+  // Métriques qualitatives
+  pressionFonciere: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
+  typologieDominante: string;
+}

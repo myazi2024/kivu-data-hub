@@ -32,14 +32,18 @@ export interface ZoneData {
   name: string;
   type: 'province' | 'ville' | 'commune' | 'quartier' | 'avenue';
   coordinates: number[][];
+  // Métriques financières standardisées
   prixmoyenloyer: number;
   prixmoyenvente_m2: number;
-  tauxvacancelocative: number;
-  densite_residentielle: number;
-  populationlocativeestimee: number;
   recetteslocativestheoriques_usd: number;
+  // Métriques marché standardisées
+  tauxvacancelocative: number;
   variationloyer3mois_pct: number;
   volumeannoncesmois: number;
+  // Métriques démographiques standardisées  
+  populationlocativeestimee: number;
+  densite_residentielle: number;
+  // Métriques qualitatives standardisées
   typologie_dominante: string;
   indicepressionfonciere: 'Faible' | 'Modéré' | 'Élevé' | 'Très élevé';
   parent_id?: string;
@@ -126,15 +130,25 @@ const TerritorialMap = () => {
   };
 
   const formatCurrency = (value: number) => {
+    if (!value || isNaN(value)) return '$0';
     return new Intl.NumberFormat('fr-FR', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
     }).format(value);
   };
 
   const formatPercentage = (value: number) => {
-    return `${value.toFixed(1)}%`;
+    if (!value || isNaN(value)) return '0.0%';
+    return `${Math.round(value * 10) / 10}%`;
+  };
+
+  const formatPopulation = (value: number) => {
+    if (!value || isNaN(value)) return '0';
+    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M hab.`;
+    if (value >= 1000) return `${(value / 1000).toFixed(1)}K hab.`;
+    return `${value.toLocaleString()} hab.`;
   };
 
   return (
@@ -328,7 +342,7 @@ const TerritorialMap = () => {
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Population locative</p>
-                                <p className="font-semibold">{zone.populationlocativeestimee.toLocaleString()}</p>
+                                <p className="font-semibold">{formatPopulation(zone.populationlocativeestimee)}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Pression foncière</p>
