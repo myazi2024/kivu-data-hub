@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
@@ -542,21 +542,23 @@ const DRCInteractiveMap = () => {
 
   return (
     <div className="w-full h-full">
-      {/* Onglets de sélection intégrés */}
-      <div className="bg-muted/30 border-b border-border/20">
-        <div className="px-2 sm:px-4 py-0.5">
-          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-7 mx-auto">
-            <TabsTrigger value="drc-map" className="text-xs px-2 sm:px-4">
-              <span className="hidden sm:inline">Carte RDC</span>
-              <span className="sm:hidden">RDC</span>
-            </TabsTrigger>
-            <TabsTrigger value="territorial-map" className="text-xs px-2 sm:px-4">
-              <span className="hidden sm:inline">Cartographie Territoriale</span>
-              <span className="sm:hidden">Territorial</span>
-            </TabsTrigger>
-          </TabsList>
+      <Tabs value={activeView === 'provinces' ? 'drc-map' : 'territorial-map'} 
+            onValueChange={(value) => setActiveView(value === 'drc-map' ? 'provinces' : 'territorial')}>
+        {/* Onglets de sélection intégrés */}
+        <div className="bg-muted/30 border-b border-border/20">
+          <div className="px-2 sm:px-4 py-0.5">
+            <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-7 mx-auto">
+              <TabsTrigger value="drc-map" className="text-xs px-2 sm:px-4">
+                <span className="hidden sm:inline">Carte RDC</span>
+                <span className="sm:hidden">RDC</span>
+              </TabsTrigger>
+              <TabsTrigger value="territorial-map" className="text-xs px-2 sm:px-4">
+                <span className="hidden sm:inline">Cartographie Territoriale</span>
+                <span className="sm:hidden">Territorial</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </div>
-      </div>
       
       <div className="px-1 sm:px-2 h-full">
         {/* Layout responsive avec mobile-first */}
@@ -746,6 +748,7 @@ const DRCInteractiveMap = () => {
           </div>
         </div>
       </div>
+      </Tabs>
     </div>
   );
 };
