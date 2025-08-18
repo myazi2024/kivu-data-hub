@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3, ZoomIn, ZoomOut } from 'lucide-react';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import { ProvinceAnalytics } from './charts/ProvinceAnalytics';
+import TerritorialMap from './TerritorialMap';
 import { useMapEvents } from 'react-leaflet';
 import { ProvinceData } from '@/types/province';
 
@@ -16,6 +17,7 @@ const DRCInteractiveMap = () => {
   const [selectedProvince, setSelectedProvince] = useState<ProvinceData | null>(null);
   const [hoveredProvince, setHoveredProvince] = useState<string | null>(null);
   const [mapInstance, setMapInstance] = useState<any>(null);
+  const [activeView, setActiveView] = useState<string>('provinces');
 
   // Complete data for all 26 provinces of DRC with correct SVG IDs
   const provincesData: ProvinceData[] = [
@@ -595,47 +597,36 @@ const DRCInteractiveMap = () => {
                 
                 {/* Carte responsive */}
                 <div className="flex-1 min-h-0 p-1 sm:p-2 max-h-[65vh] overflow-hidden">
-                  <DRCMapWithTooltip
-                    provincesData={provincesData}
-                    selectedProvince={selectedProvince?.id || null}
-                    onProvinceSelect={setSelectedProvince}
-                    onProvinceHover={setHoveredProvince}
-                    hoveredProvince={hoveredProvince}
-                    getProvinceColor={getProvinceColor}
-                    onMapReady={setMapInstance}
-                  />
+                  {activeView === 'provinces' ? (
+                    <DRCMapWithTooltip
+                      provincesData={provincesData}
+                      selectedProvince={selectedProvince?.id || null}
+                      onProvinceSelect={setSelectedProvince}
+                      onProvinceHover={setHoveredProvince}
+                      hoveredProvince={hoveredProvince}
+                      getProvinceColor={getProvinceColor}
+                      onMapReady={setMapInstance}
+                    />
+                  ) : (
+                    <TerritorialMap />
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Panneau sélection province - 2/6 largeur au milieu */}
+          {/* Panneau données province - 2/6 largeur au milieu */}
           <div className="lg:col-span-2 space-y-2 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
             <div className="p-2 bg-background border border-border rounded-lg shadow-sm">
-              <h3 className="text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                Sélection de Province
+              <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
+                <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+                Données de Province
               </h3>
-              <p className="text-xs text-muted-foreground mb-3">
-                Sélectionnez une province pour afficher ses indicateurs immobiliers détaillés et son évolution temporelle.
+              <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">
+                Cliquez sur une province de la carte pour afficher ses indicateurs immobiliers.
               </p>
               
               <div className="space-y-3">
-                <Select onValueChange={(value) => {
-                  const province = provincesData.find(p => p.id === value);
-                  setSelectedProvince(province || null);
-                }}>
-                  <SelectTrigger className="w-full text-sm">
-                    <SelectValue placeholder="Choisir une province..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {provincesData.map((province) => (
-                      <SelectItem key={province.id} value={province.id} className="text-sm">
-                        {province.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
 
                 {selectedProvince && (
                   <div className="space-y-2">
@@ -646,7 +637,7 @@ const DRCInteractiveMap = () => {
                         {/* Prix & Valeur */}
                         <div className="space-y-1">
                           <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            💰 Prix & Valeur
+                            Prix & Valeur
                             <span className="text-[10px] opacity-70">(USD par m²)</span>
                           </h5>
                           <div className="grid grid-cols-2 gap-1 text-[10px]">
@@ -664,7 +655,7 @@ const DRCInteractiveMap = () => {
                         {/* Performance locative */}
                         <div className="space-y-1">
                           <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            📊 Performance Locative
+                            Performance Locative
                             <span className="text-[10px] opacity-70">(efficacité du marché)</span>
                           </h5>
                           <div className="grid grid-cols-2 gap-1 text-[10px]">
@@ -682,7 +673,7 @@ const DRCInteractiveMap = () => {
                         {/* Population & activité */}
                         <div className="space-y-1">
                           <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            👥 Marché Locatif
+                            Marché Locatif
                             <span className="text-[10px] opacity-70">(population concernée)</span>
                           </h5>
                           <div className="p-1.5 bg-muted/50 rounded text-[10px]">
@@ -696,7 +687,7 @@ const DRCInteractiveMap = () => {
                         {/* Pression locative */}
                         <div className="space-y-1">
                           <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                            🔥 Tension du Marché
+                            Tension du Marché
                             <span className="text-[10px] opacity-70">(demande vs offre)</span>
                           </h5>
                           <div className="p-1.5 bg-muted/50 rounded">
@@ -720,17 +711,32 @@ const DRCInteractiveMap = () => {
             </div>
           </div>
 
-          {/* Panneau Analytics - 2/6 largeur à droite */}
+          {/* Panneau Analytics avec filtre - 2/6 largeur à droite */}
           <div className="lg:col-span-2 space-y-2 order-2 lg:order-3 max-h-[75vh] overflow-y-auto">
+            {/* Filtre de visualisation */}
+            <div className="p-2 bg-background border border-border rounded-lg shadow-sm">
+              <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground">Filtre de visualisation</h3>
+              <Select value={activeView} onValueChange={setActiveView}>
+                <SelectTrigger className="w-full h-7 sm:h-8 text-xs sm:text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="provinces">Cartographie RDC par Province</SelectItem>
+                  <SelectItem value="territorial">Cartographie Territoriale</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Analytics */}
             <div className="p-2 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
-              <h3 className="text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
+              <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
+                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
                 Analytics Immobilier
               </h3>
-              <p className="text-xs text-muted-foreground mb-3">
+              <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">
                 Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
               </p>
-              <div className="max-h-[500px] overflow-y-auto">
+              <div className="max-h-[400px] sm:max-h-[500px] overflow-y-auto">
                 <ProvinceAnalytics 
                   provincesData={provincesData} 
                   selectedProvince={selectedProvince}
