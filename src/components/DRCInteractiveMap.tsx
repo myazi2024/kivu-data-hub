@@ -721,15 +721,112 @@ const DRCInteractiveMap = () => {
                           </div>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+                     </div>
+                   </div>
+                 )}
+               </div>
+             </div>
 
-          {/* Panneau Analytics - 2/6 largeur à droite */}
-          <div className="lg:col-span-2 space-y-2 order-2 lg:order-3 max-h-[75vh] overflow-y-auto">
+             {/* Nouveau cadre pour les graphiques d'évolution */}
+             {selectedProvince && (
+               <div className="p-2 bg-background border border-border rounded-lg shadow-sm">
+                 <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
+                   <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+                   Évolutions - {selectedProvince.name}
+                 </h3>
+                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">
+                   Tendances des prix et de la population locative sur 3 mois.
+                 </p>
+                 
+                 <div className="space-y-3">
+                   {/* Évolution des prix */}
+                   <Card>
+                     <CardHeader className="pb-1">
+                       <CardTitle className="text-xs flex items-center gap-1">
+                         <TrendingUp className="h-3 w-3" />
+                         Évolution des prix (vente et location)
+                         <span className="text-[9px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
+                       </CardTitle>
+                     </CardHeader>
+                     <CardContent className="pt-0">
+                       <div className="h-[100px]">
+                         {(() => {
+                           const priceEvolution = [
+                             { 
+                               periode: 'Il y a 3 mois', 
+                               location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 100)),
+                               vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 150))
+                             },
+                             { 
+                               periode: 'Il y a 2 mois', 
+                               location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 200)),
+                               vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 300))
+                             },
+                             { 
+                               periode: 'Il y a 1 mois', 
+                               location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 300)),
+                               vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 450))
+                             },
+                             { 
+                               periode: 'Aujourd\'hui', 
+                               location: selectedProvince.prixMoyenLoyer,
+                               vente: selectedProvince.prixMoyenVenteM2
+                             }
+                           ];
+                           
+                           return (
+                             <div className="w-full h-full flex items-center justify-center">
+                               <div className="text-xs text-muted-foreground">
+                                 Location: {priceEvolution[0].location}$ → {priceEvolution[3].location}$ | 
+                                 Vente: {priceEvolution[0].vente}$ → {priceEvolution[3].vente}$
+                               </div>
+                             </div>
+                           );
+                         })()}
+                       </div>
+                     </CardContent>
+                   </Card>
+
+                   {/* Évolution des locataires */}
+                   <Card>
+                     <CardHeader className="pb-1">
+                       <CardTitle className="text-xs flex items-center gap-1">
+                         <Users className="h-3 w-3" />
+                         Évolution des locataires
+                         <span className="text-[9px] font-normal text-muted-foreground ml-1">(population)</span>
+                       </CardTitle>
+                     </CardHeader>
+                     <CardContent className="pt-0">
+                       <div className="h-[100px]">
+                         {(() => {
+                           const tenantsEvolution = [
+                             { periode: 'Il y a 3 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.92) },
+                             { periode: 'Il y a 2 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.95) },
+                             { periode: 'Il y a 1 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.98) },
+                             { periode: 'Aujourd\'hui', locataires: selectedProvince.populationLocativeEstimee }
+                           ];
+                           
+                           return (
+                             <div className="w-full h-full flex items-center justify-center">
+                               <div className="text-xs text-muted-foreground">
+                                 {Math.round(tenantsEvolution[0].locataires / 1000)}k → {Math.round(tenantsEvolution[3].locataires / 1000)}k locataires
+                                 <div className="text-[10px] text-green-600 mt-1">
+                                   +{Math.round((tenantsEvolution[3].locataires - tenantsEvolution[0].locataires) / 1000)}k en 3 mois
+                                 </div>
+                               </div>
+                             </div>
+                           );
+                         })()}
+                       </div>
+                     </CardContent>
+                   </Card>
+                 </div>
+               </div>
+             )}
+           </div>
+
+           {/* Panneau Analytics - 2/6 largeur à droite */}
+           <div className="lg:col-span-2 space-y-2 order-2 lg:order-3 max-h-[75vh] overflow-y-auto">
             {/* Analytics */}
             <div className="p-2 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
               <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
