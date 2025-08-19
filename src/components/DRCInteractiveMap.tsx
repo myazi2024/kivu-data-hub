@@ -567,33 +567,48 @@ const DRCInteractiveMap = () => {
           <div className="lg:col-span-2 h-full order-3 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
-                {/* En-tête responsive avec contrôles de zoom */}
-                <div className="bg-muted/30 p-2 sm:p-3 border-b flex items-center justify-between">
-                  <h2 className="text-sm sm:text-base font-semibold text-foreground">
-                    <span className="hidden sm:inline">RDC - Marché Immobilier</span>
-                    <span className="sm:hidden">Marché RDC</span>
-                  </h2>
+                {/* En-tête responsive avec contrôles de zoom et filtre de visualisation */}
+                <div className="bg-muted/30 p-2 sm:p-3 border-b space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm sm:text-base font-semibold text-foreground">
+                      <span className="hidden sm:inline">RDC - Marché Immobilier</span>
+                      <span className="sm:hidden">Marché RDC</span>
+                    </h2>
+                    
+                    {/* Contrôles de zoom dans l'en-tête */}
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-6 h-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                        onClick={() => mapInstance?.zoomIn()}
+                        title="Zoom avant"
+                      >
+                        <ZoomIn className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="w-6 h-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                        onClick={() => mapInstance?.zoomOut()}
+                        title="Zoom arrière"
+                      >
+                        <ZoomOut className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
                   
-                  {/* Contrôles de zoom dans l'en-tête */}
-                  <div className="flex gap-1">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="w-6 h-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-                      onClick={() => mapInstance?.zoomIn()}
-                      title="Zoom avant"
-                    >
-                      <ZoomIn className="w-3 h-3" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="w-6 h-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
-                      onClick={() => mapInstance?.zoomOut()}
-                      title="Zoom arrière"
-                    >
-                      <ZoomOut className="w-3 h-3" />
-                    </Button>
+                  {/* Filtre de visualisation intégré dans le cadre de la carte */}
+                  <div>
+                    <Select value={activeView} onValueChange={setActiveView}>
+                      <SelectTrigger className="w-full h-7 sm:h-8 text-xs sm:text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="provinces">Cartographie RDC par Province</SelectItem>
+                        <SelectItem value="territorial">Cartographie Territoriale</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 
@@ -713,22 +728,8 @@ const DRCInteractiveMap = () => {
             </div>
           </div>
 
-          {/* Panneau Analytics avec filtre - 2/6 largeur à droite */}
+          {/* Panneau Analytics - 2/6 largeur à droite */}
           <div className="lg:col-span-2 space-y-2 order-2 lg:order-3 max-h-[75vh] overflow-y-auto">
-            {/* Filtre de visualisation */}
-            <div className="p-2 bg-background border border-border rounded-lg shadow-sm">
-              <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground">Filtre de visualisation</h3>
-              <Select value={activeView} onValueChange={setActiveView}>
-                <SelectTrigger className="w-full h-7 sm:h-8 text-xs sm:text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="provinces">Cartographie RDC par Province</SelectItem>
-                  <SelectItem value="territorial">Cartographie Territoriale</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             {/* Analytics */}
             <div className="p-2 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
               <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
