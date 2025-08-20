@@ -7,13 +7,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const Map = () => {
   return (
-    <div className="min-h-screen">
+    <div className="h-screen flex flex-col">
       <Navigation />
-      <main className="pt-16 min-h-screen bg-background">
-        <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
-          <div className="h-[85vh]">
-            <DRCInteractiveMap />
-          </div>
+      <main className="flex-1 bg-background overflow-hidden">
+        <div className="h-full">
+          <DRCInteractiveMap />
         </div>
       </main>
     </div>

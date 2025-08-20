@@ -542,28 +542,9 @@ const DRCInteractiveMap = () => {
   };
 
   return (
-    <div className="w-full h-full">
-      <Tabs value={activeView === 'provinces' ? 'drc-map' : 'territorial-map'} 
-            onValueChange={(value) => setActiveView(value === 'drc-map' ? 'provinces' : 'territorial')}>
-        {/* Onglets de sélection intégrés */}
-        <div className="bg-muted/30 border-b border-border/20">
-          <div className="px-2 sm:px-4 py-0.5">
-            <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-7 mx-auto">
-              <TabsTrigger value="drc-map" className="text-xs px-2 sm:px-4">
-                <span className="hidden sm:inline">Carte RDC</span>
-                <span className="sm:hidden">RDC</span>
-              </TabsTrigger>
-              <TabsTrigger value="territorial-map" className="text-xs px-2 sm:px-4">
-                <span className="hidden sm:inline">Cartographie Territoriale</span>
-                <span className="sm:hidden">Territorial</span>
-              </TabsTrigger>
-            </TabsList>
-          </div>
-        </div>
-      
-      <div className="px-1 sm:px-2 h-full">
-        {/* Layout responsive avec mobile-first */}
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-1 sm:gap-2 h-full max-h-[72vh]">
+    <div className="w-full h-full p-1 sm:p-2">
+      {/* Layout responsive avec mobile-first */}
+      <div className="grid grid-cols-1 lg:grid-cols-6 gap-1 sm:gap-2 h-full">
           {/* Carte interactive - 2/6 largeur */}
           <div className="lg:col-span-2 h-full order-3 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
@@ -957,9 +938,7 @@ const DRCInteractiveMap = () => {
               </div>
             </div>
           </div>
-        </div>
       </div>
-      </Tabs>
     </div>
   );
 };
