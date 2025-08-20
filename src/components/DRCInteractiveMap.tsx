@@ -563,13 +563,13 @@ const DRCInteractiveMap = () => {
       
       <div className="px-1 sm:px-2 h-full">
         {/* Layout responsive avec mobile-first */}
-        <div className="grid grid-cols-1 lg:grid-cols-6 gap-2 sm:gap-4 h-full max-h-[75vh]">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-1 sm:gap-2 h-full max-h-[72vh]">
           {/* Carte interactive - 2/6 largeur */}
           <div className="lg:col-span-2 h-full order-3 lg:order-1">
             <Card className="shadow-card overflow-hidden h-full flex flex-col">
               <CardContent className="p-0 flex-1 flex flex-col">
                 {/* En-tête responsive avec contrôles de zoom et filtre de visualisation */}
-                <div className="bg-muted/30 p-2 sm:p-3 border-b space-y-2">
+                <div className="bg-muted/30 p-1.5 sm:p-2 border-b space-y-1.5">
                   <div className="flex items-center justify-between">
                     <h2 className="text-sm sm:text-base font-semibold text-foreground">
                       <span className="hidden sm:inline">RDC - Marché Immobilier</span>
@@ -614,7 +614,7 @@ const DRCInteractiveMap = () => {
                 </div>
                 
                 {/* Carte responsive */}
-                <div className="flex-1 min-h-0 p-1 sm:p-2 max-h-[65vh] overflow-hidden">
+                <div className="flex-1 min-h-0 p-1 max-h-[60vh] overflow-hidden">
                   {activeView === 'provinces' ? (
                     <DRCMapWithTooltip
                       provincesData={provincesData}
@@ -634,24 +634,24 @@ const DRCInteractiveMap = () => {
           </div>
 
           {/* Panneau données province - 2/6 largeur au milieu */}
-          <div className="lg:col-span-2 space-y-2 order-1 lg:order-2 max-h-[75vh] overflow-y-auto">
-            <div className="p-2 bg-background border border-border rounded-lg shadow-sm">
-              <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
-                <MapPin className="h-3 w-3 sm:h-4 sm:w-4" />
+          <div className="lg:col-span-2 space-y-1.5 order-1 lg:order-2 max-h-[72vh] overflow-y-auto">
+            <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm">
+              <h3 className="text-xs font-semibold mb-1.5 text-foreground flex items-center gap-1.5">
+                <MapPin className="h-3 w-3" />
                 Données de Province
               </h3>
-              <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">
+              <p className="text-[10px] text-muted-foreground mb-2">
                 Cliquez sur une province de la carte pour afficher ses indicateurs immobiliers.
               </p>
               
-              <div className="space-y-3">
+              <div className="space-y-2">
 
                 {selectedProvince && (
                   <div className="space-y-2">
                     <div className="border-t pt-2">
-                      <h4 className="font-semibold text-sm mb-2 text-foreground">{selectedProvince.name}</h4>
+                      <h4 className="font-semibold text-sm mb-1.5 text-foreground">{selectedProvince.name}</h4>
                       
-                      <div className="grid grid-cols-1 gap-2">
+                      <div className="grid grid-cols-1 gap-1.5">
                         {/* Prix & Valeur */}
                         <div className="space-y-1">
                           <h5 className="text-xs font-medium text-muted-foreground flex items-center gap-1">
@@ -728,28 +728,28 @@ const DRCInteractiveMap = () => {
                </div>
              </div>
 
-             {/* Nouveau cadre pour les graphiques d'évolution */}
-             {selectedProvince && (
-               <div className="p-2 bg-background border border-border rounded-lg shadow-sm">
-                 <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
-                   <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                   Évolutions - {selectedProvince.name}
-                 </h3>
-                 <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">
-                   Tendances des prix et de la population locative sur 3 mois.
-                 </p>
-                 
-                 <div className="space-y-3">
-                    {/* Évolution des prix */}
-                    <Card>
-                      <CardHeader className="pb-1">
-                        <CardTitle className="text-xs flex items-center gap-1">
-                          <TrendingUp className="h-3 w-3" />
-                          Évolution des prix (vente et location)
-                          <span className="text-[9px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0">
+              {/* Nouveau cadre pour les graphiques d'évolution */}
+              {selectedProvince && (
+                <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm">
+                  <h3 className="text-xs font-semibold mb-1.5 text-foreground flex items-center gap-1.5">
+                    <TrendingUp className="h-3 w-3" />
+                    Évolutions - {selectedProvince.name}
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground mb-2">
+                    Tendances des prix et de la population locative sur 3 mois.
+                  </p>
+                  
+                  <div className="space-y-2">
+                     {/* Évolution des prix */}
+                     <Card>
+                       <CardHeader className="pb-0.5 pt-1.5 px-2">
+                         <CardTitle className="text-[11px] flex items-center gap-1">
+                           <TrendingUp className="h-2.5 w-2.5" />
+                           Évolution des prix (vente et location)
+                           <span className="text-[9px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
+                         </CardTitle>
+                       </CardHeader>
+                       <CardContent className="pt-0 pb-1.5 px-2">
                         <div className="space-y-2">
                           {(() => {
                             const priceEvolution = [
@@ -784,8 +784,8 @@ const DRCInteractiveMap = () => {
                             };
                             
                             return (
-                              <div className="space-y-3">
-                                <ResponsiveContainer width="100%" height={140}>
+                               <div className="space-y-2">
+                                 <ResponsiveContainer width="100%" height={100}>
                                   <LineChart data={priceEvolution} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis 
@@ -829,8 +829,8 @@ const DRCInteractiveMap = () => {
                                   </LineChart>
                                 </ResponsiveContainer>
                                 
-                                {/* Notes explicatives */}
-                                <div className="bg-muted/30 p-2 rounded text-[10px] space-y-1">
+                                 {/* Notes explicatives */}
+                                 <div className="bg-muted/30 p-1.5 rounded text-[9px] space-y-0.5">
                                   <div className="flex items-center gap-2">
                                     <div className="w-3 h-0.5 bg-primary rounded"></div>
                                     <span>Location : {selectedProvince.variationLoyer3Mois >= 0 ? '+' : ''}{selectedProvince.variationLoyer3Mois.toFixed(1)}% en 3 mois</span>
@@ -839,9 +839,9 @@ const DRCInteractiveMap = () => {
                                     <div className="w-3 h-0.5 bg-secondary rounded"></div>
                                     <span>Vente : Corrélation avec marché locatif</span>
                                   </div>
-                                  <p className="text-muted-foreground text-[9px] mt-1">
-                                    * Données basées sur les tendances observées et la variation des loyers sur 3 mois
-                                  </p>
+                                   <p className="text-muted-foreground text-[8px] mt-0.5">
+                                     * Données basées sur les tendances observées et la variation des loyers sur 3 mois
+                                   </p>
                                 </div>
                               </div>
                             );
@@ -852,14 +852,14 @@ const DRCInteractiveMap = () => {
 
                     {/* Évolution des locataires */}
                     <Card>
-                      <CardHeader className="pb-1">
-                        <CardTitle className="text-xs flex items-center gap-1">
-                          <Users className="h-3 w-3" />
+                      <CardHeader className="pb-0.5 pt-1.5 px-2">
+                        <CardTitle className="text-[11px] flex items-center gap-1">
+                          <Users className="h-2.5 w-2.5" />
                           Évolution des locataires
                           <span className="text-[9px] font-normal text-muted-foreground ml-1">(population)</span>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="pt-0">
+                      <CardContent className="pt-0 pb-1.5 px-2">
                         <div className="space-y-2">
                           {(() => {
                             const tenantsEvolution = [
@@ -875,9 +875,9 @@ const DRCInteractiveMap = () => {
                             
                             const croissance = ((tenantsEvolution[3].locataires - tenantsEvolution[0].locataires) / tenantsEvolution[0].locataires * 100);
                             
-                            return (
-                              <div className="space-y-3">
-                                <ResponsiveContainer width="100%" height={140}>
+                             return (
+                               <div className="space-y-2">
+                                 <ResponsiveContainer width="100%" height={100}>
                                   <AreaChart data={tenantsEvolution} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis 
@@ -913,8 +913,8 @@ const DRCInteractiveMap = () => {
                                   </AreaChart>
                                 </ResponsiveContainer>
                                 
-                                {/* Notes explicatives */}
-                                <div className="bg-muted/30 p-2 rounded text-[10px] space-y-1">
+                                 {/* Notes explicatives */}
+                                 <div className="bg-muted/30 p-1.5 rounded text-[9px] space-y-0.5">
                                   <div className="flex items-center gap-2">
                                     <div className="w-3 h-0.5 bg-accent rounded"></div>
                                     <span>Croissance : {croissance >= 0 ? '+' : ''}{croissance.toFixed(1)}% en 3 mois</span>
@@ -923,9 +923,9 @@ const DRCInteractiveMap = () => {
                                     <span className="text-muted-foreground">Total actuel :</span>
                                     <span className="font-medium">{formatPopulation(selectedProvince.populationLocativeEstimee)} habitants</span>
                                   </div>
-                                  <p className="text-muted-foreground text-[9px] mt-1">
-                                    * Évolution estimée basée sur les dynamiques démographiques et économiques locales
-                                  </p>
+                                   <p className="text-muted-foreground text-[8px] mt-0.5">
+                                     * Évolution estimée basée sur les dynamiques démographiques et économiques locales
+                                   </p>
                                 </div>
                               </div>
                             );
@@ -938,18 +938,18 @@ const DRCInteractiveMap = () => {
              )}
            </div>
 
-           {/* Panneau Analytics - 2/6 largeur à droite */}
-           <div className="lg:col-span-2 space-y-2 order-2 lg:order-3 max-h-[75vh] overflow-y-auto">
-            {/* Analytics */}
-            <div className="p-2 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
-              <h3 className="text-xs sm:text-sm font-semibold mb-2 text-foreground flex items-center gap-2">
-                <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-                Analytics Immobilier
-              </h3>
-              <p className="text-[10px] sm:text-xs text-muted-foreground mb-3">
-                Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
-              </p>
-              <div className="max-h-[400px] sm:max-h-[500px] overflow-y-auto">
+            {/* Panneau Analytics - 2/6 largeur à droite */}
+            <div className="lg:col-span-2 space-y-1.5 order-2 lg:order-3 max-h-[72vh] overflow-y-auto">
+             {/* Analytics */}
+             <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
+               <h3 className="text-xs font-semibold mb-1.5 text-foreground flex items-center gap-1.5">
+                 <BarChart3 className="h-3 w-3" />
+                 Analytics Immobilier
+               </h3>
+               <p className="text-[10px] text-muted-foreground mb-2">
+                 Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
+               </p>
+               <div className="max-h-[350px] overflow-y-auto">
                 <ProvinceAnalytics 
                   provincesData={provincesData} 
                   selectedProvince={selectedProvince}
