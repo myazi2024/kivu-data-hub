@@ -729,27 +729,27 @@ const DRCInteractiveMap = () => {
              </div>
 
               {/* Nouveau cadre pour les graphiques d'évolution */}
-              {selectedProvince && (
-                <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm">
-                  <h3 className="text-xs font-semibold mb-1.5 text-foreground flex items-center gap-1.5">
-                    <TrendingUp className="h-3 w-3" />
-                    Évolutions - {selectedProvince.name}
-                  </h3>
-                  <p className="text-[10px] text-muted-foreground mb-2">
-                    Tendances des prix et de la population locative sur 3 mois.
-                  </p>
+                {selectedProvince && (
+                 <div className="p-1 bg-background border border-border rounded-lg shadow-sm">
+                   <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
+                     <TrendingUp className="h-2.5 w-2.5" />
+                     Évolutions - {selectedProvince.name}
+                   </h3>
+                   <p className="text-[9px] text-muted-foreground mb-1">
+                     Tendances des prix et de la population locative sur 3 mois.
+                   </p>
                   
-                  <div className="space-y-2">
-                     {/* Évolution des prix */}
-                     <Card>
-                       <CardHeader className="pb-0.5 pt-1.5 px-2">
-                         <CardTitle className="text-[11px] flex items-center gap-1">
-                           <TrendingUp className="h-2.5 w-2.5" />
-                           Évolution des prix (vente et location)
-                           <span className="text-[9px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
-                         </CardTitle>
-                       </CardHeader>
-                       <CardContent className="pt-0 pb-1.5 px-2">
+                   <div className="space-y-1.5">
+                      {/* Évolution des prix */}
+                      <Card>
+                        <CardHeader className="pb-0 pt-1 px-1.5">
+                          <CardTitle className="text-[10px] flex items-center gap-1">
+                            <TrendingUp className="h-2 w-2" />
+                            Évolution des prix (vente et location)
+                            <span className="text-[8px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="pt-0 pb-1 px-1.5">
                         <div className="space-y-2">
                           {(() => {
                             const priceEvolution = [
@@ -784,9 +784,9 @@ const DRCInteractiveMap = () => {
                             };
                             
                             return (
-                               <div className="space-y-2">
-                                 <ResponsiveContainer width="100%" height={100}>
-                                  <LineChart data={priceEvolution} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                                <div className="space-y-1.5">
+                                  <ResponsiveContainer width="100%" height={80}>
+                                   <LineChart data={priceEvolution} margin={{ top: 3, right: 3, left: 3, bottom: 3 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis 
                                       dataKey="periode" 
@@ -850,16 +850,16 @@ const DRCInteractiveMap = () => {
                       </CardContent>
                     </Card>
 
-                    {/* Évolution des locataires */}
-                    <Card>
-                      <CardHeader className="pb-0.5 pt-1.5 px-2">
-                        <CardTitle className="text-[11px] flex items-center gap-1">
-                          <Users className="h-2.5 w-2.5" />
-                          Évolution des locataires
-                          <span className="text-[9px] font-normal text-muted-foreground ml-1">(population)</span>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-0 pb-1.5 px-2">
+                     {/* Évolution des locataires */}
+                     <Card>
+                       <CardHeader className="pb-0 pt-1 px-1.5">
+                         <CardTitle className="text-[10px] flex items-center gap-1">
+                           <Users className="h-2 w-2" />
+                           Évolution des locataires
+                           <span className="text-[8px] font-normal text-muted-foreground ml-1">(population)</span>
+                         </CardTitle>
+                       </CardHeader>
+                       <CardContent className="pt-0 pb-1 px-1.5">
                         <div className="space-y-2">
                           {(() => {
                             const tenantsEvolution = [
@@ -876,9 +876,9 @@ const DRCInteractiveMap = () => {
                             const croissance = ((tenantsEvolution[3].locataires - tenantsEvolution[0].locataires) / tenantsEvolution[0].locataires * 100);
                             
                              return (
-                               <div className="space-y-2">
-                                 <ResponsiveContainer width="100%" height={100}>
-                                  <AreaChart data={tenantsEvolution} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+                                <div className="space-y-1.5">
+                                  <ResponsiveContainer width="100%" height={80}>
+                                   <AreaChart data={tenantsEvolution} margin={{ top: 3, right: 3, left: 3, bottom: 3 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis 
                                       dataKey="periode" 
@@ -939,17 +939,17 @@ const DRCInteractiveMap = () => {
            </div>
 
             {/* Panneau Analytics - 2/6 largeur à droite */}
-            <div className="lg:col-span-2 space-y-1.5 order-2 lg:order-3 max-h-[72vh] overflow-y-auto">
+            <div className="lg:col-span-2 space-y-1 order-2 lg:order-3 max-h-[60vh] overflow-y-auto">
              {/* Analytics */}
-             <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
-               <h3 className="text-xs font-semibold mb-1.5 text-foreground flex items-center gap-1.5">
+             <div className="p-1 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
+               <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
                  <BarChart3 className="h-3 w-3" />
                  Analytics Immobilier
                </h3>
-               <p className="text-[10px] text-muted-foreground mb-2">
+               <p className="text-[9px] text-muted-foreground mb-1">
                  Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
                </p>
-               <div className="max-h-[350px] overflow-y-auto">
+               <div className="max-h-[280px] overflow-y-auto">
                 <ProvinceAnalytics 
                   provincesData={provincesData} 
                   selectedProvince={selectedProvince}
