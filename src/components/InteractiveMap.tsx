@@ -58,10 +58,10 @@ const InteractiveMap = () => {
 
   const fetchProperties = async () => {
     try {
+      // Use the public view that excludes sensitive contact information
       const { data, error } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('is_available', true);
+        .from('properties_public')
+        .select('*');
 
       if (error) throw error;
       setProperties(data || []);

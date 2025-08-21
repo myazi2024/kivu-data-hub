@@ -7,7 +7,7 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
+  // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
@@ -404,7 +404,78 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      properties_public: {
+        Row: {
+          address: string | null
+          area_sqm: number | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          country: string | null
+          created_at: string | null
+          currency: string | null
+          description: string | null
+          features: string[] | null
+          id: string | null
+          image_urls: string[] | null
+          is_available: boolean | null
+          latitude: number | null
+          longitude: number | null
+          parking_spaces: number | null
+          price: number | null
+          property_type: string | null
+          province: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          area_sqm?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          features?: string[] | null
+          id?: string | null
+          image_urls?: string[] | null
+          is_available?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          parking_spaces?: number | null
+          price?: number | null
+          property_type?: string | null
+          province?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          area_sqm?: number | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          country?: string | null
+          created_at?: string | null
+          currency?: string | null
+          description?: string | null
+          features?: string[] | null
+          id?: string | null
+          image_urls?: string[] | null
+          is_available?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          parking_spaces?: number | null
+          price?: number | null
+          property_type?: string | null
+          province?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_current_user_role: {
