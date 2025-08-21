@@ -88,7 +88,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2 h-full overflow-hidden flex flex-col">
       {/* Statistiques globales */}
       <div className="grid grid-cols-2 gap-2">
         <Card className="p-2">
@@ -132,7 +132,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={140}>
+          <ResponsiveContainer width="100%" height={100}>
             <BarChart data={topRentProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -172,7 +172,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={120}>
+          <ResponsiveContainer width="100%" height={80}>
             <BarChart data={pressureData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -213,7 +213,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={140}>
+          <ResponsiveContainer width="100%" height={100}>
             <AreaChart data={topPopulationProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 

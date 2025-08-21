@@ -615,7 +615,7 @@ const DRCInteractiveMap = () => {
           </div>
 
           {/* Panneau données province - 2/6 largeur au milieu */}
-          <div className="lg:col-span-2 space-y-1.5 order-1 lg:order-2 max-h-[72vh] overflow-y-auto">
+          <div className="lg:col-span-2 space-y-1 order-1 lg:order-2 max-h-[85vh] overflow-hidden flex flex-col">
             <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm">
               <h3 className="text-xs font-semibold mb-1.5 text-foreground flex items-center gap-1.5">
                 <MapPin className="h-3 w-3" />
@@ -766,8 +766,8 @@ const DRCInteractiveMap = () => {
                             
                             return (
                                 <div className="space-y-1.5">
-                                  <ResponsiveContainer width="100%" height={80}>
-                                   <LineChart data={priceEvolution} margin={{ top: 3, right: 3, left: 3, bottom: 3 }}>
+                                   <ResponsiveContainer width="100%" height={60}>
+                                    <LineChart data={priceEvolution} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis 
                                       dataKey="periode" 
@@ -858,8 +858,8 @@ const DRCInteractiveMap = () => {
                             
                              return (
                                 <div className="space-y-1.5">
-                                  <ResponsiveContainer width="100%" height={80}>
-                                   <AreaChart data={tenantsEvolution} margin={{ top: 3, right: 3, left: 3, bottom: 3 }}>
+                                   <ResponsiveContainer width="100%" height={60}>
+                                    <AreaChart data={tenantsEvolution} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis 
                                       dataKey="periode" 
@@ -919,8 +919,8 @@ const DRCInteractiveMap = () => {
              )}
            </div>
 
-            {/* Panneau Analytics - 2/6 largeur à droite */}
-            <div className="lg:col-span-2 space-y-1 order-2 lg:order-3 max-h-[60vh] overflow-y-auto">
+             {/* Panneau Analytics - 2/6 largeur à droite */}
+             <div className="lg:col-span-2 space-y-1 order-2 lg:order-3 max-h-[85vh] overflow-hidden flex flex-col">
              {/* Analytics */}
              <div className="p-1 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
                <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
@@ -930,12 +930,12 @@ const DRCInteractiveMap = () => {
                <p className="text-[9px] text-muted-foreground mb-1">
                  Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
                </p>
-               <div className="max-h-[280px] overflow-y-auto">
-                <ProvinceAnalytics 
-                  provincesData={provincesData} 
-                  selectedProvince={selectedProvince}
-                />
-              </div>
+                <div className="flex-1 overflow-hidden">
+                 <ProvinceAnalytics 
+                   provincesData={provincesData} 
+                   selectedProvince={selectedProvince}
+                 />
+               </div>
             </div>
           </div>
       </div>
