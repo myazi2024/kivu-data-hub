@@ -766,21 +766,23 @@ const DRCInteractiveMap = () => {
                             
                             return (
                                 <div className="space-y-1.5">
-                                   <ResponsiveContainer width="100%" height={60}>
-                                    <LineChart data={priceEvolution} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                    <XAxis 
-                                      dataKey="periode" 
-                                      tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
-                                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                                      angle={-45}
-                                      textAnchor="end"
-                                      height={60}
-                                    />
-                                    <YAxis 
-                                      tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
-                                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                                    />
+                                   <ResponsiveContainer width="100%" height={120}>
+                                     <LineChart data={priceEvolution} margin={{ top: 5, right: 15, left: 15, bottom: 40 }}>
+                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                     <XAxis 
+                                       dataKey="periode" 
+                                       tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                       axisLine={{ stroke: 'hsl(var(--border))' }}
+                                       angle={-35}
+                                       textAnchor="end"
+                                       height={35}
+                                       interval={0}
+                                     />
+                                     <YAxis 
+                                       tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                       axisLine={{ stroke: 'hsl(var(--border))' }}
+                                       width={40}
+                                     />
                                     <Tooltip 
                                       contentStyle={{ 
                                         backgroundColor: 'hsl(var(--background))', 
@@ -811,16 +813,16 @@ const DRCInteractiveMap = () => {
                                 </ResponsiveContainer>
                                 
                                  {/* Notes explicatives */}
-                                 <div className="bg-muted/30 p-1.5 rounded text-[9px] space-y-0.5">
+                                 <div className="bg-muted/30 p-2 rounded text-[10px] space-y-1 mt-2">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-3 h-0.5 bg-primary rounded"></div>
-                                    <span>Location : {selectedProvince.variationLoyer3Mois >= 0 ? '+' : ''}{selectedProvince.variationLoyer3Mois.toFixed(1)}% en 3 mois</span>
+                                    <div className="w-4 h-1 bg-primary rounded"></div>
+                                    <span className="font-medium">Location : {selectedProvince.variationLoyer3Mois >= 0 ? '+' : ''}{selectedProvince.variationLoyer3Mois.toFixed(1)}% en 3 mois</span>
                                   </div>
                                   <div className="flex items-center gap-2">
-                                    <div className="w-3 h-0.5 bg-secondary rounded"></div>
-                                    <span>Vente : Corrélation avec marché locatif</span>
+                                    <div className="w-4 h-1 bg-secondary rounded"></div>
+                                    <span className="font-medium">Vente : Corrélation avec marché locatif</span>
                                   </div>
-                                   <p className="text-muted-foreground text-[8px] mt-0.5">
+                                   <p className="text-muted-foreground text-[9px] mt-1 leading-relaxed">
                                      * Données basées sur les tendances observées et la variation des loyers sur 3 mois
                                    </p>
                                 </div>
@@ -858,21 +860,23 @@ const DRCInteractiveMap = () => {
                             
                              return (
                                 <div className="space-y-1.5">
-                                   <ResponsiveContainer width="100%" height={60}>
-                                    <AreaChart data={tenantsEvolution} margin={{ top: 2, right: 2, left: 2, bottom: 2 }}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                    <XAxis 
-                                      dataKey="periode" 
-                                      tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
-                                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                                      angle={-45}
-                                      textAnchor="end"
-                                      height={60}
-                                    />
-                                    <YAxis 
-                                      tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
-                                      axisLine={{ stroke: 'hsl(var(--border))' }}
-                                    />
+                                   <ResponsiveContainer width="100%" height={110}>
+                                     <AreaChart data={tenantsEvolution} margin={{ top: 5, right: 15, left: 15, bottom: 35 }}>
+                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                     <XAxis 
+                                       dataKey="periode" 
+                                       tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                       axisLine={{ stroke: 'hsl(var(--border))' }}
+                                       angle={-35}
+                                       textAnchor="end"
+                                       height={35}
+                                       interval={0}
+                                     />
+                                     <YAxis 
+                                       tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                       axisLine={{ stroke: 'hsl(var(--border))' }}
+                                       width={40}
+                                     />
                                     <Tooltip 
                                       contentStyle={{ 
                                         backgroundColor: 'hsl(var(--background))', 
@@ -895,16 +899,16 @@ const DRCInteractiveMap = () => {
                                 </ResponsiveContainer>
                                 
                                  {/* Notes explicatives */}
-                                 <div className="bg-muted/30 p-1.5 rounded text-[9px] space-y-0.5">
+                                 <div className="bg-muted/30 p-2 rounded text-[10px] space-y-1 mt-2">
                                   <div className="flex items-center gap-2">
-                                    <div className="w-3 h-0.5 bg-accent rounded"></div>
-                                    <span>Croissance : {croissance >= 0 ? '+' : ''}{croissance.toFixed(1)}% en 3 mois</span>
+                                    <div className="w-4 h-1 bg-accent rounded"></div>
+                                    <span className="font-medium">Croissance : {croissance >= 0 ? '+' : ''}{croissance.toFixed(1)}% en 3 mois</span>
                                   </div>
                                   <div className="flex items-center gap-2">
                                     <span className="text-muted-foreground">Total actuel :</span>
                                     <span className="font-medium">{formatPopulation(selectedProvince.populationLocativeEstimee)} habitants</span>
                                   </div>
-                                   <p className="text-muted-foreground text-[8px] mt-0.5">
+                                   <p className="text-muted-foreground text-[9px] mt-1 leading-relaxed">
                                      * Évolution estimée basée sur les dynamiques démographiques et économiques locales
                                    </p>
                                 </div>

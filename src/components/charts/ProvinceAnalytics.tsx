@@ -132,16 +132,17 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={100}>
-            <BarChart data={topRentProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={130}>
+            <BarChart data={topRentProvinces} margin={{ top: 10, right: 10, left: 10, bottom: 15 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
+                interval={0}
               />
               <YAxis 
-                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <Tooltip 
@@ -213,16 +214,17 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={100}>
-            <AreaChart data={topPopulationProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+          <ResponsiveContainer width="100%" height={130}>
+            <AreaChart data={topPopulationProvinces} margin={{ top: 10, right: 10, left: 10, bottom: 15 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
+                interval={0}
               />
               <YAxis 
-                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
               />
               <Tooltip 
