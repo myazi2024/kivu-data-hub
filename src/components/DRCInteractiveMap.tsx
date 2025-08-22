@@ -616,7 +616,7 @@ const DRCInteractiveMap = () => {
 
           {/* Panneau données province - 2/6 largeur au milieu */}
           <div className="lg:col-span-2 space-y-1 order-1 lg:order-2 max-h-[85vh] overflow-hidden flex flex-col">
-            <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm">
+            <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm h-80 overflow-y-auto">
               <h3 className="text-xs font-semibold mb-1.5 text-foreground flex items-center gap-1.5">
                 <MapPin className="h-3 w-3" />
                 Données de Province
