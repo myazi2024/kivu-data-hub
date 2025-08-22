@@ -88,36 +88,54 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
   };
 
   return (
-    <div className="space-y-2 h-full overflow-hidden flex flex-col">
-      {/* Statistiques globales */}
-      <div className="grid grid-cols-2 gap-2">
-        <Card className="p-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                Prix moyen national
-                <span className="block text-[9px] opacity-70">(moyenne pondérée)</span>
-              </p>
-              <p className="text-sm font-bold text-foreground">
-                {formatCurrency(provincesData.reduce((sum, p) => sum + p.prixMoyenLoyer, 0) / provincesData.length)}
+    <div className="space-y-2 h-full overflow-y-auto flex flex-col">
+      {/* Statistiques globales détaillées */}
+      <div className="grid grid-cols-1 gap-2">
+        <Card className="p-3">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <h3 className="text-xs font-semibold text-foreground">Prix Moyens Nationaux</h3>
+            </div>
+            
+            {/* Prix de location */}
+            <div className="bg-muted/30 p-2 rounded-md">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-medium text-foreground">Location (USD/m²/mois)</span>
+                <span className="text-sm font-bold text-primary">
+                  {formatCurrency(provincesData.reduce((sum, p) => sum + p.prixMoyenLoyer, 0) / provincesData.length)}
+                </span>
+              </div>
+              <p className="text-[8px] text-muted-foreground leading-tight">
+                Moyenne arithmétique des prix de location au m² par mois à travers toutes les provinces de la RDC
               </p>
             </div>
-            <DollarSign className="h-6 w-6 text-primary" />
-          </div>
-        </Card>
-        
-        <Card className="p-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[10px] text-muted-foreground leading-tight">
-                Population totale
-                <span className="block text-[9px] opacity-70">(locataires estimés)</span>
-              </p>
-              <p className="text-sm font-bold text-foreground">
-                {Math.round(provincesData.reduce((sum, p) => sum + p.populationLocativeEstimee, 0) / 1000000 * 10) / 10}M
+
+            {/* Prix de vente */}
+            <div className="bg-muted/30 p-2 rounded-md">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-medium text-foreground">Vente (USD/m²)</span>
+                <span className="text-sm font-bold text-secondary">
+                  {formatCurrency(provincesData.reduce((sum, p) => sum + p.prixMoyenVenteM2, 0) / provincesData.length)}
+                </span>
+              </div>
+              <p className="text-[8px] text-muted-foreground leading-tight">
+                Moyenne arithmétique des prix de vente au m² à travers toutes les provinces de la RDC
               </p>
             </div>
-            <Users className="h-6 w-6 text-primary" />
+
+            {/* Population totale */}
+            <div className="bg-muted/30 p-2 rounded-md">
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-medium text-foreground">Population Locative Totale</span>
+                <span className="text-sm font-bold text-accent">
+                  {Math.round(provincesData.reduce((sum, p) => sum + p.populationLocativeEstimee, 0) / 1000000 * 10) / 10}M
+                </span>
+              </div>
+              <p className="text-[8px] text-muted-foreground leading-tight">
+                Estimation du nombre total de locataires à travers toutes les provinces de la RDC
+              </p>
+            </div>
           </div>
         </Card>
       </div>
