@@ -711,7 +711,7 @@ const DRCInteractiveMap = () => {
 
               {/* Nouveau cadre pour les graphiques d'évolution */}
                 {selectedProvince && (
-                 <div className="p-1 bg-background border border-border rounded-lg shadow-sm">
+                 <div className="p-1 bg-background border border-border rounded-lg shadow-sm h-full overflow-y-auto">
                    <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
                      <TrendingUp className="h-2.5 w-2.5" />
                      Évolutions - {selectedProvince.name}
@@ -720,7 +720,7 @@ const DRCInteractiveMap = () => {
                      Tendances des prix et de la population locative sur 3 mois.
                    </p>
                   
-                   <div className="space-y-1.5">
+                   <div className="space-y-1.5 overflow-y-auto">
                       {/* Évolution des prix */}
                       <Card>
                         <CardHeader className="pb-0 pt-1 px-1.5">

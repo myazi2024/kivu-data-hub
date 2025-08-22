@@ -190,8 +190,8 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
             <span className="text-[9px] font-normal text-muted-foreground ml-1">(nombre de provinces)</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={80}>
+        <CardContent className="pt-0 overflow-y-auto">
+          <ResponsiveContainer width="100%" height={90}>
             <BarChart data={pressureData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
