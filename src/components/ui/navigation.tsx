@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Globe, User, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, Globe, User, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import bicLogo from '@/assets/bic-logo.png';
@@ -9,32 +9,14 @@ import bicLogo from '@/assets/bic-logo.png';
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [language, setLanguage] = useState('fr');
-  const [aboutDropdown, setAboutDropdown] = useState(false);
-  const [joinDropdown, setJoinDropdown] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
 
   const navigation = [
     { name: 'Accueil', href: '/' },
-    { 
-      name: 'À propos & Services', 
-      isDropdown: true,
-      items: [
-        { name: 'À propos', href: '/about' },
-        { name: 'Nos services', href: '/services' }
-      ]
-    },
     { name: 'Kiosque', href: '/publications' },
     { name: 'Plateforme Myazi', href: '/myazi' },
     { name: 'Cartographie', href: '/map' },
-    { name: 'Partenariat', href: '/partnership' },
-    { 
-      name: 'Rejoignez-nous & Contact', 
-      isDropdown: true,
-      items: [
-        { name: 'Rejoignez-nous', href: '/careers' },
-        { name: 'Contact', href: '/contact' }
-      ]
-    },
+    { name: 'Rejoignez-nous', href: '/careers' },
   ];
 
   return (
@@ -51,48 +33,15 @@ const Navigation = () => {
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-1">
-            {navigation.map((item, index) => (
-              item.isDropdown ? (
-                <div key={item.name} className="relative">
-                  <button
-                    className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md flex items-center space-x-1"
-                    onMouseEnter={() => index === 1 ? setAboutDropdown(true) : setJoinDropdown(true)}
-                    onMouseLeave={() => index === 1 ? setAboutDropdown(false) : setJoinDropdown(false)}
-                  >
-                    <span>{item.name}</span>
-                    <ChevronDown className="h-3 w-3" />
-                  </button>
-                  <div
-                    className={cn(
-                      "absolute top-full left-0 mt-1 w-48 bg-background/95 backdrop-blur-sm border border-border rounded-md shadow-hover transition-all duration-200 z-50",
-                      (index === 1 && aboutDropdown) || (index === 6 && joinDropdown) 
-                        ? "opacity-100 visible" 
-                        : "opacity-0 invisible"
-                    )}
-                    onMouseEnter={() => index === 1 ? setAboutDropdown(true) : setJoinDropdown(true)}
-                    onMouseLeave={() => index === 1 ? setAboutDropdown(false) : setJoinDropdown(false)}
-                  >
-                    {item.items?.map((subItem) => (
-                      <Link
-                        key={subItem.name}
-                        to={subItem.href}
-                        className="block px-4 py-2 text-sm text-foreground hover:text-white hover:bg-seloger-red/90 transition-colors duration-200 first:rounded-t-md last:rounded-b-md font-medium"
-                      >
-                        {subItem.name}
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="px-3 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md"
-                >
-                  {item.name}
-                </Link>
-              )
+          <div className="hidden lg:flex items-center space-x-2">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className="px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md whitespace-nowrap"
+              >
+                {item.name}
+              </Link>
             ))}
           </div>
 
@@ -170,34 +119,16 @@ const Navigation = () => {
           "lg:hidden transition-all duration-300 ease-in-out overflow-hidden bg-background/95 backdrop-blur-sm border-t border-border",
           isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         )}>
-          <div className="pb-4 space-y-1 px-2">
+        <div className="pb-4 space-y-1 px-2">
             {navigation.map((item) => (
-              item.isDropdown ? (
-                <div key={item.name} className="space-y-1">
-                  <div className="px-3 py-2 text-sm font-semibold text-foreground border-b border-border">
-                    {item.name}
-                  </div>
-                  {item.items?.map((subItem) => (
-                    <Link
-                      key={subItem.name}
-                      to={subItem.href}
-                      className="block px-6 py-2 text-sm font-medium text-muted-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {subItem.name}
-                    </Link>
-                  ))}
-                </div>
-              ) : (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  className="block px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {item.name}
-                </Link>
-              )
+              <Link
+                key={item.name}
+                to={item.href}
+                className="block px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                onClick={() => setIsOpen(false)}
+              >
+                {item.name}
+              </Link>
             ))}
             <div className="border-t border-border pt-2 mt-2 space-y-1">
               {!loading && (

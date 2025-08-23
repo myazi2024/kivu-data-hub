@@ -9,16 +9,12 @@ import { CookieProvider } from "@/hooks/useCookies";
 import CookieBanner from "@/components/CookieBanner";
 import { CartButton } from '@/components/cart/CartButton';
 import Index from "./pages/Index";
-import About from "./pages/About";
-import Services from "./pages/Services";
 import Publications from "./pages/Publications";
-import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import Map from "./pages/Map";
 import Admin from "./pages/Admin";
-import Partnership from "./pages/Partnership";
 import Myazi from "./pages/Myazi";
-import Careers from "./pages/Careers";
+import JoinUs from "./pages/JoinUs";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,16 +29,12 @@ const App = () => (
             <Sonner />
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/services" element={<Services />} />
               <Route path="/publications" element={<Publications />} />
-              <Route path="/contact" element={<Contact />} />
               <Route path="/map" element={<Map />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/partnership" element={<Partnership />} />
               <Route path="/myazi" element={<Myazi />} />
-              <Route path="/careers" element={<Careers />} />
+              <Route path="/careers" element={<JoinUs />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
