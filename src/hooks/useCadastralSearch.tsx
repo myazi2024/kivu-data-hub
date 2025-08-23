@@ -1,0 +1,153 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+export interface CadastralParcel {
+  id: string;
+  parcel_number: string;
+  parcel_type: 'SU' | 'SR';
+  location: string;
+  property_title_type: string;
+  area_sqm: number;
+  area_hectares: number;
+  gps_coordinates: Array<{ lat: number; lng: number; borne: string }>;
+  latitude: number;
+  longitude: number;
+  current_owner_name: string;
+  current_owner_legal_status: string;
+  current_owner_since: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OwnershipHistory {
+  id: string;
+  owner_name: string;
+  legal_status: string;
+  ownership_start_date: string;
+  ownership_end_date: string | null;
+  mutation_type: string | null;
+}
+
+export interface TaxHistory {
+  id: string;
+  tax_year: number;
+  amount_usd: number;
+  payment_status: 'pending' | 'paid' | 'overdue';
+  payment_date: string | null;
+}
+
+export interface CadastralSearchResult {
+  parcel: CadastralParcel;
+  ownership_history: OwnershipHistory[];
+  tax_history: TaxHistory[];
+}
+
+export const useCadastralSearch = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResult, setSearchResult] = useState<CadastralSearchResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Fonction pour valider le format du numéro de parcelle
+  const validateParcelNumber = (query: string): boolean => {
+    const pattern = /^(SU|SR)-[A-Z]+(-[0-9]+)?$/i;
+    return pattern.test(query.trim());
+  };
+
+  // Fonction de recherche
+  const searchParcel = async (parcelNumber: string) => {
+    if (!validateParcelNumber(parcelNumber)) {
+      setError('Format invalide. Utilisez le format SU-LOCATION-XXXX ou SR-LOCATION-XXXX (ex: SU-GOMA-0456)');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Recherche de la parcelle principale
+      const { data: parcelData, error: parcelError } = await supabase
+        .from('cadastral_parcels')
+        .select('*')
+        .ilike('parcel_number', parcelNumber.trim())
+        .single();
+
+      if (parcelError) {
+        if (parcelError.code === 'PGRST116') {
+          setError('Aucune parcelle trouvée avec ce numéro');
+        } else {
+          throw parcelError;
+        }
+        return;
+      }
+
+      // Recherche de l'historique des propriétaires
+      const { data: ownershipData, error: ownershipError } = await supabase
+        .from('cadastral_ownership_history')
+        .select('*')
+        .eq('parcel_id', parcelData.id)
+        .order('ownership_start_date', { ascending: false });
+
+      if (ownershipError) throw ownershipError;
+
+      // Recherche de l'historique des taxes
+      const { data: taxData, error: taxError } = await supabase
+        .from('cadastral_tax_history')
+        .select('*')
+        .eq('parcel_id', parcelData.id)
+        .order('tax_year', { ascending: false });
+
+      if (taxError) throw taxError;
+
+      setSearchResult({
+        parcel: parcelData as CadastralParcel,
+        ownership_history: ownershipData as OwnershipHistory[],
+        tax_history: taxData as TaxHistory[]
+      });
+
+    } catch (err) {
+      console.error('Erreur lors de la recherche cadastrale:', err);
+      setError('Erreur lors de la recherche. Veuillez réessayer.');
+      toast({
+        title: "Erreur",
+        description: "Impossible d'effectuer la recherche cadastrale",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Effet pour rechercher automatiquement après une pause de frappe
+  useEffect(() => {
+    if (searchQuery.length >= 3) {
+      const timeoutId = setTimeout(() => {
+        searchParcel(searchQuery);
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      setSearchResult(null);
+      setError(null);
+    }
+  }, [searchQuery]);
+
+  const clearSearch = () => {
+    setSearchQuery('');
+    setSearchResult(null);
+    setError(null);
+  };
+
+  return {
+    searchQuery,
+    setSearchQuery,
+    searchResult,
+    loading,
+    error,
+    searchParcel,
+    clearSearch,
+    validateParcelNumber
+  };
+};

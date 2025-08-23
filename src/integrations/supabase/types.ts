@@ -14,6 +14,139 @@ export type Database = {
   }
   public: {
     Tables: {
+      cadastral_ownership_history: {
+        Row: {
+          created_at: string
+          id: string
+          legal_status: string | null
+          mutation_type: string | null
+          owner_name: string
+          ownership_end_date: string | null
+          ownership_start_date: string
+          parcel_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          legal_status?: string | null
+          mutation_type?: string | null
+          owner_name: string
+          ownership_end_date?: string | null
+          ownership_start_date: string
+          parcel_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          legal_status?: string | null
+          mutation_type?: string | null
+          owner_name?: string
+          ownership_end_date?: string | null
+          ownership_start_date?: string
+          parcel_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_ownership_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cadastral_parcels: {
+        Row: {
+          area_hectares: number | null
+          area_sqm: number
+          created_at: string
+          current_owner_legal_status: string | null
+          current_owner_name: string
+          current_owner_since: string
+          gps_coordinates: Json | null
+          id: string
+          latitude: number | null
+          location: string
+          longitude: number | null
+          parcel_number: string
+          parcel_type: string
+          property_title_type: string
+          updated_at: string
+        }
+        Insert: {
+          area_hectares?: number | null
+          area_sqm?: number
+          created_at?: string
+          current_owner_legal_status?: string | null
+          current_owner_name: string
+          current_owner_since?: string
+          gps_coordinates?: Json | null
+          id?: string
+          latitude?: number | null
+          location: string
+          longitude?: number | null
+          parcel_number: string
+          parcel_type: string
+          property_title_type?: string
+          updated_at?: string
+        }
+        Update: {
+          area_hectares?: number | null
+          area_sqm?: number
+          created_at?: string
+          current_owner_legal_status?: string | null
+          current_owner_name?: string
+          current_owner_since?: string
+          gps_coordinates?: Json | null
+          id?: string
+          latitude?: number | null
+          location?: string
+          longitude?: number | null
+          parcel_number?: string
+          parcel_type?: string
+          property_title_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cadastral_tax_history: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          id: string
+          parcel_id: string
+          payment_date: string | null
+          payment_status: string
+          tax_year: number
+        }
+        Insert: {
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          parcel_id: string
+          payment_date?: string | null
+          payment_status?: string
+          tax_year: number
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          id?: string
+          parcel_id?: string
+          payment_date?: string | null
+          payment_status?: string
+          tax_year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_tax_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number

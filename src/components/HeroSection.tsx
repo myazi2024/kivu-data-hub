@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, MapPin, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
+import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
 
 const HeroSection = () => {
   return (
@@ -65,6 +66,11 @@ const HeroSection = () => {
               Cartographie Interactive
             </Button>
           </Link>
+        </div>
+
+        {/* Barre de recherche cadastrale */}
+        <div className="w-full max-w-5xl mx-auto mb-16">
+          <CadastralSearchBar />
         </div>
 
         {/* Stats Cards */}
