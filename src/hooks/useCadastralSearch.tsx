@@ -37,10 +37,29 @@ export interface TaxHistory {
   payment_date: string | null;
 }
 
+export interface MortgagePayment {
+  id: string;
+  payment_amount_usd: number;
+  payment_date: string;
+  payment_type: 'partial' | 'total';
+}
+
+export interface MortgageHistory {
+  id: string;
+  mortgage_amount_usd: number;
+  duration_months: number;
+  creditor_name: string;
+  creditor_type: string;
+  contract_date: string;
+  mortgage_status: 'active' | 'paid_off' | 'defaulted';
+  payments: MortgagePayment[];
+}
+
 export interface CadastralSearchResult {
   parcel: CadastralParcel;
   ownership_history: OwnershipHistory[];
   tax_history: TaxHistory[];
+  mortgage_history: MortgageHistory[];
 }
 
 export const useCadastralSearch = () => {
@@ -101,10 +120,34 @@ export const useCadastralSearch = () => {
 
       if (taxError) throw taxError;
 
+      // Recherche de l'historique des hypothèques avec paiements
+      const { data: mortgageData, error: mortgageError } = await supabase
+        .from('cadastral_mortgages')
+        .select(`
+          *,
+          cadastral_mortgage_payments (
+            id,
+            payment_amount_usd,
+            payment_date,
+            payment_type
+          )
+        `)
+        .eq('parcel_id', parcelData.id)
+        .order('contract_date', { ascending: false });
+
+      if (mortgageError) throw mortgageError;
+
+      // Transformation des données d'hypothèques pour correspondre à l'interface
+      const formattedMortgageData = mortgageData?.map(mortgage => ({
+        ...mortgage,
+        payments: mortgage.cadastral_mortgage_payments || []
+      })) || [];
+
       setSearchResult({
         parcel: parcelData as CadastralParcel,
         ownership_history: ownershipData as OwnershipHistory[],
-        tax_history: taxData as TaxHistory[]
+        tax_history: taxData as TaxHistory[],
+        mortgage_history: formattedMortgageData as MortgageHistory[]
       });
 
     } catch (err) {

@@ -11,7 +11,10 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  CreditCard,
+  Landmark,
+  Receipt
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,7 +31,8 @@ interface CadastralResultCardProps {
 
 const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose }) => {
   const [activeTab, setActiveTab] = useState('general');
-  const { parcel, ownership_history, tax_history } = result;
+  const [obligationsTab, setObligationsTab] = useState('taxes');
+  const { parcel, ownership_history, tax_history, mortgage_history } = result;
 
   // Fonction pour formater les dates
   const formatDate = (dateString: string | null) => {
@@ -122,7 +126,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             <TabsTrigger value="general">Informations</TabsTrigger>
             <TabsTrigger value="location">Localisation</TabsTrigger>
             <TabsTrigger value="history">Historique</TabsTrigger>
-            <TabsTrigger value="taxes">Taxes</TabsTrigger>
+            <TabsTrigger value="obligations">Obligations</TabsTrigger>
           </TabsList>
 
           {/* Onglet Informations générales */}
@@ -270,49 +274,174 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             </Card>
           </TabsContent>
 
-          {/* Onglet Taxes */}
-          <TabsContent value="taxes" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Historique des Taxes Foncières
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {tax_history.length > 0 ? (
-                  <div className="space-y-3">
-                    {tax_history.map((tax) => (
-                      <div key={tax.id} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex items-center gap-3">
-                          {getPaymentStatusIcon(tax.payment_status)}
-                          <div>
-                            <div className="font-medium">Année {tax.tax_year}</div>
-                            <div className="text-sm text-muted-foreground">
-                              Montant: ${tax.amount_usd.toLocaleString()} USD
+          {/* Onglet Obligations */}
+          <TabsContent value="obligations" className="mt-4">
+            <div className="space-y-4">
+              {/* Navigation des sous-sections */}
+              <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+                <button
+                  className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                    obligationsTab === 'taxes' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                  }`}
+                  onClick={() => setObligationsTab('taxes')}
+                >
+                  <Receipt className="h-4 w-4 inline mr-2" />
+                  Taxes foncières
+                </button>
+                <button
+                  className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                    obligationsTab === 'mortgages' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                  }`}
+                  onClick={() => setObligationsTab('mortgages')}
+                >
+                  <CreditCard className="h-4 w-4 inline mr-2" />
+                  Hypothèques
+                </button>
+              </div>
+
+              {/* Section Taxes foncières */}
+              {obligationsTab === 'taxes' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Receipt className="h-4 w-4" />
+                      Historique des Taxes Foncières
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {tax_history.length > 0 ? (
+                      <div className="space-y-3">
+                        {tax_history.map((tax) => (
+                          <div key={tax.id} className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                              {getPaymentStatusIcon(tax.payment_status)}
+                              <div>
+                                <div className="font-medium">Taxe foncière annuelle - {tax.tax_year}</div>
+                                <div className="text-sm text-muted-foreground">
+                                  Montant dû: ${tax.amount_usd.toLocaleString()} USD
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Période: Année fiscale {tax.tax_year}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <Badge variant={getPaymentStatusBadge(tax.payment_status)}>
+                                {translatePaymentStatus(tax.payment_status)}
+                              </Badge>
+                              {tax.payment_date && (
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  Payé le {formatDate(tax.payment_date)}
+                                </div>
+                              )}
                             </div>
                           </div>
-                        </div>
-                        <div className="text-right">
-                          <Badge variant={getPaymentStatusBadge(tax.payment_status)}>
-                            {translatePaymentStatus(tax.payment_status)}
-                          </Badge>
-                          {tax.payment_date && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              Payé le {formatDate(tax.payment_date)}
-                            </div>
-                          )}
-                        </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-4">
-                    Aucun historique de taxes disponible
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-4">
+                        Aucun historique de taxes disponible
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Section Hypothèques */}
+              {obligationsTab === 'mortgages' && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Historique des Hypothèques
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {mortgage_history.length > 0 ? (
+                      <div className="space-y-4">
+                        {mortgage_history.map((mortgage) => {
+                          const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
+                          const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
+                          
+                          return (
+                            <div key={mortgage.id} className="border rounded-lg p-4">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <Landmark className="h-5 w-5 text-blue-500" />
+                                  <div>
+                                    <div className="font-medium text-lg">
+                                      ${mortgage.mortgage_amount_usd.toLocaleString()} USD
+                                    </div>
+                                    <div className="text-sm text-muted-foreground">
+                                      {mortgage.creditor_name} • {mortgage.creditor_type}
+                                    </div>
+                                  </div>
+                                </div>
+                                <Badge variant={
+                                  mortgage.mortgage_status === 'paid_off' ? 'default' :
+                                  mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
+                                }>
+                                  {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
+                                   mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
+                                </Badge>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                  <span className="text-xs text-muted-foreground">Durée</span>
+                                  <div className="font-medium">{mortgage.duration_months} mois</div>
+                                </div>
+                                <div>
+                                  <span className="text-xs text-muted-foreground">Montant payé</span>
+                                  <div className="font-medium text-green-600">
+                                    ${totalPaid.toLocaleString()} USD
+                                  </div>
+                                </div>
+                                <div>
+                                  <span className="text-xs text-muted-foreground">Montant restant</span>
+                                  <div className="font-medium text-red-600">
+                                    ${remainingAmount.toLocaleString()} USD
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-xs text-muted-foreground mb-3">
+                                Contrat signé le {formatDate(mortgage.contract_date)}
+                              </div>
+
+                              {mortgage.payments.length > 0 && (
+                                <div>
+                                  <h5 className="font-medium text-sm mb-2">Historique des paiements</h5>
+                                  <div className="space-y-2 max-h-32 overflow-y-auto">
+                                    {mortgage.payments.map((payment) => (
+                                      <div key={payment.id} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded">
+                                        <span>${payment.payment_amount_usd.toLocaleString()} USD</span>
+                                        <div className="flex items-center gap-2">
+                                          <Badge variant="outline">
+                                            {payment.payment_type === 'total' ? 'Paiement total' : 'Paiement partiel'}
+                                          </Badge>
+                                          <span className="text-muted-foreground">
+                                            {formatDate(payment.payment_date)}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-4">
+                        Aucun historique d'hypothèques disponible
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
