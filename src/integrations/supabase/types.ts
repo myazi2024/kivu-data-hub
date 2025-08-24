@@ -14,6 +14,88 @@ export type Database = {
   }
   public: {
     Tables: {
+      cadastral_mortgage_payments: {
+        Row: {
+          created_at: string
+          id: string
+          mortgage_id: string
+          payment_amount_usd: number
+          payment_date: string
+          payment_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mortgage_id: string
+          payment_amount_usd?: number
+          payment_date?: string
+          payment_type?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mortgage_id?: string
+          payment_amount_usd?: number
+          payment_date?: string
+          payment_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_cadastral_mortgage_payments_mortgage"
+            columns: ["mortgage_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_mortgages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cadastral_mortgages: {
+        Row: {
+          contract_date: string
+          created_at: string
+          creditor_name: string
+          creditor_type: string
+          duration_months: number
+          id: string
+          mortgage_amount_usd: number
+          mortgage_status: string
+          parcel_id: string
+          updated_at: string
+        }
+        Insert: {
+          contract_date?: string
+          created_at?: string
+          creditor_name: string
+          creditor_type?: string
+          duration_months?: number
+          id?: string
+          mortgage_amount_usd?: number
+          mortgage_status?: string
+          parcel_id: string
+          updated_at?: string
+        }
+        Update: {
+          contract_date?: string
+          created_at?: string
+          creditor_name?: string
+          creditor_type?: string
+          duration_months?: number
+          id?: string
+          mortgage_amount_usd?: number
+          mortgage_status?: string
+          parcel_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_cadastral_mortgages_parcel"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_ownership_history: {
         Row: {
           created_at: string
