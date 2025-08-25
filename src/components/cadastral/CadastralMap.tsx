@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { MapPin, Navigation } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MapPin, Navigation, Calculator } from 'lucide-react';
 
 interface CadastralMapProps {
   coordinates: Array<{ lat: number; lng: number; borne: string }>;
@@ -105,10 +106,22 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
       {/* Coordonnées des bornes */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <Navigation className="h-4 w-4" />
-            Coordonnées GPS des Bornes
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Navigation className="h-4 w-4" />
+              Coordonnées GPS des Bornes
+            </CardTitle>
+            <div className="flex items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Nombre de bornes :</span>
+                <span className="font-medium">{coordinates.length}</span>
+              </div>
+              <Button variant="outline" size="sm" className="h-7">
+                <Calculator className="h-3 w-3 mr-1" />
+                Calculer surface
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

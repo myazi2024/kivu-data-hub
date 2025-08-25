@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      cadastral_boundary_history: {
+        Row: {
+          boundary_purpose: string
+          created_at: string
+          id: string
+          parcel_id: string
+          pv_reference_number: string
+          survey_date: string
+          surveyor_name: string
+          updated_at: string
+        }
+        Insert: {
+          boundary_purpose: string
+          created_at?: string
+          id?: string
+          parcel_id: string
+          pv_reference_number: string
+          survey_date?: string
+          surveyor_name: string
+          updated_at?: string
+        }
+        Update: {
+          boundary_purpose?: string
+          created_at?: string
+          id?: string
+          parcel_id?: string
+          pv_reference_number?: string
+          survey_date?: string
+          surveyor_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_boundary_history_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_mortgage_payments: {
         Row: {
           created_at: string
@@ -141,53 +182,86 @@ export type Database = {
         Row: {
           area_hectares: number | null
           area_sqm: number
+          avenue: string | null
+          collectivite: string | null
+          commune: string | null
           created_at: string
           current_owner_legal_status: string | null
           current_owner_name: string
           current_owner_since: string
           gps_coordinates: Json | null
+          groupement: string | null
           id: string
           latitude: number | null
           location: string
           longitude: number | null
+          nombre_bornes: number | null
           parcel_number: string
           parcel_type: string
           property_title_type: string
+          province: string | null
+          quartier: string | null
+          surface_calculee_bornes: number | null
+          territoire: string | null
           updated_at: string
+          village: string | null
+          ville: string | null
         }
         Insert: {
           area_hectares?: number | null
           area_sqm?: number
+          avenue?: string | null
+          collectivite?: string | null
+          commune?: string | null
           created_at?: string
           current_owner_legal_status?: string | null
           current_owner_name: string
           current_owner_since?: string
           gps_coordinates?: Json | null
+          groupement?: string | null
           id?: string
           latitude?: number | null
           location: string
           longitude?: number | null
+          nombre_bornes?: number | null
           parcel_number: string
           parcel_type: string
           property_title_type?: string
+          province?: string | null
+          quartier?: string | null
+          surface_calculee_bornes?: number | null
+          territoire?: string | null
           updated_at?: string
+          village?: string | null
+          ville?: string | null
         }
         Update: {
           area_hectares?: number | null
           area_sqm?: number
+          avenue?: string | null
+          collectivite?: string | null
+          commune?: string | null
           created_at?: string
           current_owner_legal_status?: string | null
           current_owner_name?: string
           current_owner_since?: string
           gps_coordinates?: Json | null
+          groupement?: string | null
           id?: string
           latitude?: number | null
           location?: string
           longitude?: number | null
+          nombre_bornes?: number | null
           parcel_number?: string
           parcel_type?: string
           property_title_type?: string
+          province?: string | null
+          quartier?: string | null
+          surface_calculee_bornes?: number | null
+          territoire?: string | null
           updated_at?: string
+          village?: string | null
+          ville?: string | null
         }
         Relationships: []
       }

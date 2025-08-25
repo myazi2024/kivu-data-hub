@@ -18,6 +18,19 @@ export interface CadastralParcel {
   current_owner_since: string;
   created_at: string;
   updated_at: string;
+  // Nouveaux champs de localisation
+  province: string;
+  ville: string | null;
+  commune: string | null;
+  quartier: string | null;
+  avenue: string | null;
+  territoire: string | null;
+  collectivite: string | null;
+  groupement: string | null;
+  village: string | null;
+  // Nouveaux champs de bornage
+  nombre_bornes: number;
+  surface_calculee_bornes: number | null;
 }
 
 export interface OwnershipHistory {
@@ -55,11 +68,20 @@ export interface MortgageHistory {
   payments: MortgagePayment[];
 }
 
+export interface BoundaryHistory {
+  id: string;
+  pv_reference_number: string;
+  boundary_purpose: 'Réajustement ou rectification' | 'Morcellement ou fusion' | 'Mise en valeur ou mutation';
+  surveyor_name: string;
+  survey_date: string;
+}
+
 export interface CadastralSearchResult {
   parcel: CadastralParcel;
   ownership_history: OwnershipHistory[];
   tax_history: TaxHistory[];
   mortgage_history: MortgageHistory[];
+  boundary_history: BoundaryHistory[];
 }
 
 export const useCadastralSearch = () => {
@@ -137,6 +159,15 @@ export const useCadastralSearch = () => {
 
       if (mortgageError) throw mortgageError;
 
+      // Recherche de l'historique de bornage
+      const { data: boundaryData, error: boundaryError } = await supabase
+        .from('cadastral_boundary_history')
+        .select('*')
+        .eq('parcel_id', parcelData.id)
+        .order('survey_date', { ascending: false });
+
+      if (boundaryError) throw boundaryError;
+
       // Transformation des données d'hypothèques pour correspondre à l'interface
       const formattedMortgageData = mortgageData?.map(mortgage => ({
         ...mortgage,
@@ -147,7 +178,8 @@ export const useCadastralSearch = () => {
         parcel: parcelData as CadastralParcel,
         ownership_history: ownershipData as OwnershipHistory[],
         tax_history: taxData as TaxHistory[],
-        mortgage_history: formattedMortgageData as MortgageHistory[]
+        mortgage_history: formattedMortgageData as MortgageHistory[],
+        boundary_history: boundaryData as BoundaryHistory[]
       });
 
     } catch (err) {

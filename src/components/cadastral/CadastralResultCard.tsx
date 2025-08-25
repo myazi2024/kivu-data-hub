@@ -14,7 +14,9 @@ import {
   XCircle,
   CreditCard,
   Landmark,
-  Receipt
+  Receipt,
+  Calculator,
+  MapPin as Surveyor
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,7 +34,7 @@ interface CadastralResultCardProps {
 const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [obligationsTab, setObligationsTab] = useState('taxes');
-  const { parcel, ownership_history, tax_history, mortgage_history } = result;
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = result;
 
   // Fonction pour formater les dates
   const formatDate = (dateString: string | null) => {
@@ -94,6 +96,23 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     if (overdueTaxes.length > 0) return { status: 'overdue', count: overdueTaxes.length };
     if (pendingTaxes.length > 0) return { status: 'pending', count: pendingTaxes.length };
     return { status: 'up_to_date', count: 0 };
+  };
+
+  // Calculer la surface à partir des bornes (formule de Shoelace)
+  const calculateSurfaceFromBounds = () => {
+    if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) return null;
+    
+    let area = 0;
+    const coords = parcel.gps_coordinates;
+    const n = coords.length;
+    
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      area += coords[i].lat * coords[j].lng;
+      area -= coords[j].lat * coords[i].lng;
+    }
+    
+    return Math.abs(area) / 2 * 111319.5 * 111319.5; // Conversion approximative en m²
   };
 
   const taxStatus = getOverallTaxStatus();
@@ -211,12 +230,143 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           </TabsContent>
 
           {/* Onglet Localisation */}
-          <TabsContent value="location" className="mt-4">
+          <TabsContent value="location" className="mt-4 space-y-4">
+            {/* Informations de localisation détaillées */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  Localisation Géographique
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Province :</span>
+                      <span className="font-medium">{parcel.province}</span>
+                    </div>
+                    
+                    {parcel.parcel_type === 'SU' ? (
+                      <>
+                        {parcel.ville && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Ville :</span>
+                            <span className="font-medium">{parcel.ville}</span>
+                          </div>
+                        )}
+                        {parcel.commune && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Commune :</span>
+                            <span className="font-medium">{parcel.commune}</span>
+                          </div>
+                        )}
+                        {parcel.quartier && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Quartier :</span>
+                            <span className="font-medium">{parcel.quartier}</span>
+                          </div>
+                        )}
+                        {parcel.avenue && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Avenue :</span>
+                            <span className="font-medium">{parcel.avenue}</span>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        {parcel.territoire && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Territoire/District :</span>
+                            <span className="font-medium">{parcel.territoire}</span>
+                          </div>
+                        )}
+                        {parcel.collectivite && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Collectivité :</span>
+                            <span className="font-medium">{parcel.collectivite}</span>
+                          </div>
+                        )}
+                        {parcel.groupement && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Groupement :</span>
+                            <span className="font-medium">{parcel.groupement}</span>
+                          </div>
+                        )}
+                        {parcel.village && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Village :</span>
+                            <span className="font-medium">{parcel.village}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Type de parcelle :</span>
+                      <span className="font-medium">
+                        {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Localisation :</span>
+                      <span className="font-medium">{parcel.location}</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Carte cadastrale */}
             <CadastralMap 
               coordinates={parcel.gps_coordinates}
               center={{ lat: parcel.latitude, lng: parcel.longitude }}
               parcelNumber={parcel.parcel_number}
             />
+
+            {/* Informations sur le bornage */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Surveyor className="h-4 w-4" />
+                  Information sur le Bornage
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {boundary_history.length > 0 ? (
+                  <div className="space-y-4">
+                    {boundary_history.map((boundary) => (
+                      <div key={boundary.id} className="p-4 border rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <span className="text-xs text-muted-foreground">N° de référence PV</span>
+                            <div className="font-medium">{boundary.pv_reference_number}</div>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground">Objet du bornage</span>
+                            <div className="font-medium">{boundary.boundary_purpose}</div>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground">Géomètre</span>
+                            <div className="font-medium">{boundary.surveyor_name}</div>
+                          </div>
+                        </div>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          Date de mesurage : {formatDate(boundary.survey_date)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center text-muted-foreground py-4">
+                    Aucun historique de bornage disponible
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Onglet Historique */}
@@ -444,6 +594,20 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* Disclaimer */}
+        <div className="mt-8 p-4 bg-muted/50 rounded-lg border border-muted">
+          <div className="text-xs text-muted-foreground leading-relaxed">
+            <p className="mb-2">
+              <strong>Avis de non-responsabilité :</strong> Le Bureau de l'Immobilier du Congo (BIC) n'assume aucune responsabilité quant à l'exactitude des données affichées, 
+              car elles proviennent des archives du Ministère des Affaires Foncières. BIC agit de bonne foi dans son travail de compilation et de présentation de ces informations.
+            </p>
+            <p>
+              Si vous n'êtes pas satisfait des informations affichées, veuillez contacter le bureau des Affaires Foncières le plus proche de vous 
+              pour solliciter une mise à jour des informations concernant le numéro {parcel.parcel_number}.
+            </p>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );
