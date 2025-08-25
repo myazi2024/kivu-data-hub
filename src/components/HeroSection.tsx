@@ -26,23 +26,14 @@ const HeroSection = () => {
         <div className="mb-8">
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
             Les données au service
-            <span className="block text-white/90">de la ville</span>
+            <span className="block text-white/90">du foncier</span>
           </h1>
           
           <p className="text-xl md:text-2xl lg:text-3xl font-light mb-8 text-white/95 max-w-4xl mx-auto leading-relaxed">
-            Cartographier, comprendre, transformer : le Bureau de l'Immobilier du Congo 
-            met les territoires au cœur de l'action publique.
+            De l'analyse à la production, le Bureau de l'Immobilier du Congo met les données foncières au service des décisions publiques et privées.
           </p>
         </div>
 
-        {/* Description */}
-        <div className="mb-12">
-          <p className="text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Cabinet indépendant basé à Goma, engagé dans la production et la diffusion 
-            de données immobilières et territoriales fiables, géolocalisées et stratégiques 
-            pour la République Démocratique du Congo.
-          </p>
-        </div>
 
         {/* Call to Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
