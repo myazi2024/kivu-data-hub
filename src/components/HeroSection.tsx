@@ -23,13 +23,13 @@ const HeroSection = () => {
       {/* Content */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
         {/* Main Heading */}
-        <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+        <div className="mb-4">
+          <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-3 leading-tight">
             Les données au service
             <span className="block text-white/90">du foncier</span>
           </h1>
           
-          <p className="text-lg md:text-xl lg:text-2xl font-light mb-6 text-white/95 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-base md:text-lg lg:text-xl font-light mb-4 text-white/95 max-w-2xl mx-auto leading-relaxed">
             De l'analyse à la production, le Bureau de l'Immobilier du Congo met les données foncières au service des décisions publiques et privées.
           </p>
         </div>
