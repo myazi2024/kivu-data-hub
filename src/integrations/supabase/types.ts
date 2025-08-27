@@ -55,6 +55,71 @@ export type Database = {
           },
         ]
       }
+      cadastral_invoices: {
+        Row: {
+          client_email: string
+          client_name: string | null
+          client_organization: string | null
+          created_at: string
+          geographical_zone: string | null
+          id: string
+          invoice_number: string
+          parcel_number: string
+          payment_id: string | null
+          payment_method: string | null
+          search_date: string
+          selected_services: Json
+          status: string
+          total_amount_usd: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          client_email: string
+          client_name?: string | null
+          client_organization?: string | null
+          created_at?: string
+          geographical_zone?: string | null
+          id?: string
+          invoice_number: string
+          parcel_number: string
+          payment_id?: string | null
+          payment_method?: string | null
+          search_date?: string
+          selected_services: Json
+          status?: string
+          total_amount_usd?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          client_email?: string
+          client_name?: string | null
+          client_organization?: string | null
+          created_at?: string
+          geographical_zone?: string | null
+          id?: string
+          invoice_number?: string
+          parcel_number?: string
+          payment_id?: string | null
+          payment_method?: string | null
+          search_date?: string
+          selected_services?: Json
+          status?: string
+          total_amount_usd?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_invoices_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_mortgage_payments: {
         Row: {
           created_at: string
@@ -264,6 +329,44 @@ export type Database = {
           ville?: string | null
         }
         Relationships: []
+      }
+      cadastral_service_access: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          invoice_id: string
+          parcel_number: string
+          service_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          invoice_id: string
+          parcel_number: string
+          service_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          invoice_id?: string
+          parcel_number?: string
+          service_type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_service_access_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cadastral_tax_history: {
         Row: {
@@ -767,6 +870,10 @@ export type Database = {
       }
     }
     Functions: {
+      generate_invoice_number: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
