@@ -24,7 +24,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
+import { useCadastralBilling } from '@/hooks/useCadastralBilling';
+import { useAuth } from '@/hooks/useAuth';
 import CadastralMap from './CadastralMap';
+import CadastralBillingPanel from './CadastralBillingPanel';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -34,7 +37,23 @@ interface CadastralResultCardProps {
 const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [obligationsTab, setObligationsTab] = useState('taxes');
+  const [showBillingPanel, setShowBillingPanel] = useState(true);
+  const [hasAccess, setHasAccess] = useState(false);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = result;
+  const { checkServiceAccess } = useCadastralBilling();
+  const { user } = useAuth();
+
+  // Check user access to different services
+  React.useEffect(() => {
+    if (user && !showBillingPanel) {
+      checkServiceAccess(parcel.parcel_number, 'information').then(setHasAccess);
+    }
+  }, [user, parcel.parcel_number, showBillingPanel]);
+
+  const handlePaymentSuccess = () => {
+    setShowBillingPanel(false);
+    setHasAccess(true);
+  };
 
   // Fonction pour formater les dates
   const formatDate = (dateString: string | null) => {
@@ -116,6 +135,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   };
 
   const taxStatus = getOverallTaxStatus();
+
+  // Show billing panel if user doesn't have access
+  if (showBillingPanel && user) {
+    return <CadastralBillingPanel searchResult={result} onPaymentSuccess={handlePaymentSuccess} />;
+  }
 
   return (
     <Card className="w-full shadow-lg">

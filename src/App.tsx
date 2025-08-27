@@ -15,6 +15,7 @@ import Map from "./pages/Map";
 import Admin from "./pages/Admin";
 import Myazi from "./pages/Myazi";
 import JoinUs from "./pages/JoinUs";
+import BillingDashboard from "./pages/BillingDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -35,6 +36,7 @@ const App = () => (
               <Route path="/auth" element={<Auth />} />
               <Route path="/myazi" element={<Myazi />} />
               <Route path="/careers" element={<JoinUs />} />
+              <Route path="/billing" element={<BillingDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
