@@ -38,21 +38,43 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [activeTab, setActiveTab] = useState('general');
   const [obligationsTab, setObligationsTab] = useState('taxes');
   const [showBillingPanel, setShowBillingPanel] = useState(true);
-  const [hasAccess, setHasAccess] = useState(false);
+  const [paidServices, setPaidServices] = useState<string[]>([]);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
 
-  // Check user access to different services
+  // Check user access to different services on mount
   React.useEffect(() => {
-    if (user && !showBillingPanel) {
-      checkServiceAccess(parcel.parcel_number, 'information').then(setHasAccess);
-    }
-  }, [user, parcel.parcel_number, showBillingPanel]);
+    const checkAllServices = async () => {
+      if (!user) return;
+      
+      const services = ['information', 'location_history', 'history', 'obligations'];
+      const accessPromises = services.map(service => 
+        checkServiceAccess(parcel.parcel_number, service)
+      );
+      
+      const accessResults = await Promise.all(accessPromises);
+      const paidServicesList = services.filter((_, index) => accessResults[index]);
+      
+      if (paidServicesList.length > 0) {
+        setPaidServices(paidServicesList);
+        setShowBillingPanel(false);
+      }
+    };
+
+    checkAllServices();
+  }, [user, parcel.parcel_number, checkServiceAccess]);
 
   const handlePaymentSuccess = () => {
+    // This will be updated by the billing panel based on selected services
     setShowBillingPanel(false);
-    setHasAccess(true);
+    // Reload the page or refresh access to update paid services
+    window.location.reload();
+  };
+
+  // Check if user has access to a specific service
+  const hasServiceAccess = (serviceType: string) => {
+    return paidServices.includes(serviceType);
   };
 
   // Fonction pour formater les dates
@@ -136,8 +158,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   const taxStatus = getOverallTaxStatus();
 
-  // Show billing panel if user doesn't have access
-  if (showBillingPanel && user) {
+  // Always show billing panel if user hasn't paid or isn't authenticated
+  if (showBillingPanel) {
     return <CadastralBillingPanel searchResult={result} onPaymentSuccess={handlePaymentSuccess} />;
   }
 
@@ -166,95 +188,129 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="general">Informations</TabsTrigger>
-            <TabsTrigger value="location">Localisation</TabsTrigger>
-            <TabsTrigger value="history">Historique</TabsTrigger>
-            <TabsTrigger value="obligations">Obligations</TabsTrigger>
+            <TabsTrigger value="general" disabled={!hasServiceAccess('information')}>
+              Informations {!hasServiceAccess('information') && '🔒'}
+            </TabsTrigger>
+            <TabsTrigger value="location" disabled={!hasServiceAccess('location_history')}>
+              Localisation {!hasServiceAccess('location_history') && '🔒'}
+            </TabsTrigger>
+            <TabsTrigger value="history" disabled={!hasServiceAccess('history')}>
+              Historique {!hasServiceAccess('history') && '🔒'}
+            </TabsTrigger>
+            <TabsTrigger value="obligations" disabled={!hasServiceAccess('obligations')}>
+              Obligations {!hasServiceAccess('obligations') && '🔒'}
+            </TabsTrigger>
           </TabsList>
 
-          {/* Onglet Informations générales */}
-          <TabsContent value="general" className="mt-4 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Informations de propriété */}
-              <Card>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                    <Building className="h-4 w-4" />
-                    Titre de Propriété
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Type :</span>
-                      <span className="font-medium">{parcel.property_title_type}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Superficie :</span>
-                      <span className="font-medium">{formatArea(parcel.area_sqm)}</span>
-                    </div>
-                    {parcel.area_hectares > 0 && (
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">En hectares :</span>
-                        <span className="font-medium">{parcel.area_hectares.toFixed(2)} ha</span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Propriétaire actuel */}
-              <Card>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                    <User className="h-4 w-4" />
-                    Propriétaire Actuel
-                  </h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Nom :</span>
-                      <span className="font-medium">{parcel.current_owner_name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Statut :</span>
-                      <span className="font-medium">{parcel.current_owner_legal_status}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Depuis :</span>
-                      <span className="font-medium">{formatDate(parcel.current_owner_since)}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Statut fiscal */}
-            <Card>
-              <CardContent className="p-4">
-                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Statut Fiscal
-                </h4>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {taxStatus.status === 'up_to_date' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                    {taxStatus.status === 'pending' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
-                    {taxStatus.status === 'overdue' && <XCircle className="h-4 w-4 text-red-500" />}
-                    <span className="text-sm">
-                      {taxStatus.status === 'up_to_date' && 'À jour'}
-                      {taxStatus.status === 'pending' && `${taxStatus.count} paiement(s) en attente`}
-                      {taxStatus.status === 'overdue' && `${taxStatus.count} paiement(s) en retard`}
-                    </span>
-                  </div>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-3 w-3 mr-1" />
-                    Export PDF
-                  </Button>
+          {/* Contenu masqué si pas d'accès */}
+          {!hasServiceAccess('information') && !hasServiceAccess('location_history') && 
+           !hasServiceAccess('history') && !hasServiceAccess('obligations') && (
+            <div className="mt-4 p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+              <div className="space-y-4">
+                <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                  <FileText className="h-8 w-8 text-muted-foreground" />
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <div>
+                  <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
+                  <p className="text-muted-foreground max-w-md mx-auto">
+                    Le contenu détaillé de cette parcelle est accessible via paiement. 
+                    Veuillez sélectionner et payer les services souhaités pour accéder aux informations.
+                  </p>
+                </div>
+                <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Accéder aux services payants
+                </Button>
+              </div>
+            </div>
+          )}
 
-          {/* Onglet Localisation */}
-          <TabsContent value="location" className="mt-4 space-y-4">
+          {/* Onglet Informations générales - visible uniquement si payé */}
+          {hasServiceAccess('information') && (
+            <TabsContent value="general" className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Informations de propriété */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      Titre de Propriété
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Type :</span>
+                        <span className="font-medium">{parcel.property_title_type}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Superficie :</span>
+                        <span className="font-medium">{formatArea(parcel.area_sqm)}</span>
+                      </div>
+                      {parcel.area_hectares > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">En hectares :</span>
+                          <span className="font-medium">{parcel.area_hectares.toFixed(2)} ha</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Propriétaire actuel */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Propriétaire Actuel
+                    </h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Nom :</span>
+                        <span className="font-medium">{parcel.current_owner_name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Statut :</span>
+                        <span className="font-medium">{parcel.current_owner_legal_status}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Depuis :</span>
+                        <span className="font-medium">{formatDate(parcel.current_owner_since)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Statut fiscal */}
+              <Card>
+                <CardContent className="p-4">
+                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Statut Fiscal
+                  </h4>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {taxStatus.status === 'up_to_date' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                      {taxStatus.status === 'pending' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
+                      {taxStatus.status === 'overdue' && <XCircle className="h-4 w-4 text-red-500" />}
+                      <span className="text-sm">
+                        {taxStatus.status === 'up_to_date' && 'À jour'}
+                        {taxStatus.status === 'pending' && `${taxStatus.count} paiement(s) en attente`}
+                        {taxStatus.status === 'overdue' && `${taxStatus.count} paiement(s) en retard`}
+                      </span>
+                    </div>
+                    <Button variant="outline" size="sm">
+                      <Download className="h-3 w-3 mr-1" />
+                      Export PDF
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Onglet Localisation - visible uniquement si payé */}
+          {hasServiceAccess('location_history') && (
+            <TabsContent value="location" className="mt-4 space-y-4">
             {/* Informations de localisation détaillées */}
             <Card>
               <CardHeader>
@@ -391,65 +447,69 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
+            </TabsContent>
+          )}
 
-          {/* Onglet Historique */}
-          <TabsContent value="history" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Historique des Propriétaires
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Propriétaire actuel */}
-                  <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium">{parcel.current_owner_name}</span>
-                        <Badge variant="default">Propriétaire actuel</Badge>
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {parcel.current_owner_legal_status} • Depuis {formatDate(parcel.current_owner_since)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Anciens propriétaires */}
-                  {ownership_history.length > 0 && <Separator />}
-                  {ownership_history.map((owner, index) => (
-                    <div key={owner.id} className="flex items-start gap-3 p-3 rounded-lg">
-                      <div className="w-2 h-2 bg-muted-foreground rounded-full mt-2" />
+          {/* Onglet Historique - visible uniquement si payé */}
+          {hasServiceAccess('history') && (
+            <TabsContent value="history" className="mt-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Historique des Propriétaires
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Propriétaire actuel */}
+                    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <span className="font-medium">{owner.owner_name}</span>
-                          {owner.mutation_type && (
-                            <Badge variant="outline">{owner.mutation_type}</Badge>
-                          )}
+                          <span className="font-medium">{parcel.current_owner_name}</span>
+                          <Badge variant="default">Propriétaire actuel</Badge>
                         </div>
                         <div className="text-sm text-muted-foreground mt-1">
-                          {owner.legal_status} • 
-                          Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                          {parcel.current_owner_legal_status} • Depuis {formatDate(parcel.current_owner_since)}
                         </div>
                       </div>
                     </div>
-                  ))}
 
-                  {ownership_history.length === 0 && (
-                    <div className="text-center text-muted-foreground py-4">
-                      Aucun historique de propriétaire disponible
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    {/* Anciens propriétaires */}
+                    {ownership_history.length > 0 && <Separator />}
+                    {ownership_history.map((owner, index) => (
+                      <div key={owner.id} className="flex items-start gap-3 p-3 rounded-lg">
+                        <div className="w-2 h-2 bg-muted-foreground rounded-full mt-2" />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium">{owner.owner_name}</span>
+                            {owner.mutation_type && (
+                              <Badge variant="outline">{owner.mutation_type}</Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground mt-1">
+                            {owner.legal_status} • 
+                            Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
 
-          {/* Onglet Obligations */}
-          <TabsContent value="obligations" className="mt-4">
+                    {ownership_history.length === 0 && (
+                      <div className="text-center text-muted-foreground py-4">
+                        Aucun historique de propriétaire disponible
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Onglet Obligations - visible uniquement si payé */}
+          {hasServiceAccess('obligations') && (
+            <TabsContent value="obligations" className="mt-4">
             <div className="space-y-4">
               {/* Navigation des sous-sections */}
               <div className="flex space-x-1 bg-muted p-1 rounded-lg">
@@ -616,7 +676,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                 </Card>
               )}
             </div>
-          </TabsContent>
+            </TabsContent>
+          )}
         </Tabs>
 
         {/* Disclaimer */}
