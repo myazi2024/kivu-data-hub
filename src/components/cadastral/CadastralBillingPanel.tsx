@@ -80,7 +80,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/10">
             <Lock className="h-4 w-4 text-amber-600" />
             <AlertDescription className="text-amber-800 dark:text-amber-200">
-              Ce rapport est payant. Veuillez sélectionner les services souhaités et procéder au paiement pour y accéder.
+              Le rapport que vous souhaitez consulter est accessible moyennant une contribution. Nous vous invitons à sélectionner les informations correspondant à vos besoins, puis à finaliser le règlement afin d'en obtenir l'accès.
             </AlertDescription>
           </Alert>
 
@@ -88,7 +88,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           <div className="space-y-3">
             <h3 className="font-semibold text-base flex items-center gap-2">
               <CheckCircle className="h-4 w-4" />
-              Services disponibles
+              Information(s) trouvée(s) pour {searchResult.parcel.parcel_number}
             </h3>
             
             <div className="grid gap-3">
@@ -115,9 +115,22 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                           ${service.price} USD
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                         {service.description}
                       </p>
+                      <div className="mt-2 p-2 bg-muted/20 rounded border-l-2 border-primary/20">
+                        <p className="text-xs text-foreground/80 leading-relaxed">
+                          <span className="font-medium text-primary">Utilité:</span> {
+                            service.id === 'information' 
+                              ? 'Parfait pour une vérification rapide de propriété ou pour des démarches administratives de base.'
+                              : service.id === 'location_history'
+                              ? 'Recommandé pour les architectes, géomètres et développeurs pour planifier des projets de construction.'
+                              : service.id === 'history'
+                              ? 'Essentiel pour les notaires, avocats et acheteurs soucieux de sécuriser leurs transactions immobilières.'
+                              : 'Obligatoire avant tout achat immobilier, prêt bancaire ou investissement foncier pour éviter les mauvaises surprises.'
+                          }
+                        </p>
+                      </div>
                     </div>
                   </div>
                 </div>

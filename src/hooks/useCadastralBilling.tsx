@@ -16,25 +16,25 @@ export const CADASTRAL_SERVICES: CadastralService[] = [
     id: 'information',
     name: 'Informations générales',
     price: 3,
-    description: 'Informations de base sur la parcelle (propriétaire, superficie, statut)'
+    description: 'Identité du propriétaire actuel, superficie exacte, statut juridique de la parcelle et coordonnées géographiques. Idéal pour vérifier la propriété et obtenir les données de base.'
   },
   {
     id: 'location_history',
     name: 'Localisation et Historique de bornage',
     price: 2,
-    description: 'Données géographiques et historique des opérations de bornage'
+    description: 'Position géographique précise, limites cadastrales, historique complet des opérations de bornage et modifications géométriques. Essentiel pour les projets de construction et délimitation de terrain.'
   },
   {
     id: 'history',
-    name: 'Historique complet',
+    name: 'Historique complet des propriétaires',
     price: 3,
-    description: 'Historique des propriétaires et mutations foncières'
+    description: 'Chaîne complète de propriété depuis la création de la parcelle, toutes les transactions, mutations, héritages et transferts. Crucial pour vérifier la légalité des transactions passées.'
   },
   {
     id: 'obligations',
-    name: 'Obligations (Taxes, Hypothèques)',
+    name: 'Obligations fiscales et hypothécaires',
     price: 15,
-    description: 'Informations sur les taxes foncières et hypothèques'
+    description: 'État détaillé des taxes foncières impayées, hypothèques en cours, servitudes, restrictions d\'usage et tous encumbrements juridiques. Indispensable avant tout achat immobilier.'
   }
 ];
 
