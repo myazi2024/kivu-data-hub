@@ -118,8 +118,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                         {service.description}
                       </p>
-                      <div className="mt-2 p-2 bg-muted/20 rounded border-l-2 border-primary/20">
-                        <p className="text-xs text-foreground/80 leading-relaxed text-left">
+                      <div className="mt-2 p-2 bg-muted/20 rounded border-l-2 border-primary/20 text-left">
+                        <p className="text-xs text-foreground/80 leading-relaxed">
                           <span className="font-medium text-primary">Utilité:</span> {
                             service.id === 'information' 
                               ? 'Parfait pour une vérification rapide de propriété ou pour des démarches administratives de base.'
