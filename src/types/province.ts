@@ -21,6 +21,30 @@ export interface ProvinceData {
   // Autres
   variationLoyer3Mois: number;
   typologieDominante: string;
+  
+  // Nouveaux indicateurs étendus
+  rendementLocatifBrut: number; // %
+  tauxCroissancePrixAnnuel: number; // %
+  permisConstruireMois: number; // unités/mois
+  tauxAccessibiliteLogement: number; // %
+  repartitionTypologique: {
+    residential: number; // %
+    commercial: number; // %
+    mixte: number; // %
+  };
+  tauxPropriete: number; // %
+  indicePresionFonciere: number; // ratio demande/offre
+  
+  // Données temporelles pour les graphiques
+  historiquePrix?: Array<{
+    mois: string;
+    loyer: number;
+    vente: number;
+  }>;
+  
+  // Métadonnées géographiques
+  region?: 'Est' | 'Ouest' | 'Centre' | 'Sud' | 'Nord';
+  zone?: 'Urbaine' | 'Rurale' | 'Mixte';
 }
 
 // Interface standardisée pour la cohérence des données territoriales

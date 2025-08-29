@@ -12,6 +12,7 @@ import { ProvinceAnalytics } from './charts/ProvinceAnalytics';
 import TerritorialMap from './TerritorialMap';
 import { useMapEvents } from 'react-leaflet';
 import { ProvinceData } from '@/types/province';
+import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
 
 // Composant carte interactive RDC - simplifié
 const DRCInteractiveMap = () => {
@@ -39,7 +40,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 850000,
       recettesFiscalesUsd: 125000,
       variationLoyer3Mois: 3.2,
-      typologieDominante: 'Appartements'
+      typologieDominante: 'Appartements',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.58,
+      tauxCroissancePrixAnnuel: 4.2,
+      permisConstruireMois: 120,
+      tauxAccessibiliteLogement: 35.2,
+      repartitionTypologique: { residential: 65, commercial: 25, mixte: 10 },
+      tauxPropriete: 42.5,
+      indicePresionFonciere: 2.8,
+      region: 'Ouest',
+      zone: 'Urbaine'
     },
     // Nord-Kivu - Centre économique de l'Est
     {
@@ -58,7 +69,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 425000,
       recettesFiscalesUsd: 68000,
       variationLoyer3Mois: 2.1,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.2,
+      tauxCroissancePrixAnnuel: 3.8,
+      permisConstruireMois: 45,
+      tauxAccessibiliteLogement: 48.6,
+      repartitionTypologique: { residential: 78, commercial: 15, mixte: 7 },
+      tauxPropriete: 58.3,
+      indicePresionFonciere: 2.1,
+      region: 'Est',
+      zone: 'Urbaine'
     },
     // Sud-Kivu
     {
@@ -616,14 +637,11 @@ const DRCInteractiveMap = () => {
 
           {/* Panneau données province - 2/6 largeur au milieu */}
           <div className="lg:col-span-2 space-y-1 order-1 lg:order-2 max-h-[85vh] overflow-hidden flex flex-col">
-            <div className="p-1.5 bg-background border border-border rounded-lg shadow-sm h-80 overflow-y-auto">
-              <h3 className="text-xs font-semibold mb-1.5 text-foreground flex items-center gap-1.5">
-                <MapPin className="h-3 w-3" />
-                Données de Province
-              </h3>
-              <p className="text-[10px] text-muted-foreground mb-2">
-                Cliquez sur une province de la carte pour afficher ses indicateurs immobiliers.
-              </p>
+            {/* Visualisations avancées */}
+            <ProvinceDataVisualization 
+              provinces={provincesData} 
+              selectedProvince={selectedProvince}
+            />
               
               <div className="space-y-2">
 
@@ -940,11 +958,12 @@ const DRCInteractiveMap = () => {
                    selectedProvince={selectedProvince}
                  />
                </div>
-            </div>
-          </div>
-      </div>
-    </div>
-  );
-};
+             </div>
+           </div>
+         </div>
+       </div>
+     </div>
+   );
+ };
 
 export default DRCInteractiveMap;
