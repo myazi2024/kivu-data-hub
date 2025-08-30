@@ -98,7 +98,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 385000,
       recettesFiscalesUsd: 58000,
       variationLoyer3Mois: 1.8,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.32,
+      tauxCroissancePrixAnnuel: 3.5,
+      permisConstruireMois: 35,
+      tauxAccessibiliteLogement: 52.1,
+      repartitionTypologique: { residential: 75, commercial: 18, mixte: 7 },
+      tauxPropriete: 61.2,
+      indicePresionFonciere: 1.8,
+      region: 'Est',
+      zone: 'Urbaine'
     },
     // Haut-Katanga - Province minière
     {
@@ -117,7 +127,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 485000,
       recettesFiscalesUsd: 78000,
       variationLoyer3Mois: 2.5,
-      typologieDominante: 'Mixte urbain'
+      typologieDominante: 'Mixte urbain',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.18,
+      tauxCroissancePrixAnnuel: 4.1,
+      permisConstruireMois: 65,
+      tauxAccessibiliteLogement: 41.8,
+      repartitionTypologique: { residential: 60, commercial: 30, mixte: 10 },
+      tauxPropriete: 48.7,
+      indicePresionFonciere: 2.3,
+      region: 'Sud',
+      zone: 'Urbaine'
     },
     // Kasaï-Oriental
     {
@@ -136,7 +156,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 285000,
       recettesFiscalesUsd: 42000,
       variationLoyer3Mois: 1.4,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.2,
+      tauxCroissancePrixAnnuel: 2.8,
+      permisConstruireMois: 25,
+      tauxAccessibiliteLogement: 58.3,
+      repartitionTypologique: { residential: 80, commercial: 15, mixte: 5 },
+      tauxPropriete: 65.2,
+      indicePresionFonciere: 1.6,
+      region: 'Centre',
+      zone: 'Mixte'
     },
     // Autres provinces avec des données réalistes...
     {
@@ -155,7 +185,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 245000,
       recettesFiscalesUsd: 35000,
       variationLoyer3Mois: 1.1,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.1,
+      tauxCroissancePrixAnnuel: 2.5,
+      permisConstruireMois: 22,
+      tauxAccessibiliteLogement: 61.5,
+      repartitionTypologique: { residential: 82, commercial: 13, mixte: 5 },
+      tauxPropriete: 68.1,
+      indicePresionFonciere: 1.5,
+      region: 'Centre',
+      zone: 'Mixte'
     },
     {
       id: 'CDKC',
@@ -173,7 +213,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 225000,
       recettesFiscalesUsd: 32000,
       variationLoyer3Mois: 0.9,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.0,
+      tauxCroissancePrixAnnuel: 2.2,
+      permisConstruireMois: 20,
+      tauxAccessibiliteLogement: 63.8,
+      repartitionTypologique: { residential: 83, commercial: 12, mixte: 5 },
+      tauxPropriete: 70.3,
+      indicePresionFonciere: 1.4,
+      region: 'Centre',
+      zone: 'Mixte'
     },
     {
       id: 'CDLU',
@@ -191,7 +241,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 335000,
       recettesFiscalesUsd: 52000,
       variationLoyer3Mois: 1.7,
-      typologieDominante: 'Mixte minier'
+      typologieDominante: 'Mixte minier',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.3,
+      tauxCroissancePrixAnnuel: 3.2,
+      permisConstruireMois: 40,
+      tauxAccessibiliteLogement: 47.2,
+      repartitionTypologique: { residential: 65, commercial: 25, mixte: 10 },
+      tauxPropriete: 54.6,
+      indicePresionFonciere: 1.9,
+      region: 'Sud',
+      zone: 'Urbaine'
     },
     // Ajout des autres provinces...
     {
@@ -210,7 +270,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 295000,
       recettesFiscalesUsd: 45000,
       variationLoyer3Mois: 1.3,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.1,
+      tauxCroissancePrixAnnuel: 2.6,
+      permisConstruireMois: 28,
+      tauxAccessibiliteLogement: 55.4,
+      repartitionTypologique: { residential: 78, commercial: 16, mixte: 6 },
+      tauxPropriete: 62.8,
+      indicePresionFonciere: 1.7,
+      region: 'Ouest',
+      zone: 'Urbaine'
     },
     {
       id: 'CDMA',
@@ -228,7 +298,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 145000,
       recettesFiscalesUsd: 22000,
       variationLoyer3Mois: 1.2,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.25,
+      tauxCroissancePrixAnnuel: 2.4,
+      permisConstruireMois: 18,
+      tauxAccessibiliteLogement: 66.2,
+      repartitionTypologique: { residential: 85, commercial: 10, mixte: 5 },
+      tauxPropriete: 72.4,
+      indicePresionFonciere: 1.3,
+      region: 'Est',
+      zone: 'Rurale'
     },
     // Continuez avec toutes les 26 provinces...
     {
@@ -247,7 +327,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 95000,
       recettesFiscalesUsd: 15000,
       variationLoyer3Mois: 0.8,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.14,
+      tauxCroissancePrixAnnuel: 1.8,
+      permisConstruireMois: 12,
+      tauxAccessibiliteLogement: 75.2,
+      repartitionTypologique: { residential: 88, commercial: 8, mixte: 4 },
+      tauxPropriete: 78.5,
+      indicePresionFonciere: 1.2,
+      region: 'Nord',
+      zone: 'Rurale'
     },
     {
       id: 'CDHU',
@@ -265,7 +355,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 82000,
       recettesFiscalesUsd: 12000,
       variationLoyer3Mois: 0.6,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      // Nouveaux indicateurs  
+      rendementLocatifBrut: 5.08,
+      tauxCroissancePrixAnnuel: 1.6,
+      permisConstruireMois: 10,
+      tauxAccessibiliteLogement: 77.5,
+      repartitionTypologique: { residential: 89, commercial: 7, mixte: 4 },
+      tauxPropriete: 80.2,
+      indicePresionFonciere: 1.1,
+      region: 'Nord',
+      zone: 'Rurale'
     },
     {
       id: 'CDIT',
@@ -536,7 +636,17 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 105000,
       recettesFiscalesUsd: 16000,
       variationLoyer3Mois: 0.9,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      // Nouveaux indicateurs
+      rendementLocatifBrut: 5.2,
+      tauxCroissancePrixAnnuel: 2.1,
+      permisConstruireMois: 24,
+      tauxAccessibiliteLogement: 62.5,
+      repartitionTypologique: { residential: 81, commercial: 14, mixte: 5 },
+      tauxPropriete: 67.3,
+      indicePresionFonciere: 1.5,
+      region: 'Centre',
+      zone: 'Mixte'
     }
   ];
 
@@ -927,41 +1037,41 @@ const DRCInteractiveMap = () => {
                                     <p className="text-muted-foreground text-[9px] mt-1 leading-relaxed">
                                       * Évolution estimée basée sur les dynamiques démographiques et économiques locales
                                     </p>
-                                 </div>
-                               </div>
-                             );
-                           })()}
-                         </div>
-                       </CardContent>
-                     </Card>
-                  </div>
-                 )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                   </div>
+                  )}
               </div>
-           </div>
-        </div>
 
-          {/* Panneau Analytics - 2/6 largeur à droite */}
-          <div className="lg:col-span-2 space-y-1 order-2 lg:order-3 max-h-[85vh] overflow-hidden flex flex-col">
-            {/* Analytics */}
-            <div className="p-1 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
-              <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
-                <BarChart3 className="h-3 w-3" />
-                Analytics Immobilier
-              </h3>
-              <p className="text-[9px] text-muted-foreground mb-1">
-                Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
-              </p>
-               <div className="flex-1 overflow-hidden">
-                <ProvinceDataVisualization 
-                  provinces={provincesData} 
-                  selectedProvince={selectedProvince}
-                />
+              {/* Panneau Analytics - 2/6 largeur à droite */}
+              <div className="lg:col-span-2 space-y-1 order-2 lg:order-3 max-h-[85vh] overflow-hidden flex flex-col">
+                {/* Analytics */}
+                <div className="p-1 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
+                  <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
+                    <BarChart3 className="h-3 w-3" />
+                    Analytics Immobilier
+                  </h3>
+                  <p className="text-[9px] text-muted-foreground mb-1">
+                    Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
+                  </p>
+                   <div className="flex-1 overflow-hidden">
+                    <ProvinceDataVisualization 
+                      provinces={provincesData} 
+                      selectedProvince={selectedProvince}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-    );
-  };
+      );
+    };
 
-export default DRCInteractiveMap;
+  export default DRCInteractiveMap;

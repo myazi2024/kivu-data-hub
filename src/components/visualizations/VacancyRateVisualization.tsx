@@ -87,8 +87,8 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
                 formatter={formatTooltip}
               />
               <Bar 
-                dataKey="tauxVacanceLocative" 
-                fill={(entry) => getVacancyColor(entry?.tauxVacanceLocative || 0)}
+                dataKey="tauxVacanceLocative"
+                fill="#3b82f6"
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
