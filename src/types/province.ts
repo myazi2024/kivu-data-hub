@@ -23,17 +23,17 @@ export interface ProvinceData {
   typologieDominante: string;
   
   // Nouveaux indicateurs étendus
-  rendementLocatifBrut: number; // %
-  tauxCroissancePrixAnnuel: number; // %
-  permisConstruireMois: number; // unités/mois
-  tauxAccessibiliteLogement: number; // %
-  repartitionTypologique: {
+  rendementLocatifBrut?: number; // %
+  tauxCroissancePrixAnnuel?: number; // %
+  permisConstruireMois?: number; // unités/mois
+  tauxAccessibiliteLogement?: number; // %
+  repartitionTypologique?: {
     residential: number; // %
     commercial: number; // %
     mixte: number; // %
   };
-  tauxPropriete: number; // %
-  indicePresionFonciere: number; // ratio demande/offre
+  tauxPropriete?: number; // %
+  indicePresionFonciere?: number; // ratio demande/offre
   
   // Données temporelles pour les graphiques
   historiquePrix?: Array<{

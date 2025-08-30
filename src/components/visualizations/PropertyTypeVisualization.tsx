@@ -21,7 +21,7 @@ interface PropertyTypeVisualizationProps {
   selectedProvince?: ProvinceData | null;
 }
 
-export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationVisualizationProps> = ({
+export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps> = ({
   provinces,
   selectedProvince
 }) => {

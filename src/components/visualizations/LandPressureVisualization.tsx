@@ -290,7 +290,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
                 />
                 <Bar 
                   dataKey="indicePressionCalcule" 
-                  fill={(entry) => entry?.couleurPression || 'hsl(var(--primary))'}
+                  fill="hsl(var(--primary))"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
