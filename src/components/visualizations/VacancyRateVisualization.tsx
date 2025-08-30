@@ -103,7 +103,7 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
                   <li>• <span className="text-green-600 font-medium">0-15%</span> : Marché tendu, forte demande</li>
                   <li>• <span className="text-yellow-600 font-medium">15-25%</span> : Marché équilibré</li>
                   <li>• <span className="text-orange-600 font-medium">25-35%</span> : Offre excédentaire</li>
-                  <li>• <span className="text-red-600 font-medium">>35%</span> : Marché saturé</li>
+                  <li>• <span className="text-red-600 font-medium">{'>'} 35%</span> : Marché saturé</li>
                 </ul>
               </div>
             </div>

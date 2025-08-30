@@ -643,7 +643,7 @@ const DRCInteractiveMap = () => {
               selectedProvince={selectedProvince}
             />
               
-              <div className="space-y-2">
+               <div className="space-y-2">
 
                 {selectedProvince && (
                   <div className="space-y-2">
@@ -724,246 +724,244 @@ const DRCInteractiveMap = () => {
                      </div>
                    </div>
                  )}
-               </div>
-             </div>
 
-              {/* Nouveau cadre pour les graphiques d'évolution */}
-                {selectedProvince && (
-                 <div className="p-1 bg-background border border-border rounded-lg shadow-sm h-full overflow-y-auto">
-                   <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
-                     <TrendingUp className="h-2.5 w-2.5" />
-                     Évolutions - {selectedProvince.name}
-                   </h3>
-                   <p className="text-[9px] text-muted-foreground mb-1">
-                     Tendances des prix et de la population locative sur 3 mois.
-                   </p>
-                  
-                   <div className="space-y-1.5 overflow-y-auto">
-                      {/* Évolution des prix */}
+                 {/* Nouveau cadre pour les graphiques d'évolution */}
+                 {selectedProvince && (
+                  <div className="p-1 bg-background border border-border rounded-lg shadow-sm h-full overflow-y-auto">
+                    <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
+                      <TrendingUp className="h-2.5 w-2.5" />
+                      Évolutions - {selectedProvince.name}
+                    </h3>
+                    <p className="text-[9px] text-muted-foreground mb-1">
+                      Tendances des prix et de la population locative sur 3 mois.
+                    </p>
+                   
+                    <div className="space-y-1.5 overflow-y-auto">
+                       {/* Évolution des prix */}
+                       <Card>
+                         <CardHeader className="pb-0 pt-1 px-1.5">
+                           <CardTitle className="text-[10px] flex items-center gap-1">
+                             <TrendingUp className="h-2 w-2" />
+                             Évolution des prix (vente et location)
+                             <span className="text-[8px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
+                           </CardTitle>
+                         </CardHeader>
+                         <CardContent className="pt-0 pb-1 px-1.5">
+                         <div className="space-y-2">
+                           {(() => {
+                             const priceEvolution = [
+                               { 
+                                 periode: 'Il y a 3 mois', 
+                                 location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 100)),
+                                 vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 150))
+                               },
+                               { 
+                                 periode: 'Il y a 2 mois', 
+                                 location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 200)),
+                                 vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 300))
+                               },
+                               { 
+                                 periode: 'Il y a 1 mois', 
+                                 location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 300)),
+                                 vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 450))
+                               },
+                               { 
+                                 periode: 'Aujourd\'hui', 
+                                 location: selectedProvince.prixMoyenLoyer,
+                                 vente: selectedProvince.prixMoyenVenteM2
+                               }
+                             ];
+                             
+                             const formatCurrency = (value: number) => {
+                               return new Intl.NumberFormat('fr-FR', {
+                                 style: 'currency',
+                                 currency: 'USD',
+                                 minimumFractionDigits: 0,
+                               }).format(value);
+                             };
+                             
+                             return (
+                                 <div className="space-y-1.5">
+                                    <ResponsiveContainer width="100%" height={120}>
+                                      <LineChart data={priceEvolution} margin={{ top: 5, right: 15, left: 15, bottom: 40 }}>
+                                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                      <XAxis 
+                                        dataKey="periode" 
+                                        tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                                        angle={-35}
+                                        textAnchor="end"
+                                        height={35}
+                                        interval={0}
+                                      />
+                                      <YAxis 
+                                        tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                                        width={40}
+                                      />
+                                     <Tooltip 
+                                       contentStyle={{ 
+                                         backgroundColor: 'hsl(var(--background))', 
+                                         border: '1px solid hsl(var(--border))',
+                                         borderRadius: '6px',
+                                         fontSize: '10px'
+                                       }}
+                                       formatter={(value: number, name: string) => [
+                                         formatCurrency(value), 
+                                         name === 'location' ? 'Location' : 'Vente'
+                                       ]}
+                                     />
+                                     <Line 
+                                       type="monotone" 
+                                       dataKey="location" 
+                                       stroke="hsl(var(--primary))" 
+                                       strokeWidth={2}
+                                       dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }}
+                                     />
+                                     <Line 
+                                       type="monotone" 
+                                       dataKey="vente" 
+                                       stroke="hsl(var(--secondary))" 
+                                       strokeWidth={2}
+                                       dot={{ fill: 'hsl(var(--secondary))', strokeWidth: 2, r: 3 }}
+                                     />
+                                   </LineChart>
+                                 </ResponsiveContainer>
+                                 
+                                  {/* Notes explicatives */}
+                                  <div className="bg-muted/30 p-2 rounded text-[10px] space-y-1 mt-2">
+                                   <div className="flex items-center gap-2">
+                                     <div className="w-4 h-1 bg-primary rounded"></div>
+                                     <span className="font-medium">Location : {selectedProvince.variationLoyer3Mois >= 0 ? '+' : ''}{selectedProvince.variationLoyer3Mois.toFixed(1)}% en 3 mois</span>
+                                   </div>
+                                   <div className="flex items-center gap-2">
+                                     <div className="w-4 h-1 bg-secondary rounded"></div>
+                                     <span className="font-medium">Vente : Corrélation avec marché locatif</span>
+                                   </div>
+                                    <p className="text-muted-foreground text-[9px] mt-1 leading-relaxed">
+                                      * Données basées sur les tendances observées et la variation des loyers sur 3 mois
+                                    </p>
+                                 </div>
+                               </div>
+                             );
+                           })()}
+                         </div>
+                       </CardContent>
+                     </Card>
+
+                      {/* Évolution des locataires */}
                       <Card>
                         <CardHeader className="pb-0 pt-1 px-1.5">
                           <CardTitle className="text-[10px] flex items-center gap-1">
-                            <TrendingUp className="h-2 w-2" />
-                            Évolution des prix (vente et location)
-                            <span className="text-[8px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
+                            <Users className="h-2 w-2" />
+                            Évolution des locataires
+                            <span className="text-[8px] font-normal text-muted-foreground ml-1">(population)</span>
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="pt-0 pb-1 px-1.5">
-                        <div className="space-y-2">
-                          {(() => {
-                            const priceEvolution = [
-                              { 
-                                periode: 'Il y a 3 mois', 
-                                location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 100)),
-                                vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 150))
-                              },
-                              { 
-                                periode: 'Il y a 2 mois', 
-                                location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 200)),
-                                vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 300))
-                              },
-                              { 
-                                periode: 'Il y a 1 mois', 
-                                location: Math.round(selectedProvince.prixMoyenLoyer * (1 - selectedProvince.variationLoyer3Mois / 300)),
-                                vente: Math.round(selectedProvince.prixMoyenVenteM2 * (1 - selectedProvince.variationLoyer3Mois / 450))
-                              },
-                              { 
-                                periode: 'Aujourd\'hui', 
-                                location: selectedProvince.prixMoyenLoyer,
-                                vente: selectedProvince.prixMoyenVenteM2
-                              }
-                            ];
-                            
-                            const formatCurrency = (value: number) => {
-                              return new Intl.NumberFormat('fr-FR', {
-                                style: 'currency',
-                                currency: 'USD',
-                                minimumFractionDigits: 0,
-                              }).format(value);
-                            };
-                            
-                            return (
-                                <div className="space-y-1.5">
-                                   <ResponsiveContainer width="100%" height={120}>
-                                     <LineChart data={priceEvolution} margin={{ top: 5, right: 15, left: 15, bottom: 40 }}>
-                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                     <XAxis 
-                                       dataKey="periode" 
-                                       tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-                                       axisLine={{ stroke: 'hsl(var(--border))' }}
-                                       angle={-35}
-                                       textAnchor="end"
-                                       height={35}
-                                       interval={0}
+                         <div className="space-y-2">
+                           {(() => {
+                             const tenantsEvolution = [
+                               { periode: 'Il y a 3 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.92) },
+                               { periode: 'Il y a 2 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.95) },
+                               { periode: 'Il y a 1 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.98) },
+                               { periode: 'Aujourd\'hui', locataires: selectedProvince.populationLocativeEstimee }
+                             ];
+                             
+                             const formatPopulation = (value: number) => {
+                               return `${Math.round(value / 1000)}k`;
+                             };
+                             
+                             const croissance = ((tenantsEvolution[3].locataires - tenantsEvolution[0].locataires) / tenantsEvolution[0].locataires * 100);
+                             
+                              return (
+                                 <div className="space-y-1.5">
+                                    <ResponsiveContainer width="100%" height={110}>
+                                      <AreaChart data={tenantsEvolution} margin={{ top: 5, right: 15, left: 15, bottom: 35 }}>
+                                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                      <XAxis 
+                                        dataKey="periode" 
+                                        tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                                        angle={-35}
+                                        textAnchor="end"
+                                        height={35}
+                                        interval={0}
+                                      />
+                                      <YAxis 
+                                        tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                        axisLine={{ stroke: 'hsl(var(--border))' }}
+                                        width={40}
+                                      />
+                                     <Tooltip 
+                                       contentStyle={{ 
+                                         backgroundColor: 'hsl(var(--background))', 
+                                         border: '1px solid hsl(var(--border))',
+                                         borderRadius: '6px',
+                                         fontSize: '10px'
+                                       }}
+                                       formatter={(value: number) => [formatPopulation(value), 'Locataires']}
                                      />
-                                     <YAxis 
-                                       tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-                                       axisLine={{ stroke: 'hsl(var(--border))' }}
-                                       width={40}
+                                     <Area 
+                                       type="monotone" 
+                                       dataKey="locataires" 
+                                       stroke="hsl(var(--accent))" 
+                                       strokeWidth={2}
+                                       fill="hsl(var(--accent))" 
+                                       fillOpacity={0.3}
+                                       dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 3 }}
                                      />
-                                    <Tooltip 
-                                      contentStyle={{ 
-                                        backgroundColor: 'hsl(var(--background))', 
-                                        border: '1px solid hsl(var(--border))',
-                                        borderRadius: '6px',
-                                        fontSize: '10px'
-                                      }}
-                                      formatter={(value: number, name: string) => [
-                                        formatCurrency(value), 
-                                        name === 'location' ? 'Location' : 'Vente'
-                                      ]}
-                                    />
-                                    <Line 
-                                      type="monotone" 
-                                      dataKey="location" 
-                                      stroke="hsl(var(--primary))" 
-                                      strokeWidth={2}
-                                      dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }}
-                                    />
-                                    <Line 
-                                      type="monotone" 
-                                      dataKey="vente" 
-                                      stroke="hsl(var(--secondary))" 
-                                      strokeWidth={2}
-                                      dot={{ fill: 'hsl(var(--secondary))', strokeWidth: 2, r: 3 }}
-                                    />
-                                  </LineChart>
-                                </ResponsiveContainer>
-                                
-                                 {/* Notes explicatives */}
-                                 <div className="bg-muted/30 p-2 rounded text-[10px] space-y-1 mt-2">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-1 bg-primary rounded"></div>
-                                    <span className="font-medium">Location : {selectedProvince.variationLoyer3Mois >= 0 ? '+' : ''}{selectedProvince.variationLoyer3Mois.toFixed(1)}% en 3 mois</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-1 bg-secondary rounded"></div>
-                                    <span className="font-medium">Vente : Corrélation avec marché locatif</span>
-                                  </div>
-                                   <p className="text-muted-foreground text-[9px] mt-1 leading-relaxed">
-                                     * Données basées sur les tendances observées et la variation des loyers sur 3 mois
-                                   </p>
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </CardContent>
-                    </Card>
-
-                     {/* Évolution des locataires */}
-                     <Card>
-                       <CardHeader className="pb-0 pt-1 px-1.5">
-                         <CardTitle className="text-[10px] flex items-center gap-1">
-                           <Users className="h-2 w-2" />
-                           Évolution des locataires
-                           <span className="text-[8px] font-normal text-muted-foreground ml-1">(population)</span>
-                         </CardTitle>
-                       </CardHeader>
-                       <CardContent className="pt-0 pb-1 px-1.5">
-                        <div className="space-y-2">
-                          {(() => {
-                            const tenantsEvolution = [
-                              { periode: 'Il y a 3 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.92) },
-                              { periode: 'Il y a 2 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.95) },
-                              { periode: 'Il y a 1 mois', locataires: Math.round(selectedProvince.populationLocativeEstimee * 0.98) },
-                              { periode: 'Aujourd\'hui', locataires: selectedProvince.populationLocativeEstimee }
-                            ];
-                            
-                            const formatPopulation = (value: number) => {
-                              return `${Math.round(value / 1000)}k`;
-                            };
-                            
-                            const croissance = ((tenantsEvolution[3].locataires - tenantsEvolution[0].locataires) / tenantsEvolution[0].locataires * 100);
-                            
-                             return (
-                                <div className="space-y-1.5">
-                                   <ResponsiveContainer width="100%" height={110}>
-                                     <AreaChart data={tenantsEvolution} margin={{ top: 5, right: 15, left: 15, bottom: 35 }}>
-                                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                                     <XAxis 
-                                       dataKey="periode" 
-                                       tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-                                       axisLine={{ stroke: 'hsl(var(--border))' }}
-                                       angle={-35}
-                                       textAnchor="end"
-                                       height={35}
-                                       interval={0}
-                                     />
-                                     <YAxis 
-                                       tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
-                                       axisLine={{ stroke: 'hsl(var(--border))' }}
-                                       width={40}
-                                     />
-                                    <Tooltip 
-                                      contentStyle={{ 
-                                        backgroundColor: 'hsl(var(--background))', 
-                                        border: '1px solid hsl(var(--border))',
-                                        borderRadius: '6px',
-                                        fontSize: '10px'
-                                      }}
-                                      formatter={(value: number) => [formatPopulation(value), 'Locataires']}
-                                    />
-                                    <Area 
-                                      type="monotone" 
-                                      dataKey="locataires" 
-                                      stroke="hsl(var(--accent))" 
-                                      strokeWidth={2}
-                                      fill="hsl(var(--accent))" 
-                                      fillOpacity={0.3}
-                                      dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 3 }}
-                                    />
-                                  </AreaChart>
-                                </ResponsiveContainer>
-                                
-                                 {/* Notes explicatives */}
-                                 <div className="bg-muted/30 p-2 rounded text-[10px] space-y-1 mt-2">
-                                  <div className="flex items-center gap-2">
-                                    <div className="w-4 h-1 bg-accent rounded"></div>
-                                    <span className="font-medium">Croissance : {croissance >= 0 ? '+' : ''}{croissance.toFixed(1)}% en 3 mois</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-muted-foreground">Total actuel :</span>
-                                    <span className="font-medium">{formatPopulation(selectedProvince.populationLocativeEstimee)} habitants</span>
-                                  </div>
-                                   <p className="text-muted-foreground text-[9px] mt-1 leading-relaxed">
-                                     * Évolution estimée basée sur les dynamiques démographiques et économiques locales
-                                   </p>
-                                </div>
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      </CardContent>
-                    </Card>
-                 </div>
-               </div>
-             )}
+                                   </AreaChart>
+                                 </ResponsiveContainer>
+                                 
+                                  {/* Notes explicatives */}
+                                  <div className="bg-muted/30 p-2 rounded text-[10px] space-y-1 mt-2">
+                                   <div className="flex items-center gap-2">
+                                     <div className="w-4 h-1 bg-accent rounded"></div>
+                                     <span className="font-medium">Croissance : {croissance >= 0 ? '+' : ''}{croissance.toFixed(1)}% en 3 mois</span>
+                                   </div>
+                                   <div className="flex items-center gap-2">
+                                     <span className="text-muted-foreground">Total actuel :</span>
+                                     <span className="font-medium">{formatPopulation(selectedProvince.populationLocativeEstimee)} habitants</span>
+                                   </div>
+                                    <p className="text-muted-foreground text-[9px] mt-1 leading-relaxed">
+                                      * Évolution estimée basée sur les dynamiques démographiques et économiques locales
+                                    </p>
+                                 </div>
+                               </div>
+                             );
+                           })()}
+                         </div>
+                       </CardContent>
+                     </Card>
+                  </div>
+                 )}
+              </div>
            </div>
+        </div>
 
-             {/* Panneau Analytics - 2/6 largeur à droite */}
-             <div className="lg:col-span-2 space-y-1 order-2 lg:order-3 max-h-[85vh] overflow-hidden flex flex-col">
-             {/* Analytics */}
-             <div className="p-1 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
-               <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
-                 <BarChart3 className="h-3 w-3" />
-                 Analytics Immobilier
-               </h3>
-               <p className="text-[9px] text-muted-foreground mb-1">
-                 Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
-               </p>
-                <div className="flex-1 overflow-hidden">
-                 <ProvinceAnalytics 
-                   provincesData={provincesData} 
-                   selectedProvince={selectedProvince}
-                 />
-               </div>
-             </div>
-           </div>
-         </div>
-       </div>
-     </div>
-   );
- };
+          {/* Panneau Analytics - 2/6 largeur à droite */}
+          <div className="lg:col-span-2 space-y-1 order-2 lg:order-3 max-h-[85vh] overflow-hidden flex flex-col">
+            {/* Analytics */}
+            <div className="p-1 bg-background border border-border rounded-lg shadow-sm overflow-hidden">
+              <h3 className="text-xs font-semibold mb-1 text-foreground flex items-center gap-1">
+                <BarChart3 className="h-3 w-3" />
+                Analytics Immobilier
+              </h3>
+              <p className="text-[9px] text-muted-foreground mb-1">
+                Visualisations des tendances nationales et comparaisons inter-provinciales du marché immobilier.
+              </p>
+               <div className="flex-1 overflow-hidden">
+                <ProvinceDataVisualization 
+                  provinces={provincesData} 
+                  selectedProvince={selectedProvince}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
 export default DRCInteractiveMap;
