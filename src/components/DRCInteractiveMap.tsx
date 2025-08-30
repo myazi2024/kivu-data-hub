@@ -383,7 +383,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 105000,
       recettesFiscalesUsd: 16000,
       variationLoyer3Mois: 0.9,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      rendementLocatifBrut: 5.2,
+      tauxCroissancePrixAnnuel: 1.1,
+      permisConstruireMois: 8,
+      tauxAccessibiliteLogement: 68.5,
+      repartitionTypologique: { residential: 90, commercial: 6, mixte: 4 },
+      tauxPropriete: 75.2,
+      indicePresionFonciere: 0.8,
+      region: 'Est',
+      zone: 'Rurale'
     },
     {
       id: 'CDTO',
@@ -401,7 +410,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 98000,
       recettesFiscalesUsd: 14000,
       variationLoyer3Mois: 0.7,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      rendementLocatifBrut: 5.17,
+      tauxCroissancePrixAnnuel: 0.8,
+      permisConstruireMois: 6,
+      tauxAccessibiliteLogement: 65.8,
+      repartitionTypologique: { residential: 92, commercial: 5, mixte: 3 },
+      tauxPropriete: 73.5,
+      indicePresionFonciere: 0.7,
+      region: 'Est',
+      zone: 'Rurale'
     },
     {
       id: 'CDHL',
@@ -419,7 +437,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 115000,
       recettesFiscalesUsd: 18000,
       variationLoyer3Mois: 1.0,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      rendementLocatifBrut: 5.14,
+      tauxCroissancePrixAnnuel: 1.2,
+      permisConstruireMois: 9,
+      tauxAccessibiliteLogement: 69.8,
+      repartitionTypologique: { residential: 88, commercial: 8, mixte: 4 },
+      tauxPropriete: 76.1,
+      indicePresionFonciere: 0.9,
+      region: 'Sud',
+      zone: 'Rurale'
     },
     {
       id: 'CDLO',
@@ -437,7 +464,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 110000,
       recettesFiscalesUsd: 17000,
       variationLoyer3Mois: 0.9,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      rendementLocatifBrut: 5.15,
+      tauxCroissancePrixAnnuel: 1.1,
+      permisConstruireMois: 8,
+      tauxAccessibiliteLogement: 68.2,
+      repartitionTypologique: { residential: 91, commercial: 6, mixte: 3 },
+      tauxPropriete: 74.8,
+      indicePresionFonciere: 0.8,
+      region: 'Centre',
+      zone: 'Rurale'
     },
     {
       id: 'CDTA',
@@ -455,7 +491,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 125000,
       recettesFiscalesUsd: 19000,
       variationLoyer3Mois: 1.1,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      rendementLocatifBrut: 5.13,
+      tauxCroissancePrixAnnuel: 1.3,
+      permisConstruireMois: 10,
+      tauxAccessibiliteLogement: 70.1,
+      repartitionTypologique: { residential: 87, commercial: 9, mixte: 4 },
+      tauxPropriete: 76.8,
+      indicePresionFonciere: 1.0,
+      region: 'Sud',
+      zone: 'Rurale'
     },
     {
       id: 'CDSA',
@@ -473,7 +518,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 112000,
       recettesFiscalesUsd: 17000,
       variationLoyer3Mois: 1.0,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      rendementLocatifBrut: 5.16,
+      tauxCroissancePrixAnnuel: 1.2,
+      permisConstruireMois: 9,
+      tauxAccessibiliteLogement: 69.2,
+      repartitionTypologique: { residential: 89, commercial: 7, mixte: 4 },
+      tauxPropriete: 75.5,
+      indicePresionFonciere: 0.9,
+      region: 'Centre',
+      zone: 'Rurale'
     },
     {
       id: 'CDMN',
@@ -491,7 +545,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 88000,
       recettesFiscalesUsd: 13000,
       variationLoyer3Mois: 0.5,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      rendementLocatifBrut: 5.09,
+      tauxCroissancePrixAnnuel: 0.6,
+      permisConstruireMois: 3,
+      tauxAccessibiliteLogement: 62.1,
+      repartitionTypologique: { residential: 97, commercial: 2, mixte: 1 },
+      tauxPropriete: 68.5,
+      indicePresionFonciere: 0.5,
+      region: 'Ouest',
+      zone: 'Rurale'
     },
     {
       id: 'CDKL',
@@ -509,7 +572,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 102000,
       recettesFiscalesUsd: 15000,
       variationLoyer3Mois: 0.8,
-      typologieDominante: 'Maisons individuelles'
+      typologieDominante: 'Maisons individuelles',
+      rendementLocatifBrut: 5.22,
+      tauxCroissancePrixAnnuel: 0.9,
+      permisConstruireMois: 7,
+      tauxAccessibiliteLogement: 66.8,
+      repartitionTypologique: { residential: 93, commercial: 4, mixte: 3 },
+      tauxPropriete: 72.9,
+      indicePresionFonciere: 0.7,
+      region: 'Ouest',
+      zone: 'Rurale'
     },
     {
       id: 'CDKG',
@@ -527,7 +599,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 95000,
       recettesFiscalesUsd: 14000,
       variationLoyer3Mois: 0.7,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      rendementLocatifBrut: 5.13,
+      tauxCroissancePrixAnnuel: 0.8,
+      permisConstruireMois: 5,
+      tauxAccessibiliteLogement: 64.5,
+      repartitionTypologique: { residential: 95, commercial: 3, mixte: 2 },
+      tauxPropriete: 71.2,
+      indicePresionFonciere: 0.6,
+      region: 'Ouest',
+      zone: 'Rurale'
     },
     {
       id: 'CDEQ',
@@ -545,7 +626,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 92000,
       recettesFiscalesUsd: 13000,
       variationLoyer3Mois: 0.6,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      rendementLocatifBrut: 5.15,
+      tauxCroissancePrixAnnuel: 0.7,
+      permisConstruireMois: 4,
+      tauxAccessibiliteLogement: 63.2,
+      repartitionTypologique: { residential: 96, commercial: 2, mixte: 2 },
+      tauxPropriete: 69.8,
+      indicePresionFonciere: 0.6,
+      region: 'Nord',
+      zone: 'Rurale'
     },
     {
       id: 'CDMO',
@@ -563,7 +653,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 85000,
       recettesFiscalesUsd: 12000,
       variationLoyer3Mois: 0.5,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      rendementLocatifBrut: 5.08,
+      tauxCroissancePrixAnnuel: 0.6,
+      permisConstruireMois: 3,
+      tauxAccessibiliteLogement: 61.8,
+      repartitionTypologique: { residential: 97, commercial: 2, mixte: 1 },
+      tauxPropriete: 67.2,
+      indicePresionFonciere: 0.5,
+      region: 'Nord',
+      zone: 'Rurale'
     },
     {
       id: 'CDNU',
@@ -581,7 +680,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 78000,
       recettesFiscalesUsd: 11000,
       variationLoyer3Mois: 0.4,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      rendementLocatifBrut: 5.04,
+      tauxCroissancePrixAnnuel: 0.5,
+      permisConstruireMois: 2,
+      tauxAccessibiliteLogement: 60.5,
+      repartitionTypologique: { residential: 98, commercial: 1, mixte: 1 },
+      tauxPropriete: 65.8,
+      indicePresionFonciere: 0.4,
+      region: 'Nord',
+      zone: 'Rurale'
     },
     {
       id: 'CDSU',
@@ -599,7 +707,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 89000,
       recettesFiscalesUsd: 13000,
       variationLoyer3Mois: 0.6,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      rendementLocatifBrut: 5.13,
+      tauxCroissancePrixAnnuel: 0.7,
+      permisConstruireMois: 4,
+      tauxAccessibiliteLogement: 62.8,
+      repartitionTypologique: { residential: 96, commercial: 2, mixte: 2 },
+      tauxPropriete: 69.1,
+      indicePresionFonciere: 0.6,
+      region: 'Nord',
+      zone: 'Rurale'
     },
     {
       id: 'CDTU',
@@ -617,7 +734,16 @@ const DRCInteractiveMap = () => {
       recettesLocativesUsd: 86000,
       recettesFiscalesUsd: 12000,
       variationLoyer3Mois: 0.5,
-      typologieDominante: 'Maisons rurales'
+      typologieDominante: 'Maisons rurales',
+      rendementLocatifBrut: 5.11,
+      tauxCroissancePrixAnnuel: 0.6,
+      permisConstruireMois: 3,
+      tauxAccessibiliteLogement: 61.5,
+      repartitionTypologique: { residential: 97, commercial: 2, mixte: 1 },
+      tauxPropriete: 68.2,
+      indicePresionFonciere: 0.5,
+      region: 'Nord',
+      zone: 'Rurale'
     },
     // Kasaï
     {
