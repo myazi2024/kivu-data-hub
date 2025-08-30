@@ -334,8 +334,8 @@ const DRCInteractiveMap = () => {
 
         {/* Panneau Analytics - 2/6 largeur à droite */}
         <div className="lg:col-span-2 order-2 lg:order-3 max-h-[85vh] flex flex-col">
-          <Card className="flex-1 overflow-hidden">
-            <CardHeader className="pb-3">
+          <Card className="flex-1 overflow-hidden border-border/50 shadow-sm">
+            <CardHeader className="pb-2 px-3 py-3 border-b border-border/30">
               <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-primary" />
                 Analytics Immobilier
@@ -344,12 +344,14 @@ const DRCInteractiveMap = () => {
                 Tendances nationales et comparaisons inter-provinciales
               </p>
             </CardHeader>
-            <CardContent className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent p-4">
-              <div className="min-h-[600px]">
-                <ProvinceDataVisualization 
-                  provinces={provincesData} 
-                  selectedProvince={selectedProvince}
-                />
+            <CardContent className="flex-1 p-0 overflow-hidden">
+              <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40">
+                <div className="p-3 min-h-full">
+                  <ProvinceDataVisualization 
+                    provinces={provincesData} 
+                    selectedProvince={selectedProvince}
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>
