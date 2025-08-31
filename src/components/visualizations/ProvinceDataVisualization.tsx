@@ -121,11 +121,11 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
         <CardHeader className="pb-2 px-0 pt-0">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" />
+              <CardTitle className="text-xs font-semibold text-foreground flex items-center gap-1">
+                <BarChart3 className="h-3 w-3 text-primary" />
                 Indicateurs du Marché
               </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-[10px] text-muted-foreground mt-0.5">
                 Données provinciales RDC
               </p>
             </div>
@@ -134,18 +134,18 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                 size="sm"
                 variant="ghost"
                 onClick={handleExportPNG}
-                className="text-xs h-7 px-2"
+                className="text-[9px] h-5 px-1"
               >
-                <Download className="h-3 w-3 mr-1" />
+                <Download className="h-2.5 w-2.5 mr-0.5" />
                 PNG
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={handleExportPDF}
-                className="text-xs h-7 px-2"
+                className="text-[9px] h-5 px-1"
               >
-                <FileText className="h-3 w-3 mr-1" />
+                <FileText className="h-2.5 w-2.5 mr-0.5" />
                 PDF
               </Button>
             </div>
@@ -153,70 +153,40 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
         </CardHeader>
         
         <CardContent className="px-0">
-          {/* Contrôles de filtrage - Version compacte avec scroll horizontal */}
-          <div className="mb-3 p-2 bg-muted/20 rounded-lg border">
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-              <div className="flex gap-3 min-w-max pb-1">
-                <div className="flex-shrink-0 space-y-1 min-w-[140px]">
-                  <label className="text-xs font-medium text-muted-foreground">Zone</label>
-                  <Select value={filterType} onValueChange={setFilterType}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toutes</SelectItem>
-                      <SelectItem value="urban">Urbaines</SelectItem>
-                      <SelectItem value="rural">Rurales</SelectItem>
-                      <SelectItem value="high-pressure">Forte pression</SelectItem>
-                      <SelectItem value="residential">Résidentiel</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex-shrink-0 space-y-1 min-w-[120px]">
-                  <label className="text-xs font-medium text-muted-foreground">Période</label>
-                  <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                    <SelectTrigger className="h-7 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="current">Actuelle</SelectItem>
-                      <SelectItem value="quarterly">Trimestrielle</SelectItem>
-                      <SelectItem value="annual">Annuelle</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex-shrink-0 space-y-1 min-w-[100px]">
-                  <label className="text-xs font-medium text-muted-foreground">Focus</label>
-                  <div className="flex items-center h-7">
-                    {selectedProvince ? (
-                      <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                        {selectedProvince.name}
-                      </Badge>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">
-                        Aucune
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
+          {/* Contrôles de filtrage - Période uniquement */}
+          <div className="mb-2 p-2 bg-muted/20 rounded border">
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">Période:</label>
+              <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                <SelectTrigger className="h-6 text-[10px] min-w-[90px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="current">Actuelle</SelectItem>
+                  <SelectItem value="quarterly">Trimestrielle</SelectItem>
+                  <SelectItem value="annual">Annuelle</SelectItem>
+                </SelectContent>
+              </Select>
+              {selectedProvince && (
+                <Badge variant="secondary" className="text-[9px] px-1.5 py-0.5 ml-auto">
+                  {selectedProvince.name}
+                </Badge>
+              )}
             </div>
           </div>
 
-          {/* Sélecteur d'indicateurs - Version compacte avec scroll */}
+          {/* Sélecteur d'indicateurs - Version ultra-compacte */}
           <Tabs value={activeIndicator} onValueChange={setActiveIndicator} className="w-full">
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-              <TabsList className="grid grid-cols-6 min-w-max w-full h-auto p-1">
+              <TabsList className="grid grid-cols-6 min-w-max w-full h-auto p-0.5">
                 {indicators.map((indicator) => (
                   <TabsTrigger
                     key={indicator.id}
                     value={indicator.id}
-                    className="flex flex-col items-center gap-0.5 p-2 text-xs min-w-[80px] h-auto data-[state=active]:bg-primary/10"
+                    className="flex flex-col items-center gap-0.5 p-1 text-[9px] min-w-[60px] h-auto data-[state=active]:bg-primary/10"
                   >
-                    <indicator.icon className="h-3 w-3" />
-                    <span className="text-[10px] leading-tight text-center">
+                    <indicator.icon className="h-2.5 w-2.5" />
+                    <span className="text-[8px] leading-tight text-center">
                       {indicator.name.split(' ').slice(0, 2).join(' ')}
                     </span>
                   </TabsTrigger>
@@ -226,21 +196,21 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
 
             {/* Contenu des visualisations avec scroll optimisé */}
             {indicators.map((indicator) => (
-              <TabsContent key={indicator.id} value={indicator.id} className="mt-3">
-                <div className="space-y-2">
-                  <div className="bg-primary/5 p-2 rounded border-l-2 border-primary">
-                    <h3 className="font-medium text-sm text-foreground flex items-center gap-2">
-                      <indicator.icon className="h-3 w-3 text-primary" />
+              <TabsContent key={indicator.id} value={indicator.id} className="mt-1">
+                <div className="space-y-1">
+                  <div className="bg-primary/5 p-1.5 rounded border-l border-primary">
+                    <h3 className="font-medium text-[10px] text-foreground flex items-center gap-1">
+                      <indicator.icon className="h-2.5 w-2.5 text-primary" />
                       {indicator.name}
                     </h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className="text-[9px] text-muted-foreground mt-0.5">
                       {indicator.description}
                     </p>
                   </div>
                   
                   <div className="bg-card rounded border">
-                    <div className="max-h-[350px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40">
-                      <div className="p-3">
+                    <div className="max-h-[200px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40">
+                      <div className="p-2">
                         {renderVisualization()}
                       </div>
                     </div>
@@ -250,33 +220,33 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
             ))}
           </Tabs>
           
-          {/* Statistiques agrégées - Version compacte avec scroll horizontal */}
-          <div className="mt-4 pt-3 border-t border-border/50">
+          {/* Statistiques agrégées - Version ultra-compacte */}
+          <div className="mt-2 pt-2 border-t border-border/50">
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-              <div className="flex gap-2 min-w-max pb-1">
-                <div className="flex-shrink-0 text-center p-2 bg-primary/5 rounded border min-w-[90px]">
-                  <div className="text-base font-semibold text-foreground">
+              <div className="flex gap-1 min-w-max pb-1">
+                <div className="flex-shrink-0 text-center p-1.5 bg-primary/5 rounded border min-w-[65px]">
+                  <div className="text-xs font-semibold text-foreground">
                     {filteredProvinces.length}
                   </div>
-                  <div className="text-[10px] text-muted-foreground leading-tight">Provinces</div>
+                  <div className="text-[8px] text-muted-foreground leading-tight">Prov.</div>
                 </div>
-                <div className="flex-shrink-0 text-center p-2 bg-primary/5 rounded border min-w-[90px]">
-                  <div className="text-base font-semibold text-foreground">
+                <div className="flex-shrink-0 text-center p-1.5 bg-primary/5 rounded border min-w-[65px]">
+                  <div className="text-xs font-semibold text-foreground">
                     ${Math.round(filteredProvinces.reduce((sum, p) => sum + p.prixMoyenLoyer, 0) / filteredProvinces.length)}
                   </div>
-                  <div className="text-[10px] text-muted-foreground leading-tight">Loyer/m²</div>
+                  <div className="text-[8px] text-muted-foreground leading-tight">$/m²</div>
                 </div>
-                <div className="flex-shrink-0 text-center p-2 bg-primary/5 rounded border min-w-[90px]">
-                  <div className="text-base font-semibold text-foreground">
+                <div className="flex-shrink-0 text-center p-1.5 bg-primary/5 rounded border min-w-[65px]">
+                  <div className="text-xs font-semibold text-foreground">
                     {Math.round(filteredProvinces.reduce((sum, p) => sum + p.tauxVacanceLocative, 0) / filteredProvinces.length)}%
                   </div>
-                  <div className="text-[10px] text-muted-foreground leading-tight">Vacance</div>
+                  <div className="text-[8px] text-muted-foreground leading-tight">Vac.</div>
                 </div>
-                <div className="flex-shrink-0 text-center p-2 bg-primary/5 rounded border min-w-[90px]">
-                  <div className="text-base font-semibold text-foreground">
+                <div className="flex-shrink-0 text-center p-1.5 bg-primary/5 rounded border min-w-[65px]">
+                  <div className="text-xs font-semibold text-foreground">
                     {(filteredProvinces.reduce((sum, p) => sum + p.populationLocativeEstimee, 0) / 1000000).toFixed(1)}M
                   </div>
-                  <div className="text-[10px] text-muted-foreground leading-tight">Pop. locative</div>
+                  <div className="text-[8px] text-muted-foreground leading-tight">Pop.</div>
                 </div>
               </div>
             </div>
