@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useCadastralBilling, CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
+import { useToast } from '@/hooks/use-toast';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
 
 interface CadastralBillingPanelProps {
@@ -28,6 +29,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   onPaymentSuccess 
 }) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const { toast } = useToast();
   const {
     loading,
     selectedServices,
@@ -45,7 +47,12 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const handleProceedToPayment = async () => {
     const invoice = await createInvoice(searchResult);
     if (invoice) {
-      setShowPaymentDialog(true);
+      // Pour les tests : accès direct sans paiement
+      toast({
+        title: "Accès accordé !",
+        description: "Vous pouvez maintenant consulter toutes les données cadastrales sélectionnées",
+      });
+      onPaymentSuccess();
     }
   };
 
