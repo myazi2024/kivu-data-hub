@@ -4,10 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
-import CadastralResultCard from './CadastralResultCard';
+import CadastralResultsDialog from './CadastralResultsDialog';
 
 const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showResultsDialog, setShowResultsDialog] = useState(false);
   const {
     searchQuery,
     setSearchQuery,
@@ -26,6 +27,13 @@ const CadastralSearchBar = () => {
   const handleClear = () => {
     clearSearch();
     setIsExpanded(false);
+    setShowResultsDialog(false);
+  };
+
+  const handleCloseResults = () => {
+    setShowResultsDialog(false);
+    clearSearch();
+    setIsExpanded(false);
   };
 
   const getPlaceholder = () => {
@@ -41,6 +49,13 @@ const CadastralSearchBar = () => {
   };
 
   const inputStatus = getInputStatus();
+
+  // Afficher le dialog quand des résultats sont trouvés
+  React.useEffect(() => {
+    if (searchResult && !showResultsDialog) {
+      setShowResultsDialog(true);
+    }
+  }, [searchResult, showResultsDialog]);
 
   return (
     <div className="w-full max-w-4xl mx-auto">
@@ -113,14 +128,13 @@ const CadastralSearchBar = () => {
         </div>
       </Card>
 
-      {/* Résultats de recherche */}
+      {/* Dialog des résultats - Fenêtre flottante fullscreen */}
       {searchResult && (
-        <div className="mt-4">
-          <CadastralResultCard 
-            result={searchResult}
-            onClose={handleClear}
-          />
-        </div>
+        <CadastralResultsDialog
+          result={searchResult}
+          isOpen={showResultsDialog}
+          onClose={handleCloseResults}
+        />
       )}
     </div>
   );

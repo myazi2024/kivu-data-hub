@@ -32,9 +32,10 @@ import CadastralBillingPanel from './CadastralBillingPanel';
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
   onClose: () => void;
+  selectedServices?: string[]; // Services sélectionnés depuis le billing panel
 }
 
-const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose }) => {
+const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [] }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [obligationsTab, setObligationsTab] = useState('taxes');
   const [showBillingPanel, setShowBillingPanel] = useState(true);
@@ -66,10 +67,14 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   }, [user, parcel.parcel_number, checkServiceAccess]);
 
   const handlePaymentSuccess = () => {
-    // En mode test: accorder l'accès à tous les services et afficher sans rechargement
-    setPaidServices(['information', 'location_history', 'history', 'obligations']);
+    // En mode test: accorder l'accès uniquement aux services sélectionnés
+    setPaidServices(selectedServices);
     setShowBillingPanel(false);
-    setActiveTab('general');
+    // Définir l'onglet par défaut selon les services sélectionnés
+    if (selectedServices.includes('information')) setActiveTab('general');
+    else if (selectedServices.includes('location_history')) setActiveTab('location');
+    else if (selectedServices.includes('history')) setActiveTab('history');
+    else if (selectedServices.includes('obligations')) setActiveTab('obligations');
   };
 
   // Check if user has access to a specific service

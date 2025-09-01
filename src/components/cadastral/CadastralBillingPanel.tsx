@@ -21,7 +21,7 @@ import CadastralPaymentDialog from './CadastralPaymentDialog';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
-  onPaymentSuccess: () => void;
+  onPaymentSuccess: (selectedServices: string[]) => void;
 }
 
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
@@ -52,13 +52,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         title: "Accès accordé !",
         description: "Vous pouvez maintenant consulter toutes les données cadastrales sélectionnées",
       });
-      onPaymentSuccess();
+      onPaymentSuccess(selectedServices);
     }
   };
 
   const handlePaymentSuccess = () => {
     setShowPaymentDialog(false);
-    onPaymentSuccess();
+    onPaymentSuccess(selectedServices);
   };
 
   const totalAmount = getTotalAmount();
