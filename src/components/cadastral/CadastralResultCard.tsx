@@ -66,10 +66,10 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   }, [user, parcel.parcel_number, checkServiceAccess]);
 
   const handlePaymentSuccess = () => {
-    // This will be updated by the billing panel based on selected services
+    // En mode test: accorder l'accès à tous les services et afficher sans rechargement
+    setPaidServices(['information', 'location_history', 'history', 'obligations']);
     setShowBillingPanel(false);
-    // Reload the page or refresh access to update paid services
-    window.location.reload();
+    setActiveTab('general');
   };
 
   // Check if user has access to a specific service
