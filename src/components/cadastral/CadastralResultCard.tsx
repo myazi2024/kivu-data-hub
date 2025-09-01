@@ -33,9 +33,10 @@ interface CadastralResultCardProps {
   result: CadastralSearchResult;
   onClose: () => void;
   selectedServices?: string[]; // Services sélectionnés depuis le billing panel
+  onPaymentSuccess?: (services: string[]) => void;
 }
 
-const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [] }) => {
+const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [obligationsTab, setObligationsTab] = useState('taxes');
   const [showBillingPanel, setShowBillingPanel] = useState(true);
@@ -66,15 +67,20 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     checkAllServices();
   }, [user, parcel.parcel_number, checkServiceAccess]);
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (services: string[]) => {
     // En mode test: accorder l'accès uniquement aux services sélectionnés
-    setPaidServices(selectedServices);
+    setPaidServices(services);
     setShowBillingPanel(false);
     // Définir l'onglet par défaut selon les services sélectionnés
-    if (selectedServices.includes('information')) setActiveTab('general');
-    else if (selectedServices.includes('location_history')) setActiveTab('location');
-    else if (selectedServices.includes('history')) setActiveTab('history');
-    else if (selectedServices.includes('obligations')) setActiveTab('obligations');
+    if (services.includes('information')) setActiveTab('general');
+    else if (services.includes('location_history')) setActiveTab('location');
+    else if (services.includes('history')) setActiveTab('history');
+    else if (services.includes('obligations')) setActiveTab('obligations');
+    
+    // Notifier le parent
+    if (onPaymentSuccess) {
+      onPaymentSuccess(services);
+    }
   };
 
   // Check if user has access to a specific service
@@ -165,7 +171,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   // Always show billing panel if user hasn't paid or isn't authenticated
   if (showBillingPanel) {
-    return <CadastralBillingPanel searchResult={result} onPaymentSuccess={handlePaymentSuccess} />;
+    return <CadastralBillingPanel searchResult={result} onPaymentSuccess={(services) => handlePaymentSuccess(services)} />;
   }
 
   return (

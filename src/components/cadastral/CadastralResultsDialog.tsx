@@ -10,18 +10,28 @@ interface CadastralResultsDialogProps {
   isOpen: boolean;
   onClose: () => void;
   selectedServices?: string[];
+  onPaymentSuccess?: (services: string[]) => void;
 }
 
 const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({ 
   result, 
   isOpen, 
   onClose,
-  selectedServices = [] 
+  selectedServices = [],
+  onPaymentSuccess
 }) => {
+  const [paidServices, setPaidServices] = React.useState<string[]>(selectedServices);
   if (!isOpen) return null;
 
   const handleClose = () => {
     onClose();
+  };
+
+  const handlePaymentSuccess = (services: string[]) => {
+    setPaidServices(services);
+    if (onPaymentSuccess) {
+      onPaymentSuccess(services);
+    }
   };
 
   // Empêcher la fermeture par clic sur overlay - uniquement via le bouton
@@ -58,7 +68,8 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
           <CadastralResultCard 
             result={result}
             onClose={handleClose}
-            selectedServices={selectedServices}
+            selectedServices={paidServices}
+            onPaymentSuccess={handlePaymentSuccess}
           />
         </div>
       </Card>
