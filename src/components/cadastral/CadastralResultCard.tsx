@@ -28,6 +28,7 @@ import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { useAuth } from '@/hooks/useAuth';
 import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
+import CadastralInvoice from './CadastralInvoice';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -41,6 +42,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [obligationsTab, setObligationsTab] = useState('taxes');
   const [showBillingPanel, setShowBillingPanel] = useState(true);
   const [paidServices, setPaidServices] = useState<string[]>([]);
+  const [showInvoice, setShowInvoice] = useState(false);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
@@ -71,6 +73,10 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     // En mode test: accorder l'accès uniquement aux services sélectionnés
     setPaidServices(services);
     setShowBillingPanel(false);
+    
+    // Afficher automatiquement la facture
+    setShowInvoice(true);
+    
     // Définir l'onglet par défaut selon les services sélectionnés
     if (services.includes('information')) setActiveTab('general');
     else if (services.includes('location_history')) setActiveTab('location');
@@ -86,6 +92,19 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   // Check if user has access to a specific service
   const hasServiceAccess = (serviceType: string) => {
     return paidServices.includes(serviceType);
+  };
+
+  // Gérer le téléchargement PDF de la facture
+  const handleDownloadPDF = () => {
+    // Simuler le téléchargement PDF
+    const element = document.createElement('a');
+    const content = `Facture BIC - Parcelle ${result.parcel.parcel_number} - Services: ${paidServices.join(', ')}`;
+    const file = new Blob([content], { type: 'text/plain' });
+    element.href = URL.createObjectURL(file);
+    element.download = `facture-bic-${result.parcel.parcel_number}-${Date.now()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    document.body.removeChild(element);
   };
 
   // Fonction pour formater les dates
@@ -236,234 +255,292 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             </div>
           )}
 
-          {/* Onglet Informations générales - visible uniquement si payé */}
-          {hasServiceAccess('information') && (
-            <TabsContent value="general" className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Informations de propriété */}
-                <Card>
-                  <CardContent className="p-4">
-                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                      <Building className="h-4 w-4" />
-                      Titre de Propriété
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Type :</span>
-                        <span className="font-medium">{parcel.property_title_type}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Superficie :</span>
-                        <span className="font-medium">{formatArea(parcel.area_sqm)}</span>
-                      </div>
-                      {parcel.area_hectares > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">En hectares :</span>
-                          <span className="font-medium">{parcel.area_hectares.toFixed(2)} ha</span>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Propriétaire actuel */}
-                <Card>
-                  <CardContent className="p-4">
-                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                      <User className="h-4 w-4" />
-                      Propriétaire Actuel
-                    </h4>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Nom :</span>
-                        <span className="font-medium">{parcel.current_owner_name}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Statut :</span>
-                        <span className="font-medium">{parcel.current_owner_legal_status}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Depuis :</span>
-                        <span className="font-medium">{formatDate(parcel.current_owner_since)}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Statut fiscal */}
-              <Card>
-                <CardContent className="p-4">
-                  <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    Statut Fiscal
-                  </h4>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      {taxStatus.status === 'up_to_date' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                      {taxStatus.status === 'pending' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
-                      {taxStatus.status === 'overdue' && <XCircle className="h-4 w-4 text-red-500" />}
-                      <span className="text-sm">
-                        {taxStatus.status === 'up_to_date' && 'À jour'}
-                        {taxStatus.status === 'pending' && `${taxStatus.count} paiement(s) en attente`}
-                        {taxStatus.status === 'overdue' && `${taxStatus.count} paiement(s) en retard`}
-                      </span>
-                    </div>
-                    <Button variant="outline" size="sm">
-                      <Download className="h-3 w-3 mr-1" />
-                      Export PDF
-                    </Button>
+          {/* Onglet Informations générales */}
+          <TabsContent value="general" className="mt-4 space-y-4">
+            {!hasServiceAccess('information') ? (
+              <div className="p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                    <Building className="h-8 w-8 text-muted-foreground" />
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          )}
-
-          {/* Onglet Localisation - visible uniquement si payé */}
-          {hasServiceAccess('location_history') && (
-            <TabsContent value="location" className="mt-4 space-y-4">
-            {/* Informations de localisation détaillées */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <MapPin className="h-4 w-4" />
-                  Localisation Géographique
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Province :</span>
-                      <span className="font-medium">{parcel.province}</span>
-                    </div>
-                    
-                    {parcel.parcel_type === 'SU' ? (
-                      <>
-                        {parcel.ville && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Ville :</span>
-                            <span className="font-medium">{parcel.ville}</span>
-                          </div>
-                        )}
-                        {parcel.commune && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Commune :</span>
-                            <span className="font-medium">{parcel.commune}</span>
-                          </div>
-                        )}
-                        {parcel.quartier && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Quartier :</span>
-                            <span className="font-medium">{parcel.quartier}</span>
-                          </div>
-                        )}
-                        {parcel.avenue && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Avenue :</span>
-                            <span className="font-medium">{parcel.avenue}</span>
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        {parcel.territoire && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Territoire/District :</span>
-                            <span className="font-medium">{parcel.territoire}</span>
-                          </div>
-                        )}
-                        {parcel.collectivite && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Collectivité :</span>
-                            <span className="font-medium">{parcel.collectivite}</span>
-                          </div>
-                        )}
-                        {parcel.groupement && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Groupement :</span>
-                            <span className="font-medium">{parcel.groupement}</span>
-                          </div>
-                        )}
-                        {parcel.village && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Village :</span>
-                            <span className="font-medium">{parcel.village}</span>
-                          </div>
-                        )}
-                      </>
-                    )}
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Les informations générales de cette parcelle nécessitent un paiement pour être accessibles.
+                    </p>
                   </div>
-                  
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Type de parcelle :</span>
-                      <span className="font-medium">
-                        {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Localisation :</span>
-                      <span className="font-medium">{parcel.location}</span>
-                    </div>
-                  </div>
+                  <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Payer pour accéder à ce service
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Carte cadastrale */}
-            <CadastralMap 
-              coordinates={parcel.gps_coordinates}
-              center={{ lat: parcel.latitude, lng: parcel.longitude }}
-              parcelNumber={parcel.parcel_number}
-            />
-
-            {/* Informations sur le bornage */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Surveyor className="h-4 w-4" />
-                  Information sur le Bornage
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {boundary_history.length > 0 ? (
-                  <div className="space-y-4">
-                    {boundary_history.map((boundary) => (
-                      <div key={boundary.id} className="p-4 border rounded-lg">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <span className="text-xs text-muted-foreground">N° de référence PV</span>
-                            <div className="font-medium">{boundary.pv_reference_number}</div>
-                          </div>
-                          <div>
-                            <span className="text-xs text-muted-foreground">Objet du bornage</span>
-                            <div className="font-medium">{boundary.boundary_purpose}</div>
-                          </div>
-                          <div>
-                            <span className="text-xs text-muted-foreground">Géomètre</span>
-                            <div className="font-medium">{boundary.surveyor_name}</div>
-                          </div>
+              </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Informations de propriété */}
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <Building className="h-4 w-4" />
+                        Titre de Propriété
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Type :</span>
+                          <span className="font-medium">{parcel.property_title_type}</span>
                         </div>
-                        <div className="mt-2 text-xs text-muted-foreground">
-                          Date de mesurage : {formatDate(boundary.survey_date)}
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Superficie :</span>
+                          <span className="font-medium">{formatArea(parcel.area_sqm)}</span>
+                        </div>
+                        {parcel.area_hectares > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">En hectares :</span>
+                            <span className="font-medium">{parcel.area_hectares.toFixed(2)} ha</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Propriétaire actuel */}
+                  <Card>
+                    <CardContent className="p-4">
+                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                        <User className="h-4 w-4" />
+                        Propriétaire Actuel
+                      </h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Nom :</span>
+                          <span className="font-medium">{parcel.current_owner_name}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Statut :</span>
+                          <span className="font-medium">{parcel.current_owner_legal_status}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Depuis :</span>
+                          <span className="font-medium">{formatDate(parcel.current_owner_since)}</span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center text-muted-foreground py-4">
-                    Aucun historique de bornage disponible
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            </TabsContent>
-          )}
+                    </CardContent>
+                  </Card>
+                </div>
 
-          {/* Onglet Historique - visible uniquement si payé */}
-          {hasServiceAccess('history') && (
-            <TabsContent value="history" className="mt-4">
+                {/* Statut fiscal */}
+                <Card>
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Statut Fiscal
+                    </h4>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {taxStatus.status === 'up_to_date' && <CheckCircle className="h-4 w-4 text-green-500" />}
+                        {taxStatus.status === 'pending' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
+                        {taxStatus.status === 'overdue' && <XCircle className="h-4 w-4 text-red-500" />}
+                        <span className="text-sm">
+                          {taxStatus.status === 'up_to_date' && 'À jour'}
+                          {taxStatus.status === 'pending' && `${taxStatus.count} paiement(s) en attente`}
+                          {taxStatus.status === 'overdue' && `${taxStatus.count} paiement(s) en retard`}
+                        </span>
+                      </div>
+                      <Button variant="outline" size="sm">
+                        <Download className="h-3 w-3 mr-1" />
+                        Export PDF
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Onglet Localisation */}
+          <TabsContent value="location" className="mt-4 space-y-4">
+            {!hasServiceAccess('location_history') ? (
+              <div className="p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                    <MapPin className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Les informations de localisation détaillées nécessitent un paiement pour être accessibles.
+                    </p>
+                  </div>
+                  <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Payer pour accéder à ce service
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Informations de localisation détaillées */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Localisation Géographique
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Province :</span>
+                          <span className="font-medium">{parcel.province}</span>
+                        </div>
+                        
+                        {parcel.parcel_type === 'SU' ? (
+                          <>
+                            {parcel.ville && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Ville :</span>
+                                <span className="font-medium">{parcel.ville}</span>
+                              </div>
+                            )}
+                            {parcel.commune && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Commune :</span>
+                                <span className="font-medium">{parcel.commune}</span>
+                              </div>
+                            )}
+                            {parcel.quartier && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Quartier :</span>
+                                <span className="font-medium">{parcel.quartier}</span>
+                              </div>
+                            )}
+                            {parcel.avenue && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Avenue :</span>
+                                <span className="font-medium">{parcel.avenue}</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {parcel.territoire && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Territoire/District :</span>
+                                <span className="font-medium">{parcel.territoire}</span>
+                              </div>
+                            )}
+                            {parcel.collectivite && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Collectivité :</span>
+                                <span className="font-medium">{parcel.collectivite}</span>
+                              </div>
+                            )}
+                            {parcel.groupement && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Groupement :</span>
+                                <span className="font-medium">{parcel.groupement}</span>
+                              </div>
+                            )}
+                            {parcel.village && (
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Village :</span>
+                                <span className="font-medium">{parcel.village}</span>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Type de parcelle :</span>
+                          <span className="font-medium">
+                            {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Localisation :</span>
+                          <span className="font-medium">{parcel.location}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Carte cadastrale */}
+                <CadastralMap 
+                  coordinates={parcel.gps_coordinates}
+                  center={{ lat: parcel.latitude, lng: parcel.longitude }}
+                  parcelNumber={parcel.parcel_number}
+                />
+
+                {/* Informations sur le bornage */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Surveyor className="h-4 w-4" />
+                      Information sur le Bornage
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {boundary_history.length > 0 ? (
+                      <div className="space-y-4">
+                        {boundary_history.map((boundary) => (
+                          <div key={boundary.id} className="p-4 border rounded-lg">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div>
+                                <span className="text-xs text-muted-foreground">N° de référence PV</span>
+                                <div className="font-medium">{boundary.pv_reference_number}</div>
+                              </div>
+                              <div>
+                                <span className="text-xs text-muted-foreground">Objet du bornage</span>
+                                <div className="font-medium">{boundary.boundary_purpose}</div>
+                              </div>
+                              <div>
+                                <span className="text-xs text-muted-foreground">Géomètre</span>
+                                <div className="font-medium">{boundary.surveyor_name}</div>
+                              </div>
+                            </div>
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              Date de mesurage : {formatDate(boundary.survey_date)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center text-muted-foreground py-4">
+                        Aucun historique de bornage disponible
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
+          {/* Onglet Historique */}
+          <TabsContent value="history" className="mt-4">
+            {!hasServiceAccess('history') ? (
+              <div className="p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                    <Clock className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      L'historique des propriétaires nécessite un paiement pour être accessible.
+                    </p>
+                  </div>
+                  <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Payer pour accéder à ce service
+                  </Button>
+                </div>
+              </div>
+            ) : (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
@@ -515,180 +592,198 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
-          )}
+            )}
+          </TabsContent>
 
-          {/* Onglet Obligations - visible uniquement si payé */}
-          {hasServiceAccess('obligations') && (
-            <TabsContent value="obligations" className="mt-4">
-            <div className="space-y-4">
-              {/* Navigation des sous-sections */}
-              <div className="flex space-x-1 bg-muted p-1 rounded-lg">
-                <button
-                  className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
-                    obligationsTab === 'taxes' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-                  }`}
-                  onClick={() => setObligationsTab('taxes')}
-                >
-                  <Receipt className="h-4 w-4 inline mr-2" />
-                  Taxes foncières
-                </button>
-                <button
-                  className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
-                    obligationsTab === 'mortgages' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
-                  }`}
-                  onClick={() => setObligationsTab('mortgages')}
-                >
-                  <CreditCard className="h-4 w-4 inline mr-2" />
-                  Hypothèques
-                </button>
+          {/* Onglet Obligations */}
+          <TabsContent value="obligations" className="mt-4">
+            {!hasServiceAccess('obligations') ? (
+              <div className="p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                    <Calculator className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
+                    <p className="text-muted-foreground max-w-md mx-auto">
+                      Les obligations fiscales et hypothécaires nécessitent un paiement pour être accessibles.
+                    </p>
+                  </div>
+                  <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Payer pour accéder à ce service
+                  </Button>
+                </div>
               </div>
+            ) : (
+              <div className="space-y-4">
+                {/* Navigation des sous-sections */}
+                <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+                  <button
+                    className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                      obligationsTab === 'taxes' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                    }`}
+                    onClick={() => setObligationsTab('taxes')}
+                  >
+                    <Receipt className="h-4 w-4 inline mr-2" />
+                    Taxes foncières
+                  </button>
+                  <button
+                    className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
+                      obligationsTab === 'mortgages' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                    }`}
+                    onClick={() => setObligationsTab('mortgages')}
+                  >
+                    <CreditCard className="h-4 w-4 inline mr-2" />
+                    Hypothèques
+                  </button>
+                </div>
 
-              {/* Section Taxes foncières */}
-              {obligationsTab === 'taxes' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Receipt className="h-4 w-4" />
-                      Historique des Taxes Foncières
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {tax_history.length > 0 ? (
-                      <div className="space-y-3">
-                        {tax_history.map((tax) => (
-                          <div key={tax.id} className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex items-center gap-3">
-                              {getPaymentStatusIcon(tax.payment_status)}
-                              <div>
-                                <div className="font-medium">Taxe foncière annuelle - {tax.tax_year}</div>
-                                <div className="text-sm text-muted-foreground">
-                                  Montant dû: ${tax.amount_usd.toLocaleString()} USD
-                                </div>
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Période: Année fiscale {tax.tax_year}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <Badge variant={getPaymentStatusBadge(tax.payment_status)}>
-                                {translatePaymentStatus(tax.payment_status)}
-                              </Badge>
-                              {tax.payment_date && (
-                                <div className="text-xs text-muted-foreground mt-1">
-                                  Payé le {formatDate(tax.payment_date)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center text-muted-foreground py-4">
-                        Aucun historique de taxes disponible
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Section Hypothèques */}
-              {obligationsTab === 'mortgages' && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      Historique des Hypothèques
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {mortgage_history.length > 0 ? (
-                      <div className="space-y-4">
-                        {mortgage_history.map((mortgage) => {
-                          const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
-                          const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
-                          
-                          return (
-                            <div key={mortgage.id} className="border rounded-lg p-4">
-                              <div className="flex items-start justify-between mb-3">
-                                <div className="flex items-center gap-3">
-                                  <Landmark className="h-5 w-5 text-blue-500" />
-                                  <div>
-                                    <div className="font-medium text-lg">
-                                      ${mortgage.mortgage_amount_usd.toLocaleString()} USD
-                                    </div>
-                                    <div className="text-sm text-muted-foreground">
-                                      {mortgage.creditor_name} • {mortgage.creditor_type}
-                                    </div>
+                {/* Section Taxes foncières */}
+                {obligationsTab === 'taxes' && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Receipt className="h-4 w-4" />
+                        Historique des Taxes Foncières
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {tax_history.length > 0 ? (
+                        <div className="space-y-3">
+                          {tax_history.map((tax) => (
+                            <div key={tax.id} className="flex items-center justify-between p-4 border rounded-lg">
+                              <div className="flex items-center gap-3">
+                                {getPaymentStatusIcon(tax.payment_status)}
+                                <div>
+                                  <div className="font-medium">Taxe foncière annuelle - {tax.tax_year}</div>
+                                  <div className="text-sm text-muted-foreground">
+                                    Montant dû: ${tax.amount_usd.toLocaleString()} USD
+                                  </div>
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    Période: Année fiscale {tax.tax_year}
                                   </div>
                                 </div>
-                                <Badge variant={
-                                  mortgage.mortgage_status === 'paid_off' ? 'default' :
-                                  mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
-                                }>
-                                  {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
-                                   mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
+                              </div>
+                              <div className="text-right">
+                                <Badge variant={getPaymentStatusBadge(tax.payment_status)}>
+                                  {translatePaymentStatus(tax.payment_status)}
                                 </Badge>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                                <div>
-                                  <span className="text-xs text-muted-foreground">Durée</span>
-                                  <div className="font-medium">{mortgage.duration_months} mois</div>
-                                </div>
-                                <div>
-                                  <span className="text-xs text-muted-foreground">Montant payé</span>
-                                  <div className="font-medium text-green-600">
-                                    ${totalPaid.toLocaleString()} USD
+                                {tax.payment_date && (
+                                  <div className="text-xs text-muted-foreground mt-1">
+                                    Payé le {formatDate(tax.payment_date)}
                                   </div>
-                                </div>
-                                <div>
-                                  <span className="text-xs text-muted-foreground">Montant restant</span>
-                                  <div className="font-medium text-red-600">
-                                    ${remainingAmount.toLocaleString()} USD
-                                  </div>
-                                </div>
+                                )}
                               </div>
-
-                              <div className="text-xs text-muted-foreground mb-3">
-                                Contrat signé le {formatDate(mortgage.contract_date)}
-                              </div>
-
-                              {mortgage.payments.length > 0 && (
-                                <div>
-                                  <h5 className="font-medium text-sm mb-2">Historique des paiements</h5>
-                                  <div className="space-y-2 max-h-32 overflow-y-auto">
-                                    {mortgage.payments.map((payment) => (
-                                      <div key={payment.id} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded">
-                                        <span>${payment.payment_amount_usd.toLocaleString()} USD</span>
-                                        <div className="flex items-center gap-2">
-                                          <Badge variant="outline">
-                                            {payment.payment_type === 'total' ? 'Paiement total' : 'Paiement partiel'}
-                                          </Badge>
-                                          <span className="text-muted-foreground">
-                                            {formatDate(payment.payment_date)}
-                                          </span>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
                             </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="text-center text-muted-foreground py-4">
-                        Aucun historique d'hypothèques disponible
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-            </TabsContent>
-          )}
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center text-muted-foreground py-4">
+                          Aucun historique de taxes disponible
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Section Hypothèques */}
+                {obligationsTab === 'mortgages' && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CreditCard className="h-4 w-4" />
+                        Historique des Hypothèques
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {mortgage_history.length > 0 ? (
+                        <div className="space-y-4">
+                          {mortgage_history.map((mortgage) => {
+                            const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
+                            const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
+                            
+                            return (
+                              <div key={mortgage.id} className="border rounded-lg p-4">
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <Landmark className="h-5 w-5 text-blue-500" />
+                                    <div>
+                                      <div className="font-medium text-lg">
+                                        ${mortgage.mortgage_amount_usd.toLocaleString()} USD
+                                      </div>
+                                      <div className="text-sm text-muted-foreground">
+                                        {mortgage.creditor_name} • {mortgage.creditor_type}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <Badge variant={
+                                    mortgage.mortgage_status === 'paid_off' ? 'default' :
+                                    mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
+                                  }>
+                                    {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
+                                     mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
+                                  </Badge>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                  <div>
+                                    <span className="text-xs text-muted-foreground">Durée</span>
+                                    <div className="font-medium">{mortgage.duration_months} mois</div>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-muted-foreground">Montant payé</span>
+                                    <div className="font-medium text-green-600">
+                                      ${totalPaid.toLocaleString()} USD
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <span className="text-xs text-muted-foreground">Montant restant</span>
+                                    <div className="font-medium text-red-600">
+                                      ${remainingAmount.toLocaleString()} USD
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="text-xs text-muted-foreground mb-3">
+                                  Contrat signé le {formatDate(mortgage.contract_date)}
+                                </div>
+
+                                {mortgage.payments.length > 0 && (
+                                  <div>
+                                    <h5 className="font-medium text-sm mb-2">Historique des paiements</h5>
+                                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                                      {mortgage.payments.map((payment) => (
+                                        <div key={payment.id} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded">
+                                          <span>${payment.payment_amount_usd.toLocaleString()} USD</span>
+                                          <div className="flex items-center gap-2">
+                                            <Badge variant="outline">
+                                              {payment.payment_type === 'total' ? 'Paiement total' : 'Paiement partiel'}
+                                            </Badge>
+                                            <span className="text-muted-foreground">
+                                              {formatDate(payment.payment_date)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="text-center text-muted-foreground py-4">
+                          Aucun historique d'hypothèques disponible
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </TabsContent>
         </Tabs>
 
         {/* Disclaimer */}
@@ -704,6 +799,15 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             </p>
           </div>
         </div>
+
+        {/* Facture */}
+        <CadastralInvoice
+          isOpen={showInvoice}
+          onClose={() => setShowInvoice(false)}
+          result={result}
+          paidServices={paidServices}
+          onDownloadPDF={handleDownloadPDF}
+        />
       </CardContent>
     </Card>
   );
