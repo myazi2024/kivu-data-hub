@@ -70,22 +70,23 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   }, [user, parcel.parcel_number, checkServiceAccess]);
 
   const handlePaymentSuccess = (services: string[]) => {
-    // En mode test: accorder l'accès uniquement aux services sélectionnés
-    setPaidServices(services);
+    // En mode test: ajouter les nouveaux services aux services déjà payés
+    const updatedServices = [...new Set([...paidServices, ...services])];
+    setPaidServices(updatedServices);
     setShowBillingPanel(false);
     
     // Afficher automatiquement la facture
     setShowInvoice(true);
     
-    // Définir l'onglet par défaut selon les services sélectionnés
+    // Définir l'onglet par défaut selon les services nouvellement sélectionnés
     if (services.includes('information')) setActiveTab('general');
     else if (services.includes('location_history')) setActiveTab('location');
     else if (services.includes('history')) setActiveTab('history');
     else if (services.includes('obligations')) setActiveTab('obligations');
     
-    // Notifier le parent
+    // Notifier le parent avec tous les services payés
     if (onPaymentSuccess) {
-      onPaymentSuccess(services);
+      onPaymentSuccess(updatedServices);
     }
   };
 
@@ -188,9 +189,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   const taxStatus = getOverallTaxStatus();
 
-  // Always show billing panel if user hasn't paid or isn't authenticated
+  // Show billing panel if user requests it or hasn't paid any services initially
   if (showBillingPanel) {
-    return <CadastralBillingPanel searchResult={result} onPaymentSuccess={(services) => handlePaymentSuccess(services)} />;
+    return <CadastralBillingPanel 
+      searchResult={result} 
+      onPaymentSuccess={(services) => handlePaymentSuccess(services)} 
+    />;
   }
 
   return (
