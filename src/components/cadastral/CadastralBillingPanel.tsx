@@ -22,11 +22,13 @@ import CadastralPaymentDialog from './CadastralPaymentDialog';
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
   onPaymentSuccess: (selectedServices: string[]) => void;
+  preselectServiceId?: string;
 }
 
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
   searchResult, 
-  onPaymentSuccess 
+  onPaymentSuccess,
+  preselectServiceId
 }) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const { toast } = useToast();
@@ -40,10 +42,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     setCurrentInvoice
   } = useCadastralBilling();
 
+  // Pré-sélectionner un service si demandé
+  React.useEffect(() => {
+    if (preselectServiceId && !selectedServices.includes(preselectServiceId)) {
+      toggleService(preselectServiceId);
+    }
+  }, [preselectServiceId]);
+
   const handleServiceToggle = (serviceId: string) => {
     toggleService(serviceId);
   };
-
   const handleProceedToPayment = async () => {
     const invoice = await createInvoice(searchResult);
     if (invoice) {

@@ -43,6 +43,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [showBillingPanel, setShowBillingPanel] = useState(true);
   const [paidServices, setPaidServices] = useState<string[]>([]);
   const [showInvoice, setShowInvoice] = useState(false);
+  const [preselectServiceId, setPreselectServiceId] = useState<string | undefined>(undefined);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
@@ -194,6 +195,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     return <CadastralBillingPanel 
       searchResult={result} 
       onPaymentSuccess={(services) => handlePaymentSuccess(services)} 
+      preselectServiceId={preselectServiceId}
     />;
   }
 
@@ -222,16 +224,16 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="general" disabled={!hasServiceAccess('information')}>
+            <TabsTrigger value="general">
               Informations {!hasServiceAccess('information') && '🔒'}
             </TabsTrigger>
-            <TabsTrigger value="location" disabled={!hasServiceAccess('location_history')}>
+            <TabsTrigger value="location">
               Localisation {!hasServiceAccess('location_history') && '🔒'}
             </TabsTrigger>
-            <TabsTrigger value="history" disabled={!hasServiceAccess('history')}>
+            <TabsTrigger value="history">
               Historique {!hasServiceAccess('history') && '🔒'}
             </TabsTrigger>
-            <TabsTrigger value="obligations" disabled={!hasServiceAccess('obligations')}>
+            <TabsTrigger value="obligations">
               Obligations {!hasServiceAccess('obligations') && '🔒'}
             </TabsTrigger>
           </TabsList>
@@ -273,7 +275,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       Les informations générales de cette parcelle nécessitent un paiement pour être accessibles.
                     </p>
                   </div>
-                  <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                  <Button onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} className="mt-4">
                     <CreditCard className="h-4 w-4 mr-2" />
                     Payer pour accéder à ce service
                   </Button>
@@ -376,7 +378,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       Les informations de localisation détaillées nécessitent un paiement pour être accessibles.
                     </p>
                   </div>
-                  <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                  <Button onClick={() => { setPreselectServiceId('location_history'); setShowBillingPanel(true); }} className="mt-4">
                     <CreditCard className="h-4 w-4 mr-2" />
                     Payer pour accéder à ce service
                   </Button>
@@ -538,7 +540,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       L'historique des propriétaires nécessite un paiement pour être accessible.
                     </p>
                   </div>
-                  <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                  <Button onClick={() => { setPreselectServiceId('history'); setShowBillingPanel(true); }} className="mt-4">
                     <CreditCard className="h-4 w-4 mr-2" />
                     Payer pour accéder à ce service
                   </Button>
@@ -613,7 +615,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       Les obligations fiscales et hypothécaires nécessitent un paiement pour être accessibles.
                     </p>
                   </div>
-                  <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                  <Button onClick={() => { setPreselectServiceId('obligations'); setShowBillingPanel(true); }} className="mt-4">
                     <CreditCard className="h-4 w-4 mr-2" />
                     Payer pour accéder à ce service
                   </Button>
