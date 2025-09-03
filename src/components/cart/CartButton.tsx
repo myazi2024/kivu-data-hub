@@ -38,19 +38,19 @@ export const CartButton = () => {
             variant="default"
             size="icon"
             aria-label="Ouvrir le panier"
-            className="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 rounded-full shadow-lg"
+            className="fixed bottom-3 right-3 xs:bottom-4 xs:right-4 sm:bottom-5 sm:right-5 md:bottom-6 md:right-6 z-50 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300 h-12 w-12 sm:h-14 sm:w-14"
           >
-            <ShoppingCart className="h-5 w-5" />
-            <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-[10px] font-semibold rounded-full h-5 min-w-5 px-1.5 flex items-center justify-center ring-2 ring-background">
+            <ShoppingCart className="h-5 w-5 sm:h-6 sm:w-6" />
+            <span className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground text-[10px] sm:text-xs font-semibold rounded-full h-5 min-w-5 sm:h-6 sm:min-w-6 px-1.5 flex items-center justify-center ring-2 ring-background">
               {itemCount}
             </span>
           </Button>
         </SheetTrigger>
       )}
-      <SheetContent>
+      <SheetContent className="w-full sm:max-w-md">
         <SheetHeader>
-          <SheetTitle>Panier ({itemCount})</SheetTitle>
-          <SheetDescription>
+          <SheetTitle className="text-lg sm:text-xl">Panier ({itemCount})</SheetTitle>
+          <SheetDescription className="text-sm sm:text-base">
             Gérez vos rapports sélectionnés avant achat
           </SheetDescription>
         </SheetHeader>

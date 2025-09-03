@@ -142,4 +142,61 @@ All colors MUST be HSL.
   .border-seloger-red {
     border-color: hsl(var(--seloger-red));
   }
+
+  /* Responsive image utilities */
+  .responsive-image {
+    @apply w-full h-auto object-cover;
+  }
+
+  .responsive-image-contain {
+    @apply w-full h-auto object-contain;
+  }
+
+  .aspect-video-responsive {
+    @apply aspect-video w-full;
+  }
+
+  .aspect-square-responsive {
+    @apply aspect-square w-full;
+  }
+
+  /* Focus and accessibility improvements */
+  .focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
+  }
+
+  /* Responsive button utilities */
+  .btn-responsive {
+    @apply text-sm sm:text-base px-4 sm:px-6 py-2 sm:py-3;
+  }
+
+  .btn-responsive-sm {
+    @apply text-xs sm:text-sm px-3 sm:px-4 py-1.5 sm:py-2;
+  }
+
+  .btn-responsive-lg {
+    @apply text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4;
+  }
+
+  /* Responsive spacing for components */
+  .card-responsive {
+    @apply p-4 sm:p-6 md:p-8 rounded-md sm:rounded-lg shadow-card;
+  }
+
+  /* Responsive typography classes */
+  .responsive-title {
+    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold;
+  }
+
+  .responsive-subtitle {
+    @apply text-lg sm:text-xl md:text-2xl font-semibold;
+  }
+
+  .responsive-body {
+    @apply text-sm sm:text-base md:text-lg;
+  }
+
+  .responsive-caption {
+    @apply text-xs sm:text-sm text-muted-foreground;
+  }
 }

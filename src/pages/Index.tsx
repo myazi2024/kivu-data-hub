@@ -90,13 +90,13 @@ const Index = () => {
       <ServicesSection />
       
       {/* À propos section */}
-      <section className="py-16 bg-secondary/30">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-foreground mb-8 text-center">À propos du BIC</h2>
+      <section className="section-padding bg-secondary/30">
+        <div className="max-w-4xl mx-auto container-padding">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-6 sm:mb-8 text-center">À propos du BIC</h2>
           
-          <div className="mb-12">
-            <h3 className="text-xl font-semibold text-foreground mb-4">Qui sommes-nous ?</h3>
-            <p className="text-muted-foreground leading-relaxed mb-6">
+          <div className="mb-8 sm:mb-12">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground mb-3 sm:mb-4">Qui sommes-nous ?</h3>
+            <p className="text-muted-foreground text-responsive-sm leading-relaxed mb-4 sm:mb-6">
               Fondé par des experts en droit, données urbaines et innovation numérique, le BIC (Bureau de l'Immobilier du Congo) 
               est né pour répondre à un besoin urgent : Comprendre les réalités foncières et locatives à travers des données concrètes et contextualisées.
             </p>
@@ -106,17 +106,17 @@ const Index = () => {
                 alt="Illustration de carte territoriale et données urbaines"
                 loading="lazy"
                 decoding="async"
-                className="w-full rounded-lg shadow"
+                className="w-full rounded-lg shadow-card"
               />
             </figure>
           </div>
 
-          <div className="mb-12">
-            <h3 className="text-xl font-semibold text-foreground mb-4">Notre méthode</h3>
-            <p className="text-muted-foreground leading-relaxed mb-4">
+          <div className="mb-8 sm:mb-12">
+            <h3 className="text-lg sm:text-xl md:text-2xl font-semibold text-foreground mb-3 sm:mb-4">Notre méthode</h3>
+            <p className="text-muted-foreground text-responsive-sm leading-relaxed mb-3 sm:mb-4">
               Nous combinons plusieurs sources pour produire des diagnostics complets :
             </p>
-            <ul className="list-disc list-inside text-muted-foreground space-y-2 ml-4">
+            <ul className="list-disc list-inside text-muted-foreground text-responsive-sm space-y-1 sm:space-y-2 ml-2 sm:ml-4">
               <li>Collecte numérique via l'application <strong>Myazi Immobilier</strong></li>
               <li>Enquêtes terrain et remontées communautaires</li>
               <li>Imagerie satellite (OSM, Mapbox)</li>
@@ -127,34 +127,33 @@ const Index = () => {
       </section>
 
       {/* Services détaillés section */}
-      <section className="py-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-foreground mb-6">Nos Services Détaillés</h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+      <section className="section-padding">
+        <div className="max-w-6xl mx-auto container-padding">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 sm:mb-6">Nos Services Détaillés</h2>
+            <p className="text-responsive-base text-muted-foreground max-w-3xl mx-auto">
               Nos outils et livrables sont conçus pour répondre aux enjeux urbains concrets. 
               Nous proposons des solutions adaptées aux besoins des territoires congolais.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {services.map((service, index) => {
+          <div className="responsive-grid-3">{services.map((service, index) => {
               const IconComponent = service.icon;
               
               return (
-                <Card key={index} className="group hover:shadow-card transition-all duration-300 border-border hover:border-primary/20">
-                  <CardHeader className="text-center pb-4">
-                    <div className="flex justify-center mb-4">
-                      <div className="p-4 rounded-full bg-secondary group-hover:bg-primary/10 transition-colors duration-300">
-                        <IconComponent className={`h-8 w-8 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
+                <Card key={index} className="group hover:shadow-card transition-all duration-300 border-border hover:border-primary/20 h-full">
+                  <CardHeader className="text-center pb-3 sm:pb-4">
+                    <div className="flex justify-center mb-3 sm:mb-4">
+                      <div className="p-3 sm:p-4 rounded-full bg-secondary group-hover:bg-primary/10 transition-colors duration-300">
+                        <IconComponent className={`h-6 w-6 sm:h-8 sm:w-8 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
                       </div>
                     </div>
-                    <CardTitle className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                    <CardTitle className="text-lg sm:text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
                       {service.title}
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <CardDescription className="text-center text-muted-foreground leading-relaxed">
+                    <CardDescription className="text-center text-muted-foreground text-sm sm:text-base leading-relaxed">
                       {service.description}
                     </CardDescription>
                   </CardContent>
