@@ -201,59 +201,75 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   return (
     <Card className="w-full shadow-lg">
-      <CardHeader className="pb-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <CardTitle className="flex items-center gap-2 text-xl">
-              <FileText className="h-5 w-5 text-primary" />
-              Parcelle {parcel.parcel_number}
+      <CardHeader className="pb-3 md:pb-4 p-3 md:p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1 min-w-0">
+            <CardTitle className="flex items-center gap-2 responsive-subtitle">
+              <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+              <span className="truncate">Parcelle {parcel.parcel_number}</span>
             </CardTitle>
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant={parcel.parcel_type === 'SU' ? 'default' : 'secondary'}>
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              <Badge variant={parcel.parcel_type === 'SU' ? 'default' : 'secondary'} className="text-xs">
                 {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
               </Badge>
-              <Badge variant="outline">{parcel.location}</Badge>
+              <Badge variant="outline" className="text-xs truncate max-w-32 md:max-w-none">{parcel.location}</Badge>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 shrink-0">
             <XCircle className="h-4 w-4" />
           </Button>
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-3 md:p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="general">
-              Informations {!hasServiceAccess('information') && '🔒'}
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+            <TabsTrigger value="general" className="text-xs md:text-sm p-2 md:p-3">
+              <span className="hidden sm:inline">Informations</span>
+              <span className="sm:hidden">Info</span>
+              {!hasServiceAccess('information') && <span className="ml-1">🔒</span>}
             </TabsTrigger>
-            <TabsTrigger value="location">
-              Localisation {!hasServiceAccess('location_history') && '🔒'}
+            <TabsTrigger value="location" className="text-xs md:text-sm p-2 md:p-3">
+              <span className="hidden sm:inline">Localisation</span>
+              <span className="sm:hidden">Lieu</span>
+              {!hasServiceAccess('location_history') && <span className="ml-1">🔒</span>}
             </TabsTrigger>
-            <TabsTrigger value="history">
+            <TabsTrigger value="history" className="text-xs md:text-sm p-2 md:p-3 hidden md:flex">
               Historique {!hasServiceAccess('history') && '🔒'}
             </TabsTrigger>
-            <TabsTrigger value="obligations">
+            <TabsTrigger value="obligations" className="text-xs md:text-sm p-2 md:p-3 hidden md:flex">
               Obligations {!hasServiceAccess('obligations') && '🔒'}
             </TabsTrigger>
           </TabsList>
+          
+          {/* Mobile: Additional tabs in dropdown or secondary row */}
+          <div className="md:hidden mt-2">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="history" className="text-xs p-2">
+                Historique {!hasServiceAccess('history') && '🔒'}
+              </TabsTrigger>
+              <TabsTrigger value="obligations" className="text-xs p-2">
+                Obligations {!hasServiceAccess('obligations') && '🔒'}
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-          {/* Contenu masqué si pas d'accès */}
+          {/* Contenu masqué si pas d'accès - Mobile optimized */}
           {!hasServiceAccess('information') && !hasServiceAccess('location_history') && 
            !hasServiceAccess('history') && !hasServiceAccess('obligations') && (
-            <div className="mt-4 p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-              <div className="space-y-4">
-                <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                  <FileText className="h-8 w-8 text-muted-foreground" />
+            <div className="mt-4 p-4 md:p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+              <div className="space-y-3 md:space-y-4">
+                <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-muted rounded-full flex items-center justify-center">
+                  <FileText className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
-                  <p className="text-muted-foreground max-w-md mx-auto">
+                  <h3 className="responsive-subtitle font-semibold mb-2">Contenu verrouillé</h3>
+                  <p className="responsive-body text-muted-foreground">
                     Le contenu détaillé de cette parcelle est accessible via paiement. 
                     Veuillez sélectionner et payer les services souhaités pour accéder aux informations.
                   </p>
                 </div>
-                <Button onClick={() => setShowBillingPanel(true)} className="mt-4">
+                <Button onClick={() => setShowBillingPanel(true)} className="mt-4 btn-responsive">
                   <CreditCard className="h-4 w-4 mr-2" />
                   Accéder aux services payants
                 </Button>
@@ -261,21 +277,21 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             </div>
           )}
 
-          {/* Onglet Informations générales */}
-          <TabsContent value="general" className="mt-4 space-y-4">
+          {/* Onglet Informations générales - Mobile optimized */}
+          <TabsContent value="general" className="mt-3 md:mt-4 space-y-3 md:space-y-4">
             {!hasServiceAccess('information') ? (
-              <div className="p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                    <Building className="h-8 w-8 text-muted-foreground" />
+              <div className="p-4 md:p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-3 md:space-y-4">
+                  <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-muted rounded-full flex items-center justify-center">
+                    <Building className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
+                    <h3 className="responsive-subtitle font-semibold mb-2">Contenu verrouillé</h3>
+                    <p className="responsive-body text-muted-foreground">
                       Les informations générales de cette parcelle nécessitent un paiement pour être accessibles.
                     </p>
                   </div>
-                  <Button onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} className="mt-4">
+                  <Button onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} className="mt-4 btn-responsive">
                     <CreditCard className="h-4 w-4 mr-2" />
                     Payer pour accéder à ce service
                   </Button>
@@ -283,25 +299,25 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Informations de propriété */}
+                <div className="space-y-3 md:space-y-4 md:grid md:grid-cols-2 md:gap-4">
+                  {/* Informations de propriété - Mobile stacked */}
                   <Card>
-                    <CardContent className="p-4">
-                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <CardContent className="p-3 md:p-4">
+                      <h4 className="responsive-body font-semibold mb-3 flex items-center gap-2">
                         <Building className="h-4 w-4" />
                         Titre de Propriété
                       </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
+                      <div className="space-y-2 responsive-caption">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                           <span className="text-muted-foreground">Type :</span>
                           <span className="font-medium">{parcel.property_title_type}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                           <span className="text-muted-foreground">Superficie :</span>
                           <span className="font-medium">{formatArea(parcel.area_sqm)}</span>
                         </div>
                         {parcel.area_hectares > 0 && (
-                          <div className="flex justify-between">
+                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                             <span className="text-muted-foreground">En hectares :</span>
                             <span className="font-medium">{parcel.area_hectares.toFixed(2)} ha</span>
                           </div>
@@ -310,23 +326,23 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                     </CardContent>
                   </Card>
 
-                  {/* Propriétaire actuel */}
+                  {/* Propriétaire actuel - Mobile stacked */}
                   <Card>
-                    <CardContent className="p-4">
-                      <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                    <CardContent className="p-3 md:p-4">
+                      <h4 className="responsive-body font-semibold mb-3 flex items-center gap-2">
                         <User className="h-4 w-4" />
                         Propriétaire Actuel
                       </h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
+                      <div className="space-y-2 responsive-caption">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                           <span className="text-muted-foreground">Nom :</span>
-                          <span className="font-medium">{parcel.current_owner_name}</span>
+                          <span className="font-medium break-words">{parcel.current_owner_name}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                           <span className="text-muted-foreground">Statut :</span>
                           <span className="font-medium">{parcel.current_owner_legal_status}</span>
                         </div>
-                        <div className="flex justify-between">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                           <span className="text-muted-foreground">Depuis :</span>
                           <span className="font-medium">{formatDate(parcel.current_owner_since)}</span>
                         </div>
@@ -335,25 +351,25 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </Card>
                 </div>
 
-                {/* Statut fiscal */}
+                {/* Statut fiscal - Mobile optimized */}
                 <Card>
-                  <CardContent className="p-4">
-                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <CardContent className="p-3 md:p-4">
+                    <h4 className="responsive-body font-semibold mb-3 flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
                       Statut Fiscal
                     </h4>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="flex items-center gap-2 flex-1">
                         {taxStatus.status === 'up_to_date' && <CheckCircle className="h-4 w-4 text-green-500" />}
                         {taxStatus.status === 'pending' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
                         {taxStatus.status === 'overdue' && <XCircle className="h-4 w-4 text-red-500" />}
-                        <span className="text-sm">
+                        <span className="responsive-caption">
                           {taxStatus.status === 'up_to_date' && 'À jour'}
                           {taxStatus.status === 'pending' && `${taxStatus.count} paiement(s) en attente`}
                           {taxStatus.status === 'overdue' && `${taxStatus.count} paiement(s) en retard`}
                         </span>
                       </div>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="w-full sm:w-auto btn-responsive-sm">
                         <Download className="h-3 w-3 mr-1" />
                         Export PDF
                       </Button>
@@ -364,21 +380,21 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             )}
           </TabsContent>
 
-          {/* Onglet Localisation */}
-          <TabsContent value="location" className="mt-4 space-y-4">
+          {/* Onglet Localisation - Mobile optimized */}
+          <TabsContent value="location" className="mt-3 md:mt-4 space-y-3 md:space-y-4">
             {!hasServiceAccess('location_history') ? (
-              <div className="p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                    <MapPin className="h-8 w-8 text-muted-foreground" />
+              <div className="p-4 md:p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-3 md:space-y-4">
+                  <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-muted rounded-full flex items-center justify-center">
+                    <MapPin className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
+                    <h3 className="responsive-subtitle font-semibold mb-2">Contenu verrouillé</h3>
+                    <p className="responsive-body text-muted-foreground">
                       Les informations de localisation détaillées nécessitent un paiement pour être accessibles.
                     </p>
                   </div>
-                  <Button onClick={() => { setPreselectServiceId('location_history'); setShowBillingPanel(true); }} className="mt-4">
+                  <Button onClick={() => { setPreselectServiceId('location_history'); setShowBillingPanel(true); }} className="mt-4 btn-responsive">
                     <CreditCard className="h-4 w-4 mr-2" />
                     Payer pour accéder à ce service
                   </Button>
@@ -386,18 +402,18 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               </div>
             ) : (
               <>
-                {/* Informations de localisation détaillées */}
+                {/* Informations de localisation détaillées - Mobile optimized */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
+                  <CardHeader className="pb-3 p-3 md:pb-4 md:p-4">
+                    <CardTitle className="responsive-body flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
                       Localisation Géographique
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
+                  <CardContent className="p-3 md:p-4 pt-0">
+                    <div className="space-y-3 md:space-y-4 md:grid md:grid-cols-2 md:gap-4">
+                      <div className="space-y-2 responsive-caption">
+                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
                           <span className="text-muted-foreground">Province :</span>
                           <span className="font-medium">{parcel.province}</span>
                         </div>

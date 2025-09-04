@@ -51,31 +51,33 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   const currentDate = new Date().toLocaleDateString('fr-FR');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <Card className="w-full max-w-2xl max-h-screen overflow-hidden bg-background border shadow-2xl">
-        {/* Header */}
-        <CardHeader className="pb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                <FileText className="h-6 w-6 text-primary" />
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-2 md:p-4 md:flex md:items-center md:justify-center">
+      <Card className="w-full h-full md:h-auto md:max-w-2xl md:max-h-[90vh] overflow-hidden bg-background border shadow-2xl md:rounded-lg">
+        {/* Header - Mobile optimized */}
+        <CardHeader className="pb-3 md:pb-4 p-3 md:p-6">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                <FileText className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               </div>
-              <div>
-                <CardTitle className="text-xl">Facture de Services Cadastraux</CardTitle>
-                <p className="text-sm text-muted-foreground">
+              <div className="min-w-0">
+                <CardTitle className="text-base md:text-xl leading-tight">
+                  Facture de Services Cadastraux
+                </CardTitle>
+                <p className="text-xs md:text-sm text-muted-foreground">
                   Bureau de l'Immobilier du Congo (BIC)
                 </p>
               </div>
             </div>
             {!showCloseWarning && (
-              <Button variant="outline" size="sm" onClick={handleClose}>
+              <Button variant="outline" size="sm" onClick={handleClose} className="shrink-0 h-8 w-8 p-0 md:h-9 md:w-9">
                 <X className="h-4 w-4" />
               </Button>
             )}
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="p-3 md:p-6 space-y-4 md:space-y-6 overflow-auto">
           {showCloseWarning ? (
             <Alert className="border-orange-200 bg-orange-50">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -109,28 +111,28 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
             </Alert>
           ) : (
             <>
-              {/* Informations de facturation */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Informations de facturation - Mobile optimized */}
+              <div className="space-y-4 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                  <h3 className="font-semibold responsive-caption uppercase tracking-wide">
                     Informations de facturation
                   </h3>
                   <div className="space-y-1">
-                    <p className="font-medium">Numéro de facture: {invoiceNumber}</p>
-                    <p className="text-sm text-muted-foreground">Date: {currentDate}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="responsive-body font-medium">Numéro: {invoiceNumber}</p>
+                    <p className="responsive-caption">Date: {currentDate}</p>
+                    <p className="responsive-caption">
                       Parcelle: {result.parcel.parcel_number}
                     </p>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+                  <h3 className="font-semibold responsive-caption uppercase tracking-wide">
                     Statut de paiement
                   </h3>
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500" />
-                    <Badge variant="default" className="bg-green-100 text-green-800">
+                    <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
+                    <Badge variant="default" className="status-success text-xs md:text-sm">
                       Payé
                     </Badge>
                   </div>
@@ -139,25 +141,25 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* Détails des services */}
-              <div className="space-y-4">
-                <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">
+              {/* Détails des services - Mobile optimized */}
+              <div className="space-y-3 md:space-y-4">
+                <h3 className="font-semibold responsive-caption uppercase tracking-wide">
                   Services achetés
                 </h3>
                 
-                <div className="space-y-3">
+                <div className="space-y-2 md:space-y-3">
                   {paidServices.map((serviceId) => {
                     const service = CADASTRAL_SERVICES.find(s => s.id === serviceId);
                     if (!service) return null;
 
                     return (
-                      <div key={serviceId} className="flex items-center justify-between p-3 border rounded-lg">
-                        <div className="flex-1">
-                          <p className="font-medium">{service.name}</p>
-                          <p className="text-sm text-muted-foreground">{service.description}</p>
+                      <div key={serviceId} className="flex flex-col md:flex-row md:items-center justify-between p-3 border rounded-lg gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="responsive-body font-medium">{service.name}</p>
+                          <p className="responsive-caption text-muted-foreground">{service.description}</p>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">{service.price.toLocaleString()} FC</p>
+                        <div className="text-right md:text-right">
+                          <p className="responsive-body font-medium">{service.price.toLocaleString()} FC</p>
                         </div>
                       </div>
                     );
@@ -167,13 +169,13 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* Total */}
-              <div className="space-y-3">
+              {/* Total - Mobile optimized */}
+              <div className="space-y-2 md:space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Sous-total</span>
-                  <span>{total.toLocaleString()} FC</span>
+                  <span className="responsive-body text-muted-foreground">Sous-total</span>
+                  <span className="responsive-body">{total.toLocaleString()} FC</span>
                 </div>
-                <div className="flex items-center justify-between text-lg font-semibold">
+                <div className="flex items-center justify-between responsive-subtitle font-semibold">
                   <span>Total</span>
                   <span>{total.toLocaleString()} FC</span>
                 </div>
@@ -181,11 +183,11 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* Actions */}
-              <div className="flex flex-col sm:flex-row gap-3 pt-4">
+              {/* Actions - Mobile optimized */}
+              <div className="flex flex-col gap-3 pt-2 md:pt-4 md:flex-row">
                 <Button 
                   onClick={onDownloadPDF}
-                  className="flex-1 sm:flex-none"
+                  className="w-full md:flex-1 btn-responsive"
                 >
                   <Download className="h-4 w-4 mr-2" />
                   Télécharger PDF
@@ -193,14 +195,14 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                 <Button 
                   variant="outline" 
                   onClick={handleClose}
-                  className="flex-1 sm:flex-none"
+                  className="w-full md:flex-1 btn-responsive"
                 >
                   Fermer
                 </Button>
               </div>
 
-              {/* Mentions légales */}
-              <div className="pt-4 text-xs text-muted-foreground leading-relaxed bg-muted/50 p-4 rounded-lg">
+              {/* Mentions légales - Mobile optimized */}
+              <div className="pt-3 md:pt-4 responsive-caption text-muted-foreground leading-relaxed bg-muted/50 p-3 md:p-4 rounded-lg">
                 <p className="mb-2">
                   <strong>Bureau de l'Immobilier du Congo (BIC)</strong>
                 </p>
