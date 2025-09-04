@@ -110,7 +110,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               {CADASTRAL_SERVICES.map((service) => (
                 <div 
                   key={service.id}
-                  className={`p-4 rounded-lg border transition-all cursor-pointer hover:border-primary/40 ${
+                  className={`p-3 sm:p-4 rounded-lg border transition-all cursor-pointer hover:border-primary/40 focus-visible-ring hover-interactive ${
                     selectedServices.includes(service.id) 
                       ? 'border-primary bg-primary/5' 
                       : 'border-border bg-background'
@@ -124,17 +124,17 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       className="mt-1"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <h4 className="font-medium text-sm">{service.name}</h4>
-                        <Badge variant="secondary" className="text-xs font-medium">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
+                        <h4 className="font-medium text-sm sm:text-base">{service.name}</h4>
+                        <Badge variant="secondary" className="text-xs font-medium w-fit">
                           ${service.price} USD
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 leading-relaxed">
                         {service.description}
                       </p>
-                      <div className="mt-2 p-2 bg-muted/20 rounded border-l-2 border-primary/20 text-left">
-                        <p className="text-xs text-foreground/80 leading-relaxed">
+                      <div className="mt-2 p-2 sm:p-3 bg-muted/20 rounded border-l-2 border-primary/20 text-left">
+                        <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">
                           <span className="font-medium text-primary">Utilité:</span> {
                             service.id === 'information' 
                               ? 'Parfait pour une vérification rapide de propriété ou pour des démarches administratives de base.'
@@ -157,14 +157,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           {selectedServices.length > 0 && (
             <div className="space-y-3">
               <Separator />
-              <div className="bg-muted/30 rounded-lg p-4">
-                <div className="flex items-center justify-between">
+              <div className="bg-muted/30 rounded-lg p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                   <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-primary" />
-                    <span className="font-semibold">Total à payer</span>
+                    <DollarSign className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span className="font-semibold text-sm sm:text-base">Total à payer</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">
+                  <div className="text-left sm:text-right">
+                    <div className="text-xl sm:text-2xl font-bold text-primary">
                       ${totalAmount} USD
                     </div>
                     <div className="text-xs text-muted-foreground">
@@ -181,34 +181,45 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <Button 
               onClick={handleProceedToPayment}
               disabled={selectedServices.length === 0 || loading}
-              className="w-full h-12 text-base font-medium"
+              className="w-full h-10 sm:h-12 text-sm sm:text-base font-medium touch-target focus-visible-ring"
               size="lg"
             >
               {loading ? (
                 <div className="flex items-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent" />
-                  Création de la facture...
+                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-2 border-background border-t-transparent" />
+                  <span className="hidden sm:inline">Création de la facture...</span>
+                  <span className="sm:hidden">Traitement...</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-2">
-                  <CreditCard className="h-4 w-4" />
-                  Procéder au paiement (${totalAmount} USD)
+                  <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Procéder au paiement (${totalAmount} USD)</span>
+                  <span className="sm:hidden">Payer ${totalAmount}</span>
                 </div>
               )}
             </Button>
             
             {selectedServices.length === 0 && (
-              <p className="text-xs text-muted-foreground text-center mt-2">
+              <p className="text-xs text-muted-foreground text-center mt-2 leading-relaxed">
                 Sélectionnez au moins un service pour continuer
               </p>
             )}
           </div>
 
           {/* Informations légales */}
-          <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t">
-            <p>• Paiement sécurisé via mobile money ou carte bancaire</p>
-            <p>• Accès aux données immédiat après paiement validé</p>
-            <p>• Facture PDF disponible avec logo BIC et mentions légales</p>
+          <div className="text-xs text-muted-foreground space-y-1 pt-2 border-t leading-relaxed">
+            <p className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>Paiement sécurisé via mobile money ou carte bancaire</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>Accès aux données immédiat après paiement validé</span>
+            </p>
+            <p className="flex items-start gap-2">
+              <span className="text-primary">•</span>
+              <span>Facture PDF disponible avec logo BIC et mentions légales</span>
+            </p>
           </div>
         </CardContent>
       </Card>

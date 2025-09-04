@@ -137,9 +137,9 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
   const isAvailable = publication.status === 'published';
 
   return (
-    <Card className="border-border hover:border-primary/20 transition-all duration-300 h-full flex flex-col">
+    <Card className="border-border hover:border-primary/20 transition-all duration-300 h-full flex flex-col focus-visible-ring hover-interactive contrast-aa">
       {/* Cover Image */}
-      <div className="relative h-48 bg-secondary/50 rounded-t-lg overflow-hidden">
+      <div className="relative h-40 sm:h-48 bg-secondary/50 rounded-t-lg overflow-hidden">
         {publication.cover_image_url ? (
           <img
             src={publication.cover_image_url}
@@ -171,23 +171,23 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
           </Badge>
           <Badge variant="outline">{getPages()} pages</Badge>
         </div>
-        <CardTitle className="text-lg font-semibold text-foreground line-clamp-2">
+        <CardTitle className="text-base sm:text-lg font-semibold text-foreground line-clamp-2 leading-tight">
           {publication.title}
         </CardTitle>
         <CardDescription className="space-y-1">
-          <div className="flex items-center gap-1 text-sm">
-            <Calendar className="h-3 w-3" />
-            {getPeriod()}
+          <div className="flex items-center gap-1 text-xs sm:text-sm">
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">{getPeriod()}</span>
           </div>
-          <div className="flex items-center gap-1 text-sm">
-            <MapPin className="h-3 w-3" />
-            {getZone()}
+          <div className="flex items-center gap-1 text-xs sm:text-sm">
+            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">{getZone()}</span>
           </div>
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col">
-        <p className="text-muted-foreground text-sm leading-relaxed mb-4 line-clamp-3 flex-1">
+      <CardContent className="flex-1 flex flex-col p-3 sm:p-6">
+        <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-3 flex-1">
           {publication.description || "Rapport d'analyse détaillé du marché immobilier avec données territorialisées, indicateurs de performance et projections fiscales."}
         </p>
 
@@ -208,9 +208,10 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
 
           <div className="space-y-2">
             {/* Preview/Summary Button */}
-            <Button variant="outline" size="sm" className="w-full">
-              <Download className="mr-2 h-4 w-4" />
-              Aperçu gratuit
+            <Button variant="outline" size="sm" className="w-full touch-target focus-visible-ring text-xs sm:text-sm">
+              <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Aperçu gratuit</span>
+              <span className="sm:hidden">Aperçu</span>
             </Button>
             
             {/* Action Buttons */}
@@ -219,30 +220,33 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
                 onClick={handleAddToCart}
                 disabled={!isAvailable}
                 size="sm"
-                className="w-full"
+                className="w-full touch-target focus-visible-ring text-xs sm:text-sm"
               >
-                <Download className="mr-2 h-4 w-4" />
-                Télécharger gratuitement
+                <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="hidden sm:inline">Télécharger gratuitement</span>
+                <span className="sm:hidden">Télécharger</span>
               </Button>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 {/* Add/Remove from Cart Button */}
                 <Button
                   onClick={isAlreadyInCart ? () => removeFromCart(publication.id) : handleAddToCart}
                   disabled={!isAvailable}
                   variant={isAlreadyInCart ? "secondary" : "outline"}
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 touch-target focus-visible-ring text-xs sm:text-sm min-w-[120px]"
                 >
                   {isAlreadyInCart ? (
                     <>
-                      <Minus className="mr-2 h-4 w-4" />
-                      Retirer
+                      <Minus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Retirer</span>
+                      <span className="sm:hidden">Retirer</span>
                     </>
                   ) : (
                     <>
-                      <ShoppingCart className="mr-2 h-4 w-4" />
-                      Panier
+                      <ShoppingCart className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline">Panier</span>
+                      <span className="sm:hidden">Panier</span>
                     </>
                   )}
                 </Button>
@@ -252,10 +256,11 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
                   onClick={handleBuyNow}
                   disabled={!isAvailable}
                   size="sm"
-                  className="flex-1"
+                  className="flex-1 touch-target focus-visible-ring text-xs sm:text-sm min-w-[120px]"
                 >
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Acheter
+                  <CreditCard className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                  <span className="hidden sm:inline">Acheter</span>
+                  <span className="sm:hidden">Acheter</span>
                 </Button>
               </div>
             )}

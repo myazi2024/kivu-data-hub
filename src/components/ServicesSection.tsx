@@ -80,7 +80,7 @@ const ServicesSection = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
           {services.map((service, index) => {
             const IconComponent = service.icon;
             const getIconColor = (variant: string) => {
@@ -99,19 +99,19 @@ const ServicesSection = () => {
             };
             
             return (
-              <Card key={index} className="group hover:shadow-card transition-all duration-300 border-border hover:border-primary/20">
-                <CardHeader className="text-center pb-4">
-                  <div className="flex justify-center mb-3">
-                    <div className="p-3 rounded-full bg-secondary group-hover:bg-primary/10 transition-colors duration-300">
-                      <IconComponent className={`h-6 w-6 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
+              <Card key={index} className="group hover:shadow-card transition-all duration-300 border-border hover:border-primary/20 focus-visible-ring hover-interactive h-full flex flex-col">
+                <CardHeader className="text-center pb-3 sm:pb-4 flex-1">
+                  <div className="flex justify-center mb-2 sm:mb-3">
+                    <div className="p-2 sm:p-3 rounded-full bg-secondary group-hover:bg-primary/10 transition-colors duration-300 touch-target">
+                      <IconComponent className={`h-5 w-5 sm:h-6 sm:w-6 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
                     </div>
                   </div>
-                  <CardTitle className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                  <CardTitle className="text-base sm:text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300 leading-tight">
                     {service.title}
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <CardDescription className="text-center text-muted-foreground leading-relaxed">
+                <CardContent className="pt-0">
+                  <CardDescription className="text-center text-muted-foreground leading-relaxed text-sm line-clamp-3">
                     {service.description}
                   </CardDescription>
                 </CardContent>

@@ -199,4 +199,84 @@ All colors MUST be HSL.
   .responsive-caption {
     @apply text-xs sm:text-sm text-muted-foreground;
   }
+
+  /* Navigation responsive classes */
+  .nav-mobile {
+    @apply text-sm px-3 py-2;
+  }
+
+  .nav-desktop {
+    @apply text-base px-6 py-3;
+  }
+
+  /* Grid layouts for results */
+  .results-grid-mobile {
+    @apply grid grid-cols-1 gap-4;
+  }
+
+  .results-grid-tablet {
+    @apply grid grid-cols-2 gap-6;
+  }
+
+  .results-grid-desktop {
+    @apply grid grid-cols-3 lg:grid-cols-4 gap-6;
+  }
+
+  /* Responsive table styles */
+  .table-responsive {
+    @apply overflow-x-auto text-sm md:text-base;
+  }
+
+  .table-mobile-prioritize {
+    @apply block md:table;
+  }
+
+  /* Toast positioning */
+  .toast-mobile {
+    @apply bottom-4 left-4 right-4 top-auto;
+  }
+
+  .toast-desktop {
+    @apply top-4 right-4 bottom-auto left-auto max-w-md;
+  }
+
+  /* Container responsive */
+  .container-responsive {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 md:px-8;
+  }
+
+  /* Accessibility improvements */
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+  }
+
+  .hover-interactive {
+    @apply transition-all duration-200 hover:scale-105 hover:shadow-hover;
+  }
+
+  .contrast-aa {
+    @apply text-foreground bg-background border-border;
+  }
+
+  /* Touch targets for mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px] flex items-center justify-center;
+  }
+
+  /* Status colors with proper contrast */
+  .status-success {
+    @apply bg-green-100 text-green-800 border-green-300 dark:bg-green-900 dark:text-green-100 dark:border-green-700;
+  }
+
+  .status-error {
+    @apply bg-red-100 text-red-800 border-red-300 dark:bg-red-900 dark:text-red-100 dark:border-red-700;
+  }
+
+  .status-warning {
+    @apply bg-yellow-100 text-yellow-800 border-yellow-300 dark:bg-yellow-900 dark:text-yellow-100 dark:border-yellow-700;
+  }
+
+  .status-info {
+    @apply bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700;
+  }
 }

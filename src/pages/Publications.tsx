@@ -80,24 +80,24 @@ const Publications = () => {
 
           {/* Publications Grid */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="bg-secondary/50 h-48 rounded-t-lg"></div>
-                  <div className="p-4 space-y-3">
-                    <div className="h-4 bg-secondary/50 rounded w-3/4"></div>
-                    <div className="h-4 bg-secondary/50 rounded w-1/2"></div>
-                    <div className="h-20 bg-secondary/50 rounded"></div>
+                  <div className="bg-secondary/50 h-40 sm:h-48 rounded-t-lg"></div>
+                  <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+                    <div className="h-3 sm:h-4 bg-secondary/50 rounded w-3/4"></div>
+                    <div className="h-3 sm:h-4 bg-secondary/50 rounded w-1/2"></div>
+                    <div className="h-16 sm:h-20 bg-secondary/50 rounded"></div>
                   </div>
                 </div>
               ))}
             </div>
           ) : filteredPublications.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">Aucune publication trouvée.</p>
+            <div className="text-center py-8 sm:py-12">
+              <p className="text-muted-foreground text-sm sm:text-base">Aucune publication trouvée.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8 sm:mb-12">
               {filteredPublications.map((publication) => (
                 <PublicationCard key={publication.id} publication={publication} />
               ))}
@@ -105,14 +105,16 @@ const Publications = () => {
           )}
 
           {/* Newsletter Section */}
-          <div className="bg-secondary/50 rounded-lg p-8 text-center">
-            <h3 className="text-xl font-semibold text-foreground mb-4">
+          <div className="bg-secondary/50 rounded-lg p-4 sm:p-6 md:p-8 text-center">
+            <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-3 sm:mb-4">
               Restez informé de nos dernières publications
             </h3>
-            <p className="text-muted-foreground mb-6">
+            <p className="text-sm sm:text-base text-muted-foreground mb-4 sm:mb-6 max-w-2xl mx-auto">
               Inscrivez-vous à notre newsletter pour recevoir nos rapports dès leur publication.
             </p>
-            <Button>S'abonner aux notifications</Button>
+            <Button className="touch-target focus-visible-ring text-sm sm:text-base">
+              S'abonner aux notifications
+            </Button>
           </div>
         </div>
       </main>
