@@ -103,18 +103,16 @@ const CadastralSearchBar = () => {
             )}
           </div>
 
-          {/* Instructions et aide */}
+          {/* Instructions compactes - Mobile optimized */}
           {(isExpanded && !searchResult) && (
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3 w-3" />
-                <span>Format attendu : <code className="bg-muted px-1 rounded">SU-LOCATION-NUMERO</code> ou <code className="bg-muted px-1 rounded">SR-LOCATION-NUMERO</code></span>
+            <div className="text-xs text-muted-foreground">
+              <div className="flex items-center gap-2 mb-1">
+                <MapPin className="h-3 w-3 shrink-0" />
+                <span className="truncate">Format : SU-LIEU-NUM ou SR-LIEU-NUM</span>
               </div>
-              <div className="ml-5">
-                • SU = Section Urbaine (ex: SU-GOMA-0456)
-              </div>
-              <div className="ml-5">
-                • SR = Section Rurale (ex: SR-RUTSHURU-0321)
+              <div className="ml-5 space-y-0.5">
+                <div>• SU = Urbaine (SU-GOMA-0456)</div>
+                <div>• SR = Rurale (SR-RUTSHURU-0321)</div>
               </div>
             </div>
           )}

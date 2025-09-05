@@ -51,8 +51,8 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   const currentDate = new Date().toLocaleDateString('fr-FR');
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-2 md:p-4 md:flex md:items-center md:justify-center">
-      <Card className="w-full h-full md:h-auto md:max-w-2xl md:max-h-[90vh] overflow-hidden bg-background border shadow-2xl md:rounded-lg">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-2 md:p-4 flex items-start md:items-center justify-center overflow-auto">
+      <Card className="w-full max-w-2xl my-2 md:my-0 md:max-h-[90vh] bg-background border shadow-2xl rounded-lg flex flex-col">
         {/* Header - Mobile optimized */}
         <CardHeader className="pb-3 md:pb-4 p-3 md:p-6">
           <div className="flex items-start justify-between gap-3">
@@ -77,7 +77,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
           </div>
         </CardHeader>
 
-        <CardContent className="p-3 md:p-6 space-y-4 md:space-y-6 overflow-auto">
+        <CardContent className="p-3 md:p-6 space-y-3 md:space-y-4 overflow-auto flex-1 min-h-0">
           {showCloseWarning ? (
             <Alert className="border-orange-200 bg-orange-50">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -153,13 +153,13 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                     if (!service) return null;
 
                     return (
-                      <div key={serviceId} className="flex flex-col md:flex-row md:items-center justify-between p-3 border rounded-lg gap-2">
+                      <div key={serviceId} className="flex items-start justify-between p-2 md:p-3 border rounded-lg gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="responsive-body font-medium">{service.name}</p>
-                          <p className="responsive-caption text-muted-foreground">{service.description}</p>
+                          <p className="text-sm font-medium leading-tight">{service.name}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1">{service.description}</p>
                         </div>
-                        <div className="text-right md:text-right">
-                          <p className="responsive-body font-medium">{service.price.toLocaleString()} FC</p>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-medium">{service.price.toLocaleString()} FC</p>
                         </div>
                       </div>
                     );
@@ -202,17 +202,12 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               </div>
 
               {/* Mentions légales - Mobile optimized */}
-              <div className="pt-3 md:pt-4 responsive-caption text-muted-foreground leading-relaxed bg-muted/50 p-3 md:p-4 rounded-lg">
-                <p className="mb-2">
-                  <strong>Bureau de l'Immobilier du Congo (BIC)</strong>
+              <div className="pt-2 md:pt-3 text-xs text-muted-foreground bg-muted/50 p-2 md:p-3 rounded-lg">
+                <p className="font-medium mb-1">Bureau de l'Immobilier du Congo (BIC)</p>
+                <p className="mb-1">
+                  Facture pour services cadastraux - Parcelle {result.parcel.parcel_number}.
                 </p>
-                <p className="mb-2">
-                  Cette facture certifie l'achat des services cadastraux listés ci-dessus pour la parcelle {result.parcel.parcel_number}.
-                  Les informations fournies proviennent des archives officielles du Ministère des Affaires Foncières.
-                </p>
-                <p>
-                  Pour toute question concernant cette facture, veuillez contacter le service client du BIC.
-                </p>
+                <p>Sources officielles du Ministère des Affaires Foncières.</p>
               </div>
             </>
           )}

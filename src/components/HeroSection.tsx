@@ -35,27 +35,26 @@ const HeroSection = () => {
         </div>
 
 
-        {/* Call to Action Buttons */}
-        <div className="flex flex-col xs:flex-row gap-3 xs:gap-4 sm:gap-6 justify-center items-center mb-6 sm:mb-8 md:mb-12">
-          <Link to="/publications" className="w-full xs:w-auto">
+        {/* Call to Action Buttons - Mobile optimized */}
+        <div className="flex flex-col xs:flex-row gap-2 xs:gap-3 sm:gap-4 justify-center items-center mb-6 sm:mb-8 md:mb-12">
+          <Link to="/publications" className="w-full xs:w-auto max-w-xs">
             <Button 
-              size="lg" 
-              className="w-full xs:w-auto bg-white text-seloger-red hover:bg-white/90 font-semibold px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg group transition-all duration-300"
+              className="w-full xs:w-auto bg-white text-seloger-red hover:bg-white/90 font-medium px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base group transition-all duration-300 h-10 sm:h-12"
             >
-              Nos Publications
-              <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-300" />
+              <span className="hidden xs:inline">Nos Publications</span>
+              <span className="xs:hidden">Publications</span>
+              <ArrowRight className="ml-2 h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
           </Link>
           
-          <Link to="/map" className="w-full xs:w-auto">
+          <Link to="/map" className="w-full xs:w-auto max-w-xs">
             <Button 
-              variant="outline" 
-              size="lg"
-              className="w-full xs:w-auto bg-transparent border-white text-white hover:bg-white hover:text-seloger-red font-semibold px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg transition-all duration-300"
+              variant="outline"
+              className="w-full xs:w-auto bg-transparent border-white text-white hover:bg-white hover:text-seloger-red font-medium px-4 sm:px-6 py-2.5 sm:py-3 text-sm sm:text-base transition-all duration-300 h-10 sm:h-12"
             >
-              <MapPin className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Cartographie Interactive</span>
-              <span className="sm:hidden">Cartographie</span>
+              <MapPin className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden xs:inline">Cartographie Interactive</span>
+              <span className="xs:hidden">Carte</span>
             </Button>
           </Link>
         </div>

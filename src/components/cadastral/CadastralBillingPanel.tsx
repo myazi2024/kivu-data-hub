@@ -74,75 +74,75 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   return (
     <>
       <Card className="w-full border-primary/20 bg-gradient-to-br from-background to-secondary/5">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <FileText className="h-5 w-5 text-primary" />
+        <CardHeader className="pb-3 p-3 md:p-4">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded bg-primary/10">
+              <FileText className="h-4 w-4 text-primary" />
             </div>
-            <div>
-              <CardTitle className="text-lg">
-                Consultez les détails cadastraux complets
+            <div className="min-w-0">
+              <CardTitle className="text-sm md:text-base truncate">
+                Parcelle {searchResult.parcel.parcel_number}
               </CardTitle>
-              <p className="text-sm text-muted-foreground mt-1">
-                Référence SU/SR: <span className="font-mono font-medium">{searchResult.parcel.parcel_number}</span>
+              <p className="text-xs text-muted-foreground">
+                {searchResult.parcel.location} • {searchResult.parcel.parcel_type === 'SU' ? 'Urbaine' : 'Rurale'}
               </p>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-6">
-          {/* Alert principal */}
-          <Alert className="border-amber-200 bg-amber-50 dark:bg-amber-950/10">
-            <Lock className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-800 dark:text-amber-200">
-              Le rapport que vous souhaitez consulter est accessible moyennant une contribution. Nous vous invitons à sélectionner les informations correspondant à vos besoins, puis à finaliser le règlement afin d'en obtenir l'accès.
+        <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
+          {/* Alert compact */}
+          <Alert className="border-amber-200 bg-amber-50 p-2 md:p-3">
+            <Lock className="h-3 w-3 text-amber-600 mt-0.5 shrink-0" />
+            <AlertDescription className="text-xs md:text-sm text-amber-800 leading-tight ml-1">
+              Paiement requis pour consulter le rapport détaillé.
             </AlertDescription>
           </Alert>
 
-          {/* Sélection des services */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-base flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Information(s) trouvée(s) pour {searchResult.parcel.parcel_number}
+          {/* Services en grille compacte */}
+          <div className="space-y-2">
+            <h3 className="font-medium text-xs md:text-sm flex items-center gap-1.5">
+              <CheckCircle className="h-3 w-3" />
+              Services disponibles
             </h3>
             
-            <div className="grid gap-3">
+            <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
               {CADASTRAL_SERVICES.map((service) => (
                 <div 
                   key={service.id}
-                  className={`p-3 sm:p-4 rounded-lg border transition-all cursor-pointer hover:border-primary/40 focus-visible-ring hover-interactive ${
+                  className={`p-2 rounded border cursor-pointer transition-all hover:border-primary/40 ${
                     selectedServices.includes(service.id) 
                       ? 'border-primary bg-primary/5' 
                       : 'border-border bg-background'
                   }`}
                   onClick={() => handleServiceToggle(service.id)}
                 >
-                  <div className="flex items-start gap-3">
+                  <div className="flex gap-2">
                     <Checkbox 
                       checked={selectedServices.includes(service.id)}
                       onChange={() => handleServiceToggle(service.id)}
-                      className="mt-1"
+                      className="mt-0.5 shrink-0"
                     />
                     <div className="flex-1 min-w-0">
-                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
-                        <h4 className="font-medium text-sm sm:text-base">{service.name}</h4>
-                        <Badge variant="secondary" className="text-xs font-medium w-fit">
-                          ${service.price} USD
+                      <div className="flex items-start justify-between gap-1 mb-1">
+                        <h4 className="font-medium text-xs leading-tight">{service.name}</h4>
+                        <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                          ${service.price}
                         </Badge>
                       </div>
-                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 leading-relaxed">
+                      <p className="text-xs text-muted-foreground line-clamp-2 leading-tight mb-1">
                         {service.description}
                       </p>
-                      <div className="mt-2 p-2 sm:p-3 bg-muted/20 rounded border-l-2 border-primary/20 text-left">
-                        <p className="text-xs sm:text-sm text-foreground/80 leading-relaxed">
-                          <span className="font-medium text-primary">Utilité:</span> {
+                      <div className="p-1.5 bg-muted/20 rounded border-l-2 border-primary/20">
+                        <p className="text-xs text-foreground/80 line-clamp-2">
+                          <span className="font-medium">Utilité:</span> {
                             service.id === 'information' 
-                              ? 'Parfait pour une vérification rapide de propriété ou pour des démarches administratives de base.'
+                              ? 'Vérification rapide de propriété'
                               : service.id === 'location_history'
-                              ? 'Recommandé pour les architectes, géomètres et développeurs pour planifier des projets de construction.'
+                              ? 'Pour projets de construction'
                               : service.id === 'history'
-                              ? 'Essentiel pour les notaires, avocats et acheteurs soucieux de sécuriser leurs transactions immobilières.'
-                              : 'Obligatoire avant tout achat immobilier, prêt bancaire ou investissement foncier pour éviter les mauvaises surprises.'
+                              ? 'Sécuriser les transactions'
+                              : 'Avant achat ou prêt bancaire'
                           }
                         </p>
                       </div>
@@ -153,23 +153,20 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           </div>
 
-          {/* Résumé du total */}
+          {/* Total compact */}
           {selectedServices.length > 0 && (
-            <div className="space-y-3">
-              <Separator />
-              <div className="bg-muted/30 rounded-lg p-3 sm:p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="font-semibold text-sm sm:text-base">Total à payer</span>
+            <div className="bg-muted/30 rounded p-2 md:p-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="h-3 w-3 text-primary" />
+                  <span className="font-medium text-xs md:text-sm">Total</span>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm md:text-base font-bold text-primary">
+                    ${totalAmount} USD
                   </div>
-                  <div className="text-left sm:text-right">
-                    <div className="text-xl sm:text-2xl font-bold text-primary">
-                      ${totalAmount} USD
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''} sélectionné{selectedServices.length > 1 ? 's' : ''}
-                    </div>
+                  <div className="text-xs text-muted-foreground">
+                    {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''}
                   </div>
                 </div>
               </div>

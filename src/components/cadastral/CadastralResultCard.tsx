@@ -254,24 +254,23 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             </TabsList>
           </div>
 
-          {/* Contenu masqué si pas d'accès - Mobile optimized */}
+          {/* Contenu masqué - Notification compacte sur mobile */}
           {!hasServiceAccess('information') && !hasServiceAccess('location_history') && 
            !hasServiceAccess('history') && !hasServiceAccess('obligations') && (
-            <div className="mt-4 p-4 md:p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-              <div className="space-y-3 md:space-y-4">
-                <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-muted rounded-full flex items-center justify-center">
-                  <FileText className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
+            <div className="mt-3 md:mt-4 p-3 md:p-6 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+              <div className="space-y-2 md:space-y-3">
+                <div className="mx-auto w-8 h-8 md:w-12 md:h-12 bg-muted rounded-full flex items-center justify-center">
+                  <FileText className="h-4 w-4 md:h-6 md:w-6 text-muted-foreground" />
                 </div>
                 <div>
-                  <h3 className="responsive-subtitle font-semibold mb-2">Contenu verrouillé</h3>
-                  <p className="responsive-body text-muted-foreground">
-                    Le contenu détaillé de cette parcelle est accessible via paiement. 
-                    Veuillez sélectionner et payer les services souhaités pour accéder aux informations.
+                  <h3 className="text-sm md:text-base font-semibold mb-1">Contenu verrouillé</h3>
+                  <p className="text-xs md:text-sm text-muted-foreground leading-snug">
+                    Détails accessibles via paiement.
                   </p>
                 </div>
-                <Button onClick={() => setShowBillingPanel(true)} className="mt-4 btn-responsive">
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Accéder aux services payants
+                <Button onClick={() => setShowBillingPanel(true)} size="sm" className="mt-2 h-8 text-xs md:h-9 md:text-sm">
+                  <CreditCard className="h-3 w-3 mr-1.5" />
+                  Payer
                 </Button>
               </div>
             </div>
@@ -280,46 +279,46 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Onglet Informations générales - Mobile optimized */}
           <TabsContent value="general" className="mt-3 md:mt-4 space-y-3 md:space-y-4">
             {!hasServiceAccess('information') ? (
-              <div className="p-4 md:p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-3 md:space-y-4">
-                  <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-muted rounded-full flex items-center justify-center">
-                    <Building className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
+              <div className="p-3 md:p-6 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-2 md:space-y-3">
+                  <div className="mx-auto w-8 h-8 md:w-12 md:h-12 bg-muted rounded-full flex items-center justify-center">
+                    <Building className="h-4 w-4 md:h-6 md:w-6 text-muted-foreground" />
                   </div>
                   <div>
-                    <h3 className="responsive-subtitle font-semibold mb-2">Contenu verrouillé</h3>
-                    <p className="responsive-body text-muted-foreground">
-                      Les informations générales de cette parcelle nécessitent un paiement pour être accessibles.
+                    <h3 className="text-sm md:text-base font-semibold mb-1">Service verrouillé</h3>
+                    <p className="text-xs md:text-sm text-muted-foreground">
+                      Paiement requis pour ce service.
                     </p>
                   </div>
-                  <Button onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} className="mt-4 btn-responsive">
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Payer pour accéder à ce service
+                  <Button onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} size="sm" className="mt-2 h-8 text-xs md:h-9 md:text-sm">
+                    <CreditCard className="h-3 w-3 mr-1.5" />
+                    Payer
                   </Button>
                 </div>
               </div>
             ) : (
               <>
-                <div className="space-y-3 md:space-y-4 md:grid md:grid-cols-2 md:gap-4">
+                <div className="space-y-2 md:space-y-3 md:grid md:grid-cols-2 md:gap-3">
                   {/* Informations de propriété - Mobile stacked */}
                   <Card>
-                    <CardContent className="p-3 md:p-4">
-                      <h4 className="responsive-body font-semibold mb-3 flex items-center gap-2">
-                        <Building className="h-4 w-4" />
+                    <CardContent className="p-2 md:p-3">
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <Building className="h-3 w-3" />
                         Titre de Propriété
                       </h4>
-                      <div className="space-y-2 responsive-caption">
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-muted-foreground">Type :</span>
-                          <span className="font-medium">{parcel.property_title_type}</span>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Type:</span>
+                          <span className="font-medium text-right">{parcel.property_title_type}</span>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-muted-foreground">Superficie :</span>
-                          <span className="font-medium">{formatArea(parcel.area_sqm)}</span>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Surface:</span>
+                          <span className="font-medium text-right">{formatArea(parcel.area_sqm)}</span>
                         </div>
                         {parcel.area_hectares > 0 && (
-                          <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                            <span className="text-muted-foreground">En hectares :</span>
-                            <span className="font-medium">{parcel.area_hectares.toFixed(2)} ha</span>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Hectares:</span>
+                            <span className="font-medium text-right">{parcel.area_hectares.toFixed(2)} ha</span>
                           </div>
                         )}
                       </div>
@@ -328,23 +327,23 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
                   {/* Propriétaire actuel - Mobile stacked */}
                   <Card>
-                    <CardContent className="p-3 md:p-4">
-                      <h4 className="responsive-body font-semibold mb-3 flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Propriétaire Actuel
+                    <CardContent className="p-2 md:p-3">
+                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <User className="h-3 w-3" />
+                        Propriétaire
                       </h4>
-                      <div className="space-y-2 responsive-caption">
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-muted-foreground">Nom :</span>
-                          <span className="font-medium break-words">{parcel.current_owner_name}</span>
+                      <div className="space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Nom:</span>
+                          <span className="font-medium text-right break-words max-w-32">{parcel.current_owner_name}</span>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-muted-foreground">Statut :</span>
-                          <span className="font-medium">{parcel.current_owner_legal_status}</span>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Statut:</span>
+                          <span className="font-medium text-right">{parcel.current_owner_legal_status}</span>
                         </div>
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-muted-foreground">Depuis :</span>
-                          <span className="font-medium">{formatDate(parcel.current_owner_since)}</span>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Depuis:</span>
+                          <span className="font-medium text-right">{formatDate(parcel.current_owner_since)}</span>
                         </div>
                       </div>
                     </CardContent>
@@ -353,25 +352,25 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
                 {/* Statut fiscal - Mobile optimized */}
                 <Card>
-                  <CardContent className="p-3 md:p-4">
-                    <h4 className="responsive-body font-semibold mb-3 flex items-center gap-2">
-                      <DollarSign className="h-4 w-4" />
+                  <CardContent className="p-2 md:p-3">
+                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
+                      <DollarSign className="h-3 w-3" />
                       Statut Fiscal
                     </h4>
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 flex-1">
-                        {taxStatus.status === 'up_to_date' && <CheckCircle className="h-4 w-4 text-green-500" />}
-                        {taxStatus.status === 'pending' && <AlertCircle className="h-4 w-4 text-yellow-500" />}
-                        {taxStatus.status === 'overdue' && <XCircle className="h-4 w-4 text-red-500" />}
-                        <span className="responsive-caption">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {taxStatus.status === 'up_to_date' && <CheckCircle className="h-3 w-3 text-green-500" />}
+                        {taxStatus.status === 'pending' && <AlertCircle className="h-3 w-3 text-yellow-500" />}
+                        {taxStatus.status === 'overdue' && <XCircle className="h-3 w-3 text-red-500" />}
+                        <span className="text-xs">
                           {taxStatus.status === 'up_to_date' && 'À jour'}
-                          {taxStatus.status === 'pending' && `${taxStatus.count} paiement(s) en attente`}
-                          {taxStatus.status === 'overdue' && `${taxStatus.count} paiement(s) en retard`}
+                          {taxStatus.status === 'pending' && `${taxStatus.count} en attente`}
+                          {taxStatus.status === 'overdue' && `${taxStatus.count} en retard`}
                         </span>
                       </div>
-                      <Button variant="outline" size="sm" className="w-full sm:w-auto btn-responsive-sm">
+                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
                         <Download className="h-3 w-3 mr-1" />
-                        Export PDF
+                        PDF
                       </Button>
                     </div>
                   </CardContent>
