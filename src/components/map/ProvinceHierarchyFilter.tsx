@@ -13,7 +13,7 @@ interface ProvinceHierarchyFilterProps {
   }) => void;
 }
 
-// Données hiérarchiques DRC
+// Données hiérarchiques DRC - Corrigées pour éviter les doublons
 const hierarchyData = {
   "Kinshasa": {
     "Kalamu": ["Kalamu", "Matonge", "Victoire"],
@@ -30,14 +30,13 @@ const hierarchyData = {
     "Uvira": ["Kakombe", "Kilibula", "Kimanga"],
     "Kamituga": ["Kamituga Centre", "Kitutu", "Mukungwe"]
   },
-  "Katanga": {
-    "Lubumbashi": ["Kenya", "Kampemba", "Ruashi"],
-    "Likasi": ["Likasi Centre", "Shituru", "Kambove"],
-    "Kolwezi": ["Kolwezi Centre", "Manika", "Musonoie"]
-  },
   "Haut-Katanga": {
     "Lubumbashi": ["Kenya", "Kampemba", "Ruashi"],
     "Kipushi": ["Kipushi Centre", "Kasumbalesa", "Mokambo"]
+  },
+  "Lualaba": {
+    "Kolwezi": ["Kolwezi Centre", "Manika", "Musonoie"],
+    "Likasi": ["Likasi Centre", "Shituru", "Kambove"]
   }
 };
 
@@ -59,8 +58,15 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
         commune: 'all',
         quartier: 'all'
       });
+    } else if (!selectedProvince && selectedFilters.province !== 'all') {
+      // Reset all filters if no province is selected
+      setSelectedFilters({
+        province: 'all',
+        commune: 'all',
+        quartier: 'all'
+      });
     }
-  }, [selectedProvince]);
+  }, [selectedProvince, selectedFilters.province]);
 
   const handleProvinceChange = (province: string) => {
     const newFilters = {
@@ -106,126 +112,93 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
   };
 
   return (
-    <Card className="border border-border/30">
-      <CardHeader className="pb-2 px-3 pt-3">
-        <CardTitle className="text-xs font-medium text-foreground flex items-center gap-2">
-          <Filter className="h-3 w-3 text-primary" />
-          Filtres territoriaux
-          {(selectedFilters.province !== 'all' || selectedFilters.commune !== 'all' || selectedFilters.quartier !== 'all') && (
-            <Badge 
-              variant="outline" 
-              className="text-[9px] px-1 py-0 cursor-pointer hover:bg-destructive/10 hover:text-destructive"
-              onClick={resetFilters}
+    <div className="fixed top-4 right-4 z-40 w-64 max-w-[calc(100vw-2rem)]">
+      <Card className="border border-border/30 bg-background/95 backdrop-blur-sm shadow-lg">
+        <CardHeader className="pb-1 px-2 pt-2">
+          <CardTitle className="text-[10px] font-medium text-foreground flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <Filter className="h-3 w-3 text-primary" />
+              Filtres
+            </div>
+            {(selectedFilters.province !== 'all' || selectedFilters.commune !== 'all' || selectedFilters.quartier !== 'all') && (
+              <Badge 
+                variant="outline" 
+                className="text-[8px] px-1 py-0 cursor-pointer hover:bg-destructive/10 hover:text-destructive"
+                onClick={resetFilters}
+              >
+                Reset
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 p-2">
+          {/* Province Filter */}
+          <div className="space-y-1">
+            <Select 
+              value={selectedFilters.province} 
+              onValueChange={handleProvinceChange}
             >
-              Réinitialiser
-            </Badge>
+              <SelectTrigger className="h-7 text-[10px]">
+                <SelectValue placeholder="Province" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-[10px]">Toutes</SelectItem>
+                {Object.keys(hierarchyData).map(province => (
+                  <SelectItem key={province} value={province} className="text-[10px]">
+                    {province}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Commune Filter */}
+          {selectedFilters.province && selectedFilters.province !== 'all' && (
+            <div className="space-y-1">
+              <Select 
+                value={selectedFilters.commune} 
+                onValueChange={handleCommuneChange}
+                disabled={!selectedFilters.province}
+              >
+                <SelectTrigger className="h-7 text-[10px]">
+                  <SelectValue placeholder="Commune" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-[10px]">Toutes</SelectItem>
+                  {availableCommunes.map(commune => (
+                    <SelectItem key={commune} value={commune} className="text-[10px]">
+                      {commune}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 p-3">
-        {/* Province Filter */}
-        <div className="space-y-1">
-          <label className="text-[10px] font-medium text-muted-foreground block">
-            Province
-          </label>
-          <Select 
-            value={selectedFilters.province} 
-            onValueChange={handleProvinceChange}
-          >
-            <SelectTrigger className="h-8 text-xs">
-              <SelectValue placeholder="Sélectionnez une province" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all" className="text-xs">Toutes les provinces</SelectItem>
-              {Object.keys(hierarchyData).map(province => (
-                <SelectItem key={province} value={province} className="text-xs">
-                  {province}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
 
-        {/* Commune Filter */}
-        {selectedFilters.province && selectedFilters.province !== 'all' && (
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-              <ChevronRight className="h-2 w-2" />
-              Commune
-            </label>
-            <Select 
-              value={selectedFilters.commune} 
-              onValueChange={handleCommuneChange}
-              disabled={!selectedFilters.province}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Sélectionnez une commune" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-xs">Toutes les communes</SelectItem>
-                {availableCommunes.map(commune => (
-                  <SelectItem key={commune} value={commune} className="text-xs">
-                    {commune}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Quartier Filter */}
-        {selectedFilters.province && selectedFilters.province !== 'all' && selectedFilters.commune && selectedFilters.commune !== 'all' && (
-          <div className="space-y-1">
-            <label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
-              <ChevronRight className="h-2 w-2" />
-              Quartier
-            </label>
-            <Select 
-              value={selectedFilters.quartier} 
-              onValueChange={handleQuartierChange}
-              disabled={!selectedFilters.commune}
-            >
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Sélectionnez un quartier" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all" className="text-xs">Tous les quartiers</SelectItem>
-                {availableQuartiers.map(quartier => (
-                  <SelectItem key={quartier} value={quartier} className="text-xs">
-                    {quartier}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Active Filters Display */}
-        {(selectedFilters.province !== 'all' || selectedFilters.commune !== 'all' || selectedFilters.quartier !== 'all') && (
-          <div className="pt-2 border-t border-border/30">
-            <div className="text-[10px] font-medium text-muted-foreground mb-1">
-              Sélection active:
+          {/* Quartier Filter */}
+          {selectedFilters.province && selectedFilters.province !== 'all' && selectedFilters.commune && selectedFilters.commune !== 'all' && (
+            <div className="space-y-1">
+              <Select 
+                value={selectedFilters.quartier} 
+                onValueChange={handleQuartierChange}
+                disabled={!selectedFilters.commune}
+              >
+                <SelectTrigger className="h-7 text-[10px]">
+                  <SelectValue placeholder="Quartier" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all" className="text-[10px]">Tous</SelectItem>
+                  {availableQuartiers.map(quartier => (
+                    <SelectItem key={quartier} value={quartier} className="text-[10px]">
+                      {quartier}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <div className="flex flex-wrap gap-1">
-              {selectedFilters.province && selectedFilters.province !== 'all' && (
-                <Badge variant="secondary" className="text-[9px] px-1 py-0">
-                  {selectedFilters.province}
-                </Badge>
-              )}
-              {selectedFilters.commune && selectedFilters.commune !== 'all' && (
-                <Badge variant="secondary" className="text-[9px] px-1 py-0">
-                  {selectedFilters.commune}
-                </Badge>
-              )}
-              {selectedFilters.quartier && selectedFilters.quartier !== 'all' && (
-                <Badge variant="secondary" className="text-[9px] px-1 py-0">
-                  {selectedFilters.quartier}
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };

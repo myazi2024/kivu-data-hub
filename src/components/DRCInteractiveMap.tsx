@@ -769,6 +769,12 @@ const DRCInteractiveMap = () => {
 
         {/* Layout responsive optimisé avec padding pour les boutons flottants */}
         <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-4 h-full min-h-0 pb-20 lg:pb-0">
+        
+        {/* Filtre hiérarchique flottant */}
+        <ProvinceHierarchyFilter
+          selectedProvince={selectedProvince?.name}
+          onFilterChange={setHierarchyFilters}
+        />
         {/* Carte interactive - Responsive layout */}
         <div className={`${activeMobilePanel !== 'map' ? 'hidden lg:block' : 'flex-1'} lg:col-span-3 order-3 lg:order-1 min-h-0 h-full`}>
           <Card className="card-compact overflow-hidden h-full flex flex-col">
@@ -848,12 +854,6 @@ const DRCInteractiveMap = () => {
           {/* Visualisations avec scroll optimisé */}
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
             <div className="space-y-3 sm:space-y-4 p-2 sm:p-3 md:p-4">
-              {/* Filtre hiérarchique */}
-              <ProvinceHierarchyFilter
-                selectedProvince={selectedProvince?.name}
-                onFilterChange={setHierarchyFilters}
-              />
-              
               {selectedProvince && (
                 <Card className="card-compact shadow-none border-border/30">
                   <CardHeader className="pb-1 px-2 pt-2 sm:pb-2 sm:px-3 sm:pt-3">
