@@ -91,18 +91,18 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 charts-compact">
       {/* Évolution mensuelle des transactions */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2 text-xs sm:text-sm">
             <Activity className="h-4 w-4 text-primary" />
             Volume Mensuel des Transactions RDC
             <span className="text-sm font-normal text-muted-foreground">(Estimations 2024)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={150}>
             <ComposedChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -167,13 +167,13 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
         {/* Top provinces par transactions */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Building2 className="h-4 w-4 text-green-600" />
               Provinces les Plus Actives
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={140}>
               <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -208,13 +208,13 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
         {/* Évolution trimestrielle */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-blue-600" />
               Croissance Trimestrielle
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={140}>
               <AreaChart data={quarterlyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -263,7 +263,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
       {selectedProvince && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />
               Activité Transactionnelle : {selectedProvince.name}
             </CardTitle>

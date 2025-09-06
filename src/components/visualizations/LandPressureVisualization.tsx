@@ -136,18 +136,18 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 charts-compact">
       {/* Évolution temporelle de la pression */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2 text-xs sm:text-sm">
             <TrendingUp className="h-4 w-4 text-primary" />
             Évolution de la Pression Foncière RDC
             <span className="text-sm font-normal text-muted-foreground">(Tendance 2024)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={160}>
             <ComposedChart data={evolutionData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -215,7 +215,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
         {/* Distribution de la pression */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               Répartition par Niveau de Pression
             </CardTitle>
@@ -266,7 +266,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={140}>
               <BarChart data={topPressureProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -302,13 +302,13 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
       {/* Analyse de corrélation */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-blue-600" />
             Corrélation Pression Foncière - Prix - Population
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={260}>
+          <ResponsiveContainer width="100%" height={160}>
             <ScatterChart data={correlationData} margin={{ top: 20, right: 30, left: 40, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -352,7 +352,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
       {selectedProvince && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Map className="h-4 w-4 text-primary" />
               Diagnostic Foncier : {selectedProvince.name}
             </CardTitle>

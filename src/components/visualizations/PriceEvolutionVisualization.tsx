@@ -77,18 +77,18 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 charts-compact">
       {/* Évolution temporelle des prix moyens */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2 text-xs sm:text-sm">
             <TrendingUp className="h-4 w-4 text-primary" />
             Évolution des Prix Moyens RDC
             <span className="text-sm font-normal text-muted-foreground">(12 derniers mois)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={150}>
             <LineChart data={timeSeriesData} margin={{ top: 12, right: 16, left: 12, bottom: 12 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -149,13 +149,13 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
         {/* Top provinces par prix de location */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-green-600" />
               Prix Location les Plus Élevés
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={140}>
               <AreaChart data={topProvincesByRent} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -192,13 +192,13 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
         {/* Top provinces par prix de vente */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-blue-600" />
               Prix Vente les Plus Élevés
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={140}>
               <AreaChart data={topProvincesBySale} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -237,7 +237,7 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
       {selectedProvince && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-primary" />
               Analyse Détaillée : {selectedProvince.name}
             </CardTitle>

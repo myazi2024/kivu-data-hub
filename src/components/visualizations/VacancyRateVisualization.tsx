@@ -45,7 +45,7 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-1 charts-compact">
       {/* Histogramme des taux de vacance par province */}
       <Card>
         <CardHeader className="pb-1">

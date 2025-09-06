@@ -121,7 +121,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
         <CardHeader className="pb-3 sm:pb-4 px-0 pt-0">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="responsive-body font-medium text-foreground flex items-center gap-2">
+              <CardTitle className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 <span className="hidden md:inline">Indicateurs du Marché</span>
                 <span className="md:hidden">Marché</span>
@@ -214,7 +214,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                   </div>
                   
                    <div className="bg-card rounded border-border/30 border">
-                     <div className="p-2 sm:p-3">
+                     <div className="charts-compact transform origin-top-left scale-[0.86] md:scale-100 p-1 sm:p-2">
                        {renderVisualization()}
                      </div>
                    </div>

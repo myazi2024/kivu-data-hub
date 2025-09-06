@@ -341,8 +341,8 @@ const DRCInteractiveMap = () => {
         {/* Panneau Analytics - Responsive layout */}
         <div className="lg:col-span-4 order-2 lg:order-3 h-[45vh] lg:h-full flex flex-col min-h-0">
           <Card className="flex-1 overflow-hidden card-compact shadow-none">
-            <CardHeader className="px-2 py-2 sm:px-3 sm:py-3 border-b border-border/20">
-              <CardTitle className="responsive-subtitle font-medium text-foreground flex items-center gap-2">
+            <CardHeader className="px-2 py-1 sm:px-3 sm:py-2 border-b border-border/20">
+              <CardTitle className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 <span className="hidden md:inline">Analytics Immobilier</span>
                 <span className="md:hidden">Analytics</span>

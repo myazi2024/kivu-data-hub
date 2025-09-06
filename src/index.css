@@ -285,3 +285,21 @@ All colors MUST be HSL.
     @apply bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900 dark:text-blue-100 dark:border-blue-700;
   }
 }
+
+/* Charts compact mode overrides */
+@layer components {
+  .charts-compact .recharts-default-tooltip,
+  .charts-compact .recharts-legend-item-text,
+  .charts-compact .recharts-cartesian-axis-tick-value,
+  .charts-compact .recharts-tooltip-wrapper {
+    font-size: 10px;
+  }
+
+  .charts-compact .recharts-cartesian-axis-label {
+    font-size: 10px;
+  }
+
+  .charts-compact .recharts-text tspan {
+    font-size: 10px;
+  }
+}

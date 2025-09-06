@@ -100,18 +100,18 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-2 charts-compact">
       {/* Rendement par province */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
+          <CardTitle className="flex items-center gap-2 text-xs sm:text-sm">
             <DollarSign className="h-4 w-4 text-primary" />
             Rendement Locatif Brut par Province
             <span className="text-sm font-normal text-muted-foreground">(Top 10)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={160}>
             <ComposedChart data={topRendementProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
@@ -165,13 +165,13 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
         {/* Corrélation prix vs rendement */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <TrendingUp className="h-4 w-4 text-blue-600" />
               Corrélation Prix-Rendement
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={140}>
               <ScatterChart data={correlationData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -214,7 +214,7 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
         {/* Répartition par catégorie */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <Calculator className="h-4 w-4 text-green-600" />
               Répartition par Niveau de Rendement
             </CardTitle>
@@ -259,7 +259,7 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
       {selectedProvince && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
+            <CardTitle className="text-xs sm:text-sm flex items-center gap-2">
               <DollarSign className="h-4 w-4 text-primary" />
               Analyse Rendement : {selectedProvince.name}
             </CardTitle>
