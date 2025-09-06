@@ -43,16 +43,16 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
     
     // Classification de la pression
     let niveauPression = 'Faible';
-    let couleurPression = '#22c55e';
+    let couleurPression = 'hsl(var(--success))';
     if (indicePression >= 2.5) {
       niveauPression = 'Très élevé';
-      couleurPression = '#ef4444';
+      couleurPression = 'hsl(var(--destructive))';
     } else if (indicePression >= 2) {
       niveauPression = 'Élevé';
-      couleurPression = '#f97316';
+      couleurPression = 'hsl(var(--accent))';
     } else if (indicePression >= 1.5) {
       niveauPression = 'Modéré';
-      couleurPression = '#eab308';
+      couleurPression = 'hsl(var(--warning))';
     }
     
     return {
@@ -93,25 +93,25 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
     { 
       niveau: 'Faible', 
       count: enrichedProvinces.filter(p => p.indicePressionCalcule < 1.5).length,
-      color: '#22c55e',
+      color: 'hsl(var(--success))',
       seuil: '< 1.5'
     },
     { 
       niveau: 'Modéré', 
       count: enrichedProvinces.filter(p => p.indicePressionCalcule >= 1.5 && p.indicePressionCalcule < 2).length,
-      color: '#eab308',
+      color: 'hsl(var(--warning))',
       seuil: '1.5 - 2.0'
     },
     { 
       niveau: 'Élevé', 
       count: enrichedProvinces.filter(p => p.indicePressionCalcule >= 2 && p.indicePressionCalcule < 2.5).length,
-      color: '#f97316',
+      color: 'hsl(var(--accent))',
       seuil: '2.0 - 2.5'
     },
     { 
       niveau: 'Très élevé', 
       count: enrichedProvinces.filter(p => p.indicePressionCalcule >= 2.5).length,
-      color: '#ef4444',
+      color: 'hsl(var(--destructive))',
       seuil: '≥ 2.5'
     }
   ];

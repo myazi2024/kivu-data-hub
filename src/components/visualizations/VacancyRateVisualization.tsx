@@ -10,7 +10,8 @@ import {
   ResponsiveContainer,
   ComposedChart,
   Area,
-  AreaChart
+  AreaChart,
+  Cell
 } from 'recharts';
 import { ProvinceData } from '@/types/province';
 import { Home, Info } from 'lucide-react';
@@ -31,10 +32,10 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
 
   // Données pour la carte choroplèthe (simulée avec des catégories)
   const vacancyCategories = [
-    { range: '0-15%', count: provinces.filter(p => p.tauxVacanceLocative <= 15).length, color: '#22c55e' },
-    { range: '15-25%', count: provinces.filter(p => p.tauxVacanceLocative > 15 && p.tauxVacanceLocative <= 25).length, color: '#eab308' },
-    { range: '25-35%', count: provinces.filter(p => p.tauxVacanceLocative > 25 && p.tauxVacanceLocative <= 35).length, color: '#f97316' },
-    { range: '>35%', count: provinces.filter(p => p.tauxVacanceLocative > 35).length, color: '#ef4444' }
+    { range: '0-15%', count: provinces.filter(p => p.tauxVacanceLocative <= 15).length, color: 'hsl(var(--success))' },
+    { range: '15-25%', count: provinces.filter(p => p.tauxVacanceLocative > 15 && p.tauxVacanceLocative <= 25).length, color: 'hsl(var(--warning))' },
+    { range: '25-35%', count: provinces.filter(p => p.tauxVacanceLocative > 25 && p.tauxVacanceLocative <= 35).length, color: 'hsl(var(--accent))' },
+    { range: '>35%', count: provinces.filter(p => p.tauxVacanceLocative > 35).length, color: 'hsl(var(--destructive))' }
   ];
 
   const formatTooltip = (value: any, name: string) => {
@@ -55,47 +56,55 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-           <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={sortedProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 20 }}>
+           <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={sortedProvinces} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 angle={-45}
                 textAnchor="end"
-                height={28}
+                height={50}
                 interval={0}
               />
               <YAxis 
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                label={{ value: '%', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }}
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                label={{ value: 'Taux de vacance (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '12px' } }}
               />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
-                  borderRadius: '4px',
-                  fontSize: '8px'
+                  borderRadius: '6px',
+                  fontSize: '12px'
                 }}
                 formatter={formatTooltip}
               />
               <Bar 
                 dataKey="tauxVacanceLocative"
-                fill="#3b82f6"
-                radius={[1, 1, 0, 0]}
-              />
+                fill="hsl(var(--primary))"
+                radius={[4, 4, 0, 0]}
+              >
+                {sortedProvinces.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={
+                    entry.tauxVacanceLocative <= 15 ? 'hsl(var(--success))' :
+                    entry.tauxVacanceLocative <= 25 ? 'hsl(var(--warning))' :
+                    entry.tauxVacanceLocative <= 35 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'
+                  } />
+                ))}
+              </Bar>
             </BarChart>
           </ResponsiveContainer>
           
           <div className="mt-1 p-1 bg-muted/20 rounded">
             <div className="flex items-start gap-1">
               <Info className="h-2 w-2 text-primary mt-0.5 flex-shrink-0" />
-              <div className="text-[7px] text-foreground/80 leading-tight">
+                <div className="text-xs text-foreground/80 leading-tight">
                 <span className="font-medium">Interprétation: </span>
-                <span className="text-green-600">0-15%</span> tendu, 
-                <span className="text-yellow-600"> 15-25%</span> équilibré, 
-                <span className="text-orange-600"> 25-35%</span> excédentaire, 
-                <span className="text-red-600"> {'>'} 35%</span> saturé
+                <span className="text-success">0-15%</span> tendu, 
+                <span className="text-warning"> 15-25%</span> équilibré, 
+                <span className="text-accent"> 25-35%</span> excédentaire, 
+                <span className="text-destructive"> {'>'} 35%</span> saturé
               </div>
             </div>
           </div>
@@ -141,14 +150,14 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
                   <div className="text-[7px] text-muted-foreground">Taux actuel</div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-1 text-[7px]">
-                  <div className="p-1 bg-muted/20 rounded">
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2 bg-muted/20 rounded">
                     <div className="text-muted-foreground">Occupation</div>
-                    <div className="text-green-600 font-semibold">
+                    <div className="text-success font-semibold">
                       {selectedProvince.tauxOccupationLocatif.toFixed(1)}%
                     </div>
                   </div>
-                  <div className="p-1 bg-muted/20 rounded">
+                  <div className="p-2 bg-muted/20 rounded">
                     <div className="text-muted-foreground">Durée</div>
                     <div className="font-semibold">
                       {selectedProvince.dureeMoyenneMiseLocationJours}j

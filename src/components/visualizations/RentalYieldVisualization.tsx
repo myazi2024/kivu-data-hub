@@ -60,22 +60,22 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
     { 
       categorie: 'Excellent (≥8%)', 
       count: enrichedProvinces.filter(p => p.rendementBrut >= 8).length,
-      color: '#22c55e'
+      color: 'hsl(var(--success))'
     },
     { 
       categorie: 'Bon (6-8%)', 
       count: enrichedProvinces.filter(p => p.rendementBrut >= 6 && p.rendementBrut < 8).length,
-      color: '#3b82f6'
+      color: 'hsl(var(--primary))'
     },
     { 
       categorie: 'Moyen (4-6%)', 
       count: enrichedProvinces.filter(p => p.rendementBrut >= 4 && p.rendementBrut < 6).length,
-      color: '#f59e0b'
+      color: 'hsl(var(--warning))'
     },
     { 
       categorie: 'Faible (<4%)', 
       count: enrichedProvinces.filter(p => p.rendementBrut < 4).length,
-      color: '#ef4444'
+      color: 'hsl(var(--destructive))'
     }
   ];
 

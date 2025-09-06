@@ -41,19 +41,19 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
     { 
       name: 'Résidentiel', 
       value: Math.round(globalRepartition.residential / totalProvinces),
-      color: '#22c55e',
+      color: 'hsl(var(--primary))',
       description: 'Logements individuels et collectifs'
     },
     { 
       name: 'Commercial', 
       value: Math.round(globalRepartition.commercial / totalProvinces),
-      color: '#3b82f6',
+      color: 'hsl(var(--secondary))',
       description: 'Bureaux, commerces, entrepôts'
     },
     { 
       name: 'Mixte', 
       value: Math.round(globalRepartition.mixte / totalProvinces),
-      color: '#f59e0b',
+      color: 'hsl(var(--accent))',
       description: 'Combinaison résidentiel-commercial'
     }
   ];
@@ -244,19 +244,19 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
               <Bar 
                 dataKey="residential" 
                 stackId="typologie"
-                fill="#22c55e"
+                fill="hsl(var(--primary))"
                 name="Résidentiel"
               />
               <Bar 
                 dataKey="commercial" 
                 stackId="typologie"
-                fill="#3b82f6"
+                fill="hsl(var(--secondary))"
                 name="Commercial"
               />
               <Bar 
                 dataKey="mixte" 
                 stackId="typologie"
-                fill="#f59e0b"
+                fill="hsl(var(--accent))"
                 name="Mixte"
               />
             </BarChart>

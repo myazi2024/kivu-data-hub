@@ -102,8 +102,8 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={150}>
-            <ComposedChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <ResponsiveContainer width="100%" height={160}>
+            <ComposedChart data={monthlyData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="month" 
@@ -112,13 +112,13 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
               <YAxis 
                 yAxisId="left"
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                label={{ value: 'Nombre de transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                label={{ value: 'Transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
               />
               <YAxis 
                 yAxisId="right" 
                 orientation="right"
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                label={{ value: 'Taux conversion (%)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }}
+                label={{ value: 'Taux (%)', angle: 90, position: 'insideRight', style: { textAnchor: 'middle' } }}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -132,16 +132,16 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
               <Bar 
                 yAxisId="left"
                 dataKey="transactions" 
-                fill="hsl(var(--primary) / 0.8)"
+                fill="hsl(var(--primary))"
                 radius={[4, 4, 0, 0]}
               />
               <Line 
                 yAxisId="right"
                 type="monotone" 
                 dataKey="tauxConversion" 
-                stroke="hsl(var(--accent))" 
+                stroke="hsl(var(--secondary))" 
                 strokeWidth={3}
-                dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 4 }}
+                dot={{ fill: 'hsl(var(--secondary))', strokeWidth: 2, r: 4 }}
               />
             </ComposedChart>
           </ResponsiveContainer>
@@ -173,8 +173,8 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <ResponsiveContainer width="100%" height={160}>
+              <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="name" 
@@ -184,7 +184,8 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
                   height={70}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ value: 'Nombre transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -197,7 +198,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
                 />
                 <Bar 
                   dataKey="nombreTransactionsEstimees" 
-                  fill="hsl(var(--primary))"
+                  fill="hsl(var(--success))"
                   radius={[4, 4, 0, 0]}
                 />
               </BarChart>
@@ -214,8 +215,8 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={140}>
-              <AreaChart data={quarterlyData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart data={quarterlyData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="trimestre" 
@@ -223,6 +224,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
                 />
                 <YAxis 
                   tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ value: 'Transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -241,7 +243,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
                   type="monotone"
                   dataKey="transactions"
                   stroke="hsl(var(--accent))"
-                  fill="hsl(var(--accent) / 0.3)"
+                  fill="hsl(var(--accent) / 0.2)"
                   strokeWidth={2}
                 />
               </AreaChart>
@@ -284,8 +286,8 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
                 <div className="text-sm text-muted-foreground">Annonces/mois</div>
               </div>
               
-              <div className="text-center p-4 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-center p-4 bg-success/10 rounded-lg border border-success/20">
+                <div className="text-2xl font-bold text-success">
                   {((selectedProvince.nombreTransactionsEstimees / (selectedProvince.volumeAnnoncesImmobilieres * 12)) * 100).toFixed(1)}%
                 </div>
                 <div className="text-sm text-muted-foreground">Taux conversion</div>

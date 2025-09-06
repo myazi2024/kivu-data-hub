@@ -88,8 +88,8 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={150}>
-            <LineChart data={timeSeriesData} margin={{ top: 12, right: 16, left: 12, bottom: 12 }}>
+          <ResponsiveContainer width="100%" height={160}>
+            <LineChart data={timeSeriesData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="month" 
@@ -112,18 +112,20 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
                 type="monotone" 
                 dataKey="loyer" 
                 stroke="hsl(var(--primary))" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }}
-                activeDot={{ r: 5, fill: 'hsl(var(--primary))' }}
+                strokeWidth={3}
+                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
+                name="Location"
               />
               <Line 
                 type="monotone" 
                 dataKey="vente" 
-                stroke="hsl(var(--accent))" 
-                strokeWidth={2}
-                dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 3 }}
-                activeDot={{ r: 5, fill: 'hsl(var(--accent))' }}
-                strokeDasharray="5 5"
+                stroke="hsl(var(--secondary))" 
+                strokeWidth={3}
+                dot={{ fill: 'hsl(var(--secondary))', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, fill: 'hsl(var(--secondary))' }}
+                strokeDasharray="8 4"
+                name="Vente"
               />
             </LineChart>
           </ResponsiveContainer>
@@ -155,8 +157,8 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={140}>
-              <AreaChart data={topProvincesByRent} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart data={topProvincesByRent} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="name" 
@@ -166,7 +168,8 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
                   height={70}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ value: 'Prix location (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -180,8 +183,8 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
                 <Area
                   type="monotone"
                   dataKey="prixMoyenLoyer"
-                  stroke="hsl(var(--primary))"
-                  fill="hsl(var(--primary) / 0.2)"
+                  stroke="hsl(var(--success))"
+                  fill="hsl(var(--success) / 0.2)"
                   strokeWidth={2}
                 />
               </AreaChart>
@@ -198,8 +201,8 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={140}>
-              <AreaChart data={topProvincesBySale} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+            <ResponsiveContainer width="100%" height={160}>
+              <AreaChart data={topProvincesBySale} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="name" 
@@ -209,7 +212,8 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
                   height={70}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ value: 'Prix vente (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                 />
                 <Tooltip 
                   contentStyle={{ 
