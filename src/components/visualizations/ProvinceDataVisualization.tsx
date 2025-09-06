@@ -110,12 +110,6 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   return (
     <div className="space-y-3 sm:space-y-4">
       <Card className="border-0 shadow-none bg-background/50">
-        <CardHeader className="pb-3 sm:pb-4 px-0 pt-0">
-          <CardTitle className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-            <span>Analytics RDC</span>
-          </CardTitle>
-        </CardHeader>
         
         <CardContent className="px-0">
           {/* Contrôles responsive */}
