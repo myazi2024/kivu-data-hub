@@ -15,7 +15,8 @@ import {
   PieChart as PieChartIcon,
   Activity,
   Home,
-  DollarSign
+  DollarSign,
+  Info
 } from 'lucide-react';
 import { ProvinceData } from '@/types/province';
 import { VacancyRateVisualization } from './VacancyRateVisualization';
@@ -109,7 +110,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   };
 
   return (
-    <TooltipProvider>
+    <TooltipProvider delayDuration={150} disableHoverableContent>
       <div className="space-y-3 sm:space-y-4">
       <Card className="border-0 shadow-none bg-background/50">
         
@@ -152,6 +153,16 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                       <indicator.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                       <span className="hidden md:inline">{indicator.name}</span>
                       <span className="md:hidden">{indicator.name.split(' ')[0]}</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button className="ml-auto inline-flex items-center justify-center rounded-full p-1 text-muted-foreground hover:text-foreground focus:outline-none" aria-label="Aide">
+                            <Info className="h-4 w-4" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="left" className="max-w-xs">
+                          <p className="text-xs">{indicator.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
                     </h3>
                     <p className="responsive-caption text-muted-foreground mt-1 hidden md:block">
                       {indicator.description}
@@ -160,23 +171,23 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                   
                    <div className="bg-card rounded border-border/30 border relative">
                      {/* Filtre période dans le coin */}
-                     <div className="absolute top-2 right-2 z-10">
+                     <div className="absolute top-2 right-2 z-20">
                        <Select value={periodFilter} onValueChange={setPeriodFilter}>
                          <SelectTrigger className="h-7 text-xs min-w-[90px] bg-background/80 backdrop-blur-sm border-border/50">
                            <SelectValue />
                          </SelectTrigger>
-                         <SelectContent>
-                           <SelectItem value="current" className="text-xs">Actuelle</SelectItem>
-                           <SelectItem value="quarterly" className="text-xs">Trimestrielle</SelectItem>
-                           <SelectItem value="annual" className="text-xs">Annuelle</SelectItem>
-                         </SelectContent>
+                          <SelectContent className="z-50 bg-popover">
+                            <SelectItem value="current" className="text-xs">Actuelle</SelectItem>
+                            <SelectItem value="quarterly" className="text-xs">Trimestrielle</SelectItem>
+                            <SelectItem value="annual" className="text-xs">Annuelle</SelectItem>
+                          </SelectContent>
                        </Select>
                      </div>
-                     <div className="w-full overflow-hidden p-2 sm:p-3">
-                       <div className="transform origin-top-left scale-95 md:scale-100 w-full">
-                         {renderVisualization()}
-                       </div>
-                     </div>
+                      <div className="w-full overflow-visible p-0">
+                        <div className="w-full">
+                          {renderVisualization()}
+                        </div>
+                      </div>
                    </div>
                 </div>
               </TabsContent>
