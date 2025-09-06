@@ -174,7 +174,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
             <div>
               <div style={{ width: '100%' }}>
                 <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 20, left: 20, bottom: 60 }} barCategoryGap="-80%" barGap={-6} barSize={6}>
+                  <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 20, left: 20, bottom: 60 }} barCategoryGap="-240%" barGap={-18} barSize={3}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 
