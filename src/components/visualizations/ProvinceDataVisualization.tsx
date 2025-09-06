@@ -116,101 +116,106 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   };
 
   return (
-    <div className="space-y-3">
-      <Card className="border-0 shadow-none">
-        <CardHeader className="pb-2 px-0 pt-0">
+    <div className="space-y-1.5">
+      <Card className="border-0 shadow-none bg-background/50">
+        <CardHeader className="pb-1 px-0 pt-0">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-xs font-semibold text-foreground flex items-center gap-1">
-                <BarChart3 className="h-3 w-3 text-primary" />
-                Indicateurs du Marché
+              <CardTitle className="text-[10px] font-medium text-foreground flex items-center gap-0.5">
+                <BarChart3 className="h-2.5 w-2.5 text-primary" />
+                <span className="hidden sm:inline">Indicateurs du Marché</span>
+                <span className="sm:hidden">Marché</span>
               </CardTitle>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
-                Données provinciales RDC
+              <p className="text-[8px] text-muted-foreground mt-0">
+                <span className="hidden sm:inline">Données provinciales RDC</span>
+                <span className="sm:hidden">RDC</span>
               </p>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-0.5">
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={handleExportPNG}
-                className="text-[9px] h-5 px-1"
+                className="text-[8px] h-4 px-1"
               >
-                <Download className="h-2.5 w-2.5 mr-0.5" />
-                PNG
+                <Download className="h-2 w-2 mr-0.5" />
+                <span className="hidden sm:inline">PNG</span>
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={handleExportPDF}
-                className="text-[9px] h-5 px-1"
+                className="text-[8px] h-4 px-1"
               >
-                <FileText className="h-2.5 w-2.5 mr-0.5" />
-                PDF
+                <FileText className="h-2 w-2 mr-0.5" />
+                <span className="hidden sm:inline">PDF</span>
               </Button>
             </div>
           </div>
         </CardHeader>
         
         <CardContent className="px-0">
-          {/* Contrôles de filtrage - Période uniquement */}
-          <div className="mb-2 p-2 bg-muted/20 rounded border">
-            <div className="flex items-center gap-2">
-              <label className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">Période:</label>
+          {/* Contrôles ultra-compacts */}
+          <div className="mb-1 p-1 bg-muted/10 rounded border-border/30 border">
+            <div className="flex items-center gap-1 flex-wrap">
+              <label className="text-[8px] font-medium text-muted-foreground whitespace-nowrap">Période:</label>
               <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                <SelectTrigger className="h-6 text-[10px] min-w-[90px]">
+                <SelectTrigger className="h-5 text-[8px] min-w-[70px] flex-shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="current">Actuelle</SelectItem>
-                  <SelectItem value="quarterly">Trimestrielle</SelectItem>
-                  <SelectItem value="annual">Annuelle</SelectItem>
+                  <SelectItem value="current" className="text-[8px]">Actuelle</SelectItem>
+                  <SelectItem value="quarterly" className="text-[8px]">Trimestrielle</SelectItem>
+                  <SelectItem value="annual" className="text-[8px]">Annuelle</SelectItem>
                 </SelectContent>
               </Select>
               {selectedProvince && (
-                <Badge variant="secondary" className="text-[9px] px-1.5 py-0.5 ml-auto">
+                <Badge variant="secondary" className="text-[7px] px-1 py-0 ml-auto">
                   {selectedProvince.name}
                 </Badge>
               )}
             </div>
           </div>
 
-          {/* Sélecteur d'indicateurs - Version ultra-compacte */}
+          {/* Sélecteur d'indicateurs - Mobile optimisé */}
           <Tabs value={activeIndicator} onValueChange={setActiveIndicator} className="w-full">
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-              <TabsList className="grid grid-cols-6 min-w-max w-full h-auto p-0.5">
+            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
+              <TabsList className="grid grid-cols-3 sm:grid-cols-6 min-w-max w-full h-auto p-0.5">
                 {indicators.map((indicator) => (
                   <TabsTrigger
                     key={indicator.id}
                     value={indicator.id}
-                    className="flex flex-col items-center gap-0.5 p-1 text-[9px] min-w-[60px] h-auto data-[state=active]:bg-primary/10"
+                    className="flex flex-col items-center gap-0.5 p-0.5 text-[8px] min-w-[45px] sm:min-w-[55px] h-auto data-[state=active]:bg-primary/10"
                   >
-                    <indicator.icon className="h-2.5 w-2.5" />
-                    <span className="text-[8px] leading-tight text-center">
-                      {indicator.name.split(' ').slice(0, 2).join(' ')}
+                    <indicator.icon className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
+                    <span className="text-[7px] sm:text-[8px] leading-tight text-center">
+                      {indicator.name.split(' ')[0]}
+                      <br className="sm:hidden" />
+                      <span className="hidden sm:inline"> {indicator.name.split(' ').slice(1).join(' ')}</span>
                     </span>
                   </TabsTrigger>
                 ))}
               </TabsList>
             </div>
 
-            {/* Contenu des visualisations avec scroll optimisé */}
+            {/* Contenu ultra-compact */}
             {indicators.map((indicator) => (
-              <TabsContent key={indicator.id} value={indicator.id} className="mt-1">
-                <div className="space-y-1">
-                  <div className="bg-primary/5 p-1.5 rounded border-l border-primary">
-                    <h3 className="font-medium text-[10px] text-foreground flex items-center gap-1">
-                      <indicator.icon className="h-2.5 w-2.5 text-primary" />
-                      {indicator.name}
+              <TabsContent key={indicator.id} value={indicator.id} className="mt-0.5">
+                <div className="space-y-0.5">
+                  <div className="bg-primary/5 p-1 rounded border-l border-primary">
+                    <h3 className="font-medium text-[9px] text-foreground flex items-center gap-0.5">
+                      <indicator.icon className="h-2 w-2 text-primary" />
+                      <span className="hidden sm:inline">{indicator.name}</span>
+                      <span className="sm:hidden">{indicator.name.split(' ')[0]}</span>
                     </h3>
-                    <p className="text-[9px] text-muted-foreground mt-0.5">
+                    <p className="text-[7px] sm:text-[8px] text-muted-foreground mt-0 hidden sm:block">
                       {indicator.description}
                     </p>
                   </div>
                   
-                  <div className="bg-card rounded border">
-                    <div className="max-h-[200px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40">
-                      <div className="p-2">
+                  <div className="bg-card rounded border-border/30 border">
+                    <div className="max-h-[120px] sm:max-h-[150px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
+                      <div className="p-1">
                         {renderVisualization()}
                       </div>
                     </div>

@@ -128,60 +128,66 @@ const DRCInteractiveMap = () => {
   };
 
   return (
-    <div className="w-full h-full p-1 sm:p-2">
-      {/* Layout responsive avec mobile-first */}
-      <div className="grid grid-cols-1 lg:grid-cols-6 gap-1 sm:gap-2 h-full">
-        {/* Carte interactive - 2/6 largeur */}
-        <div className="lg:col-span-2 h-full order-3 lg:order-1">
-          <Card className="shadow-card overflow-hidden h-full flex flex-col">
+    <div className="w-full h-full p-0.5 sm:p-1">
+      {/* Layout mobile-first optimisé */}
+      <div className="flex flex-col lg:grid lg:grid-cols-6 gap-0.5 sm:gap-1 h-full">
+        {/* Carte interactive - Mobile full width, Desktop 2/6 */}
+        <div className="lg:col-span-2 h-[40vh] lg:h-full order-3 lg:order-1">
+          <Card className="overflow-hidden h-full flex flex-col border-border/50">
             <CardContent className="p-0 flex-1 flex flex-col">
-              {/* En-tête responsive avec contrôles de zoom */}
-              <div className="bg-muted/30 p-1.5 sm:p-2 border-b space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-sm sm:text-base font-semibold text-foreground">
+              {/* En-tête ultra-compact mobile */}
+              <div className="bg-muted/20 p-1 sm:p-1.5 border-b border-border/30">
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-xs sm:text-sm font-medium text-foreground">
                     <span className="hidden sm:inline">RDC - Marché Immobilier</span>
                     <span className="sm:hidden">Marché RDC</span>
                   </h2>
                   
-                  {/* Contrôles de zoom */}
-                  <div className="flex gap-1">
+                  {/* Contrôles de zoom compacts */}
+                  <div className="flex gap-0.5">
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="w-6 h-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      className="w-5 h-5 p-0 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                       onClick={() => mapInstance?.zoomIn()}
                       title="Zoom avant"
                     >
-                      <ZoomIn className="w-3 h-3" />
+                      <ZoomIn className="w-2.5 h-2.5" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="w-6 h-6 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      className="w-5 h-5 p-0 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                       onClick={() => mapInstance?.zoomOut()}
                       title="Zoom arrière"
                     >
-                      <ZoomOut className="w-3 h-3" />
+                      <ZoomOut className="w-2.5 h-2.5" />
                     </Button>
                   </div>
                 </div>
                 
-                {/* Filtre de visualisation */}
+                {/* Filtre de visualisation compact */}
                 <div>
                   <Select value={activeView} onValueChange={setActiveView}>
-                    <SelectTrigger className="w-full h-7 sm:h-8 text-xs sm:text-sm">
+                    <SelectTrigger className="w-full h-6 sm:h-7 text-[10px] sm:text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="provinces">Cartographie RDC par Province</SelectItem>
-                      <SelectItem value="territorial">Cartographie Territoriale</SelectItem>
+                      <SelectItem value="provinces" className="text-[10px] sm:text-xs">
+                        <span className="hidden sm:inline">Cartographie RDC par Province</span>
+                        <span className="sm:hidden">RDC Provinces</span>
+                      </SelectItem>
+                      <SelectItem value="territorial" className="text-[10px] sm:text-xs">
+                        <span className="hidden sm:inline">Cartographie Territoriale</span>
+                        <span className="sm:hidden">Territorial</span>
+                      </SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
               
-              {/* Carte responsive */}
-              <div className="flex-1 min-h-0 p-1 max-h-[60vh] overflow-hidden">
+              {/* Carte responsive optimisée */}
+              <div className="flex-1 min-h-0 p-0.5 overflow-hidden">
                 {activeView === 'provinces' ? (
                   <DRCMapWithTooltip
                     provincesData={provincesData}
@@ -200,125 +206,125 @@ const DRCInteractiveMap = () => {
           </Card>
         </div>
 
-        {/* Panneau données province - 2/6 largeur au milieu */}
-        <div className="lg:col-span-2 order-1 lg:order-2 max-h-[85vh] flex flex-col">
-          {/* Visualisations avancées avec scroll */}
-          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent">
-            <div className="space-y-4 p-2">
+        {/* Panneau données province - Mobile stack, Desktop 2/6 */}
+        <div className="lg:col-span-2 order-1 lg:order-2 h-[35vh] lg:max-h-[85vh] flex flex-col">
+          {/* Visualisations compactes avec scroll optimisé */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+            <div className="space-y-2 p-1">
               {selectedProvince && (
-                <Card className="shadow-sm">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      Données détaillées - {selectedProvince.name}
+                <Card className="shadow-none border-border/30">
+                  <CardHeader className="pb-1 px-2 pt-2">
+                    <CardTitle className="text-xs font-medium text-foreground flex items-center gap-1">
+                      <MapPin className="h-3 w-3 text-primary" />
+                      <span className="hidden sm:inline">Données détaillées - {selectedProvince.name}</span>
+                      <span className="sm:hidden">{selectedProvince.name}</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-3">
-                      {/* Prix & Valeur */}
-                      <div className="space-y-2">
-                        <h5 className="text-sm font-medium text-foreground flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 text-primary" />
+                  <CardContent className="space-y-2 p-2">
+                    <div className="space-y-1.5">
+                      {/* Prix & Valeur - Compact */}
+                      <div className="space-y-1">
+                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
+                          <DollarSign className="h-2.5 w-2.5 text-primary" />
                           Prix & Valeur
-                          <Badge variant="outline" className="text-xs">USD/m²</Badge>
+                          <Badge variant="outline" className="text-[8px] px-1 py-0">USD/m²</Badge>
                         </h5>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Card className="p-3">
-                            <div className="text-xs text-muted-foreground">Loyer moyen</div>
-                            <div className="text-lg font-bold text-primary">${selectedProvince.prixMoyenLoyer}</div>
-                            <div className="text-xs text-muted-foreground">par m²/mois</div>
+                        <div className="grid grid-cols-2 gap-1">
+                          <Card className="p-1.5">
+                            <div className="text-[9px] text-muted-foreground">Loyer moyen</div>
+                            <div className="text-sm font-bold text-primary">${selectedProvince.prixMoyenLoyer}</div>
+                            <div className="text-[8px] text-muted-foreground">par m²/mois</div>
                           </Card>
-                          <Card className="p-3">
-                            <div className="text-xs text-muted-foreground">Prix de vente</div>
-                            <div className="text-lg font-bold text-primary">${selectedProvince.prixMoyenVenteM2}</div>
-                            <div className="text-xs text-muted-foreground">par m²</div>
+                          <Card className="p-1.5">
+                            <div className="text-[9px] text-muted-foreground">Prix de vente</div>
+                            <div className="text-sm font-bold text-primary">${selectedProvince.prixMoyenVenteM2}</div>
+                            <div className="text-[8px] text-muted-foreground">par m²</div>
                           </Card>
                         </div>
-                        <Card className="p-3 bg-accent/10">
-                          <div className="text-xs text-muted-foreground">Valeur foncière parcelle</div>
-                          <div className="text-xl font-bold text-accent">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</div>
+                        <Card className="p-1.5 bg-accent/5">
+                          <div className="text-[9px] text-muted-foreground">Valeur foncière parcelle</div>
+                          <div className="text-base font-bold text-accent">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</div>
                         </Card>
                       </div>
 
-                      {/* Performance locative */}
-                      <div className="space-y-2">
-                        <h5 className="text-sm font-medium text-foreground flex items-center gap-2">
-                          <Building className="h-4 w-4 text-primary" />
+                      {/* Performance locative - Compact */}
+                      <div className="space-y-1">
+                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
+                          <Building className="h-2.5 w-2.5 text-primary" />
                           Performance Locative
-                          <Badge variant="outline" className="text-xs">Efficacité marché</Badge>
                         </h5>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Card className="p-3">
-                            <div className="text-xs text-muted-foreground">Taux d'occupation</div>
-                            <div className="text-lg font-bold text-green-600">{selectedProvince.tauxOccupationLocatif}%</div>
-                            <div className="flex items-center gap-1 text-xs">
+                        <div className="grid grid-cols-2 gap-1">
+                          <Card className="p-1.5">
+                            <div className="text-[9px] text-muted-foreground">Taux d'occupation</div>
+                            <div className="text-sm font-bold text-green-600">{selectedProvince.tauxOccupationLocatif}%</div>
+                            <div className="flex items-center gap-0.5 text-[8px]">
                               {selectedProvince.tauxOccupationLocatif > 75 ? (
-                                <><TrendingUp className="h-3 w-3 text-green-600" /> Élevé</>
+                                <><TrendingUp className="h-2 w-2 text-green-600" /> Élevé</>
                               ) : (
-                                <><TrendingDown className="h-3 w-3 text-orange-500" /> Moyen</>
+                                <><TrendingDown className="h-2 w-2 text-orange-500" /> Moyen</>
                               )}
                             </div>
                           </Card>
-                          <Card className="p-3">
-                            <div className="text-xs text-muted-foreground">Durée location</div>
-                            <div className="text-lg font-bold text-primary">{selectedProvince.dureeMoyenneMiseLocationJours}</div>
-                            <div className="text-xs text-muted-foreground">jours en moyenne</div>
+                          <Card className="p-1.5">
+                            <div className="text-[9px] text-muted-foreground">Durée location</div>
+                            <div className="text-sm font-bold text-primary">{selectedProvince.dureeMoyenneMiseLocationJours}</div>
+                            <div className="text-[8px] text-muted-foreground">jours</div>
                           </Card>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Card className="p-3">
-                            <div className="text-xs text-muted-foreground">Taux de vacance</div>
-                            <div className="text-lg font-bold text-orange-500">{selectedProvince.tauxVacanceLocative}%</div>
+                        <div className="grid grid-cols-2 gap-1">
+                          <Card className="p-1.5">
+                            <div className="text-[9px] text-muted-foreground">Taux de vacance</div>
+                            <div className="text-sm font-bold text-orange-500">{selectedProvince.tauxVacanceLocative}%</div>
                           </Card>
-                          <Card className="p-3">
-                            <div className="text-xs text-muted-foreground">Rendement brut</div>
-                            <div className="text-lg font-bold text-emerald-600">{selectedProvince.rendementLocatifBrut ? selectedProvince.rendementLocatifBrut : 0}%</div>
+                          <Card className="p-1.5">
+                            <div className="text-[9px] text-muted-foreground">Rendement brut</div>
+                            <div className="text-sm font-bold text-emerald-600">{selectedProvince.rendementLocatifBrut ? selectedProvince.rendementLocatifBrut : 0}%</div>
                           </Card>
                         </div>
                       </div>
 
-                      {/* Population & activité */}
-                      <div className="space-y-2">
-                        <h5 className="text-sm font-medium text-foreground flex items-center gap-2">
-                          <Users className="h-4 w-4 text-primary" />
+                      {/* Population & activité - Compact */}
+                      <div className="space-y-1">
+                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
+                          <Users className="h-2.5 w-2.5 text-primary" />
                           Marché & Population
                         </h5>
-                        <div className="grid grid-cols-1 gap-2">
-                          <Card className="p-3">
-                            <div className="text-xs text-muted-foreground">Population locative</div>
-                            <div className="text-lg font-bold text-blue-600">
+                        <div className="space-y-1">
+                          <Card className="p-1.5">
+                            <div className="text-[9px] text-muted-foreground">Population locative</div>
+                            <div className="text-sm font-bold text-blue-600">
                               {(selectedProvince.populationLocativeEstimee / 1000).toFixed(0)}k
                             </div>
-                            <div className="text-xs text-muted-foreground">habitants concernés</div>
+                            <div className="text-[8px] text-muted-foreground">habitants</div>
                           </Card>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Card className="p-3">
-                              <div className="text-xs text-muted-foreground">Transactions</div>
-                              <div className="text-lg font-bold text-accent">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
+                          <div className="grid grid-cols-2 gap-1">
+                            <Card className="p-1.5">
+                              <div className="text-[9px] text-muted-foreground">Transactions</div>
+                              <div className="text-sm font-bold text-accent">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
                             </Card>
-                            <Card className="p-3">
-                              <div className="text-xs text-muted-foreground">Annonces</div>
-                              <div className="text-lg font-bold text-accent">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</div>
+                            <Card className="p-1.5">
+                              <div className="text-[9px] text-muted-foreground">Annonces</div>
+                              <div className="text-sm font-bold text-accent">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</div>
                             </Card>
                           </div>
                         </div>
                       </div>
 
-                      {/* Pression locative */}
-                      <div className="space-y-2">
-                        <h5 className="text-sm font-medium text-foreground flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-primary" />
+                      {/* Pression locative - Compact */}
+                      <div className="space-y-1">
+                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
+                          <MapPin className="h-2.5 w-2.5 text-primary" />
                           Tension du Marché
                         </h5>
-                        <Card className="p-3">
-                          <div className="text-xs text-muted-foreground">Indice de pression</div>
+                        <Card className="p-1.5">
+                          <div className="text-[9px] text-muted-foreground">Indice de pression</div>
                           <Badge 
                             variant={
                               selectedProvince.indicePresionLocative === 'Très élevé' ? 'destructive' :
                               selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' :
                               selectedProvince.indicePresionLocative === 'Modéré' ? 'outline' : 'default'
                             }
-                            className="text-sm px-3 py-1"
+                            className="text-[9px] px-1.5 py-0.5"
                           >
                             {selectedProvince.indicePresionLocative}
                           </Badge>
@@ -332,21 +338,22 @@ const DRCInteractiveMap = () => {
           </div>
         </div>
 
-        {/* Panneau Analytics - 2/6 largeur à droite */}
-        <div className="lg:col-span-2 order-2 lg:order-3 max-h-[85vh] flex flex-col">
-          <Card className="flex-1 overflow-hidden border-border/50 shadow-sm">
-            <CardHeader className="pb-2 px-3 py-3 border-b border-border/30">
-              <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" />
-                Analytics Immobilier
+        {/* Panneau Analytics - Mobile bottom, Desktop right 2/6 */}
+        <div className="lg:col-span-2 order-2 lg:order-3 h-[25vh] lg:max-h-[85vh] flex flex-col">
+          <Card className="flex-1 overflow-hidden border-border/30 shadow-none">
+            <CardHeader className="pb-1 px-2 py-1.5 border-b border-border/20">
+              <CardTitle className="text-xs font-medium text-foreground flex items-center gap-1">
+                <BarChart3 className="h-3 w-3 text-primary" />
+                <span className="hidden sm:inline">Analytics Immobilier</span>
+                <span className="sm:hidden">Analytics</span>
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
-                Tendances nationales et comparaisons inter-provinciales
+              <p className="text-[9px] text-muted-foreground hidden sm:block">
+                Tendances nationales et comparaisons
               </p>
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-hidden">
-              <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent hover:scrollbar-thumb-primary/40">
-                <div className="p-3 min-h-full">
+              <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
+                <div className="p-1.5 min-h-full">
                   <ProvinceDataVisualization 
                     provinces={provincesData} 
                     selectedProvince={selectedProvince}

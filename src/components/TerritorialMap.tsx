@@ -154,107 +154,142 @@ const TerritorialMap = () => {
   return (
     <div className="w-full h-full">
       {/* Onglets de sélection intégrés */}
-      <div className="bg-muted/30 border-b border-border/20">
-        <div className="px-2 sm:px-4 py-0.5">
-          <TabsList className="grid w-full max-w-xs sm:max-w-md grid-cols-2 h-7 mx-auto">
-            <TabsTrigger value="drc-map" className="text-xs px-2 sm:px-4">
-              <span className="hidden sm:inline">Carte RDC</span>
-              <span className="sm:hidden">RDC</span>
-            </TabsTrigger>
-            <TabsTrigger value="territorial-map" className="text-xs px-2 sm:px-4">
-              <span className="hidden sm:inline">Cartographie Territoriale</span>
-              <span className="sm:hidden">Territorial</span>
-            </TabsTrigger>
-          </TabsList>
-        </div>
-      </div>
+      {/* Suppression de l'onglet redondant - intégré dans la navigation */}
       
-      <div className="p-1 sm:p-2 h-full overflow-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-2 sm:gap-4 h-full max-h-[75vh]">
-          {/* Controls Panel - Responsive */}
-          <div className="space-y-2 sm:space-y-3 order-2 lg:order-1 max-h-[75vh] overflow-y-auto">
-          {/* Search */}
-          <Card>
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="flex items-center gap-2 text-xs sm:text-sm">
-                <Search className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Recherche territoriale</span>
-                <span className="sm:hidden">Recherche</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 sm:space-y-3 p-3 sm:p-6 pt-0">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Rechercher..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="text-sm"
-                />
-                <Button size="sm" className="px-2 sm:px-4">
-                  <Search className="w-3 h-3 sm:w-4 sm:h-4" />
-                </Button>
+      <div className="p-0.5 sm:p-1 h-full overflow-hidden">
+        <div className="flex flex-col lg:grid lg:grid-cols-4 gap-1 sm:gap-2 h-full">
+          {/* Controls Panel - Mobile horizontal scroll, Desktop sidebar */}
+          <div className="lg:space-y-1 lg:order-1 order-2 h-auto lg:h-full lg:max-h-[85vh] overflow-hidden">
+            {/* Mobile: Horizontal scrollable controls */}
+            <div className="lg:hidden overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+              <div className="flex gap-2 p-2 min-w-max">
+                {/* Search compact mobile */}
+                <Card className="min-w-[200px]">
+                  <CardContent className="p-2">
+                    <div className="flex items-center gap-1 mb-1">
+                      <Search className="w-2.5 h-2.5" />
+                      <span className="text-[10px] font-medium">Recherche</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <Input
+                        placeholder="Rechercher..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="text-[10px] h-6"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Zoom Level compact mobile */}
+                <Card className="min-w-[180px]">
+                  <CardContent className="p-2">
+                    <div className="flex items-center gap-1 mb-1">
+                      <MapPin className="w-2.5 h-2.5" />
+                      <span className="text-[10px] font-medium">Zoom</span>
+                    </div>
+                    <Tabs value={zoomLevel} onValueChange={setZoomLevel}>
+                      <TabsList className="grid w-full grid-cols-2 h-5">
+                        <TabsTrigger value="province" className="text-[8px]">Province</TabsTrigger>
+                        <TabsTrigger value="ville" className="text-[8px]">Ville</TabsTrigger>
+                      </TabsList>
+                      <TabsList className="grid w-full grid-cols-3 mt-1 h-5">
+                        <TabsTrigger value="commune" className="text-[8px]">Commune</TabsTrigger>
+                        <TabsTrigger value="quartier" className="text-[8px]">Quartier</TabsTrigger>
+                        <TabsTrigger value="avenue" className="text-[8px]">Avenue</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          {/* Zoom Level - Responsive */}
-          <Card>
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="flex items-center gap-2 text-xs sm:text-sm">
-                <MapPin className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">Niveau de zoom</span>
-                <span className="sm:hidden">Zoom</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-3 sm:p-6 pt-0">
-              <Tabs value={zoomLevel} onValueChange={setZoomLevel}>
-                <TabsList className="grid w-full grid-cols-2 h-8 sm:h-10">
-                  <TabsTrigger value="province" className="text-[10px] sm:text-xs">Province</TabsTrigger>
-                  <TabsTrigger value="ville" className="text-[10px] sm:text-xs">Ville</TabsTrigger>
-                </TabsList>
-                <TabsList className="grid w-full grid-cols-3 mt-2 h-8 sm:h-10">
-                  <TabsTrigger value="commune" className="text-[10px] sm:text-xs">Commune</TabsTrigger>
-                  <TabsTrigger value="quartier" className="text-[10px] sm:text-xs">Quartier</TabsTrigger>
-                  <TabsTrigger value="avenue" className="text-[10px] sm:text-xs">Avenue</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            </CardContent>
-          </Card>
+            {/* Desktop: Vertical sidebar */}
+            <div className="hidden lg:block space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+              {/* Search Desktop */}
+              <Card>
+                <CardHeader className="p-2">
+                  <CardTitle className="flex items-center gap-1 text-xs">
+                    <Search className="w-3 h-3" />
+                    Recherche territoriale
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-2 pt-0">
+                  <div className="flex gap-1">
+                    <Input
+                      placeholder="Rechercher..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="text-xs h-7"
+                    />
+                    <Button size="sm" className="px-2 h-7">
+                      <Search className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
 
-          {/* Filters */}
-          <TerritorialFilters filters={filters} onFiltersChange={setFilters} />
+              {/* Zoom Level Desktop */}
+              <Card>
+                <CardHeader className="p-2">
+                  <CardTitle className="flex items-center gap-1 text-xs">
+                    <MapPin className="w-3 h-3" />
+                    Niveau de zoom
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-2 pt-0">
+                  <Tabs value={zoomLevel} onValueChange={setZoomLevel}>
+                    <TabsList className="grid w-full grid-cols-2 h-6">
+                      <TabsTrigger value="province" className="text-[9px]">Province</TabsTrigger>
+                      <TabsTrigger value="ville" className="text-[9px]">Ville</TabsTrigger>
+                    </TabsList>
+                    <TabsList className="grid w-full grid-cols-3 mt-1 h-6">
+                      <TabsTrigger value="commune" className="text-[9px]">Commune</TabsTrigger>
+                      <TabsTrigger value="quartier" className="text-[9px]">Quartier</TabsTrigger>
+                      <TabsTrigger value="avenue" className="text-[9px]">Avenue</TabsTrigger>
+                    </TabsList>
+                  </Tabs>
+                </CardContent>
+              </Card>
 
-          {/* Zone Indicators */}
-          <ZoneIndicators zones={filteredZones} />
-        </div>
+              {/* Filters Desktop */}
+              <TerritorialFilters filters={filters} onFiltersChange={setFilters} />
 
-        {/* Map Container - Responsive */}
-        <div className="lg:col-span-3 order-1 lg:order-2 h-full max-h-[75vh]">
-          <div className="w-full h-full rounded-lg border border-border overflow-hidden">
+              {/* Zone Indicators Desktop */}
+              <ZoneIndicators zones={filteredZones} />
+            </div>
+          </div>
+
+        {/* Map Container - Mobile full-screen, Desktop 3/4 */}
+        <div className="lg:col-span-3 order-1 lg:order-2 h-[70vh] lg:h-full lg:max-h-[85vh]">
+          <div className="w-full h-full rounded border border-border/50 overflow-hidden">
             <div className="h-full flex flex-col">
-              {/* En-tête avec contrôles de zoom */}
-              <div className="bg-muted/30 border-b p-2 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-foreground">Cartographie Territoriale</h3>
+              {/* En-tête ultra-compact mobile */}
+              <div className="bg-muted/20 border-b border-border/30 p-1 sm:p-1.5 flex items-center justify-between">
+                <h3 className="text-xs sm:text-sm font-medium text-foreground">
+                  <span className="hidden sm:inline">Cartographie Territoriale</span>
+                  <span className="sm:hidden">Carte</span>
+                </h3>
                 
-                {/* Contrôles de zoom dans l'en-tête */}
-                <div className="flex gap-1">
+                {/* Contrôles de zoom compacts */}
+                <div className="flex gap-0.5">
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                    className="w-6 h-6 p-0 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                     onClick={() => mapInstance?.zoomIn()}
                     title="Zoom avant"
                   >
-                    <ZoomIn className="w-4 h-4" />
+                    <ZoomIn className="w-3 h-3" />
                   </Button>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="w-8 h-8 p-0 hover:bg-muted text-muted-foreground hover:text-foreground"
+                    className="w-6 h-6 p-0 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                     onClick={() => mapInstance?.zoomOut()}
                     title="Zoom arrière"
                   >
-                    <ZoomOut className="w-4 h-4" />
+                    <ZoomOut className="w-3 h-3" />
                   </Button>
                 </div>
               </div>
@@ -303,69 +338,69 @@ const TerritorialMap = () => {
                         }}
                       >
                         <Popup>
-                          <div className="p-3 min-w-[300px]">
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="text-2xl">{getTypologyIcon(zone.typologie_dominante)}</span>
+                          <div className="p-2 min-w-[250px] max-w-[300px]">
+                            <div className="flex items-center gap-1.5 mb-2">
+                              <span className="text-lg">{getTypologyIcon(zone.typologie_dominante)}</span>
                               <div>
-                                <h3 className="font-semibold text-sm">{zone.name}</h3>
-                                <Badge variant="outline" className="text-xs">
+                                <h3 className="font-medium text-xs">{zone.name}</h3>
+                                <Badge variant="outline" className="text-[8px] px-1 py-0">
                                   {zone.type}
                                 </Badge>
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-3 text-xs">
+                            <div className="grid grid-cols-2 gap-2 text-[10px]">
                               <div>
-                                <p className="text-muted-foreground">Prix moyen loyer</p>
-                                <p className="font-semibold">{formatCurrency(zone.prixmoyenloyer)}</p>
+                                <p className="text-muted-foreground">Prix loyer</p>
+                                <p className="font-medium">{formatCurrency(zone.prixmoyenloyer)}</p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">Prix m² vente</p>
-                                <p className="font-semibold">{formatCurrency(zone.prixmoyenvente_m2)}</p>
+                                <p className="text-muted-foreground">Prix vente m²</p>
+                                <p className="font-medium">{formatCurrency(zone.prixmoyenvente_m2)}</p>
                               </div>
                               <div>
                                 <p className="text-muted-foreground">Taux vacance</p>
                                 <div className="flex items-center gap-1">
                                   <div 
-                                    className="w-2 h-2 rounded-full" 
+                                    className="w-1.5 h-1.5 rounded-full" 
                                     style={{ backgroundColor: getZoneColor(zone.tauxvacancelocative) }}
                                   />
-                                  <span className="font-semibold">{formatPercentage(zone.tauxvacancelocative)}</span>
+                                  <span className="font-medium">{formatPercentage(zone.tauxvacancelocative)}</span>
                                 </div>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">Variation 3 mois</p>
-                                <div className="flex items-center gap-1">
+                                <p className="text-muted-foreground">Variation 3M</p>
+                                <div className="flex items-center gap-0.5">
                                   {getVariationIcon(zone.variationloyer3mois_pct)}
-                                  <span className="font-semibold">{formatPercentage(zone.variationloyer3mois_pct)}</span>
+                                  <span className="font-medium">{formatPercentage(zone.variationloyer3mois_pct)}</span>
                                 </div>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">Population locative</p>
-                                <p className="font-semibold">{formatPopulation(zone.populationlocativeestimee)}</p>
+                                <p className="text-muted-foreground">Population</p>
+                                <p className="font-medium">{formatPopulation(zone.populationlocativeestimee)}</p>
                               </div>
                               <div>
-                                <p className="text-muted-foreground">Pression foncière</p>
+                                <p className="text-muted-foreground">Pression</p>
                                 <Badge 
                                   style={{ backgroundColor: getPressureColor(zone.indicepressionfonciere) }}
-                                  className="text-white text-xs"
+                                  className="text-white text-[8px] px-1 py-0"
                                 >
                                   {zone.indicepressionfonciere}
                                 </Badge>
                               </div>
                             </div>
                             
-                            <div className="mt-3 pt-3 border-t">
-                              <p className="text-xs text-muted-foreground">Typologie dominante</p>
-                              <p className="text-xs font-medium">{zone.typologie_dominante}</p>
+                            <div className="mt-2 pt-2 border-t border-border/50">
+                              <p className="text-[9px] text-muted-foreground">Typologie</p>
+                              <p className="text-[9px] font-medium">{zone.typologie_dominante}</p>
                             </div>
                             
                             <Button 
                               size="sm" 
-                              className="w-full mt-3"
+                              className="w-full mt-2 h-7 text-[10px]"
                               onClick={() => setSelectedZone(zone)}
                             >
-                              Voir détails complets
+                              Voir détails
                             </Button>
                           </div>
                         </Popup>
