@@ -46,9 +46,9 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
   onFilterChange 
 }) => {
   const [selectedFilters, setSelectedFilters] = useState({
-    province: selectedProvince || '',
-    commune: '',
-    quartier: ''
+    province: selectedProvince || 'all',
+    commune: 'all',
+    quartier: 'all'
   });
 
   // Reset filters when selectedProvince changes
@@ -56,8 +56,8 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
     if (selectedProvince && selectedProvince !== selectedFilters.province) {
       setSelectedFilters({
         province: selectedProvince,
-        commune: '',
-        quartier: ''
+        commune: 'all',
+        quartier: 'all'
       });
     }
   }, [selectedProvince]);
@@ -65,8 +65,8 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
   const handleProvinceChange = (province: string) => {
     const newFilters = {
       province,
-      commune: '',
-      quartier: ''
+      commune: 'all',
+      quartier: 'all'
     };
     setSelectedFilters(newFilters);
     onFilterChange(newFilters);
@@ -76,7 +76,7 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
     const newFilters = {
       ...selectedFilters,
       commune,
-      quartier: ''
+      quartier: 'all'
     };
     setSelectedFilters(newFilters);
     onFilterChange(newFilters);
@@ -91,16 +91,16 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
     onFilterChange(newFilters);
   };
 
-  const availableCommunes = selectedFilters.province ? 
+  const availableCommunes = selectedFilters.province && selectedFilters.province !== 'all' ? 
     Object.keys(hierarchyData[selectedFilters.province as keyof typeof hierarchyData] || {}) : 
     [];
 
-  const availableQuartiers = selectedFilters.province && selectedFilters.commune ?
+  const availableQuartiers = selectedFilters.province && selectedFilters.province !== 'all' && selectedFilters.commune && selectedFilters.commune !== 'all' ?
     hierarchyData[selectedFilters.province as keyof typeof hierarchyData]?.[selectedFilters.commune] || [] :
     [];
 
   const resetFilters = () => {
-    const newFilters = { province: '', commune: '', quartier: '' };
+    const newFilters = { province: 'all', commune: 'all', quartier: 'all' };
     setSelectedFilters(newFilters);
     onFilterChange(newFilters);
   };
@@ -111,7 +111,7 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
         <CardTitle className="text-xs font-medium text-foreground flex items-center gap-2">
           <Filter className="h-3 w-3 text-primary" />
           Filtres territoriaux
-          {(selectedFilters.province || selectedFilters.commune || selectedFilters.quartier) && (
+          {(selectedFilters.province !== 'all' || selectedFilters.commune !== 'all' || selectedFilters.quartier !== 'all') && (
             <Badge 
               variant="outline" 
               className="text-[9px] px-1 py-0 cursor-pointer hover:bg-destructive/10 hover:text-destructive"
@@ -136,7 +136,7 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
               <SelectValue placeholder="Sélectionnez une province" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="" className="text-xs">Toutes les provinces</SelectItem>
+              <SelectItem value="all" className="text-xs">Toutes les provinces</SelectItem>
               {Object.keys(hierarchyData).map(province => (
                 <SelectItem key={province} value={province} className="text-xs">
                   {province}
@@ -147,7 +147,7 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
         </div>
 
         {/* Commune Filter */}
-        {selectedFilters.province && (
+        {selectedFilters.province && selectedFilters.province !== 'all' && (
           <div className="space-y-1">
             <label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
               <ChevronRight className="h-2 w-2" />
@@ -162,7 +162,7 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
                 <SelectValue placeholder="Sélectionnez une commune" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="" className="text-xs">Toutes les communes</SelectItem>
+                <SelectItem value="all" className="text-xs">Toutes les communes</SelectItem>
                 {availableCommunes.map(commune => (
                   <SelectItem key={commune} value={commune} className="text-xs">
                     {commune}
@@ -174,7 +174,7 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
         )}
 
         {/* Quartier Filter */}
-        {selectedFilters.province && selectedFilters.commune && (
+        {selectedFilters.province && selectedFilters.province !== 'all' && selectedFilters.commune && selectedFilters.commune !== 'all' && (
           <div className="space-y-1">
             <label className="text-[10px] font-medium text-muted-foreground flex items-center gap-1">
               <ChevronRight className="h-2 w-2" />
@@ -189,7 +189,7 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
                 <SelectValue placeholder="Sélectionnez un quartier" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="" className="text-xs">Tous les quartiers</SelectItem>
+                <SelectItem value="all" className="text-xs">Tous les quartiers</SelectItem>
                 {availableQuartiers.map(quartier => (
                   <SelectItem key={quartier} value={quartier} className="text-xs">
                     {quartier}
@@ -201,23 +201,23 @@ export const ProvinceHierarchyFilter: React.FC<ProvinceHierarchyFilterProps> = (
         )}
 
         {/* Active Filters Display */}
-        {(selectedFilters.province || selectedFilters.commune || selectedFilters.quartier) && (
+        {(selectedFilters.province !== 'all' || selectedFilters.commune !== 'all' || selectedFilters.quartier !== 'all') && (
           <div className="pt-2 border-t border-border/30">
             <div className="text-[10px] font-medium text-muted-foreground mb-1">
               Sélection active:
             </div>
             <div className="flex flex-wrap gap-1">
-              {selectedFilters.province && (
+              {selectedFilters.province && selectedFilters.province !== 'all' && (
                 <Badge variant="secondary" className="text-[9px] px-1 py-0">
                   {selectedFilters.province}
                 </Badge>
               )}
-              {selectedFilters.commune && (
+              {selectedFilters.commune && selectedFilters.commune !== 'all' && (
                 <Badge variant="secondary" className="text-[9px] px-1 py-0">
                   {selectedFilters.commune}
                 </Badge>
               )}
-              {selectedFilters.quartier && (
+              {selectedFilters.quartier && selectedFilters.quartier !== 'all' && (
                 <Badge variant="secondary" className="text-[9px] px-1 py-0">
                   {selectedFilters.quartier}
                 </Badge>
