@@ -153,7 +153,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardHeader>
         <CardContent className="pt-0 p-3">
           <ResponsiveContainer width="100%" height={100}>
-            <BarChart data={sortedRentProvinces} margin={{ top: 5, right: 2, left: 2, bottom: 25 }} barCategoryGap="5%" maxBarSize={8}>
+            <BarChart data={sortedRentProvinces} margin={{ top: 4, right: 2, left: 2, bottom: 22 }} barCategoryGap="2%" barGap={0} barSize={4}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name"
@@ -200,7 +200,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardHeader>
         <CardContent className="pt-0 p-3">
           <ResponsiveContainer width="100%" height={80}>
-            <BarChart data={pressureData} margin={{ top: 5, right: 5, left: 5, bottom: 10 }} barCategoryGap="10%" maxBarSize={20}>
+            <BarChart data={pressureData} margin={{ top: 4, right: 4, left: 4, bottom: 8 }} barCategoryGap="5%" barGap={0} barSize={10}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="niveau" 
