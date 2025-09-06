@@ -153,7 +153,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardHeader>
         <CardContent className="pt-0 p-3">
           <ResponsiveContainer width="100%" height={100}>
-            <BarChart data={sortedRentProvinces} margin={{ top: 2, right: 2, left: 2, bottom: 16 }} barCategoryGap="0%" barGap={0} barSize={2}>
+            <BarChart data={sortedRentProvinces} margin={{ top: 2, right: 2, left: 2, bottom: 16 }} barCategoryGap="0%" barGap={0} barSize={1}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name"
@@ -183,7 +183,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                   props.payload?.fullName || name
                 ]}
               />
-              <Bar dataKey="prix" fill="hsl(var(--primary))" radius={[1, 1, 0, 0]} />
+              <Bar dataKey="prix" fill="hsl(var(--primary))" radius={[0.5, 0.5, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -201,7 +201,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardHeader>
         <CardContent className="pt-0 p-3">
           <ResponsiveContainer width="100%" height={80}>
-            <BarChart data={pressureData} margin={{ top: 2, right: 4, left: 4, bottom: 8 }} barCategoryGap="0%" barGap={0} barSize={10}>
+            <BarChart data={pressureData} margin={{ top: 2, right: 4, left: 4, bottom: 8 }} barCategoryGap="0%" barGap={0} barSize={6}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="niveau" 
@@ -226,7 +226,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                 }}
                 formatter={(value: number) => [`${value} provinces`, 'Nombre']}
               />
-              <Bar dataKey="nombre" radius={[2, 2, 0, 0]}>
+              <Bar dataKey="nombre" radius={[1, 1, 0, 0]}>
                 {pressureData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
