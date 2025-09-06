@@ -13,6 +13,7 @@ import TerritorialMap from './TerritorialMap';
 import { useMapEvents } from 'react-leaflet';
 import { ProvinceData } from '@/types/province';
 import ProvinceDataVisualization from './visualizations/ProvinceDataVisualization';
+import { ProvinceHierarchyFilter } from './map/ProvinceHierarchyFilter';
 
 // Composant carte interactive RDC - simplifié
 const DRCInteractiveMap = () => {
@@ -21,6 +22,11 @@ const DRCInteractiveMap = () => {
   const [mapInstance, setMapInstance] = useState<any>(null);
   const [activeView, setActiveView] = useState<string>('provinces');
   const [activeMobilePanel, setActiveMobilePanel] = useState<'map' | 'details' | 'analytics'>('map');
+  const [hierarchyFilters, setHierarchyFilters] = useState({
+    province: '',
+    commune: '',
+    quartier: ''
+  });
 
   // Complete data for all 26 provinces of DRC with correct SVG IDs
   const provincesData: ProvinceData[] = [
@@ -226,6 +232,12 @@ const DRCInteractiveMap = () => {
           {/* Visualisations avec scroll optimisé */}
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
             <div className="space-y-3 sm:space-y-4 p-2 sm:p-3 md:p-4">
+              {/* Filtre hiérarchique */}
+              <ProvinceHierarchyFilter
+                selectedProvince={selectedProvince?.name}
+                onFilterChange={setHierarchyFilters}
+              />
+              
               {selectedProvince && (
                 <Card className="card-compact shadow-none border-border/30">
                   <CardHeader className="pb-1 px-2 pt-2 sm:pb-2 sm:px-3 sm:pt-3">
