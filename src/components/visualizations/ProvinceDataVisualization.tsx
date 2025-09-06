@@ -112,27 +112,6 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
       <Card className="border-0 shadow-none bg-background/50">
         
         <CardContent className="px-0">
-          {/* Contrôles responsive */}
-          <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-muted/10 rounded border-border/30 border">
-            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-              <label className="responsive-caption font-medium text-muted-foreground whitespace-nowrap">Période:</label>
-              <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                <SelectTrigger className="touch-target responsive-caption min-w-[100px] sm:min-w-[120px] flex-shrink-0">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="current" className="responsive-caption">Actuelle</SelectItem>
-                  <SelectItem value="quarterly" className="responsive-caption">Trimestrielle</SelectItem>
-                  <SelectItem value="annual" className="responsive-caption">Annuelle</SelectItem>
-                </SelectContent>
-              </Select>
-              {selectedProvince && (
-                <Badge variant="secondary" className="responsive-caption px-2 py-1 ml-auto">
-                  {selectedProvince.name}
-                </Badge>
-              )}
-            </div>
-          </div>
 
           {/* Sélecteur d'indicateurs - Responsive */}
           <Tabs value={activeIndicator} onValueChange={setActiveIndicator} className="w-full">
@@ -170,7 +149,20 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                     </p>
                   </div>
                   
-                   <div className="bg-card rounded border-border/30 border">
+                   <div className="bg-card rounded border-border/30 border relative">
+                     {/* Filtre période dans le coin */}
+                     <div className="absolute top-2 right-2 z-10">
+                       <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                         <SelectTrigger className="h-7 text-xs min-w-[90px] bg-background/80 backdrop-blur-sm border-border/50">
+                           <SelectValue />
+                         </SelectTrigger>
+                         <SelectContent>
+                           <SelectItem value="current" className="text-xs">Actuelle</SelectItem>
+                           <SelectItem value="quarterly" className="text-xs">Trimestrielle</SelectItem>
+                           <SelectItem value="annual" className="text-xs">Annuelle</SelectItem>
+                         </SelectContent>
+                       </Select>
+                     </div>
                      <div className="charts-compact transform origin-top-left scale-[0.86] md:scale-100 p-1 sm:p-2">
                        {renderVisualization()}
                      </div>
