@@ -86,15 +86,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
     }
   ];
 
-  const handleExportPDF = () => {
-    // Fonction d'export PDF (à implémenter)
-    console.log('Export PDF des données de', selectedProvince?.name || 'toutes les provinces');
-  };
-
-  const handleExportPNG = () => {
-    // Fonction d'export PNG (à implémenter)
-    console.log('Export PNG du graphique actuel');
-  };
+  // Pas de fonctions d'export - l'utilisateur peut faire une capture d'écran
 
   const renderVisualization = () => {
     switch (activeIndicator) {
@@ -119,39 +111,10 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
     <div className="space-y-3 sm:space-y-4">
       <Card className="border-0 shadow-none bg-background/50">
         <CardHeader className="pb-3 sm:pb-4 px-0 pt-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                <span className="hidden md:inline">Indicateurs du Marché</span>
-                <span className="md:hidden">Marché</span>
-              </CardTitle>
-              <p className="responsive-caption text-muted-foreground mt-1">
-                <span className="hidden md:inline">Données provinciales RDC</span>
-                <span className="md:hidden">RDC</span>
-              </p>
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleExportPNG}
-                className="btn-responsive-sm touch-target"
-              >
-                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                <span className="hidden md:inline">PNG</span>
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleExportPDF}
-                className="btn-responsive-sm touch-target"
-              >
-                <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                <span className="hidden md:inline">PDF</span>
-              </Button>
-            </div>
-          </div>
+          <CardTitle className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
+            <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <span>Analytics RDC</span>
+          </CardTitle>
         </CardHeader>
         
         <CardContent className="px-0">
