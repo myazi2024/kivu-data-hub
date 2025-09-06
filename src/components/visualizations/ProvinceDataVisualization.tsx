@@ -116,106 +116,106 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   };
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-3 sm:space-y-4">
       <Card className="border-0 shadow-none bg-background/50">
-        <CardHeader className="pb-1 px-0 pt-0">
+        <CardHeader className="pb-3 sm:pb-4 px-0 pt-0">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-[10px] font-medium text-foreground flex items-center gap-0.5">
-                <BarChart3 className="h-2.5 w-2.5 text-primary" />
-                <span className="hidden sm:inline">Indicateurs du Marché</span>
-                <span className="sm:hidden">Marché</span>
+              <CardTitle className="responsive-body font-medium text-foreground flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <span className="hidden md:inline">Indicateurs du Marché</span>
+                <span className="md:hidden">Marché</span>
               </CardTitle>
-              <p className="text-[8px] text-muted-foreground mt-0">
-                <span className="hidden sm:inline">Données provinciales RDC</span>
-                <span className="sm:hidden">RDC</span>
+              <p className="responsive-caption text-muted-foreground mt-1">
+                <span className="hidden md:inline">Données provinciales RDC</span>
+                <span className="md:hidden">RDC</span>
               </p>
             </div>
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={handleExportPNG}
-                className="text-[8px] h-4 px-1"
+                className="btn-responsive-sm touch-target"
               >
-                <Download className="h-2 w-2 mr-0.5" />
-                <span className="hidden sm:inline">PNG</span>
+                <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="hidden md:inline">PNG</span>
               </Button>
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={handleExportPDF}
-                className="text-[8px] h-4 px-1"
+                className="btn-responsive-sm touch-target"
               >
-                <FileText className="h-2 w-2 mr-0.5" />
-                <span className="hidden sm:inline">PDF</span>
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="hidden md:inline">PDF</span>
               </Button>
             </div>
           </div>
         </CardHeader>
         
         <CardContent className="px-0">
-          {/* Contrôles ultra-compacts */}
-          <div className="mb-1 p-1 bg-muted/10 rounded border-border/30 border">
-            <div className="flex items-center gap-1 flex-wrap">
-              <label className="text-[8px] font-medium text-muted-foreground whitespace-nowrap">Période:</label>
+          {/* Contrôles responsive */}
+          <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-muted/10 rounded border-border/30 border">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <label className="responsive-caption font-medium text-muted-foreground whitespace-nowrap">Période:</label>
               <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                <SelectTrigger className="h-5 text-[8px] min-w-[70px] flex-shrink-0">
+                <SelectTrigger className="touch-target responsive-caption min-w-[100px] sm:min-w-[120px] flex-shrink-0">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="current" className="text-[8px]">Actuelle</SelectItem>
-                  <SelectItem value="quarterly" className="text-[8px]">Trimestrielle</SelectItem>
-                  <SelectItem value="annual" className="text-[8px]">Annuelle</SelectItem>
+                  <SelectItem value="current" className="responsive-caption">Actuelle</SelectItem>
+                  <SelectItem value="quarterly" className="responsive-caption">Trimestrielle</SelectItem>
+                  <SelectItem value="annual" className="responsive-caption">Annuelle</SelectItem>
                 </SelectContent>
               </Select>
               {selectedProvince && (
-                <Badge variant="secondary" className="text-[7px] px-1 py-0 ml-auto">
+                <Badge variant="secondary" className="responsive-caption px-2 py-1 ml-auto">
                   {selectedProvince.name}
                 </Badge>
               )}
             </div>
           </div>
 
-          {/* Sélecteur d'indicateurs - Mobile optimisé */}
+          {/* Sélecteur d'indicateurs - Responsive */}
           <Tabs value={activeIndicator} onValueChange={setActiveIndicator} className="w-full">
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-              <TabsList className="grid grid-cols-3 sm:grid-cols-6 min-w-max w-full h-auto p-0.5">
+              <TabsList className="results-grid-tablet sm:grid-cols-3 lg:grid-cols-6 min-w-max w-full h-auto p-1 sm:p-2 gap-1 sm:gap-2">
                 {indicators.map((indicator) => (
                   <TabsTrigger
                     key={indicator.id}
                     value={indicator.id}
-                    className="flex flex-col items-center gap-0.5 p-0.5 text-[8px] min-w-[45px] sm:min-w-[55px] h-auto data-[state=active]:bg-primary/10"
+                    className="flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 responsive-caption min-w-[80px] sm:min-w-[100px] h-auto data-[state=active]:bg-primary/10 touch-target"
                   >
-                    <indicator.icon className="h-2 w-2 sm:h-2.5 sm:w-2.5" />
-                    <span className="text-[7px] sm:text-[8px] leading-tight text-center">
+                    <indicator.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                    <span className="responsive-caption leading-tight text-center">
                       {indicator.name.split(' ')[0]}
-                      <br className="sm:hidden" />
-                      <span className="hidden sm:inline"> {indicator.name.split(' ').slice(1).join(' ')}</span>
+                      <br className="md:hidden" />
+                      <span className="hidden md:inline"> {indicator.name.split(' ').slice(1).join(' ')}</span>
                     </span>
                   </TabsTrigger>
                 ))}
               </TabsList>
             </div>
 
-            {/* Contenu ultra-compact */}
+            {/* Contenu responsive */}
             {indicators.map((indicator) => (
-              <TabsContent key={indicator.id} value={indicator.id} className="mt-0.5">
-                <div className="space-y-0.5">
-                  <div className="bg-primary/5 p-1 rounded border-l border-primary">
-                    <h3 className="font-medium text-[9px] text-foreground flex items-center gap-0.5">
-                      <indicator.icon className="h-2 w-2 text-primary" />
-                      <span className="hidden sm:inline">{indicator.name}</span>
-                      <span className="sm:hidden">{indicator.name.split(' ')[0]}</span>
+              <TabsContent key={indicator.id} value={indicator.id} className="mt-2 sm:mt-3">
+                <div className="space-y-2 sm:space-y-3">
+                  <div className="bg-primary/5 p-3 sm:p-4 rounded border-l-2 border-primary">
+                    <h3 className="font-medium responsive-body text-foreground flex items-center gap-2">
+                      <indicator.icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                      <span className="hidden md:inline">{indicator.name}</span>
+                      <span className="md:hidden">{indicator.name.split(' ')[0]}</span>
                     </h3>
-                    <p className="text-[7px] sm:text-[8px] text-muted-foreground mt-0 hidden sm:block">
+                    <p className="responsive-caption text-muted-foreground mt-1 hidden md:block">
                       {indicator.description}
                     </p>
                   </div>
                   
                   <div className="bg-card rounded border-border/30 border">
-                    <div className="max-h-[120px] sm:max-h-[150px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-                      <div className="p-1">
+                    <div className="max-h-[200px] sm:max-h-[250px] md:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
+                      <div className="p-3 sm:p-4">
                         {renderVisualization()}
                       </div>
                     </div>
@@ -225,33 +225,33 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
             ))}
           </Tabs>
           
-          {/* Statistiques agrégées - Version ultra-compacte */}
-          <div className="mt-2 pt-2 border-t border-border/50">
+          {/* Statistiques agrégées - Version responsive */}
+          <div className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-border/50">
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-              <div className="flex gap-1 min-w-max pb-1">
-                <div className="flex-shrink-0 text-center p-1.5 bg-primary/5 rounded border min-w-[65px]">
-                  <div className="text-xs font-semibold text-foreground">
+              <div className="flex gap-2 sm:gap-3 min-w-max pb-2">
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
                     {filteredProvinces.length}
                   </div>
-                  <div className="text-[8px] text-muted-foreground leading-tight">Prov.</div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Provinces</div>
                 </div>
-                <div className="flex-shrink-0 text-center p-1.5 bg-primary/5 rounded border min-w-[65px]">
-                  <div className="text-xs font-semibold text-foreground">
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
                     ${Math.round(filteredProvinces.reduce((sum, p) => sum + p.prixMoyenLoyer, 0) / filteredProvinces.length)}
                   </div>
-                  <div className="text-[8px] text-muted-foreground leading-tight">$/m²</div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">$/m²</div>
                 </div>
-                <div className="flex-shrink-0 text-center p-1.5 bg-primary/5 rounded border min-w-[65px]">
-                  <div className="text-xs font-semibold text-foreground">
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
                     {Math.round(filteredProvinces.reduce((sum, p) => sum + p.tauxVacanceLocative, 0) / filteredProvinces.length)}%
                   </div>
-                  <div className="text-[8px] text-muted-foreground leading-tight">Vac.</div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Vacance</div>
                 </div>
-                <div className="flex-shrink-0 text-center p-1.5 bg-primary/5 rounded border min-w-[65px]">
-                  <div className="text-xs font-semibold text-foreground">
+                <div className="flex-shrink-0 text-center p-3 sm:p-4 bg-primary/5 rounded border min-w-[80px] sm:min-w-[100px]">
+                  <div className="text-lg sm:text-xl font-semibold text-foreground">
                     {(filteredProvinces.reduce((sum, p) => sum + p.populationLocativeEstimee, 0) / 1000000).toFixed(1)}M
                   </div>
-                  <div className="text-[8px] text-muted-foreground leading-tight">Pop.</div>
+                  <div className="responsive-caption text-muted-foreground leading-tight">Population</div>
                 </div>
               </div>
             </div>

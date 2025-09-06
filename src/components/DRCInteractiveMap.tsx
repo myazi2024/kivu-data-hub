@@ -128,58 +128,58 @@ const DRCInteractiveMap = () => {
   };
 
   return (
-    <div className="w-full h-full p-0.5 sm:p-1">
-      {/* Layout mobile-first optimisé */}
-      <div className="flex flex-col lg:grid lg:grid-cols-6 gap-0.5 sm:gap-1 h-full">
-        {/* Carte interactive - Mobile full width, Desktop 2/6 */}
-        <div className="lg:col-span-2 h-[40vh] lg:h-full order-3 lg:order-1">
-          <Card className="overflow-hidden h-full flex flex-col border-border/50">
+    <div className="w-full h-full container-responsive">
+      {/* Layout responsive optimisé pour tous écrans */}
+      <div className="flex flex-col xl:grid xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4 h-full">
+        {/* Carte interactive - Responsive layout */}
+        <div className="xl:col-span-2 h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] xl:h-full order-3 xl:order-1">
+          <Card className="card-responsive overflow-hidden h-full flex flex-col">
             <CardContent className="p-0 flex-1 flex flex-col">
-              {/* En-tête ultra-compact mobile */}
-              <div className="bg-muted/20 p-1 sm:p-1.5 border-b border-border/30">
-                <div className="flex items-center justify-between mb-1">
-                  <h2 className="text-xs sm:text-sm font-medium text-foreground">
-                    <span className="hidden sm:inline">RDC - Marché Immobilier</span>
-                    <span className="sm:hidden">Marché RDC</span>
+              {/* En-tête responsive */}
+              <div className="bg-muted/20 p-2 sm:p-3 md:p-4 border-b border-border/30">
+                <div className="flex items-center justify-between mb-2">
+                  <h2 className="responsive-subtitle text-foreground">
+                    <span className="hidden md:inline">RDC - Marché Immobilier</span>
+                    <span className="md:hidden">Marché RDC</span>
                   </h2>
                   
-                  {/* Contrôles de zoom compacts */}
-                  <div className="flex gap-0.5">
+                  {/* Contrôles de zoom responsive */}
+                  <div className="flex gap-1 sm:gap-2">
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="w-5 h-5 p-0 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                      className="touch-target hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                       onClick={() => mapInstance?.zoomIn()}
                       title="Zoom avant"
                     >
-                      <ZoomIn className="w-2.5 h-2.5" />
+                      <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="w-5 h-5 p-0 hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+                      className="touch-target hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                       onClick={() => mapInstance?.zoomOut()}
                       title="Zoom arrière"
                     >
-                      <ZoomOut className="w-2.5 h-2.5" />
+                      <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                   </div>
                 </div>
                 
-                {/* Filtre de visualisation compact */}
-                <div>
+                {/* Filtre de visualisation responsive */}
+                <div className="mt-2">
                   <Select value={activeView} onValueChange={setActiveView}>
-                    <SelectTrigger className="w-full h-6 sm:h-7 text-[10px] sm:text-xs">
+                    <SelectTrigger className="w-full touch-target responsive-caption">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="provinces" className="text-[10px] sm:text-xs">
-                        <span className="hidden sm:inline">Cartographie RDC par Province</span>
-                        <span className="sm:hidden">RDC Provinces</span>
+                      <SelectItem value="provinces" className="responsive-caption">
+                        <span className="hidden md:inline">Cartographie RDC par Province</span>
+                        <span className="md:hidden">Provinces RDC</span>
                       </SelectItem>
-                      <SelectItem value="territorial" className="text-[10px] sm:text-xs">
-                        <span className="hidden sm:inline">Cartographie Territoriale</span>
-                        <span className="sm:hidden">Territorial</span>
+                      <SelectItem value="territorial" className="responsive-caption">
+                        <span className="hidden md:inline">Cartographie Territoriale</span>
+                        <span className="md:hidden">Territorial</span>
                       </SelectItem>
                     </SelectContent>
                   </Select>
@@ -187,7 +187,7 @@ const DRCInteractiveMap = () => {
               </div>
               
               {/* Carte responsive optimisée */}
-              <div className="flex-1 min-h-0 p-0.5 overflow-hidden">
+              <div className="flex-1 min-h-0 p-2 sm:p-3 md:p-4 overflow-hidden">
                 {activeView === 'provinces' ? (
                   <DRCMapWithTooltip
                     provincesData={provincesData}
@@ -206,44 +206,44 @@ const DRCInteractiveMap = () => {
           </Card>
         </div>
 
-        {/* Panneau données province - Mobile stack, Desktop 2/6 */}
-        <div className="lg:col-span-2 order-1 lg:order-2 h-[35vh] lg:max-h-[85vh] flex flex-col">
-          {/* Visualisations compactes avec scroll optimisé */}
+        {/* Panneau données province - Responsive layout */}
+        <div className="xl:col-span-2 order-1 xl:order-2 h-[30vh] sm:h-[35vh] md:h-[40vh] lg:h-[45vh] xl:max-h-[85vh] flex flex-col">
+          {/* Visualisations avec scroll optimisé */}
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
-            <div className="space-y-2 p-1">
+            <div className="space-y-3 sm:space-y-4 p-2 sm:p-3 md:p-4">
               {selectedProvince && (
-                <Card className="shadow-none border-border/30">
-                  <CardHeader className="pb-1 px-2 pt-2">
-                    <CardTitle className="text-xs font-medium text-foreground flex items-center gap-1">
-                      <MapPin className="h-3 w-3 text-primary" />
-                      <span className="hidden sm:inline">Données détaillées - {selectedProvince.name}</span>
-                      <span className="sm:hidden">{selectedProvince.name}</span>
+                <Card className="card-responsive shadow-none border-border/30">
+                  <CardHeader className="pb-2 px-3 pt-3 sm:pb-3 sm:px-4 sm:pt-4">
+                    <CardTitle className="responsive-body font-medium text-foreground flex items-center gap-2">
+                      <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                      <span className="hidden md:inline">Données détaillées - {selectedProvince.name}</span>
+                      <span className="md:hidden">{selectedProvince.name}</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-2 p-2">
-                    <div className="space-y-1.5">
-                      {/* Prix & Valeur - Compact */}
-                      <div className="space-y-1">
-                        <h5 className="text-[10px] font-medium text-foreground flex items-center gap-1">
-                          <DollarSign className="h-2.5 w-2.5 text-primary" />
+                  <CardContent className="space-y-4 p-3 sm:p-4">
+                    <div className="space-y-4">
+                      {/* Prix & Valeur - Responsive */}
+                      <div className="space-y-3">
+                        <h5 className="responsive-caption font-medium text-foreground flex items-center gap-2">
+                          <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                           Prix & Valeur
-                          <Badge variant="outline" className="text-[8px] px-1 py-0">USD/m²</Badge>
+                          <Badge variant="outline" className="responsive-caption px-2 py-1">USD/m²</Badge>
                         </h5>
-                        <div className="grid grid-cols-2 gap-1">
-                          <Card className="p-1.5">
-                            <div className="text-[9px] text-muted-foreground">Loyer moyen</div>
-                            <div className="text-sm font-bold text-primary">${selectedProvince.prixMoyenLoyer}</div>
-                            <div className="text-[8px] text-muted-foreground">par m²/mois</div>
+                        <div className="results-grid-tablet gap-3">
+                          <Card className="p-3 sm:p-4">
+                            <div className="responsive-caption text-muted-foreground">Loyer moyen</div>
+                            <div className="text-lg sm:text-xl font-bold text-primary">${selectedProvince.prixMoyenLoyer}</div>
+                            <div className="responsive-caption text-muted-foreground">par m²/mois</div>
                           </Card>
-                          <Card className="p-1.5">
-                            <div className="text-[9px] text-muted-foreground">Prix de vente</div>
-                            <div className="text-sm font-bold text-primary">${selectedProvince.prixMoyenVenteM2}</div>
-                            <div className="text-[8px] text-muted-foreground">par m²</div>
+                          <Card className="p-3 sm:p-4">
+                            <div className="responsive-caption text-muted-foreground">Prix de vente</div>
+                            <div className="text-lg sm:text-xl font-bold text-primary">${selectedProvince.prixMoyenVenteM2}</div>
+                            <div className="responsive-caption text-muted-foreground">par m²</div>
                           </Card>
                         </div>
-                        <Card className="p-1.5 bg-accent/5">
-                          <div className="text-[9px] text-muted-foreground">Valeur foncière parcelle</div>
-                          <div className="text-base font-bold text-accent">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</div>
+                        <Card className="p-3 sm:p-4 bg-accent/5">
+                          <div className="responsive-caption text-muted-foreground">Valeur foncière parcelle</div>
+                          <div className="text-xl sm:text-2xl font-bold text-accent">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</div>
                         </Card>
                       </div>
 
@@ -338,22 +338,22 @@ const DRCInteractiveMap = () => {
           </div>
         </div>
 
-        {/* Panneau Analytics - Mobile bottom, Desktop right 2/6 */}
-        <div className="lg:col-span-2 order-2 lg:order-3 h-[25vh] lg:max-h-[85vh] flex flex-col">
-          <Card className="flex-1 overflow-hidden border-border/30 shadow-none">
-            <CardHeader className="pb-1 px-2 py-1.5 border-b border-border/20">
-              <CardTitle className="text-xs font-medium text-foreground flex items-center gap-1">
-                <BarChart3 className="h-3 w-3 text-primary" />
-                <span className="hidden sm:inline">Analytics Immobilier</span>
-                <span className="sm:hidden">Analytics</span>
+        {/* Panneau Analytics - Responsive layout */}
+        <div className="xl:col-span-2 order-2 xl:order-3 h-[35vh] sm:h-[40vh] md:h-[45vh] lg:h-[50vh] xl:max-h-[85vh] flex flex-col">
+          <Card className="flex-1 overflow-hidden card-responsive shadow-none">
+            <CardHeader className="pb-3 px-3 py-3 sm:pb-4 sm:px-4 sm:py-4 border-b border-border/20">
+              <CardTitle className="responsive-subtitle font-medium text-foreground flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                <span className="hidden md:inline">Analytics Immobilier</span>
+                <span className="md:hidden">Analytics</span>
               </CardTitle>
-              <p className="text-[9px] text-muted-foreground hidden sm:block">
+              <p className="responsive-caption text-muted-foreground hidden md:block">
                 Tendances nationales et comparaisons
               </p>
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-hidden">
               <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-                <div className="p-1.5 min-h-full">
+                <div className="p-3 sm:p-4 min-h-full">
                   <ProvinceDataVisualization 
                     provinces={provincesData} 
                     selectedProvince={selectedProvince}
