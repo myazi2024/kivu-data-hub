@@ -4,6 +4,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -108,7 +109,8 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
   };
 
   return (
-    <div className="space-y-3 sm:space-y-4">
+    <TooltipProvider>
+      <div className="space-y-3 sm:space-y-4">
       <Card className="border-0 shadow-none bg-background/50">
         
         <CardContent className="px-0">
@@ -118,18 +120,25 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
             <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
               <TabsList className="results-grid-tablet sm:grid-cols-3 lg:grid-cols-6 min-w-max w-full h-auto p-1 sm:p-2 gap-1 sm:gap-2">
                 {indicators.map((indicator) => (
-                  <TabsTrigger
-                    key={indicator.id}
-                    value={indicator.id}
-                    className="flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 responsive-caption min-w-[80px] sm:min-w-[100px] h-auto data-[state=active]:bg-primary/10 touch-target"
-                  >
-                    <indicator.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="responsive-caption leading-tight text-center">
-                      {indicator.name.split(' ')[0]}
-                      <br className="md:hidden" />
-                      <span className="hidden md:inline"> {indicator.name.split(' ').slice(1).join(' ')}</span>
-                    </span>
-                  </TabsTrigger>
+                  <Tooltip key={indicator.id}>
+                    <TooltipTrigger asChild>
+                      <TabsTrigger
+                        value={indicator.id}
+                        className="flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 responsive-caption min-w-[80px] sm:min-w-[100px] h-auto data-[state=active]:bg-primary/10 touch-target"
+                      >
+                        <indicator.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                        <span className="responsive-caption leading-tight text-center">
+                          {indicator.name.split(' ')[0]}
+                          <br className="md:hidden" />
+                          <span className="hidden md:inline"> {indicator.name.split(' ').slice(1).join(' ')}</span>
+                        </span>
+                      </TabsTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" className="max-w-xs">
+                      <p className="text-sm font-medium">{indicator.name}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{indicator.description}</p>
+                    </TooltipContent>
+                  </Tooltip>
                 ))}
               </TabsList>
             </div>
@@ -163,8 +172,10 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                          </SelectContent>
                        </Select>
                      </div>
-                     <div className="charts-compact transform origin-top-left scale-[0.86] md:scale-100 p-1 sm:p-2">
-                       {renderVisualization()}
+                     <div className="w-full overflow-hidden p-2 sm:p-3">
+                       <div className="transform origin-top-left scale-95 md:scale-100 w-full">
+                         {renderVisualization()}
+                       </div>
                      </div>
                    </div>
                 </div>
@@ -206,6 +217,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
         </CardContent>
       </Card>
     </div>
+    </TooltipProvider>
   );
 };
 
