@@ -116,7 +116,7 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="name" 
-                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
                     angle={-45}
                     textAnchor="end"
                     height={70}
@@ -182,13 +182,13 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
                 <XAxis 
                   type="number" 
                   dataKey="prixVente" 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
                   label={{ value: 'Prix vente (USD/m²)', position: 'insideBottom', offset: -10 }}
                 />
                 <YAxis 
                   type="number" 
                   dataKey="rendement"
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
                   label={{ value: 'Rendement (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                 />
                 <Tooltip 

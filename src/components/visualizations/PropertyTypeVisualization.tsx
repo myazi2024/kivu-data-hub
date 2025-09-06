@@ -223,7 +223,7 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="name" 
-                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
                     angle={-45}
                     textAnchor="end"
                     height={70}
