@@ -148,7 +148,7 @@ const DRCInteractiveMap = () => {
         {/* Layout responsive optimisé */}
         <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-4 h-full min-h-0">
         {/* Carte interactive - Responsive layout */}
-        <div className={`${activeMobilePanel !== 'map' ? 'hidden lg:block' : 'flex-1'} lg:col-span-4 order-3 lg:order-1 min-h-0 h-full`}>
+        <div className={`${activeMobilePanel !== 'map' ? 'hidden lg:block' : 'flex-1'} lg:col-span-3 order-3 lg:order-1 min-h-0 h-full`}>
           <Card className="card-compact overflow-hidden h-full flex flex-col">
             <CardContent className="p-0 flex-1 flex flex-col">
               {/* En-tête responsive */}
@@ -353,7 +353,7 @@ const DRCInteractiveMap = () => {
         </div>
 
         {/* Panneau Analytics - Responsive layout */}
-        <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-4 order-2 lg:order-3 flex-col min-h-0 h-full`}>
+        <div className={`${activeMobilePanel !== 'analytics' ? 'hidden lg:flex' : 'flex'} lg:col-span-5 order-2 lg:order-3 flex-col min-h-0 h-full`}>
           <Card className="flex-1 overflow-hidden card-compact shadow-none">
             <CardHeader className="px-2 py-1 sm:px-3 sm:py-2 border-b border-border/20">
               <CardTitle className="text-[11px] sm:text-xs font-medium text-foreground flex items-center gap-1">
@@ -363,8 +363,8 @@ const DRCInteractiveMap = () => {
             </CardHeader>
             <CardContent className="flex-1 p-0 overflow-hidden charts-compact text-[10px]">
               <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-                <div className="p-2 sm:p-3 min-h-full">
-                  <div className="scale-[0.8] sm:scale-[0.9] md:scale-100 origin-top-left">
+                <div className="p-1 sm:p-2 min-h-full">
+                  <div className="w-full">
                     <ProvinceDataVisualization 
                       provinces={provincesData} 
                       selectedProvince={selectedProvince}
