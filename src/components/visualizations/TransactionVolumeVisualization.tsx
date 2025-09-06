@@ -173,8 +173,8 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
           <CardContent>
             <div className="overflow-x-auto">
               <div style={{ width: Math.max(700, topProvincesByTransactions.length * 60) }}>
-                 <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={topProvincesByTransactions} margin={{ top: 12, right: 8, left: 8, bottom: 40 }} barCategoryGap="-100%" barGap={-6} barSize={0.75}>
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 
