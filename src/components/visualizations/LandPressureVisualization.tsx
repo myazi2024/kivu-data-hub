@@ -266,8 +266,8 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
           <CardContent>
             <div className="overflow-x-auto">
               <div style={{ width: Math.max(700, topPressureProvinces.length * 60) }}>
-                <ResponsiveContainer width="100%" height={140}>
-                  <BarChart data={topPressureProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                 <ResponsiveContainer width="100%" height={140}>
+                  <BarChart data={topPressureProvinces} margin={{ top: 12, right: 8, left: 8, bottom: 40 }} barCategoryGap="-100%" barGap={-6} barSize={0.75}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 

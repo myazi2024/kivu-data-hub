@@ -201,7 +201,7 @@ const AdminAnalytics: React.FC = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={data.topPublications}>
+              <BarChart data={data.topPublications} barCategoryGap="-60%" barGap={-4} barSize={2}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="title" />
                 <YAxis />
@@ -254,7 +254,7 @@ const AdminAnalytics: React.FC = () => {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={data.userGrowth}>
+            <BarChart data={data.userGrowth} barCategoryGap="-60%" barGap={-4} barSize={2}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
               <YAxis />

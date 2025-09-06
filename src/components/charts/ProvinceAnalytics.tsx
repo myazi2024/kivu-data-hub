@@ -152,8 +152,8 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 p-3">
-          <ResponsiveContainer width="100%" height={100}>
-            <BarChart data={sortedRentProvinces} margin={{ top: 2, right: 2, left: 2, bottom: 16 }} barCategoryGap="-40%" barGap={-1} barSize={0.5}>
+           <ResponsiveContainer width="100%" height={100}>
+            <BarChart data={sortedRentProvinces} margin={{ top: 2, right: 2, left: 2, bottom: 16 }} barCategoryGap="-120%" barGap={-3} barSize={0.17}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name"
@@ -183,7 +183,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                   props.payload?.fullName || name
                 ]}
               />
-              <Bar dataKey="prix" fill="hsl(var(--primary))" radius={[0.5, 0.5, 0, 0]} />
+               <Bar dataKey="prix" fill="hsl(var(--primary))" radius={[0.5, 0.5, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
@@ -200,8 +200,8 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 p-3">
-          <ResponsiveContainer width="100%" height={80}>
-            <BarChart data={pressureData} margin={{ top: 2, right: 4, left: 4, bottom: 8 }} barCategoryGap="-30%" barGap={-2} barSize={2}>
+           <ResponsiveContainer width="100%" height={80}>
+            <BarChart data={pressureData} margin={{ top: 2, right: 4, left: 4, bottom: 8 }} barCategoryGap="-90%" barGap={-6} barSize={0.67}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="niveau" 
