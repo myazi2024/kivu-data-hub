@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -185,11 +186,13 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                          </Select>
                        </div>
                      )}
-                     <div className="w-full overflow-visible p-0">
-                       <div className="w-full">
-                         {renderVisualization()}
+                     <ScrollArea className="h-96 w-full">
+                       <div className="w-full overflow-visible p-4">
+                         <div className="w-full">
+                           {renderVisualization()}
+                         </div>
                        </div>
-                     </div>
+                     </ScrollArea>
                    </div>
                 </div>
               </TabsContent>
