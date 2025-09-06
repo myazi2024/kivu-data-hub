@@ -55,10 +55,10 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-           <div className="overflow-x-auto">
-             <div style={{ width: Math.max(700, sortedProvinces.length * 60) }}>
+           <div>
+             <div style={{ width: '100%' }}>
                <ResponsiveContainer width="100%" height={160}>
-                 <BarChart data={sortedProvinces} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
+                 <BarChart data={sortedProvinces} margin={{ top: 20, right: 20, left: 20, bottom: 60 }} barCategoryGap="-80%" barGap={-6} barSize={6}>
                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                    <XAxis 
                      dataKey="name" 
