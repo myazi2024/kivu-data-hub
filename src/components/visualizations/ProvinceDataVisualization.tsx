@@ -170,24 +170,26 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                   </div>
                   
                    <div className="bg-card rounded border-border/30 border relative">
-                     {/* Filtre période dans le coin */}
-                     <div className="absolute top-2 right-2 z-20">
-                       <Select value={periodFilter} onValueChange={setPeriodFilter}>
-                         <SelectTrigger className="h-7 text-xs min-w-[90px] bg-background/80 backdrop-blur-sm border-border/50">
-                           <SelectValue />
-                         </SelectTrigger>
-                          <SelectContent className="z-50 bg-popover">
-                            <SelectItem value="current" className="text-xs">Actuelle</SelectItem>
-                            <SelectItem value="quarterly" className="text-xs">Trimestrielle</SelectItem>
-                            <SelectItem value="annual" className="text-xs">Annuelle</SelectItem>
-                          </SelectContent>
-                       </Select>
+                     {/* Filtre période dans le coin - seulement pour les graphiques temporels */}
+                     {(indicator.id === 'price-evolution' || indicator.id === 'transaction-volume') && (
+                       <div className="absolute top-2 right-2 z-20">
+                         <Select value={periodFilter} onValueChange={setPeriodFilter}>
+                           <SelectTrigger className="h-7 text-xs min-w-[90px] bg-background/80 backdrop-blur-sm border-border/50">
+                             <SelectValue />
+                           </SelectTrigger>
+                           <SelectContent className="z-50 bg-popover">
+                             <SelectItem value="current" className="text-xs">Actuelle</SelectItem>
+                             <SelectItem value="quarterly" className="text-xs">Trimestrielle</SelectItem>
+                             <SelectItem value="annual" className="text-xs">Annuelle</SelectItem>
+                           </SelectContent>
+                         </Select>
+                       </div>
+                     )}
+                     <div className="w-full overflow-visible p-0">
+                       <div className="w-full">
+                         {renderVisualization()}
+                       </div>
                      </div>
-                      <div className="w-full overflow-visible p-0">
-                        <div className="w-full">
-                          {renderVisualization()}
-                        </div>
-                      </div>
                    </div>
                 </div>
               </TabsContent>
