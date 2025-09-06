@@ -136,9 +136,9 @@ const DRCInteractiveMap = () => {
           <Card className="card-compact overflow-hidden h-full flex flex-col">
             <CardContent className="p-0 flex-1 flex flex-col">
               {/* En-tête responsive */}
-              <div className="bg-muted/20 p-1 sm:p-2 md:p-3 border-b border-border/30">
-                <div className="flex items-center justify-between mb-2">
-                  <h2 className="responsive-subtitle text-foreground">
+              <div className="bg-muted/20 p-1 sm:p-2 border-b border-border/30">
+                <div className="flex items-center justify-between mb-1">
+                  <h2 className="text-xs sm:text-sm font-medium text-foreground">
                     <span className="hidden md:inline">RDC - Marché Immobilier</span>
                     <span className="md:hidden">Marché RDC</span>
                   </h2>
@@ -169,15 +169,15 @@ const DRCInteractiveMap = () => {
                 {/* Filtre de visualisation responsive */}
                 <div className="mt-2">
                   <Select value={activeView} onValueChange={setActiveView}>
-                    <SelectTrigger className="w-full touch-target responsive-caption">
+                    <SelectTrigger className="w-full touch-target text-xs">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="provinces" className="responsive-caption">
+                      <SelectItem value="provinces" className="text-xs">
                         <span className="hidden md:inline">Cartographie RDC par Province</span>
                         <span className="md:hidden">Provinces RDC</span>
                       </SelectItem>
-                      <SelectItem value="territorial" className="responsive-caption">
+                      <SelectItem value="territorial" className="text-xs">
                         <span className="hidden md:inline">Cartographie Territoriale</span>
                         <span className="md:hidden">Territorial</span>
                       </SelectItem>
@@ -213,98 +213,98 @@ const DRCInteractiveMap = () => {
             <div className="space-y-3 sm:space-y-4 p-2 sm:p-3 md:p-4">
               {selectedProvince && (
                 <Card className="card-compact shadow-none border-border/30">
-                  <CardHeader className="pb-2 px-3 pt-3 sm:pb-3 sm:px-4 sm:pt-4">
-                    <CardTitle className="responsive-body font-medium text-foreground flex items-center gap-2">
-                      <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  <CardHeader className="pb-1 px-2 pt-2 sm:pb-2 sm:px-3 sm:pt-3">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-2">
+                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
                       <span className="hidden md:inline">Données détaillées - {selectedProvince.name}</span>
                       <span className="md:hidden">{selectedProvince.name}</span>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4 p-3 sm:p-4">
-                    <div className="space-y-4">
+                  <CardContent className="space-y-3 p-2 sm:p-3">
+                    <div className="space-y-3">
                       {/* Prix & Valeur - Responsive */}
-                      <div className="space-y-3">
-                        <h5 className="responsive-caption font-medium text-foreground flex items-center gap-2">
-                          <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                      <div className="space-y-2">
+                        <h5 className="text-xs font-medium text-foreground flex items-center gap-1">
+                          <DollarSign className="h-3 w-3 text-primary" />
                           Prix & Valeur
-                          <Badge variant="outline" className="responsive-caption px-2 py-1">USD/m²</Badge>
+                          <Badge variant="outline" className="text-xs px-1 py-0">USD/m²</Badge>
                         </h5>
-                        <div className="results-grid-tablet gap-3">
-                          <Card className="p-3 sm:p-4">
-                            <div className="responsive-caption text-muted-foreground">Loyer moyen</div>
-                            <div className="text-lg sm:text-xl font-bold text-primary">${selectedProvince.prixMoyenLoyer}</div>
-                            <div className="responsive-caption text-muted-foreground">par m²/mois</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <Card className="p-2">
+                            <div className="text-xs text-muted-foreground">Loyer moyen</div>
+                            <div className="text-sm font-bold text-primary">${selectedProvince.prixMoyenLoyer}</div>
+                            <div className="text-xs text-muted-foreground">par m²/mois</div>
                           </Card>
-                          <Card className="p-3 sm:p-4">
-                            <div className="responsive-caption text-muted-foreground">Prix de vente</div>
-                            <div className="text-lg sm:text-xl font-bold text-primary">${selectedProvince.prixMoyenVenteM2}</div>
-                            <div className="responsive-caption text-muted-foreground">par m²</div>
+                          <Card className="p-2">
+                            <div className="text-xs text-muted-foreground">Prix de vente</div>
+                            <div className="text-sm font-bold text-primary">${selectedProvince.prixMoyenVenteM2}</div>
+                            <div className="text-xs text-muted-foreground">par m²</div>
                           </Card>
                         </div>
-                        <Card className="p-3 sm:p-4 bg-accent/5">
-                          <div className="responsive-caption text-muted-foreground">Valeur foncière parcelle</div>
-                          <div className="text-xl sm:text-2xl font-bold text-accent">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</div>
+                        <Card className="p-2 bg-accent/5">
+                          <div className="text-xs text-muted-foreground">Valeur foncière parcelle</div>
+                          <div className="text-sm font-bold text-accent">{formatCurrency(selectedProvince.valeurFonciereParcelleUsd)}</div>
                         </Card>
                       </div>
 
                       {/* Performance locative - Compact */}
                       <div className="space-y-2">
-                        <h5 className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-1">
-                          <Building className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                        <h5 className="text-xs font-medium text-foreground flex items-center gap-1">
+                          <Building className="h-3 w-3 text-primary" />
                           Performance Locative
                         </h5>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Card className="p-2 sm:p-3">
+                        <div className="grid grid-cols-2 gap-1">
+                          <Card className="p-1">
                             <div className="text-xs text-muted-foreground">Taux d'occupation</div>
-                            <div className="text-sm sm:text-base font-bold text-green-600">{selectedProvince.tauxOccupationLocatif}%</div>
+                            <div className="text-sm font-bold text-green-600">{selectedProvince.tauxOccupationLocatif}%</div>
                             <div className="flex items-center gap-1 text-xs">
                               {selectedProvince.tauxOccupationLocatif > 75 ? (
-                                <><TrendingUp className="h-3 w-3 text-green-600" /> Élevé</>
+                                <><TrendingUp className="h-2 w-2 text-green-600" /> Élevé</>
                               ) : (
-                                <><TrendingDown className="h-3 w-3 text-orange-500" /> Moyen</>
+                                <><TrendingDown className="h-2 w-2 text-orange-500" /> Moyen</>
                               )}
                             </div>
                           </Card>
-                          <Card className="p-2 sm:p-3">
+                          <Card className="p-1">
                             <div className="text-xs text-muted-foreground">Durée location</div>
-                            <div className="text-sm sm:text-base font-bold text-primary">{selectedProvince.dureeMoyenneMiseLocationJours}</div>
+                            <div className="text-sm font-bold text-primary">{selectedProvince.dureeMoyenneMiseLocationJours}</div>
                             <div className="text-xs text-muted-foreground">jours</div>
                           </Card>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Card className="p-2 sm:p-3">
+                        <div className="grid grid-cols-2 gap-1">
+                          <Card className="p-1">
                             <div className="text-xs text-muted-foreground">Taux de vacance</div>
-                            <div className="text-sm sm:text-base font-bold text-orange-500">{selectedProvince.tauxVacanceLocative}%</div>
+                            <div className="text-sm font-bold text-orange-500">{selectedProvince.tauxVacanceLocative}%</div>
                           </Card>
-                          <Card className="p-2 sm:p-3">
+                          <Card className="p-1">
                             <div className="text-xs text-muted-foreground">Rendement brut</div>
-                            <div className="text-sm sm:text-base font-bold text-emerald-600">{selectedProvince.rendementLocatifBrut ? selectedProvince.rendementLocatifBrut : 0}%</div>
+                            <div className="text-sm font-bold text-emerald-600">{selectedProvince.rendementLocatifBrut ? selectedProvince.rendementLocatifBrut : 0}%</div>
                           </Card>
                         </div>
                       </div>
 
                       {/* Population & activité - Compact */}
                       <div className="space-y-2">
-                        <h5 className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-1">
-                          <Users className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                        <h5 className="text-xs font-medium text-foreground flex items-center gap-1">
+                          <Users className="h-3 w-3 text-primary" />
                           Marché & Population
                         </h5>
-                        <div className="space-y-2">
-                          <Card className="p-2 sm:p-3">
+                        <div className="space-y-1">
+                          <Card className="p-1">
                             <div className="text-xs text-muted-foreground">Population locative</div>
-                            <div className="text-sm sm:text-base font-bold text-blue-600">
+                            <div className="text-sm font-bold text-blue-600">
                               {(selectedProvince.populationLocativeEstimee / 1000).toFixed(0)}k
                             </div>
                             <div className="text-xs text-muted-foreground">habitants</div>
                           </Card>
-                          <div className="grid grid-cols-2 gap-2">
-                            <Card className="p-2 sm:p-3">
+                          <div className="grid grid-cols-2 gap-1">
+                            <Card className="p-1">
                               <div className="text-xs text-muted-foreground">Transactions</div>
-                              <div className="text-sm sm:text-base font-bold text-accent">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
+                              <div className="text-sm font-bold text-accent">{formatNumber(selectedProvince.nombreTransactionsEstimees)}</div>
                             </Card>
-                            <Card className="p-2 sm:p-3">
+                            <Card className="p-1">
                               <div className="text-xs text-muted-foreground">Annonces</div>
-                              <div className="text-sm sm:text-base font-bold text-accent">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</div>
+                              <div className="text-sm font-bold text-accent">{formatNumber(selectedProvince.volumeAnnoncesImmobilieres)}</div>
                             </Card>
                           </div>
                         </div>
@@ -312,11 +312,11 @@ const DRCInteractiveMap = () => {
 
                       {/* Pression locative - Compact */}
                       <div className="space-y-2">
-                        <h5 className="text-xs sm:text-sm font-medium text-foreground flex items-center gap-1">
-                          <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
+                        <h5 className="text-xs font-medium text-foreground flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-primary" />
                           Tension du Marché
                         </h5>
-                        <Card className="p-2 sm:p-3">
+                        <Card className="p-1">
                           <div className="text-xs text-muted-foreground">Indice de pression</div>
                           <Badge 
                             variant={
@@ -324,7 +324,7 @@ const DRCInteractiveMap = () => {
                               selectedProvince.indicePresionLocative === 'Élevé' ? 'secondary' :
                               selectedProvince.indicePresionLocative === 'Modéré' ? 'outline' : 'default'
                             }
-                            className="text-xs px-2 py-1"
+                            className="text-xs px-1 py-0"
                           >
                             {selectedProvince.indicePresionLocative}
                           </Badge>
@@ -351,9 +351,9 @@ const DRCInteractiveMap = () => {
                 Tendances nationales et comparaisons
               </p>
             </CardHeader>
-            <CardContent className="flex-1 p-0 overflow-hidden">
+            <CardContent className="flex-1 p-0 overflow-hidden charts-compact">
               <div className="h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-                <div className="p-3 sm:p-4 min-h-full">
+                <div className="p-2 sm:p-3 min-h-full">
                   <ProvinceDataVisualization 
                     provinces={provincesData} 
                     selectedProvince={selectedProvince}
