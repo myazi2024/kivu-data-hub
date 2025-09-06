@@ -55,20 +55,20 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-          <ResponsiveContainer width="100%" height={120}>
+           <ResponsiveContainer width="100%" height={120}>
             <BarChart data={sortedProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
                 angle={-45}
                 textAnchor="end"
-                height={20}
+                height={28}
                 interval={0}
               />
               <YAxis 
-                tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
-                label={{ value: '%', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '6px' } }}
+                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                label={{ value: '%', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '10px' } }}
               />
               <Tooltip 
                 contentStyle={{ 

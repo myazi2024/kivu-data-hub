@@ -88,8 +88,8 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={timeSeriesData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <ResponsiveContainer width="100%" height={220}>
+            <LineChart data={timeSeriesData} margin={{ top: 12, right: 16, left: 12, bottom: 12 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="month" 
@@ -112,17 +112,17 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
                 type="monotone" 
                 dataKey="loyer" 
                 stroke="hsl(var(--primary))" 
-                strokeWidth={3}
-                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: 'hsl(var(--primary))' }}
+                strokeWidth={2}
+                dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5, fill: 'hsl(var(--primary))' }}
               />
               <Line 
                 type="monotone" 
                 dataKey="vente" 
                 stroke="hsl(var(--accent))" 
-                strokeWidth={3}
-                dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: 'hsl(var(--accent))' }}
+                strokeWidth={2}
+                dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 3 }}
+                activeDot={{ r: 5, fill: 'hsl(var(--accent))' }}
                 strokeDasharray="5 5"
               />
             </LineChart>
@@ -155,7 +155,7 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={topProvincesByRent} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
@@ -198,7 +198,7 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={topProvincesBySale} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 

@@ -213,13 +213,11 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                     </p>
                   </div>
                   
-                  <div className="bg-card rounded border-border/30 border">
-                    <div className="max-h-[200px] sm:max-h-[250px] md:max-h-[300px] overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-                      <div className="p-3 sm:p-4">
-                        {renderVisualization()}
-                      </div>
-                    </div>
-                  </div>
+                   <div className="bg-card rounded border-border/30 border">
+                     <div className="p-2 sm:p-3">
+                       {renderVisualization()}
+                     </div>
+                   </div>
                 </div>
               </TabsContent>
             ))}

@@ -141,7 +141,7 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
         <CardContent>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div>
-              <ResponsiveContainer width="100%" height={250}>
+              <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
                     data={avgRepartition}
@@ -217,7 +217,7 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
+          <ResponsiveContainer width="100%" height={240}>
             <BarChart data={provincialComparison} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 

@@ -133,10 +133,10 @@ const DRCInteractiveMap = () => {
       <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-4 h-full min-h-0">
         {/* Carte interactive - Responsive layout */}
         <div className="lg:col-span-4 h-[40vh] sm:h-[45vh] lg:h-full order-3 lg:order-1 min-h-0">
-          <Card className="card-responsive overflow-hidden h-full flex flex-col">
+          <Card className="card-compact overflow-hidden h-full flex flex-col">
             <CardContent className="p-0 flex-1 flex flex-col">
               {/* En-tête responsive */}
-              <div className="bg-muted/20 p-2 sm:p-3 md:p-4 border-b border-border/30">
+              <div className="bg-muted/20 p-1 sm:p-2 md:p-3 border-b border-border/30">
                 <div className="flex items-center justify-between mb-2">
                   <h2 className="responsive-subtitle text-foreground">
                     <span className="hidden md:inline">RDC - Marché Immobilier</span>
@@ -212,7 +212,7 @@ const DRCInteractiveMap = () => {
           <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
             <div className="space-y-3 sm:space-y-4 p-2 sm:p-3 md:p-4">
               {selectedProvince && (
-                <Card className="card-responsive shadow-none border-border/30">
+                <Card className="card-compact shadow-none border-border/30">
                   <CardHeader className="pb-2 px-3 pt-3 sm:pb-3 sm:px-4 sm:pt-4">
                     <CardTitle className="responsive-body font-medium text-foreground flex items-center gap-2">
                       <MapPin className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -340,8 +340,8 @@ const DRCInteractiveMap = () => {
 
         {/* Panneau Analytics - Responsive layout */}
         <div className="lg:col-span-4 order-2 lg:order-3 h-[45vh] lg:h-full flex flex-col min-h-0">
-          <Card className="flex-1 overflow-hidden card-responsive shadow-none">
-            <CardHeader className="pb-3 px-3 py-3 sm:pb-4 sm:px-4 sm:py-4 border-b border-border/20">
+          <Card className="flex-1 overflow-hidden card-compact shadow-none">
+            <CardHeader className="px-2 py-2 sm:px-3 sm:py-3 border-b border-border/20">
               <CardTitle className="responsive-subtitle font-medium text-foreground flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 <span className="hidden md:inline">Analytics Immobilier</span>
