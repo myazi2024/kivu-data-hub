@@ -112,7 +112,7 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
           <div className="overflow-x-auto">
             <div style={{ width: Math.max(700, topRendementProvinces.length * 60) }}>
               <ResponsiveContainer width="100%" height={160}>
-                <ComposedChart data={topRendementProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }} barCategoryGap="-240%" barGap={-18}>
+                <ComposedChart data={topRendementProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }} barCategoryGap="-60%" barGap={2}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="name" 

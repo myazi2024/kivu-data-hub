@@ -267,7 +267,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
             <div>
               <div style={{ width: '100%' }}>
                 <ResponsiveContainer width="100%" height={140}>
-                  <BarChart data={topPressureProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }} barCategoryGap="-80%" barGap={-6} barSize={6}>
+                  <BarChart data={topPressureProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }} barCategoryGap="-20%" barGap={4} barSize={6}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 
