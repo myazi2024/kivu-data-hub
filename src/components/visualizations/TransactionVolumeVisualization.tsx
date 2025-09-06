@@ -46,10 +46,8 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
     });
   };
 
-  // Top provinces par volume de transactions
   const topProvincesByTransactions = [...provinces]
-    .sort((a, b) => b.nombreTransactionsEstimees - a.nombreTransactionsEstimees)
-    .slice(0, 10);
+    .sort((a, b) => b.nombreTransactionsEstimees - a.nombreTransactionsEstimees);
 
   // Données par trimestre
   const quarterlyData = [
@@ -161,7 +159,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
           </div>
         </CardContent>
       </Card>
-
+            
       {/* Répartition provinciale et tendances trimestrielles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top provinces par transactions */}
@@ -173,36 +171,41 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={70}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                  label={{ value: 'Nombre transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                  formatter={formatTooltip}
-                />
-                <Bar 
-                  dataKey="nombreTransactionsEstimees" 
-                  fill="hsl(var(--success))"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="overflow-x-auto">
+              <div style={{ width: Math.max(700, topProvincesByTransactions.length * 60) }}>
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      interval={0}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      label={{ value: 'Nombre transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px',
+                        fontSize: '12px'
+                      }}
+                      formatter={formatTooltip}
+                    />
+                    <Bar 
+                      dataKey="nombreTransactionsEstimees" 
+                      fill="hsl(var(--success))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

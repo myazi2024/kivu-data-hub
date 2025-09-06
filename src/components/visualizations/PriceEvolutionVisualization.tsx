@@ -49,14 +49,11 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
     });
   };
 
-  // Top provinces par prix
   const topProvincesByRent = [...provinces]
-    .sort((a, b) => b.prixMoyenLoyer - a.prixMoyenLoyer)
-    .slice(0, 8);
+    .sort((a, b) => b.prixMoyenLoyer - a.prixMoyenLoyer);
 
   const topProvincesBySale = [...provinces]
-    .sort((a, b) => b.prixMoyenVenteM2 - a.prixMoyenVenteM2)
-    .slice(0, 8);
+    .sort((a, b) => b.prixMoyenVenteM2 - a.prixMoyenVenteM2);
 
   const timeSeriesData = generateTimeSeriesData();
 
@@ -157,38 +154,43 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={topProvincesByRent} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={70}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                  label={{ value: 'Prix location (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                  formatter={formatTooltip}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="prixMoyenLoyer"
-                  stroke="hsl(var(--success))"
-                  fill="hsl(var(--success) / 0.2)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="overflow-x-auto">
+              <div style={{ width: Math.max(700, topProvincesByRent.length * 60) }}>
+                <ResponsiveContainer width="100%" height={160}>
+                  <AreaChart data={topProvincesByRent} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      interval={0}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      label={{ value: 'Prix location (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px',
+                        fontSize: '12px'
+                      }}
+                      formatter={formatTooltip}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="prixMoyenLoyer"
+                      stroke="hsl(var(--success))"
+                      fill="hsl(var(--success) / 0.2)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
@@ -201,38 +203,43 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={topProvincesBySale} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={70}
-                />
-                <YAxis 
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                  label={{ value: 'Prix vente (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                  formatter={formatTooltip}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="prixMoyenVenteM2"
-                  stroke="hsl(var(--accent))"
-                  fill="hsl(var(--accent) / 0.2)"
-                  strokeWidth={2}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="overflow-x-auto">
+              <div style={{ width: Math.max(700, topProvincesBySale.length * 60) }}>
+                <ResponsiveContainer width="100%" height={160}>
+                  <AreaChart data={topProvincesBySale} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      interval={0}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                      label={{ value: 'Prix vente (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px',
+                        fontSize: '12px'
+                      }}
+                      formatter={formatTooltip}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="prixMoyenVenteM2"
+                      stroke="hsl(var(--accent))"
+                      fill="hsl(var(--accent) / 0.2)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

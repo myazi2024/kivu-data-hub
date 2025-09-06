@@ -83,10 +83,8 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
     });
   };
 
-  // Top provinces par pression foncière
   const topPressureProvinces = [...enrichedProvinces]
-    .sort((a, b) => b.indicePressionCalcule - a.indicePressionCalcule)
-    .slice(0, 10);
+    .sort((a, b) => b.indicePressionCalcule - a.indicePressionCalcule);
 
   // Répartition par niveau de pression
   const pressureDistribution = [
@@ -266,35 +264,40 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={140}>
-              <BarChart data={topPressureProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={70}
-                />
-                <YAxis 
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '6px',
-                    fontSize: '12px'
-                  }}
-                  formatter={formatTooltip}
-                />
-                <Bar 
-                  dataKey="indicePressionCalcule" 
-                  fill="hsl(var(--primary))"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="overflow-x-auto">
+              <div style={{ width: Math.max(700, topPressureProvinces.length * 60) }}>
+                <ResponsiveContainer width="100%" height={140}>
+                  <BarChart data={topPressureProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={70}
+                      interval={0}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    />
+                    <Tooltip 
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--background))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '6px',
+                        fontSize: '12px'
+                      }}
+                      formatter={formatTooltip}
+                    />
+                    <Bar 
+                      dataKey="indicePressionCalcule" 
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

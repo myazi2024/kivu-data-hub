@@ -27,8 +27,7 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
 }) => {
   // Préparer les données pour l'histogramme comparatif
   const sortedProvinces = [...provinces]
-    .sort((a, b) => b.tauxVacanceLocative - a.tauxVacanceLocative)
-    .slice(0, 8);
+    .sort((a, b) => b.tauxVacanceLocative - a.tauxVacanceLocative);
 
   // Données pour la carte choroplèthe (simulée avec des catégories)
   const vacancyCategories = [
@@ -56,45 +55,49 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0">
-           <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={sortedProvinces} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                angle={-45}
-                textAnchor="end"
-                height={50}
-                interval={0}
-              />
-              <YAxis 
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                label={{ value: 'Taux de vacance (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '12px' } }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  fontSize: '12px'
-                }}
-                formatter={formatTooltip}
-              />
-              <Bar 
-                dataKey="tauxVacanceLocative"
-                fill="hsl(var(--primary))"
-                radius={[4, 4, 0, 0]}
-              >
-                {sortedProvinces.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={
-                    entry.tauxVacanceLocative <= 15 ? 'hsl(var(--success))' :
-                    entry.tauxVacanceLocative <= 25 ? 'hsl(var(--warning))' :
-                    entry.tauxVacanceLocative <= 35 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'
-                  } />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
+           <div className="overflow-x-auto">
+             <div style={{ width: Math.max(700, sortedProvinces.length * 60) }}>
+               <ResponsiveContainer width="100%" height={160}>
+                 <BarChart data={sortedProvinces} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
+                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                   <XAxis 
+                     dataKey="name" 
+                     tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                     angle={-45}
+                     textAnchor="end"
+                     height={50}
+                     interval={0}
+                   />
+                   <YAxis 
+                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                     label={{ value: 'Taux de vacance (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '12px' } }}
+                   />
+                   <Tooltip 
+                     contentStyle={{ 
+                       backgroundColor: 'hsl(var(--background))', 
+                       border: '1px solid hsl(var(--border))',
+                       borderRadius: '6px',
+                       fontSize: '12px'
+                     }}
+                     formatter={formatTooltip}
+                   />
+                   <Bar 
+                     dataKey="tauxVacanceLocative"
+                     fill="hsl(var(--primary))"
+                     radius={[4, 4, 0, 0]}
+                   >
+                     {sortedProvinces.map((entry, index) => (
+                       <Cell key={`cell-${index}`} fill={
+                         entry.tauxVacanceLocative <= 15 ? 'hsl(var(--success))' :
+                         entry.tauxVacanceLocative <= 25 ? 'hsl(var(--warning))' :
+                         entry.tauxVacanceLocative <= 35 ? 'hsl(var(--accent))' : 'hsl(var(--destructive))'
+                       } />
+                     ))}
+                   </Bar>
+                 </BarChart>
+               </ResponsiveContainer>
+             </div>
+           </div>
           
           <div className="mt-1 p-1 bg-muted/20 rounded">
             <div className="flex items-start gap-1">

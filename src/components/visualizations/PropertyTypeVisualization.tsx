@@ -58,8 +58,7 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
     }
   ];
 
-  // Données par province pour comparaison
-  const provincialComparison = provinces.slice(0, 8).map(province => ({
+  const provincialComparison = provinces.map(province => ({
     name: province.name.substring(0, 8),
     residential: province.repartitionTypologique?.residential || 60,
     commercial: province.repartitionTypologique?.commercial || 25,
@@ -217,50 +216,55 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={provincialComparison} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                angle={-45}
-                textAnchor="end"
-                height={70}
-              />
-              <YAxis 
-                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                label={{ value: 'Pourcentage (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  fontSize: '12px'
-                }}
-                formatter={formatTooltip}
-              />
-              <Legend />
-              <Bar 
-                dataKey="residential" 
-                stackId="typologie"
-                fill="hsl(var(--primary))"
-                name="Résidentiel"
-              />
-              <Bar 
-                dataKey="commercial" 
-                stackId="typologie"
-                fill="hsl(var(--secondary))"
-                name="Commercial"
-              />
-              <Bar 
-                dataKey="mixte" 
-                stackId="typologie"
-                fill="hsl(var(--accent))"
-                name="Mixte"
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div style={{ width: Math.max(700, provincialComparison.length * 60) }}>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={provincialComparison} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="name" 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    angle={-45}
+                    textAnchor="end"
+                    height={70}
+                    interval={0}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    label={{ value: 'Pourcentage (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      fontSize: '12px'
+                    }}
+                    formatter={formatTooltip}
+                  />
+                  <Legend />
+                  <Bar 
+                    dataKey="residential" 
+                    stackId="typologie"
+                    fill="hsl(var(--primary))"
+                    name="Résidentiel"
+                  />
+                  <Bar 
+                    dataKey="commercial" 
+                    stackId="typologie"
+                    fill="hsl(var(--secondary))"
+                    name="Commercial"
+                  />
+                  <Bar 
+                    dataKey="mixte" 
+                    stackId="typologie"
+                    fill="hsl(var(--accent))"
+                    name="Mixte"
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
