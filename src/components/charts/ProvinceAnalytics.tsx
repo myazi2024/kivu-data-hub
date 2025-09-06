@@ -88,53 +88,53 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
   };
 
   return (
-    <div className="space-y-1 h-full overflow-y-auto flex flex-col">
-      {/* Statistiques globales ultra-compactes */}
-      <div className="grid grid-cols-1 gap-1">
-        <Card className="p-1.5 sm:p-2">
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1 mb-1">
-              <DollarSign className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-primary" />
-              <h3 className="text-[9px] sm:text-xs font-medium text-foreground">
+    <div className="space-y-3 h-full overflow-y-auto flex flex-col">
+      {/* Statistiques globales optimisées */}
+      <div className="grid grid-cols-1 gap-2">
+        <Card className="p-3 sm:p-4">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              <h3 className="text-sm sm:text-base font-medium text-foreground">
                 <span className="hidden sm:inline">Prix Moyens Nationaux</span>
                 <span className="sm:hidden">Prix Nationaux</span>
               </h3>
             </div>
             
-            {/* Prix compacts mobile */}
-            <div className="grid grid-cols-1 sm:grid-cols-1 gap-1">
-              <div className="bg-muted/20 p-1 rounded">
+            {/* Prix lisibles */}
+            <div className="grid grid-cols-1 gap-2">
+              <div className="bg-muted/20 p-2 sm:p-3 rounded">
                 <div className="flex justify-between items-center">
-                  <span className="text-[8px] sm:text-[9px] font-medium text-foreground">Location</span>
-                  <span className="text-[10px] sm:text-xs font-bold text-primary">
+                  <span className="text-xs sm:text-sm font-medium text-foreground">Location</span>
+                  <span className="text-sm sm:text-base font-bold text-primary">
                     {formatCurrency(provincesData.reduce((sum, p) => sum + p.prixMoyenLoyer, 0) / provincesData.length)}
                   </span>
                 </div>
-                <p className="text-[7px] sm:text-[8px] text-muted-foreground leading-tight hidden sm:block">
+                <p className="text-xs text-muted-foreground leading-tight mt-1">
                   Moyenne USD/m²/mois
                 </p>
               </div>
 
-              <div className="bg-muted/20 p-1 rounded">
+              <div className="bg-muted/20 p-2 sm:p-3 rounded">
                 <div className="flex justify-between items-center">
-                  <span className="text-[8px] sm:text-[9px] font-medium text-foreground">Vente</span>
-                  <span className="text-[10px] sm:text-xs font-bold text-secondary">
+                  <span className="text-xs sm:text-sm font-medium text-foreground">Vente</span>
+                  <span className="text-sm sm:text-base font-bold text-secondary">
                     {formatCurrency(provincesData.reduce((sum, p) => sum + p.prixMoyenVenteM2, 0) / provincesData.length)}
                   </span>
                 </div>
-                <p className="text-[7px] sm:text-[8px] text-muted-foreground leading-tight hidden sm:block">
+                <p className="text-xs text-muted-foreground leading-tight mt-1">
                   Moyenne USD/m²
                 </p>
               </div>
 
-              <div className="bg-muted/20 p-1 rounded">
+              <div className="bg-muted/20 p-2 sm:p-3 rounded">
                 <div className="flex justify-between items-center">
-                  <span className="text-[8px] sm:text-[9px] font-medium text-foreground">Population</span>
-                  <span className="text-[10px] sm:text-xs font-bold text-accent">
+                  <span className="text-xs sm:text-sm font-medium text-foreground">Population</span>
+                  <span className="text-sm sm:text-base font-bold text-accent">
                     {Math.round(provincesData.reduce((sum, p) => sum + p.populationLocativeEstimee, 0) / 1000000 * 10) / 10}M
                   </span>
                 </div>
-                <p className="text-[7px] sm:text-[8px] text-muted-foreground leading-tight hidden sm:block">
+                <p className="text-xs text-muted-foreground leading-tight mt-1">
                   Total locataires RDC
                 </p>
               </div>
@@ -143,91 +143,91 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </Card>
       </div>
 
-      {/* Graphiques optimisés mobile */}
+      {/* Graphiques optimisés */}
       <Card>
-        <CardHeader className="pb-0.5 p-1.5">
-          <CardTitle className="text-[9px] sm:text-xs flex items-center gap-0.5">
-            <TrendingUp className="h-2.5 w-2.5" />
+        <CardHeader className="pb-2 p-3">
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
             <span className="hidden sm:inline">Top 5 - Prix de loyer</span>
             <span className="sm:hidden">Top Prix</span>
-            <span className="text-[7px] sm:text-[8px] font-normal text-muted-foreground ml-1">(USD/m²)</span>
+            <span className="text-xs font-normal text-muted-foreground ml-1">(USD/m²)</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 p-1">
-          <ResponsiveContainer width="100%" height={80}>
-            <BarChart data={topRentProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 10 }}>
+        <CardContent className="pt-0 p-3">
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={topRentProvinces} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 interval={0}
                 angle={-45}
                 textAnchor="end"
-                height={30}
+                height={40}
               />
               <YAxis 
-                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={25}
+                width={40}
               />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
-                  borderRadius: '4px',
-                  fontSize: '8px',
-                  padding: '4px'
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  padding: '8px'
                 }}
                 formatter={(value: number, name, props) => [
                   formatCurrency(value), 
                   props.payload?.fullName || name
                 ]}
               />
-              <Bar dataKey="prix" fill="hsl(var(--primary))" radius={[1, 1, 0, 0]} />
+              <Bar dataKey="prix" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
-      {/* Pression locative compact */}
+      {/* Pression locative */}
       <Card>
-        <CardHeader className="pb-0.5 p-1.5">
-          <CardTitle className="text-[9px] sm:text-xs flex items-center gap-0.5">
-            <Building2 className="h-2.5 w-2.5" />
+        <CardHeader className="pb-2 p-3">
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
             <span className="hidden sm:inline">Niveaux de pression</span>
             <span className="sm:hidden">Pression</span>
-            <span className="text-[7px] sm:text-[8px] font-normal text-muted-foreground ml-1">(nb provinces)</span>
+            <span className="text-xs font-normal text-muted-foreground ml-1">(nb provinces)</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 p-1">
-          <ResponsiveContainer width="100%" height={60}>
-            <BarChart data={pressureData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
+        <CardContent className="pt-0 p-3">
+          <ResponsiveContainer width="100%" height={100}>
+            <BarChart data={pressureData} margin={{ top: 10, right: 10, left: 10, bottom: 15 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="niveau" 
-                tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 angle={-45}
                 textAnchor="end"
-                height={20}
+                height={30}
               />
               <YAxis 
-                tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={20}
+                width={30}
               />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
-                  borderRadius: '4px',
-                  fontSize: '8px',
-                  padding: '4px'
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  padding: '8px'
                 }}
                 formatter={(value: number) => [`${value} provinces`, 'Nombre']}
               />
-              <Bar dataKey="nombre" radius={[1, 1, 0, 0]}>
+              <Bar dataKey="nombre" radius={[2, 2, 0, 0]}>
                 {pressureData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />
                 ))}
@@ -237,41 +237,41 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardContent>
       </Card>
 
-      {/* Population compact */}
+      {/* Population */}
       <Card>
-        <CardHeader className="pb-0.5 p-1.5">
-          <CardTitle className="text-[9px] sm:text-xs flex items-center gap-0.5">
-            <Users className="h-2.5 w-2.5" />
+        <CardHeader className="pb-2 p-3">
+          <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+            <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Top 5 - Population</span>
             <span className="sm:hidden">Population</span>
-            <span className="text-[7px] sm:text-[8px] font-normal text-muted-foreground ml-1">(K hab.)</span>
+            <span className="text-xs font-normal text-muted-foreground ml-1">(K hab.)</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="pt-0 p-1">
-          <ResponsiveContainer width="100%" height={80}>
-            <AreaChart data={topPopulationProvinces} margin={{ top: 5, right: 5, left: 5, bottom: 10 }}>
+        <CardContent className="pt-0 p-3">
+          <ResponsiveContainer width="100%" height={120}>
+            <AreaChart data={topPopulationProvinces} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name" 
-                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 interval={0}
                 angle={-45}
                 textAnchor="end"
-                height={30}
+                height={40}
               />
               <YAxis 
-                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={25}
+                width={40}
               />
               <Tooltip 
                 contentStyle={{ 
                   backgroundColor: 'hsl(var(--background))', 
                   border: '1px solid hsl(var(--border))',
-                  borderRadius: '4px',
-                  fontSize: '8px',
-                  padding: '4px'
+                  borderRadius: '6px',
+                  fontSize: '12px',
+                  padding: '8px'
                 }}
                 formatter={(value: number, name, props) => [
                   formatPopulation(value), 

@@ -74,7 +74,7 @@ export const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({ zone, onClos
   const trendData = generateMockTrendData();
 
   return (
-    <Card className="fixed inset-4 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <Card className="fixed inset-2 sm:inset-4 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 max-w-full max-h-full">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <div className="flex items-center gap-3">
           <span className="text-3xl">{getTypologyIcon(zone.typologie_dominante)}</span>
@@ -96,7 +96,7 @@ export const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({ zone, onClos
         </Button>
       </CardHeader>
       
-      <CardContent className="max-h-[calc(100vh-12rem)] overflow-y-auto">
+      <CardContent className="max-h-[calc(100vh-8rem)] sm:max-h-[calc(100vh-12rem)] overflow-y-auto p-2 sm:p-6">
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
