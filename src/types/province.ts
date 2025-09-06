@@ -43,8 +43,8 @@ export interface ProvinceData {
   }>;
   
   // Métadonnées géographiques
-  region?: 'Est' | 'Ouest' | 'Centre' | 'Sud' | 'Nord';
-  zone?: 'Urbaine' | 'Rurale' | 'Mixte';
+  region?: 'Est' | 'Ouest' | 'Centre' | 'Sud' | 'Nord' | 'Nord-Est' | 'Nord-Ouest' | 'Sud-Est' | 'Sud-Ouest' | 'Centre-Ouest';
+  zone?: 'Urbaine' | 'Rurale' | 'Mixte' | 'Semi-urbaine';
 }
 
 // Interface standardisée pour la cohérence des données territoriales
