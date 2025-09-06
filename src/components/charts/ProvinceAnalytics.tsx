@@ -153,21 +153,22 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardHeader>
         <CardContent className="pt-0 p-3">
           <ResponsiveContainer width="100%" height={100}>
-            <BarChart data={sortedRentProvinces} margin={{ top: 4, right: 2, left: 2, bottom: 22 }} barCategoryGap="2%" barGap={0} barSize={4}>
+            <BarChart data={sortedRentProvinces} margin={{ top: 2, right: 2, left: 2, bottom: 16 }} barCategoryGap="0%" barGap={0} barSize={2}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name"
-                tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 interval={0}
-                angle={-85}
+                angle={-90}
                 textAnchor="end"
-                height={25}
+                height={18}
+                tickMargin={1}
               />
               <YAxis 
-                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={25}
+                width={20}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -200,20 +201,20 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardHeader>
         <CardContent className="pt-0 p-3">
           <ResponsiveContainer width="100%" height={80}>
-            <BarChart data={pressureData} margin={{ top: 4, right: 4, left: 4, bottom: 8 }} barCategoryGap="5%" barGap={0} barSize={10}>
+            <BarChart data={pressureData} margin={{ top: 2, right: 4, left: 4, bottom: 8 }} barCategoryGap="0%" barGap={0} barSize={10}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="niveau" 
-                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 angle={-30}
                 textAnchor="end"
-                height={20}
+                height={18}
               />
               <YAxis 
-                tick={{ fontSize: 8, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={25}
+                width={22}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -247,21 +248,22 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         </CardHeader>
         <CardContent className="pt-0 p-3">
           <ResponsiveContainer width="100%" height={100}>
-            <AreaChart data={sortedPopulationProvinces} margin={{ top: 5, right: 2, left: 2, bottom: 25 }}>
+            <AreaChart data={sortedPopulationProvinces} margin={{ top: 2, right: 2, left: 2, bottom: 16 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name"
-                tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 interval={0}
-                angle={-85}
+                angle={-90}
                 textAnchor="end"
-                height={25}
+                height={18}
+                tickMargin={1}
               />
               <YAxis 
-                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={25}
+                width={20}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -281,8 +283,8 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                 dataKey="population" 
                 stroke="hsl(var(--primary))" 
                 fill="hsl(var(--primary))" 
-                fillOpacity={0.3}
-                strokeWidth={1}
+                fillOpacity={0.35}
+                strokeWidth={0.75}
               />
             </AreaChart>
           </ResponsiveContainer>
