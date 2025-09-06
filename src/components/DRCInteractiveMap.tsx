@@ -751,24 +751,24 @@ const DRCInteractiveMap = () => {
   };
 
   return (
-    <div className="w-full h-full max-w-full overflow-hidden">
-        {/* Contrôles mobiles - afficher une seule zone à la fois */}
-        <div className="lg:hidden p-2 border-b border-border/30 bg-muted/10">
-          <div className="flex items-center justify-center gap-2">
-            <Button size="sm" variant={activeMobilePanel==='map' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte">
+    <div className="w-full h-full max-w-full overflow-hidden relative">
+        {/* Contrôles mobiles flottants - déplacés vers le bas */}
+        <div className="lg:hidden fixed bottom-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="flex items-center justify-center gap-2 bg-background/95 backdrop-blur-sm border border-border/50 rounded-full px-3 py-2 shadow-lg">
+            <Button size="sm" variant={activeMobilePanel==='map' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('map')} aria-label="Carte" className="rounded-full">
               <MapPin className="w-4 h-4" />
             </Button>
-            <Button size="sm" variant={activeMobilePanel==='details' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('details')} aria-label="Détails">
+            <Button size="sm" variant={activeMobilePanel==='details' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('details')} aria-label="Détails" className="rounded-full">
               <Building className="w-4 h-4" />
             </Button>
-            <Button size="sm" variant={activeMobilePanel==='analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('analytics')} aria-label="Analytics">
+            <Button size="sm" variant={activeMobilePanel==='analytics' ? 'default' : 'outline'} onClick={() => setActiveMobilePanel('analytics')} aria-label="Analytics" className="rounded-full">
               <BarChart3 className="w-4 h-4" />
             </Button>
           </div>
         </div>
 
-        {/* Layout responsive optimisé */}
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-4 h-full min-h-0">
+        {/* Layout responsive optimisé avec padding pour les boutons flottants */}
+        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-3 sm:gap-4 h-full min-h-0 pb-20 lg:pb-0">
         {/* Carte interactive - Responsive layout */}
         <div className={`${activeMobilePanel !== 'map' ? 'hidden lg:block' : 'flex-1'} lg:col-span-3 order-3 lg:order-1 min-h-0 h-full`}>
           <Card className="card-compact overflow-hidden h-full flex flex-col">
