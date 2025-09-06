@@ -13,12 +13,11 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
   provincesData, 
   selectedProvince 
 }) => {
-  // Top 5 provinces par prix moyen de loyer
-  const topRentProvinces = provincesData
+  // Toutes les provinces triées par prix moyen de loyer
+  const sortedRentProvinces = provincesData
     .sort((a, b) => b.prixMoyenLoyer - a.prixMoyenLoyer)
-    .slice(0, 5)
     .map(p => ({
-      name: p.name.length > 8 ? p.name.substring(0, 8) + '...' : p.name,
+      name: p.name.length > 10 ? p.name.substring(0, 10) + '...' : p.name,
       prix: p.prixMoyenLoyer,
       fullName: p.name
     }));
@@ -31,12 +30,11 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
     { niveau: 'Très élevé', nombre: provincesData.filter(p => p.indicePresionLocative === 'Très élevé').length, color: '#ef4444' }
   ];
 
-  // Top 5 provinces par population locative
-  const topPopulationProvinces = provincesData
+  // Toutes les provinces triées par population locative
+  const sortedPopulationProvinces = provincesData
     .sort((a, b) => b.populationLocativeEstimee - a.populationLocativeEstimee)
-    .slice(0, 5)
     .map(p => ({
-      name: p.name.length > 8 ? p.name.substring(0, 8) + '...' : p.name,
+      name: p.name.length > 10 ? p.name.substring(0, 10) + '...' : p.name,
       population: Math.round(p.populationLocativeEstimee / 1000), // En milliers
       fullName: p.name
     }));
@@ -148,45 +146,49 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         <CardHeader className="pb-2 p-3">
           <CardTitle className="text-sm sm:text-base flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
-            <span className="hidden sm:inline">Top 5 - Prix de loyer</span>
-            <span className="sm:hidden">Top Prix</span>
+            <span className="hidden sm:inline">Prix de loyer par province</span>
+            <span className="sm:hidden">Prix</span>
             <span className="text-xs font-normal text-muted-foreground ml-1">(USD/m²)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 p-3">
-          <ResponsiveContainer width="100%" height={120}>
-            <BarChart data={topRentProvinces} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                interval={0}
-                angle={-45}
-                textAnchor="end"
-                height={40}
-              />
-              <YAxis 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={40}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  padding: '8px'
-                }}
-                formatter={(value: number, name, props) => [
-                  formatCurrency(value), 
-                  props.payload?.fullName || name
-                ]}
-              />
-              <Bar dataKey="prix" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div style={{ width: Math.max(700, sortedRentProvinces.length * 35) }}>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={sortedRentProvinces} margin={{ top: 10, right: 10, left: 10, bottom: 50 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="name"
+                    tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={50}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    width={40}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      padding: '8px'
+                    }}
+                    formatter={(value: number, name, props) => [
+                      formatCurrency(value), 
+                      props.payload?.fullName || name
+                    ]}
+                  />
+                  <Bar dataKey="prix" fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -242,51 +244,55 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
         <CardHeader className="pb-2 p-3">
           <CardTitle className="text-sm sm:text-base flex items-center gap-2">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Top 5 - Population</span>
+            <span className="hidden sm:inline">Population par province</span>
             <span className="sm:hidden">Population</span>
             <span className="text-xs font-normal text-muted-foreground ml-1">(K hab.)</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-0 p-3">
-          <ResponsiveContainer width="100%" height={120}>
-            <AreaChart data={topPopulationProvinces} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis 
-                dataKey="name" 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                interval={0}
-                angle={-45}
-                textAnchor="end"
-                height={40}
-              />
-              <YAxis 
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={40}
-              />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '6px',
-                  fontSize: '12px',
-                  padding: '8px'
-                }}
-                formatter={(value: number, name, props) => [
-                  formatPopulation(value), 
-                  props.payload?.fullName || name
-                ]}
-              />
-              <Area 
-                type="monotone" 
-                dataKey="population" 
-                stroke="hsl(var(--primary))" 
-                fill="hsl(var(--primary))" 
-                fillOpacity={0.3}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div className="overflow-x-auto">
+            <div style={{ width: Math.max(700, sortedPopulationProvinces.length * 35) }}>
+              <ResponsiveContainer width="100%" height={140}>
+                <AreaChart data={sortedPopulationProvinces} margin={{ top: 10, right: 10, left: 10, bottom: 50 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis 
+                    dataKey="name"
+                    tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    interval={0}
+                    angle={-45}
+                    textAnchor="end"
+                    height={50}
+                  />
+                  <YAxis 
+                    tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                    axisLine={{ stroke: 'hsl(var(--border))' }}
+                    width={40}
+                  />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      padding: '8px'
+                    }}
+                    formatter={(value: number, name, props) => [
+                      formatPopulation(value), 
+                      props.payload?.fullName || name
+                    ]}
+                  />
+                  <Area 
+                    type="monotone" 
+                    dataKey="population" 
+                    stroke="hsl(var(--primary))" 
+                    fill="hsl(var(--primary))" 
+                    fillOpacity={0.3}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
