@@ -128,7 +128,7 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
                         value={indicator.id}
                         className="flex flex-col items-center gap-2 p-3 min-w-[60px] h-auto data-[state=active]:bg-primary/20 hover:bg-primary/10 transition-colors rounded-md"
                       >
-                        <indicator.icon className="h-3 w-3" />
+                        <indicator.icon className="h-6 w-6" />
                         {activeIndicator === indicator.id && (
                           <span className="text-xs font-medium leading-tight text-center whitespace-normal break-words max-w-[80px]">
                             {indicator.name}
