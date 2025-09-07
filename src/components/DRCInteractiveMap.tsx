@@ -221,9 +221,37 @@ const DRCInteractiveMap = () => {
       region: 'Centre',
       zone: 'Semi-urbaine'
     },
+    // Kasaï
+    {
+      id: 'CDKS',
+      name: 'Kasaï',
+      prixMoyenLoyer: 120,
+      prixMoyenVenteM2: 275,
+      valeurFonciereParcelleUsd: 4300,
+      tauxOccupationLocatif: 64.2,
+      dureeMoyenneMiseLocationJours: 46,
+      tauxVacanceLocative: 35.8,
+      indicePresionLocative: 'Faible',
+      volumeAnnoncesImmobilieres: 1500,
+      nombreTransactionsEstimees: 990,
+      populationLocativeEstimee: 88000,
+      recettesLocativesUsd: 235000,
+      recettesFiscalesUsd: 34000,
+      variationLoyer3Mois: 1.1,
+      typologieDominante: 'Maisons individuelles',
+      rendementLocatifBrut: 4.0,
+      tauxCroissancePrixAnnuel: 2.4,
+      permisConstruireMois: 24,
+      tauxAccessibiliteLogement: 63.0,
+      repartitionTypologique: { residential: 70, commercial: 20, mixte: 10 },
+      tauxPropriete: 69.5,
+      indicePresionFonciere: 1.35,
+      region: 'Centre',
+      zone: 'Semi-urbaine'
+    },
     // Kasaï-Oriental
     {
-      id: 'CDKO',
+      id: 'CDKE',
       name: 'Kasaï-Oriental',
       prixMoyenLoyer: 135,
       prixMoyenVenteM2: 295,
@@ -447,7 +475,7 @@ const DRCInteractiveMap = () => {
     },
     // Mongala
     {
-      id: 'CDMN',
+      id: 'CDMO',
       name: 'Mongala',
       prixMoyenLoyer: 82,
       prixMoyenVenteM2: 195,
@@ -531,7 +559,7 @@ const DRCInteractiveMap = () => {
     },
     // Tshuapa
     {
-      id: 'CDTS',
+      id: 'CDTU',
       name: 'Tshuapa',
       prixMoyenLoyer: 75,
       prixMoyenVenteM2: 178,
