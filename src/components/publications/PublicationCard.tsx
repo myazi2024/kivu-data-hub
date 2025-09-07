@@ -138,8 +138,8 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
 
   return (
     <Card className="border-border hover:border-primary/20 transition-all duration-300 h-full flex flex-col focus-visible-ring hover-interactive contrast-aa">
-      {/* Cover Image */}
-      <div className="relative h-40 sm:h-48 bg-secondary/50 rounded-t-lg overflow-hidden">
+      {/* Cover Image - Compact */}
+      <div className="relative h-28 sm:h-32 bg-secondary/50 rounded-t-lg overflow-hidden">
         {publication.cover_image_url ? (
           <img
             src={publication.cover_image_url}
@@ -158,109 +158,88 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
           />
         )}
         {publication.featured && (
-          <Badge className="absolute top-2 right-2" variant="default">
+          <Badge className="absolute top-1 right-1 text-xs px-1.5 py-0.5" variant="default">
             Populaire
           </Badge>
         )}
       </div>
 
-      <CardHeader className="pb-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Badge variant={isAvailable ? "default" : "secondary"}>
+      <CardHeader className="p-2 sm:p-3 pb-1">
+        <div className="flex items-center gap-1 mb-1">
+          <Badge variant={isAvailable ? "default" : "secondary"} className="text-xs px-1.5 py-0.5">
             {isAvailable ? "Disponible" : "Bientôt"}
           </Badge>
-          <Badge variant="outline">{getPages()} pages</Badge>
+          <Badge variant="outline" className="text-xs px-1.5 py-0.5">{getPages()}p</Badge>
         </div>
-        <CardTitle className="text-base sm:text-lg font-semibold text-foreground line-clamp-2 leading-tight">
+        <CardTitle className="text-sm sm:text-base font-semibold text-foreground line-clamp-2 leading-tight mb-1">
           {publication.title}
         </CardTitle>
-        <CardDescription className="space-y-1">
-          <div className="flex items-center gap-1 text-xs sm:text-sm">
-            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+        <CardDescription className="space-y-0.5 text-xs">
+          <div className="flex items-center gap-1">
+            <Calendar className="h-3 w-3 flex-shrink-0" />
             <span className="truncate">{getPeriod()}</span>
           </div>
-          <div className="flex items-center gap-1 text-xs sm:text-sm">
-            <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+          <div className="flex items-center gap-1">
+            <MapPin className="h-3 w-3 flex-shrink-0" />
             <span className="truncate">{getZone()}</span>
           </div>
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-3 sm:p-6">
-        <p className="text-muted-foreground text-xs sm:text-sm leading-relaxed mb-3 sm:mb-4 line-clamp-3 flex-1">
-          {publication.description || "Rapport d'analyse détaillé du marché immobilier avec données territorialisées, indicateurs de performance et projections fiscales."}
+      <CardContent className="flex-1 flex flex-col p-2 sm:p-3 pt-0">
+        <p className="text-muted-foreground text-xs leading-relaxed mb-2 line-clamp-2 flex-1">
+          {publication.description || "Rapport d'analyse détaillé du marché immobilier."}
         </p>
 
-        {/* Price and Actions */}
-        <div className="space-y-3 mt-auto">
-          <div className="flex items-center justify-between">
-            <div className="text-right">
-              {isFree ? (
-                <span className="text-lg font-bold text-primary">Gratuit</span>
-              ) : (
-                <div>
-                  <span className="text-2xl font-bold text-foreground">${publication.price_usd}</span>
-                  <span className="text-sm text-muted-foreground ml-1">USD</span>
-                </div>
-              )}
-            </div>
+        {/* Price and Actions - Compact */}
+        <div className="space-y-2 mt-auto">
+          <div className="text-center">
+            {isFree ? (
+              <span className="text-sm font-bold text-primary">Gratuit</span>
+            ) : (
+              <div>
+                <span className="text-lg font-bold text-foreground">${publication.price_usd}</span>
+                <span className="text-xs text-muted-foreground ml-1">USD</span>
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            {/* Preview/Summary Button */}
-            <Button variant="outline" size="sm" className="w-full touch-target focus-visible-ring text-xs sm:text-sm">
-              <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Aperçu gratuit</span>
-              <span className="sm:hidden">Aperçu</span>
-            </Button>
-            
-            {/* Action Buttons */}
+          <div className="space-y-1">
+            {/* Action Buttons - Simplified */}
             {isFree ? (
               <Button
                 onClick={handleAddToCart}
                 disabled={!isAvailable}
                 size="sm"
-                className="w-full touch-target focus-visible-ring text-xs sm:text-sm"
+                className="w-full text-xs h-7"
               >
-                <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Télécharger gratuitement</span>
-                <span className="sm:hidden">Télécharger</span>
+                <Download className="mr-1 h-3 w-3" />
+                Télécharger
               </Button>
             ) : (
-              <div className="flex flex-col sm:flex-row gap-2">
-                {/* Add/Remove from Cart Button */}
+              <div className="flex gap-1">
                 <Button
                   onClick={isAlreadyInCart ? () => removeFromCart(publication.id) : handleAddToCart}
                   disabled={!isAvailable}
                   variant={isAlreadyInCart ? "secondary" : "outline"}
                   size="sm"
-                  className="flex-1 touch-target focus-visible-ring text-xs sm:text-sm min-w-[120px]"
+                  className="flex-1 text-xs h-7"
                 >
                   {isAlreadyInCart ? (
-                    <>
-                      <Minus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">Retirer</span>
-                      <span className="sm:hidden">Retirer</span>
-                    </>
+                    <Minus className="h-3 w-3" />
                   ) : (
-                    <>
-                      <ShoppingCart className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                      <span className="hidden sm:inline">Panier</span>
-                      <span className="sm:hidden">Panier</span>
-                    </>
+                    <ShoppingCart className="h-3 w-3" />
                   )}
                 </Button>
                 
-                {/* Buy Now Button */}
                 <Button
                   onClick={handleBuyNow}
                   disabled={!isAvailable}
                   size="sm"
-                  className="flex-1 touch-target focus-visible-ring text-xs sm:text-sm min-w-[120px]"
+                  className="flex-1 text-xs h-7"
                 >
-                  <CreditCard className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Acheter</span>
-                  <span className="sm:hidden">Acheter</span>
+                  <CreditCard className="mr-1 h-3 w-3" />
+                  Acheter
                 </Button>
               </div>
             )}
