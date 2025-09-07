@@ -147,11 +147,12 @@ const AnalyticsDashboard = () => {
         { zone: 'Kinshasa', users: Math.floor(totalUsers * 0.22), revenue: Math.floor(totalRevenue * 0.25) },
         { zone: 'Nord-Kivu', users: Math.floor(totalUsers * 0.18), revenue: Math.floor(totalRevenue * 0.20) },
         { zone: 'Sud-Kivu', users: Math.floor(totalUsers * 0.15), revenue: Math.floor(totalRevenue * 0.18) },
+        { zone: 'Mai-Ndombe', users: Math.floor(totalUsers * 0.09), revenue: Math.floor(totalRevenue * 0.10) },
         { zone: 'Kasaï-Oriental', users: Math.floor(totalUsers * 0.08), revenue: Math.floor(totalRevenue * 0.09) },
         { zone: 'Kasaï', users: Math.floor(totalUsers * 0.07), revenue: Math.floor(totalRevenue * 0.08) },
         { zone: 'Tshuapa', users: Math.floor(totalUsers * 0.06), revenue: Math.floor(totalRevenue * 0.06) },
         { zone: 'Mongala', users: Math.floor(totalUsers * 0.05), revenue: Math.floor(totalRevenue * 0.05) },
-        { zone: 'Autres provinces', users: Math.floor(totalUsers * 0.19), revenue: Math.floor(totalRevenue * 0.09) }
+        { zone: 'Autres provinces', users: Math.floor(totalUsers * 0.10), revenue: Math.floor(totalRevenue * 0.04) }
       ];
 
       setAnalytics({
