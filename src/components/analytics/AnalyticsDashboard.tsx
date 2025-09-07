@@ -142,13 +142,16 @@ const AnalyticsDashboard = () => {
       // Activité utilisateurs (données simulées basées sur les vraies données)
       const userActivity = generateUserActivity(users, parseInt(timeRange));
 
-      // Données territoriales (simulées)
+      // Données territoriales (simulées) - incluant toutes les provinces
       const territorialData = [
-        { zone: 'Goma', users: Math.floor(totalUsers * 0.4), revenue: Math.floor(totalRevenue * 0.35) },
-        { zone: 'Bukavu', users: Math.floor(totalUsers * 0.25), revenue: Math.floor(totalRevenue * 0.28) },
-        { zone: 'Uvira', users: Math.floor(totalUsers * 0.15), revenue: Math.floor(totalRevenue * 0.18) },
-        { zone: 'Kinshasa', users: Math.floor(totalUsers * 0.12), revenue: Math.floor(totalRevenue * 0.12) },
-        { zone: 'Autres', users: Math.floor(totalUsers * 0.08), revenue: Math.floor(totalRevenue * 0.07) }
+        { zone: 'Kinshasa', users: Math.floor(totalUsers * 0.22), revenue: Math.floor(totalRevenue * 0.25) },
+        { zone: 'Nord-Kivu', users: Math.floor(totalUsers * 0.18), revenue: Math.floor(totalRevenue * 0.20) },
+        { zone: 'Sud-Kivu', users: Math.floor(totalUsers * 0.15), revenue: Math.floor(totalRevenue * 0.18) },
+        { zone: 'Kasaï-Oriental', users: Math.floor(totalUsers * 0.08), revenue: Math.floor(totalRevenue * 0.09) },
+        { zone: 'Kasaï', users: Math.floor(totalUsers * 0.07), revenue: Math.floor(totalRevenue * 0.08) },
+        { zone: 'Tshuapa', users: Math.floor(totalUsers * 0.06), revenue: Math.floor(totalRevenue * 0.06) },
+        { zone: 'Mongala', users: Math.floor(totalUsers * 0.05), revenue: Math.floor(totalRevenue * 0.05) },
+        { zone: 'Autres provinces', users: Math.floor(totalUsers * 0.19), revenue: Math.floor(totalRevenue * 0.09) }
       ];
 
       setAnalytics({
