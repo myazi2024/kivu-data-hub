@@ -104,6 +104,11 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             setHoveredProvinceData(province);
             setShowTooltip(true);
             target.setAttribute('fill', 'hsl(348, 100%, 54%)');
+            
+            // Calculer la position initiale de l'infobulle
+            const position = calculateTooltipPosition(target);
+            setTooltipPosition({ x: position.x, y: position.y });
+            setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
           } else {
             console.warn(`No province data found for ID: ${provinceId}`);
           }
@@ -113,9 +118,9 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       };
 
       const handlePathMouseMove = (event: Event) => {
-        const mouseEvent = event as MouseEvent;
+        const target = event.target as SVGElement;
         if (showTooltip) {
-          const position = calculateTooltipPosition(mouseEvent.clientX, mouseEvent.clientY);
+          const position = calculateTooltipPosition(target);
           setTooltipPosition({ x: position.x, y: position.y });
           setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
         }
@@ -165,67 +170,93 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
     }
   }, [svgContent, provincesData, onProvinceHover, onProvinceSelect]);
 
-  const calculateTooltipPosition = (mouseX: number, mouseY: number) => {
+  const calculateTooltipPosition = (provinceElement: SVGElement) => {
     const rect = mapRef.current?.getBoundingClientRect();
-    if (!rect) return { x: mouseX, y: mouseY, horizontal: 'right', vertical: 'bottom' };
+    if (!rect) return { x: 0, y: 0, horizontal: 'right', vertical: 'bottom' };
 
-    // Dimensions adaptatives de l'infobulle selon la taille d'écran
-    const isSmallScreen = window.innerWidth < 640; // sm breakpoint
-    const tooltipWidth = isSmallScreen ? 192 : 256; // w-48 vs w-64
+    // Obtenir les limites de la province SVG
+    const provincePath = provinceElement as SVGGraphicsElement;
+    const provinceBBox = provincePath.getBBox();
+    const svgElement = provinceElement.closest('svg');
+    if (!svgElement) return { x: 0, y: 0, horizontal: 'right', vertical: 'bottom' };
+
+    // Obtenir les dimensions du conteneur SVG
+    const svgRect = svgElement.getBoundingClientRect();
+    const mapRect = rect;
+
+    // Calculer les coordonnées de la province dans le conteneur
+    const scaleX = mapRect.width / svgRect.width;
+    const scaleY = mapRect.height / svgRect.height;
+    
+    const provinceLeft = (provinceBBox.x * svgRect.width / svgElement.viewBox?.baseVal.width || 1) * scaleX;
+    const provinceTop = (provinceBBox.y * svgRect.height / svgElement.viewBox?.baseVal.height || 1) * scaleY;
+    const provinceWidth = (provinceBBox.width * svgRect.width / svgElement.viewBox?.baseVal.width || 1) * scaleX;
+    const provinceHeight = (provinceBBox.height * svgRect.height / svgElement.viewBox?.baseVal.height || 1) * scaleY;
+
+    // Dimensions de l'infobulle
+    const isSmallScreen = window.innerWidth < 640;
+    const tooltipWidth = isSmallScreen ? 192 : 256;
     const tooltipHeight = isSmallScreen ? 240 : 280;
-    const offset = 12; // distance du curseur
+    const offset = 16; // distance de la province
 
-    // Position relative dans le conteneur
-    let relativeX = mouseX - rect.left;
-    let relativeY = mouseY - rect.top;
+    // Points d'ancrage possibles autour de la province
+    const anchorPoints = [
+      // À droite de la province
+      {
+        x: provinceLeft + provinceWidth + offset,
+        y: provinceTop + provinceHeight / 2 - tooltipHeight / 2,
+        horizontal: 'right',
+        vertical: 'center',
+        priority: 1
+      },
+      // À gauche de la province
+      {
+        x: provinceLeft - tooltipWidth - offset,
+        y: provinceTop + provinceHeight / 2 - tooltipHeight / 2,
+        horizontal: 'left',
+        vertical: 'center',
+        priority: 2
+      },
+      // En bas de la province
+      {
+        x: provinceLeft + provinceWidth / 2 - tooltipWidth / 2,
+        y: provinceTop + provinceHeight + offset,
+        horizontal: 'center',
+        vertical: 'bottom',
+        priority: 3
+      },
+      // En haut de la province
+      {
+        x: provinceLeft + provinceWidth / 2 - tooltipWidth / 2,
+        y: provinceTop - tooltipHeight - offset,
+        horizontal: 'center',
+        vertical: 'top',
+        priority: 4
+      }
+    ];
 
-    // Détermine l'alignement en fonction de l'espace disponible
-    const spaceRight = rect.width - relativeX;
-    const spaceLeft = relativeX;
-    const spaceBelow = rect.height - relativeY;
-    const spaceAbove = relativeY;
+    // Trouver la meilleure position (celle qui reste dans les limites)
+    const validPositions = anchorPoints.filter(point => 
+      point.x >= 10 && 
+      point.x + tooltipWidth <= mapRect.width - 10 &&
+      point.y >= 10 && 
+      point.y + tooltipHeight <= mapRect.height - 10
+    );
 
-    // Prioriser l'affichage à droite et en bas du curseur
-    let horizontal: 'left' | 'right' = 'right';
-    let vertical: 'top' | 'bottom' = 'bottom';
+    // Choisir la position avec la priorité la plus élevée
+    const bestPosition = validPositions.length > 0 
+      ? validPositions.sort((a, b) => a.priority - b.priority)[0]
+      : anchorPoints[0]; // Fallback à droite
 
-    // Ajuster horizontal si pas assez d'espace à droite
-    if (spaceRight < tooltipWidth + offset && spaceLeft > tooltipWidth + offset) {
-      horizontal = 'left';
-    }
-
-    // Ajuster vertical si pas assez d'espace en bas
-    if (spaceBelow < tooltipHeight + offset && spaceAbove > tooltipHeight + offset) {
-      vertical = 'top';
-    }
-
-    // Calculer la position finale avec contraintes
-    let finalX = relativeX;
-    let finalY = relativeY;
-
-    // Position horizontale
-    if (horizontal === 'right') {
-      finalX = Math.min(relativeX + offset, rect.width - tooltipWidth - 10);
-    } else {
-      finalX = Math.max(relativeX - offset - tooltipWidth, 10);
-    }
-
-    // Position verticale
-    if (vertical === 'bottom') {
-      finalY = Math.min(relativeY + offset, rect.height - tooltipHeight - 10);
-    } else {
-      finalY = Math.max(relativeY - offset - tooltipHeight, 10);
-    }
-
-    // S'assurer que l'infobulle reste dans les limites
-    finalX = Math.max(10, Math.min(finalX, rect.width - tooltipWidth - 10));
-    finalY = Math.max(10, Math.min(finalY, rect.height - tooltipHeight - 10));
+    // Contraindre la position finale dans les limites
+    let finalX = Math.max(10, Math.min(bestPosition.x, mapRect.width - tooltipWidth - 10));
+    let finalY = Math.max(10, Math.min(bestPosition.y, mapRect.height - tooltipHeight - 10));
 
     return {
       x: finalX,
       y: finalY,
-      horizontal,
-      vertical
+      horizontal: bestPosition.horizontal === 'center' ? 'right' : bestPosition.horizontal,
+      vertical: bestPosition.vertical === 'center' ? 'bottom' : bestPosition.vertical
     };
   };
 
