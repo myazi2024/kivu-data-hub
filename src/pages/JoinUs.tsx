@@ -35,170 +35,140 @@ const JoinUs = () => {
   return (
     <div className="min-h-screen">
       <Navigation />
-      <main className="pt-20 pb-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h1 className="text-4xl font-bold text-foreground mb-6">Rejoignez-nous</h1>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Construisons ensemble l'avenir de l'immobilier en République Démocratique du Congo
+      <main className="pt-16 pb-8">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4">
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Rejoignez-nous</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Construisons l'avenir immobilier en RDC
             </p>
           </div>
 
           {/* Section Partenariats */}
-          <section className="mb-16">
-            <h2 className="text-3xl font-bold text-foreground mb-8 text-center">Partenariats</h2>
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-center mb-4">Partenariats</h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
               {partnershipTypes.map((type, index) => (
-                <Card key={index} className="h-full">
-                  <CardHeader>
-                    <div className="flex items-center space-x-3">
-                      {type.icon}
-                      <CardTitle className="text-xl">{type.title}</CardTitle>
+                <Card key={index} className="p-3">
+                  <div className="flex items-start space-x-2">
+                    <div className="mt-0.5">
+                      {React.cloneElement(type.icon, { className: "h-5 w-5 text-primary" })}
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-base leading-relaxed">
-                      {type.description}
-                    </CardDescription>
-                  </CardContent>
+                    <div>
+                      <h3 className="text-sm font-semibold mb-1">{type.title}</h3>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {type.description}
+                      </p>
+                    </div>
+                  </div>
                 </Card>
               ))}
             </div>
 
-            <Card className="bg-secondary/50 mb-16">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Rejoignez notre réseau de partenaires</CardTitle>
-                <CardDescription className="text-lg">
-                  Ensemble, développons des solutions innovantes pour le secteur immobilier congolais
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="text-center">
-                <Button size="lg" className="mt-4">
-                  Devenir Partenaire
-                </Button>
-              </CardContent>
+            <Card className="bg-secondary/20 p-4 text-center mb-8">
+              <h3 className="text-base font-semibold mb-2">Rejoignez notre réseau</h3>
+              <p className="text-xs text-muted-foreground mb-3">
+                Développons ensemble l'immobilier congolais
+              </p>
+              <Button size="sm">Devenir Partenaire</Button>
             </Card>
           </section>
 
           {/* Section Contact */}
           <section>
-            <h2 className="text-3xl font-bold text-foreground mb-8 text-center">Contact</h2>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto text-center mb-12">
-              Contactez le Bureau de l'Immobilier du Congo pour toute question concernant nos services, 
-              publications ou possibilités de partenariat.
+            <h2 className="text-lg font-semibold text-center mb-4">Contact</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground text-center mb-6">
+              Contactez BIC pour nos services, publications ou partenariats
             </p>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Informations de contact */}
               <div>
-                <h3 className="text-2xl font-semibold text-foreground mb-8">Nos coordonnées</h3>
+                <h3 className="text-base font-medium mb-4">Coordonnées</h3>
                 
-                <div className="space-y-6">
-                  <Card className="border-border">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <MapPin className="h-6 w-6 text-primary mt-1" />
-                        <div>
-                          <h4 className="font-semibold text-foreground mb-1">Adresse</h4>
-                          <p className="text-muted-foreground">
-                            07, Rue Touristique<br />
-                            Goma, Nord-Kivu<br />
-                            République Démocratique du Congo
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                <div className="space-y-3">
+                  <div className="flex items-start gap-2 p-3 bg-secondary/10 rounded-lg">
+                    <MapPin className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium mb-1">Adresse</p>
+                      <p className="text-xs text-muted-foreground">
+                        07, Rue Touristique<br />
+                        Goma, Nord-Kivu, RDC
+                      </p>
+                    </div>
+                  </div>
 
-                  <Card className="border-border">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <Phone className="h-6 w-6 text-primary mt-1" />
-                        <div>
-                          <h4 className="font-semibold text-foreground mb-1">Téléphone</h4>
-                          <p className="text-muted-foreground">+243 816 996 077</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-start gap-2 p-3 bg-secondary/10 rounded-lg">
+                    <Phone className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium mb-1">Téléphone</p>
+                      <p className="text-xs text-muted-foreground">+243 816 996 077</p>
+                    </div>
+                  </div>
 
-                  <Card className="border-border">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <Mail className="h-6 w-6 text-primary mt-1" />
-                        <div>
-                          <h4 className="font-semibold text-foreground mb-1">Email</h4>
-                          <p className="text-muted-foreground">contact@bic.myazi.net.org</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-start gap-2 p-3 bg-secondary/10 rounded-lg">
+                    <Mail className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium mb-1">Email</p>
+                      <p className="text-xs text-muted-foreground">contact@bic.myazi.net.org</p>
+                    </div>
+                  </div>
 
-                  <Card className="border-border">
-                    <CardContent className="p-6">
-                      <div className="flex items-start gap-4">
-                        <Clock className="h-6 w-6 text-primary mt-1" />
-                        <div>
-                          <h4 className="font-semibold text-foreground mb-1">Horaires</h4>
-                          <p className="text-muted-foreground">
-                            Lundi - Vendredi : 8h00 - 17h00<br />
-                            Samedi : 8h00 - 12h00
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                  <div className="flex items-start gap-2 p-3 bg-secondary/10 rounded-lg">
+                    <Clock className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-medium mb-1">Horaires</p>
+                      <p className="text-xs text-muted-foreground">
+                        Lun-Ven: 8h-17h<br />
+                        Sam: 8h-12h
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               {/* Formulaire de contact */}
               <div>
-                <h3 className="text-2xl font-semibold text-foreground mb-8">Envoyez-nous un message</h3>
+                <h3 className="text-base font-medium mb-4">Message</h3>
                 
-                <Card className="border-border">
-                  <CardContent className="p-6">
-                    <form className="space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="firstName">Prénom</Label>
-                          <Input id="firstName" placeholder="Votre prénom" />
-                        </div>
-                        <div>
-                          <Label htmlFor="lastName">Nom</Label>
-                          <Input id="lastName" placeholder="Votre nom" />
-                        </div>
-                      </div>
-                      
+                <Card className="p-4">
+                  <form className="space-y-4">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" placeholder="votre@email.com" />
+                        <Label htmlFor="firstName" className="text-xs">Prénom</Label>
+                        <Input id="firstName" placeholder="Prénom" className="h-8 text-xs" />
                       </div>
-                      
                       <div>
-                        <Label htmlFor="phone">Téléphone (optionnel)</Label>
-                        <Input id="phone" placeholder="+243 ..." />
+                        <Label htmlFor="lastName" className="text-xs">Nom</Label>
+                        <Input id="lastName" placeholder="Nom" className="h-8 text-xs" />
                       </div>
-                      
-                      <div>
-                        <Label htmlFor="subject">Sujet</Label>
-                        <Input id="subject" placeholder="Objet de votre message" />
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="message">Message</Label>
-                        <Textarea 
-                          id="message" 
-                          placeholder="Décrivez votre demande ou question..."
-                          rows={6}
-                        />
-                      </div>
-                      
-                      <Button type="submit" className="w-full">
-                        Envoyer le message
-                      </Button>
-                    </form>
-                  </CardContent>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="email" className="text-xs">Email</Label>
+                      <Input id="email" type="email" placeholder="email@exemple.com" className="h-8 text-xs" />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="subject" className="text-xs">Sujet</Label>
+                      <Input id="subject" placeholder="Objet du message" className="h-8 text-xs" />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="message" className="text-xs">Message</Label>
+                      <Textarea 
+                        id="message" 
+                        placeholder="Votre message..."
+                        rows={4}
+                        className="text-xs"
+                      />
+                    </div>
+                    
+                    <Button type="submit" size="sm" className="w-full text-xs">
+                      Envoyer
+                    </Button>
+                  </form>
                 </Card>
               </div>
             </div>
