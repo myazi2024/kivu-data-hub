@@ -61,9 +61,11 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             if (province) {
               path.setAttribute('data-province', province.id);
               path.setAttribute('data-name', province.name);
+              console.log(`✓ Matched province: ${provinceId} -> ${province.name}`);
             } else {
               path.setAttribute('data-province', provinceId || 'unknown');
               path.setAttribute('data-name', `Province ${provinceId}`);
+              console.warn(`✗ No data for province: ${provinceId}`);
             }
           });
           
@@ -77,19 +79,36 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   useEffect(() => {
     if (svgContent && mapRef.current) {
       const paths = mapRef.current.querySelectorAll('path[data-province]');
+      console.log(`Found ${paths.length} paths with data-province attribute`);
+      
+      // Log all province IDs from SVG and data
+      const svgProvinceIds: string[] = [];
+      paths.forEach(path => {
+        const id = path.getAttribute('data-province');
+        if (id) svgProvinceIds.push(id);
+      });
+      console.log('SVG Province IDs:', svgProvinceIds);
+      console.log('Data Province IDs:', provincesData.map(p => p.id));
       
       const handlePathMouseOver = (event: Event) => {
         const target = event.target as SVGElement;
         const provinceId = target.getAttribute('data-province');
         
+        console.log(`Mouse over province: ${provinceId}`);
+        
         if (provinceId && provinceId !== 'unknown') {
           const province = provincesData.find(p => p.id === provinceId);
           if (province) {
+            console.log(`Found province data for ${provinceId}: ${province.name}`);
             onProvinceHover(provinceId);
             setHoveredProvinceData(province);
             setShowTooltip(true);
             target.setAttribute('fill', 'hsl(348, 100%, 54%)');
+          } else {
+            console.warn(`No province data found for ID: ${provinceId}`);
           }
+        } else {
+          console.warn(`Invalid province ID: ${provinceId}`);
         }
       };
 
