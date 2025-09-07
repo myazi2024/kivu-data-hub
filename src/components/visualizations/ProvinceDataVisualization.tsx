@@ -120,23 +120,23 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
           {/* Sélecteur d'indicateurs - Responsive */}
           <Tabs value={activeIndicator} onValueChange={setActiveIndicator} className="w-full">
             <div className="flex justify-center">
-              <TabsList className="flex gap-1 h-auto p-1 bg-muted/30 rounded-lg">
+              <TabsList className="inline-flex items-center gap-0.5 h-auto p-1 bg-background border border-border/50 rounded-xl shadow-sm">
                 {indicators.map((indicator) => (
                   <Tooltip key={indicator.id}>
                     <TooltipTrigger asChild>
                       <TabsTrigger
                         value={indicator.id}
-                        className="flex flex-col items-center gap-2 p-3 min-w-[60px] h-auto data-[state=active]:bg-primary/20 hover:bg-primary/10 transition-colors rounded-md"
+                        className="flex flex-col items-center gap-1.5 p-2.5 min-w-[56px] h-auto data-[state=active]:bg-primary data-[state=active]:text-primary-foreground hover:bg-muted/50 transition-all duration-200 rounded-lg border border-transparent data-[state=active]:border-primary/20 data-[state=active]:shadow-sm"
                       >
-                        <indicator.icon className="h-6 w-6" />
+                        <indicator.icon className="h-5 w-5 transition-transform duration-200 data-[state=active]:scale-110" />
                         {activeIndicator === indicator.id && (
-                          <span className="text-xs font-medium leading-tight text-center whitespace-normal break-words max-w-[80px]">
+                          <span className="text-[10px] font-medium leading-none text-center whitespace-normal break-words max-w-[48px] animate-in fade-in-0 slide-in-from-top-1 duration-200">
                             {indicator.name}
                           </span>
                         )}
                       </TabsTrigger>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-xs">
+                    <TooltipContent side="bottom" className="max-w-xs bg-popover border border-border/50 shadow-md">
                       <p className="text-sm font-medium">{indicator.name}</p>
                       <p className="text-xs text-muted-foreground mt-1">{indicator.description}</p>
                     </TooltipContent>
