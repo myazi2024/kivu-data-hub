@@ -58,7 +58,7 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
            <div>
              <div style={{ width: '100%' }}>
                 <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={sortedProvinces} margin={{ top: 20, right: 20, left: 0, bottom: 60 }} barCategoryGap="20%" barGap={12} barSize={5}>
+                  <BarChart data={sortedProvinces} margin={{ top: 20, right: 0, left: 0, bottom: 60 }} barCategoryGap="20%" barGap={12} barSize={5}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 
