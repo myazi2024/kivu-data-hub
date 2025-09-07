@@ -319,7 +319,7 @@ const AnalyticsDashboard = () => {
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={analytics.monthlyRevenue}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
+                <XAxis dataKey="month" tick={{ fontSize: 6 }} />
                 <YAxis />
                 <Tooltip formatter={(value) => [`$${value}`, 'Revenus']} />
                 <Area type="monotone" dataKey="revenue" stroke="#8884d8" fill="#8884d8" fillOpacity={0.3} />
@@ -340,7 +340,7 @@ const AnalyticsDashboard = () => {
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={analytics.userActivity}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
+                <XAxis dataKey="date" tick={{ fontSize: 6 }} />
                 <YAxis />
                 <Tooltip />
                 <Line type="monotone" dataKey="active_users" stroke="#82ca9d" strokeWidth={2} />

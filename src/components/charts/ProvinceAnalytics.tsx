@@ -157,7 +157,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name"
-                tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 3, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 interval={0}
                 angle={-90}
@@ -205,7 +205,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="niveau" 
-                tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 4, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 angle={-30}
                 textAnchor="end"
@@ -252,7 +252,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="name"
-                tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 3, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
                 interval={0}
                 angle={-90}
