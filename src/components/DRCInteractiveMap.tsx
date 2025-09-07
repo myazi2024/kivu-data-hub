@@ -587,7 +587,7 @@ const DRCInteractiveMap = () => {
     },
     // Mai-Ndombe
     {
-      id: 'CDMND',
+      id: 'CDMN',
       name: 'Mai-Ndombe',
       prixMoyenLoyer: 72,
       prixMoyenVenteM2: 168,
