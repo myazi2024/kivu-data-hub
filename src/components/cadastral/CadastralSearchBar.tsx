@@ -24,12 +24,12 @@ const CadastralSearchBar = () => {
   } = useCadastralSearch();
 
   const animatedTexts = [
-    "🔎 Entrez un numéro SU ou SR pour consulter les données cadastrales",
-    "📍 Recherchez une parcelle pour voir sa localisation et son historique de bornage", 
-    "👤 Identifiez le propriétaire actuel et le type de titre foncier",
-    "📜 Consultez l'historique des propriétaires d'une section cadastrale",
-    "💼 Vérifiez les obligations fiscales et hypothécaires associées à une propriété",
-    "🧭 Explorez les limites cadastrales et les géomètres ayant effectué le bornage"
+    "🔎 Recherchez par numéro SU ou SR",
+    "📍 Consultez localisation et bornage", 
+    "👤 Identifiez le propriétaire actuel",
+    "📜 Historique des propriétaires",
+    "💼 Vérifiez obligations fiscales",
+    "🧭 Explorez limites cadastrales"
   ];
 
   // Animation du texte rotatif
