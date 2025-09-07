@@ -107,10 +107,11 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
                 dataKey="month" 
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               />
-              <YAxis 
+               <YAxis 
                 yAxisId="left"
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                 label={{ value: 'Transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                width={80}
               />
               <YAxis 
                 yAxisId="right" 
@@ -187,6 +188,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
                     <YAxis 
                       tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                       label={{ value: 'Nombre transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                      width={80}
                     />
                     <Tooltip 
                       contentStyle={{ 
@@ -228,6 +230,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
                 <YAxis 
                   tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                   label={{ value: 'Transactions', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                  width={80}
                 />
                 <Tooltip 
                   contentStyle={{ 

@@ -125,6 +125,7 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
                   <YAxis 
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     label={{ value: 'Rendement (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                    width={60}
                   />
                   <Tooltip 
                     contentStyle={{ 
@@ -188,7 +189,7 @@ export const RentalYieldVisualization: React.FC<RentalYieldVisualizationProps> =
                 <YAxis 
                   type="number" 
                   dataKey="rendement"
-                  tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   label={{ value: 'Rendement (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
                 />
                 <Tooltip 

@@ -152,10 +152,11 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
                 dataKey="month" 
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               />
-              <YAxis 
+               <YAxis 
                 yAxisId="left"
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                 label={{ value: 'Indice de pression', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                width={60}
               />
               <YAxis 
                 yAxisId="right"
@@ -279,6 +280,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
                     />
                     <YAxis 
                       tick={{ fontSize: 5, fill: 'hsl(var(--muted-foreground))' }}
+                      width={40}
                     />
                     <Tooltip 
                       contentStyle={{ 
@@ -320,11 +322,12 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                 label={{ value: 'Indice de pression foncière', position: 'insideBottom', offset: -10 }}
               />
-              <YAxis 
+               <YAxis 
                 type="number" 
                 dataKey="prix"
                 tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                 label={{ value: 'Prix (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                width={60}
               />
               <Tooltip 
                 contentStyle={{ 

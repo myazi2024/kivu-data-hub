@@ -232,6 +232,7 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
                   <YAxis 
                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
                     label={{ value: 'Pourcentage (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                    width={60}
                   />
                   <Tooltip 
                     contentStyle={{ 

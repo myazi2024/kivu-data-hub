@@ -168,7 +168,7 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
               <YAxis 
                 tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={20}
+                width={40}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -211,10 +211,10 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                 textAnchor="end"
                 height={18}
               />
-              <YAxis 
+               <YAxis 
                 tick={{ fontSize: 7, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={22}
+                width={44}
               />
               <Tooltip 
                 contentStyle={{ 
@@ -260,10 +260,10 @@ export const ProvinceAnalytics: React.FC<ProvinceAnalyticsProps> = ({
                 height={18}
                 tickMargin={1}
               />
-              <YAxis 
+               <YAxis 
                 tick={{ fontSize: 6, fill: 'hsl(var(--muted-foreground))' }}
                 axisLine={{ stroke: 'hsl(var(--border))' }}
-                width={20}
+                width={40}
               />
               <Tooltip 
                 contentStyle={{ 

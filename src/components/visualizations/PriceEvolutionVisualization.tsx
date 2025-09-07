@@ -167,10 +167,10 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
                       height={70}
                       interval={0}
                     />
-                    <YAxis 
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      label={{ value: 'Prix location (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                    />
+              <YAxis 
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                label={{ value: 'Prix location (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+              />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--background))', 
@@ -216,10 +216,10 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
                       height={70}
                       interval={0}
                     />
-                    <YAxis 
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      label={{ value: 'Prix vente (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
-                    />
+              <YAxis 
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                label={{ value: 'Prix vente (USD/m²)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+              />
                     <Tooltip 
                       contentStyle={{ 
                         backgroundColor: 'hsl(var(--background))', 
