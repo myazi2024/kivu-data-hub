@@ -6,6 +6,14 @@ import { Card } from '@/components/ui/card';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import CadastralResultsDialog from './CadastralResultsDialog';
 
+const ANIMATED_TEXTS = [
+  "Recherchez une parcelle avec un numéro SU ou SR…",
+  "Consultez les limites cadastrales et l'historique de bornage…",
+  "Identifiez le propriétaire actuel et le type de titre foncier…",
+  "Explorez les obligations fiscales et hypothécaires d'une propriété…",
+  "Accédez à l'historique des propriétaires d'une section cadastrale…"
+];
+
 const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
@@ -23,14 +31,6 @@ const CadastralSearchBar = () => {
     validateParcelNumber
   } = useCadastralSearch();
 
-  const animatedTexts = [
-    "Recherchez une parcelle avec un numéro SU ou SR…",
-    "Consultez les limites cadastrales et l'historique de bornage…",
-    "Identifiez le propriétaire actuel et le type de titre foncier…",
-    "Explorez les obligations fiscales et hypothécaires d'une propriété…",
-    "Accédez à l'historique des propriétaires d'une section cadastrale…"
-  ];
-
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
@@ -43,7 +43,7 @@ const CadastralSearchBar = () => {
       return;
     }
     
-    const currentText = animatedTexts[currentTextIndex];
+    const currentText = ANIMATED_TEXTS[currentTextIndex];
     let charIndex = 0;
     
     // Phase d'écriture
@@ -69,7 +69,7 @@ const CadastralSearchBar = () => {
                 clearInterval(eraseInterval);
                 // Passer au texte suivant après un court délai
                 setTimeout(() => {
-                  setCurrentTextIndex((prev) => (prev + 1) % animatedTexts.length);
+                  setCurrentTextIndex((prev) => (prev + 1) % ANIMATED_TEXTS.length);
                 }, 500);
                 return '';
               }
@@ -80,7 +80,7 @@ const CadastralSearchBar = () => {
     }, 50);
 
     return () => clearInterval(typeInterval);
-  }, [currentTextIndex, searchQuery, isFocused, animatedTexts]);
+  }, [currentTextIndex, searchQuery, isFocused]);
 
   // Animation du curseur
   useEffect(() => {
@@ -173,7 +173,7 @@ const CadastralSearchBar = () => {
             />
             
             {/* Texte animé machine à écrire */}
-            {!searchQuery && !isFocused && displayedText && (
+            {!searchQuery && !isFocused && (
               <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none">
                 <div 
                   className="text-sm text-muted-foreground/60 font-light"
