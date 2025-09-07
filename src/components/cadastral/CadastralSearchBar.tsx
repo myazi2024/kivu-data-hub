@@ -65,10 +65,6 @@ const CadastralSearchBar = () => {
     setIsExpanded(false);
   };
 
-  const getPlaceholder = () => {
-    return "Rechercher une parcelle (ex: SU-GOMA-0456, SR-RUTSHURU-0321)";
-  };
-
   const getInputStatus = () => {
     if (!searchQuery) return 'default';
     if (error) return 'error';
@@ -117,7 +113,6 @@ const CadastralSearchBar = () => {
             {/* Input principal */}
             <Input
               type="text"
-              placeholder={getPlaceholder()}
               value={searchQuery}
               onChange={handleInputChange}
               onFocus={() => {
