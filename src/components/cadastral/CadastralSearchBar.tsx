@@ -24,29 +24,72 @@ const CadastralSearchBar = () => {
   } = useCadastralSearch();
 
   const animatedTexts = [
-    "🔎 Recherchez par numéro SU ou SR",
-    "📍 Consultez localisation et bornage", 
-    "👤 Identifiez le propriétaire actuel",
-    "📜 Historique des propriétaires",
-    "💼 Vérifiez obligations fiscales",
-    "🧭 Explorez limites cadastrales"
+    "Recherchez une parcelle avec un numéro SU ou SR…",
+    "Consultez les limites cadastrales et l'historique de bornage…",
+    "Identifiez le propriétaire actuel et le type de titre foncier…",
+    "Explorez les obligations fiscales et hypothécaires d'une propriété…",
+    "Accédez à l'historique des propriétaires d'une section cadastrale…"
   ];
 
-  // Animation du texte rotatif
-  useEffect(() => {
-    if (searchQuery || isFocused) return;
-    
-    const interval = setInterval(() => {
-      setIsTextVisible(false);
-      
-      setTimeout(() => {
-        setCurrentTextIndex((prev) => (prev + 1) % animatedTexts.length);
-        setIsTextVisible(true);
-      }, 300);
-    }, 4000);
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [showCursor, setShowCursor] = useState(true);
 
-    return () => clearInterval(interval);
-  }, [searchQuery, isFocused, animatedTexts.length]);
+  // Animation machine à écrire
+  useEffect(() => {
+    if (searchQuery || isFocused) {
+      setDisplayedText('');
+      setIsTyping(false);
+      return;
+    }
+    
+    const currentText = animatedTexts[currentTextIndex];
+    let charIndex = 0;
+    
+    // Phase d'écriture
+    setIsTyping(true);
+    setDisplayedText('');
+    
+    const typeInterval = setInterval(() => {
+      if (charIndex < currentText.length) {
+        setDisplayedText(currentText.slice(0, charIndex + 1));
+        charIndex++;
+      } else {
+        clearInterval(typeInterval);
+        setIsTyping(false);
+        
+        // Pause avant effacement
+        setTimeout(() => {
+          // Phase d'effacement
+          const eraseInterval = setInterval(() => {
+            setDisplayedText(prev => {
+              if (prev.length > 0) {
+                return prev.slice(0, -1);
+              } else {
+                clearInterval(eraseInterval);
+                // Passer au texte suivant après un court délai
+                setTimeout(() => {
+                  setCurrentTextIndex((prev) => (prev + 1) % animatedTexts.length);
+                }, 500);
+                return '';
+              }
+            });
+          }, 30);
+        }, 2000);
+      }
+    }, 50);
+
+    return () => clearInterval(typeInterval);
+  }, [currentTextIndex, searchQuery, isFocused, animatedTexts]);
+
+  // Animation du curseur
+  useEffect(() => {
+    const cursorInterval = setInterval(() => {
+      setShowCursor(prev => !prev);
+    }, 530);
+
+    return () => clearInterval(cursorInterval);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
@@ -129,19 +172,27 @@ const CadastralSearchBar = () => {
               }`}
             />
             
-            {/* Texte animé flottant */}
-            {!searchQuery && !isFocused && (
+            {/* Texte animé machine à écrire */}
+            {!searchQuery && !isFocused && displayedText && (
               <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none">
                 <div 
-                  className={`text-sm text-muted-foreground/70 transition-opacity duration-300 truncate ${
-                    isTextVisible ? 'opacity-100' : 'opacity-0'
-                  }`}
+                  className="text-sm text-muted-foreground/60 font-light"
                   style={{
                     maxWidth: 'calc(100% - 2rem)',
-                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'
+                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
                   }}
                 >
-                  {animatedTexts[currentTextIndex]}
+                  <span>{displayedText}</span>
+                  <span 
+                    className={`inline-block w-0.5 h-4 bg-muted-foreground/60 ml-0.5 transition-opacity duration-100 ${
+                      showCursor ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{ 
+                      animation: isTyping ? 'none' : undefined,
+                      verticalAlign: 'middle'
+                    }}
+                  />
                 </div>
               </div>
             )}
