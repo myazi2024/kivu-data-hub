@@ -57,21 +57,20 @@ export const VacancyRateVisualization: React.FC<VacancyRateVisualizationProps> =
         <CardContent className="pt-0">
            <div>
              <div style={{ width: '100%' }}>
-               <ResponsiveContainer width="100%" height={160}>
-                 <BarChart data={sortedProvinces} margin={{ top: 20, right: 20, left: 20, bottom: 60 }} barCategoryGap="10%" barGap={8} barSize={6}>
-                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                   <XAxis 
-                     dataKey="name" 
-                     tick={{ fontSize: 2.5, fill: 'hsl(var(--muted-foreground))' }}
-                     angle={-45}
-                     textAnchor="end"
-                     height={50}
-                     interval={0}
-                   />
-                   <YAxis 
-                     tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                     label={{ value: 'Taux de vacance (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: '12px' } }}
-                   />
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={sortedProvinces} margin={{ top: 20, right: 20, left: 20, bottom: 60 }} barCategoryGap="20%" barGap={12} barSize={5}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 2.5, fill: 'hsl(var(--muted-foreground))' }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={50}
+                      interval={0}
+                    />
+                    <YAxis 
+                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
+                    />
                    <Tooltip 
                      contentStyle={{ 
                        backgroundColor: 'hsl(var(--background))', 
