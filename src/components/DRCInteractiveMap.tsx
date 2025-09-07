@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3, ZoomIn, ZoomOut } from 'lucide-react';
+import { TrendingUp, TrendingDown, MapPin, Users, DollarSign, Building, Clock, BarChart3, Info, AlertTriangle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
 import DRCMapWithTooltip from './DRCMapWithTooltip';
 import { ProvinceAnalytics } from './charts/ProvinceAnalytics';
@@ -798,32 +798,22 @@ const DRCInteractiveMap = () => {
             <CardContent className="p-0 flex-1 flex flex-col">
               {/* En-tête responsive */}
               <div className="bg-muted/20 p-1 sm:p-2 border-b border-border/30">
+                {/* Note explicative en haut */}
+                <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-blue-800 dark:text-blue-200">
+                      <p className="font-medium mb-1">Comment utiliser la carte :</p>
+                      <p className="text-[11px] leading-relaxed">• Survolez une province pour afficher ses données<br/>• Cliquez pour sélectionner et voir les détails<br/>• Utilisez les filtres pour affiner l'affichage</p>
+                    </div>
+                  </div>
+                </div>
+                
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-[10px] sm:text-xs font-medium text-foreground flex items-center gap-1">
                     <MapPin className="h-3 w-3 text-primary" />
                     <span>RDC</span>
                   </h2>
-                  {/* Contrôles de zoom responsive */}
-                  <div className="flex gap-1 sm:gap-2">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="touch-target hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                      onClick={() => mapInstance?.zoomIn()}
-                      title="Zoom avant"
-                    >
-                      <ZoomIn className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="touch-target hover:bg-muted/50 text-muted-foreground hover:text-foreground"
-                      onClick={() => mapInstance?.zoomOut()}
-                      title="Zoom arrière"
-                    >
-                      <ZoomOut className="w-4 h-4" />
-                    </Button>
-                  </div>
                 </div>
                 
                 {/* Filtre de visualisation responsive */}
@@ -861,6 +851,26 @@ const DRCInteractiveMap = () => {
                 ) : (
                   <TerritorialMap />
                 )}
+              </div>
+              
+              {/* Note explicative en bas */}
+              <div className="p-2 bg-amber-50 dark:bg-amber-950/20 border-t border-amber-200 dark:border-amber-800">
+                <div className="space-y-2">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-amber-800 dark:text-amber-200">
+                      <p className="font-medium mb-1">À propos de cette cartographie :</p>
+                      <p className="text-[11px] leading-relaxed">Cette carte présente les données immobilières par province de la RDC : prix de location et vente, taux d'occupation, rendements locatifs et indicateurs de marché.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
+                    <div className="text-xs text-red-800 dark:text-red-200">
+                      <p className="font-medium mb-1">Précaution sur les données :</p>
+                      <p className="text-[11px] leading-relaxed">Les données présentées sont des estimations basées sur les informations disponibles. Elles peuvent varier selon les sources et doivent être utilisées à titre indicatif.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
