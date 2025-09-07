@@ -171,92 +171,84 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   }, [svgContent, provincesData, onProvinceHover, onProvinceSelect]);
 
   const calculateTooltipPosition = (provinceElement: SVGElement) => {
-    const rect = mapRef.current?.getBoundingClientRect();
-    if (!rect) return { x: 0, y: 0, horizontal: 'right', vertical: 'bottom' };
+    // Utiliser les coordonnées écran réelles pour éviter tout chevauchement
+    const mapEl = mapRef.current;
+    if (!mapEl) return { x: 0, y: 0, horizontal: 'right', vertical: 'bottom' };
 
-    // Obtenir les limites de la province SVG
-    const provincePath = provinceElement as SVGGraphicsElement;
-    const provinceBBox = provincePath.getBBox();
-    const svgElement = provinceElement.closest('svg');
-    if (!svgElement) return { x: 0, y: 0, horizontal: 'right', vertical: 'bottom' };
+    const mapRect = mapEl.getBoundingClientRect();
+    const provinceRect = (provinceElement as SVGGraphicsElement).getBoundingClientRect();
 
-    // Obtenir les dimensions du conteneur SVG
-    const svgRect = svgElement.getBoundingClientRect();
-    const mapRect = rect;
+    // Coords relatives au conteneur de la carte
+    const provinceLeft = provinceRect.left - mapRect.left;
+    const provinceTop = provinceRect.top - mapRect.top;
+    const provinceWidth = provinceRect.width;
+    const provinceHeight = provinceRect.height;
 
-    // Calculer les coordonnées de la province dans le conteneur
-    const scaleX = mapRect.width / svgRect.width;
-    const scaleY = mapRect.height / svgRect.height;
-    
-    const provinceLeft = (provinceBBox.x * svgRect.width / svgElement.viewBox?.baseVal.width || 1) * scaleX;
-    const provinceTop = (provinceBBox.y * svgRect.height / svgElement.viewBox?.baseVal.height || 1) * scaleY;
-    const provinceWidth = (provinceBBox.width * svgRect.width / svgElement.viewBox?.baseVal.width || 1) * scaleX;
-    const provinceHeight = (provinceBBox.height * svgRect.height / svgElement.viewBox?.baseVal.height || 1) * scaleY;
-
-    // Dimensions de l'infobulle
+    // Dimensions approximatives de l'infobulle
     const isSmallScreen = window.innerWidth < 640;
     const tooltipWidth = isSmallScreen ? 192 : 256;
     const tooltipHeight = isSmallScreen ? 240 : 280;
     const offset = 16; // distance de la province
 
-    // Points d'ancrage possibles autour de la province
+    // Points d'ancrage possibles autour de la province (jamais au-dessus)
     const anchorPoints = [
-      // À droite de la province
+      // À droite
       {
         x: provinceLeft + provinceWidth + offset,
         y: provinceTop + provinceHeight / 2 - tooltipHeight / 2,
         horizontal: 'right',
         vertical: 'center',
-        priority: 1
+        priority: 1,
       },
-      // À gauche de la province
+      // À gauche
       {
         x: provinceLeft - tooltipWidth - offset,
         y: provinceTop + provinceHeight / 2 - tooltipHeight / 2,
         horizontal: 'left',
         vertical: 'center',
-        priority: 2
+        priority: 2,
       },
-      // En bas de la province
+      // En bas
       {
         x: provinceLeft + provinceWidth / 2 - tooltipWidth / 2,
         y: provinceTop + provinceHeight + offset,
         horizontal: 'center',
         vertical: 'bottom',
-        priority: 3
+        priority: 3,
       },
-      // En haut de la province
+      // En haut
       {
         x: provinceLeft + provinceWidth / 2 - tooltipWidth / 2,
         y: provinceTop - tooltipHeight - offset,
         horizontal: 'center',
         vertical: 'top',
-        priority: 4
-      }
+        priority: 4,
+      },
     ];
 
-    // Trouver la meilleure position (celle qui reste dans les limites)
-    const validPositions = anchorPoints.filter(point => 
-      point.x >= 10 && 
-      point.x + tooltipWidth <= mapRect.width - 10 &&
-      point.y >= 10 && 
-      point.y + tooltipHeight <= mapRect.height - 10
+    // Garder l'infobulle dans les limites du conteneur
+    const pad = 10;
+    const validPositions = anchorPoints.filter(
+      (p) =>
+        p.x >= pad &&
+        p.x + tooltipWidth <= mapRect.width - pad &&
+        p.y >= pad &&
+        p.y + tooltipHeight <= mapRect.height - pad
     );
 
-    // Choisir la position avec la priorité la plus élevée
-    const bestPosition = validPositions.length > 0 
-      ? validPositions.sort((a, b) => a.priority - b.priority)[0]
-      : anchorPoints[0]; // Fallback à droite
+    const bestPosition =
+      validPositions.length > 0
+        ? validPositions.sort((a, b) => a.priority - b.priority)[0]
+        : anchorPoints[0]; // Fallback à droite
 
-    // Contraindre la position finale dans les limites
-    let finalX = Math.max(10, Math.min(bestPosition.x, mapRect.width - tooltipWidth - 10));
-    let finalY = Math.max(10, Math.min(bestPosition.y, mapRect.height - tooltipHeight - 10));
+    const finalX = Math.max(pad, Math.min(bestPosition.x, mapRect.width - tooltipWidth - pad));
+    const finalY = Math.max(pad, Math.min(bestPosition.y, mapRect.height - tooltipHeight - pad));
 
     return {
       x: finalX,
       y: finalY,
       horizontal: bestPosition.horizontal === 'center' ? 'right' : bestPosition.horizontal,
-      vertical: bestPosition.vertical === 'center' ? 'bottom' : bestPosition.vertical
+      vertical: bestPosition.vertical === 'center' ? 'bottom' : bestPosition.vertical,
     };
   };
 
