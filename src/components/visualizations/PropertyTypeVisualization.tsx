@@ -219,7 +219,7 @@ export const PropertyTypeVisualization: React.FC<PropertyTypeVisualizationProps>
           <div>
             <div style={{ width: '100%' }}>
               <ResponsiveContainer width="100%" height={160}>
-                <BarChart data={provincialComparison} margin={{ top: 20, right: 30, left: 20, bottom: 60 }} barCategoryGap="10%" barGap={8} barSize={6}>
+                <BarChart data={provincialComparison} margin={{ top: 20, right: 0, left: 0, bottom: 60 }} barCategoryGap="10%" barGap={8} barSize={6}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis 
                     dataKey="name" 

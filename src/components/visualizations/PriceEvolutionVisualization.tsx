@@ -86,7 +86,7 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={timeSeriesData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+            <LineChart data={timeSeriesData} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="month" 
@@ -157,7 +157,7 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
             <div className="overflow-x-auto">
               <div style={{ width: Math.max(700, topProvincesByRent.length * 60) }}>
                 <ResponsiveContainer width="100%" height={160}>
-                  <AreaChart data={topProvincesByRent} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
+                  <AreaChart data={topProvincesByRent} margin={{ top: 20, right: 0, left: 0, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 
@@ -206,7 +206,7 @@ export const PriceEvolutionVisualization: React.FC<PriceEvolutionVisualizationPr
             <div className="overflow-x-auto">
               <div style={{ width: Math.max(700, topProvincesBySale.length * 60) }}>
                 <ResponsiveContainer width="100%" height={160}>
-                  <AreaChart data={topProvincesBySale} margin={{ top: 20, right: 20, left: 20, bottom: 60 }}>
+                  <AreaChart data={topProvincesBySale} margin={{ top: 20, right: 0, left: 0, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 

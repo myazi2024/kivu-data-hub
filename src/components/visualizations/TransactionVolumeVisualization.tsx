@@ -101,7 +101,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={160}>
-            <ComposedChart data={monthlyData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+            <ComposedChart data={monthlyData} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="month" 
@@ -174,7 +174,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
             <div>
               <div style={{ width: '100%' }}>
                 <ResponsiveContainer width="100%" height={160}>
-                  <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 20, left: 20, bottom: 60 }} barCategoryGap="10%" barGap={6} barSize={3}>
+                  <BarChart data={topProvincesByTransactions} margin={{ top: 20, right: 0, left: 0, bottom: 60 }} barCategoryGap="10%" barGap={6} barSize={3}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 
@@ -219,7 +219,7 @@ export const TransactionVolumeVisualization: React.FC<TransactionVolumeVisualiza
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={160}>
-              <AreaChart data={quarterlyData} margin={{ top: 20, right: 20, left: 20, bottom: 20 }}>
+              <AreaChart data={quarterlyData} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis 
                   dataKey="trimestre" 

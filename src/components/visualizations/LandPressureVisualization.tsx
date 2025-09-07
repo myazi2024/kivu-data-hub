@@ -146,7 +146,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={160}>
-            <ComposedChart data={evolutionData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+            <ComposedChart data={evolutionData} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 dataKey="month" 
@@ -267,7 +267,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
             <div>
               <div style={{ width: '100%' }}>
                 <ResponsiveContainer width="100%" height={140}>
-                  <BarChart data={topPressureProvinces} margin={{ top: 20, right: 30, left: 20, bottom: 60 }} barCategoryGap="-20%" barGap={4} barSize={6}>
+                  <BarChart data={topPressureProvinces} margin={{ top: 20, right: 0, left: 0, bottom: 60 }} barCategoryGap="-20%" barGap={4} barSize={6}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                     <XAxis 
                       dataKey="name" 
@@ -312,7 +312,7 @@ export const LandPressureVisualization: React.FC<LandPressureVisualizationProps>
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={160}>
-            <ScatterChart data={correlationData} margin={{ top: 20, right: 30, left: 40, bottom: 20 }}>
+            <ScatterChart data={correlationData} margin={{ top: 20, right: 0, left: 0, bottom: 20 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
                 type="number" 
