@@ -798,13 +798,12 @@ const DRCInteractiveMap = () => {
             <CardContent className="p-0 flex-1 flex flex-col">
               {/* En-tête responsive */}
               <div className="bg-muted/20 p-1 sm:p-2 border-b border-border/30">
-                {/* Note explicative en haut */}
-                <div className="mb-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded-md border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-blue-800 dark:text-blue-200">
-                      <p className="font-medium mb-1">Comment utiliser la carte :</p>
-                      <p className="text-[11px] leading-relaxed">• Survolez une province pour afficher ses données<br/>• Cliquez pour sélectionner et voir les détails<br/>• Utilisez les filtres pour affiner l'affichage</p>
+                {/* Note explicative en haut - Compacte */}
+                <div className="mb-1 p-1 bg-blue-50/50 dark:bg-blue-950/10 rounded border border-blue-200/50 dark:border-blue-800/50">
+                  <div className="flex items-center gap-1">
+                    <Info className="h-3 w-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <div className="text-[10px] text-blue-700 dark:text-blue-300">
+                      <span className="font-medium">Usage :</span> Survolez/cliquez les provinces • Utilisez les filtres
                     </div>
                   </div>
                 </div>
@@ -853,22 +852,18 @@ const DRCInteractiveMap = () => {
                 )}
               </div>
               
-              {/* Note explicative en bas */}
-              <div className="p-2 bg-amber-50 dark:bg-amber-950/20 border-t border-amber-200 dark:border-amber-800">
-                <div className="space-y-2">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-amber-800 dark:text-amber-200">
-                      <p className="font-medium mb-1">À propos de cette cartographie :</p>
-                      <p className="text-[11px] leading-relaxed">Cette carte présente les données immobilières par province de la RDC : prix de location et vente, taux d'occupation, rendements locatifs et indicateurs de marché.</p>
-                    </div>
+              {/* Note explicative en bas - Compacte et bien visible */}
+              <div className="p-1 bg-amber-50/70 dark:bg-amber-950/15 border-t border-amber-200/70 dark:border-amber-800/50 flex-shrink-0">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <Info className="h-3 w-3 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                    <span className="text-[10px] font-medium text-amber-700 dark:text-amber-300">À propos :</span>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-300">Données immobilières RDC par province</span>
                   </div>
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
-                    <div className="text-xs text-red-800 dark:text-red-200">
-                      <p className="font-medium mb-1">Précaution sur les données :</p>
-                      <p className="text-[11px] leading-relaxed">Les données présentées sont des estimations basées sur les informations disponibles. Elles peuvent varier selon les sources et doivent être utilisées à titre indicatif.</p>
-                    </div>
+                  <div className="flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 text-red-600 dark:text-red-400 flex-shrink-0" />
+                    <span className="text-[10px] font-medium text-red-700 dark:text-red-300">Précaution :</span>
+                    <span className="text-[10px] text-red-700 dark:text-red-300">Estimations indicatives, données variables selon sources</span>
                   </div>
                 </div>
               </div>
