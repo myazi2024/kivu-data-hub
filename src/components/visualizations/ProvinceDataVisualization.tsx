@@ -119,21 +119,21 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
 
           {/* Sélecteur d'indicateurs - Responsive */}
           <Tabs value={activeIndicator} onValueChange={setActiveIndicator} className="w-full">
-            <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-primary/10 scrollbar-track-transparent">
-              <TabsList className="results-grid-tablet sm:grid-cols-3 lg:grid-cols-6 min-w-max w-full h-auto p-1 sm:p-2 gap-1 sm:gap-2">
+            <div className="flex justify-center">
+              <TabsList className="flex gap-1 h-auto p-1 bg-muted/30 rounded-lg">
                 {indicators.map((indicator) => (
                   <Tooltip key={indicator.id}>
                     <TooltipTrigger asChild>
                       <TabsTrigger
                         value={indicator.id}
-                        className="flex flex-col items-center gap-1 sm:gap-2 p-2 sm:p-3 responsive-caption min-w-[80px] sm:min-w-[100px] h-auto data-[state=active]:bg-primary/10 touch-target"
+                        className="flex flex-col items-center gap-2 p-3 min-w-[60px] h-auto data-[state=active]:bg-primary/20 hover:bg-primary/10 transition-colors rounded-md"
                       >
-                        <indicator.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="responsive-caption leading-tight text-center">
-                          {indicator.name.split(' ')[0]}
-                          <br className="md:hidden" />
-                          <span className="hidden md:inline"> {indicator.name.split(' ').slice(1).join(' ')}</span>
-                        </span>
+                        <indicator.icon className="h-6 w-6" />
+                        {activeIndicator === indicator.id && (
+                          <span className="text-xs font-medium leading-tight text-center">
+                            {indicator.name}
+                          </span>
+                        )}
                       </TabsTrigger>
                     </TooltipTrigger>
                     <TooltipContent side="bottom" className="max-w-xs">
