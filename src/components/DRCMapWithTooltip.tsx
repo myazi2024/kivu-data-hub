@@ -29,6 +29,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [isManuallyPositioned, setIsManuallyPositioned] = useState(false);
+  const [overTooltip, setOverTooltip] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -134,14 +135,18 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       const handlePathMouseOut = (event: Event) => {
         const target = event.target as SVGElement;
         
-        // Remettre à zéro tous les états
+        // Restaurer la couleur uniforme
+        target.setAttribute('fill', 'hsl(210, 40%, 85%)');
+
+        // Ne pas masquer si on est au-dessus de l'infobulle, en train de drag, ou si positionnée manuellement
+        if (isDragging || isManuallyPositioned || overTooltip) {
+          return;
+        }
+        
+        // Remettre à zéro uniquement si aucune autre interaction
         onProvinceHover(null);
         setShowTooltip(false);
         setHoveredProvinceData(null);
-        setIsManuallyPositioned(false);
-        
-        // Restaurer la couleur uniforme
-        target.setAttribute('fill', 'hsl(210, 40%, 85%)');
       };
 
       const handlePathClick = (event: Event) => {
@@ -213,20 +218,17 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
     }
   }, [svgContent, provincesData, onProvinceHover, onProvinceSelect]);
 
-  // Event listeners pour le drag global
+  // Event listeners pour le drag global (souris + tactile)
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
       if (isDragging && mapRef.current) {
         const rect = mapRef.current.getBoundingClientRect();
         const newX = event.clientX - rect.left - dragOffset.x;
         const newY = event.clientY - rect.top - dragOffset.y;
-        
-        // Limiter la position dans les bounds de la carte
         const tooltipWidth = 256;
         const tooltipHeight = 280;
         const maxX = rect.width - tooltipWidth;
         const maxY = rect.height - tooltipHeight;
-        
         setTooltipPosition({
           x: Math.max(0, Math.min(newX, maxX)),
           y: Math.max(0, Math.min(newY, maxY))
@@ -239,12 +241,40 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       setIsDragging(false);
     };
 
+    const handleTouchMove = (event: TouchEvent) => {
+      if (isDragging && mapRef.current) {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const rect = mapRef.current.getBoundingClientRect();
+        const newX = touch.clientX - rect.left - dragOffset.x;
+        const newY = touch.clientY - rect.top - dragOffset.y;
+        const isSmallScreen = window.innerWidth < 640;
+        const tooltipWidth = isSmallScreen ? 192 : 256;
+        const tooltipHeight = isSmallScreen ? 240 : 280;
+        const maxX = rect.width - tooltipWidth;
+        const maxY = rect.height - tooltipHeight;
+        setTooltipPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY))
+        });
+        setIsManuallyPositioned(true);
+      }
+    };
+
+    const handleTouchEnd = () => {
+      setIsDragging(false);
+    };
+
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('touchend', handleTouchEnd);
       return () => {
         document.removeEventListener('mousemove', handleMouseMove);
         document.removeEventListener('mouseup', handleMouseUp);
+        document.removeEventListener('touchmove', handleTouchMove as any);
+        document.removeEventListener('touchend', handleTouchEnd);
       };
     }
   }, [isDragging, dragOffset]);
@@ -361,8 +391,13 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             opacity: showTooltip ? 1 : 0,
             transform: `scale(${showTooltip ? 1 : 0.95})`,
             transformOrigin: `${tooltipAlignment.horizontal === 'left' ? 'right' : 'left'} ${tooltipAlignment.vertical === 'top' ? 'bottom' : 'top'}`,
-            userSelect: 'none'
+            userSelect: 'none',
+            touchAction: 'none'
           }}
+          role="dialog"
+          aria-label="Infobulle province – faites glisser pour déplacer"
+          onMouseEnter={() => setOverTooltip(true)}
+          onMouseLeave={() => setOverTooltip(false)}
           onMouseDown={(e) => {
             e.preventDefault();
             setIsDragging(true);
@@ -371,6 +406,17 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
               setDragOffset({
                 x: e.clientX - rect.left - tooltipPosition.x,
                 y: e.clientY - rect.top - tooltipPosition.y
+              });
+            }
+          }}
+          onTouchStart={(e) => {
+            const touch = e.touches[0];
+            setIsDragging(true);
+            const rect = mapRef.current?.getBoundingClientRect();
+            if (rect) {
+              setDragOffset({
+                x: touch.clientX - rect.left - tooltipPosition.x,
+                y: touch.clientY - rect.top - tooltipPosition.y
               });
             }
           }}
