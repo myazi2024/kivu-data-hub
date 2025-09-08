@@ -26,6 +26,9 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
   const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const [tooltipAlignment, setTooltipAlignment] = useState({ horizontal: 'right', vertical: 'top' });
   const [showTooltip, setShowTooltip] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isManuallyPositioned, setIsManuallyPositioned] = useState(false);
   const mapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -105,10 +108,12 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             setShowTooltip(true);
             target.setAttribute('fill', 'hsl(348, 100%, 54%)');
             
-            // Calculer la position initiale de l'infobulle
-            const position = calculateTooltipPosition(target);
-            setTooltipPosition({ x: position.x, y: position.y });
-            setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
+            // Calculer la position initiale de l'infobulle seulement si pas manuellement positionnée
+            if (!isManuallyPositioned) {
+              const position = calculateTooltipPosition(target);
+              setTooltipPosition({ x: position.x, y: position.y });
+              setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
+            }
           } else {
             console.warn(`No province data found for ID: ${provinceId}`);
           }
@@ -119,7 +124,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
 
       const handlePathMouseMove = (event: Event) => {
         const target = event.target as SVGElement;
-        if (showTooltip) {
+        if (showTooltip && !isManuallyPositioned) {
           const position = calculateTooltipPosition(target);
           setTooltipPosition({ x: position.x, y: position.y });
           setTooltipAlignment({ horizontal: position.horizontal, vertical: position.vertical });
@@ -133,6 +138,7 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         onProvinceHover(null);
         setShowTooltip(false);
         setHoveredProvinceData(null);
+        setIsManuallyPositioned(false);
         
         // Restaurer la couleur uniforme
         target.setAttribute('fill', 'hsl(210, 40%, 85%)');
@@ -148,6 +154,43 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
             onProvinceSelect(province);
           }
         }
+      };
+
+      // Handlers pour le drag & drop de l'infobulle
+      const handleTooltipMouseDown = (event: MouseEvent) => {
+        event.preventDefault();
+        setIsDragging(true);
+        const rect = mapRef.current?.getBoundingClientRect();
+        if (rect) {
+          setDragOffset({
+            x: event.clientX - rect.left - tooltipPosition.x,
+            y: event.clientY - rect.top - tooltipPosition.y
+          });
+        }
+      };
+
+      const handleMouseMove = (event: MouseEvent) => {
+        if (isDragging && mapRef.current) {
+          const rect = mapRef.current.getBoundingClientRect();
+          const newX = event.clientX - rect.left - dragOffset.x;
+          const newY = event.clientY - rect.top - dragOffset.y;
+          
+          // Limiter la position dans les bounds de la carte
+          const tooltipWidth = 256;
+          const tooltipHeight = 280;
+          const maxX = rect.width - tooltipWidth;
+          const maxY = rect.height - tooltipHeight;
+          
+          setTooltipPosition({
+            x: Math.max(0, Math.min(newX, maxX)),
+            y: Math.max(0, Math.min(newY, maxY))
+          });
+          setIsManuallyPositioned(true);
+        }
+      };
+
+      const handleMouseUp = () => {
+        setIsDragging(false);
       };
 
       // Attacher les événements à chaque path
@@ -169,6 +212,42 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
       };
     }
   }, [svgContent, provincesData, onProvinceHover, onProvinceSelect]);
+
+  // Event listeners pour le drag global
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      if (isDragging && mapRef.current) {
+        const rect = mapRef.current.getBoundingClientRect();
+        const newX = event.clientX - rect.left - dragOffset.x;
+        const newY = event.clientY - rect.top - dragOffset.y;
+        
+        // Limiter la position dans les bounds de la carte
+        const tooltipWidth = 256;
+        const tooltipHeight = 280;
+        const maxX = rect.width - tooltipWidth;
+        const maxY = rect.height - tooltipHeight;
+        
+        setTooltipPosition({
+          x: Math.max(0, Math.min(newX, maxX)),
+          y: Math.max(0, Math.min(newY, maxY))
+        });
+        setIsManuallyPositioned(true);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsDragging(false);
+    };
+
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('mouseup', handleMouseUp);
+      };
+    }
+  }, [isDragging, dragOffset]);
 
   const calculateTooltipPosition = (provinceElement: SVGElement) => {
     // Utiliser les coordonnées écran réelles pour éviter tout chevauchement
@@ -272,18 +351,34 @@ const DRCMapWithTooltip: React.FC<DRCMapWithTooltipProps> = ({
         />
       </div>
       
-      {/* Infobulle adaptative */}
+      {/* Infobulle adaptative avec drag & drop */}
       {showTooltip && hoveredProvinceData && (
         <div
-          className="absolute z-50 pointer-events-none transition-all duration-100 ease-out"
+          className={`absolute z-50 transition-all duration-100 ease-out ${isDragging ? 'cursor-grabbing' : 'cursor-grab'}`}
           style={{
             left: tooltipPosition.x,
             top: tooltipPosition.y,
             opacity: showTooltip ? 1 : 0,
             transform: `scale(${showTooltip ? 1 : 0.95})`,
-            transformOrigin: `${tooltipAlignment.horizontal === 'left' ? 'right' : 'left'} ${tooltipAlignment.vertical === 'top' ? 'bottom' : 'top'}`
+            transformOrigin: `${tooltipAlignment.horizontal === 'left' ? 'right' : 'left'} ${tooltipAlignment.vertical === 'top' ? 'bottom' : 'top'}`,
+            userSelect: 'none'
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsDragging(true);
+            const rect = mapRef.current?.getBoundingClientRect();
+            if (rect) {
+              setDragOffset({
+                x: e.clientX - rect.left - tooltipPosition.x,
+                y: e.clientY - rect.top - tooltipPosition.y
+              });
+            }
           }}
         >
+          {/* Handle de drag visible */}
+          <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-primary/20 hover:bg-primary/30 rounded-full px-3 py-1 text-xs text-primary cursor-grab hover:cursor-grabbing transition-colors">
+            ⋮⋮⋮
+          </div>
           <ProvinceTooltip province={hoveredProvinceData} />
         </div>
       )}
