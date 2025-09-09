@@ -58,7 +58,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
           <Button 
             variant="outline"
             onClick={handleClose}
-            className="shrink-0 ml-2 h-8 w-8 p-0 md:h-9 md:w-auto md:px-3 md:gap-2"
+            className="shrink-0 ml-2 h-9 w-9 p-0 md:w-auto md:px-3 md:gap-2 border-2"
           >
             <X className="h-4 w-4" />
             <span className="hidden md:inline">Fermer</span>
