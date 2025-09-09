@@ -89,8 +89,10 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   };
 
   const generatePDFInvoice = () => {
-    // TODO: Implémenter la génération PDF
-    console.log('Génération PDF pour facture:', invoice.invoice_number);
+    // Génère un reçu PDF A4 pour la facture courante
+    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
+      generateInvoicePDF(invoice, CADASTRAL_SERVICES);
+    });
   };
 
   return (
