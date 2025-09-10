@@ -27,8 +27,6 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   const [showCloseWarning, setShowCloseWarning] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
-  if (!isOpen) return null;
-
   const handleClose = () => {
     setShowCloseWarning(true);
   };
@@ -75,6 +73,9 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
       generateQR();
     }
   }, [isOpen, result.parcel.parcel_number, invoiceNumber, paidServices]);
+
+  // Early return after all hooks are called
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-2 md:p-4 flex items-start md:items-center justify-center overflow-auto">
