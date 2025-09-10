@@ -6,20 +6,19 @@ import { Card } from '@/components/ui/card';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import CadastralResultsDialog from './CadastralResultsDialog';
 
-const FIXED_TEXT = "Avec le numéro SU ou SR,";
-
 const ANIMATED_TEXTS = [
-  "Identifier le propriétaire actuel et antérieur",
-  "Trouver les limites cadastrales et l'historique de bornage",
-  "Explorer les obligations fiscales et hypothécaires"
+  "Recherchez une parcelle avec un numéro SU ou SR…",
+  "Consultez les limites cadastrales et l'historique de bornage…",
+  "Identifiez le propriétaire actuel et le type de titre foncier…",
+  "Explorez les obligations fiscales et hypothécaires d'une propriété…",
+  "Accédez à l'historique des propriétaires d'une section cadastrale…"
 ];
 
 const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  const [nextTextIndex, setNextTextIndex] = useState(1);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
   
   const {
@@ -32,31 +31,65 @@ const CadastralSearchBar = () => {
     validateParcelNumber
   } = useCadastralSearch();
 
-  // Animation fluide style Lovable avec glissement horizontal + fade
+  const [displayedText, setDisplayedText] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [showCursor, setShowCursor] = useState(true);
+
+  // Animation machine à écrire
   useEffect(() => {
     if (searchQuery || isFocused) {
+      setDisplayedText('');
+      setIsTyping(false);
       return;
     }
-
-    const animateText = () => {
-      const timer = setTimeout(() => {
-        setIsAnimating(true);
+    
+    const currentText = ANIMATED_TEXTS[currentTextIndex];
+    let charIndex = 0;
+    
+    // Phase d'écriture
+    setIsTyping(true);
+    setDisplayedText('');
+    
+    const typeInterval = setInterval(() => {
+      if (charIndex < currentText.length) {
+        setDisplayedText(currentText.slice(0, charIndex + 1));
+        charIndex++;
+      } else {
+        clearInterval(typeInterval);
+        setIsTyping(false);
         
-        // Après l'animation de sortie, changer les textes
+        // Pause avant effacement
         setTimeout(() => {
-          setCurrentTextIndex(nextTextIndex);
-          setNextTextIndex((nextTextIndex + 1) % ANIMATED_TEXTS.length);
-          setIsAnimating(false);
-        }, 400); // Durée de l'animation de transition
-        
-      }, 3500); // 3.5 secondes d'affichage stable
+          // Phase d'effacement
+          const eraseInterval = setInterval(() => {
+            setDisplayedText(prev => {
+              if (prev.length > 0) {
+                return prev.slice(0, -1);
+              } else {
+                clearInterval(eraseInterval);
+                // Passer au texte suivant après un court délai
+                setTimeout(() => {
+                  setCurrentTextIndex((prev) => (prev + 1) % ANIMATED_TEXTS.length);
+                }, 500);
+                return '';
+              }
+            });
+          }, 30);
+        }, 2000);
+      }
+    }, 50);
 
-      return timer;
-    };
+    return () => clearInterval(typeInterval);
+  }, [currentTextIndex, searchQuery, isFocused]);
 
-    const timer = animateText();
-    return () => clearTimeout(timer);
-  }, [currentTextIndex, nextTextIndex, searchQuery, isFocused]);
+  // Animation du curseur
+  useEffect(() => {
+    const cursorInterval = setInterval(() => {
+      setShowCursor(prev => !prev);
+    }, 530);
+
+    return () => clearInterval(cursorInterval);
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
@@ -139,43 +172,27 @@ const CadastralSearchBar = () => {
               }`}
             />
             
-            {/* Texte animé style Lovable.dev */}
+            {/* Texte animé machine à écrire */}
             {!searchQuery && !isFocused && (
-              <div className="absolute inset-0 flex items-start justify-start pl-10 pr-2 pt-3 pointer-events-none overflow-hidden">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-1 w-full">
-                  {/* Partie fixe */}
-                  <span className="text-muted-foreground/70 whitespace-nowrap text-sm font-mono tracking-wide">
-                    {FIXED_TEXT}
-                  </span>
-                  
-                  {/* Container pour l'animation de glissement style Lovable */}
-                  <div className="relative flex-1 min-w-0 h-6 overflow-hidden">
-                    {/* Texte actuel */}
-                    <div 
-                      className={`absolute inset-0 flex items-center transition-all duration-500 ease-in-out ${
-                        isAnimating 
-                          ? 'transform translate-y-[-100%] opacity-0 blur-sm' 
-                          : 'transform translate-y-0 opacity-100 blur-0'
-                      }`}
-                    >
-                      <span className="text-muted-foreground/60 text-sm font-mono tracking-wide leading-relaxed">
-                        {ANIMATED_TEXTS[currentTextIndex]}
-                      </span>
-                    </div>
-                    
-                    {/* Texte suivant (entre par le bas) */}
-                    <div 
-                      className={`absolute inset-0 flex items-center transition-all duration-500 ease-in-out ${
-                        isAnimating 
-                          ? 'transform translate-y-0 opacity-100 blur-0' 
-                          : 'transform translate-y-full opacity-0 blur-sm'
-                      }`}
-                    >
-                      <span className="text-muted-foreground/60 text-sm font-mono tracking-wide leading-relaxed">
-                        {ANIMATED_TEXTS[nextTextIndex]}
-                      </span>
-                    </div>
-                  </div>
+              <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none">
+                <div 
+                  className="text-sm text-muted-foreground/60 font-light"
+                  style={{
+                    maxWidth: 'calc(100% - 2rem)',
+                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+                    fontFamily: 'system-ui, -apple-system, sans-serif'
+                  }}
+                >
+                  <span>{displayedText}</span>
+                  <span 
+                    className={`inline-block w-0.5 h-4 bg-muted-foreground/60 ml-0.5 transition-opacity duration-100 ${
+                      showCursor ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{ 
+                      animation: isTyping ? 'none' : undefined,
+                      verticalAlign: 'middle'
+                    }}
+                  />
                 </div>
               </div>
             )}
