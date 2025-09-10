@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { MapPin, Navigation, Calculator } from 'lucide-react';
@@ -12,11 +12,14 @@ interface CadastralMapProps {
 const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcelNumber }) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
+  const [calculatedSurface, setCalculatedSurface] = useState<number | null>(null);
 
+  // Stabiliser l'initialisation de la carte
   useEffect(() => {
     // Fonction pour initialiser la carte OpenStreetMap avec Leaflet
     const initMap = async () => {
-      if (!mapRef.current) return;
+      // Éviter les réinitialisations inutiles
+      if (!mapRef.current || mapInstanceRef.current) return;
 
       try {
         // Import dynamique de Leaflet
@@ -45,11 +48,46 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
           attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // S'assurer que la carte se redessine correctement (ex: après ouverture d'un onglet/modal)
+        mapInstanceRef.current = map;
+
+        // S'assurer que la carte se redessine correctement
         map.whenReady(() => {
           setTimeout(() => map.invalidateSize(), 0);
         });
-        // Ajouter les marqueurs pour chaque borne
+
+      } catch (error) {
+        console.error('Erreur lors de l\'initialisation de la carte:', error);
+      }
+    };
+
+    initMap();
+
+    // Cleanup
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []); // Pas de dépendances pour éviter les re-render
+
+  // Effet séparé pour mettre à jour les marqueurs et polygones
+  useEffect(() => {
+    const updateMapData = async () => {
+      if (!mapInstanceRef.current) return;
+
+      try {
+        const L = await import('leaflet');
+        const map = mapInstanceRef.current;
+        
+        // Nettoyer les marqueurs existants
+        map.eachLayer((layer: any) => {
+          if (layer instanceof L.Marker || layer instanceof L.Polygon) {
+            map.removeLayer(layer);
+          }
+        });
+
+        // Ajouter les nouveaux marqueurs
         coordinates.forEach((coord) => {
           const marker = L.marker([coord.lat, coord.lng]).addTo(map);
           marker.bindPopup(`
@@ -74,28 +112,41 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
 
           // Ajuster la vue pour inclure tout le polygone
           map.fitBounds(polygon.getBounds());
+        } else if (coordinates.length > 0) {
+          // Si pas de polygone mais des coordonnées, centrer sur la première
+          map.setView([coordinates[0].lat, coordinates[0].lng], 16);
         } else {
-          // Si pas de polygone, centrer simplement sur la parcelle
+          // Centrer sur le centre fourni
           map.setView([center.lat, center.lng], 16);
         }
-
-        mapInstanceRef.current = map;
-
       } catch (error) {
-        console.error('Erreur lors de l\'initialisation de la carte:', error);
+        console.error('Erreur lors de la mise à jour de la carte:', error);
       }
     };
 
-    initMap();
+    updateMapData();
+  }, [coordinates, center, parcelNumber]); // Dépendances pour mise à jour des données
 
-    // Cleanup
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-      }
-    };
-  }, [coordinates, center, parcelNumber]);
+  // Calculer la surface à partir des bornes (formule de Shoelace)
+  const calculateSurface = useCallback(() => {
+    if (coordinates.length < 3) {
+      setCalculatedSurface(null);
+      return;
+    }
+    
+    let area = 0;
+    const n = coordinates.length;
+    
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      area += coordinates[i].lat * coordinates[j].lng;
+      area -= coordinates[j].lat * coordinates[i].lng;
+    }
+    
+    // Conversion approximative en m² (111319.5 m par degré)
+    const surfaceM2 = Math.abs(area) / 2 * 111319.5 * 111319.5;
+    setCalculatedSurface(surfaceM2);
+  }, [coordinates]);
 
   return (
     <div className="space-y-4">
@@ -128,7 +179,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                 <span className="text-muted-foreground">Nombre de bornes :</span>
                 <span className="font-medium">{coordinates.length}</span>
               </div>
-              <Button variant="outline" size="sm" className="h-7 hidden sm:inline-flex">
+              <Button variant="outline" size="sm" className="h-7 hidden sm:inline-flex" onClick={calculateSurface}>
                 <Calculator className="h-3 w-3 mr-1" />
                 Calculer surface
               </Button>
@@ -151,6 +202,21 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
               </div>
             ))}
           </div>
+          
+          {/* Surface calculée */}
+          {calculatedSurface && (
+            <div className="mt-3 p-2 bg-primary/10 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Surface calculée:</span>
+                <span className="text-sm font-bold">
+                  {calculatedSurface >= 10000 
+                    ? `${(calculatedSurface / 10000).toFixed(2)} ha` 
+                    : `${calculatedSurface.toLocaleString()} m²`
+                  }
+                </span>
+              </div>
+            </div>
+          )}
           
           {coordinates.length === 0 && (
             <div className="text-center text-muted-foreground py-4">

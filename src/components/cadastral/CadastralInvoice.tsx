@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X, Download, FileText, CheckCircle, AlertTriangle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, Download, FileText, CheckCircle, AlertTriangle, QrCode } from 'lucide-react';
+import QRCode from 'qrcode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   onDownloadPDF
 }) => {
   const [showCloseWarning, setShowCloseWarning] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
 
   if (!isOpen) return null;
 
@@ -46,9 +48,33 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     return sum + (service?.price || 0);
   }, 0);
 
-  // Générer un numéro de facture
-  const invoiceNumber = `BIC-${Date.now().toString().slice(-8)}`;
+  // Stabiliser le numéro de facture avec le numéro de parcelle + timestamp de création
+  const invoiceNumber = React.useMemo(
+    () => `BIC-${result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4)}-${Date.now().toString().slice(-6)}`,
+    [result.parcel.parcel_number]
+  );
   const currentDate = new Date().toLocaleDateString('fr-FR');
+
+  // Générer QR code pour accès aux données
+  useEffect(() => {
+    const generateQR = async () => {
+      try {
+        const dataUrl = `${window.location.origin}/cadastral/${result.parcel.parcel_number}?invoice=${invoiceNumber}&services=${paidServices.join(',')}`;
+        const qrUrl = await QRCode.toDataURL(dataUrl, {
+          width: 120,
+          margin: 1,
+          color: { dark: '#000000', light: '#ffffff' }
+        });
+        setQrCodeUrl(qrUrl);
+      } catch (error) {
+        console.error('Erreur génération QR code:', error);
+      }
+    };
+    
+    if (isOpen && paidServices.length > 0) {
+      generateQR();
+    }
+  }, [isOpen, result.parcel.parcel_number, invoiceNumber, paidServices]);
 
   return (
     <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-2 md:p-4 flex items-start md:items-center justify-center overflow-auto">
@@ -180,6 +206,26 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                   <span>{total.toLocaleString()} FC</span>
                 </div>
               </div>
+
+              <Separator />
+
+              {/* QR Code d'accès aux données - Mobile optimized */}
+              {qrCodeUrl && (
+                <div className="flex flex-col sm:flex-row items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                  <div className="shrink-0">
+                    <img src={qrCodeUrl} alt="QR Code d'accès" className="w-16 h-16 sm:w-20 sm:h-20" />
+                  </div>
+                  <div className="text-center sm:text-left space-y-1">
+                    <div className="flex items-center gap-2 justify-center sm:justify-start">
+                      <QrCode className="h-4 w-4 text-primary" />
+                      <p className="text-sm font-medium">Accès rapide aux données</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Scannez pour accéder directement aux informations achetées
+                    </p>
+                  </div>
+                </div>
+              )}
 
               <Separator />
 
