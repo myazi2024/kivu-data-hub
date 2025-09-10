@@ -203,26 +203,34 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   return (
     <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden">
-      <CardHeader className="pb-4 p-4 md:p-6 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50">
+      <CardHeader className="sticky top-0 z-10 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <CardTitle className="flex items-center gap-3 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-              <div className="p-2 rounded-lg bg-primary/10 shadow-sm">
-                <FileText className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+            <CardTitle className="flex items-center gap-2 text-sm md:text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              <div className="p-1.5 rounded-lg bg-primary/10 shadow-sm">
+                <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary" />
               </div>
-              <span className="truncate">Parcelle {parcel.parcel_number}</span>
+              <span className="truncate text-xs md:text-sm">Parcelle {parcel.parcel_number}</span>
             </CardTitle>
-            <div className="flex flex-wrap items-center gap-2 mt-3">
+            <div className="flex flex-wrap items-center gap-2 mt-2">
               <Badge 
                 variant={parcel.parcel_type === 'SU' ? 'default' : 'secondary'} 
-                className="text-xs font-medium px-3 py-1 shadow-sm"
+                className="text-xs font-medium px-2 py-1 shadow-sm"
               >
                 {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
               </Badge>
-              <Badge variant="outline" className="text-xs px-3 py-1 bg-background/80 shadow-sm">{parcel.location}</Badge>
+              <Badge variant="outline" className="text-xs px-2 py-1 bg-background/80 shadow-sm">{parcel.location}</Badge>
             </div>
           </div>
           <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleDownloadPDF}
+              className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+            >
+              <Download className="h-4 w-4" />
+            </Button>
             <Button 
               variant="outline" 
               size="sm" 
