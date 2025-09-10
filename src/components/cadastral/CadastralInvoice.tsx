@@ -105,31 +105,31 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
         <CardContent className="p-3 md:p-6 space-y-3 md:space-y-4 overflow-auto flex-1 min-h-0">
           {showCloseWarning ? (
-            <Alert className="border-orange-200 bg-orange-50">
+            <Alert className="border-orange-200 bg-orange-50 mx-1">
               <AlertTriangle className="h-4 w-4 text-orange-600" />
               <AlertDescription className="text-orange-800">
-                <div className="space-y-3">
-                  <p className="font-medium">
-                    Attention ! Vous ne pourrez plus accéder à cette facture une fois cette page fermée.
+                <div className="space-y-2">
+                  <p className="font-medium text-xs md:text-sm leading-tight">
+                    Attention ! Cette facture ne sera plus accessible après fermeture.
                   </p>
-                  <p className="text-sm">
-                    Nous vous recommandons de sauvegarder cette facture au format PDF avant de fermer.
+                  <p className="text-xs opacity-90 leading-tight">
+                    Téléchargez le PDF avant de fermer.
                   </p>
-                  <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" onClick={cancelClose}>
+                  <div className="flex flex-col gap-2 pt-2 md:flex-row md:gap-2">
+                    <Button variant="outline" size="sm" onClick={cancelClose} className="text-xs h-8">
                       Annuler
                     </Button>
                     <Button 
                       variant="default" 
                       size="sm" 
                       onClick={onDownloadPDF}
-                      className="mr-2"
+                      className="text-xs h-8"
                     >
-                      <Download className="h-4 w-4 mr-2" />
-                      Télécharger PDF
+                      <Download className="h-3 w-3 mr-1" />
+                      PDF
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={confirmClose}>
-                      Fermer définitivement
+                    <Button variant="destructive" size="sm" onClick={confirmClose} className="text-xs h-8">
+                      Fermer
                     </Button>
                   </div>
                 </div>
