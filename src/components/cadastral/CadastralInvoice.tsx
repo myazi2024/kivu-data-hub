@@ -78,58 +78,58 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-2 md:p-4 flex items-start md:items-center justify-center overflow-auto">
-      <Card className="w-full max-w-2xl my-2 md:my-0 md:max-h-[90vh] bg-background border shadow-2xl rounded-lg flex flex-col">
+    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm p-1 md:p-4 flex items-start justify-center overflow-auto">
+      <Card className="w-full max-w-xl my-1 md:my-0 md:max-h-[95vh] bg-background border shadow-2xl rounded-lg flex flex-col">
         {/* Header - Mobile optimized */}
-        <CardHeader className="pb-3 md:pb-4 p-3 md:p-6">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2 md:gap-3 flex-1 min-w-0">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                <FileText className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+        <CardHeader className="pb-2 md:pb-4 p-2 md:p-6">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
+              <div className="w-8 h-8 md:w-12 md:h-12 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                <FileText className="h-4 w-4 md:h-6 md:w-6 text-primary" />
               </div>
               <div className="min-w-0">
-                <CardTitle className="text-base md:text-xl leading-tight">
-                  Facture de Services Cadastraux
+                <CardTitle className="text-sm md:text-xl leading-tight">
+                  Facture Services Cadastraux
                 </CardTitle>
-                <p className="text-xs md:text-sm text-muted-foreground">
-                  Bureau de l'Immobilier du Congo (BIC)
+                <p className="text-xs text-muted-foreground">
+                  Bureau de l'Immobilier du Congo
                 </p>
               </div>
             </div>
             {!showCloseWarning && (
-              <Button variant="outline" size="sm" onClick={handleClose} className="shrink-0 h-8 w-8 p-0 md:h-9 md:w-9">
-                <X className="h-4 w-4" />
+              <Button variant="outline" size="sm" onClick={handleClose} className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9">
+                <X className="h-3 w-3 md:h-4 md:w-4" />
               </Button>
             )}
           </div>
         </CardHeader>
 
-        <CardContent className="p-3 md:p-6 space-y-3 md:space-y-4 overflow-auto flex-1 min-h-0">
+        <CardContent className="p-2 md:p-6 space-y-2 md:space-y-4 overflow-auto flex-1 min-h-0">
           {showCloseWarning ? (
             <Alert className="border-orange-200 bg-orange-50 mx-1">
-              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-orange-600" />
               <AlertDescription className="text-orange-800">
-                <div className="space-y-2">
-                  <p className="font-medium text-xs md:text-sm leading-tight">
-                    Attention ! Cette facture ne sera plus accessible après fermeture.
+                <div className="space-y-1">
+                  <p className="font-medium text-xs leading-tight">
+                    Cette facture ne sera plus accessible après fermeture.
                   </p>
                   <p className="text-xs opacity-90 leading-tight">
                     Téléchargez le PDF avant de fermer.
                   </p>
-                  <div className="flex flex-col gap-2 pt-2 md:flex-row md:gap-2">
-                    <Button variant="outline" size="sm" onClick={cancelClose} className="text-xs h-8">
+                  <div className="flex flex-col gap-1 pt-1 md:flex-row md:gap-2">
+                    <Button variant="outline" size="sm" onClick={cancelClose} className="text-xs h-7">
                       Annuler
                     </Button>
                     <Button 
                       variant="default" 
                       size="sm" 
                       onClick={onDownloadPDF}
-                      className="text-xs h-8"
+                      className="text-xs h-7"
                     >
                       <Download className="h-3 w-3 mr-1" />
                       PDF
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={confirmClose} className="text-xs h-8">
+                    <Button variant="destructive" size="sm" onClick={confirmClose} className="text-xs h-7">
                       Fermer
                     </Button>
                   </div>
@@ -139,29 +139,34 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
           ) : (
             <>
               {/* Informations de facturation - Mobile optimized */}
-              <div className="space-y-4 md:grid md:grid-cols-2 md:gap-6 md:space-y-0">
-                <div className="space-y-2">
-                  <h3 className="font-semibold responsive-caption uppercase tracking-wide">
+              <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-xs uppercase tracking-wide">
                     Informations de facturation
                   </h3>
-                  <div className="space-y-1">
-                    <p className="responsive-body font-medium">Numéro: {invoiceNumber}</p>
-                    <p className="responsive-caption">Date: {currentDate}</p>
-                    <p className="responsive-caption">
+                  <div className="space-y-0.5">
+                    <p className="text-sm font-medium">N°: {invoiceNumber}</p>
+                    <p className="text-xs text-muted-foreground">Date: {currentDate}</p>
+                    <p className="text-xs text-muted-foreground">
                       Parcelle: {result.parcel.parcel_number}
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <h3 className="font-semibold responsive-caption uppercase tracking-wide">
-                    Statut de paiement
+                <div className="space-y-1">
+                  <h3 className="font-semibold text-xs uppercase tracking-wide">
+                    Statut & Paiement
                   </h3>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
-                    <Badge variant="default" className="status-success text-xs md:text-sm">
-                      Payé
-                    </Badge>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
+                      <Badge variant="default" className="status-success text-xs">
+                        Payé
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Visa •••• 4242
+                    </p>
                   </div>
                 </div>
               </div>
@@ -169,24 +174,24 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               <Separator />
 
               {/* Détails des services - Mobile optimized */}
-              <div className="space-y-3 md:space-y-4">
-                <h3 className="font-semibold responsive-caption uppercase tracking-wide">
+              <div className="space-y-2">
+                <h3 className="font-semibold text-xs uppercase tracking-wide">
                   Services achetés
                 </h3>
                 
-                <div className="space-y-2 md:space-y-3">
+                <div className="space-y-1.5">
                   {paidServices.map((serviceId) => {
                     const service = CADASTRAL_SERVICES.find(s => s.id === serviceId);
                     if (!service) return null;
 
                     return (
-                      <div key={serviceId} className="flex items-start justify-between p-2 md:p-3 border rounded-lg gap-2">
+                      <div key={serviceId} className="flex items-start justify-between p-2 border rounded-lg gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium leading-tight">{service.name}</p>
+                          <p className="text-xs font-medium leading-tight">{service.name}</p>
                           <p className="text-xs text-muted-foreground line-clamp-1">{service.description}</p>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-medium">{service.price.toLocaleString()} FC</p>
+                          <p className="text-xs font-medium">${service.price.toLocaleString()}</p>
                         </div>
                       </div>
                     );
@@ -197,14 +202,14 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               <Separator />
 
               {/* Total - Mobile optimized */}
-              <div className="space-y-2 md:space-y-3">
+              <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="responsive-body text-muted-foreground">Sous-total</span>
-                  <span className="responsive-body">{total.toLocaleString()} FC</span>
+                  <span className="text-xs text-muted-foreground">Sous-total</span>
+                  <span className="text-xs">${total.toLocaleString()}</span>
                 </div>
-                <div className="flex items-center justify-between responsive-subtitle font-semibold">
+                <div className="flex items-center justify-between text-sm font-semibold">
                   <span>Total</span>
-                  <span>{total.toLocaleString()} FC</span>
+                  <span>${total.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -212,17 +217,17 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               {/* QR Code d'accès aux données - Mobile optimized */}
               {qrCodeUrl && (
-                <div className="flex flex-col sm:flex-row items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                <div className="flex flex-col sm:flex-row items-center gap-2 p-2 bg-muted/30 rounded-lg">
                   <div className="shrink-0">
-                    <img src={qrCodeUrl} alt="QR Code d'accès" className="w-16 h-16 sm:w-20 sm:h-20" />
+                    <img src={qrCodeUrl} alt="QR Code d'accès" className="w-12 h-12 sm:w-16 sm:h-16" />
                   </div>
-                  <div className="text-center sm:text-left space-y-1">
-                    <div className="flex items-center gap-2 justify-center sm:justify-start">
-                      <QrCode className="h-4 w-4 text-primary" />
-                      <p className="text-sm font-medium">Accès rapide aux données</p>
+                  <div className="text-center sm:text-left space-y-0.5">
+                    <div className="flex items-center gap-1 justify-center sm:justify-start">
+                      <QrCode className="h-3 w-3 text-primary" />
+                      <p className="text-xs font-medium">Accès rapide</p>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Scannez pour accéder directement aux informations achetées
+                      Scannez pour accéder aux données
                     </p>
                   </div>
                 </div>
@@ -231,30 +236,30 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               <Separator />
 
               {/* Actions - Mobile optimized */}
-              <div className="flex flex-col gap-3 pt-2 md:pt-4 md:flex-row">
+              <div className="flex flex-col gap-2 pt-1 md:pt-2 md:flex-row">
                 <Button 
                   onClick={onDownloadPDF}
-                  className="w-full md:flex-1 btn-responsive"
+                  className="w-full md:flex-1 h-8 text-xs"
                 >
-                  <Download className="h-4 w-4 mr-2" />
-                  Télécharger PDF
+                  <Download className="h-3 w-3 mr-1" />
+                  PDF
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleClose}
-                  className="w-full md:flex-1 btn-responsive"
+                  className="w-full md:flex-1 h-8 text-xs"
                 >
                   Fermer
                 </Button>
               </div>
 
               {/* Mentions légales - Mobile optimized */}
-              <div className="pt-2 md:pt-3 text-xs text-muted-foreground bg-muted/50 p-2 md:p-3 rounded-lg">
-                <p className="font-medium mb-1">Bureau de l'Immobilier du Congo (BIC)</p>
-                <p className="mb-1">
-                  Facture pour services cadastraux - Parcelle {result.parcel.parcel_number}.
+              <div className="pt-1 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
+                <p className="font-medium mb-0.5">Bureau de l'Immobilier du Congo</p>
+                <p className="mb-0.5">
+                  Facture services cadastraux - {result.parcel.parcel_number}
                 </p>
-                <p>Sources officielles du Ministère des Affaires Foncières.</p>
+                <p>Sources officielles Ministère Affaires Foncières</p>
               </div>
             </>
           )}
