@@ -139,39 +139,39 @@ const CadastralSearchBar = () => {
               }`}
             />
             
-            {/* Texte animé avec effet de glissement horizontal fluide */}
+            {/* Texte animé style Lovable.dev */}
             {!searchQuery && !isFocused && (
-              <div className="absolute inset-0 flex items-center pl-10 pr-2 pointer-events-none overflow-hidden">
-                <div className="flex items-center gap-1 w-full font-mono text-xs sm:text-sm">
+              <div className="absolute inset-0 flex items-start justify-start pl-10 pr-2 pt-3 pointer-events-none overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-1 w-full">
                   {/* Partie fixe */}
-                  <span className="text-muted-foreground/80 whitespace-nowrap font-medium">
+                  <span className="text-muted-foreground/70 whitespace-nowrap text-sm font-mono tracking-wide">
                     {FIXED_TEXT}
                   </span>
                   
-                  {/* Container pour l'animation de glissement */}
-                  <div className="relative flex-1 min-w-0 h-5 overflow-hidden">
+                  {/* Container pour l'animation de glissement style Lovable */}
+                  <div className="relative flex-1 min-w-0 h-6 overflow-hidden">
                     {/* Texte actuel */}
                     <div 
-                      className={`absolute inset-0 flex items-center transition-all duration-400 ease-out ${
+                      className={`absolute inset-0 flex items-center transition-all duration-500 ease-in-out ${
                         isAnimating 
-                          ? 'transform translate-x-[-100%] opacity-0' 
-                          : 'transform translate-x-0 opacity-100'
+                          ? 'transform translate-y-[-100%] opacity-0 blur-sm' 
+                          : 'transform translate-y-0 opacity-100 blur-0'
                       }`}
                     >
-                      <span className="text-muted-foreground/70 truncate font-mono">
+                      <span className="text-muted-foreground/60 text-sm font-mono tracking-wide leading-relaxed">
                         {ANIMATED_TEXTS[currentTextIndex]}
                       </span>
                     </div>
                     
-                    {/* Texte suivant (entre par la droite) */}
+                    {/* Texte suivant (entre par le bas) */}
                     <div 
-                      className={`absolute inset-0 flex items-center transition-all duration-400 ease-out ${
+                      className={`absolute inset-0 flex items-center transition-all duration-500 ease-in-out ${
                         isAnimating 
-                          ? 'transform translate-x-0 opacity-100' 
-                          : 'transform translate-x-full opacity-0'
+                          ? 'transform translate-y-0 opacity-100 blur-0' 
+                          : 'transform translate-y-full opacity-0 blur-sm'
                       }`}
                     >
-                      <span className="text-muted-foreground/70 truncate font-mono">
+                      <span className="text-muted-foreground/60 text-sm font-mono tracking-wide leading-relaxed">
                         {ANIMATED_TEXTS[nextTextIndex]}
                       </span>
                     </div>
