@@ -31,14 +31,24 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
           shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
         });
 
-        // Créer la carte
-        const map = L.map(mapRef.current).setView([center.lat, center.lng], 16);
+        // Créer la carte (limiter les zooms agressifs sur mobile)
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+        const map = L.map(mapRef.current, {
+          zoomControl: !isMobile,
+          scrollWheelZoom: !isMobile,
+          doubleClickZoom: !isMobile,
+          dragging: true
+        });
 
         // Ajouter la couche de tuiles OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
+        // S'assurer que la carte se redessine correctement (ex: après ouverture d'un onglet/modal)
+        map.whenReady(() => {
+          setTimeout(() => map.invalidateSize(), 0);
+        });
         // Ajouter les marqueurs pour chaque borne
         coordinates.forEach((coord) => {
           const marker = L.marker([coord.lat, coord.lng]).addTo(map);
@@ -64,6 +74,9 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
 
           // Ajuster la vue pour inclure tout le polygone
           map.fitBounds(polygon.getBounds());
+        } else {
+          // Si pas de polygone, centrer simplement sur la parcelle
+          map.setView([center.lat, center.lng], 16);
         }
 
         mapInstanceRef.current = map;
@@ -97,8 +110,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
         <CardContent>
           <div 
             ref={mapRef} 
-            className="w-full h-96 rounded-lg border border-border"
-            style={{ minHeight: '400px' }}
+            className="w-full h-64 md:h-96 rounded-lg border border-border"
           />
         </CardContent>
       </Card>
@@ -116,7 +128,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                 <span className="text-muted-foreground">Nombre de bornes :</span>
                 <span className="font-medium">{coordinates.length}</span>
               </div>
-              <Button variant="outline" size="sm" className="h-7">
+              <Button variant="outline" size="sm" className="h-7 hidden sm:inline-flex">
                 <Calculator className="h-3 w-3 mr-1" />
                 Calculer surface
               </Button>
@@ -124,16 +136,16 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
             {coordinates.map((coord, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+              <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                  <div className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
                     {coord.borne}
                   </div>
-                  <span className="font-medium">Borne {coord.borne}</span>
+                  <span className="font-medium text-xs">Borne {coord.borne}</span>
                 </div>
-                <div className="text-sm text-muted-foreground font-mono">
+                <div className="font-mono text-[11px] text-muted-foreground">
                   {coord.lat.toFixed(6)}, {coord.lng.toFixed(6)}
                 </div>
               </div>

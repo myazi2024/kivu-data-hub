@@ -23,6 +23,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePayment } from '@/hooks/usePayment';
 import { useCadastralBilling, CADASTRAL_SERVICES, CadastralInvoice } from '@/hooks/useCadastralBilling';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
+import { useToast } from '@/hooks/use-toast';
 
 interface CadastralPaymentDialogProps {
   invoice: CadastralInvoice;
@@ -39,6 +40,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   const [paymentStep, setPaymentStep] = useState<'selection' | 'processing' | 'success'>('selection');
   const { createStripePayment } = usePayment();
   const { updateInvoiceStatus } = useCadastralBilling();
+  const { toast } = useToast();
 
   const getSelectedServices = () => {
     return CADASTRAL_SERVICES.filter(service => {
@@ -88,6 +90,11 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     }, 2000);
   };
 
+  const handleClose = () => {
+    toast({ title: 'Facture fermée', duration: 1500 });
+    onClose();
+  };
+
   const generatePDFInvoice = () => {
     // Génère un reçu PDF A4 pour la facture courante
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
@@ -96,46 +103,39 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   };
 
   return (
-    <Dialog open={true} onOpenChange={onClose}>
+    <Dialog open={true} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl">
               Paiement - Facture {invoice.invoice_number}
             </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={onClose}>
+            <Button variant="ghost" size="sm" onClick={handleClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>
 
         {paymentStep === 'success' ? (
-          <div className="space-y-6 py-6">
-            <div className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-green-600" />
+          <div className="space-y-4 py-4">
+            <div className="text-center space-y-2">
+              <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-green-700 dark:text-green-400">
-                  Paiement validé avec succès !
+                <h3 className="text-base font-semibold text-green-700 dark:text-green-400">
+                  Paiement validé
                 </h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Accédez maintenant au rapport SU/SR complet
+                <p className="text-xs text-muted-foreground mt-1">
+                  Reçu disponible en PDF
                 </p>
               </div>
             </div>
 
-            <Alert className="border-green-200 bg-green-50 dark:bg-green-950/10">
-              <CheckCircle className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800 dark:text-green-200">
-                Facture générée avec succès. Téléchargez votre reçu ci-dessous.
-              </AlertDescription>
-            </Alert>
-
-            <div className="flex gap-3 justify-center">
-              <Button onClick={generatePDFInvoice} variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Télécharger le reçu PDF
+            <div className="flex gap-2 justify-center">
+              <Button onClick={generatePDFInvoice} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-1" />
+                Télécharger le PDF
               </Button>
             </div>
           </div>

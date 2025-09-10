@@ -20,7 +20,7 @@ export function generateInvoicePDF(
   // En-tête
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text("Facture de Services Cadastraux", margin, cursorY);
+  doc.text("Facture de Services Cadastraux", margin, cursorY, { baseline: 'top' });
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   cursorY += 6;
@@ -31,8 +31,8 @@ export function generateInvoicePDF(
   doc.setFontSize(11);
   const rightX = pageWidth - margin;
   const dateStr = new Date(invoice.search_date).toLocaleDateString('fr-FR');
-  doc.text(`Facture: ${invoice.invoice_number}`, margin, cursorY);
-  doc.text(`Date: ${dateStr}`, rightX, cursorY, { align: 'right' });
+  doc.text(`Facture: ${invoice.invoice_number}`, margin, cursorY, { baseline: 'top' });
+  doc.text(`Date: ${dateStr}`, rightX, cursorY, { align: 'right', baseline: 'top' });
   cursorY += 6;
   doc.text(`Parcelle: ${invoice.parcel_number}`, margin, cursorY);
   if (invoice.client_email) {
@@ -86,7 +86,19 @@ export function generateInvoicePDF(
     footerY
   );
 
-  // Sauvegarde
+  // Sauvegarde (fallback iOS / Safari)
   const fn = filename || `facture_${invoice.invoice_number || invoice.parcel_number}.pdf`;
-  doc.save(fn);
+  try {
+    doc.save(fn);
+  } catch (e) {
+    const blob = doc.output('blob');
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = fn;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  }
 }
