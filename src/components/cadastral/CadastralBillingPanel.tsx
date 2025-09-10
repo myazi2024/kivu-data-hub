@@ -6,7 +6,8 @@ import {
   DollarSign,
   Lock,
   Unlock,
-  Receipt
+  Receipt,
+  X
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,12 +25,14 @@ interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
   onPaymentSuccess: (selectedServices: string[]) => void;
   preselectServiceId?: string;
+  onClose?: () => void;
 }
 
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
   searchResult, 
   onPaymentSuccess,
-  preselectServiceId
+  preselectServiceId,
+  onClose
 }) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [appliedDiscount, setAppliedDiscount] = useState<{
@@ -81,8 +84,20 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
   return (
     <>
-      <Card className="w-full border-primary/20 bg-gradient-to-br from-background to-secondary/5">
-        <CardHeader className="pb-3 p-3 md:p-4">
+      <Card className="w-full border-primary/20 bg-gradient-to-br from-background to-secondary/5 relative">
+        {/* Bouton fermer */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute top-2 right-2 z-10 p-1.5 rounded-md border bg-background/95 backdrop-blur-sm text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
+            aria-label="Fermer le catalogue"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        )}
+        
+        <CardHeader className="pb-3 p-3 md:p-4 pr-8">
           <div className="flex items-center gap-2">
             <div className="p-1.5 rounded bg-primary/10">
               <FileText className="h-4 w-4 text-primary" />
