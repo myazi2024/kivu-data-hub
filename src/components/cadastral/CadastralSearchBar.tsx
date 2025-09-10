@@ -7,12 +7,12 @@ import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import CadastralResultsDialog from './CadastralResultsDialog';
 
 const ANIMATED_TEXTS = [
-  "Recherchez une parcelle avec un numéro SU ou SR…",
-  "Consultez les limites cadastrales et l'historique de bornage…",
-  "Identifiez le propriétaire actuel et le type de titre foncier…",
-  "Explorez les obligations fiscales et hypothécaires d'une propriété…",
-  "Accédez à l'historique des propriétaires d'une section cadastrale…"
+  "Identifier le propriétaire actuel et antérieur",
+  "Trouver les limites cadastrales et l'historique de bornage",
+  "Explorer les obligations fiscales et hypothécaires"
 ];
+
+const FIXED_TEXT = "Avec le numéro SU ou SR, ";
 
 const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -176,13 +176,14 @@ const CadastralSearchBar = () => {
             {!searchQuery && !isFocused && (
               <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none">
                 <div 
-                  className="text-sm text-muted-foreground/60 font-light"
+                  className="text-sm text-muted-foreground/60 font-light flex flex-wrap"
                   style={{
                     maxWidth: 'calc(100% - 2rem)',
                     fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
                     fontFamily: 'system-ui, -apple-system, sans-serif'
                   }}
                 >
+                  <span className="text-muted-foreground/80">{FIXED_TEXT}</span>
                   <span>{displayedText}</span>
                   <span 
                     className={`inline-block w-0.5 h-4 bg-muted-foreground/60 ml-0.5 transition-opacity duration-100 ${
