@@ -70,14 +70,14 @@ const CadastralSearchBar = () => {
                 // Passer au texte suivant après un court délai
                 setTimeout(() => {
                   setCurrentTextIndex((prev) => (prev + 1) % ANIMATED_TEXTS.length);
-                }, 800);
+                }, 1500);
                 return '';
               }
             });
-          }, 50);
-        }, 3000);
+          }, 100);
+        }, 4500);
       }
-    }, 80);
+    }, 120);
 
     return () => clearInterval(typeInterval);
   }, [currentTextIndex, searchQuery, isFocused]);
