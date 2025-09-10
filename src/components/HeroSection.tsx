@@ -53,8 +53,8 @@ const HeroSection = () => {
               className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-seloger-red hover:scale-[1.02] font-semibold px-4 sm:px-6 py-3 sm:py-3.5 text-sm sm:text-base transition-all duration-300 h-12 sm:h-auto rounded-xl sm:rounded-lg shadow-lg hover:shadow-xl"
             >
               <MapPin className="mr-2 h-4 w-4 sm:mr-2.5 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Cartographie Interactive</span>
-              <span className="sm:hidden">Carte</span>
+              <span className="hidden sm:inline">Données foncières</span>
+              <span className="sm:hidden">Données foncières</span>
             </Button>
           </Link>
         </div>
