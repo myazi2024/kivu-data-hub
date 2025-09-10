@@ -6,12 +6,12 @@ import { Card } from '@/components/ui/card';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import CadastralResultsDialog from './CadastralResultsDialog';
 
+const FIXED_TEXT = "Avec le numéro SU ou SR,";
+
 const ANIMATED_TEXTS = [
-  "Recherchez une parcelle avec un numéro SU ou SR…",
-  "Consultez les limites cadastrales et l'historique de bornage…",
-  "Identifiez le propriétaire actuel et le type de titre foncier…",
-  "Explorez les obligations fiscales et hypothécaires d'une propriété…",
-  "Accédez à l'historique des propriétaires d'une section cadastrale…"
+  "Identifier le propriétaire actuel et antérieur",
+  "Trouver les limites cadastrales et l'historique de bornage",
+  "Explorer les obligations fiscales et hypothécaires"
 ];
 
 const CadastralSearchBar = () => {
@@ -31,65 +31,31 @@ const CadastralSearchBar = () => {
     validateParcelNumber
   } = useCadastralSearch();
 
-  const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [showCursor, setShowCursor] = useState(true);
+  const [fadeClass, setFadeClass] = useState('opacity-100');
 
-  // Animation machine à écrire
+  // Animation fade-in/fade-out pour le texte animé
   useEffect(() => {
     if (searchQuery || isFocused) {
-      setDisplayedText('');
-      setIsTyping(false);
       return;
     }
-    
-    const currentText = ANIMATED_TEXTS[currentTextIndex];
-    let charIndex = 0;
-    
-    // Phase d'écriture
-    setIsTyping(true);
-    setDisplayedText('');
-    
-    const typeInterval = setInterval(() => {
-      if (charIndex < currentText.length) {
-        setDisplayedText(currentText.slice(0, charIndex + 1));
-        charIndex++;
-      } else {
-        clearInterval(typeInterval);
-        setIsTyping(false);
+
+    const showText = () => {
+      setFadeClass('opacity-100');
+      
+      // Après 4 secondes, commencer le fade-out
+      setTimeout(() => {
+        setFadeClass('opacity-0');
         
-        // Pause avant effacement
+        // Après le fade-out, changer le texte et passer au suivant
         setTimeout(() => {
-          // Phase d'effacement
-          const eraseInterval = setInterval(() => {
-            setDisplayedText(prev => {
-              if (prev.length > 0) {
-                return prev.slice(0, -1);
-              } else {
-                clearInterval(eraseInterval);
-                // Passer au texte suivant après un court délai
-                setTimeout(() => {
-                  setCurrentTextIndex((prev) => (prev + 1) % ANIMATED_TEXTS.length);
-                }, 500);
-                return '';
-              }
-            });
-          }, 30);
-        }, 2000);
-      }
-    }, 50);
+          setCurrentTextIndex((prev) => (prev + 1) % ANIMATED_TEXTS.length);
+        }, 300); // Durée du fade-out
+        
+      }, 4000); // 4 secondes d'affichage
+    };
 
-    return () => clearInterval(typeInterval);
+    showText();
   }, [currentTextIndex, searchQuery, isFocused]);
-
-  // Animation du curseur
-  useEffect(() => {
-    const cursorInterval = setInterval(() => {
-      setShowCursor(prev => !prev);
-    }, 530);
-
-    return () => clearInterval(cursorInterval);
-  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
@@ -172,27 +138,32 @@ const CadastralSearchBar = () => {
               }`}
             />
             
-            {/* Texte animé machine à écrire */}
+            {/* Texte animé avec partie fixe et partie dynamique */}
             {!searchQuery && !isFocused && (
               <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none">
                 <div 
-                  className="text-sm text-muted-foreground/60 font-light"
+                  className="flex flex-wrap items-center gap-1 text-muted-foreground/70"
                   style={{
                     maxWidth: 'calc(100% - 2rem)',
-                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
+                    fontSize: 'clamp(14px, 2.5vw, 16px)',
                     fontFamily: 'system-ui, -apple-system, sans-serif'
                   }}
                 >
-                  <span>{displayedText}</span>
+                  {/* Partie fixe */}
+                  <span className="font-medium text-muted-foreground/80">
+                    {FIXED_TEXT}
+                  </span>
+                  
+                  {/* Partie animée */}
                   <span 
-                    className={`inline-block w-0.5 h-4 bg-muted-foreground/60 ml-0.5 transition-opacity duration-100 ${
-                      showCursor ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    style={{ 
-                      animation: isTyping ? 'none' : undefined,
-                      verticalAlign: 'middle'
+                    className={`transition-opacity duration-300 ease-in-out ${fadeClass}`}
+                    style={{
+                      minHeight: '1.2em',
+                      display: 'inline-block'
                     }}
-                  />
+                  >
+                    {ANIMATED_TEXTS[currentTextIndex]}
+                  </span>
                 </div>
               </div>
             )}
