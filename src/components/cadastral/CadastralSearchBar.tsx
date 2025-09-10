@@ -141,21 +141,15 @@ const CadastralSearchBar = () => {
             
             {/* Texte animé avec effet de glissement horizontal fluide */}
             {!searchQuery && !isFocused && (
-              <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none overflow-hidden">
-                <div 
-                  className="flex items-center gap-1 w-full"
-                  style={{
-                    fontSize: 'clamp(14px, 2.5vw, 16px)',
-                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                  }}
-                >
+              <div className="absolute inset-0 flex items-center pl-10 pr-2 pointer-events-none overflow-hidden">
+                <div className="flex items-center gap-1 w-full font-mono text-xs sm:text-sm">
                   {/* Partie fixe */}
-                  <span className="font-medium text-muted-foreground/80 whitespace-nowrap">
+                  <span className="text-muted-foreground/80 whitespace-nowrap font-medium">
                     {FIXED_TEXT}
                   </span>
                   
                   {/* Container pour l'animation de glissement */}
-                  <div className="relative flex-1 min-w-0 h-6 overflow-hidden">
+                  <div className="relative flex-1 min-w-0 h-5 overflow-hidden">
                     {/* Texte actuel */}
                     <div 
                       className={`absolute inset-0 flex items-center transition-all duration-400 ease-out ${
@@ -164,7 +158,7 @@ const CadastralSearchBar = () => {
                           : 'transform translate-x-0 opacity-100'
                       }`}
                     >
-                      <span className="text-muted-foreground/70 truncate">
+                      <span className="text-muted-foreground/70 truncate font-mono">
                         {ANIMATED_TEXTS[currentTextIndex]}
                       </span>
                     </div>
@@ -177,7 +171,7 @@ const CadastralSearchBar = () => {
                           : 'transform translate-x-full opacity-0'
                       }`}
                     >
-                      <span className="text-muted-foreground/70 truncate">
+                      <span className="text-muted-foreground/70 truncate font-mono">
                         {ANIMATED_TEXTS[nextTextIndex]}
                       </span>
                     </div>
