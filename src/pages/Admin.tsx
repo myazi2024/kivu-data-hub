@@ -12,6 +12,7 @@ import AdminPublications from '@/components/admin/AdminPublications';
 import AdminPayments from '@/components/admin/AdminPayments';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 import AdminUsers from '@/components/admin/AdminUsers';
+import AdminResellers from '@/components/admin/AdminResellers';
 import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
 
 const Admin = () => {
@@ -136,14 +137,15 @@ const Admin = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="publications" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="publications">Publications</TabsTrigger>
-            <TabsTrigger value="payments">Paiements</TabsTrigger>
-            <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="territorial">Zones</TabsTrigger>
-          </TabsList>
+          <Tabs defaultValue="publications" className="space-y-6">
+            <TabsList className="grid w-full grid-cols-6">
+              <TabsTrigger value="publications">Publications</TabsTrigger>
+              <TabsTrigger value="payments">Paiements</TabsTrigger>
+              <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+              <TabsTrigger value="resellers">Revendeurs</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+              <TabsTrigger value="territorial">Zones</TabsTrigger>
+            </TabsList>
 
           <TabsContent value="publications">
             <AdminPublications onRefresh={fetchStats} />
@@ -155,6 +157,10 @@ const Admin = () => {
 
           <TabsContent value="users">
             <AdminUsers onRefresh={fetchStats} />
+          </TabsContent>
+
+          <TabsContent value="resellers">
+            <AdminResellers onRefresh={fetchStats} />
           </TabsContent>
 
           <TabsContent value="analytics">

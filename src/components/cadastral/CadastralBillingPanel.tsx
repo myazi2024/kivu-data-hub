@@ -18,6 +18,7 @@ import { useCadastralBilling, CADASTRAL_SERVICES } from '@/hooks/useCadastralBil
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
+import DiscountCodeInput from './DiscountCodeInput';
 
 interface CadastralBillingPanelProps {
   searchResult: CadastralSearchResult;
@@ -31,6 +32,12 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   preselectServiceId
 }) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    amount: number;
+    reseller_id: string;
+    code_id: string;
+  } | null>(null);
   const { toast } = useToast();
   const {
     loading,
@@ -53,7 +60,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     toggleService(serviceId);
   };
   const handleProceedToPayment = async () => {
-    const invoice = await createInvoice(searchResult);
+    const invoice = await createInvoice(searchResult, appliedDiscount);
     if (invoice) {
       // Pour les tests : accès direct sans paiement
       toast({
@@ -70,6 +77,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   };
 
   const totalAmount = getTotalAmount();
+  const discountedAmount = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
 
   return (
     <>
@@ -153,20 +161,47 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           </div>
 
+          {/* Code de remise */}
+          {selectedServices.length > 0 && (
+            <DiscountCodeInput
+              invoiceAmount={totalAmount}
+              onDiscountApplied={setAppliedDiscount}
+              className="bg-muted/10 rounded p-2 md:p-3"
+            />
+          )}
+
           {/* Total compact */}
           {selectedServices.length > 0 && (
             <div className="bg-muted/30 rounded p-2 md:p-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5">
-                  <DollarSign className="h-3 w-3 text-primary" />
-                  <span className="font-medium text-xs md:text-sm">Total</span>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm md:text-base font-bold text-primary">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <DollarSign className="h-3 w-3 text-primary" />
+                    <span className="font-medium text-xs md:text-sm">Sous-total</span>
+                  </div>
+                  <div className="text-xs md:text-sm font-medium">
                     ${totalAmount} USD
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''}
+                </div>
+                
+                {appliedDiscount && (
+                  <div className="flex items-center justify-between text-green-600">
+                    <span className="text-xs md:text-sm">Remise ({appliedDiscount.code})</span>
+                    <span className="text-xs md:text-sm font-medium">-${appliedDiscount.amount.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                <Separator />
+                
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-xs md:text-sm">Total à payer</span>
+                  <div className="text-right">
+                    <div className="text-sm md:text-base font-bold text-primary">
+                      ${discountedAmount.toFixed(2)} USD
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {selectedServices.length} service{selectedServices.length > 1 ? 's' : ''}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -190,8 +225,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               ) : (
                 <div className="flex items-center gap-2">
                   <CreditCard className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="hidden sm:inline">Procéder au paiement (${totalAmount} USD)</span>
-                  <span className="sm:hidden">Payer ${totalAmount}</span>
+                  <span className="hidden sm:inline">Procéder au paiement (${discountedAmount.toFixed(2)} USD)</span>
+                  <span className="sm:hidden">Payer ${discountedAmount.toFixed(2)}</span>
                 </div>
               )}
             </Button>
