@@ -61,9 +61,12 @@ export type Database = {
           client_name: string | null
           client_organization: string | null
           created_at: string
+          discount_amount_usd: number | null
+          discount_code_used: string | null
           geographical_zone: string | null
           id: string
           invoice_number: string
+          original_amount_usd: number | null
           parcel_number: string
           payment_id: string | null
           payment_method: string | null
@@ -79,9 +82,12 @@ export type Database = {
           client_name?: string | null
           client_organization?: string | null
           created_at?: string
+          discount_amount_usd?: number | null
+          discount_code_used?: string | null
           geographical_zone?: string | null
           id?: string
           invoice_number: string
+          original_amount_usd?: number | null
           parcel_number: string
           payment_id?: string | null
           payment_method?: string | null
@@ -97,9 +103,12 @@ export type Database = {
           client_name?: string | null
           client_organization?: string | null
           created_at?: string
+          discount_amount_usd?: number | null
+          discount_code_used?: string | null
           geographical_zone?: string | null
           id?: string
           invoice_number?: string
+          original_amount_usd?: number | null
           parcel_number?: string
           payment_id?: string | null
           payment_method?: string | null
@@ -406,6 +415,56 @@ export type Database = {
           },
         ]
       }
+      discount_codes: {
+        Row: {
+          code: string
+          created_at: string
+          discount_amount_usd: number | null
+          discount_percentage: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          max_usage: number | null
+          reseller_id: string
+          updated_at: string
+          usage_count: number
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          discount_amount_usd?: number | null
+          discount_percentage?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_usage?: number | null
+          reseller_id: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          discount_amount_usd?: number | null
+          discount_percentage?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          max_usage?: number | null
+          reseller_id?: string
+          updated_at?: string
+          usage_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_codes_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           amount: number
@@ -708,6 +767,116 @@ export type Database = {
         }
         Relationships: []
       }
+      reseller_sales: {
+        Row: {
+          commission_earned_usd: number
+          commission_paid: boolean
+          commission_paid_at: string | null
+          created_at: string
+          discount_applied_usd: number | null
+          discount_code_id: string | null
+          id: string
+          invoice_id: string | null
+          payment_id: string | null
+          reseller_id: string
+          sale_amount_usd: number
+        }
+        Insert: {
+          commission_earned_usd: number
+          commission_paid?: boolean
+          commission_paid_at?: string | null
+          created_at?: string
+          discount_applied_usd?: number | null
+          discount_code_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          payment_id?: string | null
+          reseller_id: string
+          sale_amount_usd: number
+        }
+        Update: {
+          commission_earned_usd?: number
+          commission_paid?: boolean
+          commission_paid_at?: string | null
+          created_at?: string
+          discount_applied_usd?: number | null
+          discount_code_id?: string | null
+          id?: string
+          invoice_id?: string | null
+          payment_id?: string | null
+          reseller_id?: string
+          sale_amount_usd?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reseller_sales_discount_code_id_fkey"
+            columns: ["discount_code_id"]
+            isOneToOne: false
+            referencedRelation: "discount_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reseller_sales_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reseller_sales_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reseller_sales_reseller_id_fkey"
+            columns: ["reseller_id"]
+            isOneToOne: false
+            referencedRelation: "resellers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resellers: {
+        Row: {
+          business_name: string | null
+          commission_rate: number
+          contact_phone: string | null
+          created_at: string
+          fixed_commission_usd: number | null
+          id: string
+          is_active: boolean
+          reseller_code: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          business_name?: string | null
+          commission_rate?: number
+          contact_phone?: string | null
+          created_at?: string
+          fixed_commission_usd?: number | null
+          id?: string
+          is_active?: boolean
+          reseller_code: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          business_name?: string | null
+          commission_rate?: number
+          contact_phone?: string | null
+          created_at?: string
+          fixed_commission_usd?: number | null
+          id?: string
+          is_active?: boolean
+          reseller_code?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       territorial_zones: {
         Row: {
           coordinates: Json
@@ -874,9 +1043,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      generate_reseller_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      validate_and_apply_discount_code: {
+        Args: { code_input: string; invoice_amount: number }
+        Returns: {
+          code_id: string
+          discount_amount: number
+          is_valid: boolean
+          reseller_id: string
+        }[]
       }
     }
     Enums: {
