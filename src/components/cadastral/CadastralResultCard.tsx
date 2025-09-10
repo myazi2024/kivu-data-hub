@@ -16,7 +16,8 @@ import {
   Landmark,
   Receipt,
   Calculator,
-  MapPin as Surveyor
+  MapPin as Surveyor,
+  Printer
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -201,177 +202,230 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   }
 
   return (
-    <Card className="w-full shadow-lg">
-      <CardHeader className="pb-3 md:pb-4 p-3 md:p-4">
-        <div className="flex items-start justify-between gap-3">
+    <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden">
+      <CardHeader className="pb-4 p-4 md:p-6 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50">
+        <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
-            <CardTitle className="flex items-center gap-2 responsive-subtitle">
-              <FileText className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+            <CardTitle className="flex items-center gap-3 text-lg md:text-xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+              <div className="p-2 rounded-lg bg-primary/10 shadow-sm">
+                <FileText className="h-5 w-5 md:h-6 md:w-6 text-primary" />
+              </div>
               <span className="truncate">Parcelle {parcel.parcel_number}</span>
             </CardTitle>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <Badge variant={parcel.parcel_type === 'SU' ? 'default' : 'secondary'} className="text-xs">
+            <div className="flex flex-wrap items-center gap-2 mt-3">
+              <Badge 
+                variant={parcel.parcel_type === 'SU' ? 'default' : 'secondary'} 
+                className="text-xs font-medium px-3 py-1 shadow-sm"
+              >
                 {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
               </Badge>
-              <Badge variant="outline" className="text-xs truncate max-w-32 md:max-w-none">{parcel.location}</Badge>
+              <Badge variant="outline" className="text-xs px-3 py-1 bg-background/80 shadow-sm">{parcel.location}</Badge>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0 shrink-0">
-            <XCircle className="h-4 w-4" />
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.print()} 
+              className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onClose} 
+              className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+            >
+              <XCircle className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
-      <CardContent className="p-3 md:p-4">
+      <CardContent className="p-4 md:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
-            <TabsTrigger value="general" className="text-xs md:text-sm p-2 md:p-3">
-              <span className="hidden sm:inline">Informations</span>
-              <span className="sm:hidden">Info</span>
-              {!hasServiceAccess('information') && <span className="ml-1">🔒</span>}
+          {/* Optimisation mobile : tous les onglets côte à côte avec texte adaptatif */}
+          <TabsList className="grid w-full grid-cols-4 h-auto bg-muted/50 p-1 rounded-xl shadow-inner">
+            <TabsTrigger 
+              value="general" 
+              className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="hidden sm:inline">Informations</span>
+                <span className="sm:hidden">Info</span>
+                {!hasServiceAccess('information') && <span className="text-xs opacity-60">🔒</span>}
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="location" className="text-xs md:text-sm p-2 md:p-3">
-              <span className="hidden sm:inline">Localisation</span>
-              <span className="sm:hidden">Lieu</span>
-              {!hasServiceAccess('location_history') && <span className="ml-1">🔒</span>}
+            <TabsTrigger 
+              value="location" 
+              className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="hidden sm:inline">Localisation</span>
+                <span className="sm:hidden">Lieu</span>
+                {!hasServiceAccess('location_history') && <span className="text-xs opacity-60">🔒</span>}
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="history" className="text-xs md:text-sm p-2 md:p-3 hidden md:flex">
-              Historique {!hasServiceAccess('history') && '🔒'}
+            <TabsTrigger 
+              value="history" 
+              className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="hidden sm:inline">Historique</span>
+                <span className="sm:hidden">Hist.</span>
+                {!hasServiceAccess('history') && <span className="text-xs opacity-60">🔒</span>}
+              </div>
             </TabsTrigger>
-            <TabsTrigger value="obligations" className="text-xs md:text-sm p-2 md:p-3 hidden md:flex">
-              Obligations {!hasServiceAccess('obligations') && '🔒'}
+            <TabsTrigger 
+              value="obligations" 
+              className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="hidden sm:inline">Obligations</span>
+                <span className="sm:hidden">Oblig.</span>
+                {!hasServiceAccess('obligations') && <span className="text-xs opacity-60">🔒</span>}
+              </div>
             </TabsTrigger>
           </TabsList>
-          
-          {/* Mobile: Additional tabs in dropdown or secondary row */}
-          <div className="md:hidden mt-2">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="history" className="text-xs p-2">
-                Historique {!hasServiceAccess('history') && '🔒'}
-              </TabsTrigger>
-              <TabsTrigger value="obligations" className="text-xs p-2">
-                Obligations {!hasServiceAccess('obligations') && '🔒'}
-              </TabsTrigger>
-            </TabsList>
-          </div>
 
-          {/* Contenu masqué - Notification compacte sur mobile */}
+          {/* Contenu masqué - Design premium */}
           {!hasServiceAccess('information') && !hasServiceAccess('location_history') && 
            !hasServiceAccess('history') && !hasServiceAccess('obligations') && (
-            <div className="mt-3 md:mt-4 p-3 md:p-6 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-              <div className="space-y-2 md:space-y-3">
-                <div className="mx-auto w-8 h-8 md:w-12 md:h-12 bg-muted rounded-full flex items-center justify-center">
-                  <FileText className="h-4 w-4 md:h-6 md:w-6 text-muted-foreground" />
+            <div className="mt-4 p-6 text-center border-2 border-dashed border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 shadow-lg">
+              <div className="space-y-4 animate-fade-in">
+                <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center shadow-md">
+                  <FileText className="h-8 w-8 text-primary" />
                 </div>
-                <div>
-                  <h3 className="text-sm md:text-base font-semibold mb-1">Contenu verrouillé</h3>
-                  <p className="text-xs md:text-sm text-muted-foreground leading-snug">
-                    Détails accessibles via paiement.
+                <div className="space-y-2">
+                  <h3 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                    Contenu Premium
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                    Accédez aux données détaillées avec nos services cadastraux professionnels
                   </p>
                 </div>
-                <Button onClick={() => setShowBillingPanel(true)} size="sm" className="mt-2 h-8 text-xs md:h-9 md:text-sm">
-                  <CreditCard className="h-3 w-3 mr-1.5" />
-                  Payer
+                <Button 
+                  onClick={() => setShowBillingPanel(true)} 
+                  className="mt-4 px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-primary/80"
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Débloquer l'accès
                 </Button>
               </div>
             </div>
           )}
 
-          {/* Onglet Informations générales - Mobile optimized */}
-          <TabsContent value="general" className="mt-3 md:mt-4 space-y-3 md:space-y-4">
+          {/* Onglet Informations générales - Design premium */}
+          <TabsContent value="general" className="mt-6 space-y-4 animate-fade-in">
             {!hasServiceAccess('information') ? (
-              <div className="p-3 md:p-6 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-2 md:space-y-3">
-                  <div className="mx-auto w-8 h-8 md:w-12 md:h-12 bg-muted rounded-full flex items-center justify-center">
-                    <Building className="h-4 w-4 md:h-6 md:w-6 text-muted-foreground" />
+              <div className="p-6 text-center border-2 border-dashed border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 shadow-lg">
+                <div className="space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center shadow-md">
+                    <Building className="h-8 w-8 text-primary" />
                   </div>
-                  <div>
-                    <h3 className="text-sm md:text-base font-semibold mb-1">Service verrouillé</h3>
-                    <p className="text-xs md:text-sm text-muted-foreground">
-                      Paiement requis pour ce service.
+                  <div className="space-y-2">
+                    <h3 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      Service Premium
+                    </h3>
+                    <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+                      Accédez aux informations détaillées de la parcelle
                     </p>
                   </div>
-                  <Button onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} size="sm" className="mt-2 h-8 text-xs md:h-9 md:text-sm">
-                    <CreditCard className="h-3 w-3 mr-1.5" />
-                    Payer
+                  <Button 
+                    onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} 
+                    className="mt-4 px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-primary/80"
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Débloquer
                   </Button>
                 </div>
               </div>
             ) : (
               <>
-                <div className="space-y-2 md:space-y-3 md:grid md:grid-cols-2 md:gap-3">
-                  {/* Informations de propriété - Mobile stacked */}
-                  <Card>
-                    <CardContent className="p-2 md:p-3">
-                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                        <Building className="h-3 w-3" />
+                <div className="grid gap-4 md:grid-cols-2">
+                  {/* Informations de propriété - Design premium */}
+                  <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-primary/5">
+                    <CardContent className="p-4">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <Building className="h-4 w-4" />
+                        </div>
                         Titre de Propriété
                       </h4>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Type:</span>
-                          <span className="font-medium text-right">{parcel.property_title_type}</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">Type:</span>
+                          <span className="text-sm font-medium bg-primary/10 px-2 py-1 rounded-md">{parcel.property_title_type}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Surface:</span>
-                          <span className="font-medium text-right">{formatArea(parcel.area_sqm)}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">Surface:</span>
+                          <span className="text-sm font-medium text-primary">{formatArea(parcel.area_sqm)}</span>
                         </div>
                         {parcel.area_hectares > 0 && (
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Hectares:</span>
-                            <span className="font-medium text-right">{parcel.area_hectares.toFixed(2)} ha</span>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs text-muted-foreground">Hectares:</span>
+                            <span className="text-sm font-medium text-secondary-foreground">{parcel.area_hectares.toFixed(2)} ha</span>
                           </div>
                         )}
                       </div>
                     </CardContent>
                   </Card>
 
-                  {/* Propriétaire actuel - Mobile stacked */}
-                  <Card>
-                    <CardContent className="p-2 md:p-3">
-                      <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                        <User className="h-3 w-3" />
-                        Propriétaire
+                  {/* Propriétaire actuel - Design premium */}
+                  <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-secondary/5">
+                    <CardContent className="p-4">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <User className="h-4 w-4" />
+                        </div>
+                        Propriétaire Actuel
                       </h4>
-                      <div className="space-y-1 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Nom:</span>
-                          <span className="font-medium text-right break-words max-w-32">{parcel.current_owner_name}</span>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs text-muted-foreground">Nom:</span>
+                          <span className="text-sm font-medium text-right max-w-[60%] break-words">{parcel.current_owner_name}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Statut:</span>
-                          <span className="font-medium text-right">{parcel.current_owner_legal_status}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">Statut:</span>
+                          <span className="text-sm font-medium bg-secondary/10 px-2 py-1 rounded-md">{parcel.current_owner_legal_status}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Depuis:</span>
-                          <span className="font-medium text-right">{formatDate(parcel.current_owner_since)}</span>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs text-muted-foreground">Depuis:</span>
+                          <span className="text-sm font-medium text-primary">{formatDate(parcel.current_owner_since)}</span>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Statut fiscal - Mobile optimized */}
-                <Card>
-                  <CardContent className="p-2 md:p-3">
-                    <h4 className="text-sm font-medium mb-2 flex items-center gap-2">
-                      <DollarSign className="h-3 w-3" />
+                {/* Statut fiscal - Design premium */}
+                <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-accent/5">
+                  <CardContent className="p-4">
+                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
+                      <div className="p-1.5 rounded-lg bg-primary/10">
+                        <DollarSign className="h-4 w-4" />
+                      </div>
                       Statut Fiscal
                     </h4>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5">
-                        {taxStatus.status === 'up_to_date' && <CheckCircle className="h-3 w-3 text-green-500" />}
-                        {taxStatus.status === 'pending' && <AlertCircle className="h-3 w-3 text-yellow-500" />}
-                        {taxStatus.status === 'overdue' && <XCircle className="h-3 w-3 text-red-500" />}
-                        <span className="text-xs">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-2">
+                        {taxStatus.status === 'up_to_date' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                        {taxStatus.status === 'pending' && <AlertCircle className="h-5 w-5 text-yellow-500" />}
+                        {taxStatus.status === 'overdue' && <XCircle className="h-5 w-5 text-red-500" />}
+                        <span className="text-sm font-medium">
                           {taxStatus.status === 'up_to_date' && 'À jour'}
                           {taxStatus.status === 'pending' && `${taxStatus.count} en attente`}
                           {taxStatus.status === 'overdue' && `${taxStatus.count} en retard`}
                         </span>
                       </div>
-                      <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
-                        <Download className="h-3 w-3 mr-1" />
-                        PDF
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Rapport
                       </Button>
                     </div>
                   </CardContent>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, FileText, CheckCircle, AlertTriangle, QrCode } from 'lucide-react';
+import { X, Download, FileText, CheckCircle, AlertTriangle, QrCode, Printer } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,9 +97,24 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               </div>
             </div>
             {!showCloseWarning && (
-              <Button variant="outline" size="sm" onClick={handleClose} className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9">
-                <X className="h-3 w-3 md:h-4 md:w-4" />
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => window.print()} 
+                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                >
+                  <Printer className="h-3 w-3 md:h-4 md:w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleClose} 
+                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                >
+                  <X className="h-3 w-3 md:h-4 md:w-4" />
+                </Button>
+              </div>
             )}
           </div>
         </CardHeader>
@@ -238,8 +253,16 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               {/* Actions - Mobile optimized */}
               <div className="flex flex-col gap-2 pt-1 md:pt-2 md:flex-row">
                 <Button 
+                  onClick={() => window.print()}
+                  variant="outline"
+                  className="w-full md:flex-1 h-8 text-xs shadow-sm hover:shadow-md transition-all duration-200"
+                >
+                  <Printer className="h-3 w-3 mr-1" />
+                  Imprimer
+                </Button>
+                <Button 
                   onClick={onDownloadPDF}
-                  className="w-full md:flex-1 h-8 text-xs"
+                  className="w-full md:flex-1 h-8 text-xs shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   <Download className="h-3 w-3 mr-1" />
                   PDF
@@ -247,7 +270,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                 <Button 
                   variant="outline" 
                   onClick={handleClose}
-                  className="w-full md:flex-1 h-8 text-xs"
+                  className="w-full md:flex-1 h-8 text-xs shadow-sm hover:shadow-md transition-all duration-200"
                 >
                   Fermer
                 </Button>
