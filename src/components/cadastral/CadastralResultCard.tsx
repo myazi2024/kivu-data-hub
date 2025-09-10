@@ -202,8 +202,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   }
 
   return (
-    <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden">
-      <CardHeader className="sticky top-0 z-10 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95">
+    <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
+      <CardHeader className="sticky top-0 z-20 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <CardTitle className="flex items-center gap-2 text-sm md:text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
@@ -416,25 +416,15 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       </div>
                       Statut Fiscal
                     </h4>
-                    <div className="flex items-center justify-between gap-4">
-                      <div className="flex items-center gap-2">
-                        {taxStatus.status === 'up_to_date' && <CheckCircle className="h-5 w-5 text-green-500" />}
-                        {taxStatus.status === 'pending' && <AlertCircle className="h-5 w-5 text-yellow-500" />}
-                        {taxStatus.status === 'overdue' && <XCircle className="h-5 w-5 text-red-500" />}
-                        <span className="text-sm font-medium">
-                          {taxStatus.status === 'up_to_date' && 'À jour'}
-                          {taxStatus.status === 'pending' && `${taxStatus.count} en attente`}
-                          {taxStatus.status === 'overdue' && `${taxStatus.count} en retard`}
-                        </span>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-                      >
-                        <Download className="h-4 w-4 mr-1" />
-                        Rapport
-                      </Button>
+                    <div className="flex items-center gap-2">
+                      {taxStatus.status === 'up_to_date' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                      {taxStatus.status === 'pending' && <AlertCircle className="h-5 w-5 text-yellow-500" />}
+                      {taxStatus.status === 'overdue' && <XCircle className="h-5 w-5 text-red-500" />}
+                      <span className="text-sm font-medium">
+                        {taxStatus.status === 'up_to_date' && 'À jour'}
+                        {taxStatus.status === 'pending' && `${taxStatus.count} en attente`}
+                        {taxStatus.status === 'overdue' && `${taxStatus.count} en retard`}
+                      </span>
                     </div>
                   </CardContent>
                 </Card>
