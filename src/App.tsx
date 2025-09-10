@@ -17,6 +17,11 @@ import Myazi from "./pages/Myazi";
 import JoinUs from "./pages/JoinUs";
 import BillingDashboard from "./pages/BillingDashboard";
 import ResellerDashboard from "./pages/ResellerDashboard";
+import About from "./pages/About";
+import Services from "./pages/Services";
+import Contact from "./pages/Contact";
+import Partnership from "./pages/Partnership";
+import Legal from "./pages/Legal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +44,11 @@ const App = () => (
               <Route path="/careers" element={<JoinUs />} />
               <Route path="/billing" element={<BillingDashboard />} />
               <Route path="/reseller" element={<ResellerDashboard />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/partnership" element={<Partnership />} />
+              <Route path="/legal" element={<Legal />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

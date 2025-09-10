@@ -24,10 +24,14 @@ import {
 } from '@/components/ui/table';
 import { useCadastralBilling, CadastralInvoice } from '@/hooks/useCadastralBilling';
 import { useAuth } from '@/hooks/useAuth';
+import CadastralInvoiceDetailsDialog from './CadastralInvoiceDetailsDialog';
 
 const CadastralClientDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [selectedInvoice, setSelectedInvoice] = useState<CadastralInvoice | null>(null);
+  const [showInvoiceDetails, setShowInvoiceDetails] = useState(false);
+  
   const { invoices, loading, fetchUserInvoices } = useCadastralBilling();
   const { user } = useAuth();
 
@@ -74,8 +78,13 @@ const CadastralClientDashboard: React.FC = () => {
   };
 
   const viewInvoiceDetails = (invoice: CadastralInvoice) => {
-    // TODO: Ouvrir un modal avec les détails de la facture
-    console.log('Voir détails facture:', invoice.invoice_number);
+    setSelectedInvoice(invoice);
+    setShowInvoiceDetails(true);
+  };
+
+  const handleCloseInvoiceDetails = () => {
+    setShowInvoiceDetails(false);
+    setSelectedInvoice(null);
   };
 
   if (loading && invoices.length === 0) {
@@ -233,6 +242,7 @@ const CadastralClientDashboard: React.FC = () => {
                             variant="ghost"
                             size="sm"
                             onClick={() => viewInvoiceDetails(invoice)}
+                            aria-label={`Voir les détails de la facture ${invoice.invoice_number}`}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -241,6 +251,7 @@ const CadastralClientDashboard: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => generatePDFInvoice(invoice)}
+                              aria-label={`Télécharger la facture ${invoice.invoice_number}`}
                             >
                               <Download className="h-4 w-4" />
                             </Button>
@@ -255,6 +266,14 @@ const CadastralClientDashboard: React.FC = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog des détails de facture */}
+      <CadastralInvoiceDetailsDialog
+        invoice={selectedInvoice}
+        isOpen={showInvoiceDetails}
+        onClose={handleCloseInvoiceDetails}
+        onDownloadPDF={generatePDFInvoice}
+      />
     </div>
   );
 };
