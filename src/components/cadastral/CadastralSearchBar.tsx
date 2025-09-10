@@ -133,7 +133,7 @@ const CadastralSearchBar = () => {
           {/* En-tête avec icône et titre */}
           <div className="flex items-center gap-2 text-foreground">
             <FileText className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-base">Recherche Cadastrale</h3>
+            <h3 className="font-semibold text-base">Taper le numéro SU ou SR de la parcelle ici</h3>
             <div className="flex-1" />
             {searchResult && (
               <Button 
