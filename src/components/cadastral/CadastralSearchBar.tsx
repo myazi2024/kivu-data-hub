@@ -18,7 +18,8 @@ const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  const [isTextVisible, setIsTextVisible] = useState(true);
+  const [nextTextIndex, setNextTextIndex] = useState(1);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   
   const {
@@ -31,31 +32,31 @@ const CadastralSearchBar = () => {
     validateParcelNumber
   } = useCadastralSearch();
 
-  const [fadeClass, setFadeClass] = useState('opacity-100');
-
-  // Animation fade-in/fade-out pour le texte animé
+  // Animation fluide style Lovable avec glissement horizontal + fade
   useEffect(() => {
     if (searchQuery || isFocused) {
       return;
     }
 
-    const showText = () => {
-      setFadeClass('opacity-100');
-      
-      // Après 4 secondes, commencer le fade-out
-      setTimeout(() => {
-        setFadeClass('opacity-0');
+    const animateText = () => {
+      const timer = setTimeout(() => {
+        setIsAnimating(true);
         
-        // Après le fade-out, changer le texte et passer au suivant
+        // Après l'animation de sortie, changer les textes
         setTimeout(() => {
-          setCurrentTextIndex((prev) => (prev + 1) % ANIMATED_TEXTS.length);
-        }, 300); // Durée du fade-out
+          setCurrentTextIndex(nextTextIndex);
+          setNextTextIndex((nextTextIndex + 1) % ANIMATED_TEXTS.length);
+          setIsAnimating(false);
+        }, 400); // Durée de l'animation de transition
         
-      }, 4000); // 4 secondes d'affichage
+      }, 3500); // 3.5 secondes d'affichage stable
+
+      return timer;
     };
 
-    showText();
-  }, [currentTextIndex, searchQuery, isFocused]);
+    const timer = animateText();
+    return () => clearTimeout(timer);
+  }, [currentTextIndex, nextTextIndex, searchQuery, isFocused]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
@@ -138,32 +139,49 @@ const CadastralSearchBar = () => {
               }`}
             />
             
-            {/* Texte animé avec partie fixe et partie dynamique */}
+            {/* Texte animé avec effet de glissement horizontal fluide */}
             {!searchQuery && !isFocused && (
-              <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none">
+              <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none overflow-hidden">
                 <div 
-                  className="flex flex-wrap items-center gap-1 text-muted-foreground/70"
+                  className="flex items-center gap-1 w-full"
                   style={{
-                    maxWidth: 'calc(100% - 2rem)',
                     fontSize: 'clamp(14px, 2.5vw, 16px)',
                     fontFamily: 'system-ui, -apple-system, sans-serif'
                   }}
                 >
                   {/* Partie fixe */}
-                  <span className="font-medium text-muted-foreground/80">
+                  <span className="font-medium text-muted-foreground/80 whitespace-nowrap">
                     {FIXED_TEXT}
                   </span>
                   
-                  {/* Partie animée */}
-                  <span 
-                    className={`transition-opacity duration-300 ease-in-out ${fadeClass}`}
-                    style={{
-                      minHeight: '1.2em',
-                      display: 'inline-block'
-                    }}
-                  >
-                    {ANIMATED_TEXTS[currentTextIndex]}
-                  </span>
+                  {/* Container pour l'animation de glissement */}
+                  <div className="relative flex-1 min-w-0 h-6 overflow-hidden">
+                    {/* Texte actuel */}
+                    <div 
+                      className={`absolute inset-0 flex items-center transition-all duration-400 ease-out ${
+                        isAnimating 
+                          ? 'transform translate-x-[-100%] opacity-0' 
+                          : 'transform translate-x-0 opacity-100'
+                      }`}
+                    >
+                      <span className="text-muted-foreground/70 truncate">
+                        {ANIMATED_TEXTS[currentTextIndex]}
+                      </span>
+                    </div>
+                    
+                    {/* Texte suivant (entre par la droite) */}
+                    <div 
+                      className={`absolute inset-0 flex items-center transition-all duration-400 ease-out ${
+                        isAnimating 
+                          ? 'transform translate-x-0 opacity-100' 
+                          : 'transform translate-x-full opacity-0'
+                      }`}
+                    >
+                      <span className="text-muted-foreground/70 truncate">
+                        {ANIMATED_TEXTS[nextTextIndex]}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
