@@ -7,9 +7,9 @@ import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import CadastralResultsDialog from './CadastralResultsDialog';
 
 const ANIMATED_TEXTS = [
-  "Identifier le propriétaire actuel et antérieur",
-  "Trouver les limites cadastrales et l'historique de bornage",
-  "Explorer les obligations fiscales et hypothécaires"
+  "identifier le propriétaire",
+  "consulter les limites et bornage",
+  "vérifier les obligations fiscales"
 ];
 
 const FIXED_TEXT = "Avec le numéro SU ou SR, ";
