@@ -4,6 +4,7 @@ import { ArrowRight, MapPin, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
+import TypewriterAnimation from '@/components/TypewriterAnimation';
 
 const HeroSection = () => {
   return (
@@ -25,13 +26,10 @@ const HeroSection = () => {
         {/* Main Heading */}
         <div className="mb-4 sm:mb-6">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 leading-tight">
-            Les données au service
-            <span className="block text-white/90">du foncier</span>
+            Analyse. Visualisation. Décision.
           </h1>
           
-          <p className="text-xs xs:text-sm sm:text-base md:text-lg font-light mb-3 sm:mb-4 text-white/95 max-w-xl lg:max-w-2xl mx-auto leading-relaxed">
-            Le Bureau de l'Immobilier du Congo met les données foncières au service des décisions.
-          </p>
+          <TypewriterAnimation />
         </div>
 
         {/* Call to Action Buttons - Premium Mobile Design */}
