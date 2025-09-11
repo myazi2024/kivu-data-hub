@@ -257,7 +257,6 @@ export type Database = {
           area_hectares: number | null
           area_sqm: number
           avenue: string | null
-          circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
           created_at: string
@@ -286,7 +285,6 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           created_at?: string
@@ -315,7 +313,6 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           created_at?: string
