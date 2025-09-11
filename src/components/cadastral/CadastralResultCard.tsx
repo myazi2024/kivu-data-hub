@@ -17,13 +17,15 @@ import {
   Receipt,
   Calculator,
   MapPin as Surveyor,
-  Printer
+  Printer,
+  Settings
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { useAuth } from '@/hooks/useAuth';
@@ -45,6 +47,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [paidServices, setPaidServices] = useState<string[]>([]);
   const [showInvoice, setShowInvoice] = useState(false);
   const [preselectServiceId, setPreselectServiceId] = useState<string | undefined>(undefined);
+  const [invoiceFormat, setInvoiceFormat] = useState<'mini' | 'a4'>('a4');
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
@@ -99,25 +102,34 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   // Gérer le téléchargement PDF de la facture
   const handleDownloadPDF = () => {
-    // Créer une facture temporaire pour la génération PDF
-    const invoice = {
-      id: `temp-${Date.now()}`,
-      user_id: result.parcel.parcel_number,
-      invoice_number: `INV-${result.parcel.parcel_number}-${Date.now()}`,
-      parcel_number: result.parcel.parcel_number,
-      selected_services: paidServices,
-      search_date: new Date().toISOString(),
-      total_amount_usd: paidServices.length * 25, // Prix estimé
-      status: 'paid',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-      client_email: null
-    };
+    // Calculer le total correct basé sur les services sélectionnés
+    import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
+      const selectedServicesList = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
+      const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
+      
+      // Créer une facture avec les données correctes
+      const invoice = {
+        id: `temp-${Date.now()}`,
+        user_id: user?.id || null,
+        invoice_number: `INV-${result.parcel.parcel_number}-${Date.now().toString().slice(-6)}`,
+        parcel_number: result.parcel.parcel_number,
+        selected_services: paidServices,
+        search_date: new Date().toISOString(),
+        total_amount_usd: subtotal,
+        status: 'paid',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        client_name: user?.user_metadata?.full_name || null,
+        client_email: user?.email || null,
+        client_organization: user?.user_metadata?.organization || null,
+        geographical_zone: `${result.parcel.commune}, ${result.parcel.quartier}`,
+        discount_amount_usd: 0,
+        original_amount_usd: subtotal
+      };
 
-    // Génère un PDF A4 de la facture
-    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
-        generateInvoicePDF(invoice, CADASTRAL_SERVICES);
+      // Génère un PDF selon le format sélectionné
+      import('@/lib/pdf').then(({ generateInvoicePDF }) => {
+        generateInvoicePDF(invoice, CADASTRAL_SERVICES, invoiceFormat);
       });
     });
   };
@@ -244,34 +256,50 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               <Badge variant="outline" className="text-xs px-2 py-1 bg-background/80 shadow-sm">{parcel.location}</Badge>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDownloadPDF}
-              className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-              title="Télécharger la facture PDF"
-            >
-              <Download className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleDownloadReport}
-              className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-              title="Télécharger le rapport cadastral complet"
-            >
-              <FileText className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => window.print()} 
-              className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-              title="Imprimer"
-            >
-              <Printer className="h-4 w-4" />
-            </Button>
+          <div className="flex flex-col gap-2">
+            {/* Sélecteur de format de facture */}
+            <div className="flex items-center gap-2">
+              <Select value={invoiceFormat} onValueChange={(value: 'mini' | 'a4') => setInvoiceFormat(value)}>
+                <SelectTrigger className="w-[120px] h-8 text-xs">
+                  <SelectValue placeholder="Format" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mini">Mini-facture</SelectItem>
+                  <SelectItem value="a4">Format A4</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Boutons de téléchargement */}
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownloadPDF}
+                className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                title={`Télécharger la facture PDF (${invoiceFormat === 'mini' ? 'Mini-facture' : 'Format A4'})`}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleDownloadReport}
+                className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                title="Télécharger le rapport cadastral complet"
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => window.print()} 
+                className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                title="Imprimer"
+              >
+                <Printer className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
           <div className="flex gap-2">
             <Button 
