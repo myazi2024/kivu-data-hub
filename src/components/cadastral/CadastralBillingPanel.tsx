@@ -42,6 +42,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     code_id: string;
   } | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [highlightTerms, setHighlightTerms] = useState(false);
   const { toast } = useToast();
   const {
     loading,
@@ -64,6 +65,18 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     toggleService(serviceId);
   };
   const handleProceedToPayment = async () => {
+    if (!acceptedTerms) {
+      // Déclencher l'animation de surbrillance
+      setHighlightTerms(true);
+      setTimeout(() => setHighlightTerms(false), 2000);
+      toast({
+        title: "Termes et conditions requis",
+        description: "Veuillez accepter les conditions d'utilisation pour continuer",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const invoice = await createInvoice(searchResult, appliedDiscount);
     if (invoice) {
       // Pour les tests : accès direct sans paiement
@@ -226,30 +239,30 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
           {/* Case à cocher conditions d'utilisation */}
           {selectedServices.length > 0 && (
-            <div className="space-y-3 p-3 bg-muted/20 rounded-lg border">
-              <div className="flex items-start gap-3">
+            <div className={`space-y-2 p-2 bg-muted/20 rounded-lg border transition-all duration-500 ${
+              highlightTerms ? 'ring-2 ring-destructive animate-pulse bg-destructive/5 border-destructive/30' : ''
+            }`}>
+              <div className="flex items-start gap-2">
                 <Checkbox 
                   id="terms"
                   checked={acceptedTerms}
                   onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                  className="mt-0.5"
+                  className={`mt-0.5 transition-all duration-300 ${
+                    highlightTerms ? 'ring-2 ring-destructive ring-offset-2' : ''
+                  }`}
                 />
                 <div className="flex-1 min-w-0">
                   <label htmlFor="terms" className="text-xs leading-tight cursor-pointer">
-                    J'ai lu et j'accepte les{" "}
+                    J'accepte les{" "}
                     <a 
                       href="/legal" 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="text-primary hover:underline font-medium"
                     >
-                      termes et conditions d'utilisation
-                    </a>{" "}
-                    du Bureau de l'Immobilier du Congo (BIC)
+                      conditions d'utilisation BIC
+                    </a>
                   </label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    En cochant cette case, vous confirmez avoir pris connaissance des conditions d'utilisation des services cadastraux BIC
-                  </p>
                 </div>
               </div>
             </div>
