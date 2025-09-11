@@ -274,18 +274,48 @@ function generateA4InvoicePDF(
   const qrY = tvaY + 20;
   if (invoice.status === 'paid') {
     try {
-      const qrData = `${typeof window !== 'undefined' ? window.location.origin : 'https://bic-congo.cd'}/cadastral/${invoice.parcel_number}?invoice=${invoice.invoice_number}`;
+      const qrData = `${typeof window !== 'undefined' ? window.location.origin : 'https://bic-congo.cd'}/cadastral/${invoice.parcel_number}?invoice=${invoice.invoice_number}&services=${getSelectedServiceIds(invoice).join(',')}`;
       
-      // Simuler un QR code simple avec du texte (en production, utilisez une vraie bibliothèque QR)
+      // Section QR Code avec cadre et description
       doc.setFontSize(8);
-      doc.text("QR Code d'accès aux données:", margin, qrY);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Accès rapide aux données:", margin, qrY);
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(6);
-      doc.text("Scannez pour accéder sans repayer", margin, qrY + 4);
+      doc.text("Scannez pour accéder aux données", margin, qrY + 4);
+      doc.text("achetées sans repayer", margin, qrY + 7);
       
-      // Dessiner un cadre pour représenter le QR code
-      doc.rect(margin, qrY + 6, 20, 20);
-      doc.setFontSize(4);
-      doc.text("QR", margin + 8, qrY + 17);
+      // Dessiner un QR code stylisé
+      const qrSize = 20;
+      const qrX = margin;
+      const qrStartY = qrY + 10;
+      
+      // Cadre extérieur
+      doc.setLineWidth(0.5);
+      doc.rect(qrX, qrStartY, qrSize, qrSize);
+      
+      // Motif QR simulé avec des petits carrés
+      doc.setFillColor(0, 0, 0);
+      const cellSize = qrSize / 8;
+      const pattern = [
+        [1,1,1,0,1,0,1,1],
+        [1,0,1,1,0,1,0,1],
+        [1,0,0,1,1,0,1,0],
+        [0,1,0,0,1,1,0,1],
+        [1,0,1,1,0,0,1,0],
+        [0,1,1,0,1,0,0,1],
+        [1,1,0,1,0,1,1,0],
+        [0,0,1,1,1,0,0,1]
+      ];
+      
+      for (let i = 0; i < 8; i++) {
+        for (let j = 0; j < 8; j++) {
+          if (pattern[i][j]) {
+            doc.rect(qrX + j * cellSize + 0.5, qrStartY + i * cellSize + 0.5, cellSize - 1, cellSize - 1, 'F');
+          }
+        }
+      }
+      
     } catch (error) {
       console.error('Erreur génération QR code:', error);
     }

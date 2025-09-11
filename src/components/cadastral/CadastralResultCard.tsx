@@ -107,10 +107,14 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       const selectedServicesList = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
       const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
       
-      // Générer le même numéro de facture que dans l'affichage à l'écran
+      // Générer le même numéro de facture que dans l'affichage à l'écran (stable)
       const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
-      const timestamp = Date.now().toString().slice(-6);
-      const invoiceNumber = `INV-SU-GOMA-${parcelId}-${timestamp}`;
+      const stableHash = result.parcel.parcel_number.split('').reduce((a, b) => {
+        a = ((a << 5) - a) + b.charCodeAt(0);
+        return a & a;
+      }, 0);
+      const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
+      const invoiceNumber = `INV-SU-GOMA-${parcelId}-${stableTimestamp}`;
       
       // Créer une facture avec les données identiques à l'écran
       const discountAmount = 0; // Pas de remise pour l'instant

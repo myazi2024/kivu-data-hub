@@ -40,7 +40,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     setShowCloseWarning(false);
   };
 
-  // Transformer les données pour correspondre exactement au PDF
+  // Générer les données de facture de manière stable
   const invoiceData = useMemo(() => {
     const selectedServices = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
     const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
@@ -50,10 +50,14 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     const tvaAmount = netAmount * tvaRate;
     const total = netAmount + tvaAmount;
     
-    // Générer le numéro de facture de manière stable et identique au PDF
+    // Générer un timestamp stable basé sur la parcelle pour que le numéro soit identique
     const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
-    const timestamp = Date.now().toString().slice(-6);
-    const invoiceNumber = `INV-SU-GOMA-${parcelId}-${timestamp}`;
+    const stableHash = result.parcel.parcel_number.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    const stableTimestamp = Math.abs(stableHash).toString().slice(-6);
+    const invoiceNumber = `INV-SU-GOMA-${parcelId}-${stableTimestamp}`;
     
     return {
       invoiceNumber,
