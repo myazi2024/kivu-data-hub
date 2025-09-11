@@ -99,15 +99,37 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   // Gérer le téléchargement PDF de la facture
   const handleDownloadPDF = () => {
-    // Simuler le téléchargement PDF
-    const element = document.createElement('a');
-    const content = `Facture BIC - Parcelle ${result.parcel.parcel_number} - Services: ${paidServices.join(', ')}`;
-    const file = new Blob([content], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = `facture-bic-${result.parcel.parcel_number}-${Date.now()}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
+    // Créer une facture temporaire pour la génération PDF
+    const invoice = {
+      id: `temp-${Date.now()}`,
+      user_id: result.parcel.parcel_number,
+      invoice_number: `INV-${result.parcel.parcel_number}-${Date.now()}`,
+      parcel_number: result.parcel.parcel_number,
+      selected_services: paidServices,
+      search_date: new Date().toISOString(),
+      total_amount_usd: paidServices.length * 25, // Prix estimé
+      status: 'paid',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      client_email: null
+    };
+
+    // Génère un PDF A4 de la facture
+    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
+      import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
+        generateInvoicePDF(invoice, CADASTRAL_SERVICES);
+      });
+    });
+  };
+
+  // Gérer le téléchargement du rapport cadastral complet
+  const handleDownloadReport = () => {
+    // Génère un rapport cadastral PDF A4 complet
+    import('@/lib/pdf').then(({ generateCadastralReport }) => {
+      import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
+        generateCadastralReport(result.parcel, paidServices, CADASTRAL_SERVICES);
+      });
+    });
   };
 
   // Fonction pour formater les dates
@@ -228,17 +250,30 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               size="sm" 
               onClick={handleDownloadPDF}
               className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+              title="Télécharger la facture PDF"
             >
               <Download className="h-4 w-4" />
             </Button>
             <Button 
               variant="outline" 
               size="sm" 
+              onClick={handleDownloadReport}
+              className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+              title="Télécharger le rapport cadastral complet"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
               onClick={() => window.print()} 
               className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+              title="Imprimer"
             >
               <Printer className="h-4 w-4" />
             </Button>
+          </div>
+          <div className="flex gap-2">
             <Button 
               variant="outline" 
               size="sm" 
