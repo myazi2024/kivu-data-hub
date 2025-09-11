@@ -32,6 +32,7 @@ import { useAuth } from '@/hooks/useAuth';
 import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
+import DeedVerificationPanel from './DeedVerificationPanel';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -484,6 +485,26 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       </div>
                     </CardContent>
                   </Card>
+
+                  {/* Circonscription foncière - Design premium */}
+                  <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-accent/5">
+                    <CardContent className="p-4">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <Landmark className="h-4 w-4" />
+                        </div>
+                        Circonscription Foncière
+                      </h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-start">
+                          <span className="text-xs text-muted-foreground">Rattachée à:</span>
+                          <span className="text-sm font-medium text-right max-w-[60%] break-words bg-accent/10 px-2 py-1 rounded-md">
+                            {parcel.circonscription_fonciere || 'Circonscription Foncière de Goma'}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
 
                 {/* Statut fiscal - Design premium */}
@@ -694,57 +715,65 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                 </div>
               </div>
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Historique des Propriétaires
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Propriétaire actuel */}
-                    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{parcel.current_owner_name}</span>
-                          <Badge variant="default">Propriétaire actuel</Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {parcel.current_owner_legal_status} • Depuis {formatDate(parcel.current_owner_since)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Anciens propriétaires */}
-                    {ownership_history.length > 0 && <Separator />}
-                    {ownership_history.map((owner, index) => (
-                      <div key={owner.id} className="flex items-start gap-3 p-3 rounded-lg">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full mt-2" />
+              <div className="space-y-6">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Historique des Propriétaires
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Propriétaire actuel */}
+                      <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">{owner.owner_name}</span>
-                            {owner.mutation_type && (
-                              <Badge variant="outline">{owner.mutation_type}</Badge>
-                            )}
+                            <span className="font-medium">{parcel.current_owner_name}</span>
+                            <Badge variant="default">Propriétaire actuel</Badge>
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            {owner.legal_status} • 
-                            Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                            {parcel.current_owner_legal_status} • Depuis {formatDate(parcel.current_owner_since)}
                           </div>
                         </div>
                       </div>
-                    ))}
 
-                    {ownership_history.length === 0 && (
-                      <div className="text-center text-muted-foreground py-4">
-                        Aucun historique de propriétaire disponible
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      {/* Anciens propriétaires */}
+                      {ownership_history.length > 0 && <Separator />}
+                      {ownership_history.map((owner, index) => (
+                        <div key={owner.id} className="flex items-start gap-3 p-3 rounded-lg">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full mt-2" />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">{owner.owner_name}</span>
+                              {owner.mutation_type && (
+                                <Badge variant="outline">{owner.mutation_type}</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {owner.legal_status} • 
+                              Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {ownership_history.length === 0 && (
+                        <div className="text-center text-muted-foreground py-4">
+                          Aucun historique de propriétaire disponible
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Vérification d'acte foncier */}
+                <DeedVerificationPanel 
+                  parcelNumber={parcel.parcel_number}
+                  landRegistryDistrict={parcel.circonscription_fonciere || 'Circonscription Foncière de Goma'}
+                />
+              </div>
             )}
           </TabsContent>
 
