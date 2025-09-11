@@ -272,12 +272,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           <div className="pt-2">
             <Button 
               onClick={handleProceedToPayment}
-              disabled={selectedServices.length === 0 || loading || !acceptedTerms}
+              disabled={selectedServices.length === 0 || loading}
               className={`
                 w-full h-10 sm:h-12 text-sm sm:text-base font-medium touch-target 
                 transition-all duration-300 ease-out
                 ${selectedServices.length > 0 && acceptedTerms 
                   ? 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-elegant hover:shadow-hover hover:scale-[1.02] active:scale-[0.98]' 
+                  : selectedServices.length > 0 
+                  ? 'bg-gradient-to-r from-muted-foreground to-muted-foreground/90 hover:from-muted-foreground/90 hover:to-muted-foreground cursor-pointer'
                   : 'opacity-60 cursor-not-allowed'
                 }
                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
