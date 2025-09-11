@@ -32,6 +32,40 @@ import { useAuth } from '@/hooks/useAuth';
 import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
+import { 
+  MapPin, 
+  User, 
+  Calendar, 
+  DollarSign, 
+  FileText, 
+  Download, 
+  Map,
+  Building,
+  Clock,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  CreditCard,
+  Landmark,
+  Receipt,
+  Calculator,
+  MapPin as Surveyor,
+  Printer,
+  Settings
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
+import { useCadastralBilling } from '@/hooks/useCadastralBilling';
+import { useAuth } from '@/hooks/useAuth';
+import CadastralMap from './CadastralMap';
+import CadastralBillingPanel from './CadastralBillingPanel';
+import CadastralInvoice from './CadastralInvoice';
+import { DeedVerificationPanel } from './DeedVerificationPanel';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -486,6 +520,26 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </Card>
                 </div>
 
+                {/* Circonscription foncière - Nouvelle section */}
+                {parcel.circonscription_fonciere && (
+                  <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-secondary/5">
+                    <CardContent className="p-4">
+                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
+                        <div className="p-1.5 rounded-lg bg-primary/10">
+                          <Landmark className="h-4 w-4" />
+                        </div>
+                        Circonscription Foncière
+                      </h4>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-muted-foreground">Rattachée à:</span>
+                        <span className="text-sm font-medium bg-secondary/10 px-3 py-1.5 rounded-md text-secondary-foreground">
+                          {parcel.circonscription_fonciere}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 {/* Statut fiscal - Design premium */}
                 <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-accent/5">
                   <CardContent className="p-4">
@@ -694,57 +748,66 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                 </div>
               </div>
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Historique des Propriétaires
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Propriétaire actuel */}
-                    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{parcel.current_owner_name}</span>
-                          <Badge variant="default">Propriétaire actuel</Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {parcel.current_owner_legal_status} • Depuis {formatDate(parcel.current_owner_since)}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Anciens propriétaires */}
-                    {ownership_history.length > 0 && <Separator />}
-                    {ownership_history.map((owner, index) => (
-                      <div key={owner.id} className="flex items-start gap-3 p-3 rounded-lg">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full mt-2" />
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Historique des Propriétaires
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Propriétaire actuel */}
+                      <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
+                        <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">{owner.owner_name}</span>
-                            {owner.mutation_type && (
-                              <Badge variant="outline">{owner.mutation_type}</Badge>
-                            )}
+                            <span className="font-medium">{parcel.current_owner_name}</span>
+                            <Badge variant="default">Propriétaire actuel</Badge>
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            {owner.legal_status} • 
-                            Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                            {parcel.current_owner_legal_status} • Depuis {formatDate(parcel.current_owner_since)}
                           </div>
                         </div>
                       </div>
-                    ))}
 
-                    {ownership_history.length === 0 && (
-                      <div className="text-center text-muted-foreground py-4">
-                        Aucun historique de propriétaire disponible
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
+                      {/* Anciens propriétaires */}
+                      {ownership_history.length > 0 && <Separator />}
+                      {ownership_history.map((owner, index) => (
+                        <div key={owner.id} className="flex items-start gap-3 p-3 rounded-lg">
+                          <div className="w-2 h-2 bg-muted-foreground rounded-full mt-2" />
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between">
+                              <span className="font-medium">{owner.owner_name}</span>
+                              {owner.mutation_type && (
+                                <Badge variant="outline">{owner.mutation_type}</Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-muted-foreground mt-1">
+                              {owner.legal_status} • 
+                              Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {ownership_history.length === 0 && (
+                        <div className="text-center text-muted-foreground py-4">
+                          Aucun historique de propriétaire disponible
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Composant de vérification d'actes */}
+                <DeedVerificationPanel
+                  parcelNumber={parcel.parcel_number}
+                  currentOwner={parcel.current_owner_name}
+                  circonscriptionFonciere={parcel.circonscription_fonciere}
+                />
+              </div>
             )}
           </TabsContent>
 

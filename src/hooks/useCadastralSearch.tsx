@@ -31,6 +31,8 @@ export interface CadastralParcel {
   // Nouveaux champs de bornage
   nombre_bornes: number;
   surface_calculee_bornes: number | null;
+  // Circonscription foncière
+  circonscription_fonciere: string | null;
 }
 
 export interface OwnershipHistory {
