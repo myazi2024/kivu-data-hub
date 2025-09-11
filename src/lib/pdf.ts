@@ -63,6 +63,12 @@ function generateMiniInvoicePDF(
   doc.text(`Date: ${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, margin, cursorY);
   cursorY += 4;
   doc.text(`Parcelle: ${invoice.parcel_number}`, margin, cursorY);
+  cursorY += 4;
+  
+  // Statut
+  const statusText = invoice.status === 'paid' ? 'Payée' : 
+                    invoice.status === 'pending' ? 'En attente' : 'Échec';
+  doc.text(`Statut: ${statusText}`, margin, cursorY);
   cursorY += 6;
 
   // Services
@@ -82,11 +88,23 @@ function generateMiniInvoicePDF(
     cursorY += 3;
   });
 
-  // Total
-  cursorY += 3;
+  // TVA et Total
+  const discountAmount = Number(invoice.discount_amount_usd || 0);
+  const netAmount = subtotal - discountAmount;
+  const tvaAmount = netAmount * 0.16; // 16% TVA
+  const total = netAmount + tvaAmount;
+
+  cursorY += 2;
+  if (discountAmount > 0) {
+    doc.text(`Remise: -$${discountAmount.toFixed(2)}`, margin, cursorY);
+    cursorY += 3;
+  }
+  doc.text(`TVA 16%: $${tvaAmount.toFixed(2)}`, margin, cursorY);
+  cursorY += 4;
+  
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(9);
-  doc.text(`TOTAL: $${subtotal.toFixed(2)} USD`, pageWidth / 2, cursorY, { align: 'center' });
+  doc.text(`TOTAL: $${total.toFixed(2)} USD`, pageWidth / 2, cursorY, { align: 'center' });
   cursorY += 8;
 
   // Contact
@@ -94,7 +112,7 @@ function generateMiniInvoicePDF(
   doc.setFontSize(6);
   doc.text(BIC_COMPANY_INFO.phone, pageWidth / 2, cursorY, { align: 'center' });
 
-  saveDocument(doc, filename || `mini_facture_BIC_${formatDateForFilename()}_${invoice.invoice_number}.pdf`);
+  saveDocument(doc, filename || `mini_facture_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
 
 /**
@@ -143,14 +161,27 @@ function generateA4InvoicePDF(
   doc.text("FACTURE", leftCol, cursorY);
   cursorY += 6;
   doc.setFont('helvetica', 'normal');
-  doc.text(`Numéro: ${invoice.invoice_number}`, leftCol, cursorY);
+  doc.text(`N°: ${invoice.invoice_number}`, leftCol, cursorY);
   cursorY += 5;
   doc.text(`Date: ${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, leftCol, cursorY);
   cursorY += 5;
   doc.text(`Parcelle: ${invoice.parcel_number}`, leftCol, cursorY);
+  cursorY += 5;
+  
+  // Statut et paiement
+  const statusText = invoice.status === 'paid' ? 'Payée' : 
+                    invoice.status === 'pending' ? 'En attente' : 'Échec';
+  doc.text(`Statut: ${statusText}`, leftCol, cursorY);
+  cursorY += 5;
+  
+  const paymentMethod = invoice.payment_method || 'Non spécifié';
+  const paymentDisplay = paymentMethod === 'mobile_money' ? 'Mobile Money' :
+                         paymentMethod === 'visa' ? 'Visa •••• 4242' :
+                         paymentMethod === 'stripe' ? 'Carte de crédit' : paymentMethod;
+  doc.text(`Paiement: ${paymentDisplay}`, leftCol, cursorY);
 
   // Colonne droite - Info client
-  const clientY = cursorY - 16;
+  const clientY = cursorY - 25;
   doc.setFont('helvetica', 'bold');
   doc.text("FACTURER À", rightCol, clientY);
   doc.setFont('helvetica', 'normal');
@@ -213,7 +244,9 @@ function generateA4InvoicePDF(
   
   const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
   const discountAmount = Number(invoice.discount_amount_usd || 0);
-  const total = subtotal - discountAmount;
+  const tvaRate = 0.16; // 16% TVA en RDC
+  const tvaAmount = (subtotal - discountAmount) * tvaRate;
+  const total = subtotal - discountAmount + tvaAmount;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
@@ -225,13 +258,38 @@ function generateA4InvoicePDF(
     doc.text(`-$${discountAmount.toFixed(2)} USD`, pageWidth - margin, totalsY + 5, { align: 'right' });
   }
 
+  const tvaY = totalsY + (discountAmount > 0 ? 10 : 5);
+  doc.text("TVA (16%):", totalsX, tvaY);
+  doc.text(`$${tvaAmount.toFixed(2)} USD`, pageWidth - margin, tvaY, { align: 'right' });
+
   // Ligne de séparation
-  doc.line(totalsX, totalsY + (discountAmount > 0 ? 8 : 3), pageWidth - margin, totalsY + (discountAmount > 0 ? 8 : 3));
+  doc.line(totalsX, tvaY + 3, pageWidth - margin, tvaY + 3);
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text("TOTAL:", totalsX, totalsY + (discountAmount > 0 ? 13 : 8));
-  doc.text(`$${total.toFixed(2)} USD`, pageWidth - margin, totalsY + (discountAmount > 0 ? 13 : 8), { align: 'right' });
+  doc.text("TOTAL:", totalsX, tvaY + 8);
+  doc.text(`$${total.toFixed(2)} USD`, pageWidth - margin, tvaY + 8, { align: 'right' });
+
+  // QR Code d'accès aux données
+  const qrY = tvaY + 20;
+  if (invoice.status === 'paid') {
+    try {
+      const qrData = `${typeof window !== 'undefined' ? window.location.origin : 'https://bic-congo.cd'}/cadastral/${invoice.parcel_number}?invoice=${invoice.invoice_number}`;
+      
+      // Simuler un QR code simple avec du texte (en production, utilisez une vraie bibliothèque QR)
+      doc.setFontSize(8);
+      doc.text("QR Code d'accès aux données:", margin, qrY);
+      doc.setFontSize(6);
+      doc.text("Scannez pour accéder sans repayer", margin, qrY + 4);
+      
+      // Dessiner un cadre pour représenter le QR code
+      doc.rect(margin, qrY + 6, 20, 20);
+      doc.setFontSize(4);
+      doc.text("QR", margin + 8, qrY + 17);
+    } catch (error) {
+      console.error('Erreur génération QR code:', error);
+    }
+  }
 
   // Mentions légales
   const footerY = 270;
@@ -247,8 +305,13 @@ function generateA4InvoicePDF(
     margin,
     footerY + 4
   );
+  doc.text(
+    `RCCM: ${BIC_COMPANY_INFO.rccm} | ID NAT: ${BIC_COMPANY_INFO.idNat} | N° IMPÔT: ${BIC_COMPANY_INFO.numImpot}`,
+    margin,
+    footerY + 8
+  );
 
-  saveDocument(doc, filename || `facture_BIC_${formatDateForFilename()}_${invoice.invoice_number}.pdf`);
+  saveDocument(doc, filename || `facture_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
 
 // Fonctions utilitaires
