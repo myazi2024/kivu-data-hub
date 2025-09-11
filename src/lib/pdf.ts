@@ -125,79 +125,90 @@ function generateA4InvoicePDF(
 ) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 15;
+  const margin = 20;
   let cursorY = margin;
 
-  // En-tête professionnel
+  // En-tête moderne et compact
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.text(BIC_COMPANY_INFO.name, margin, cursorY);
-  cursorY += 7;
-
-  doc.setFontSize(12);
-  doc.text("FACTURE DE SERVICES CADASTRAUX", margin, cursorY);
-  cursorY += 15;
-
-  // Informations de l'entreprise
+  doc.setFontSize(20);
+  doc.text(BIC_COMPANY_INFO.abbreviation, margin, cursorY);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  const companyInfoY = margin + 5;
-  doc.text(BIC_COMPANY_INFO.address, pageWidth - margin, companyInfoY, { align: 'right' });
-  doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, pageWidth - margin, companyInfoY + 4, { align: 'right' });
-  doc.text(`ID NAT: ${BIC_COMPANY_INFO.idNat}`, pageWidth - margin, companyInfoY + 8, { align: 'right' });
-  doc.text(`N° IMPÔT: ${BIC_COMPANY_INFO.numImpot}`, pageWidth - margin, companyInfoY + 12, { align: 'right' });
-  doc.text(`Email: ${BIC_COMPANY_INFO.email}`, pageWidth - margin, companyInfoY + 16, { align: 'right' });
-  doc.text(`Tél: ${BIC_COMPANY_INFO.phone}`, pageWidth - margin, companyInfoY + 20, { align: 'right' });
-
-  // Informations facture et client
-  cursorY += 10;
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'bold');
+  doc.text(BIC_COMPANY_INFO.name, margin, cursorY + 6);
   
+  // Informations de l'entreprise à droite de manière compacte
+  doc.setFontSize(8);
+  const rightX = pageWidth - margin;
+  doc.text(BIC_COMPANY_INFO.address, rightX, cursorY, { align: 'right' });
+  doc.text(`${BIC_COMPANY_INFO.email} | ${BIC_COMPANY_INFO.phone}`, rightX, cursorY + 4, { align: 'right' });
+  doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, rightX, cursorY + 8, { align: 'right' });
+  doc.text(`ID: ${BIC_COMPANY_INFO.idNat} | N°IMPÔT: ${BIC_COMPANY_INFO.numImpot}`, rightX, cursorY + 12, { align: 'right' });
+
+  cursorY += 25;
+
+  // Ligne de séparation moderne
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(41, 128, 185);
+  doc.line(margin, cursorY, pageWidth - margin, cursorY);
+  cursorY += 8;
+
+  // FACTURE - titre moderne
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.text("FACTURE", margin, cursorY);
+  cursorY += 10;
+  // Layout en deux colonnes compact
   const leftCol = margin;
   const rightCol = pageWidth / 2 + 10;
   
-  // Colonne gauche - Info facture
-  doc.text("FACTURE", leftCol, cursorY);
+  // Colonne gauche - Info facture (plus compact)
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(10);
+  doc.text("Informations facture", leftCol, cursorY);
   cursorY += 6;
-  doc.setFont('helvetica', 'normal');
-  doc.text(`N°: ${invoice.invoice_number}`, leftCol, cursorY);
-  cursorY += 5;
-  doc.text(`Date: ${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, leftCol, cursorY);
-  cursorY += 5;
-  doc.text(`Parcelle: ${invoice.parcel_number}`, leftCol, cursorY);
-  cursorY += 5;
   
-  // Statut et paiement
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
+  doc.text(`N°: ${invoice.invoice_number}`, leftCol, cursorY);
+  cursorY += 4;
+  doc.text(`Date: ${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, leftCol, cursorY);
+  cursorY += 4;
+  doc.text(`Parcelle: ${invoice.parcel_number}`, leftCol, cursorY);
+  
+  // Statut et paiement dans la même section
+  cursorY += 4;
   const statusText = invoice.status === 'paid' ? 'Payée' : 
                     invoice.status === 'pending' ? 'En attente' : 'Échec';
   doc.text(`Statut: ${statusText}`, leftCol, cursorY);
-  cursorY += 5;
   
+  cursorY += 4;
   const paymentMethod = invoice.payment_method || 'Non spécifié';
   const paymentDisplay = paymentMethod === 'mobile_money' ? 'Mobile Money' :
                          paymentMethod === 'visa' ? 'Visa •••• 4242' :
                          paymentMethod === 'stripe' ? 'Carte de crédit' : paymentMethod;
   doc.text(`Paiement: ${paymentDisplay}`, leftCol, cursorY);
 
-  // Colonne droite - Info client
-  const clientY = cursorY - 25;
+  // Colonne droite - Info client (alignée)
+  const clientY = cursorY - 20;
   doc.setFont('helvetica', 'bold');
-  doc.text("FACTURER À", rightCol, clientY);
+  doc.setFontSize(10);
+  doc.text("Facturer à", rightCol, clientY);
+  
   doc.setFont('helvetica', 'normal');
+  doc.setFontSize(9);
   if (invoice.client_name) {
     doc.text(invoice.client_name, rightCol, clientY + 6);
   }
   if (invoice.client_email) {
-    doc.text(invoice.client_email, rightCol, clientY + 11);
+    doc.text(invoice.client_email, rightCol, clientY + 10);
   }
   if (invoice.client_organization) {
-    doc.text(invoice.client_organization, rightCol, clientY + 16);
+    doc.text(invoice.client_organization, rightCol, clientY + 14);
   }
 
   cursorY += 15;
 
-  // Services sélectionnés - Tableau professionnel
+  // Tableau des services optimisé et moderne
   const selectedIds = getSelectedServiceIds(invoice);
   const selectedServices = servicesCatalog.filter(s => selectedIds.includes(s.id));
 
@@ -210,108 +221,108 @@ function generateA4InvoicePDF(
   ]);
 
   autoTable(doc, {
-    head: [["Service", "Description", "Qté", "Prix unitaire", "Total"]],
+    head: [["Service", "Description", "Qté", "Prix unit.", "Total"]],
     body: tableData.length ? tableData : [["-", "-", "-", "-", "-"]],
     startY: cursorY,
     styles: { 
-      fontSize: 10, 
-      cellPadding: 4,
-      lineColor: [200, 200, 200],
+      fontSize: 9, 
+      cellPadding: 3,
+      lineColor: [220, 220, 220],
       lineWidth: 0.1
     },
     headStyles: { 
       fillColor: [41, 128, 185], 
       textColor: 255,
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      fontSize: 9
     },
     columnStyles: {
-      0: { cellWidth: 50 },
-      1: { cellWidth: 80 },
-      2: { cellWidth: 15, halign: 'center' },
-      3: { cellWidth: 25, halign: 'right' },
-      4: { cellWidth: 25, halign: 'right' }
+      0: { cellWidth: 55 },
+      1: { cellWidth: 75 },
+      2: { cellWidth: 12, halign: 'center' },
+      3: { cellWidth: 22, halign: 'right' },
+      4: { cellWidth: 22, halign: 'right' }
     },
-    theme: 'striped',
-    alternateRowStyles: { fillColor: [245, 245, 245] },
+    theme: 'grid',
+    alternateRowStyles: { fillColor: [248, 249, 250] },
     margin: { left: margin, right: margin }
   });
 
   const finalY = (doc as any).lastAutoTable?.finalY || cursorY + 20;
 
-  // Section totaux
-  const totalsY = finalY + 10;
-  const totalsX = pageWidth - margin - 60;
+  // Section totaux compacte et moderne
+  const totalsY = finalY + 8;
+  const totalsX = pageWidth - margin - 50;
   
   const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
   const discountAmount = Number(invoice.discount_amount_usd || 0);
-  const tvaRate = 0.16; // 16% TVA en RDC
+  const tvaRate = 0.16;
   const tvaAmount = (subtotal - discountAmount) * tvaRate;
   const total = subtotal - discountAmount + tvaAmount;
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9);
+  
   doc.text("Sous-total:", totalsX, totalsY);
-  doc.text(`$${subtotal.toFixed(2)} USD`, pageWidth - margin, totalsY, { align: 'right' });
+  doc.text(`$${subtotal.toFixed(2)}`, pageWidth - margin, totalsY, { align: 'right' });
 
   if (discountAmount > 0) {
-    doc.text("Remise:", totalsX, totalsY + 5);
-    doc.text(`-$${discountAmount.toFixed(2)} USD`, pageWidth - margin, totalsY + 5, { align: 'right' });
+    doc.text("Remise:", totalsX, totalsY + 4);
+    doc.text(`-$${discountAmount.toFixed(2)}`, pageWidth - margin, totalsY + 4, { align: 'right' });
   }
 
-  const tvaY = totalsY + (discountAmount > 0 ? 10 : 5);
+  const tvaY = totalsY + (discountAmount > 0 ? 8 : 4);
   doc.text("TVA (16%):", totalsX, tvaY);
-  doc.text(`$${tvaAmount.toFixed(2)} USD`, pageWidth - margin, tvaY, { align: 'right' });
+  doc.text(`$${tvaAmount.toFixed(2)}`, pageWidth - margin, tvaY, { align: 'right' });
 
-  // Ligne de séparation
-  doc.line(totalsX, tvaY + 3, pageWidth - margin, tvaY + 3);
+  // Ligne de total moderne
+  doc.setLineWidth(0.5);
+  doc.setDrawColor(41, 128, 185);
+  doc.line(totalsX, tvaY + 2, pageWidth - margin, tvaY + 2);
 
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(12);
-  doc.text("TOTAL:", totalsX, tvaY + 8);
-  doc.text(`$${total.toFixed(2)} USD`, pageWidth - margin, tvaY + 8, { align: 'right' });
+  doc.setFontSize(11);
+  doc.text("TOTAL:", totalsX, tvaY + 7);
+  doc.text(`$${total.toFixed(2)} USD`, pageWidth - margin, tvaY + 7, { align: 'right' });
 
-  // QR Code d'accès aux données
-  const qrY = tvaY + 20;
+  // QR Code moderne et compact
+  const qrY = tvaY + 12;
   if (invoice.status === 'paid') {
     try {
       const qrData = `${typeof window !== 'undefined' ? window.location.origin : 'https://bic-congo.cd'}/cadastral/${invoice.parcel_number}?invoice=${invoice.invoice_number}&services=${getSelectedServiceIds(invoice).join(',')}`;
       
-      // Section QR Code avec cadre et description
-      doc.setFontSize(8);
+      // QR Code section compacte
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'bold');
-      doc.text("Accès rapide aux données:", margin, qrY);
+      doc.text("Accès rapide:", margin, qrY);
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(6);
-      doc.text("Scannez pour accéder aux données", margin, qrY + 4);
-      doc.text("achetées sans repayer", margin, qrY + 7);
+      doc.text("Scannez pour accéder", margin, qrY + 3);
       
-      // Dessiner un QR code stylisé
-      const qrSize = 20;
+      // QR code stylisé compact
+      const qrSize = 15;
       const qrX = margin;
-      const qrStartY = qrY + 10;
+      const qrStartY = qrY + 5;
       
-      // Cadre extérieur
-      doc.setLineWidth(0.5);
+      doc.setLineWidth(0.3);
       doc.rect(qrX, qrStartY, qrSize, qrSize);
       
-      // Motif QR simulé avec des petits carrés
+      // Motif QR optimisé
       doc.setFillColor(0, 0, 0);
-      const cellSize = qrSize / 8;
+      const cellSize = qrSize / 6;
       const pattern = [
-        [1,1,1,0,1,0,1,1],
-        [1,0,1,1,0,1,0,1],
-        [1,0,0,1,1,0,1,0],
-        [0,1,0,0,1,1,0,1],
-        [1,0,1,1,0,0,1,0],
-        [0,1,1,0,1,0,0,1],
-        [1,1,0,1,0,1,1,0],
-        [0,0,1,1,1,0,0,1]
+        [1,1,0,1,0,1],
+        [1,0,1,0,1,0],
+        [0,1,1,1,0,1],
+        [1,0,0,1,1,0],
+        [0,1,0,0,1,1],
+        [1,0,1,1,0,0]
       ];
       
-      for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 8; j++) {
+      for (let i = 0; i < 6; i++) {
+        for (let j = 0; j < 6; j++) {
           if (pattern[i][j]) {
-            doc.rect(qrX + j * cellSize + 0.5, qrStartY + i * cellSize + 0.5, cellSize - 1, cellSize - 1, 'F');
+            doc.rect(qrX + j * cellSize + 0.5, qrStartY + i * cellSize + 0.5, cellSize - 0.5, cellSize - 0.5, 'F');
           }
         }
       }
@@ -321,24 +332,21 @@ function generateA4InvoicePDF(
     }
   }
 
-  // Mentions légales
-  const footerY = 270;
+  // Pied de page compact
+  const footerY = 280;
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.text(
-    "Ce document constitue une facture officielle. Toutes les informations proviennent des sources officielles du Ministère des Affaires Foncières.",
-    margin,
-    footerY
+    "Document officiel BIC - Sources Ministère des Affaires Foncières",
+    pageWidth / 2,
+    footerY,
+    { align: 'center' }
   );
   doc.text(
-    `Document généré automatiquement le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`,
-    margin,
-    footerY + 4
-  );
-  doc.text(
-    `RCCM: ${BIC_COMPANY_INFO.rccm} | ID NAT: ${BIC_COMPANY_INFO.idNat} | N° IMPÔT: ${BIC_COMPANY_INFO.numImpot}`,
-    margin,
-    footerY + 8
+    `Généré le ${new Date().toLocaleDateString('fr-FR')} | ${BIC_COMPANY_INFO.rccm}`,
+    pageWidth / 2,
+    footerY + 3,
+    { align: 'center' }
   );
 
   saveDocument(doc, filename || `facture_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
