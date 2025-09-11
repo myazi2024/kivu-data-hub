@@ -272,59 +272,39 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               <Badge variant="outline" className="text-xs px-2 py-1 bg-background/80 shadow-sm">{parcel.location}</Badge>
             </div>
           </div>
-          <div className="flex flex-col gap-2">
-            {/* Sélecteur de format de facture */}
-            <div className="flex items-center gap-2">
-              <Select value={invoiceFormat} onValueChange={(value: 'mini' | 'a4') => setInvoiceFormat(value)}>
-                <SelectTrigger className="w-[120px] h-8 text-xs">
-                  <SelectValue placeholder="Format" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="mini">Mini-facture</SelectItem>
-                  <SelectItem value="a4">Format A4</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Boutons de téléchargement */}
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleDownloadPDF}
-                className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-                title={`Télécharger la facture PDF (${invoiceFormat === 'mini' ? 'Mini-facture' : 'Format A4'})`}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleDownloadReport}
-                className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-                title="Télécharger le rapport cadastral complet"
-              >
-                <FileText className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => window.print()} 
-                className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
-                title="Imprimer"
-              >
-                <Printer className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          {/* Boutons alignés côte à côte */}
           <div className="flex gap-2">
             <Button 
               variant="outline" 
               size="sm" 
-              onClick={onClose} 
-              className="h-9 w-9 p-0 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+              onClick={handleDownloadReport}
+              className="h-9 px-3 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+              title="Télécharger le rapport cadastral complet"
             >
-              <XCircle className="h-4 w-4" />
+              <FileText className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Télécharger le rapport</span>
+              <span className="sm:hidden">Rapport</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => window.print()} 
+              className="h-9 px-3 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+              title="Imprimer le rapport"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Imprimer le rapport</span>
+              <span className="sm:hidden">Imprimer</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onClose} 
+              className="h-9 px-3 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+              title="Fermer"
+            >
+              <XCircle className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Fermer</span>
             </Button>
           </div>
         </div>
@@ -332,8 +312,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
       <CardContent className="p-4 md:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          {/* Optimisation mobile : tous les onglets côte à côte avec texte adaptatif */}
-          <TabsList className="grid w-full grid-cols-4 h-auto bg-muted/50 p-1 rounded-xl shadow-inner">
+          {/* Onglets figés pour faciliter la navigation */}
+          <TabsList className="sticky top-[120px] z-10 grid w-full grid-cols-4 h-auto bg-muted/50 p-1 rounded-xl shadow-inner backdrop-blur-md bg-background/95 border border-border/50">
             <TabsTrigger 
               value="general" 
               className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
