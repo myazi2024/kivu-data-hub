@@ -110,7 +110,12 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
             <DialogTitle className="text-xl">
               Paiement - Facture {invoice.invoice_number}
             </DialogTitle>
-            <Button variant="ghost" size="sm" onClick={handleClose}>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={handleClose}
+              className="transition-all duration-300 ease-out hover:bg-destructive/10 hover:text-destructive hover:shadow-card hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
+            >
               <X className="h-4 w-4" />
             </Button>
           </div>
@@ -133,8 +138,13 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
             </div>
 
             <div className="flex gap-2 justify-center">
-              <Button onClick={generatePDFInvoice} variant="outline" size="sm">
-                <Download className="h-4 w-4 mr-1" />
+              <Button 
+                onClick={generatePDFInvoice} 
+                variant="outline" 
+                size="sm"
+                className="transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 shadow-card hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+              >
+                <Download className="h-4 w-4 mr-1 transition-colors" />
                 Télécharger le PDF
               </Button>
             </div>
@@ -248,7 +258,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                       
                       <Button 
                         onClick={handleStripePayment}
-                        className="w-full"
+                        className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2"
                         size="lg"
                       >
                         <CreditCard className="h-4 w-4 mr-2" />

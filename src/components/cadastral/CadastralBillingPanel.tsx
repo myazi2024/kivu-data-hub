@@ -41,6 +41,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     reseller_id: string;
     code_id: string;
   } | null>(null);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const { toast } = useToast();
   const {
     loading,
@@ -223,12 +224,51 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           )}
 
+          {/* Case à cocher conditions d'utilisation */}
+          {selectedServices.length > 0 && (
+            <div className="space-y-3 p-3 bg-muted/20 rounded-lg border">
+              <div className="flex items-start gap-3">
+                <Checkbox 
+                  id="terms"
+                  checked={acceptedTerms}
+                  onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                  className="mt-0.5"
+                />
+                <div className="flex-1 min-w-0">
+                  <label htmlFor="terms" className="text-xs leading-tight cursor-pointer">
+                    J'ai lu et j'accepte les{" "}
+                    <a 
+                      href="/legal" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline font-medium"
+                    >
+                      termes et conditions d'utilisation
+                    </a>{" "}
+                    du Bureau de l'Immobilier du Congo (BIC)
+                  </label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    En cochant cette case, vous confirmez avoir pris connaissance des conditions d'utilisation des services cadastraux BIC
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Bouton de paiement */}
           <div className="pt-2">
             <Button 
               onClick={handleProceedToPayment}
-              disabled={selectedServices.length === 0 || loading}
-              className="w-full h-10 sm:h-12 text-sm sm:text-base font-medium touch-target focus-visible-ring"
+              disabled={selectedServices.length === 0 || loading || !acceptedTerms}
+              className={`
+                w-full h-10 sm:h-12 text-sm sm:text-base font-medium touch-target 
+                transition-all duration-300 ease-out
+                ${selectedServices.length > 0 && acceptedTerms 
+                  ? 'bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-elegant hover:shadow-hover hover:scale-[1.02] active:scale-[0.98]' 
+                  : 'opacity-60 cursor-not-allowed'
+                }
+                focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2
+              `}
               size="lg"
             >
               {loading ? (
@@ -249,6 +289,12 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             {selectedServices.length === 0 && (
               <p className="text-xs text-muted-foreground text-center mt-2 leading-relaxed">
                 Sélectionnez au moins un service pour continuer
+              </p>
+            )}
+            
+            {selectedServices.length > 0 && !acceptedTerms && (
+              <p className="text-xs text-muted-foreground text-center mt-2 leading-relaxed">
+                Veuillez accepter les conditions d'utilisation pour continuer
               </p>
             )}
           </div>

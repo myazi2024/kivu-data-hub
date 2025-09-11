@@ -102,17 +102,17 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                   variant="outline" 
                   size="sm" 
                   onClick={() => window.print()} 
-                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 >
-                  <Printer className="h-3 w-3 md:h-4 md:w-4" />
+                  <Printer className="h-3 w-3 md:h-4 md:w-4 transition-colors" />
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={handleClose} 
-                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+                  className="shrink-0 h-7 w-7 p-0 md:h-9 md:w-9 transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
                 >
-                  <X className="h-3 w-3 md:h-4 md:w-4" />
+                  <X className="h-3 w-3 md:h-4 md:w-4 transition-colors hover:text-destructive" />
                 </Button>
               </div>
             )}
@@ -132,19 +132,29 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                     Téléchargez le PDF avant de fermer.
                   </p>
                   <div className="flex flex-col gap-1 pt-1 md:flex-row md:gap-2">
-                    <Button variant="outline" size="sm" onClick={cancelClose} className="text-xs h-7">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={cancelClose} 
+                      className="text-xs h-7 transition-all duration-300 ease-out hover:bg-accent hover:shadow-card hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                    >
                       Annuler
                     </Button>
                     <Button 
                       variant="default" 
                       size="sm" 
                       onClick={onDownloadPDF}
-                      className="text-xs h-7"
+                      className="text-xs h-7 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-1"
                     >
                       <Download className="h-3 w-3 mr-1" />
                       PDF
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={confirmClose} className="text-xs h-7">
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={confirmClose} 
+                      className="text-xs h-7 transition-all duration-300 ease-out hover:shadow-card hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive-foreground focus-visible:ring-offset-1"
+                    >
                       Fermer
                     </Button>
                   </div>
@@ -255,22 +265,22 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                 <Button 
                   onClick={() => window.print()}
                   variant="outline"
-                  className="w-full md:flex-1 h-8 text-xs shadow-sm hover:shadow-md transition-all duration-200"
+                  className="w-full md:flex-1 h-8 text-xs transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 shadow-card hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
                 >
-                  <Printer className="h-3 w-3 mr-1" />
+                  <Printer className="h-3 w-3 mr-1 transition-colors" />
                   Imprimer
                 </Button>
                 <Button 
                   onClick={onDownloadPDF}
-                  className="w-full md:flex-1 h-8 text-xs shadow-sm hover:shadow-md transition-all duration-200"
+                  className="w-full md:flex-1 h-8 text-xs bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-1"
                 >
                   <Download className="h-3 w-3 mr-1" />
-                  PDF
+                  Télécharger PDF
                 </Button>
                 <Button 
                   variant="outline" 
                   onClick={handleClose}
-                  className="w-full md:flex-1 h-8 text-xs shadow-sm hover:shadow-md transition-all duration-200"
+                  className="w-full md:flex-1 h-8 text-xs transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-destructive/10 hover:border-destructive/30 hover:text-destructive shadow-card hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
                 >
                   Fermer
                 </Button>
