@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { X, Download, FileText, CheckCircle, AlertTriangle, QrCode, Printer } from 'lucide-react';
 import QRCode from 'qrcode';
 import { Button } from '@/components/ui/button';
@@ -40,22 +40,32 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     setShowCloseWarning(false);
   };
 
-  // Calculer les totaux avec TVA
-  const subtotal = paidServices.reduce((sum, serviceId) => {
-    const service = CADASTRAL_SERVICES.find(s => s.id === serviceId);
-    return sum + (service?.price || 0);
-  }, 0);
-  
-  const tvaRate = 0.16; // 16% TVA en RDC
-  const tvaAmount = subtotal * tvaRate;
-  const total = subtotal + tvaAmount;
-
-  // Stabiliser le numéro de facture - format identique au PDF
-  const invoiceNumber = React.useMemo(() => {
+  // Transformer les données pour correspondre exactement au PDF
+  const invoiceData = useMemo(() => {
+    const selectedServices = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
+    const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
+    const discountAmount = 0; // Pas de remise pour l'instant
+    const tvaRate = 0.16; // 16% TVA en RDC
+    const netAmount = subtotal - discountAmount;
+    const tvaAmount = netAmount * tvaRate;
+    const total = netAmount + tvaAmount;
+    
+    // Générer le numéro de facture de manière stable et identique au PDF
     const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
     const timestamp = Date.now().toString().slice(-6);
-    return `INV-SU-GOMA-${parcelId}-${timestamp}`;
-  }, [result.parcel.parcel_number]);
+    const invoiceNumber = `INV-SU-GOMA-${parcelId}-${timestamp}`;
+    
+    return {
+      invoiceNumber,
+      subtotal,
+      discountAmount,
+      tvaAmount,
+      total,
+      selectedServices,
+      currentDate: new Date().toLocaleDateString('fr-FR'),
+      currentTime: new Date().toLocaleTimeString('fr-FR')
+    };
+  }, [result.parcel.parcel_number, paidServices]);
 
   // Informations légales de BIC
   const BIC_COMPANY_INFO = {
@@ -68,13 +78,11 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     email: "contact@bic-congo.cd",
     phone: "+243 997 123 456"
   };
-  const currentDate = new Date().toLocaleDateString('fr-FR');
-
   // Générer QR code pour accès aux données
   useEffect(() => {
     const generateQR = async () => {
       try {
-        const dataUrl = `${window.location.origin}/cadastral/${result.parcel.parcel_number}?invoice=${invoiceNumber}&services=${paidServices.join(',')}`;
+        const dataUrl = `${window.location.origin}/cadastral/${result.parcel.parcel_number}?invoice=${invoiceData.invoiceNumber}&services=${paidServices.join(',')}`;
         const qrUrl = await QRCode.toDataURL(dataUrl, {
           width: 120,
           margin: 1,
@@ -89,7 +97,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     if (isOpen && paidServices.length > 0) {
       generateQR();
     }
-  }, [isOpen, result.parcel.parcel_number, invoiceNumber, paidServices]);
+  }, [isOpen, result.parcel.parcel_number, invoiceData.invoiceNumber, paidServices]);
 
   // Early return after all hooks are called
   if (!isOpen) return null;
@@ -205,8 +213,8 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                     Informations de facturation
                   </h3>
                   <div className="space-y-0.5">
-                    <p className="text-sm font-medium">N°: {invoiceNumber}</p>
-                    <p className="text-xs text-muted-foreground">Date: {currentDate}</p>
+                    <p className="text-sm font-medium">N°: {invoiceData.invoiceNumber}</p>
+                    <p className="text-xs text-muted-foreground">Date: {invoiceData.currentDate}</p>
                     <p className="text-xs text-muted-foreground">
                       Parcelle: {result.parcel.parcel_number}
                     </p>
@@ -240,22 +248,17 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                 </h3>
                 
                 <div className="space-y-1.5">
-                  {paidServices.map((serviceId) => {
-                    const service = CADASTRAL_SERVICES.find(s => s.id === serviceId);
-                    if (!service) return null;
-
-                    return (
-                      <div key={serviceId} className="flex items-start justify-between p-2 border rounded-lg gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium leading-tight">{service.name}</p>
-                          <p className="text-xs text-muted-foreground line-clamp-1">{service.description}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-xs font-medium">${service.price.toLocaleString()}</p>
-                        </div>
+                  {invoiceData.selectedServices.map((service) => (
+                    <div key={service.id} className="flex items-start justify-between p-2 border rounded-lg gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium leading-tight">{service.name}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{service.description || 'Service cadastral professionnel'}</p>
                       </div>
-                    );
-                  })}
+                      <div className="text-right shrink-0">
+                        <p className="text-xs font-medium">${Number(service.price).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -265,16 +268,22 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               <div className="space-y-1 bg-muted/30 p-3 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Sous-total</span>
-                  <span className="text-xs">${subtotal.toFixed(2)}</span>
+                  <span className="text-xs">${invoiceData.subtotal.toFixed(2)} USD</span>
                 </div>
+                {invoiceData.discountAmount > 0 && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Remise</span>
+                    <span className="text-xs">-${invoiceData.discountAmount.toFixed(2)} USD</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">TVA (16%)</span>
-                  <span className="text-xs">${tvaAmount.toFixed(2)}</span>
+                  <span className="text-xs">${invoiceData.tvaAmount.toFixed(2)} USD</span>
                 </div>
                 <Separator className="my-1" />
                 <div className="flex items-center justify-between text-sm font-semibold">
                   <span>TOTAL</span>
-                  <span>${total.toFixed(2)} USD</span>
+                  <span>${invoiceData.total.toFixed(2)} USD</span>
                 </div>
               </div>
 
@@ -333,7 +342,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                   Ce document constitue une facture officielle. Toutes les informations proviennent des sources officielles du Ministère des Affaires Foncières.
                 </p>
                 <p className="mb-0.5">
-                  Document généré automatiquement le {currentDate} à {new Date().toLocaleTimeString('fr-FR')}
+                  Document généré automatiquement le {invoiceData.currentDate} à {invoiceData.currentTime}
                 </p>
                 <p>
                   RCCM: {BIC_COMPANY_INFO.rccm} | ID NAT: {BIC_COMPANY_INFO.idNat} | N° IMPÔT: {BIC_COMPANY_INFO.numImpot}
