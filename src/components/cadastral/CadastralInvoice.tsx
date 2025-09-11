@@ -118,7 +118,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               </div>
               <div className="min-w-0">
                 <CardTitle className="text-sm md:text-xl leading-tight">
-                  Facture Services Cadastraux
+                  Justificatif de Paiement Services Cadastraux
                 </CardTitle>
                 <p className="text-xs text-muted-foreground">
                   Bureau de l'Immobilier du Congo
@@ -155,10 +155,10 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               <AlertDescription className="text-orange-800">
                 <div className="space-y-1">
                   <p className="font-medium text-xs leading-tight">
-                    Cette facture ne sera plus accessible après fermeture.
+                    Ce justificatif ne sera plus accessible après fermeture.
                   </p>
                   <p className="text-xs opacity-90 leading-tight">
-                    Téléchargez le PDF avant de fermer.
+                    Téléchargez le justificatif avant de fermer.
                   </p>
                   <div className="flex flex-col gap-1 pt-1 md:flex-row md:gap-2">
                     <Button 
@@ -214,7 +214,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                 <div className="space-y-1">
                   <h3 className="font-semibold text-xs uppercase tracking-wide">
-                    Informations de facturation
+                    Informations du justificatif
                   </h3>
                   <div className="space-y-0.5">
                     <p className="text-sm font-medium">N°: {invoiceData.invoiceNumber}</p>
@@ -248,7 +248,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               {/* Détails des services - Mobile optimized */}
               <div className="space-y-2">
                 <h3 className="font-semibold text-xs uppercase tracking-wide">
-                  Services achetés
+                  Prestations acquises
                 </h3>
                 
                 <div className="space-y-1.5">
@@ -328,7 +328,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                   className="w-full md:flex-1 h-8 text-xs bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-1"
                 >
                   <Download className="h-3 w-3 mr-1" />
-                  Télécharger PDF
+                  Télécharger le justificatif
                 </Button>
                 <Button 
                   variant="outline" 
@@ -343,7 +343,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
               <div className="pt-1 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
                 <p className="font-medium mb-0.5">Mentions légales</p>
                 <p className="mb-0.5">
-                  Ce document constitue une facture officielle. Toutes les informations proviennent des sources officielles du Ministère des Affaires Foncières.
+                  Ce document constitue un justificatif de paiement officiel. Toutes les informations proviennent des sources officielles du Ministère des Affaires Foncières.
                 </p>
                 <p className="mb-0.5">
                   Document généré automatiquement le {invoiceData.currentDate} à {invoiceData.currentTime}

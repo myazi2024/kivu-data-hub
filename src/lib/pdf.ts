@@ -17,7 +17,7 @@ const BIC_COMPANY_INFO = {
 export type InvoiceFormat = 'mini' | 'a4';
 
 /**
- * Génère un PDF de facture avec format sélectionnable
+ * Génère un PDF de justificatif de paiement avec format sélectionnable
  */
 export function generateInvoicePDF(
   invoice: CadastralInvoice,
@@ -33,7 +33,7 @@ export function generateInvoicePDF(
 }
 
 /**
- * Génère une mini-facture compacte
+ * Génère un mini-justificatif compact
  */
 function generateMiniInvoicePDF(
   invoice: CadastralInvoice,
@@ -53,7 +53,7 @@ function generateMiniInvoicePDF(
   
   doc.setFontSize(8);
   doc.setFont('helvetica', 'normal');
-  doc.text("FACTURE", pageWidth / 2, cursorY, { align: 'center' });
+  doc.text("JUSTIFICATIF DE PAIEMENT", pageWidth / 2, cursorY, { align: 'center' });
   cursorY += 8;
 
   // Informations facture
@@ -76,7 +76,7 @@ function generateMiniInvoicePDF(
   const selectedServices = servicesCatalog.filter(s => selectedIds.includes(s.id));
   
   doc.setFont('helvetica', 'bold');
-  doc.text("Services:", margin, cursorY);
+  doc.text("Prestations:", margin, cursorY);
   cursorY += 4;
   
   doc.setFont('helvetica', 'normal');
@@ -112,11 +112,11 @@ function generateMiniInvoicePDF(
   doc.setFontSize(6);
   doc.text(BIC_COMPANY_INFO.phone, pageWidth / 2, cursorY, { align: 'center' });
 
-  saveDocument(doc, filename || `mini_facture_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
+  saveDocument(doc, filename || `mini_justificatif_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
 
 /**
- * Génère une facture A4 complète
+ * Génère un justificatif de paiement A4 complet
  */
 function generateA4InvoicePDF(
   invoice: CadastralInvoice,
@@ -152,10 +152,10 @@ function generateA4InvoicePDF(
   doc.line(margin, cursorY, pageWidth - margin, cursorY);
   cursorY += 8;
 
-  // FACTURE - titre moderne
+  // JUSTIFICATIF DE PAIEMENT - titre moderne
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
-  doc.text("FACTURE", margin, cursorY);
+  doc.text("JUSTIFICATIF DE PAIEMENT", margin, cursorY);
   cursorY += 10;
   // Layout en deux colonnes compact
   const leftCol = margin;
@@ -164,7 +164,7 @@ function generateA4InvoicePDF(
   // Colonne gauche - Info facture (plus compact)
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text("Informations facture", leftCol, cursorY);
+  doc.text("Informations du justificatif", leftCol, cursorY);
   cursorY += 6;
   
   doc.setFont('helvetica', 'normal');
@@ -221,7 +221,7 @@ function generateA4InvoicePDF(
   ]);
 
   autoTable(doc, {
-    head: [["Service", "Description", "Qté", "Prix unit.", "Total"]],
+    head: [["Prestation", "Description", "Qté", "Prix unit.", "Total"]],
     body: tableData.length ? tableData : [["-", "-", "-", "-", "-"]],
     startY: cursorY,
     styles: { 
@@ -349,7 +349,7 @@ function generateA4InvoicePDF(
     { align: 'center' }
   );
 
-  saveDocument(doc, filename || `facture_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
+  saveDocument(doc, filename || `justificatif_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
 
 // Fonctions utilitaires
