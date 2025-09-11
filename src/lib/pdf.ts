@@ -220,13 +220,15 @@ function generateA4InvoicePDF(
     `$${Number(service.price).toFixed(2)}`
   ]);
 
+  const availableWidth = pageWidth - (2 * margin);
+  
   autoTable(doc, {
     head: [["Prestation", "Description", "Qté", "Prix unit.", "Total"]],
     body: tableData.length ? tableData : [["-", "-", "-", "-", "-"]],
     startY: cursorY,
     styles: { 
       fontSize: 9, 
-      cellPadding: 3,
+      cellPadding: 2.5,
       lineColor: [220, 220, 220],
       lineWidth: 0.1
     },
@@ -237,22 +239,24 @@ function generateA4InvoicePDF(
       fontSize: 9
     },
     columnStyles: {
-      0: { cellWidth: 55 },
-      1: { cellWidth: 75 },
-      2: { cellWidth: 12, halign: 'center' },
-      3: { cellWidth: 22, halign: 'right' },
-      4: { cellWidth: 22, halign: 'right' }
+      0: { cellWidth: availableWidth * 0.32 }, // 32% pour prestation
+      1: { cellWidth: availableWidth * 0.43 }, // 43% pour description
+      2: { cellWidth: availableWidth * 0.08, halign: 'center' }, // 8% pour quantité
+      3: { cellWidth: availableWidth * 0.085, halign: 'right' }, // 8.5% pour prix unit
+      4: { cellWidth: availableWidth * 0.085, halign: 'right' } // 8.5% pour total
     },
     theme: 'grid',
     alternateRowStyles: { fillColor: [248, 249, 250] },
-    margin: { left: margin, right: margin }
+    margin: { left: margin, right: margin },
+    tableWidth: availableWidth
   });
 
   const finalY = (doc as any).lastAutoTable?.finalY || cursorY + 20;
 
   // Section totaux compacte et moderne
   const totalsY = finalY + 8;
-  const totalsX = pageWidth - margin - 50;
+  const totalsWidth = 60; // Largeur de la section totaux
+  const totalsX = pageWidth - margin - totalsWidth;
   
   const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
   const discountAmount = Number(invoice.discount_amount_usd || 0);
