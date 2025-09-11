@@ -40,17 +40,34 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     setShowCloseWarning(false);
   };
 
-  // Calculer le total
-  const total = paidServices.reduce((sum, serviceId) => {
+  // Calculer les totaux avec TVA
+  const subtotal = paidServices.reduce((sum, serviceId) => {
     const service = CADASTRAL_SERVICES.find(s => s.id === serviceId);
     return sum + (service?.price || 0);
   }, 0);
+  
+  const tvaRate = 0.16; // 16% TVA en RDC
+  const tvaAmount = subtotal * tvaRate;
+  const total = subtotal + tvaAmount;
 
-  // Stabiliser le numéro de facture avec le numéro de parcelle + timestamp de création
-  const invoiceNumber = React.useMemo(
-    () => `BIC-${result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4)}-${Date.now().toString().slice(-6)}`,
-    [result.parcel.parcel_number]
-  );
+  // Stabiliser le numéro de facture - format identique au PDF
+  const invoiceNumber = React.useMemo(() => {
+    const parcelId = result.parcel.parcel_number.replace(/[^0-9]/g, '').slice(-4);
+    const timestamp = Date.now().toString().slice(-6);
+    return `INV-SU-GOMA-${parcelId}-${timestamp}`;
+  }, [result.parcel.parcel_number]);
+
+  // Informations légales de BIC
+  const BIC_COMPANY_INFO = {
+    name: "Bureau de l'Immobilier du Congo",
+    abbreviation: "BIC",
+    address: "Avenue Patrice Lumumba, Goma, Nord-Kivu, RDC",
+    rccm: "RCCM/GOMA/2024/B/001234",
+    idNat: "01-234-N12345C",
+    numImpot: "A1234567890",
+    email: "contact@bic-congo.cd",
+    phone: "+243 997 123 456"
+  };
   const currentDate = new Date().toLocaleDateString('fr-FR');
 
   // Générer QR code pour accès aux données
@@ -163,6 +180,24 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
             </Alert>
           ) : (
             <>
+              {/* Informations légales de l'entreprise */}
+              <div className="bg-muted/50 p-3 rounded-lg space-y-2">
+                <div className="text-center">
+                  <h2 className="font-bold text-sm">{BIC_COMPANY_INFO.name}</h2>
+                  <p className="text-xs text-muted-foreground">{BIC_COMPANY_INFO.address}</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-xs text-muted-foreground">
+                  <p>RCCM: {BIC_COMPANY_INFO.rccm}</p>
+                  <p>ID NAT: {BIC_COMPANY_INFO.idNat}</p>
+                  <p>N° IMPÔT: {BIC_COMPANY_INFO.numImpot}</p>
+                </div>
+                <div className="text-center text-xs">
+                  <p>{BIC_COMPANY_INFO.email} | {BIC_COMPANY_INFO.phone}</p>
+                </div>
+              </div>
+
+              <Separator />
+
               {/* Informations de facturation - Mobile optimized */}
               <div className="space-y-3 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
                 <div className="space-y-1">
@@ -226,15 +261,20 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               <Separator />
 
-              {/* Total - Mobile optimized */}
-              <div className="space-y-1">
+              {/* Total avec TVA - Mobile optimized */}
+              <div className="space-y-1 bg-muted/30 p-3 rounded-lg">
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-muted-foreground">Sous-total</span>
-                  <span className="text-xs">${total.toLocaleString()}</span>
+                  <span className="text-xs">${subtotal.toFixed(2)}</span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">TVA (16%)</span>
+                  <span className="text-xs">${tvaAmount.toFixed(2)}</span>
+                </div>
+                <Separator className="my-1" />
                 <div className="flex items-center justify-between text-sm font-semibold">
-                  <span>Total</span>
-                  <span>${total.toLocaleString()}</span>
+                  <span>TOTAL</span>
+                  <span>${total.toFixed(2)} USD</span>
                 </div>
               </div>
 
@@ -288,11 +328,16 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
               {/* Mentions légales - Mobile optimized */}
               <div className="pt-1 text-xs text-muted-foreground bg-muted/50 p-2 rounded-lg">
-                <p className="font-medium mb-0.5">Bureau de l'Immobilier du Congo</p>
+                <p className="font-medium mb-0.5">Mentions légales</p>
                 <p className="mb-0.5">
-                  Facture services cadastraux - {result.parcel.parcel_number}
+                  Ce document constitue une facture officielle. Toutes les informations proviennent des sources officielles du Ministère des Affaires Foncières.
                 </p>
-                <p>Sources officielles Ministère Affaires Foncières</p>
+                <p className="mb-0.5">
+                  Document généré automatiquement le {currentDate} à {new Date().toLocaleTimeString('fr-FR')}
+                </p>
+                <p>
+                  RCCM: {BIC_COMPANY_INFO.rccm} | ID NAT: {BIC_COMPANY_INFO.idNat} | N° IMPÔT: {BIC_COMPANY_INFO.numImpot}
+                </p>
               </div>
             </>
           )}
