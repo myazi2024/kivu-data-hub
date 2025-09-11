@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
+const PHRASES = [
+  "BIC transforme les marchés fonciers en insights stratégiques.",
+  "Explorez, comparez, agissez avec clarté et précision."
+];
+
 const TypewriterAnimation = () => {
-  const phrases = [
-    "BIC transforme les marchés fonciers en insights stratégiques.",
-    "Explorez, comparez, agissez avec clarté et précision."
-  ];
 
   const [currentPhraseIndex, setCurrentPhraseIndex] = useState(0);
   const [currentText, setCurrentText] = useState('');
@@ -12,7 +13,7 @@ const TypewriterAnimation = () => {
   const [showCursor, setShowCursor] = useState(true);
 
   useEffect(() => {
-    const currentPhrase = phrases[currentPhraseIndex];
+    const currentPhrase = PHRASES[currentPhraseIndex];
     
     if (isTyping) {
       // Typing effect
@@ -38,13 +39,13 @@ const TypewriterAnimation = () => {
       } else {
         // Move to next phrase
         const timeout = setTimeout(() => {
-          setCurrentPhraseIndex((prev) => (prev + 1) % phrases.length);
+          setCurrentPhraseIndex((prev) => (prev + 1) % PHRASES.length);
           setIsTyping(true);
         }, 500); // Pause before next phrase
         return () => clearTimeout(timeout);
       }
     }
-  }, [currentText, isTyping, currentPhraseIndex, phrases]);
+  }, [currentText, isTyping, currentPhraseIndex]);
 
   // Cursor blinking effect
   useEffect(() => {
