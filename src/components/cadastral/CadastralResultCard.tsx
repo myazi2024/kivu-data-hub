@@ -428,7 +428,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
                           <span className="text-muted-foreground">Propriétaire:</span>
-                          <div className="font-semibold">{parcel.owner}</div>
+                          <div className="font-semibold">{parcel.current_owner_name}</div>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Superficie:</span>
@@ -436,11 +436,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         </div>
                         <div>
                           <span className="text-muted-foreground">Type d'usage:</span>
-                          <div className="font-semibold">{parcel.property_type}</div>
+                          <div className="font-semibold">{parcel.property_title_type}</div>
                         </div>
                         <div>
                           <span className="text-muted-foreground">Date d'enregistrement:</span>
-                          <div className="font-semibold">{formatDate(parcel.registration_date)}</div>
+                          <div className="font-semibold">{formatDate(parcel.current_owner_since)}</div>
                         </div>
                       </div>
                       
@@ -497,7 +497,14 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </div>
                 </div>
               ) : (
-                <CadastralMap parcel={parcel} />
+                <CadastralMap 
+                  coordinates={parcel.gps_coordinates || []}
+                  center={{
+                    lat: parcel.latitude || 0,
+                    lng: parcel.longitude || 0
+                  }}
+                  parcelNumber={parcel.parcel_number}
+                />
               )}
             </TabsContent>
 
@@ -545,10 +552,10 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
                                 <User className="h-3 w-3 text-green-600" />
-                                <span className="text-xs font-semibold text-green-700">{parcel.owner}</span>
+                                <span className="text-xs font-semibold text-green-700">{parcel.current_owner_name}</span>
                               </div>
                               <div className="text-xs text-green-600">
-                                Depuis: {formatDate(parcel.registration_date)}
+                                Depuis: {formatDate(parcel.current_owner_since)}
                               </div>
                             </div>
                             <Button
@@ -582,7 +589,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                       <span className="text-xs font-semibold">{owner.owner_name}</span>
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      {formatDate(owner.start_date)} - {formatDate(owner.end_date)}
+                                      {formatDate(owner.ownership_start_date)} - {formatDate(owner.ownership_end_date)}
                                     </div>
                                   </div>
                                   <Button
@@ -675,7 +682,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 mb-1">
                                         {getPaymentStatusIcon(tax.payment_status)}
-                                        <span className="text-xs font-semibold">{tax.tax_type}</span>
+                                        <span className="text-xs font-semibold">Impôt foncier</span>
                                         <Badge 
                                           variant={getPaymentStatusBadge(tax.payment_status)}
                                           className="text-xs px-1 py-0"
@@ -684,7 +691,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                         </Badge>
                                       </div>
                                       <div className="text-xs text-muted-foreground">
-                                        Montant: {tax.amount.toLocaleString()} FC - Année: {tax.year}
+                                        Montant: {tax.amount_usd.toLocaleString()} USD - Année: {tax.tax_year}
                                       </div>
                                     </div>
                                     <Button
@@ -733,16 +740,16 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                     <div className="flex-1 min-w-0">
                                       <div className="flex items-center gap-2 mb-1">
                                         <Landmark className="h-3 w-3 text-primary" />
-                                        <span className="text-xs font-semibold">{mortgage.lender}</span>
+                                        <span className="text-xs font-semibold">{mortgage.creditor_name}</span>
                                         <Badge 
-                                          variant={mortgage.status === 'active' ? 'destructive' : 'default'}
+                                          variant={mortgage.mortgage_status === 'active' ? 'destructive' : 'default'}
                                           className="text-xs px-1 py-0"
                                         >
-                                          {mortgage.status === 'active' ? 'Active' : 'Clôturée'}
+                                          {mortgage.mortgage_status === 'active' ? 'Active' : 'Clôturée'}
                                         </Badge>
                                       </div>
                                       <div className="text-xs text-muted-foreground">
-                                        Montant: {mortgage.amount.toLocaleString()} FC - Date: {formatDate(mortgage.start_date)}
+                                        Montant: {mortgage.mortgage_amount_usd.toLocaleString()} USD - Date: {formatDate(mortgage.contract_date)}
                                       </div>
                                     </div>
                                     <Button
@@ -795,22 +802,35 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           {/* Show invoice if requested */}
           {showInvoice && (
             <CadastralInvoice 
-              result={result}
-              services={paidServices} 
+              isOpen={showInvoice}
               onClose={() => setShowInvoice(false)}
-              onFormatChange={(format) => setInvoiceFormat(format)}
-              onDownload={() => {
+              result={result}
+              paidServices={paidServices}
+              onDownloadPDF={() => {
                 import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
                   const invoice = {
                     id: `INV-${Date.now()}`,
+                    user_id: user?.id || null,
+                    search_date: new Date().toISOString(),
                     parcel_number: result.parcel.parcel_number,
-                    services: paidServices,
-                    total_amount: paidServices.reduce((sum, serviceId) => {
+                    selected_services: paidServices,
+                    total_amount_usd: paidServices.reduce((sum, serviceId) => {
                       const service = CADASTRAL_SERVICES.find(s => s.id === serviceId);
                       return sum + (service?.price || 0);
                     }, 0),
+                    status: 'paid',
+                    invoice_number: `BIC-${Date.now()}`,
+                    client_name: user?.user_metadata?.full_name || 'Client',
+                    client_email: user?.email || '',
+                    client_organization: user?.user_metadata?.organization || null,
+                    geographical_zone: result.parcel.location,
+                    payment_method: 'mobile_money',
+                    discount_code_used: null,
+                    payment_id: null,
                     created_at: new Date().toISOString(),
-                    payment_status: 'paid'
+                    updated_at: new Date().toISOString(),
+                    discount_amount_usd: 0,
+                    original_amount_usd: null
                   };
                   
                   import('@/lib/pdf').then(({ generateInvoicePDF }) => {
