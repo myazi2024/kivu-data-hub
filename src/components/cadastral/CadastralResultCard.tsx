@@ -56,22 +56,39 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   // Logique de scroll pour masquer/afficher l'en-tête
   useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
+    const handleScroll = (event: Event) => {
+      // Déterminer le conteneur de scroll approprié
+      const scrollElement = event.target as Element;
+      const currentScrollY = scrollElement.scrollTop || window.scrollY;
       const scrollDirection = currentScrollY > lastScrollY ? 'down' : 'up';
       
-      // Masquer l'en-tête si on scroll vers le bas (plus de 100px) ou l'afficher si on remonte
-      if (scrollDirection === 'down' && currentScrollY > 100) {
+      // Masquer l'en-tête si on scroll vers le bas (plus de 80px) ou l'afficher si on remonte
+      if (scrollDirection === 'down' && currentScrollY > 80) {
         setIsHeaderHidden(true);
-      } else if (scrollDirection === 'up' || currentScrollY <= 50) {
+      } else if (scrollDirection === 'up' || currentScrollY <= 30) {
         setIsHeaderHidden(false);
       }
       
       setLastScrollY(currentScrollY);
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    // Ajouter l'écouteur sur la fenêtre et sur les conteneurs potentiels
+    const scrollContainers = [
+      window,
+      document.querySelector('[data-radix-dialog-content]'),
+      document.querySelector('.scroll-area-viewport'),
+      document.body
+    ].filter(Boolean);
+
+    scrollContainers.forEach(container => {
+      container?.addEventListener('scroll', handleScroll, { passive: true });
+    });
+
+    return () => {
+      scrollContainers.forEach(container => {
+        container?.removeEventListener('scroll', handleScroll);
+      });
+    };
   }, [lastScrollY]);
 
   // Check user access to different services on mount
@@ -275,7 +292,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   return (
     <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
-      <CardHeader className={`sticky top-0 z-20 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95 transition-transform duration-300 ease-in-out ${isHeaderHidden ? '-translate-y-full' : 'translate-y-0'}`}>
+      <CardHeader className={`sticky top-0 z-20 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95 transition-all duration-500 ease-out ${isHeaderHidden ? 'transform -translate-y-full opacity-0' : 'transform translate-y-0 opacity-100'}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <CardTitle className="flex items-center gap-2 text-sm md:text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
@@ -330,7 +347,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       <CardContent className="p-4 md:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Onglets figés pour faciliter la navigation */}
-          <TabsList className={`sticky z-10 grid w-full grid-cols-4 h-auto bg-muted/50 p-1 rounded-xl shadow-inner backdrop-blur-md bg-background/95 border border-border/50 transition-all duration-300 ease-in-out ${isHeaderHidden ? 'top-0' : 'top-[120px]'}`}>
+          <TabsList className={`sticky z-10 grid w-full grid-cols-4 h-auto bg-muted/50 p-1 rounded-xl shadow-inner backdrop-blur-md bg-background/95 border border-border/50 transition-all duration-500 ease-out ${isHeaderHidden ? 'top-0 shadow-lg' : 'top-[120px]'}`}>
             <TabsTrigger 
               value="general" 
               className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
