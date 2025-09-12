@@ -272,39 +272,34 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               <Badge variant="outline" className="text-xs px-2 py-1 bg-background/80 shadow-sm">{parcel.location}</Badge>
             </div>
           </div>
-          {/* Boutons alignés côte à côte */}
-          <div className="flex gap-2">
+          {/* Boutons compacts avec icônes seulement */}
+          <div className="flex gap-1">
             <Button 
-              variant="outline" 
-              size="sm" 
+              variant="ghost" 
+              size="icon" 
               onClick={handleDownloadReport}
-              className="h-9 px-3 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+              className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-all duration-200"
               title="Télécharger le rapport cadastral complet"
             >
-              <FileText className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Télécharger le rapport</span>
-              <span className="sm:hidden">Rapport</span>
+              <Download className="h-4 w-4" />
             </Button>
             <Button 
-              variant="outline" 
-              size="sm" 
+              variant="ghost" 
+              size="icon" 
               onClick={() => window.print()} 
-              className="h-9 px-3 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105"
+              className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-all duration-200"
               title="Imprimer le rapport"
             >
-              <Printer className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Imprimer le rapport</span>
-              <span className="sm:hidden">Imprimer</span>
+              <Printer className="h-4 w-4" />
             </Button>
             <Button 
-              variant="outline" 
-              size="sm" 
+              variant="ghost" 
+              size="icon" 
               onClick={onClose} 
-              className="h-9 px-3 shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/20"
+              className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive transition-all duration-200"
               title="Fermer"
             >
-              <XCircle className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Fermer</span>
+              <XCircle className="h-4 w-4" />
             </Button>
           </div>
         </div>
