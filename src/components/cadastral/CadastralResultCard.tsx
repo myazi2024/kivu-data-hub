@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   MapPin, 
   User, 
@@ -49,15 +49,13 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [preselectServiceId, setPreselectServiceId] = useState<string | undefined>(undefined);
   const [invoiceFormat, setInvoiceFormat] = useState<'mini' | 'a4'>('a4');
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollYRef = useRef(0);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
 
   // Logique de scroll pour masquer/afficher l'en-tête
   useEffect(() => {
-    let cleanupFunctions: (() => void)[] = [];
-
     const handleScroll = () => {
       // Déterminer le scroll position depuis le bon conteneur
       let currentScrollY = 0;
@@ -74,7 +72,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
         currentScrollY = window.scrollY;
       }
 
-      const scrollDirection = currentScrollY > lastScrollY ? 'down' : 'up';
+      const scrollDirection = currentScrollY > lastScrollYRef.current ? 'down' : 'up';
       
       // Masquer l'en-tête si on scroll vers le bas (plus de 50px) ou l'afficher si on remonte
       if (scrollDirection === 'down' && currentScrollY > 50) {
@@ -83,50 +81,27 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
         setIsHeaderHidden(false);
       }
       
-      setLastScrollY(currentScrollY);
+      lastScrollYRef.current = currentScrollY;
     };
 
-    // Setup initial listeners
-    const setupListeners = () => {
-      const containers: (HTMLElement | Window)[] = [window];
-      
-      const dialogContent = document.querySelector('[data-radix-dialog-content]') as HTMLElement;
-      const scrollAreaViewport = document.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
-      
-      if (dialogContent) containers.push(dialogContent);
-      if (scrollAreaViewport) containers.push(scrollAreaViewport);
+    // Essayer d'attacher le listener sur différents conteneurs possibles
+    const containers = [
+      window,
+      document.querySelector('[data-radix-dialog-content]'),
+      document.querySelector('[data-radix-scroll-area-viewport]'),
+      document.body
+    ].filter(Boolean) as (HTMLElement | Window)[];
 
-      containers.forEach(container => {
-        if (container) {
-          container.addEventListener('scroll', handleScroll, { passive: true });
-        }
-      });
-
-      // Return cleanup function
-      return () => {
-        containers.forEach(container => {
-          if (container) {
-            container.removeEventListener('scroll', handleScroll);
-          }
-        });
-      };
-    };
-
-    // Setup listeners immediately
-    const cleanup = setupListeners();
-    cleanupFunctions.push(cleanup);
-
-    // Also try again after a delay for dynamic elements
-    const timer = setTimeout(() => {
-      const delayedCleanup = setupListeners();
-      cleanupFunctions.push(delayedCleanup);
-    }, 200);
+    containers.forEach(container => {
+      container.addEventListener('scroll', handleScroll, { passive: true });
+    });
 
     return () => {
-      clearTimeout(timer);
-      cleanupFunctions.forEach(fn => fn());
+      containers.forEach(container => {
+        container.removeEventListener('scroll', handleScroll);
+      });
     };
-  }, [lastScrollY]);
+  }, []);
 
   // Check user access to different services on mount
   React.useEffect(() => {
