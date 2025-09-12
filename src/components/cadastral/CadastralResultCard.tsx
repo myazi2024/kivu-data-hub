@@ -56,21 +56,9 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   // Logique de scroll pour masquer/afficher l'en-tête
   useEffect(() => {
-    const handleScroll = () => {
-      // Déterminer le scroll position depuis le bon conteneur
-      let currentScrollY = 0;
-
-      // Chercher le conteneur de scroll actif
-      const dialogContent = document.querySelector('[data-radix-dialog-content]') as HTMLElement;
-      const scrollAreaViewport = document.querySelector('[data-radix-scroll-area-viewport]') as HTMLElement;
-      
-      if (dialogContent) {
-        currentScrollY = dialogContent.scrollTop;
-      } else if (scrollAreaViewport) {
-        currentScrollY = scrollAreaViewport.scrollTop;
-      } else {
-        currentScrollY = window.scrollY;
-      }
+    const handleScroll = (event: Event) => {
+      const scrollContainer = event.currentTarget as HTMLElement;
+      const currentScrollY = scrollContainer.scrollTop || 0;
 
       const scrollDirection = currentScrollY > lastScrollYRef.current ? 'down' : 'up';
       
@@ -84,23 +72,21 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       lastScrollYRef.current = currentScrollY;
     };
 
-    // Essayer d'attacher le listener sur différents conteneurs possibles
-    const containers = [
-      window,
-      document.querySelector('[data-radix-dialog-content]'),
-      document.querySelector('[data-radix-scroll-area-viewport]'),
-      document.body
-    ].filter(Boolean) as (HTMLElement | Window)[];
-
-    containers.forEach(container => {
-      container.addEventListener('scroll', handleScroll, { passive: true });
-    });
-
-    return () => {
-      containers.forEach(container => {
-        container.removeEventListener('scroll', handleScroll);
-      });
+    // Trouver le conteneur scrollable parent - celui avec overflow-auto dans CadastralResultsDialog
+    const findScrollContainer = () => {
+      // Chercher le div avec overflow-auto qui est le parent scrollable du dialogue
+      const scrollableDiv = document.querySelector('.overflow-auto') as HTMLElement;
+      return scrollableDiv;
     };
+
+    const scrollContainer = findScrollContainer();
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
+      
+      return () => {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      };
+    }
   }, []);
 
   // Check user access to different services on mount
