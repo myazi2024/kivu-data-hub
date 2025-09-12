@@ -415,198 +415,183 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             </div>
           )}
 
-          {/* Onglet Informations générales - Design premium */}
-          <TabsContent value="general" className="mt-6 space-y-4 animate-fade-in">
+          {/* Onglet Informations générales - Mobile First */}
+          <TabsContent value="general" className="mt-3 space-y-3 animate-fade-in">
             {!hasServiceAccess('information') ? (
-              <div className="p-6 text-center border-2 border-dashed border-primary/20 rounded-xl bg-gradient-to-br from-primary/5 to-secondary/5 shadow-lg">
-                <div className="space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center shadow-md">
-                    <Building className="h-8 w-8 text-primary" />
+              <div className="p-4 text-center border-2 border-dashed border-primary/20 rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5">
+                <div className="space-y-3">
+                  <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center">
+                    <Building className="h-6 w-6 text-primary" />
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                       Service Premium
                     </h3>
-                    <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                      Accédez aux informations détaillées de la parcelle
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Accédez aux informations détaillées
                     </p>
                   </div>
                   <Button 
                     onClick={() => { setPreselectServiceId('information'); setShowBillingPanel(true); }} 
-                    className="mt-4 px-6 py-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 bg-gradient-to-r from-primary to-primary/80"
+                    size="sm"
+                    className="text-xs bg-gradient-to-r from-primary to-primary/80"
                   >
-                    <CreditCard className="h-4 w-4 mr-2" />
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    Débloquer
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Informations de propriété - Mobile First */}
+                <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
+                  <CardContent className="p-3">
+                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                      <Building className="h-3 w-3" />
+                      Titre de Propriété
+                    </h4>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Type:</span>
+                        <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded text-right">{parcel.property_title_type}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Surface:</span>
+                        <span className="text-xs font-medium text-primary text-right">{formatArea(parcel.area_sqm)}</span>
+                      </div>
+                      {parcel.area_hectares > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-muted-foreground">Hectares:</span>
+                          <span className="text-xs font-medium text-right">{parcel.area_hectares.toFixed(2)} ha</span>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Propriétaire actuel - Mobile First */}
+                <Card className="border-0 bg-gradient-to-br from-background to-secondary/5">
+                  <CardContent className="p-3">
+                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                      <User className="h-3 w-3" />
+                      Propriétaire Actuel
+                    </h4>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">Nom:</span>
+                        <span className="text-xs font-medium text-right break-words leading-tight">{parcel.current_owner_name}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">Statut:</span>
+                        <span className="text-xs font-medium bg-secondary/10 px-1.5 py-0.5 rounded text-right break-words">{parcel.current_owner_legal_status}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Depuis:</span>
+                        <span className="text-xs font-medium text-primary">{formatDate(parcel.current_owner_since)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Onglet Localisation - Mobile First */}
+          <TabsContent value="location" className="mt-3 space-y-3">
+            {!hasServiceAccess('location_history') ? (
+              <div className="p-4 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-3">
+                  <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                    <MapPin className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold mb-1">Contenu verrouillé</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Informations de localisation détaillées
+                    </p>
+                  </div>
+                  <Button onClick={() => { setPreselectServiceId('location_history'); setShowBillingPanel(true); }} size="sm" className="text-xs">
+                    <CreditCard className="h-3 w-3 mr-1" />
                     Débloquer
                   </Button>
                 </div>
               </div>
             ) : (
               <>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {/* Informations de propriété - Design premium */}
-                  <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-primary/5">
-                    <CardContent className="p-4">
-                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
-                        <div className="p-1.5 rounded-lg bg-primary/10">
-                          <Building className="h-4 w-4" />
-                        </div>
-                        Titre de Propriété
-                      </h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-muted-foreground">Type:</span>
-                          <span className="text-sm font-medium bg-primary/10 px-2 py-1 rounded-md">{parcel.property_title_type}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-muted-foreground">Surface:</span>
-                          <span className="text-sm font-medium text-primary">{formatArea(parcel.area_sqm)}</span>
-                        </div>
-                        {parcel.area_hectares > 0 && (
-                          <div className="flex justify-between items-center">
-                            <span className="text-xs text-muted-foreground">Hectares:</span>
-                            <span className="text-sm font-medium text-secondary-foreground">{parcel.area_hectares.toFixed(2)} ha</span>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Propriétaire actuel - Design premium */}
-                  <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-secondary/5">
-                    <CardContent className="p-4">
-                      <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
-                        <div className="p-1.5 rounded-lg bg-primary/10">
-                          <User className="h-4 w-4" />
-                        </div>
-                        Propriétaire Actuel
-                      </h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between items-start">
-                          <span className="text-xs text-muted-foreground">Nom:</span>
-                          <span className="text-sm font-medium text-right max-w-[60%] break-words">{parcel.current_owner_name}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-muted-foreground">Statut:</span>
-                          <span className="text-sm font-medium bg-secondary/10 px-2 py-1 rounded-md">{parcel.current_owner_legal_status}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-muted-foreground">Depuis:</span>
-                          <span className="text-sm font-medium text-primary">{formatDate(parcel.current_owner_since)}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            )}
-          </TabsContent>
-
-          {/* Onglet Localisation - Mobile optimized */}
-          <TabsContent value="location" className="mt-3 md:mt-4 space-y-3 md:space-y-4">
-            {!hasServiceAccess('location_history') ? (
-              <div className="p-4 md:p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-3 md:space-y-4">
-                  <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-muted rounded-full flex items-center justify-center">
-                    <MapPin className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <h3 className="responsive-subtitle font-semibold mb-2">Contenu verrouillé</h3>
-                    <p className="responsive-body text-muted-foreground">
-                      Les informations de localisation détaillées nécessitent un paiement pour être accessibles.
-                    </p>
-                  </div>
-                  <Button onClick={() => { setPreselectServiceId('location_history'); setShowBillingPanel(true); }} className="mt-4 btn-responsive">
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Payer pour accéder à ce service
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <>
-                {/* Informations de localisation détaillées - Mobile optimized */}
-                <Card>
-                  <CardHeader className="pb-3 p-3 md:pb-4 md:p-4">
-                    <CardTitle className="responsive-body flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Localisation Géographique
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-3 md:p-4 pt-0">
-                    <div className="space-y-3 md:space-y-4 md:grid md:grid-cols-2 md:gap-4">
-                      <div className="space-y-2 responsive-caption">
-                        <div className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                          <span className="text-muted-foreground">Province :</span>
-                          <span className="font-medium">{parcel.province}</span>
-                        </div>
-                        
-                        {parcel.parcel_type === 'SU' ? (
-                          <>
-                            {parcel.ville && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Ville :</span>
-                                <span className="font-medium">{parcel.ville}</span>
-                              </div>
-                            )}
-                            {parcel.commune && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Commune :</span>
-                                <span className="font-medium">{parcel.commune}</span>
-                              </div>
-                            )}
-                            {parcel.quartier && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Quartier :</span>
-                                <span className="font-medium">{parcel.quartier}</span>
-                              </div>
-                            )}
-                            {parcel.avenue && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Avenue :</span>
-                                <span className="font-medium">{parcel.avenue}</span>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            {parcel.territoire && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Territoire/District :</span>
-                                <span className="font-medium">{parcel.territoire}</span>
-                              </div>
-                            )}
-                            {parcel.collectivite && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Collectivité :</span>
-                                <span className="font-medium">{parcel.collectivite}</span>
-                              </div>
-                            )}
-                            {parcel.groupement && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Groupement :</span>
-                                <span className="font-medium">{parcel.groupement}</span>
-                              </div>
-                            )}
-                            {parcel.village && (
-                              <div className="flex justify-between">
-                                <span className="text-muted-foreground">Village :</span>
-                                <span className="font-medium">{parcel.village}</span>
-                              </div>
-                            )}
-                          </>
-                        )}
+                {/* Informations de localisation - Mobile First */}
+                <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
+                  <CardContent className="p-3">
+                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                      <MapPin className="h-3 w-3" />
+                      Localisation
+                    </h4>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Province:</span>
+                        <span className="text-xs font-medium text-right">{parcel.province}</span>
                       </div>
                       
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Type de parcelle :</span>
-                          <span className="font-medium">
-                            {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Localisation :</span>
-                          <span className="font-medium">{parcel.location}</span>
-                        </div>
+                      {parcel.parcel_type === 'SU' ? (
+                        <>
+                          {parcel.ville && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Ville:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.ville}</span>
+                            </div>
+                          )}
+                          {parcel.commune && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Commune:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.commune}</span>
+                            </div>
+                          )}
+                          {parcel.quartier && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Quartier:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.quartier}</span>
+                            </div>
+                          )}
+                          {parcel.avenue && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Avenue:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.avenue}</span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          {parcel.territoire && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Territoire:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.territoire}</span>
+                            </div>
+                          )}
+                          {parcel.collectivite && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Collectivité:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.collectivite}</span>
+                            </div>
+                          )}
+                          {parcel.groupement && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Groupement:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.groupement}</span>
+                            </div>
+                          )}
+                          {parcel.village && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Village:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.village}</span>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      <div className="flex justify-between items-center pt-1 border-t border-muted/30">
+                        <span className="text-[10px] text-muted-foreground">Type:</span>
+                        <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded">
+                          {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
@@ -619,42 +604,41 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   parcelNumber={parcel.parcel_number}
                 />
 
-                {/* Informations sur le bornage */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Surveyor className="h-4 w-4" />
-                      Information sur le Bornage
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+                {/* Informations sur le bornage - Mobile First */}
+                <Card className="border-0 bg-gradient-to-br from-background to-secondary/5">
+                  <CardContent className="p-3">
+                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                      <Surveyor className="h-3 w-3" />
+                      Bornage
+                    </h4>
                     {boundary_history.length > 0 ? (
-                      <div className="space-y-4">
+                      <div className="space-y-2">
                         {boundary_history.map((boundary) => (
-                          <div key={boundary.id} className="p-4 border rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              <div>
-                                <span className="text-xs text-muted-foreground">N° de référence PV</span>
-                                <div className="font-medium">{boundary.pv_reference_number}</div>
+                          <div key={boundary.id} className="p-2 bg-muted/30 rounded">
+                            <div className="space-y-1">
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-muted-foreground">Réf. PV:</span>
+                                <span className="text-xs font-medium text-right">{boundary.pv_reference_number}</span>
                               </div>
-                              <div>
-                                <span className="text-xs text-muted-foreground">Objet du bornage</span>
-                                <div className="font-medium">{boundary.boundary_purpose}</div>
+                              <div className="flex justify-between items-start">
+                                <span className="text-[10px] text-muted-foreground">Objet:</span>
+                                <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.boundary_purpose}</span>
                               </div>
-                              <div>
-                                <span className="text-xs text-muted-foreground">Géomètre</span>
-                                <div className="font-medium">{boundary.surveyor_name}</div>
+                              <div className="flex justify-between items-start">
+                                <span className="text-[10px] text-muted-foreground">Géomètre:</span>
+                                <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.surveyor_name}</span>
                               </div>
-                            </div>
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              Date de mesurage : {formatDate(boundary.survey_date)}
+                              <div className="flex justify-between items-center pt-1 border-t border-muted/30">
+                                <span className="text-[10px] text-muted-foreground">Date:</span>
+                                <span className="text-xs font-medium text-primary">{formatDate(boundary.survey_date)}</span>
+                              </div>
                             </div>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center text-muted-foreground py-4">
-                        Aucun historique de bornage disponible
+                      <div className="text-center text-xs text-muted-foreground py-2">
+                        Aucun historique disponible
                       </div>
                     )}
                   </CardContent>
@@ -663,73 +647,80 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             )}
           </TabsContent>
 
-          {/* Onglet Historique */}
-          <TabsContent value="history" className="mt-4">
+          {/* Onglet Historique - Mobile First */}
+          <TabsContent value="history" className="mt-3 space-y-3">
             {!hasServiceAccess('history') ? (
-              <div className="p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                    <Clock className="h-8 w-8 text-muted-foreground" />
+              <div className="p-4 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-3">
+                  <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      L'historique des propriétaires nécessite un paiement pour être accessible.
+                    <h3 className="text-sm font-semibold mb-1">Contenu verrouillé</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Historique des propriétaires
                     </p>
                   </div>
-                  <Button onClick={() => { setPreselectServiceId('history'); setShowBillingPanel(true); }} className="mt-4">
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Payer pour accéder à ce service
+                  <Button onClick={() => { setPreselectServiceId('history'); setShowBillingPanel(true); }} size="sm" className="text-xs">
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    Débloquer
                   </Button>
                 </div>
               </div>
             ) : (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
+              <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
+                <CardContent className="p-3">
+                  <h4 className="text-xs font-semibold mb-3 flex items-center gap-1.5 text-primary">
+                    <Clock className="h-3 w-3" />
                     Historique des Propriétaires
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
+                  </h4>
+                  <div className="space-y-2">
                     {/* Propriétaire actuel */}
-                    <div className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg">
-                      <div className="w-2 h-2 bg-green-500 rounded-full mt-2" />
+                    <div className="flex items-start gap-2 p-2 bg-primary/10 rounded">
+                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0" />
                       <div className="flex-1">
-                        <div className="flex items-center justify-between">
-                          <span className="font-medium">{parcel.current_owner_name}</span>
-                          <Badge variant="default">Propriétaire actuel</Badge>
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-xs font-medium break-words">{parcel.current_owner_name}</span>
+                          <Badge variant="default" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">Actuel</Badge>
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {parcel.current_owner_legal_status} • Depuis {formatDate(parcel.current_owner_since)}
+                        <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                          {parcel.current_owner_legal_status}
+                        </div>
+                        <div className="text-[10px] text-primary mt-0.5">
+                          Depuis {formatDate(parcel.current_owner_since)}
                         </div>
                       </div>
                     </div>
 
                     {/* Anciens propriétaires */}
-                    {ownership_history.length > 0 && <Separator />}
-                    {ownership_history.map((owner, index) => (
-                      <div key={owner.id} className="flex items-start gap-3 p-3 rounded-lg">
-                        <div className="w-2 h-2 bg-muted-foreground rounded-full mt-2" />
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between">
-                            <span className="font-medium">{owner.owner_name}</span>
-                            {owner.mutation_type && (
-                              <Badge variant="outline">{owner.mutation_type}</Badge>
-                            )}
+                    {ownership_history.length > 0 && (
+                      <>
+                        <div className="border-t border-muted/30 my-2"></div>
+                        {ownership_history.map((owner, index) => (
+                          <div key={owner.id} className="flex items-start gap-2 p-2 bg-muted/30 rounded">
+                            <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full mt-1.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="text-xs font-medium break-words">{owner.owner_name}</span>
+                                {owner.mutation_type && (
+                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">{owner.mutation_type}</Badge>
+                                )}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                                {owner.legal_status}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">
+                                Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground mt-1">
-                            {owner.legal_status} • 
-                            Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                        ))}
+                      </>
+                    )}
 
                     {ownership_history.length === 0 && (
-                      <div className="text-center text-muted-foreground py-4">
-                        Aucun historique de propriétaire disponible
+                      <div className="text-center text-xs text-muted-foreground py-2">
+                        Aucun historique disponible
                       </div>
                     )}
                   </div>
@@ -738,175 +729,163 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             )}
           </TabsContent>
 
-          {/* Onglet Obligations */}
-          <TabsContent value="obligations" className="mt-4">
+          {/* Onglet Obligations - Mobile First */}
+          <TabsContent value="obligations" className="mt-3 space-y-3">
             {!hasServiceAccess('obligations') ? (
-              <div className="p-8 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
-                <div className="space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center">
-                    <Calculator className="h-8 w-8 text-muted-foreground" />
+              <div className="p-4 text-center border-2 border-dashed border-muted-foreground/30 rounded-lg">
+                <div className="space-y-3">
+                  <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                    <Calculator className="h-6 w-6 text-muted-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold mb-2">Contenu verrouillé</h3>
-                    <p className="text-muted-foreground max-w-md mx-auto">
-                      Les obligations fiscales et hypothécaires nécessitent un paiement pour être accessibles.
+                    <h3 className="text-sm font-semibold mb-1">Contenu verrouillé</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Obligations fiscales et hypothécaires
                     </p>
                   </div>
-                  <Button onClick={() => { setPreselectServiceId('obligations'); setShowBillingPanel(true); }} className="mt-4">
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Payer pour accéder à ce service
+                  <Button onClick={() => { setPreselectServiceId('obligations'); setShowBillingPanel(true); }} size="sm" className="text-xs">
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    Débloquer
                   </Button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4">
-                {/* Navigation des sous-sections */}
-                <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+              <div className="space-y-3">
+                {/* Navigation des sous-sections - Mobile First */}
+                <div className="flex bg-muted p-0.5 rounded-lg">
                   <button
-                    className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
-                      obligationsTab === 'taxes' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                    className={`flex-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                      obligationsTab === 'taxes' ? 'bg-background shadow-sm text-primary' : 'hover:bg-background/50'
                     }`}
                     onClick={() => setObligationsTab('taxes')}
                   >
-                    <Receipt className="h-4 w-4 inline mr-2" />
-                    Taxes foncières
+                    <Receipt className="h-3 w-3 inline mr-1" />
+                    Taxes
                   </button>
                   <button
-                    className={`flex-1 px-3 py-2 text-sm rounded-md transition-colors ${
-                      obligationsTab === 'mortgages' ? 'bg-background shadow-sm' : 'hover:bg-background/50'
+                    className={`flex-1 px-2 py-1.5 text-xs rounded-md transition-colors ${
+                      obligationsTab === 'mortgages' ? 'bg-background shadow-sm text-primary' : 'hover:bg-background/50'
                     }`}
                     onClick={() => setObligationsTab('mortgages')}
                   >
-                    <CreditCard className="h-4 w-4 inline mr-2" />
+                    <CreditCard className="h-3 w-3 inline mr-1" />
                     Hypothèques
                   </button>
                 </div>
 
-                {/* Section Taxes foncières */}
+                {/* Section Taxes foncières - Mobile First */}
                 {obligationsTab === 'taxes' && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Receipt className="h-4 w-4" />
-                        Historique des Taxes Foncières
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                  <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
+                    <CardContent className="p-3">
+                      <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                        <Receipt className="h-3 w-3" />
+                        Taxes Foncières
+                      </h4>
                       {tax_history.length > 0 ? (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                           {tax_history.map((tax) => (
-                            <div key={tax.id} className="flex items-center justify-between p-4 border rounded-lg">
-                              <div className="flex items-center gap-3">
-                                {getPaymentStatusIcon(tax.payment_status)}
-                                <div>
-                                  <div className="font-medium">Taxe foncière annuelle - {tax.tax_year}</div>
-                                  <div className="text-sm text-muted-foreground">
-                                    Montant dû: ${tax.amount_usd.toLocaleString()} USD
-                                  </div>
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    Période: Année fiscale {tax.tax_year}
+                            <div key={tax.id} className="p-2 bg-muted/30 rounded">
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="flex items-start gap-1.5">
+                                  {getPaymentStatusIcon(tax.payment_status)}
+                                  <div className="flex-1">
+                                    <div className="text-xs font-medium break-words">Taxe {tax.tax_year}</div>
+                                    <div className="text-[10px] text-muted-foreground">
+                                      ${tax.amount_usd.toLocaleString()} USD
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                              <div className="text-right">
-                                <Badge variant={getPaymentStatusBadge(tax.payment_status)}>
+                                <Badge variant={getPaymentStatusBadge(tax.payment_status)} className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
                                   {translatePaymentStatus(tax.payment_status)}
                                 </Badge>
-                                {tax.payment_date && (
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    Payé le {formatDate(tax.payment_date)}
-                                  </div>
-                                )}
                               </div>
+                              {tax.payment_date && (
+                                <div className="text-[10px] text-primary">
+                                  Payé le {formatDate(tax.payment_date)}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
                       ) : (
-                        <div className="text-center text-muted-foreground py-4">
-                          Aucun historique de taxes disponible
+                        <div className="text-center text-xs text-muted-foreground py-2">
+                          Aucun historique disponible
                         </div>
                       )}
                     </CardContent>
                   </Card>
                 )}
 
-                {/* Section Hypothèques */}
+                {/* Section Hypothèques - Mobile First */}
                 {obligationsTab === 'mortgages' && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <CreditCard className="h-4 w-4" />
-                        Historique des Hypothèques
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                  <Card className="border-0 bg-gradient-to-br from-background to-secondary/5">
+                    <CardContent className="p-3">
+                      <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                        <CreditCard className="h-3 w-3" />
+                        Hypothèques
+                      </h4>
                       {mortgage_history.length > 0 ? (
-                        <div className="space-y-4">
+                        <div className="space-y-2">
                           {mortgage_history.map((mortgage) => {
                             const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
                             const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
                             
                             return (
-                              <div key={mortgage.id} className="border rounded-lg p-4">
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex items-center gap-3">
-                                    <Landmark className="h-5 w-5 text-blue-500" />
+                              <div key={mortgage.id} className="p-2 bg-muted/30 rounded">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                  <div className="flex items-start gap-1.5">
+                                    <Landmark className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
                                     <div>
-                                      <div className="font-medium text-lg">
+                                      <div className="text-xs font-medium">
                                         ${mortgage.mortgage_amount_usd.toLocaleString()} USD
                                       </div>
-                                      <div className="text-sm text-muted-foreground">
-                                        {mortgage.creditor_name} • {mortgage.creditor_type}
+                                      <div className="text-[10px] text-muted-foreground break-words">
+                                        {mortgage.creditor_name}
                                       </div>
                                     </div>
                                   </div>
                                   <Badge variant={
                                     mortgage.mortgage_status === 'paid_off' ? 'default' :
                                     mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
-                                  }>
+                                  } className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
                                     {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
                                      mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
                                   </Badge>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div className="grid grid-cols-3 gap-2 my-1">
                                   <div>
-                                    <span className="text-xs text-muted-foreground">Durée</span>
-                                    <div className="font-medium">{mortgage.duration_months} mois</div>
+                                    <div className="text-[9px] text-muted-foreground">Durée</div>
+                                    <div className="text-xs font-medium">{mortgage.duration_months}m</div>
                                   </div>
                                   <div>
-                                    <span className="text-xs text-muted-foreground">Montant payé</span>
-                                    <div className="font-medium text-green-600">
-                                      ${totalPaid.toLocaleString()} USD
+                                    <div className="text-[9px] text-muted-foreground">Payé</div>
+                                    <div className="text-xs font-medium text-green-600">
+                                      ${totalPaid.toLocaleString()}
                                     </div>
                                   </div>
                                   <div>
-                                    <span className="text-xs text-muted-foreground">Montant restant</span>
-                                    <div className="font-medium text-red-600">
-                                      ${remainingAmount.toLocaleString()} USD
+                                    <div className="text-[9px] text-muted-foreground">Restant</div>
+                                    <div className="text-xs font-medium text-red-600">
+                                      ${remainingAmount.toLocaleString()}
                                     </div>
                                   </div>
                                 </div>
 
-                                <div className="text-xs text-muted-foreground mb-3">
-                                  Contrat signé le {formatDate(mortgage.contract_date)}
+                                <div className="text-[10px] text-muted-foreground border-t border-muted/30 pt-1">
+                                  Contrat: {formatDate(mortgage.contract_date)}
                                 </div>
 
                                 {mortgage.payments.length > 0 && (
-                                  <div>
-                                    <h5 className="font-medium text-sm mb-2">Historique des paiements</h5>
-                                    <div className="space-y-2 max-h-32 overflow-y-auto">
-                                      {mortgage.payments.map((payment) => (
-                                        <div key={payment.id} className="flex justify-between items-center text-sm p-2 bg-muted/50 rounded">
-                                          <span>${payment.payment_amount_usd.toLocaleString()} USD</span>
-                                          <div className="flex items-center gap-2">
-                                            <Badge variant="outline">
-                                              {payment.payment_type === 'total' ? 'Paiement total' : 'Paiement partiel'}
-                                            </Badge>
-                                            <span className="text-muted-foreground">
-                                              {formatDate(payment.payment_date)}
-                                            </span>
-                                          </div>
+                                  <div className="mt-1 pt-1 border-t border-muted/30">
+                                    <div className="text-[10px] font-medium mb-1">Paiements récents:</div>
+                                    <div className="space-y-1 max-h-16 overflow-y-auto">
+                                      {mortgage.payments.slice(0, 2).map((payment) => (
+                                        <div key={payment.id} className="flex justify-between items-center text-[10px] bg-muted/20 rounded px-1 py-0.5">
+                                          <span>${payment.payment_amount_usd.toLocaleString()}</span>
+                                          <span className="text-muted-foreground">
+                                            {formatDate(payment.payment_date)}
+                                          </span>
                                         </div>
                                       ))}
                                     </div>
@@ -917,8 +896,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                           })}
                         </div>
                       ) : (
-                        <div className="text-center text-muted-foreground py-4">
-                          Aucun historique d'hypothèques disponible
+                        <div className="text-center text-xs text-muted-foreground py-2">
+                          Aucun historique disponible
                         </div>
                       )}
                     </CardContent>
