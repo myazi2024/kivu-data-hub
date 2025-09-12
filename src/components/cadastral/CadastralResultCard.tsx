@@ -722,46 +722,130 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                     Historique des Propriétaires
                   </h4>
                   <div className="space-y-2">
-                    {/* Propriétaire actuel */}
-                    <div className="flex items-start gap-2 p-2 bg-primary/10 rounded">
-                      <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="text-xs font-medium break-words">{parcel.current_owner_name}</span>
-                          <Badge variant="default" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">Actuel</Badge>
-                        </div>
-                        <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                          {parcel.current_owner_legal_status}
-                        </div>
-                        <div className="text-[10px] text-primary mt-0.5">
-                          Depuis {formatDate(parcel.current_owner_since)}
-                        </div>
-                      </div>
-                    </div>
+                     {/* Propriétaire actuel */}
+                     <div className="flex items-start gap-2 p-2 bg-primary/10 rounded">
+                       <div className="w-1.5 h-1.5 bg-green-500 rounded-full mt-1.5 flex-shrink-0" />
+                       <div className="flex-1">
+                         <div className="flex items-start justify-between gap-2">
+                           <span className="text-xs font-medium break-words">{parcel.current_owner_name}</span>
+                           <Badge variant="default" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">Actuel</Badge>
+                         </div>
+                         <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                           {parcel.current_owner_legal_status}
+                         </div>
+                         <div className="text-[10px] text-primary mt-0.5">
+                           Depuis {formatDate(parcel.current_owner_since)}
+                         </div>
+                         <div className="mt-2 pt-2 border-t border-muted/30">
+                           <div className="flex items-center gap-1">
+                             <Button
+                               variant="ghost"
+                               size="sm"
+                               className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
+                               onClick={() => {
+                                 const ownerVerificationUrl = `https://cadastre.cd/verification-proprietaire/${encodeURIComponent(parcel.current_owner_name)}?parcelle=${parcel.parcel_number}`;
+                                 window.open(ownerVerificationUrl, '_blank');
+                               }}
+                             >
+                               <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
+                               <span className="hidden xs:inline">Vérifier</span>
+                               <span className="xs:hidden">Vérif.</span>
+                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
+                             </Button>
+                             
+                             <Popover>
+                               <PopoverTrigger asChild>
+                                 <Button
+                                   variant="ghost"
+                                   size="sm"
+                                   className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
+                                 >
+                                   <Info className="h-3 w-3" />
+                                 </Button>
+                               </PopoverTrigger>
+                               <PopoverContent side="top" className="w-72 p-3" align="end">
+                                 <div className="space-y-2">
+                                   <div className="flex items-center gap-2">
+                                     <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
+                                     <p className="font-medium text-sm text-orange-600">Service externe</p>
+                                   </div>
+                                   <p className="text-xs text-muted-foreground leading-relaxed">
+                                     Vérification des données du propriétaire auprès des services officiels. 
+                                     Des frais supplémentaires peuvent être demandés.
+                                   </p>
+                                 </div>
+                               </PopoverContent>
+                             </Popover>
+                           </div>
+                         </div>
+                       </div>
+                     </div>
 
                     {/* Anciens propriétaires */}
                     {ownership_history.length > 0 && (
                       <>
                         <div className="border-t border-muted/30 my-2"></div>
-                        {ownership_history.map((owner, index) => (
-                          <div key={owner.id} className="flex items-start gap-2 p-2 bg-muted/30 rounded">
-                            <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full mt-1.5 flex-shrink-0" />
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between gap-2">
-                                <span className="text-xs font-medium break-words">{owner.owner_name}</span>
-                                {owner.mutation_type && (
-                                  <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">{owner.mutation_type}</Badge>
-                                )}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                                {owner.legal_status}
-                              </div>
-                              <div className="text-[10px] text-muted-foreground mt-0.5">
-                                Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+                         {ownership_history.map((owner, index) => (
+                           <div key={owner.id} className="flex items-start gap-2 p-2 bg-muted/30 rounded">
+                             <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full mt-1.5 flex-shrink-0" />
+                             <div className="flex-1">
+                               <div className="flex items-start justify-between gap-2">
+                                 <span className="text-xs font-medium break-words">{owner.owner_name}</span>
+                                 {owner.mutation_type && (
+                                   <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">{owner.mutation_type}</Badge>
+                                 )}
+                               </div>
+                               <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                                 {owner.legal_status}
+                               </div>
+                               <div className="text-[10px] text-muted-foreground mt-0.5">
+                                 Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                               </div>
+                               <div className="mt-2 pt-2 border-t border-muted/30">
+                                 <div className="flex items-center gap-1">
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
+                                     onClick={() => {
+                                       const ownerVerificationUrl = `https://cadastre.cd/verification-proprietaire/${encodeURIComponent(owner.owner_name)}?parcelle=${parcel.parcel_number}&periode=${owner.ownership_start_date}-${owner.ownership_end_date}`;
+                                       window.open(ownerVerificationUrl, '_blank');
+                                     }}
+                                   >
+                                     <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
+                                     <span className="hidden xs:inline">Vérifier</span>
+                                     <span className="xs:hidden">Vérif.</span>
+                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
+                                   </Button>
+                                   
+                                   <Popover>
+                                     <PopoverTrigger asChild>
+                                       <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
+                                       >
+                                         <Info className="h-3 w-3" />
+                                       </Button>
+                                     </PopoverTrigger>
+                                     <PopoverContent side="top" className="w-72 p-3" align="end">
+                                       <div className="space-y-2">
+                                         <div className="flex items-center gap-2">
+                                           <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
+                                           <p className="font-medium text-sm text-orange-600">Service externe</p>
+                                         </div>
+                                         <p className="text-xs text-muted-foreground leading-relaxed">
+                                           Vérification des données de l'ancien propriétaire auprès des archives officielles. 
+                                           Des frais supplémentaires peuvent être demandés.
+                                         </p>
+                                       </div>
+                                     </PopoverContent>
+                                   </Popover>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+                         ))}
                       </>
                     )}
 
@@ -830,29 +914,71 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       </h4>
                       {tax_history.length > 0 ? (
                         <div className="space-y-2">
-                          {tax_history.map((tax) => (
-                            <div key={tax.id} className="p-2 bg-muted/30 rounded">
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="flex items-start gap-1.5">
-                                  {getPaymentStatusIcon(tax.payment_status)}
-                                  <div className="flex-1">
-                                    <div className="text-xs font-medium break-words">Taxe {tax.tax_year}</div>
-                                    <div className="text-[10px] text-muted-foreground">
-                                      ${tax.amount_usd.toLocaleString()} USD
-                                    </div>
-                                  </div>
-                                </div>
-                                <Badge variant={getPaymentStatusBadge(tax.payment_status)} className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
-                                  {translatePaymentStatus(tax.payment_status)}
-                                </Badge>
-                              </div>
-                              {tax.payment_date && (
-                                <div className="text-[10px] text-primary">
-                                  Payé le {formatDate(tax.payment_date)}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                           {tax_history.map((tax) => (
+                             <div key={tax.id} className="p-2 bg-muted/30 rounded">
+                               <div className="flex items-start justify-between gap-2 mb-1">
+                                 <div className="flex items-start gap-1.5">
+                                   {getPaymentStatusIcon(tax.payment_status)}
+                                   <div className="flex-1">
+                                     <div className="text-xs font-medium break-words">Taxe {tax.tax_year}</div>
+                                     <div className="text-[10px] text-muted-foreground">
+                                       ${tax.amount_usd.toLocaleString()} USD
+                                     </div>
+                                   </div>
+                                 </div>
+                                 <Badge variant={getPaymentStatusBadge(tax.payment_status)} className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
+                                   {translatePaymentStatus(tax.payment_status)}
+                                 </Badge>
+                               </div>
+                               {tax.payment_date && (
+                                 <div className="text-[10px] text-primary">
+                                   Payé le {formatDate(tax.payment_date)}
+                                 </div>
+                               )}
+                               <div className="mt-2 pt-2 border-t border-muted/30">
+                                 <div className="flex items-center gap-1">
+                                   <Button
+                                     variant="ghost"
+                                     size="sm"
+                                     className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
+                                     onClick={() => {
+                                       const taxVerificationUrl = `https://impots.cd/verification-taxe-fonciere/${parcel.parcel_number}?annee=${tax.tax_year}`;
+                                       window.open(taxVerificationUrl, '_blank');
+                                     }}
+                                   >
+                                     <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
+                                     <span className="hidden xs:inline">Vérifier</span>
+                                     <span className="xs:hidden">Vérif.</span>
+                                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
+                                   </Button>
+                                   
+                                   <Popover>
+                                     <PopoverTrigger asChild>
+                                       <Button
+                                         variant="ghost"
+                                         size="sm"
+                                         className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
+                                       >
+                                         <Info className="h-3 w-3" />
+                                       </Button>
+                                     </PopoverTrigger>
+                                     <PopoverContent side="top" className="w-72 p-3" align="end">
+                                       <div className="space-y-2">
+                                         <div className="flex items-center gap-2">
+                                           <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
+                                           <p className="font-medium text-sm text-orange-600">Service externe</p>
+                                         </div>
+                                         <p className="text-xs text-muted-foreground leading-relaxed">
+                                           Vérification du statut de paiement auprès des services fiscaux officiels. 
+                                           Des frais supplémentaires peuvent être demandés.
+                                         </p>
+                                       </div>
+                                     </PopoverContent>
+                                   </Popover>
+                                 </div>
+                               </div>
+                             </div>
+                           ))}
                         </div>
                       ) : (
                         <div className="text-center text-xs text-muted-foreground py-2">
@@ -873,74 +999,117 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       </h4>
                       {mortgage_history.length > 0 ? (
                         <div className="space-y-2">
-                          {mortgage_history.map((mortgage) => {
-                            const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
-                            const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
-                            
-                            return (
-                              <div key={mortgage.id} className="p-2 bg-muted/30 rounded">
-                                <div className="flex items-start justify-between gap-2 mb-1">
-                                  <div className="flex items-start gap-1.5">
-                                    <Landmark className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
-                                    <div>
-                                      <div className="text-xs font-medium">
-                                        ${mortgage.mortgage_amount_usd.toLocaleString()} USD
-                                      </div>
-                                      <div className="text-[10px] text-muted-foreground break-words">
-                                        {mortgage.creditor_name}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  <Badge variant={
-                                    mortgage.mortgage_status === 'paid_off' ? 'default' :
-                                    mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
-                                  } className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
-                                    {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
-                                     mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
-                                  </Badge>
-                                </div>
+                           {mortgage_history.map((mortgage) => {
+                             const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
+                             const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
+                             
+                             return (
+                               <div key={mortgage.id} className="p-2 bg-muted/30 rounded">
+                                 <div className="flex items-start justify-between gap-2 mb-1">
+                                   <div className="flex items-start gap-1.5">
+                                     <Landmark className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                                     <div>
+                                       <div className="text-xs font-medium">
+                                         ${mortgage.mortgage_amount_usd.toLocaleString()} USD
+                                       </div>
+                                       <div className="text-[10px] text-muted-foreground break-words">
+                                         {mortgage.creditor_name}
+                                       </div>
+                                     </div>
+                                   </div>
+                                   <Badge variant={
+                                     mortgage.mortgage_status === 'paid_off' ? 'default' :
+                                     mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
+                                   } className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
+                                     {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
+                                      mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
+                                   </Badge>
+                                 </div>
 
-                                <div className="grid grid-cols-3 gap-2 my-1">
-                                  <div>
-                                    <div className="text-[9px] text-muted-foreground">Durée</div>
-                                    <div className="text-xs font-medium">{mortgage.duration_months}m</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-[9px] text-muted-foreground">Payé</div>
-                                    <div className="text-xs font-medium text-green-600">
-                                      ${totalPaid.toLocaleString()}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="text-[9px] text-muted-foreground">Restant</div>
-                                    <div className="text-xs font-medium text-red-600">
-                                      ${remainingAmount.toLocaleString()}
-                                    </div>
-                                  </div>
-                                </div>
+                                 <div className="grid grid-cols-3 gap-2 my-1">
+                                   <div>
+                                     <div className="text-[9px] text-muted-foreground">Durée</div>
+                                     <div className="text-xs font-medium">{mortgage.duration_months}m</div>
+                                   </div>
+                                   <div>
+                                     <div className="text-[9px] text-muted-foreground">Payé</div>
+                                     <div className="text-xs font-medium text-green-600">
+                                       ${totalPaid.toLocaleString()}
+                                     </div>
+                                   </div>
+                                   <div>
+                                     <div className="text-[9px] text-muted-foreground">Restant</div>
+                                     <div className="text-xs font-medium text-red-600">
+                                       ${remainingAmount.toLocaleString()}
+                                     </div>
+                                   </div>
+                                 </div>
 
-                                <div className="text-[10px] text-muted-foreground border-t border-muted/30 pt-1">
-                                  Contrat: {formatDate(mortgage.contract_date)}
-                                </div>
+                                 <div className="text-[10px] text-muted-foreground border-t border-muted/30 pt-1">
+                                   Contrat: {formatDate(mortgage.contract_date)}
+                                 </div>
 
-                                {mortgage.payments.length > 0 && (
-                                  <div className="mt-1 pt-1 border-t border-muted/30">
-                                    <div className="text-[10px] font-medium mb-1">Paiements récents:</div>
-                                    <div className="space-y-1 max-h-16 overflow-y-auto">
-                                      {mortgage.payments.slice(0, 2).map((payment) => (
-                                        <div key={payment.id} className="flex justify-between items-center text-[10px] bg-muted/20 rounded px-1 py-0.5">
-                                          <span>${payment.payment_amount_usd.toLocaleString()}</span>
-                                          <span className="text-muted-foreground">
-                                            {formatDate(payment.payment_date)}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+                                 {mortgage.payments.length > 0 && (
+                                   <div className="mt-1 pt-1 border-t border-muted/30">
+                                     <div className="text-[10px] font-medium mb-1">Paiements récents:</div>
+                                     <div className="space-y-1 max-h-16 overflow-y-auto">
+                                       {mortgage.payments.slice(0, 2).map((payment) => (
+                                         <div key={payment.id} className="flex justify-between items-center text-[10px] bg-muted/20 rounded px-1 py-0.5">
+                                           <span>${payment.payment_amount_usd.toLocaleString()}</span>
+                                           <span className="text-muted-foreground">
+                                             {formatDate(payment.payment_date)}
+                                           </span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
+
+                                 <div className="mt-2 pt-2 border-t border-muted/30">
+                                   <div className="flex items-center gap-1">
+                                     <Button
+                                       variant="ghost"
+                                       size="sm"
+                                       className="flex-1 h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
+                                       onClick={() => {
+                                         const mortgageVerificationUrl = `https://hypotheques.cd/verification-hypotheque/${parcel.parcel_number}?creancier=${encodeURIComponent(mortgage.creditor_name)}&contrat=${mortgage.contract_date}`;
+                                         window.open(mortgageVerificationUrl, '_blank');
+                                       }}
+                                     >
+                                       <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
+                                       <span className="hidden xs:inline">Vérifier</span>
+                                       <span className="xs:hidden">Vérif.</span>
+                                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
+                                     </Button>
+                                     
+                                     <Popover>
+                                       <PopoverTrigger asChild>
+                                         <Button
+                                           variant="ghost"
+                                           size="sm"
+                                           className="h-6 w-6 p-0 text-primary/70 hover:text-primary hover:bg-primary/10 transition-all duration-200 rounded-md"
+                                         >
+                                           <Info className="h-3 w-3" />
+                                         </Button>
+                                       </PopoverTrigger>
+                                       <PopoverContent side="top" className="w-72 p-3" align="end">
+                                         <div className="space-y-2">
+                                           <div className="flex items-center gap-2">
+                                             <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
+                                             <p className="font-medium text-sm text-orange-600">Service externe</p>
+                                           </div>
+                                           <p className="text-xs text-muted-foreground leading-relaxed">
+                                             Vérification du statut de l'hypothèque auprès des services officiels compétents. 
+                                             Des frais supplémentaires peuvent être demandés.
+                                           </p>
+                                         </div>
+                                       </PopoverContent>
+                                     </Popover>
+                                   </div>
+                                 </div>
+                               </div>
+                             );
+                           })}
                         </div>
                       ) : (
                         <div className="text-center text-xs text-muted-foreground py-2">
