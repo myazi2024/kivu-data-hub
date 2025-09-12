@@ -18,7 +18,8 @@ import {
   Calculator,
   MapPin as Surveyor,
   Printer,
-  Settings
+  Settings,
+  FileCheck
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -611,31 +612,48 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       <Surveyor className="h-3 w-3" />
                       Bornage
                     </h4>
-                    {boundary_history.length > 0 ? (
-                      <div className="space-y-2">
-                        {boundary_history.map((boundary) => (
-                          <div key={boundary.id} className="p-2 bg-muted/30 rounded">
-                            <div className="space-y-1">
-                              <div className="flex justify-between items-center">
-                                <span className="text-[10px] text-muted-foreground">Réf. PV:</span>
-                                <span className="text-xs font-medium text-right">{boundary.pv_reference_number}</span>
-                              </div>
-                              <div className="flex justify-between items-start">
-                                <span className="text-[10px] text-muted-foreground">Objet:</span>
-                                <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.boundary_purpose}</span>
-                              </div>
-                              <div className="flex justify-between items-start">
-                                <span className="text-[10px] text-muted-foreground">Géomètre:</span>
-                                <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.surveyor_name}</span>
-                              </div>
-                              <div className="flex justify-between items-center pt-1 border-t border-muted/30">
-                                <span className="text-[10px] text-muted-foreground">Date:</span>
-                                <span className="text-xs font-medium text-primary">{formatDate(boundary.survey_date)}</span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                     {boundary_history.length > 0 ? (
+                       <div className="space-y-2">
+                         {boundary_history.map((boundary) => (
+                           <div key={boundary.id} className="p-2 bg-muted/30 rounded-lg border border-border/50">
+                             <div className="space-y-1">
+                               <div className="flex justify-between items-center">
+                                 <span className="text-[10px] text-muted-foreground">Réf. PV:</span>
+                                 <span className="text-xs font-medium text-right">{boundary.pv_reference_number}</span>
+                               </div>
+                               <div className="flex justify-between items-start">
+                                 <span className="text-[10px] text-muted-foreground">Objet:</span>
+                                 <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.boundary_purpose}</span>
+                               </div>
+                               <div className="flex justify-between items-start">
+                                 <span className="text-[10px] text-muted-foreground">Géomètre:</span>
+                                 <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.surveyor_name}</span>
+                               </div>
+                               <div className="flex justify-between items-center pt-1 border-t border-muted/30">
+                                 <span className="text-[10px] text-muted-foreground">Date:</span>
+                                 <span className="text-xs font-medium text-primary">{formatDate(boundary.survey_date)}</span>
+                               </div>
+                               <div className="mt-2 pt-2 border-t border-muted/30">
+                                 <Button
+                                   variant="outline"
+                                   size="sm"
+                                   className="w-full h-7 text-[10px] font-medium px-2 py-1 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 text-primary hover:text-primary transition-all duration-200"
+                                   onClick={() => {
+                                     // Redirection vers le bureau de la circonscription foncière
+                                     // Vous pouvez adapter cette URL selon votre système
+                                     const landRegistryUrl = `https://circonscription-fonciere.cd/verification-pv/${boundary.pv_reference_number}?parcelle=${parcel.parcel_number}&location=${encodeURIComponent(parcel.location)}`;
+                                     window.open(landRegistryUrl, '_blank');
+                                   }}
+                                 >
+                                   <FileCheck className="h-3 w-3 mr-1.5" />
+                                   <span className="hidden xs:inline">Vérifier le PV de bornage</span>
+                                   <span className="xs:hidden">Vérifier PV</span>
+                                 </Button>
+                               </div>
+                             </div>
+                           </div>
+                         ))}
+                       </div>
                     ) : (
                       <div className="text-center text-xs text-muted-foreground py-2">
                         Aucun historique disponible
