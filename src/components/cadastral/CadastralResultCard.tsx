@@ -460,28 +460,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                     </CardContent>
                   </Card>
                 </div>
-
-                {/* Statut fiscal - Design premium */}
-                <Card className="shadow-md hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-background to-accent/5">
-                  <CardContent className="p-4">
-                    <h4 className="text-sm font-semibold mb-3 flex items-center gap-2 text-primary">
-                      <div className="p-1.5 rounded-lg bg-primary/10">
-                        <DollarSign className="h-4 w-4" />
-                      </div>
-                      Statut Fiscal
-                    </h4>
-                    <div className="flex items-center gap-2">
-                      {taxStatus.status === 'up_to_date' && <CheckCircle className="h-5 w-5 text-green-500" />}
-                      {taxStatus.status === 'pending' && <AlertCircle className="h-5 w-5 text-yellow-500" />}
-                      {taxStatus.status === 'overdue' && <XCircle className="h-5 w-5 text-red-500" />}
-                      <span className="text-sm font-medium">
-                        {taxStatus.status === 'up_to_date' && 'À jour'}
-                        {taxStatus.status === 'pending' && `${taxStatus.count} en attente`}
-                        {taxStatus.status === 'overdue' && `${taxStatus.count} en retard`}
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
               </>
             )}
           </TabsContent>
