@@ -642,17 +642,17 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                         <Button
                                           variant="ghost"
                                           size="sm"
-                                          className="w-full h-8 text-xs font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 hover:border-primary/40 text-primary hover:text-primary transition-all duration-300 hover:shadow-sm rounded-lg"
+                                          className="w-full h-6 text-[10px] font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/8 hover:from-primary/10 hover:to-primary/15 border border-primary/15 hover:border-primary/25 text-primary hover:text-primary transition-all duration-300 hover:scale-[1.02] hover:shadow-sm rounded-md px-2 py-0.5"
                                           onClick={() => {
                                             // Redirection vers le bureau de la circonscription foncière
                                             const landRegistryUrl = `https://circonscription-fonciere.cd/verification-pv/${boundary.pv_reference_number}?parcelle=${parcel.parcel_number}&location=${encodeURIComponent(parcel.location)}`;
                                             window.open(landRegistryUrl, '_blank');
                                           }}
                                         >
-                                          <ExternalLink className="h-3.5 w-3.5 mr-2 group-hover:scale-110 transition-transform duration-200" />
-                                          <span className="hidden sm:inline">Vérifier le PV</span>
-                                          <span className="sm:hidden">Vérifier</span>
-                                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+                                          <ExternalLink className="h-2.5 w-2.5 mr-1 group-hover:scale-110 transition-transform duration-200" />
+                                          <span className="hidden xs:inline">Vérifier PV</span>
+                                          <span className="xs:hidden">Vérifier</span>
+                                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out" />
                                         </Button>
                                       </TooltipTrigger>
                                       <TooltipContent side="top" className="max-w-xs">
