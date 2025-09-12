@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MapPin, 
   User, 
@@ -48,9 +48,31 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [showInvoice, setShowInvoice] = useState(false);
   const [preselectServiceId, setPreselectServiceId] = useState<string | undefined>(undefined);
   const [invoiceFormat, setInvoiceFormat] = useState<'mini' | 'a4'>('a4');
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
+
+  // Logique de scroll pour masquer/afficher l'en-tête
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const scrollDirection = currentScrollY > lastScrollY ? 'down' : 'up';
+      
+      // Masquer l'en-tête si on scroll vers le bas (plus de 100px) ou l'afficher si on remonte
+      if (scrollDirection === 'down' && currentScrollY > 100) {
+        setIsHeaderHidden(true);
+      } else if (scrollDirection === 'up' || currentScrollY <= 50) {
+        setIsHeaderHidden(false);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [lastScrollY]);
 
   // Check user access to different services on mount
   React.useEffect(() => {
@@ -253,7 +275,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   return (
     <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
-      <CardHeader className="sticky top-0 z-20 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95">
+      <CardHeader className={`sticky top-0 z-20 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95 transition-transform duration-300 ease-in-out ${isHeaderHidden ? '-translate-y-full' : 'translate-y-0'}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <CardTitle className="flex items-center gap-2 text-sm md:text-base font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
@@ -308,7 +330,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       <CardContent className="p-4 md:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Onglets figés pour faciliter la navigation */}
-          <TabsList className="sticky top-[120px] z-10 grid w-full grid-cols-4 h-auto bg-muted/50 p-1 rounded-xl shadow-inner backdrop-blur-md bg-background/95 border border-border/50">
+          <TabsList className={`sticky z-10 grid w-full grid-cols-4 h-auto bg-muted/50 p-1 rounded-xl shadow-inner backdrop-blur-md bg-background/95 border border-border/50 transition-all duration-300 ease-in-out ${isHeaderHidden ? 'top-0' : 'top-[120px]'}`}>
             <TabsTrigger 
               value="general" 
               className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
