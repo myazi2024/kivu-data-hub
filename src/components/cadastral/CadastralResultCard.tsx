@@ -19,7 +19,8 @@ import {
   MapPin as Surveyor,
   Printer,
   Settings,
-  FileCheck
+  FileCheck,
+  ExternalLink
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { useAuth } from '@/hooks/useAuth';
@@ -633,23 +635,38 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                  <span className="text-[10px] text-muted-foreground">Date:</span>
                                  <span className="text-xs font-medium text-primary">{formatDate(boundary.survey_date)}</span>
                                </div>
-                               <div className="mt-2 pt-2 border-t border-muted/30">
-                                 <Button
-                                   variant="outline"
-                                   size="sm"
-                                   className="w-full h-7 text-[10px] font-medium px-2 py-1 bg-primary/5 hover:bg-primary/10 border-primary/20 hover:border-primary/30 text-primary hover:text-primary transition-all duration-200"
-                                   onClick={() => {
-                                     // Redirection vers le bureau de la circonscription foncière
-                                     // Vous pouvez adapter cette URL selon votre système
-                                     const landRegistryUrl = `https://circonscription-fonciere.cd/verification-pv/${boundary.pv_reference_number}?parcelle=${parcel.parcel_number}&location=${encodeURIComponent(parcel.location)}`;
-                                     window.open(landRegistryUrl, '_blank');
-                                   }}
-                                 >
-                                   <FileCheck className="h-3 w-3 mr-1.5" />
-                                   <span className="hidden xs:inline">Vérifier le PV de bornage</span>
-                                   <span className="xs:hidden">Vérifier PV</span>
-                                 </Button>
-                               </div>
+                                <div className="mt-2 pt-2 border-t border-muted/30">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="w-full h-8 text-xs font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 hover:border-primary/40 text-primary hover:text-primary transition-all duration-300 hover:shadow-sm rounded-lg"
+                                          onClick={() => {
+                                            // Redirection vers le bureau de la circonscription foncière
+                                            const landRegistryUrl = `https://circonscription-fonciere.cd/verification-pv/${boundary.pv_reference_number}?parcelle=${parcel.parcel_number}&location=${encodeURIComponent(parcel.location)}`;
+                                            window.open(landRegistryUrl, '_blank');
+                                          }}
+                                        >
+                                          <ExternalLink className="h-3.5 w-3.5 mr-2 group-hover:scale-110 transition-transform duration-200" />
+                                          <span className="hidden sm:inline">Vérifier le PV</span>
+                                          <span className="sm:hidden">Vérifier</span>
+                                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" className="max-w-xs">
+                                        <div className="text-center space-y-1">
+                                          <p className="font-medium text-xs">Service externe</p>
+                                          <p className="text-xs text-muted-foreground">
+                                            Service fourni par le bureau de la circonscription foncière. 
+                                            Des frais supplémentaires peuvent être demandés.
+                                          </p>
+                                        </div>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
                              </div>
                            </div>
                          ))}
