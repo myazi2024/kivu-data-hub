@@ -664,18 +664,18 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                           <Info className="h-3 w-3" />
                                         </Button>
                                       </PopoverTrigger>
-                                      <PopoverContent side="top" className="w-72 p-3" align="end">
-                                        <div className="space-y-2">
-                                          <div className="flex items-center gap-2">
-                                            <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
-                                            <p className="font-medium text-sm text-orange-600">Service externe</p>
-                                          </div>
-                                          <p className="text-xs text-muted-foreground leading-relaxed">
-                                            Ce service est fourni par le bureau de la circonscription foncière à laquelle est attachée cette parcelle. 
-                                            Des frais supplémentaires peuvent être demandés par ce bureau.
-                                          </p>
-                                        </div>
-                                      </PopoverContent>
+                                       <PopoverContent side="top" className="w-72 p-3" align="end">
+                                         <div className="space-y-2">
+                                           <div className="flex items-center gap-2">
+                                             <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                             <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
+                                           </div>
+                                           <p className="text-xs text-muted-foreground leading-relaxed">
+                                             Vérifie et consulte l'authenticité du titre ou document signé 
+                                             auprès du bureau de la circonscription foncière.
+                                           </p>
+                                         </div>
+                                       </PopoverContent>
                                     </Popover>
                                   </div>
                                 </div>
@@ -763,18 +763,18 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                    <Info className="h-3 w-3" />
                                  </Button>
                                </PopoverTrigger>
-                               <PopoverContent side="top" className="w-72 p-3" align="end">
-                                 <div className="space-y-2">
-                                   <div className="flex items-center gap-2">
-                                     <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
-                                     <p className="font-medium text-sm text-orange-600">Service externe</p>
-                                   </div>
-                                   <p className="text-xs text-muted-foreground leading-relaxed">
-                                     Vérification des données du propriétaire auprès des services officiels. 
-                                     Des frais supplémentaires peuvent être demandés.
-                                   </p>
-                                 </div>
-                               </PopoverContent>
+                                <PopoverContent side="top" className="w-72 p-3" align="end">
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                      <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
+                                    </div>
+                                    <p className="text-xs text-muted-foreground leading-relaxed">
+                                      Vérifie et consulte l'authenticité du document de propriété signé 
+                                      auprès du bureau de la circonscription foncière.
+                                    </p>
+                                  </div>
+                                </PopoverContent>
                              </Popover>
                            </div>
                          </div>
@@ -828,18 +828,18 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                          <Info className="h-3 w-3" />
                                        </Button>
                                      </PopoverTrigger>
-                                     <PopoverContent side="top" className="w-72 p-3" align="end">
-                                       <div className="space-y-2">
-                                         <div className="flex items-center gap-2">
-                                           <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
-                                           <p className="font-medium text-sm text-orange-600">Service externe</p>
-                                         </div>
-                                         <p className="text-xs text-muted-foreground leading-relaxed">
-                                           Vérification des données de l'ancien propriétaire auprès des archives officielles. 
-                                           Des frais supplémentaires peuvent être demandés.
-                                         </p>
-                                       </div>
-                                     </PopoverContent>
+                                      <PopoverContent side="top" className="w-72 p-3" align="end">
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2">
+                                            <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                            <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground leading-relaxed">
+                                            Vérifie et consulte l'authenticité du document de propriété signé 
+                                            auprès du bureau de la circonscription foncière.
+                                          </p>
+                                        </div>
+                                      </PopoverContent>
                                    </Popover>
                                  </div>
                                </div>
@@ -962,18 +962,18 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                          <Info className="h-3 w-3" />
                                        </Button>
                                      </PopoverTrigger>
-                                     <PopoverContent side="top" className="w-72 p-3" align="end">
-                                       <div className="space-y-2">
-                                         <div className="flex items-center gap-2">
-                                           <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
-                                           <p className="font-medium text-sm text-orange-600">Service externe</p>
-                                         </div>
-                                         <p className="text-xs text-muted-foreground leading-relaxed">
-                                           Vérification du statut de paiement auprès des services fiscaux officiels. 
-                                           Des frais supplémentaires peuvent être demandés.
-                                         </p>
-                                       </div>
-                                     </PopoverContent>
+                                      <PopoverContent side="top" className="w-72 p-3" align="end">
+                                        <div className="space-y-2">
+                                          <div className="flex items-center gap-2">
+                                            <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                            <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
+                                          </div>
+                                          <p className="text-xs text-muted-foreground leading-relaxed">
+                                            Vérifie et consulte l'authenticité du document fiscal signé 
+                                            auprès du bureau de la circonscription foncière.
+                                          </p>
+                                        </div>
+                                      </PopoverContent>
                                    </Popover>
                                  </div>
                                </div>
@@ -1092,18 +1092,18 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                            <Info className="h-3 w-3" />
                                          </Button>
                                        </PopoverTrigger>
-                                       <PopoverContent side="top" className="w-72 p-3" align="end">
-                                         <div className="space-y-2">
-                                           <div className="flex items-center gap-2">
-                                             <div className="h-2 w-2 bg-orange-500 rounded-full"></div>
-                                             <p className="font-medium text-sm text-orange-600">Service externe</p>
-                                           </div>
-                                           <p className="text-xs text-muted-foreground leading-relaxed">
-                                             Vérification du statut de l'hypothèque auprès des services officiels compétents. 
-                                             Des frais supplémentaires peuvent être demandés.
-                                           </p>
-                                         </div>
-                                       </PopoverContent>
+                                        <PopoverContent side="top" className="w-72 p-3" align="end">
+                                          <div className="space-y-2">
+                                            <div className="flex items-center gap-2">
+                                              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                                              <p className="font-medium text-sm text-blue-600">Vérification d'authenticité</p>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground leading-relaxed">
+                                              Vérifie et consulte l'authenticité du document d'hypothèque signé 
+                                              auprès du bureau de la circonscription foncière.
+                                            </p>
+                                          </div>
+                                        </PopoverContent>
                                      </Popover>
                                    </div>
                                  </div>
