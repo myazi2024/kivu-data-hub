@@ -388,7 +388,7 @@ function saveDocument(doc: jsPDF, filename: string) {
  * Génère un PDF A4 d'un rapport cadastral complet
  */
 export function generateCadastralReport(
-  parcelData: any,
+  cadastralResult: any,
   paidServices: string[],
   servicesCatalog: CadastralService[],
   filename?: string
@@ -398,52 +398,279 @@ export function generateCadastralReport(
   const margin = 15;
   let cursorY = margin;
 
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = cadastralResult;
+
+  // Fonction pour ajouter une nouvelle page si nécessaire
+  const checkPageSpace = (neededSpace: number) => {
+    if (cursorY + neededSpace > 270) { // 270mm from top to avoid footer
+      doc.addPage();
+      cursorY = margin;
+    }
+  };
+
   // En-tête du rapport
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(18);
-  doc.text("RAPPORT CADASTRAL", pageWidth / 2, cursorY, { align: 'center' });
+  doc.text("RAPPORT CADASTRAL COMPLET", pageWidth / 2, cursorY, { align: 'center' });
   cursorY += 8;
   
   doc.setFontSize(12);
   doc.text("Bureau de l'Immobilier du Congo (BIC)", pageWidth / 2, cursorY, { align: 'center' });
   cursorY += 15;
 
-  // Informations de la parcelle
+  // Section 1: Informations générales de la parcelle
+  checkPageSpace(50);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text("INFORMATIONS DE LA PARCELLE", margin, cursorY);
+  doc.text("1. INFORMATIONS GÉNÉRALES", margin, cursorY);
   cursorY += 8;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   
-  const parcelInfo = [
-    [`Numéro de parcelle:`, parcelData.parcel_number || 'N/A'],
-    [`Commune:`, parcelData.commune || 'N/A'],
-    [`Quartier:`, parcelData.quartier || 'N/A'],
-    [`Avenue:`, parcelData.avenue || 'N/A'],
-    [`Superficie:`, parcelData.superficie ? `${parcelData.superficie} m²` : 'N/A'],
-    [`Statut:`, parcelData.statut || 'N/A'],
-    [`Date de génération:`, new Date().toLocaleDateString('fr-FR')]
+  const generalInfo = [
+    ['Numéro de parcelle:', parcel.parcel_number || 'N/A'],
+    ['Type de parcelle:', parcel.parcel_type || 'N/A'],
+    ['Type de titre foncier:', parcel.property_title_type || 'N/A'],
+    ['Superficie officielle:', parcel.area_sqm ? `${Number(parcel.area_sqm).toLocaleString()} m² (${(Number(parcel.area_sqm) / 10000).toFixed(4)} ha)` : 'N/A'],
+    ['Superficie calculée (bornes):', parcel.surface_calculee_bornes ? `${Number(parcel.surface_calculee_bornes).toLocaleString()} m² (${(Number(parcel.surface_calculee_bornes) / 10000).toFixed(4)} ha)` : 'N/A'],
+    ['Nombre de bornes:', parcel.nombre_bornes?.toString() || 'N/A'],
+    ['Propriétaire actuel:', parcel.current_owner_name || 'N/A'],
+    ['Statut juridique:', parcel.current_owner_legal_status || 'N/A'],
+    ['Propriétaire depuis:', parcel.current_owner_since ? new Date(parcel.current_owner_since).toLocaleDateString('fr-FR') : 'N/A']
   ];
 
-  parcelInfo.forEach(([label, value]) => {
+  generalInfo.forEach(([label, value]) => {
+    checkPageSpace(6);
     doc.setFont('helvetica', 'bold');
     doc.text(label, margin, cursorY);
     doc.setFont('helvetica', 'normal');
-    doc.text(value, margin + 50, cursorY);
+    doc.text(value, margin + 60, cursorY);
     cursorY += 6;
   });
 
   cursorY += 10;
 
-  // Services inclus
+  // Section 2: Localisation
+  checkPageSpace(40);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text("2. LOCALISATION", margin, cursorY);
+  cursorY += 8;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(11);
+  
+  const locationInfo = [
+    ['Circonscription foncière:', parcel.circonscription_fonciere || 'N/A'],
+    ['Province:', parcel.province || 'N/A'],
+    ['Ville:', parcel.ville || 'N/A'],
+    ['Commune:', parcel.commune || 'N/A'],
+    ['Quartier:', parcel.quartier || 'N/A'],
+    ['Avenue:', parcel.avenue || 'N/A'],
+    ['Territoire:', parcel.territoire || 'N/A'],
+    ['Collectivité:', parcel.collectivite || 'N/A'],
+    ['Groupement:', parcel.groupement || 'N/A'],
+    ['Village:', parcel.village || 'N/A']
+  ];
+
+  locationInfo.forEach(([label, value]) => {
+    if (value !== 'N/A') {
+      checkPageSpace(6);
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, margin, cursorY);
+      doc.setFont('helvetica', 'normal');
+      doc.text(value, margin + 60, cursorY);
+      cursorY += 6;
+    }
+  });
+
+  cursorY += 10;
+
+  // Section 3: Coordonnées GPS
+  if (parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
+    checkPageSpace(30);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text("3. COORDONNÉES GPS DES BORNES", margin, cursorY);
+    cursorY += 8;
+
+    const gpsData = parcel.gps_coordinates.map((coord: any, index: number) => [
+      `Borne ${index + 1}`,
+      coord.lat?.toFixed(6) || 'N/A',
+      coord.lng?.toFixed(6) || 'N/A'
+    ]);
+
+    autoTable(doc, {
+      head: [["Borne", "Latitude", "Longitude"]],
+      body: gpsData,
+      startY: cursorY,
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      columnStyles: {
+        0: { cellWidth: 40, halign: 'center' },
+        1: { cellWidth: 60, halign: 'center' },
+        2: { cellWidth: 60, halign: 'center' }
+      },
+      theme: 'grid',
+      margin: { left: margin, right: margin }
+    });
+
+    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 30;
+  }
+
+  // Section 4: Historique de propriété
+  if (ownership_history && ownership_history.length > 0) {
+    checkPageSpace(40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text("4. HISTORIQUE DE PROPRIÉTÉ", margin, cursorY);
+    cursorY += 8;
+
+    const ownershipData = ownership_history.map((owner: any) => [
+      owner.owner_name || 'N/A',
+      owner.legal_status || 'N/A',
+      owner.ownership_start_date ? new Date(owner.ownership_start_date).toLocaleDateString('fr-FR') : 'N/A',
+      owner.ownership_end_date ? new Date(owner.ownership_end_date).toLocaleDateString('fr-FR') : 'En cours',
+      owner.mutation_type || 'N/A'
+    ]);
+
+    autoTable(doc, {
+      head: [["Propriétaire", "Statut juridique", "Début", "Fin", "Type de mutation"]],
+      body: ownershipData,
+      startY: cursorY,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      columnStyles: {
+        0: { cellWidth: 45 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 25, halign: 'center' },
+        3: { cellWidth: 25, halign: 'center' },
+        4: { cellWidth: 35 }
+      },
+      theme: 'grid',
+      margin: { left: margin, right: margin }
+    });
+
+    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
+  }
+
+  // Section 5: Historique fiscal
+  if (tax_history && tax_history.length > 0) {
+    checkPageSpace(40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text("5. HISTORIQUE FISCAL", margin, cursorY);
+    cursorY += 8;
+
+    const taxData = tax_history.map((tax: any) => [
+      tax.tax_year?.toString() || 'N/A',
+      tax.amount_usd ? `${Number(tax.amount_usd).toLocaleString()} USD` : 'N/A',
+      tax.payment_date ? new Date(tax.payment_date).toLocaleDateString('fr-FR') : 'Non payé',
+      tax.payment_status === 'paid' ? 'Payé' : 
+      tax.payment_status === 'overdue' ? 'En retard' : 'En attente'
+    ]);
+
+    autoTable(doc, {
+      head: [["Année", "Montant", "Date de paiement", "Statut"]],
+      body: taxData,
+      startY: cursorY,
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      columnStyles: {
+        0: { cellWidth: 30, halign: 'center' },
+        1: { cellWidth: 40, halign: 'right' },
+        2: { cellWidth: 40, halign: 'center' },
+        3: { cellWidth: 35, halign: 'center' }
+      },
+      theme: 'grid',
+      margin: { left: margin, right: margin }
+    });
+
+    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
+  }
+
+  // Section 6: Historique des hypothèques
+  if (mortgage_history && mortgage_history.length > 0) {
+    checkPageSpace(40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text("6. HISTORIQUE DES HYPOTHÈQUES", margin, cursorY);
+    cursorY += 8;
+
+    const mortgageData = mortgage_history.map((mortgage: any) => [
+      mortgage.creditor_name || 'N/A',
+      mortgage.creditor_type || 'N/A',
+      mortgage.mortgage_amount_usd ? `${Number(mortgage.mortgage_amount_usd).toLocaleString()} USD` : 'N/A',
+      mortgage.duration_months ? `${mortgage.duration_months} mois` : 'N/A',
+      mortgage.contract_date ? new Date(mortgage.contract_date).toLocaleDateString('fr-FR') : 'N/A',
+      mortgage.mortgage_status === 'active' ? 'Active' : 
+      mortgage.mortgage_status === 'paid' ? 'Remboursée' : 'Inactive'
+    ]);
+
+    autoTable(doc, {
+      head: [["Créancier", "Type", "Montant", "Durée", "Date contrat", "Statut"]],
+      body: mortgageData,
+      startY: cursorY,
+      styles: { fontSize: 9, cellPadding: 2 },
+      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      columnStyles: {
+        0: { cellWidth: 35 },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 30, halign: 'right' },
+        3: { cellWidth: 20, halign: 'center' },
+        4: { cellWidth: 25, halign: 'center' },
+        5: { cellWidth: 25, halign: 'center' }
+      },
+      theme: 'grid',
+      margin: { left: margin, right: margin }
+    });
+
+    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
+  }
+
+  // Section 7: Historique de bornage
+  if (boundary_history && boundary_history.length > 0) {
+    checkPageSpace(40);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text("7. HISTORIQUE DE BORNAGE", margin, cursorY);
+    cursorY += 8;
+
+    const boundaryData = boundary_history.map((boundary: any) => [
+      boundary.surveyor_name || 'N/A',
+      boundary.pv_reference_number || 'N/A',
+      boundary.survey_date ? new Date(boundary.survey_date).toLocaleDateString('fr-FR') : 'N/A',
+      boundary.boundary_purpose || 'N/A'
+    ]);
+
+    autoTable(doc, {
+      head: [["Géomètre", "Référence PV", "Date d'arpentage", "Objet"]],
+      body: boundaryData,
+      startY: cursorY,
+      styles: { fontSize: 10, cellPadding: 3 },
+      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      columnStyles: {
+        0: { cellWidth: 45 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 30, halign: 'center' },
+        3: { cellWidth: 45 }
+      },
+      theme: 'grid',
+      margin: { left: margin, right: margin }
+    });
+
+    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
+  }
+
+  // Section 8: Services inclus dans ce rapport
   const selectedServices = servicesCatalog.filter(s => paidServices.includes(s.id));
   
   if (selectedServices.length > 0) {
+    checkPageSpace(40);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text("SERVICES INCLUS", margin, cursorY);
+    doc.text("8. SERVICES INCLUS DANS CE RAPPORT", margin, cursorY);
     cursorY += 8;
 
     const servicesTableData = selectedServices.map(service => [
@@ -469,6 +696,7 @@ export function generateCadastralReport(
   }
 
   // Notes importantes
+  checkPageSpace(30);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.text("NOTES IMPORTANTES", margin, cursorY);
@@ -477,30 +705,36 @@ export function generateCadastralReport(
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
   const notes = [
-    "• Ce rapport est basé sur les données officielles du Ministère des Affaires Foncières.",
-    "• Les informations sont valides à la date de génération du rapport.",
-    "• Pour toute question, veuillez contacter le Bureau de l'Immobilier du Congo.",
-    "• Ce document est généré automatiquement et certifié par BIC."
+    "• Ce rapport est basé sur les données officielles du Ministère des Affaires Foncières de la RDC.",
+    "• Les informations contenues dans ce rapport sont valides à la date de génération.",
+    "• Pour toute vérification, référez-vous aux documents officiels auprès de la circonscription foncière.",
+    "• Ce document est généré automatiquement par le système BIC et certifié conforme.",
+    "• En cas de discordance, les documents officiels font foi."
   ];
 
   notes.forEach(note => {
+    checkPageSpace(5);
     doc.text(note, margin, cursorY);
     cursorY += 5;
   });
 
-  // Pied de page
-  doc.setFont('helvetica', 'italic');
-  doc.setFontSize(9);
-  const footerY = 297 - 10; // A4 height ~297mm
-  doc.text(
-    "Document généré automatiquement par BIC - Sources officielles du Ministère des Affaires Foncières",
-    pageWidth / 2,
-    footerY,
-    { align: 'center' }
-  );
+  // Ajouter le pied de page sur toutes les pages
+  const totalPages = doc.internal.pages.length - 1; // Exclude the first empty page
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    const footerY = 297 - 10; // A4 height ~297mm
+    doc.text(
+      `Document généré automatiquement par BIC - Page ${i}/${totalPages} - ${new Date().toLocaleDateString('fr-FR')}`,
+      pageWidth / 2,
+      footerY,
+      { align: 'center' }
+    );
+  }
 
   // Sauvegarde
-  const fn = filename || `rapport_cadastral_${parcelData.parcel_number}_${Date.now()}.pdf`;
+  const fn = filename || `rapport_cadastral_complet_${parcel.parcel_number}_${Date.now()}.pdf`;
   try {
     doc.save(fn);
   } catch (e) {
