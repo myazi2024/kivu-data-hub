@@ -236,12 +236,12 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                     </PopoverContent>
                   </Popover>
                 </div>
-                <span className="text-sm font-bold">
-                  {calculatedSurface >= 10000 
-                    ? `${(calculatedSurface / 10000).toFixed(2)} ha` 
-                    : `${calculatedSurface.toLocaleString()} m²`
-                  }
-                </span>
+                <div className="text-sm font-bold text-right">
+                  <div>{calculatedSurface.toLocaleString()} m²</div>
+                  <div className="text-xs text-muted-foreground">
+                    {(calculatedSurface / 10000).toFixed(4)} ha
+                  </div>
+                </div>
               </div>
             </div>
           )}
