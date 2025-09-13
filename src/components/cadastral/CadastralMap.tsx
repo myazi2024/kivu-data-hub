@@ -1,7 +1,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { MapPin, Navigation, Calculator } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { MapPin, Navigation, Calculator, Info } from 'lucide-react';
 
 interface CadastralMapProps {
   coordinates: Array<{ lat: number; lng: number; borne: string }>;
@@ -179,10 +180,36 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                 <span className="text-muted-foreground">Nombre de bornes :</span>
                 <span className="font-medium">{coordinates.length}</span>
               </div>
-              <Button variant="outline" size="sm" className="h-7 hidden sm:inline-flex" onClick={calculateSurface}>
-                <Calculator className="h-3 w-3 mr-1" />
-                Calculer surface
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="h-7 px-3 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 hover:border-primary/40 text-primary hover:text-primary transition-all duration-300 hover:scale-105 hover:shadow-md rounded-lg animate-fade-in" 
+                      onClick={calculateSurface}
+                    >
+                      <Calculator className="h-3 w-3 mr-1.5 group-hover:rotate-12 transition-transform duration-300" />
+                      <span className="hidden xs:inline">Calculer superficie</span>
+                      <span className="xs:hidden">Calculer</span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-sm p-3">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Calculator className="h-3 w-3 text-primary" />
+                        <p className="font-medium text-sm">Calcul automatique de superficie</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        Cette fonction calcule la superficie à partir des coordonnées GPS des bornes 
+                        enregistrées dans le système. En cas d'incertitude, comparez avec le PV de 
+                        bornage au bureau de la circonscription foncière.
+                      </p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </CardHeader>

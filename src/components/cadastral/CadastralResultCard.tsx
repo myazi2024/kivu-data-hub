@@ -602,11 +602,13 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                 </Card>
 
                 {/* Carte cadastrale */}
-                <CadastralMap 
-                  coordinates={parcel.gps_coordinates}
-                  center={{ lat: parcel.latitude, lng: parcel.longitude }}
-                  parcelNumber={parcel.parcel_number}
-                />
+                <div className="relative z-0">
+                  <CadastralMap 
+                    coordinates={parcel.gps_coordinates}
+                    center={{ lat: parcel.latitude, lng: parcel.longitude }}
+                    parcelNumber={parcel.parcel_number}
+                  />
+                </div>
 
                 {/* Informations sur le bornage - Mobile First */}
                 <Card className="border-0 bg-gradient-to-br from-background to-secondary/5">
