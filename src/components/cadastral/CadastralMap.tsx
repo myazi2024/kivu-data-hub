@@ -216,14 +216,14 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-8 px-4 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 active:from-primary/15 active:to-primary/25 border border-primary/20 hover:border-primary/40 active:border-primary/50 text-primary hover:text-primary active:text-primary focus-visible:text-primary transition-all duration-200 hover:scale-105 active:scale-100 hover:shadow-md rounded-lg animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
+                    className="h-8 px-4 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 active:from-primary active:to-primary border border-primary/20 hover:border-primary/40 active:border-primary text-primary hover:text-primary active:text-white focus-visible:text-primary transition-all duration-200 hover:scale-105 active:scale-100 hover:shadow-md rounded-lg animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
                     onClick={calculateSurface}
                   >
-                    <Calculator className="h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-transform duration-300 relative z-10" />
+                    <Calculator className="h-3.5 w-3.5 mr-2 group-hover:rotate-12 group-active:text-white transition-all duration-300 relative z-10" />
                     <span className="hidden xs:inline relative z-10">Calculer superficie</span>
                     <span className="xs:hidden relative z-10">Calculer</span>
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out pointer-events-none" />
-                    <Info className="h-3 w-3 ml-1 opacity-60 relative z-10" />
+                    <Info className="h-3 w-3 ml-1 opacity-60 group-active:text-white group-active:opacity-100 transition-all duration-200 relative z-10" />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-3" side="bottom" sideOffset={8}>
