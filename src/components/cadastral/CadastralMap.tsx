@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { MapPin, Navigation, Calculator, Info } from 'lucide-react';
 
 interface CadastralMapProps {
@@ -210,36 +211,35 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
           {/* Bouton calculer superficie - déplacé ici */}
           {coordinates.length >= 3 && (
             <div className="flex justify-center pt-2">
-              <TooltipProvider delayDuration={0}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="h-8 px-4 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 active:from-primary/15 active:to-primary/25 border border-primary/20 hover:border-primary/40 active:border-primary/50 text-primary hover:text-primary active:text-primary focus-visible:text-primary transition-all duration-200 hover:scale-105 active:scale-100 hover:shadow-md rounded-lg animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
-                      onClick={calculateSurface}
-                    >
-                      <Calculator className="h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-transform duration-300 relative z-10" />
-                      <span className="hidden xs:inline relative z-10">Calculer superficie</span>
-                      <span className="xs:hidden relative z-10">Calculer</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out pointer-events-none" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" className="max-w-sm p-3 z-50 bg-popover border border-border shadow-lg" sideOffset={8}>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Calculator className="h-3 w-3 text-primary" />
-                        <p className="font-medium text-sm text-popover-foreground">Calcul automatique de superficie</p>
-                      </div>
-                      <p className="text-xs text-muted-foreground leading-relaxed">
-                        Cette fonction calcule la superficie à partir des coordonnées GPS des bornes 
-                        enregistrées dans le système. En cas d'incertitude, comparez avec le PV de 
-                        bornage au bureau de la circonscription foncière.
-                      </p>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-4 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 active:from-primary/15 active:to-primary/25 border border-primary/20 hover:border-primary/40 active:border-primary/50 text-primary hover:text-primary active:text-primary focus-visible:text-primary transition-all duration-200 hover:scale-105 active:scale-100 hover:shadow-md rounded-lg animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
+                    onClick={calculateSurface}
+                  >
+                    <Calculator className="h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-transform duration-300 relative z-10" />
+                    <span className="hidden xs:inline relative z-10">Calculer superficie</span>
+                    <span className="xs:hidden relative z-10">Calculer</span>
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out pointer-events-none" />
+                    <Info className="h-3 w-3 ml-1 opacity-60 relative z-10" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-3" side="bottom" sideOffset={8}>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Calculator className="h-3 w-3 text-primary" />
+                      <p className="font-medium text-sm text-popover-foreground">Calcul automatique de superficie</p>
                     </div>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Cette fonction calcule la superficie à partir des coordonnées GPS des bornes 
+                      enregistrées dans le système. En cas d'incertitude, comparez avec le PV de 
+                      bornage au bureau de la circonscription foncière.
+                    </p>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           )}
           
