@@ -131,7 +131,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
 
   const [buttonState, setButtonState] = useState<'normal' | 'active'>('normal');
 
-  // Calculer la surface à partir des bornes (formule de Shoelace)
+  // Calculer la surface géodésique précise
   const calculateSurface = useCallback(() => {
     if (coordinates.length < 3) {
       setCalculatedSurface(null);
@@ -143,17 +143,28 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
     
     // Calcul de la surface
     setTimeout(() => {
+      // Fonction pour convertir degrés en radians
+      const toRadians = (degrees: number) => degrees * (Math.PI / 180);
+      
+      // Rayon de la Terre en mètres
+      const earthRadius = 6378137; // WGS84
+      
+      // Calcul de l'aire géodésique en utilisant la formule sphérique
       let area = 0;
       const n = coordinates.length;
       
       for (let i = 0; i < n; i++) {
         const j = (i + 1) % n;
-        area += coordinates[i].lat * coordinates[j].lng;
-        area -= coordinates[j].lat * coordinates[i].lng;
+        const lat1 = toRadians(coordinates[i].lat);
+        const lat2 = toRadians(coordinates[j].lat);
+        const deltaLng = toRadians(coordinates[j].lng - coordinates[i].lng);
+        
+        // Formule géodésique pour petites surfaces
+        area += deltaLng * (2 + Math.sin(lat1) + Math.sin(lat2));
       }
       
-      // Conversion approximative en m² (111319.5 m par degré)
-      const surfaceM2 = Math.abs(area) / 2 * 111319.5 * 111319.5;
+      // Conversion en mètres carrés
+      const surfaceM2 = Math.abs(area) * earthRadius * earthRadius / 2;
       setCalculatedSurface(surfaceM2);
       
       // Retour à l'état normal
