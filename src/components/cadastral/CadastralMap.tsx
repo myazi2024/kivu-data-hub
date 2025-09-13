@@ -133,12 +133,13 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
 
   // Calculer la surface à partir des bornes (formule de Shoelace)
   const calculateSurface = useCallback(() => {
+    setIsCalculating(true);
+    
     if (coordinates.length < 3) {
       setCalculatedSurface(null);
+      setTimeout(() => setIsCalculating(false), 300);
       return;
     }
-    
-    setIsCalculating(true);
     
     let area = 0;
     const n = coordinates.length;
