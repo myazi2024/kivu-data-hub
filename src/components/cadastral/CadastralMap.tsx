@@ -129,33 +129,36 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
     updateMapData();
   }, [coordinates, center, parcelNumber]); // Dépendances pour mise à jour des données
 
-  const [isCalculating, setIsCalculating] = useState(false);
+  const [buttonState, setButtonState] = useState<'normal' | 'active'>('normal');
 
   // Calculer la surface à partir des bornes (formule de Shoelace)
   const calculateSurface = useCallback(() => {
-    setIsCalculating(true);
-    
     if (coordinates.length < 3) {
       setCalculatedSurface(null);
-      setTimeout(() => setIsCalculating(false), 300);
       return;
     }
     
-    let area = 0;
-    const n = coordinates.length;
+    // Animation du bouton
+    setButtonState('active');
     
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
-      area += coordinates[i].lat * coordinates[j].lng;
-      area -= coordinates[j].lat * coordinates[i].lng;
-    }
-    
-    // Conversion approximative en m² (111319.5 m par degré)
-    const surfaceM2 = Math.abs(area) / 2 * 111319.5 * 111319.5;
-    setCalculatedSurface(surfaceM2);
-    
-    // Animation de feedback
-    setTimeout(() => setIsCalculating(false), 300);
+    // Calcul de la surface
+    setTimeout(() => {
+      let area = 0;
+      const n = coordinates.length;
+      
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        area += coordinates[i].lat * coordinates[j].lng;
+        area -= coordinates[j].lat * coordinates[i].lng;
+      }
+      
+      // Conversion approximative en m² (111319.5 m par degré)
+      const surfaceM2 = Math.abs(area) / 2 * 111319.5 * 111319.5;
+      setCalculatedSurface(surfaceM2);
+      
+      // Retour à l'état normal
+      setTimeout(() => setButtonState('normal'), 200);
+    }, 100);
   }, [coordinates]);
 
   return (
@@ -225,17 +228,17 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                     variant="outline" 
                     size="sm" 
                     className={`h-8 px-4 font-medium group relative overflow-hidden transition-all duration-200 hover:scale-105 rounded-lg animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                      isCalculating 
-                        ? 'bg-primary text-white border-primary' 
+                      buttonState === 'active'
+                        ? 'bg-primary text-primary-foreground border-primary' 
                         : 'bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 hover:border-primary/40 text-primary hover:text-primary'
                     }`}
                     onClick={calculateSurface}
                   >
-                    <Calculator className={`h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-all duration-300 relative z-10 ${isCalculating ? 'text-white' : ''}`} />
-                    <span className={`hidden xs:inline relative z-10 ${isCalculating ? 'text-white' : ''}`}>Calculer superficie</span>
-                    <span className={`xs:hidden relative z-10 ${isCalculating ? 'text-white' : ''}`}>Calculer</span>
+                    <Calculator className={`h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-all duration-300 relative z-10 ${buttonState === 'active' ? 'text-primary-foreground' : ''}`} />
+                    <span className={`hidden xs:inline relative z-10 ${buttonState === 'active' ? 'text-primary-foreground' : ''}`}>Calculer superficie</span>
+                    <span className={`xs:hidden relative z-10 ${buttonState === 'active' ? 'text-primary-foreground' : ''}`}>Calculer</span>
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out pointer-events-none" />
-                    <Info className={`h-3 w-3 ml-1 opacity-60 transition-all duration-200 relative z-10 ${isCalculating ? 'text-white opacity-100' : ''}`} />
+                    <Info className={`h-3 w-3 ml-1 opacity-60 transition-all duration-200 relative z-10 ${buttonState === 'active' ? 'text-primary-foreground opacity-100' : ''}`} />
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-80 p-3" side="bottom" sideOffset={8}>
