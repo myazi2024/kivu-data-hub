@@ -232,8 +232,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                       </TooltipTrigger>
                       <TooltipContent side="top" className="max-w-xs">
                         <p className="text-xs leading-relaxed">
-                          Surface calculée automatiquement à partir des coordonnées GPS des bornes. 
-                          En cas d'incertitude, vérifiez avec le PV de bornage au bureau de la circonscription foncière.
+                          Cette fonction permet de calculer la superficie à partir des coordonnées GPS des bornes enregistrées dans le système. En cas d'incertitude, comparez avec le PV de bornage au bureau de la circonscription foncière à laquelle est attachée cette parcelle.
                         </p>
                       </TooltipContent>
                     </Tooltip>
