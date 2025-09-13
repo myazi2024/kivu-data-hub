@@ -210,26 +210,26 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
           {/* Bouton calculer superficie - déplacé ici */}
           {coordinates.length >= 3 && (
             <div className="flex justify-center pt-2">
-              <TooltipProvider>
+              <TooltipProvider delayDuration={0}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="h-8 px-4 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 hover:border-primary/40 text-primary hover:text-primary transition-all duration-300 hover:scale-105 hover:shadow-md rounded-lg animate-fade-in" 
+                      className="h-8 px-4 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 active:from-primary/15 active:to-primary/25 border border-primary/20 hover:border-primary/40 active:border-primary/50 text-primary hover:text-primary active:text-primary focus-visible:text-primary transition-all duration-200 hover:scale-105 active:scale-100 hover:shadow-md rounded-lg animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" 
                       onClick={calculateSurface}
                     >
-                      <Calculator className="h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-transform duration-300" />
-                      <span className="hidden xs:inline">Calculer superficie</span>
-                      <span className="xs:hidden">Calculer</span>
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
+                      <Calculator className="h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-transform duration-300 relative z-10" />
+                      <span className="hidden xs:inline relative z-10">Calculer superficie</span>
+                      <span className="xs:hidden relative z-10">Calculer</span>
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out pointer-events-none" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-sm p-3">
+                  <TooltipContent side="bottom" className="max-w-sm p-3 z-50 bg-popover border border-border shadow-lg" sideOffset={8}>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Calculator className="h-3 w-3 text-primary" />
-                        <p className="font-medium text-sm">Calcul automatique de superficie</p>
+                        <p className="font-medium text-sm text-popover-foreground">Calcul automatique de superficie</p>
                       </div>
                       <p className="text-xs text-muted-foreground leading-relaxed">
                         Cette fonction calcule la superficie à partir des coordonnées GPS des bornes 
