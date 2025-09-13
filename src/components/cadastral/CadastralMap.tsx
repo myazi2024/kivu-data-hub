@@ -169,27 +169,57 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
 
       {/* Coordonnées des bornes */}
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-4">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Navigation className="h-4 w-4" />
-              Coordonnées GPS des Bornes
+            <CardTitle className="text-sm font-medium flex items-center gap-2 text-foreground/90">
+              <Navigation className="h-3.5 w-3.5" />
+              Coordonnées GPS
             </CardTitle>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-muted-foreground">Nombre de bornes :</span>
-                <span className="font-medium">{coordinates.length}</span>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 hover:bg-muted transition-colors cursor-help">
+                    <MapPin className="h-3 w-3 text-muted-foreground" />
+                    <span className="text-xs font-medium">{coordinates.length}</span>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p className="text-xs">Nombre de bornes: {coordinates.length}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
+            {coordinates.map((coord, index) => (
+              <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
+                    {coord.borne}
+                  </div>
+                  <span className="font-medium text-xs">Borne {coord.borne}</span>
+                </div>
+                <div className="font-mono text-[11px] text-muted-foreground">
+                  {coord.lat.toFixed(6)}, {coord.lng.toFixed(6)}
+                </div>
               </div>
+            ))}
+          </div>
+
+          {/* Bouton calculer superficie - déplacé ici */}
+          {coordinates.length >= 3 && (
+            <div className="flex justify-center pt-2">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
                       variant="outline" 
                       size="sm" 
-                      className="h-7 px-3 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 hover:border-primary/40 text-primary hover:text-primary transition-all duration-300 hover:scale-105 hover:shadow-md rounded-lg animate-fade-in" 
+                      className="h-8 px-4 font-medium group relative overflow-hidden bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 hover:border-primary/40 text-primary hover:text-primary transition-all duration-300 hover:scale-105 hover:shadow-md rounded-lg animate-fade-in" 
                       onClick={calculateSurface}
                     >
-                      <Calculator className="h-3 w-3 mr-1.5 group-hover:rotate-12 transition-transform duration-300" />
+                      <Calculator className="h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-transform duration-300" />
                       <span className="hidden xs:inline">Calculer superficie</span>
                       <span className="xs:hidden">Calculer</span>
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700 ease-out" />
@@ -211,28 +241,11 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                 </Tooltip>
               </TooltipProvider>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
-            {coordinates.map((coord, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
-                    {coord.borne}
-                  </div>
-                  <span className="font-medium text-xs">Borne {coord.borne}</span>
-                </div>
-                <div className="font-mono text-[11px] text-muted-foreground">
-                  {coord.lat.toFixed(6)}, {coord.lng.toFixed(6)}
-                </div>
-              </div>
-            ))}
-          </div>
+          )}
           
           {/* Surface calculée */}
           {calculatedSurface && (
-            <div className="mt-3 p-2 bg-primary/10 rounded-lg">
+            <div className="mt-3 p-3 bg-primary/10 rounded-lg">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium">Surface calculée:</span>
                 <span className="text-sm font-bold">
