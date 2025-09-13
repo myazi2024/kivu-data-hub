@@ -225,18 +225,16 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Surface calculée:</span>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary cursor-help" />
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p className="text-xs leading-relaxed">
-                          Cette fonction permet de calculer la superficie à partir des coordonnées GPS des bornes enregistrées dans le système. En cas d'incertitude, comparez avec le PV de bornage au bureau de la circonscription foncière à laquelle est attachée cette parcelle.
-                        </p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary cursor-pointer" />
+                    </PopoverTrigger>
+                    <PopoverContent side="top" className="max-w-xs">
+                      <p className="text-xs leading-relaxed">
+                        Cette fonction permet de calculer la superficie à partir des coordonnées GPS des bornes enregistrées dans le système. En cas d'incertitude, comparez avec le PV de bornage au bureau de la circonscription foncière à laquelle est attachée cette parcelle.
+                      </p>
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 <span className="text-sm font-bold">
                   {calculatedSurface >= 10000 
