@@ -129,47 +129,36 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
     updateMapData();
   }, [coordinates, center, parcelNumber]); // Dépendances pour mise à jour des données
 
-  const [buttonState, setButtonState] = useState<'normal' | 'active'>('normal');
-
-  // Calculer la surface géodésique précise
-  const calculateSurface = useCallback(() => {
+  // Calculer automatiquement la surface géodésique précise
+  useEffect(() => {
     if (coordinates.length < 3) {
       setCalculatedSurface(null);
       return;
     }
     
-    // Animation du bouton
-    setButtonState('active');
+    // Fonction pour convertir degrés en radians
+    const toRadians = (degrees: number) => degrees * (Math.PI / 180);
     
-    // Calcul de la surface
-    setTimeout(() => {
-      // Fonction pour convertir degrés en radians
-      const toRadians = (degrees: number) => degrees * (Math.PI / 180);
+    // Rayon de la Terre en mètres
+    const earthRadius = 6378137; // WGS84
+    
+    // Calcul de l'aire géodésique en utilisant la formule sphérique
+    let area = 0;
+    const n = coordinates.length;
+    
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const lat1 = toRadians(coordinates[i].lat);
+      const lat2 = toRadians(coordinates[j].lat);
+      const deltaLng = toRadians(coordinates[j].lng - coordinates[i].lng);
       
-      // Rayon de la Terre en mètres
-      const earthRadius = 6378137; // WGS84
-      
-      // Calcul de l'aire géodésique en utilisant la formule sphérique
-      let area = 0;
-      const n = coordinates.length;
-      
-      for (let i = 0; i < n; i++) {
-        const j = (i + 1) % n;
-        const lat1 = toRadians(coordinates[i].lat);
-        const lat2 = toRadians(coordinates[j].lat);
-        const deltaLng = toRadians(coordinates[j].lng - coordinates[i].lng);
-        
-        // Formule géodésique pour petites surfaces
-        area += deltaLng * (2 + Math.sin(lat1) + Math.sin(lat2));
-      }
-      
-      // Conversion en mètres carrés
-      const surfaceM2 = Math.abs(area) * earthRadius * earthRadius / 2;
-      setCalculatedSurface(surfaceM2);
-      
-      // Retour à l'état normal
-      setTimeout(() => setButtonState('normal'), 200);
-    }, 100);
+      // Formule géodésique pour petites surfaces
+      area += deltaLng * (2 + Math.sin(lat1) + Math.sin(lat2));
+    }
+    
+    // Conversion en mètres carrés
+    const surfaceM2 = Math.abs(area) * earthRadius * earthRadius / 2;
+    setCalculatedSurface(surfaceM2);
   }, [coordinates]);
 
   return (
@@ -229,51 +218,27 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
               </div>
             ))}
           </div>
-
-          {/* Bouton calculer superficie - déplacé ici */}
-          {coordinates.length >= 3 && (
-            <div className="flex justify-center pt-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className={`h-8 px-4 font-medium group relative overflow-hidden transition-all duration-200 hover:scale-105 rounded-lg animate-fade-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 ${
-                      buttonState === 'active'
-                        ? 'bg-primary text-primary-foreground border-primary' 
-                        : 'bg-gradient-to-r from-primary/5 to-primary/10 hover:from-primary/10 hover:to-primary/20 border border-primary/20 hover:border-primary/40 text-primary hover:text-primary'
-                    }`}
-                    onClick={calculateSurface}
-                  >
-                    <Calculator className={`h-3.5 w-3.5 mr-2 group-hover:rotate-12 transition-all duration-300 relative z-10 ${buttonState === 'active' ? 'text-primary-foreground' : ''}`} />
-                    <span className={`hidden xs:inline relative z-10 ${buttonState === 'active' ? 'text-primary-foreground' : ''}`}>Calculer superficie</span>
-                    <span className={`xs:hidden relative z-10 ${buttonState === 'active' ? 'text-primary-foreground' : ''}`}>Calculer</span>
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent transform translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500 ease-out pointer-events-none" />
-                    <Info className={`h-3 w-3 ml-1 opacity-60 transition-all duration-200 relative z-10 ${buttonState === 'active' ? 'text-primary-foreground opacity-100' : ''}`} />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80 p-3" side="bottom" sideOffset={8}>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Calculator className="h-3 w-3 text-primary" />
-                      <p className="font-medium text-sm text-popover-foreground">Calcul automatique de superficie</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Cette fonction calcule la superficie à partir des coordonnées GPS des bornes 
-                      enregistrées dans le système. En cas d'incertitude, comparez avec le PV de 
-                      bornage au bureau de la circonscription foncière.
-                    </p>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-          )}
           
           {/* Surface calculée */}
           {calculatedSurface && (
             <div className="mt-3 p-3 bg-primary/10 rounded-lg">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Surface calculée:</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Surface calculée:</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-primary cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p className="text-xs leading-relaxed">
+                          Surface calculée automatiquement à partir des coordonnées GPS des bornes. 
+                          En cas d'incertitude, vérifiez avec le PV de bornage au bureau de la circonscription foncière.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
                 <span className="text-sm font-bold">
                   {calculatedSurface >= 10000 
                     ? `${(calculatedSurface / 10000).toFixed(2)} ha` 
