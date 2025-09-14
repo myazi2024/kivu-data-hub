@@ -125,233 +125,174 @@ function generateA4InvoicePDF(
 ) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 20;
-  let cursorY = margin;
+  const margin = 25;
+  let cursorY = margin + 10;
 
-  // En-tête moderne et compact
+  // En-tête épuré et moderne
+  doc.setTextColor(52, 73, 94);
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
+  doc.setFontSize(24);
   doc.text(BIC_COMPANY_INFO.abbreviation, margin, cursorY);
+  
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
-  doc.text(BIC_COMPANY_INFO.name, margin, cursorY + 6);
-  
-  // Informations de l'entreprise à droite de manière compacte
-  doc.setFontSize(8);
-  const rightX = pageWidth - margin;
-  doc.text(BIC_COMPANY_INFO.address, rightX, cursorY, { align: 'right' });
-  doc.text(`${BIC_COMPANY_INFO.email} | ${BIC_COMPANY_INFO.phone}`, rightX, cursorY + 4, { align: 'right' });
-  doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, rightX, cursorY + 8, { align: 'right' });
-  doc.text(`ID: ${BIC_COMPANY_INFO.idNat} | N°IMPÔT: ${BIC_COMPANY_INFO.numImpot}`, rightX, cursorY + 12, { align: 'right' });
+  doc.setTextColor(149, 165, 166);
+  doc.text(BIC_COMPANY_INFO.name, margin, cursorY + 8);
 
   cursorY += 25;
 
-  // Ligne de séparation moderne
-  doc.setLineWidth(0.5);
-  doc.setDrawColor(41, 128, 185);
-  doc.line(margin, cursorY, pageWidth - margin, cursorY);
-  cursorY += 8;
-
-  // JUSTIFICATIF DE PAIEMENT - titre moderne
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text("JUSTIFICATIF DE PAIEMENT", margin, cursorY);
-  cursorY += 10;
-  // Layout en deux colonnes compact
-  const leftCol = margin;
-  const rightCol = pageWidth / 2 + 10;
-  
-  // Colonne gauche - Info facture (plus compact)
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text("Informations du justificatif", leftCol, cursorY);
-  cursorY += 6;
-  
+  // Titre principal centré et épuré
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  doc.text(`N°: ${invoice.invoice_number}`, leftCol, cursorY);
-  cursorY += 4;
-  doc.text(`Date: ${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, leftCol, cursorY);
-  cursorY += 4;
-  doc.text(`Parcelle: ${invoice.parcel_number}`, leftCol, cursorY);
+  doc.setFontSize(18);
+  doc.setTextColor(52, 73, 94);
+  doc.text("Justificatif de Paiement", pageWidth / 2, cursorY, { align: 'center' });
   
-  // Statut et paiement dans la même section
-  cursorY += 4;
+  cursorY += 15;
+  // Layout minimaliste en grille
+  const leftCol = margin;
+  const rightCol = pageWidth / 2 + 5;
+  
+  // Informations principales dans une grille épurée
+  doc.setTextColor(52, 73, 94);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(10);
+  
+  // Colonne gauche - métadonnées
+  const lineHeight = 6;
+  
+  doc.text(`Numéro`, leftCol, cursorY);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${invoice.invoice_number}`, leftCol + 30, cursorY);
+  doc.setFont('helvetica', 'normal');
+  
+  doc.text(`Date`, leftCol, cursorY + lineHeight);
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${new Date(invoice.search_date).toLocaleDateString('fr-FR')}`, leftCol + 30, cursorY + lineHeight);
+  doc.setFont('helvetica', 'normal');
+  
+  doc.text(`Parcelle`, leftCol, cursorY + (lineHeight * 2));
+  doc.setFont('helvetica', 'bold');
+  doc.text(`${invoice.parcel_number}`, leftCol + 30, cursorY + (lineHeight * 2));
+  doc.setFont('helvetica', 'normal');
+  
   const statusText = invoice.status === 'paid' ? 'Payée' : 
                     invoice.status === 'pending' ? 'En attente' : 'Échec';
-  doc.text(`Statut: ${statusText}`, leftCol, cursorY);
-  
-  cursorY += 4;
-  const paymentMethod = invoice.payment_method || 'Non spécifié';
-  const paymentDisplay = paymentMethod === 'mobile_money' ? 'Mobile Money' :
-                         paymentMethod === 'visa' ? 'Visa •••• 4242' :
-                         paymentMethod === 'stripe' ? 'Carte de crédit' : paymentMethod;
-  doc.text(`Paiement: ${paymentDisplay}`, leftCol, cursorY);
-
-  // Colonne droite - Info client (alignée)
-  const clientY = cursorY - 20;
+  doc.text(`Statut`, leftCol, cursorY + (lineHeight * 3));
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(10);
-  doc.text("Facturer à", rightCol, clientY);
-  
+  doc.setTextColor(statusText === 'Payée' ? 39 : 231, statusText === 'Payée' ? 174 : 76, statusText === 'Payée' ? 96 : 60);
+  doc.text(statusText, leftCol + 30, cursorY + (lineHeight * 3));
+  doc.setTextColor(52, 73, 94);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  if (invoice.client_name) {
-    doc.text(invoice.client_name, rightCol, clientY + 6);
-  }
-  if (invoice.client_email) {
-    doc.text(invoice.client_email, rightCol, clientY + 10);
-  }
-  if (invoice.client_organization) {
-    doc.text(invoice.client_organization, rightCol, clientY + 14);
+
+  // Colonne droite - client (si présent)
+  if (invoice.client_name || invoice.client_email) {
+    doc.setTextColor(149, 165, 166);
+    doc.setFontSize(9);
+    doc.text("Facturé à", rightCol, cursorY);
+    doc.setTextColor(52, 73, 94);
+    doc.setFontSize(10);
+    
+    if (invoice.client_name) {
+      doc.text(invoice.client_name, rightCol, cursorY + lineHeight);
+    }
+    if (invoice.client_email) {
+      doc.text(invoice.client_email, rightCol, cursorY + (lineHeight * 2));
+    }
+    if (invoice.client_organization) {
+      doc.text(invoice.client_organization, rightCol, cursorY + (lineHeight * 3));
+    }
   }
 
-  cursorY += 15;
+  cursorY += (lineHeight * 4) + 10;
 
-  // Tableau des services optimisé et moderne
+  // Section Services avec design minimaliste
+  doc.setTextColor(149, 165, 166);
+  doc.setFontSize(12);
+  doc.text("Prestations", margin, cursorY);
+  cursorY += 10;
+
   const selectedIds = getSelectedServiceIds(invoice);
   const selectedServices = servicesCatalog.filter(s => selectedIds.includes(s.id));
 
   const tableData = selectedServices.map(service => [
     service.name,
-    service.description || 'Service cadastral professionnel',
     '1',
-    `$${Number(service.price).toFixed(2)}`,
-    `$${Number(service.price).toFixed(2)}`
+    `${Number(service.price).toFixed(2)} $`
   ]);
 
   const availableWidth = pageWidth - (2 * margin);
   
   autoTable(doc, {
-    head: [["Prestation", "Description", "Qté", "Prix unit.", "Total"]],
-    body: tableData.length ? tableData : [["-", "-", "-", "-", "-"]],
+    head: [["Service", "Qté", "Prix"]],
+    body: tableData.length ? tableData : [["-", "-", "-"]],
     startY: cursorY,
     styles: { 
-      fontSize: 9, 
-      cellPadding: 2.5,
-      lineColor: [220, 220, 220],
-      lineWidth: 0.1
+      fontSize: 10, 
+      cellPadding: 6,
+      lineColor: [240, 240, 240],
+      lineWidth: 0.5,
+      textColor: [52, 73, 94]
     },
     headStyles: { 
-      fillColor: [41, 128, 185], 
-      textColor: 255,
-      fontStyle: 'bold',
-      fontSize: 9
+      fillColor: [248, 249, 250], 
+      textColor: [52, 73, 94],
+      fontStyle: 'normal',
+      fontSize: 10
     },
     columnStyles: {
-      0: { cellWidth: availableWidth * 0.32 }, // 32% pour prestation
-      1: { cellWidth: availableWidth * 0.43 }, // 43% pour description
-      2: { cellWidth: availableWidth * 0.08, halign: 'center' }, // 8% pour quantité
-      3: { cellWidth: availableWidth * 0.085, halign: 'right' }, // 8.5% pour prix unit
-      4: { cellWidth: availableWidth * 0.085, halign: 'right' } // 8.5% pour total
+      0: { cellWidth: availableWidth * 0.65 },
+      1: { cellWidth: availableWidth * 0.15, halign: 'center' },
+      2: { cellWidth: availableWidth * 0.2, halign: 'right' }
     },
-    theme: 'grid',
-    alternateRowStyles: { fillColor: [248, 249, 250] },
+    theme: 'plain',
     margin: { left: margin, right: margin },
     tableWidth: availableWidth
   });
 
   const finalY = (doc as any).lastAutoTable?.finalY || cursorY + 20;
 
-  // Section totaux compacte et moderne
-  const totalsY = finalY + 8;
-  const totalsWidth = 60; // Largeur de la section totaux
-  const totalsX = pageWidth - margin - totalsWidth;
-  
+  // Section totaux épurée
   const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
   const discountAmount = Number(invoice.discount_amount_usd || 0);
   const tvaRate = 0.16;
-  const tvaAmount = (subtotal - discountAmount) * tvaRate;
-  const total = subtotal - discountAmount + tvaAmount;
+  const netAmount = subtotal - discountAmount;
+  const tvaAmount = netAmount * tvaRate;
+  const total = netAmount + tvaAmount;
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  cursorY = finalY + 20;
+  const rightAlign = pageWidth - margin;
   
-  doc.text("Sous-total:", totalsX, totalsY);
-  doc.text(`$${subtotal.toFixed(2)}`, pageWidth - margin, totalsY, { align: 'right' });
-
-  if (discountAmount > 0) {
-    doc.text("Remise:", totalsX, totalsY + 4);
-    doc.text(`-$${discountAmount.toFixed(2)}`, pageWidth - margin, totalsY + 4, { align: 'right' });
-  }
-
-  const tvaY = totalsY + (discountAmount > 0 ? 8 : 4);
-  doc.text("TVA (16%):", totalsX, tvaY);
-  doc.text(`$${tvaAmount.toFixed(2)}`, pageWidth - margin, tvaY, { align: 'right' });
-
-  // Ligne de total moderne
-  doc.setLineWidth(0.5);
-  doc.setDrawColor(41, 128, 185);
-  doc.line(totalsX, tvaY + 2, pageWidth - margin, tvaY + 2);
-
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text("TOTAL:", totalsX, tvaY + 7);
-  doc.text(`$${total.toFixed(2)} USD`, pageWidth - margin, tvaY + 7, { align: 'right' });
-
-  // QR Code moderne et compact
-  const qrY = tvaY + 12;
-  if (invoice.status === 'paid') {
-    try {
-      const qrData = `${typeof window !== 'undefined' ? window.location.origin : 'https://bic-congo.cd'}/cadastral/${invoice.parcel_number}?invoice=${invoice.invoice_number}&services=${getSelectedServiceIds(invoice).join(',')}`;
-      
-      // QR Code section compacte
-      doc.setFontSize(7);
-      doc.setFont('helvetica', 'bold');
-      doc.text("Accès rapide:", margin, qrY);
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(6);
-      doc.text("Scannez pour accéder", margin, qrY + 3);
-      
-      // QR code stylisé compact
-      const qrSize = 15;
-      const qrX = margin;
-      const qrStartY = qrY + 5;
-      
-      doc.setLineWidth(0.3);
-      doc.rect(qrX, qrStartY, qrSize, qrSize);
-      
-      // Motif QR optimisé
-      doc.setFillColor(0, 0, 0);
-      const cellSize = qrSize / 6;
-      const pattern = [
-        [1,1,0,1,0,1],
-        [1,0,1,0,1,0],
-        [0,1,1,1,0,1],
-        [1,0,0,1,1,0],
-        [0,1,0,0,1,1],
-        [1,0,1,1,0,0]
-      ];
-      
-      for (let i = 0; i < 6; i++) {
-        for (let j = 0; j < 6; j++) {
-          if (pattern[i][j]) {
-            doc.rect(qrX + j * cellSize + 0.5, qrStartY + i * cellSize + 0.5, cellSize - 0.5, cellSize - 0.5, 'F');
-          }
-        }
-      }
-      
-    } catch (error) {
-      console.error('Erreur génération QR code:', error);
-    }
-  }
-
-  // Pied de page compact
-  const footerY = 280;
+  doc.setTextColor(149, 165, 166);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.text(
-    "Document officiel BIC - Sources Ministère des Affaires Foncières",
-    pageWidth / 2,
-    footerY,
-    { align: 'center' }
-  );
-  doc.text(
-    `Généré le ${new Date().toLocaleDateString('fr-FR')} | ${BIC_COMPANY_INFO.rccm}`,
-    pageWidth / 2,
-    footerY + 3,
-    { align: 'center' }
-  );
+  doc.setFontSize(10);
+  
+  if (discountAmount > 0) {
+    doc.text("Remise", rightAlign - 40, cursorY);
+    doc.text(`-${discountAmount.toFixed(2)} $`, rightAlign, cursorY, { align: 'right' });
+    cursorY += 6;
+  }
+  
+  doc.text("TVA 16%", rightAlign - 40, cursorY);
+  doc.text(`${tvaAmount.toFixed(2)} $`, rightAlign, cursorY, { align: 'right' });
+  cursorY += 10;
+
+  // Total avec accent
+  doc.setTextColor(52, 73, 94);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text("Total", rightAlign - 40, cursorY);
+  doc.text(`${total.toFixed(2)} $`, rightAlign, cursorY, { align: 'right' });
+  
+  cursorY += 20;
+
+  // Pied de page épuré
+  doc.setTextColor(149, 165, 166);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  
+  const footerY = 270;
+  doc.text("Bureau de l'Immobilier du Congo", pageWidth / 2, footerY, { align: 'center' });
+  doc.text(`Document généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, footerY + 5, { align: 'center' });
 
   saveDocument(doc, filename || `justificatif_BIC_${formatDateForFilename()}_${invoice.invoice_number.replace(/[^0-9A-Za-z]/g, '_')}.pdf`);
 }
@@ -464,36 +405,33 @@ export function generateCadastralReport(
   // En-tête principal de la première page
   addPageHeader();
 
-  // Titre du rapport avec style moderne
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
-  doc.setTextColor(20, 84, 129);
-  doc.text("RAPPORT CADASTRAL COMPLET", pageWidth / 2, currentY, { align: 'center' });
+  // Titre du rapport épuré
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(24);
+  doc.setTextColor(52, 73, 94);
+  doc.text("Rapport Cadastral", pageWidth / 2, currentY, { align: 'center' });
+  currentY += 8;
+  
+  // Sous-titre minimaliste
+  doc.setFontSize(14);
+  doc.setTextColor(149, 165, 166);
+  doc.text(`Parcelle ${parcel.parcel_number || 'N/A'}`, pageWidth / 2, currentY, { align: 'center' });
   currentY += 6;
   
-  // Sous-titre avec informations de la parcelle
-  doc.setFontSize(12);
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Parcelle N° ${parcel.parcel_number || 'N/A'}`, pageWidth / 2, currentY, { align: 'center' });
-  currentY += 4;
-  
-  doc.setFontSize(8);
-  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, pageWidth / 2, currentY, { align: 'center' });
-  currentY += 12;
+  doc.setFontSize(9);
+  doc.text(`${new Date().toLocaleDateString('fr-FR')}`, pageWidth / 2, currentY, { align: 'center' });
+  currentY += 20;
 
   // Section 1: Informations générales - Afficher seulement si le service 'information' est payé
   if (paidServices.includes('information')) {
     checkPageBreak(50);
     
-    // Titre de section
-    doc.setFillColor(20, 84, 129);
-    doc.rect(20, currentY, pageWidth - 40, 10, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(12);
-    doc.text('📋 INFORMATIONS GÉNÉRALES', 25, currentY + 6);
-    
-    currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
+    // Section avec titre épuré
+    doc.setTextColor(149, 165, 166);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(14);
+    doc.text('Informations générales', margin, currentY);
+    currentY += 10;
 
     // Calculer la superficie à partir des coordonnées GPS (si disponible)
     const calculateAreaFromGPS = () => {
@@ -515,9 +453,9 @@ export function generateCadastralReport(
     const calculatedArea = calculateAreaFromGPS();
     const formatCalculatedArea = calculatedArea ? formatArea(Math.round(calculatedArea)) : 'N/A';
 
-    // Générer la table des informations générales
-    (doc as any).autoTable({
-      startY: currentY + 5,
+    // Générer le tableau épuré des informations générales
+    autoTable(doc, {
+      startY: currentY,
       head: [['Propriété', 'Valeur']],
       body: [
         ['Numéro de parcelle', parcel.parcel_number],
@@ -528,14 +466,22 @@ export function generateCadastralReport(
         ['Date d\'enregistrement', parcel.registration_date ? new Date(parcel.registration_date).toLocaleDateString('fr-FR') : 'N/A'],
         ['Dernière mise à jour', parcel.updated_at ? new Date(parcel.updated_at).toLocaleDateString('fr-FR') : 'N/A'],
       ],
-      theme: 'striped',
-      headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
-      bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
-      alternateRowStyles: { fillColor: [248, 248, 248] },
-      margin: { left: 20, right: 20 },
-      tableWidth: 'wrap',
+      theme: 'plain',
+      headStyles: { 
+        fillColor: [248, 249, 250], 
+        fontSize: 10, 
+        textColor: [52, 73, 94],
+        fontStyle: 'normal'
+      },
+      bodyStyles: { 
+        fontSize: 10, 
+        textColor: [52, 73, 94],
+        lineColor: [240, 240, 240],
+        lineWidth: 0.5
+      },
+      margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 70 },
+        0: { cellWidth: 70, fontStyle: 'normal' },
         1: { cellWidth: 100 }
       }
     });
@@ -547,19 +493,16 @@ export function generateCadastralReport(
   if (paidServices.includes('location_history')) {
     checkPageBreak(40);
     
-    // Titre de section
-    doc.setFillColor(20, 84, 129);
-    doc.rect(20, currentY, pageWidth - 40, 10, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFont(undefined, 'bold');
-    doc.setFontSize(12);
-    doc.text('📍 LOCALISATION', 25, currentY + 6);
-    
-    currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
+    // Section avec titre épuré
+    doc.setTextColor(149, 165, 166);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(14);
+    doc.text('Localisation', margin, currentY);
+    currentY += 10;
 
-    // Table des informations de localisation
-    (doc as any).autoTable({
-      startY: currentY + 5,
+    // Table épurée des informations de localisation
+    autoTable(doc, {
+      startY: currentY,
       head: [['Propriété', 'Valeur']],
       body: [
         ['Province', parcel.province || 'N/A'],
@@ -570,14 +513,22 @@ export function generateCadastralReport(
         ['Numéro', parcel.numero || 'N/A'],
         ['Localisation complète', parcel.location || 'N/A']
       ],
-      theme: 'striped',
-      headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
-      bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
-      alternateRowStyles: { fillColor: [248, 248, 248] },
-      margin: { left: 20, right: 20 },
-      tableWidth: 'wrap',
+      theme: 'plain',
+      headStyles: { 
+        fillColor: [248, 249, 250], 
+        fontSize: 10, 
+        textColor: [52, 73, 94],
+        fontStyle: 'normal'
+      },
+      bodyStyles: { 
+        fontSize: 10, 
+        textColor: [52, 73, 94],
+        lineColor: [240, 240, 240],
+        lineWidth: 0.5
+      },
+      margin: { left: margin, right: margin },
       columnStyles: {
-        0: { cellWidth: 70 },
+        0: { cellWidth: 70, fontStyle: 'normal' },
         1: { cellWidth: 100 }
       }
     });
