@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
+import { toast } from '@/hooks/use-toast';
 import CadastralResultCard from './CadastralResultCard';
 
 interface CadastralResultsDialogProps {
@@ -24,7 +25,17 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
   if (!isOpen) return null;
 
   const handleClose = () => {
-    onClose();
+    // Afficher une notification d'avertissement avant fermeture
+    toast({
+      title: "⚠️ Attention !",
+      description: "Pensez à télécharger ou imprimer votre rapport cadastral avant de fermer. Vous devrez faire une nouvelle requête pour y accéder à nouveau.",
+      duration: 4000,
+    });
+    
+    // Fermer après un petit délai pour que l'utilisateur puisse voir le message
+    setTimeout(() => {
+      onClose();
+    }, 1000);
   };
 
   const handlePaymentSuccess = (services: string[]) => {
