@@ -270,7 +270,7 @@ function saveDocument(doc: jsPDF, filename: string) {
 }
 
 /**
- * Génère un rapport cadastral détaillé et conforme aux données à l'écran
+ * Génère un rapport cadastral ultra-compact sur une seule page, conforme aux données à l'écran
  */
 export function generateCadastralReport(
   cadastralResult: any,
@@ -280,580 +280,312 @@ export function generateCadastralReport(
 ) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const pageHeight = doc.internal.pageSize.getHeight();
-  const margin = 15;
+  const margin = 10;
   let currentY = margin;
 
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = cadastralResult;
 
-  // ===== EN-TÊTE PROFESSIONNEL AVEC INFORMATIONS LÉGALES COMPLÈTES =====
-  
-  // Logo et nom principal
-  doc.setTextColor(0, 51, 102); // Bleu professionnel
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(22);
-  doc.text(BIC_COMPANY_INFO.abbreviation, margin, currentY);
-  
-  // Nom complet de l'entreprise
-  doc.setFontSize(11);
-  doc.setFont('helvetica', 'normal');
-  doc.text(BIC_COMPANY_INFO.fullLegalName, margin + 35, currentY);
-  
-  // Informations légales à droite
-  doc.setFontSize(8);
-  doc.setTextColor(80, 80, 80);
-  const rightMargin = pageWidth - margin;
-  doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, rightMargin, currentY - 2, { align: 'right' });
-  doc.text(`N° TVA: ${BIC_COMPANY_INFO.numTva}`, rightMargin, currentY + 2, { align: 'right' });
-  doc.text(`ID NAT: ${BIC_COMPANY_INFO.idNat}`, rightMargin, currentY + 6, { align: 'right' });
-  
-  currentY += 12;
-  
-  // Adresse complète
-  doc.setFontSize(9);
-  doc.setTextColor(100, 100, 100);
-  doc.text(BIC_COMPANY_INFO.address, margin, currentY);
-  doc.text(`${BIC_COMPANY_INFO.city}, ${BIC_COMPANY_INFO.country}`, margin, currentY + 4);
-  
-  // Contact à droite
-  doc.text(`Tél: ${BIC_COMPANY_INFO.phone}`, rightMargin, currentY, { align: 'right' });
-  doc.text(`Email: ${BIC_COMPANY_INFO.email}`, rightMargin, currentY + 4, { align: 'right' });
-  
-  currentY += 12;
-  
-  // Ligne de séparation
-  doc.setDrawColor(0, 51, 102);
-  doc.setLineWidth(0.8);
-  doc.line(margin, currentY, pageWidth - margin, currentY);
-  currentY += 8;
-
-  // ===== TITRE ET INFORMATIONS DU RAPPORT =====
-  
-  doc.setTextColor(0, 51, 102);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(16);
-  doc.text(`RAPPORT CADASTRAL DÉTAILLÉ`, margin, currentY);
-  
-  // Informations du rapport à droite
-  const reportDate = new Date().toLocaleDateString('fr-FR', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
-  });
-  const reportTime = new Date().toLocaleTimeString('fr-FR', { 
-    hour: '2-digit', 
-    minute: '2-digit' 
-  });
-  const reportNumber = `RPT-${parcel.parcel_number.replace(/[^0-9A-Za-z]/g, '')}-${Date.now().toString().slice(-6)}`;
-  
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(80, 80, 80);
-  doc.text(`Date: ${reportDate}`, rightMargin, currentY - 4, { align: 'right' });
-  doc.text(`Heure: ${reportTime}`, rightMargin, currentY, { align: 'right' });
-  doc.text(`N° Rapport: ${reportNumber}`, rightMargin, currentY + 4, { align: 'right' });
-  
-  currentY += 12;
-  
-  // Informations principales de la parcelle
-  doc.setTextColor(0, 51, 102);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text(`PARCELLE N° ${parcel.parcel_number}`, margin, currentY);
-  
-  currentY += 6;
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(60, 60, 60);
-  const parcelTypeText = parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale';
-  doc.text(`${parcelTypeText} • ${parcel.location || 'Localisation à déterminer'}`, margin, currentY);
-  
-  currentY += 10;
-
-  // ===== SERVICES INCLUS DANS LE RAPPORT =====
-  
-  doc.setTextColor(0, 102, 51); // Vert pour les services
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
-  doc.text("SERVICES INCLUS DANS CE RAPPORT:", margin, currentY);
-  currentY += 5;
-  
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
-  let servicesCount = 0;
-  paidServices.forEach(serviceId => {
-    const service = servicesCatalog.find(s => s.id === serviceId);
-    if (service) {
-      servicesCount++;
-      doc.setTextColor(0, 150, 0);
-      doc.text(`✓ ${service.name} - ${service.description || 'Service cadastral'}`, margin + 5, currentY);
-      doc.setTextColor(80, 80, 80);
-      doc.text(`$${Number(service.price).toFixed(2)}`, rightMargin, currentY, { align: 'right' });
-      currentY += 4;
-    }
-  });
-  
-  if (servicesCount === 0) {
-    doc.setTextColor(200, 0, 0);
-    doc.text("Aucun service payé - Rapport limité", margin + 5, currentY);
-    currentY += 4;
-  }
-  
-  currentY += 8;
-
-  // ===== FONCTIONS UTILITAIRES POUR CONFORMITÉ ÉCRAN =====
-  
+  // ===== FONCTIONS DE FORMATAGE IDENTIQUES À L'ÉCRAN =====
   const formatArea = (sqm: number): string => {
     if (!sqm || sqm === 0) return 'Non spécifiée';
     if (sqm >= 10000) {
-      return `${(sqm / 10000).toFixed(4)} hectares (${sqm.toLocaleString('fr-FR')} m²)`;
+      return `${(sqm / 10000).toFixed(2)} ha (${sqm.toLocaleString('fr-FR')} m²)`;
     }
     return `${sqm.toLocaleString('fr-FR')} m²`;
   };
 
   const formatDate = (dateString: string | null): string => {
-    if (!dateString) return 'Non spécifiée';
-    try {
-      return new Date(dateString).toLocaleDateString('fr-FR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch {
-      return 'Format invalide';
-    }
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('fr-FR');
   };
 
-  const formatCurrency = (amount: number | string | null): string => {
-    if (!amount) return '0,00 USD';
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return `${num.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`;
-  };
+  // ===== EN-TÊTE ULTRA-COMPACT =====
+  doc.setTextColor(0, 51, 102);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text("BIC", margin, currentY);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.text("Bureau de l'Immobilier du Congo", margin + 25, currentY);
+  doc.text(new Date().toLocaleDateString('fr-FR'), pageWidth - margin, currentY, { align: 'right' });
 
-  // ===== FONCTION POUR CRÉER DES SECTIONS DÉTAILLÉES =====
+  currentY += 8;
+
+  // ===== TITRE ET PARCELLE =====
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(12);
+  doc.text(`RAPPORT CADASTRAL - PARCELLE ${parcel.parcel_number}`, margin, currentY);
   
-  const addDetailedSection = (title: string, data: Array<[string, string]>, hasAccess: boolean = true, description?: string) => {
-    // Vérifier si on a besoin d'une nouvelle page
-    if (currentY + (data.length * 6) + 25 > pageHeight - 40) {
-      doc.addPage();
-      currentY = margin;
-    }
+  currentY += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(8);
+  const parcelTypeText = parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale';
+  doc.text(`${parcelTypeText} • ${parcel.location || 'Localisation indéterminée'}`, margin, currentY);
+  
+  currentY += 10;
 
-    // Titre de section avec fond coloré
-    doc.setFillColor(240, 248, 255);
-    doc.rect(margin - 2, currentY - 3, pageWidth - 2 * margin + 4, 8, 'F');
-    
+  // ===== MISE EN PAGE EN DEUX COLONNES =====
+  const colWidth = (pageWidth - 3 * margin) / 2;
+  const leftCol = margin;
+  const rightCol = margin + colWidth + margin;
+  let leftY = currentY;
+  let rightY = currentY;
+
+  // ===== COLONNE GAUCHE: INFORMATIONS GÉNÉRALES =====
+  if (paidServices.includes('information')) {
     doc.setTextColor(0, 51, 102);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(12);
-    doc.text(title, margin, currentY);
-    
-    if (!hasAccess) {
-      doc.setTextColor(200, 0, 0);
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
-      doc.text("(Service non inclus - Données non disponibles)", rightMargin, currentY, { align: 'right' });
-    }
-    
-    currentY += 8;
-    
-    // Description du service si fournie
-    if (description && hasAccess) {
-      doc.setTextColor(100, 100, 100);
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(8);
-      doc.text(description, margin, currentY);
-      currentY += 4;
-    }
+    doc.setFontSize(9);
+    doc.text("INFORMATIONS GÉNÉRALES", leftCol, leftY);
+    leftY += 5;
 
-    if (!hasAccess) {
-      doc.setTextColor(150, 150, 150);
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
-      doc.text("Pour accéder à ces informations, veuillez souscrire au service correspondant.", margin, currentY);
-      currentY += 12;
-      return;
-    }
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(60, 60, 60);
 
-    if (data.length === 0) {
-      doc.setTextColor(150, 150, 150);
-      doc.setFont('helvetica', 'italic');
-      doc.setFontSize(9);
-      doc.text("Aucune donnée disponible pour cette section.", margin, currentY);
-      currentY += 12;
-      return;
-    }
-
-    // Affichage des données en tableau structuré
-    autoTable(doc, {
-      startY: currentY,
-      head: [['Propriété', 'Valeur']],
-      body: data,
-      styles: { 
-        fontSize: 9,
-        cellPadding: 3,
-        lineColor: [220, 220, 220],
-        lineWidth: 0.3,
-        textColor: [40, 40, 40],
-        overflow: 'linebreak',
-        cellWidth: 'wrap'
-      },
-      headStyles: { 
-        fillColor: [248, 250, 252], 
-        textColor: [0, 51, 102],
-        fontStyle: 'bold',
-        fontSize: 10
-      },
-      columnStyles: {
-        0: { 
-          cellWidth: 60, 
-          fontStyle: 'bold',
-          fillColor: [252, 254, 255],
-          valign: 'top'
-        },
-        1: { 
-          cellWidth: pageWidth - 2 * margin - 60,
-          cellPadding: { left: 8, right: 3, top: 3, bottom: 3 },
-          valign: 'top'
-        }
-      },
-      alternateRowStyles: { fillColor: [252, 254, 255] },
-      theme: 'grid',
-      margin: { left: margin, right: margin }
-    });
-
-    currentY = (doc as any).lastAutoTable?.finalY + 10;
-  };
-
-  // ===== 1. INFORMATIONS GÉNÉRALES (Service 'information') =====
-  
-  if (paidServices.includes('information')) {
-    const generalData: Array<[string, string]> = [
-      ['Numéro de parcelle', parcel.parcel_number || 'Non spécifié'],
-      ['Type de section', parcel.parcel_type === 'SU' ? 'Section Urbaine (SU)' : 'Section Rurale (SR)'],
-      ['Superficie officielle', formatArea(parcel.official_area)],
-      ['Statut juridique', parcel.legal_status || 'Non défini'],
-      ['Date d\'enregistrement', formatDate(parcel.registration_date)],
-      ['Zone cadastrale', parcel.cadastral_zone || 'Non spécifiée'],
-      ['Numéro de titre foncier', parcel.title_number || 'Non attribué'],
-      ['Usage autorisé', parcel.authorized_use || 'Usage mixte'],
-      ['Valeur estimée', formatCurrency(parcel.estimated_value)],
-      ['Date de dernière mise à jour', formatDate(parcel.last_updated)]
+    // Données EXACTES de l'écran
+    const infoData = [
+      ['Type:', parcel.property_title_type || 'Non spécifié'],
+      ['Surface:', formatArea(parcel.area_sqm)], // Utilise area_sqm comme à l'écran
+      ...(parcel.area_hectares > 0 ? [['Hectares:', `${parcel.area_hectares.toFixed(2)} ha`]] : [])
     ];
 
-    // Calcul de superficie GPS si disponible
-    if (parcel.gps_coordinates && parcel.gps_coordinates.length >= 3) {
+    infoData.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, leftCol, leftY);
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(value, colWidth - 25);
+      doc.text(lines, leftCol + 25, leftY);
+      leftY += 3.5;
+    });
+
+    leftY += 3;
+
+    // Propriétaire actuel (EXACTEMENT comme à l'écran)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text("PROPRIÉTAIRE ACTUEL", leftCol, leftY);
+    leftY += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    const ownerData = [
+      ['Nom:', parcel.current_owner_name || 'Non renseigné'],
+      ['Statut:', parcel.current_owner_legal_status || 'Non défini'],
+      ['Depuis:', formatDate(parcel.current_owner_since)]
+    ];
+
+    ownerData.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, leftCol, leftY);
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(value, colWidth - 25);
+      doc.text(lines, leftCol + 25, leftY);
+      leftY += 3.5;
+    });
+  } else {
+    doc.setTextColor(200, 0, 0);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text("Service 'Information' non inclus", leftCol, leftY);
+    leftY += 5;
+  }
+
+  // ===== COLONNE DROITE: LOCALISATION =====
+  if (paidServices.includes('location_history')) {
+    doc.setTextColor(0, 51, 102);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text("LOCALISATION", rightCol, rightY);
+    rightY += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(60, 60, 60);
+
+    // Données EXACTES comme affichées à l'écran
+    const locationData = [];
+    if (parcel.province) locationData.push(['Province:', parcel.province]);
+    
+    if (parcel.parcel_type === 'SU') {
+      if (parcel.ville) locationData.push(['Ville:', parcel.ville]);
+      if (parcel.commune) locationData.push(['Commune:', parcel.commune]);
+      if (parcel.quartier) locationData.push(['Quartier:', parcel.quartier]);
+      if (parcel.avenue) locationData.push(['Avenue:', parcel.avenue]);
+    } else {
+      if (parcel.territoire) locationData.push(['Territoire:', parcel.territoire]);
+      if (parcel.collectivite) locationData.push(['Collectivité:', parcel.collectivite]);
+      if (parcel.groupement) locationData.push(['Groupement:', parcel.groupement]);
+      if (parcel.village) locationData.push(['Village:', parcel.village]);
+    }
+
+    locationData.forEach(([label, value]) => {
+      doc.setFont('helvetica', 'bold');
+      doc.text(label, rightCol, rightY);
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(value, colWidth - 25);
+      doc.text(lines, rightCol + 25, rightY);
+      rightY += 3.5;
+    });
+
+    // Coordonnées GPS si disponibles
+    if (parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
+      rightY += 2;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text("COORDONNÉES GPS", rightCol, rightY);
+      rightY += 4;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6);
+      doc.text(`${parcel.gps_coordinates.length} points de délimitation`, rightCol, rightY);
+      rightY += 3;
+      
+      // Superficie calculée comme à l'écran
       const calculatedArea = calculateSurfaceFromBounds(parcel.gps_coordinates);
       if (calculatedArea && calculatedArea > 0) {
-        generalData.push(['Superficie calculée (GPS)', formatArea(calculatedArea)]);
-        
-        // Comparaison avec superficie officielle
-        if (parcel.official_area && Math.abs(calculatedArea - parcel.official_area) > 1) {
-          const difference = ((calculatedArea - parcel.official_area) / parcel.official_area * 100).toFixed(2);
-          generalData.push(['Écart GPS/Officiel', `${difference}% (${(calculatedArea - parcel.official_area).toFixed(2)} m²)`]);
-        }
+        doc.text(`Surface GPS: ${formatArea(calculatedArea)}`, rightCol, rightY);
+        rightY += 3;
       }
     }
-
-    addDetailedSection(
-      'INFORMATIONS GÉNÉRALES DE LA PARCELLE', 
-      generalData, 
-      true,
-      'Données de base extraites du registre foncier officiel'
-    );
   } else {
-    addDetailedSection('INFORMATIONS GÉNÉRALES DE LA PARCELLE', [], false);
+    doc.setTextColor(200, 0, 0);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.text("Service 'Localisation' non inclus", rightCol, rightY);
+    rightY += 5;
   }
 
-  // ===== 2. LOCALISATION DÉTAILLÉE (Service 'location_history') =====
-  
-  if (paidServices.includes('location_history')) {
-    const locationData: Array<[string, string]> = [];
-    
-    // Hiérarchie administrative complète
-    if (parcel.province) locationData.push(['Province', parcel.province]);
-    if (parcel.ville) locationData.push(['Ville/Territoire', parcel.ville]);
-    if (parcel.commune) locationData.push(['Commune/Secteur', parcel.commune]);
-    if (parcel.quartier) locationData.push(['Quartier/Localité', parcel.quartier]);
-    if (parcel.avenue) locationData.push(['Avenue/Rue', parcel.avenue]);
-    if (parcel.location) locationData.push(['Adresse complète', parcel.location]);
-    
-    // Coordonnées et géolocalisation
-    if (parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
-      const centerLat = parcel.gps_coordinates.reduce((sum: number, coord: any) => sum + coord.lat, 0) / parcel.gps_coordinates.length;
-      const centerLng = parcel.gps_coordinates.reduce((sum: number, coord: any) => sum + coord.lng, 0) / parcel.gps_coordinates.length;
-      
-      locationData.push(['Coordonnées centrales', `${centerLat.toFixed(6)}°N, ${centerLng.toFixed(6)}°E`]);
-      locationData.push(['Système de coordonnées', 'WGS84 (GPS)']);
-      locationData.push(['Nombre de points de délimitation', `${parcel.gps_coordinates.length} points`]);
-      
-      // Périmètre calculé
-      let perimeter = 0;
-      for (let i = 0; i < parcel.gps_coordinates.length; i++) {
-        const current = parcel.gps_coordinates[i];
-        const next = parcel.gps_coordinates[(i + 1) % parcel.gps_coordinates.length];
-        const distance = Math.sqrt(Math.pow((next.lat - current.lat) * 111000, 2) + Math.pow((next.lng - current.lng) * 111000 * Math.cos(current.lat * Math.PI / 180), 2));
-        perimeter += distance;
+  // Continuer avec la plus haute colonne
+  currentY = Math.max(leftY, rightY) + 10;
+
+  // ===== HISTORIQUE (Si inclus) =====
+  if (paidServices.includes('history')) {
+    doc.setTextColor(0, 51, 102);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text("HISTORIQUE", margin, currentY);
+    currentY += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(60, 60, 60);
+
+    if (ownership_history && ownership_history.length > 0) {
+      const recentOwners = ownership_history.slice(0, 3); // Limiter pour l'espace
+      recentOwners.forEach((owner, index) => {
+        const startDate = formatDate(owner.ownership_start_date);
+        const endDate = owner.ownership_end_date ? formatDate(owner.ownership_end_date) : 'Actuel';
+        doc.text(`${index + 1}. ${owner.owner_name || 'Inconnu'} (${startDate} → ${endDate})`, margin, currentY);
+        currentY += 3;
+      });
+      if (ownership_history.length > 3) {
+        doc.setFont('helvetica', 'italic');
+        doc.text(`... et ${ownership_history.length - 3} autre(s) propriétaire(s)`, margin, currentY);
+        currentY += 3;
       }
-      locationData.push(['Périmètre calculé', `${perimeter.toFixed(2)} mètres`]);
     } else {
-      locationData.push(['Géolocalisation', 'Coordonnées GPS non disponibles']);
+      doc.text("Aucun historique disponible", margin, currentY);
+      currentY += 3;
     }
+  }
 
-    addDetailedSection(
-      'LOCALISATION ET GÉOLOCALISATION', 
-      locationData, 
-      true,
-      'Position géographique précise et délimitation de la parcelle'
-    );
+  // ===== OBLIGATIONS FISCALES (Si incluses) =====
+  if (paidServices.includes('obligations')) {
+    currentY += 5;
+    doc.setTextColor(0, 51, 102);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text("OBLIGATIONS FISCALES", margin, currentY);
+    currentY += 5;
 
-    // Sous-section: Coordonnées GPS détaillées
-    if (parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
-      const gpsDetailData = parcel.gps_coordinates.map((coord: any, index: number) => [
-        `Borne ${index + 1}`,
-        `Latitude: ${coord.lat.toFixed(8)}°\nLongitude: ${coord.lng.toFixed(8)}°\nPrécision: ±3m (GPS standard)`
-      ]);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(60, 60, 60);
+
+    if (tax_history && tax_history.length > 0) {
+      const overdueTaxes = tax_history.filter(tax => tax.payment_status === 'overdue');
+      const paidTaxes = tax_history.filter(tax => tax.payment_status === 'paid');
+      const pendingTaxes = tax_history.filter(tax => tax.payment_status === 'pending');
       
-      addDetailedSection(
-        'COORDONNÉES GPS DES BORNES', 
-        gpsDetailData, 
-        true,
-        'Points de délimitation précis relevés par GPS'
-      );
+      doc.text(`Total: ${tax_history.length} taxes | Payées: ${paidTaxes.length} | En retard: ${overdueTaxes.length} | En attente: ${pendingTaxes.length}`, margin, currentY);
+      currentY += 3;
+      
+      const statusText = overdueTaxes.length > 0 ? 'RETARDS DE PAIEMENT' : 'À JOUR';
+      const statusColor = overdueTaxes.length > 0 ? [200, 0, 0] : [0, 150, 0];
+      doc.setTextColor(...statusColor);
+      doc.text(`Statut: ${statusText}`, margin, currentY);
+      currentY += 3;
+    } else {
+      doc.text("Aucune donnée fiscale disponible", margin, currentY);
+      currentY += 3;
     }
-  } else {
-    addDetailedSection('LOCALISATION ET GÉOLOCALISATION', [], false);
   }
 
-  // ===== 3. HISTORIQUE DE PROPRIÉTÉ (Service 'history' ou 'ownership_history') =====
-  
-  const hasOwnershipAccess = paidServices.includes('history') || paidServices.includes('ownership_history');
-  if (hasOwnershipAccess && ownership_history && ownership_history.length > 0) {
-    const ownershipData = ownership_history.map((owner: any, index: number) => {
-      const startDate = formatDate(owner.ownership_start_date);
-      const endDate = owner.ownership_end_date ? formatDate(owner.ownership_end_date) : 'Propriétaire actuel';
-      
-      let duration = 'En cours';
-      if (owner.ownership_start_date && owner.ownership_end_date) {
-        const start = new Date(owner.ownership_start_date);
-        const end = new Date(owner.ownership_end_date);
-        const years = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
-        const months = Math.round(((end.getTime() - start.getTime()) % (1000 * 60 * 60 * 24 * 365.25)) / (1000 * 60 * 60 * 24 * 30.44));
-        duration = `${years} an(s) ${months} mois`;
-      } else if (owner.ownership_start_date) {
-        const start = new Date(owner.ownership_start_date);
-        const now = new Date();
-        const years = Math.round((now.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 365.25));
-        duration = `${years} an(s) (en cours)`;
-      }
-      
-      return [
-        `Propriétaire ${index + 1}`,
-        `Nom: ${owner.owner_name || 'Non renseigné'}\n` +
-        `Période: ${startDate} → ${endDate}\n` +
-        `Durée: ${duration}\n` +
-        `Type de propriété: ${owner.ownership_type || 'Propriété privée'}\n` +
-        `Mode d'acquisition: ${owner.acquisition_method || 'Non spécifié'}\n` +
-        `Prix d'acquisition: ${formatCurrency(owner.acquisition_price)}`
-      ];
-    });
-    
-    // Ajouter un résumé en tête
-    const currentOwner = ownership_history.find((owner: any) => !owner.ownership_end_date);
-    if (currentOwner) {
-      ownershipData.unshift([
-        'PROPRIÉTAIRE ACTUEL',
-        `${currentOwner.owner_name || 'Non identifié'}\n` +
-        `Depuis: ${formatDate(currentOwner.ownership_start_date)}\n` +
-        `Statut: ${currentOwner.ownership_type || 'Propriété privée'}`
-      ]);
-    }
-    
-    addDetailedSection(
-      'HISTORIQUE DE PROPRIÉTÉ', 
-      ownershipData, 
-      true,
-      'Succession complète des propriétaires depuis la création de la parcelle'
-    );
-  } else {
-    addDetailedSection('HISTORIQUE DE PROPRIÉTÉ', [], !hasOwnershipAccess);
-  }
-
-  // ===== 4. OBLIGATIONS FISCALES (Service 'obligations') =====
-  
-  if (paidServices.includes('obligations') && tax_history && tax_history.length > 0) {
-    // Calculs préalables pour résumé
-    const totalDue = tax_history.reduce((sum: number, tax: any) => sum + (Number(tax.amount_due) || 0), 0);
-    const totalPaid = tax_history.reduce((sum: number, tax: any) => {
-      return sum + (tax.payment_status === 'paid' ? (Number(tax.amount_due) || 0) : 0);
-    }, 0);
-    const paidTaxes = tax_history.filter(tax => tax.payment_status === 'paid').length;
-    const overdueTaxes = tax_history.filter(tax => tax.payment_status === 'overdue').length;
-    const pendingTaxes = tax_history.filter(tax => tax.payment_status === 'pending').length;
-    
-    const taxData: Array<[string, string]> = [
-      [
-        'RÉSUMÉ FISCAL',
-        `Total des taxes: ${formatCurrency(totalDue)}\n` +
-        `Montant payé: ${formatCurrency(totalPaid)}\n` +
-        `Solde dû: ${formatCurrency(totalDue - totalPaid)}\n` +
-        `Taxes payées: ${paidTaxes}/${tax_history.length}\n` +
-        `Taxes en retard: ${overdueTaxes}\n` +
-        `Taxes en attente: ${pendingTaxes}\n` +
-        `Statut global: ${overdueTaxes > 0 ? '⚠️ RETARDS DE PAIEMENT' : totalPaid >= totalDue ? '✅ À JOUR' : '⏳ PAIEMENTS EN COURS'}`
-      ]
-    ];
-
-    // Détail par année fiscale
-    tax_history.forEach((tax: any) => {
-      const year = tax.tax_year ? new Date(tax.tax_year).getFullYear() : 'Année inconnue';
-      const status = tax.payment_status === 'paid' ? '✅ Payé' : 
-                    tax.payment_status === 'overdue' ? '⚠️ En retard' : 
-                    tax.payment_status === 'pending' ? '⏳ En attente' : '❓ Statut inconnu';
-      const amount = formatCurrency(tax.amount_due);
-      const paymentDate = formatDate(tax.payment_date);
-      const dueDate = formatDate(tax.due_date);
-      
-      let penaltyInfo = '';
-      if (tax.penalty_amount && Number(tax.penalty_amount) > 0) {
-        penaltyInfo = `\nPénalités: ${formatCurrency(tax.penalty_amount)}`;
-      }
-      
-      taxData.push([
-        `Exercice ${year}`,
-        `Type: ${tax.tax_type || 'Taxe foncière'}\n` +
-        `Montant: ${amount}\n` +
-        `Statut: ${status}\n` +
-        `Date d'échéance: ${dueDate}\n` +
-        `Date de paiement: ${paymentDate}${penaltyInfo}\n` +
-        `Méthode de paiement: ${tax.payment_method || 'Non spécifiée'}`
-      ]);
-    });
-    
-    addDetailedSection(
-      'OBLIGATIONS FISCALES ET PAIEMENTS', 
-      taxData, 
-      true,
-      'État complet des taxes foncières et obligations fiscales'
-    );
-  } else {
-    addDetailedSection('OBLIGATIONS FISCALES ET PAIEMENTS', [], !paidServices.includes('obligations'));
-  }
-
-  // ===== 5. HYPOTHÈQUES ET CHARGES (Service 'history') =====
-  
-  if (paidServices.includes('history') && mortgage_history && mortgage_history.length > 0) {
-    const mortgageData = mortgage_history.map((mortgage: any, index: number) => {
-      const amount = formatCurrency(mortgage.mortgage_amount);
-      const startDate = formatDate(mortgage.mortgage_start_date);
-      const endDate = formatDate(mortgage.mortgage_end_date);
-      const status = mortgage.mortgage_status === 'active' ? '🔴 Active' : 
-                     mortgage.mortgage_status === 'paid_off' ? '✅ Remboursée' : 
-                     mortgage.mortgage_status === 'default' ? '⚠️ En défaut' : '❓ Statut inconnu';
-      
-      const interestRate = mortgage.interest_rate ? `${mortgage.interest_rate}% par an` : 'Non spécifié';
-      const monthlyPayment = formatCurrency(mortgage.monthly_payment);
-      const remainingBalance = formatCurrency(mortgage.remaining_balance);
-      
-      return [
-        `Hypothèque ${index + 1}`,
-        `Créancier: ${mortgage.lender_name || 'Institution non identifiée'}\n` +
-        `Montant initial: ${amount}\n` +
-        `Période: ${startDate} → ${endDate}\n` +
-        `Statut: ${status}\n` +
-        `Taux d'intérêt: ${interestRate}\n` +
-        `Paiement mensuel: ${monthlyPayment}\n` +
-        `Solde restant: ${remainingBalance}\n` +
-        `Type d'hypothèque: ${mortgage.mortgage_type || 'Hypothèque conventionnelle'}\n` +
-        `Garanties: ${mortgage.collateral_description || 'La parcelle elle-même'}`
-      ];
-    });
-    
-    // Résumé des charges
-    const totalMortgages = mortgage_history.length;
-    const activeMortgages = mortgage_history.filter(m => m.mortgage_status === 'active').length;
-    const totalDebt = mortgage_history.reduce((sum: number, m: any) => {
-      return sum + (m.mortgage_status === 'active' ? (Number(m.remaining_balance) || Number(m.mortgage_amount) || 0) : 0);
-    }, 0);
-    
-    mortgageData.unshift([
-      'RÉSUMÉ DES CHARGES',
-      `Nombre total d'hypothèques: ${totalMortgages}\n` +
-      `Hypothèques actives: ${activeMortgages}\n` +
-      `Dette totale active: ${formatCurrency(totalDebt)}\n` +
-      `Statut général: ${activeMortgages > 0 ? '⚠️ PARCELLE GREVÉE' : '✅ PARCELLE LIBRE'}`
-    ]);
-    
-    addDetailedSection(
-      'HYPOTHÈQUES ET CHARGES RÉELLES', 
-      mortgageData, 
-      true,
-      'Ensemble des charges, hypothèques et sûretés grevant la parcelle'
-    );
-  } else {
-    addDetailedSection('HYPOTHÈQUES ET CHARGES RÉELLES', [], !paidServices.includes('history'));
-  }
-
-  // ===== 6. HISTORIQUE DES LIMITES (Service bonus si disponible) =====
-  
+  // ===== BORNAGE (Si disponible) =====
   if (boundary_history && boundary_history.length > 0) {
-    const boundaryData = boundary_history.map((boundary: any, index: number) => [
-      `Délimitation ${index + 1}`,
-      `Date: ${formatDate(boundary.survey_date)}\n` +
-      `Géomètre: ${boundary.surveyor_name || 'Non identifié'}\n` +
-      `Méthode: ${boundary.survey_method || 'Non spécifiée'}\n` +
-      `Précision: ${boundary.precision || 'Standard'}\n` +
-      `Notes: ${boundary.notes || 'Aucune remarque'}`
-    ]);
-    
-    addDetailedSection(
-      'HISTORIQUE DES DÉLIMITATIONS', 
-      boundaryData, 
-      true,
-      'Historique des relevés topographiques et délimitations'
-    );
+    currentY += 5;
+    doc.setTextColor(0, 51, 102);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text("BORNAGE", margin, currentY);
+    currentY += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(60, 60, 60);
+
+    boundary_history.slice(0, 2).forEach(boundary => {
+      const surveyDate = formatDate(boundary.survey_date);
+      doc.text(`PV: ${boundary.pv_reference_number} | Date: ${surveyDate} | Géomètre: ${boundary.surveyor_name || 'N/A'}`, margin, currentY);
+      currentY += 3;
+    });
   }
 
-  // ===== PIED DE PAGE AVEC INFORMATIONS LÉGALES COMPLÈTES =====
+  // ===== SERVICES INCLUS =====
+  currentY += 8;
+  doc.setFillColor(240, 248, 255);
+  doc.rect(margin - 2, currentY - 3, pageWidth - 2 * margin + 4, 6, 'F');
+  doc.setTextColor(0, 102, 51);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.text("SERVICES INCLUS:", margin, currentY);
+  currentY += 4;
+
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  let servicesList = '';
+  paidServices.forEach(serviceId => {
+    const service = servicesCatalog.find(s => s.id === serviceId);
+    if (service) {
+      servicesList += `✓ ${service.name} ($${Number(service.price).toFixed(2)}) `;
+    }
+  });
+  doc.text(servicesList || 'Aucun service payé', margin, currentY);
   
-  const footerStartY = pageHeight - 35;
-  
-  // Ligne de séparation
+  // ===== PIED DE PAGE COMPACT =====
+  const footerY = 280;
   doc.setDrawColor(0, 51, 102);
-  doc.setLineWidth(0.8);
-  doc.line(margin, footerStartY, pageWidth - margin, footerStartY);
+  doc.setLineWidth(0.5);
+  doc.line(margin, footerY, pageWidth - margin, footerY);
   
-  // Informations légales complètes
   doc.setTextColor(60, 60, 60);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8);
-  doc.text(BIC_COMPANY_INFO.fullLegalName, pageWidth / 2, footerStartY + 4, { align: 'center' });
+  doc.text(BIC_COMPANY_INFO.fullLegalName, pageWidth / 2, footerY + 4, { align: 'center' });
   
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(7);
-  doc.text(`${BIC_COMPANY_INFO.address}, ${BIC_COMPANY_INFO.city}`, pageWidth / 2, footerStartY + 8, { align: 'center' });
-  doc.text(`${BIC_COMPANY_INFO.legalForm} - Capital: ${BIC_COMPANY_INFO.authorizedCapital}`, pageWidth / 2, footerStartY + 11, { align: 'center' });
-  
-  // Informations légales en deux colonnes
-  doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, margin, footerStartY + 15);
-  doc.text(`N° TVA: ${BIC_COMPANY_INFO.numTva}`, pageWidth - margin, footerStartY + 15, { align: 'right' });
-  doc.text(`ID NAT: ${BIC_COMPANY_INFO.idNat}`, margin, footerStartY + 18);
-  doc.text(`Licence: ${BIC_COMPANY_INFO.tradeLicense}`, pageWidth - margin, footerStartY + 18, { align: 'right' });
-  
-  // Contact et certification
-  doc.setTextColor(80, 80, 80);
-  doc.text(`Tél: ${BIC_COMPANY_INFO.phone} • Email: ${BIC_COMPANY_INFO.email} • Web: ${BIC_COMPANY_INFO.website}`, pageWidth / 2, footerStartY + 22, { align: 'center' });
-  
-  // Mentions légales
-  doc.setFont('helvetica', 'italic');
   doc.setFontSize(6);
-  doc.setTextColor(120, 120, 120);
-  doc.text(`Rapport généré le ${reportDate} à ${reportTime} - Document confidentiel - Établi depuis ${BIC_COMPANY_INFO.establishedYear}`, pageWidth / 2, footerStartY + 26, { align: 'center' });
-  doc.text("Les informations contenues dans ce rapport sont extraites des registres officiels et bases de données cadastrales.", pageWidth / 2, footerStartY + 29, { align: 'center' });
+  doc.text(`${BIC_COMPANY_INFO.address}, ${BIC_COMPANY_INFO.city}`, pageWidth / 2, footerY + 8, { align: 'center' });
+  doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm} • N° TVA: ${BIC_COMPANY_INFO.numTva}`, pageWidth / 2, footerY + 11, { align: 'center' });
+  doc.text(`Tél: ${BIC_COMPANY_INFO.phone} • Email: ${BIC_COMPANY_INFO.email}`, pageWidth / 2, footerY + 14, { align: 'center' });
 
-  // Sauvegarde avec nom descriptif complet
-  const fn = filename || `rapport_cadastral_detaille_${parcel.parcel_number.replace(/[^0-9A-Za-z]/g, '_')}_${formatDateForFilename()}_${reportNumber}.pdf`;
+  // Sauvegarde
+  const reportDate = new Date().toISOString().split('T')[0];
+  const fn = filename || `rapport_cadastral_${parcel.parcel_number.replace(/[^0-9A-Za-z]/g, '_')}_${reportDate}.pdf`;
   saveDocument(doc, fn);
+}
+
 }
 
 // Fonction utilitaire pour calculer la superficie depuis les coordonnées GPS (identique à l'écran)
