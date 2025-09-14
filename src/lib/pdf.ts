@@ -502,12 +502,20 @@ export function generateCadastralReport(
   doc.setFontSize(11);
   doc.setTextColor(0, 0, 0);
   
+  // Formater la superficie comme à l'écran
+  const formatArea = (sqm: number) => {
+    if (sqm >= 10000) {
+      return `${(sqm / 10000).toFixed(2)} ha (${sqm.toLocaleString()} m²)`;
+    }
+    return `${sqm.toLocaleString()} m²`;
+  };
+
   const generalInfo = [
     ['Numéro de parcelle:', parcel.parcel_number || 'N/A'],
     ['Type de parcelle:', parcel.parcel_type ? (parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale') : 'N/A'],
     ['Type de titre foncier:', parcel.property_title_type || 'N/A'],
-    ['Superficie officielle:', parcel.area_sqm ? `${Number(parcel.area_sqm).toLocaleString()} m² (${(Number(parcel.area_sqm) / 10000).toFixed(4)} ha)` : 'N/A'],
-    ['Superficie calculée (GPS):', calculatedArea ? `${Math.round(calculatedArea).toLocaleString()} m² (${(calculatedArea / 10000).toFixed(4)} ha)` : 'N/A'],
+    ['Superficie officielle:', parcel.area_sqm ? formatArea(Number(parcel.area_sqm)) : 'N/A'],
+    ['Superficie calculée (GPS):', calculatedArea ? formatArea(Math.round(calculatedArea)) : 'N/A'],
     ['Nombre de bornes GPS:', parcel.gps_coordinates ? parcel.gps_coordinates.length.toString() : 'N/A'],
     ['Propriétaire actuel:', parcel.current_owner_name || 'N/A'],
     ['Statut juridique:', parcel.current_owner_legal_status || 'N/A'],
@@ -553,16 +561,17 @@ export function generateCadastralReport(
   doc.setTextColor(0, 0, 0);
   
   const locationInfo = [
-    ['Circonscription foncière:', parcel.circonscription_fonciere || 'N/A'],
     ['Province:', parcel.province || 'N/A'],
-    ['Ville:', parcel.ville || 'N/A'],
+    ['Ville:', parcel.ville || 'N/A'], 
     ['Commune:', parcel.commune || 'N/A'],
     ['Quartier:', parcel.quartier || 'N/A'],
     ['Avenue:', parcel.avenue || 'N/A'],
     ['Territoire:', parcel.territoire || 'N/A'],
     ['Collectivité:', parcel.collectivite || 'N/A'],
     ['Groupement:', parcel.groupement || 'N/A'],
-    ['Village:', parcel.village || 'N/A']
+    ['Village:', parcel.village || 'N/A'],
+    ['Localisation complète:', parcel.location || 'N/A'],
+    ['Circonscription foncière:', parcel.circonscription_fonciere || 'N/A']
   ];
 
   // Filtrer les informations non-vides et les afficher avec alternance de couleurs
@@ -602,13 +611,13 @@ export function generateCadastralReport(
     doc.text("3. COORDONNÉES GPS DES BORNES", margin + 5, cursorY + 3);
     cursorY += 12;
 
-    // Affichage des superficies calculées
+    // Affichage des superficies calculées avec format identique à l'écran
     const area = calculateAreaFromGPS();
     if (area) {
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(10);
       doc.setTextColor(70, 70, 70);
-      doc.text(`Superficie calculée : ${Math.round(area).toLocaleString()} m² (${(area / 10000).toFixed(4)} ha)`, margin + 5, cursorY);
+      doc.text(`Superficie calculée : ${formatArea(Math.round(area))}`, margin + 5, cursorY);
       cursorY += 8;
     }
 
@@ -714,7 +723,7 @@ export function generateCadastralReport(
 
     const taxData = tax_history.map((tax: any) => [
       tax.tax_year?.toString() || 'N/A',
-      tax.amount_usd ? `${Number(tax.amount_usd).toLocaleString()} USD` : 'N/A',
+      tax.amount_usd ? `$${Number(tax.amount_usd).toFixed(2)} USD` : 'N/A',
       tax.payment_date ? new Date(tax.payment_date).toLocaleDateString('fr-FR') : 'Non payé',
       tax.payment_status === 'paid' ? 'Payé' : 
       tax.payment_status === 'overdue' ? 'En retard' : 'En attente'
@@ -766,7 +775,7 @@ export function generateCadastralReport(
     const mortgageData = mortgage_history.map((mortgage: any) => [
       mortgage.creditor_name || 'N/A',
       mortgage.creditor_type || 'N/A',
-      mortgage.mortgage_amount_usd ? `${Number(mortgage.mortgage_amount_usd).toLocaleString()} USD` : 'N/A',
+      mortgage.mortgage_amount_usd ? `$${Number(mortgage.mortgage_amount_usd).toFixed(2)} USD` : 'N/A',
       mortgage.duration_months ? `${mortgage.duration_months} mois` : 'N/A',
       mortgage.contract_date ? new Date(mortgage.contract_date).toLocaleDateString('fr-FR') : 'N/A',
       mortgage.mortgage_status === 'active' ? 'Active' : 
