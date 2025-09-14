@@ -401,531 +401,552 @@ export function generateCadastralReport(
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = cadastralResult;
 
   // Fonction pour ajouter une nouvelle page si nécessaire avec en-tête
-  const checkPageSpace = (neededSpace: number) => {
-    if (cursorY + neededSpace > 260) { // 260mm from top to avoid footer
+  const checkPageBreak = (doc: jsPDF, neededSpace: number) => {
+    if (currentY + neededSpace > 250) { // 250mm from top to avoid footer
       doc.addPage();
-      cursorY = margin;
+      currentY = margin + 10;
       addPageHeader();
     }
   };
 
   // Fonction pour ajouter l'en-tête sur chaque page
   const addPageHeader = () => {
-    const headerStartY = cursorY;
-    
     // Logo et nom BIC (côté gauche)
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(24);
-    doc.setTextColor(41, 128, 185); // Bleu professionnel
-    doc.text(BIC_COMPANY_INFO.abbreviation, margin, cursorY);
+    doc.setFontSize(18);
+    doc.setTextColor(20, 84, 129); // Bleu professionnel BIC
+    doc.text(BIC_COMPANY_INFO.abbreviation, margin, currentY);
     
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
     doc.setFont('helvetica', 'normal');
-    doc.text(BIC_COMPANY_INFO.name, margin, cursorY + 8);
+    doc.text(BIC_COMPANY_INFO.name, margin, currentY + 6);
     
     // Informations légales (côté droit) - compact
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setTextColor(100, 100, 100);
     const rightX = pageWidth - margin;
-    doc.text(BIC_COMPANY_INFO.address, rightX, cursorY, { align: 'right' });
-    doc.text(`${BIC_COMPANY_INFO.email} | ${BIC_COMPANY_INFO.phone}`, rightX, cursorY + 4, { align: 'right' });
-    doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, rightX, cursorY + 8, { align: 'right' });
-    doc.text(`ID NAT: ${BIC_COMPANY_INFO.idNat} | N°IMPÔT: ${BIC_COMPANY_INFO.numImpot}`, rightX, cursorY + 12, { align: 'right' });
+    doc.text(BIC_COMPANY_INFO.address, rightX, currentY, { align: 'right' });
+    doc.text(`${BIC_COMPANY_INFO.email} | ${BIC_COMPANY_INFO.phone}`, rightX, currentY + 3, { align: 'right' });
+    doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, rightX, currentY + 6, { align: 'right' });
 
-    cursorY += 20;
+    currentY += 15;
 
     // Ligne de séparation élégante
-    doc.setLineWidth(0.8);
-    doc.setDrawColor(41, 128, 185);
-    doc.line(margin, cursorY, pageWidth - margin, cursorY);
-    cursorY += 2;
-    
-    doc.setLineWidth(0.3);
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, cursorY, pageWidth - margin, cursorY);
-    cursorY += 10;
+    doc.setLineWidth(0.5);
+    doc.setDrawColor(20, 84, 129);
+    doc.line(margin, currentY, pageWidth - margin, currentY);
+    currentY += 5;
   };
 
+  // Variables pour gérer la position Y
+  let currentY = margin;
+  
   // En-tête principal de la première page
   addPageHeader();
 
   // Titre du rapport avec style moderne
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(20);
-  doc.setTextColor(41, 128, 185);
-  doc.text("RAPPORT CADASTRAL COMPLET", pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 8;
+  doc.setFontSize(18);
+  doc.setTextColor(20, 84, 129);
+  doc.text("RAPPORT CADASTRAL COMPLET", pageWidth / 2, currentY, { align: 'center' });
+  currentY += 6;
   
   // Sous-titre avec informations de la parcelle
-  doc.setFontSize(14);
+  doc.setFontSize(12);
   doc.setTextColor(100, 100, 100);
-  doc.text(`Parcelle N° ${parcel.parcel_number || 'N/A'}`, pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 6;
+  doc.text(`Parcelle N° ${parcel.parcel_number || 'N/A'}`, pageWidth / 2, currentY, { align: 'center' });
+  currentY += 4;
   
-  doc.setFontSize(10);
-  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 20;
+  doc.setFontSize(8);
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, pageWidth / 2, currentY, { align: 'center' });
+  currentY += 12;
 
-  // Section 1: Informations générales avec design moderne
-  checkPageSpace(60);
-  
-  // En-tête de section stylisé
-  doc.setFillColor(248, 249, 250);
-  doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(41, 128, 185);
-  doc.text("1. INFORMATIONS GÉNÉRALES", margin + 5, cursorY + 3);
-  cursorY += 12;
-
-  // Calculer la superficie à partir des coordonnées GPS (si disponible)
-  const calculateAreaFromGPS = () => {
-    if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) return null;
+  // Section 1: Informations générales - Afficher seulement si le service 'information' est payé
+  if (paidServices.includes('information')) {
+    checkPageBreak(doc, 50);
     
-    let area = 0;
-    const coords = parcel.gps_coordinates;
-    const n = coords.length;
+    // Titre de section
+    doc.setFillColor(20, 84, 129);
+    doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(12);
+    doc.text('📋 INFORMATIONS GÉNÉRALES', 25, currentY + 6);
     
-    for (let i = 0; i < n; i++) {
-      const j = (i + 1) % n;
-      area += coords[i].lat * coords[j].lng;
-      area -= coords[j].lat * coords[i].lng;
-    }
-    
-    return Math.abs(area) / 2 * 111319.5 * 111319.5; // Conversion approximative en m²
-  };
+    currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
 
-  const calculatedArea = calculateAreaFromGPS();
+    // Calculer la superficie à partir des coordonnées GPS (si disponible)
+    const calculateAreaFromGPS = () => {
+      if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) return null;
+      
+      let area = 0;
+      const coords = parcel.gps_coordinates;
+      const n = coords.length;
+      
+      for (let i = 0; i < n; i++) {
+        const j = (i + 1) % n;
+        area += coords[i].lat * coords[j].lng;
+        area -= coords[j].lat * coords[i].lng;
+      }
+      
+      return Math.abs(area) / 2 * 111319.5 * 111319.5; // Conversion approximative en m²
+    };
 
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  
-  // Formater la superficie comme à l'écran
-  const formatArea = (sqm: number) => {
-    if (sqm >= 10000) {
-      return `${(sqm / 10000).toFixed(2)} ha (${sqm.toLocaleString()} m²)`;
-    }
-    return `${sqm.toLocaleString()} m²`;
-  };
+    const calculatedArea = calculateAreaFromGPS();
+    const formatCalculatedArea = calculatedArea ? formatArea(Math.round(calculatedArea)) : 'N/A';
 
-  const generalInfo = [
-    ['Numéro de parcelle:', parcel.parcel_number || 'N/A'],
-    ['Type de parcelle:', parcel.parcel_type ? (parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale') : 'N/A'],
-    ['Type de titre foncier:', parcel.property_title_type || 'N/A'],
-    ['Superficie officielle:', parcel.area_sqm ? formatArea(Number(parcel.area_sqm)) : 'N/A'],
-    ['Superficie calculée (GPS):', calculatedArea ? formatArea(Math.round(calculatedArea)) : 'N/A'],
-    ['Nombre de bornes GPS:', parcel.gps_coordinates ? parcel.gps_coordinates.length.toString() : 'N/A'],
-    ['Propriétaire actuel:', parcel.current_owner_name || 'N/A'],
-    ['Statut juridique:', parcel.current_owner_legal_status || 'N/A'],
-    ['Propriétaire depuis:', parcel.current_owner_since ? new Date(parcel.current_owner_since).toLocaleDateString('fr-FR') : 'N/A']
-  ];
-
-  // Affichage en tableau élégant
-  generalInfo.forEach(([label, value], index) => {
-    checkPageSpace(8);
-    
-    // Alternance de couleurs pour les lignes  
-    if (index % 2 === 0) {
-      doc.setFillColor(248, 249, 250);
-      doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 6, 'F');
-    }
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(70, 70, 70);
-    doc.text(label, margin + 5, cursorY);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text(value, margin + 75, cursorY);
-    cursorY += 6;
-  });
-
-  cursorY += 15;
-
-  // Section 2: Localisation avec design moderne
-  checkPageSpace(50);
-  
-  // En-tête de section stylisé
-  doc.setFillColor(248, 249, 250);
-  doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.setTextColor(41, 128, 185);
-  doc.text("2. LOCALISATION", margin + 5, cursorY + 3);
-  cursorY += 12;
-
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(11);
-  doc.setTextColor(0, 0, 0);
-  
-  const locationInfo = [
-    ['Province:', parcel.province || 'N/A'],
-    ['Ville:', parcel.ville || 'N/A'], 
-    ['Commune:', parcel.commune || 'N/A'],
-    ['Quartier:', parcel.quartier || 'N/A'],
-    ['Avenue:', parcel.avenue || 'N/A'],
-    ['Territoire:', parcel.territoire || 'N/A'],
-    ['Collectivité:', parcel.collectivite || 'N/A'],
-    ['Groupement:', parcel.groupement || 'N/A'],
-    ['Village:', parcel.village || 'N/A'],
-    ['Localisation complète:', parcel.location || 'N/A'],
-    ['Circonscription foncière:', parcel.circonscription_fonciere || 'N/A']
-  ];
-
-  // Filtrer les informations non-vides et les afficher avec alternance de couleurs
-  const validLocationInfo = locationInfo.filter(([, value]) => value !== 'N/A');
-  
-  validLocationInfo.forEach(([label, value], index) => {
-    checkPageSpace(8);
-    
-    // Alternance de couleurs pour les lignes
-    if (index % 2 === 0) {
-      doc.setFillColor(248, 249, 250);
-      doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 6, 'F');
-    }
-    
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(70, 70, 70);
-    doc.text(label, margin + 5, cursorY);
-    
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(0, 0, 0);
-    doc.text(value, margin + 75, cursorY);
-    cursorY += 6;
-  });
-
-  cursorY += 15;
-
-  // Section 3: Coordonnées GPS avec design moderne
-  if (parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
-    checkPageSpace(40);
-    
-    // En-tête de section stylisé
-    doc.setFillColor(248, 249, 250);
-    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(41, 128, 185);
-    doc.text("3. COORDONNÉES GPS DES BORNES", margin + 5, cursorY + 3);
-    cursorY += 12;
-
-    // Affichage des superficies calculées avec format identique à l'écran
-    const area = calculateAreaFromGPS();
-    if (area) {
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(10);
-      doc.setTextColor(70, 70, 70);
-      doc.text(`Superficie calculée : ${formatArea(Math.round(area))}`, margin + 5, cursorY);
-      cursorY += 8;
-    }
-
-    const gpsData = parcel.gps_coordinates.map((coord: any, index: number) => [
-      `Borne ${index + 1}`,
-      coord.lat?.toFixed(6) || 'N/A',
-      coord.lng?.toFixed(6) || 'N/A'
-    ]);
-
-    autoTable(doc, {
-      head: [["Borne", "Latitude", "Longitude"]],
-      body: gpsData,
-      startY: cursorY,
-      styles: { 
-        fontSize: 10, 
-        cellPadding: 4,
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185], 
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center' 
-      },
+    // Générer la table des informations générales
+    doc.autoTable({
+      startY: currentY + 5,
+      head: [['Propriété', 'Valeur']],
+      body: [
+        ['Numéro de parcelle', parcel.parcel_number],
+        ['Type de parcelle', parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'],
+        ['Superficie officielle', parcel.official_area ? formatArea(parcel.official_area) : 'N/A'],
+        ['Superficie calculée', formatCalculatedArea],
+        ['Statut juridique', parcel.legal_status || 'N/A'],
+        ['Date d\'enregistrement', parcel.registration_date ? new Date(parcel.registration_date).toLocaleDateString('fr-FR') : 'N/A'],
+        ['Dernière mise à jour', parcel.updated_at ? new Date(parcel.updated_at).toLocaleDateString('fr-FR') : 'N/A'],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+      bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      margin: { left: 20, right: 20 },
+      tableWidth: 'wrap',
       columnStyles: {
-        0: { cellWidth: 50, halign: 'center' },
-        1: { cellWidth: 65, halign: 'center' },
-        2: { cellWidth: 65, halign: 'center' }
-      },
-      theme: 'grid',
-      alternateRowStyles: { fillColor: [248, 249, 250] },
-      margin: { left: margin, right: margin }
+        0: { cellWidth: 70 },
+        1: { cellWidth: 100 }
+      }
     });
 
-    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 30;
+    currentY = doc.lastAutoTable.finalY + 10;
   }
 
-  // Section 4: Historique de propriété avec design moderne
-  if (ownership_history && ownership_history.length > 0) {
-    checkPageSpace(50);
+  // Section 2: Localisation - Afficher seulement si le service 'location_history' est payé
+  if (paidServices.includes('location_history')) {
+    checkPageBreak(doc, 40);
     
-    // En-tête de section stylisé
-    doc.setFillColor(248, 249, 250);
-    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(41, 128, 185);
-    doc.text("4. HISTORIQUE DE PROPRIÉTÉ", margin + 5, cursorY + 3);
-    cursorY += 12;
+    // Titre de section
+    doc.setFillColor(20, 84, 129);
+    doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(12);
+    doc.text('📍 LOCALISATION', 25, currentY + 6);
+    
+    currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
 
-    const ownershipData = ownership_history.map((owner: any) => [
-      owner.owner_name || 'N/A',
-      owner.legal_status || 'N/A',
-      owner.ownership_start_date ? new Date(owner.ownership_start_date).toLocaleDateString('fr-FR') : 'N/A',
-      owner.ownership_end_date ? new Date(owner.ownership_end_date).toLocaleDateString('fr-FR') : 'En cours',
-      owner.mutation_type || 'N/A'
-    ]);
-
-    autoTable(doc, {
-      head: [["Propriétaire", "Statut juridique", "Début", "Fin", "Type de mutation"]],
-      body: ownershipData,
-      startY: cursorY,
-      styles: { 
-        fontSize: 9, 
-        cellPadding: 3,
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185], 
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center' 
-      },
+    // Table des informations de localisation
+    doc.autoTable({
+      startY: currentY + 5,
+      head: [['Propriété', 'Valeur']],
+      body: [
+        ['Province', parcel.province || 'N/A'],
+        ['Ville', parcel.ville || 'N/A'],
+        ['Commune', parcel.commune || 'N/A'],
+        ['Quartier', parcel.quartier || 'N/A'],
+        ['Avenue', parcel.avenue || 'N/A'],
+        ['Numéro', parcel.numero || 'N/A'],
+        ['Localisation complète', parcel.location || 'N/A']
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+      bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      margin: { left: 20, right: 20 },
+      tableWidth: 'wrap',
       columnStyles: {
-        0: { cellWidth: 45 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 25, halign: 'center' },
-        3: { cellWidth: 25, halign: 'center' },
-        4: { cellWidth: 35 }
-      },
-      theme: 'grid',
-      alternateRowStyles: { fillColor: [248, 249, 250] },
-      margin: { left: margin, right: margin }
+        0: { cellWidth: 70 },
+        1: { cellWidth: 100 }
+      }
     });
 
-    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
+    currentY = doc.lastAutoTable.finalY + 10;
   }
 
-  // Section 5: Historique fiscal avec design moderne
-  if (tax_history && tax_history.length > 0) {
-    checkPageSpace(50);
+  // Section 3: Coordonnées GPS - Afficher seulement si le service 'location_history' est payé
+  if (paidServices.includes('location_history') && parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
+    checkPageBreak(doc, 40);
     
-    // En-tête de section stylisé
-    doc.setFillColor(248, 249, 250);
-    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(41, 128, 185);
-    doc.text("5. HISTORIQUE FISCAL", margin + 5, cursorY + 3);
-    cursorY += 12;
+    // Titre de section
+    doc.setFillColor(20, 84, 129);
+    doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont(undefined, 'bold');
+    doc.setFontSize(12);
+    doc.text('🗺️ COORDONNÉES GPS DES BORNES', 25, currentY + 6);
+    
+    currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
 
-    const taxData = tax_history.map((tax: any) => [
-      tax.tax_year?.toString() || 'N/A',
-      tax.amount_usd ? `$${Number(tax.amount_usd).toFixed(2)} USD` : 'N/A',
-      tax.payment_date ? new Date(tax.payment_date).toLocaleDateString('fr-FR') : 'Non payé',
-      tax.payment_status === 'paid' ? 'Payé' : 
-      tax.payment_status === 'overdue' ? 'En retard' : 'En attente'
-    ]);
-
-    autoTable(doc, {
-      head: [["Année", "Montant", "Date de paiement", "Statut"]],
-      body: taxData,
-      startY: cursorY,
-      styles: { 
-        fontSize: 10, 
-        cellPadding: 4,
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185], 
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center' 
-      },
+    // Table des coordonnées GPS
+    doc.autoTable({
+      startY: currentY + 5,
+      head: [['Point', 'Latitude', 'Longitude']],
+      body: parcel.gps_coordinates.map((coord, index) => [
+        `Point ${index + 1}`,
+        coord.lat.toFixed(6),
+        coord.lng.toFixed(6)
+      ]),
+      theme: 'striped',
+      headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+      bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+      alternateRowStyles: { fillColor: [248, 248, 248] },
+      margin: { left: 20, right: 20 },
+      tableWidth: 'wrap',
       columnStyles: {
-        0: { cellWidth: 30, halign: 'center' },
-        1: { cellWidth: 40, halign: 'right' },
-        2: { cellWidth: 40, halign: 'center' },
-        3: { cellWidth: 35, halign: 'center' }
-      },
-      theme: 'grid',
-      alternateRowStyles: { fillColor: [248, 249, 250] },
-      margin: { left: margin, right: margin }
+        0: { cellWidth: 25 },
+        1: { cellWidth: 70 },
+        2: { cellWidth: 70 }
+      }
     });
 
-    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
+    currentY = doc.lastAutoTable.finalY + 10;
   }
 
-  // Section 6: Historique des hypothèques avec design moderne
-  if (mortgage_history && mortgage_history.length > 0) {
-    checkPageSpace(50);
-    
-    // En-tête de section stylisé
-    doc.setFillColor(248, 249, 250);
-    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(41, 128, 185);
-    doc.text("6. HISTORIQUE DES HYPOTHÈQUES", margin + 5, cursorY + 3);
-    cursorY += 12;
+  // Section Historique des propriétés - Afficher seulement si le service 'history' est payé
+  if (paidServices.includes('history')) {
+    if (ownership_history && ownership_history.length > 0) {
+      checkPageBreak(doc, 50);
+      
+      // Titre de section
+      doc.setFillColor(20, 84, 129);
+      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(12);
+      doc.text('📋 HISTORIQUE DES PROPRIÉTAIRES', 25, currentY + 6);
+      
+      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
 
-    const mortgageData = mortgage_history.map((mortgage: any) => [
-      mortgage.creditor_name || 'N/A',
-      mortgage.creditor_type || 'N/A',
-      mortgage.mortgage_amount_usd ? `$${Number(mortgage.mortgage_amount_usd).toFixed(2)} USD` : 'N/A',
-      mortgage.duration_months ? `${mortgage.duration_months} mois` : 'N/A',
-      mortgage.contract_date ? new Date(mortgage.contract_date).toLocaleDateString('fr-FR') : 'N/A',
-      mortgage.mortgage_status === 'active' ? 'Active' : 
-      mortgage.mortgage_status === 'paid' ? 'Remboursée' : 'Inactive'
-    ]);
+      // Table de l'historique des propriétaires
+      doc.autoTable({
+        startY: currentY + 5,
+        head: [['Propriétaire', 'Période', 'Type de transaction', 'Statut']],
+        body: ownership_history.map(owner => [
+          owner.owner_name || 'N/A',
+          `${owner.start_date ? new Date(owner.start_date).toLocaleDateString('fr-FR') : 'N/A'} - ${owner.end_date ? new Date(owner.end_date).toLocaleDateString('fr-FR') : 'Actuel'}`,
+          owner.transaction_type || 'N/A',
+          owner.ownership_status || 'N/A'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        margin: { left: 20, right: 20 },
+        tableWidth: 'wrap',
+        columnStyles: {
+          0: { cellWidth: 50 },
+          1: { cellWidth: 45 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 35 }
+        }
+      });
 
-    autoTable(doc, {
-      head: [["Créancier", "Type", "Montant", "Durée", "Date contrat", "Statut"]],
-      body: mortgageData,
-      startY: cursorY,
-      styles: { 
-        fontSize: 9, 
-        cellPadding: 3,
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185], 
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center' 
-      },
-      columnStyles: {
-        0: { cellWidth: 35 },
-        1: { cellWidth: 25 },
-        2: { cellWidth: 30, halign: 'right' },
-        3: { cellWidth: 20, halign: 'center' },
-        4: { cellWidth: 25, halign: 'center' },
-        5: { cellWidth: 25, halign: 'center' }
-      },
-      theme: 'grid',
-      alternateRowStyles: { fillColor: [248, 249, 250] },
-      margin: { left: margin, right: margin }
-    });
-
-    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
+      currentY = doc.lastAutoTable.finalY + 10;
+    }
   }
 
-  // Section 7: Historique de bornage avec design moderne
-  if (boundary_history && boundary_history.length > 0) {
-    checkPageSpace(50);
-    
-    // En-tête de section stylisé
-    doc.setFillColor(248, 249, 250);
-    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(41, 128, 185);
-    doc.text("7. HISTORIQUE DE BORNAGE", margin + 5, cursorY + 3);
-    cursorY += 12;
+  // Section Historique fiscal - Afficher seulement si le service 'obligations' est payé
+  if (paidServices.includes('obligations')) {
+    if (tax_history && tax_history.length > 0) {
+      checkPageBreak(doc, 50);
+      
+      // Titre de section
+      doc.setFillColor(20, 84, 129);
+      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(12);
+      doc.text('💰 HISTORIQUE FISCAL', 25, currentY + 6);
+      
+      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
 
-    const boundaryData = boundary_history.map((boundary: any) => [
-      boundary.surveyor_name || 'N/A',
-      boundary.pv_reference_number || 'N/A',
-      boundary.survey_date ? new Date(boundary.survey_date).toLocaleDateString('fr-FR') : 'N/A',
-      boundary.boundary_purpose || 'N/A'
-    ]);
+      // Fonction pour traduire le statut de paiement (identique à l'écran)
+      const translatePaymentStatus = (status: string) => {
+        switch (status) {
+          case 'paid':
+            return 'Payé';
+          case 'overdue':
+            return 'En retard';
+          case 'pending':
+            return 'En attente';
+          default:
+            return status;
+        }
+      };
 
-    autoTable(doc, {
-      head: [["Géomètre", "Référence PV", "Date d'arpentage", "Objet"]],
-      body: boundaryData,
-      startY: cursorY,
-      styles: { 
-        fontSize: 10, 
-        cellPadding: 4,
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185], 
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'center' 
-      },
-      columnStyles: {
-        0: { cellWidth: 45 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 30, halign: 'center' },
-        3: { cellWidth: 45 }
-      },
-      theme: 'grid',
-      alternateRowStyles: { fillColor: [248, 249, 250] },
-      margin: { left: margin, right: margin }
-    });
+      // Table de l'historique fiscal
+      doc.autoTable({
+        startY: currentY + 5,
+        head: [['Année', 'Type d\'impôt', 'Montant (USD)', 'Date d\'échéance', 'Statut de paiement']],
+        body: tax_history.map(tax => [
+          tax.tax_year?.toString() || 'N/A',
+          tax.tax_type || 'N/A',
+          tax.amount_due ? `$${tax.amount_due.toFixed(2)}` : 'N/A',
+          tax.due_date ? new Date(tax.due_date).toLocaleDateString('fr-FR') : 'N/A',
+          translatePaymentStatus(tax.payment_status || 'N/A')
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        margin: { left: 20, right: 20 },
+        tableWidth: 'wrap',
+        columnStyles: {
+          0: { cellWidth: 25 },
+          1: { cellWidth: 40 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 35 },
+          4: { cellWidth: 30 }
+        }
+      });
 
-    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
+      currentY = doc.lastAutoTable.finalY + 10;
+    }
   }
 
-  // Section 8: Services inclus dans ce rapport avec design moderne
-  const selectedServices = servicesCatalog.filter(s => paidServices.includes(s.id));
+    // Section Historique des hypothèques - Afficher seulement si le service 'obligations' est payé
+    if (mortgage_history && mortgage_history.length > 0) {
+      checkPageBreak(doc, 50);
+      
+      // Titre de section
+      doc.setFillColor(20, 84, 129);
+      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(12);
+      doc.text('🏦 HISTORIQUE DES HYPOTHÈQUES', 25, currentY + 6);
+      
+      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+
+      // Table de l'historique des hypothèques
+      doc.autoTable({
+        startY: currentY + 5,
+        head: [['Créancier', 'Montant (USD)', 'Date de création', 'Date d\'échéance', 'Statut']],
+        body: mortgage_history.map(mortgage => [
+          mortgage.lender_name || 'N/A',
+          mortgage.mortgage_amount ? `$${mortgage.mortgage_amount.toFixed(2)}` : 'N/A',
+          mortgage.mortgage_date ? new Date(mortgage.mortgage_date).toLocaleDateString('fr-FR') : 'N/A',
+          mortgage.due_date ? new Date(mortgage.due_date).toLocaleDateString('fr-FR') : 'N/A',
+          mortgage.mortgage_status || 'N/A'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        margin: { left: 20, right: 20 },
+        tableWidth: 'wrap',
+        columnStyles: {
+          0: { cellWidth: 45 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 25 }
+        }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 10;
+    }
+  }
+
+    // Section Historique des modifications de limites - Afficher seulement si le service 'history' est payé
+    if (boundary_history && boundary_history.length > 0) {
+      checkPageBreak(doc, 50);
+      
+      // Titre de section
+      doc.setFillColor(20, 84, 129);
+      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(12);
+      doc.text('📐 HISTORIQUE DES MODIFICATIONS DE LIMITES', 25, currentY + 6);
+      
+      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+
+      // Table de l'historique des modifications de limites
+      doc.autoTable({
+        startY: currentY + 5,
+        head: [['Date de modification', 'Type de modification', 'Ancienne superficie', 'Nouvelle superficie', 'Raison']],
+        body: boundary_history.map(boundary => [
+          boundary.modification_date ? new Date(boundary.modification_date).toLocaleDateString('fr-FR') : 'N/A',
+          boundary.modification_type || 'N/A',
+          boundary.old_area ? formatArea(boundary.old_area) : 'N/A',
+          boundary.new_area ? formatArea(boundary.new_area) : 'N/A',
+          boundary.modification_reason || 'N/A'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        margin: { left: 20, right: 20 },
+        tableWidth: 'wrap',
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 35 }
+        }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 10;
+    }
+
+    // Section Historique des hypothèques - Afficher seulement si le service 'obligations' est payé
+    if (mortgage_history && mortgage_history.length > 0) {
+      checkPageBreak(doc, 50);
+      
+      // Titre de section
+      doc.setFillColor(20, 84, 129);
+      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(12);
+      doc.text('🏦 HISTORIQUE DES HYPOTHÈQUES', 25, currentY + 6);
+      
+      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+
+      // Table de l'historique des hypothèques
+      doc.autoTable({
+        startY: currentY + 5,
+        head: [['Créancier', 'Montant (USD)', 'Date de création', 'Date d\'échéance', 'Statut']],
+        body: mortgage_history.map(mortgage => [
+          mortgage.lender_name || 'N/A',
+          mortgage.mortgage_amount ? `$${mortgage.mortgage_amount.toFixed(2)}` : 'N/A',
+          mortgage.mortgage_date ? new Date(mortgage.mortgage_date).toLocaleDateString('fr-FR') : 'N/A',
+          mortgage.due_date ? new Date(mortgage.due_date).toLocaleDateString('fr-FR') : 'N/A',
+          mortgage.mortgage_status || 'N/A'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        margin: { left: 20, right: 20 },
+        tableWidth: 'wrap',
+        columnStyles: {
+          0: { cellWidth: 45 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 25 }
+        }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 10;
+    }
+
+    // Section Historique des modifications de limites - Afficher seulement si le service 'history' est payé
+    if (boundary_history && boundary_history.length > 0) {
+      checkPageBreak(doc, 50);
+      
+      // Titre de section
+      doc.setFillColor(20, 84, 129);
+      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(12);
+      doc.text('📐 HISTORIQUE DES MODIFICATIONS DE LIMITES', 25, currentY + 6);
+      
+      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+
+      // Table de l'historique des modifications de limites
+      doc.autoTable({
+        startY: currentY + 5,
+        head: [['Date de modification', 'Type de modification', 'Ancienne superficie', 'Nouvelle superficie', 'Raison']],
+        body: boundary_history.map(boundary => [
+          boundary.modification_date ? new Date(boundary.modification_date).toLocaleDateString('fr-FR') : 'N/A',
+          boundary.modification_type || 'N/A',
+          boundary.old_area ? formatArea(boundary.old_area) : 'N/A',
+          boundary.new_area ? formatArea(boundary.new_area) : 'N/A',
+          boundary.modification_reason || 'N/A'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        margin: { left: 20, right: 20 },
+        tableWidth: 'wrap',
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 35 }
+        }
+      });
+
+      currentY = doc.lastAutoTable.finalY + 10;
+    }
+  }
+
+  // Section des services inclus - Utiliser les vrais noms des services payés
+  checkPageBreak(doc, 50);
   
-  if (selectedServices.length > 0) {
-    checkPageSpace(50);
-    
-    // En-tête de section stylisé
-    doc.setFillColor(248, 249, 250);
-    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(14);
-    doc.setTextColor(41, 128, 185);
-    doc.text("8. SERVICES INCLUS DANS CE RAPPORT", margin + 5, cursorY + 3);
-    cursorY += 12;
+  // Titre de section
+  doc.setFillColor(20, 84, 129);
+  doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(12);
+  doc.text('📋 SERVICES INCLUS DANS CE RAPPORT', 25, currentY + 6);
+  
+  currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
 
-    const servicesTableData = selectedServices.map(service => [
+  // Filtrer les services selon les services payés
+  const includedServices = servicesCatalog.filter(service => paidServices.includes(service.id));
+  
+  // Table des services inclus
+  doc.autoTable({
+    startY: currentY + 5,
+    head: [['Service', 'Description', 'Prix (USD)']],
+    body: includedServices.map(service => [
       service.name,
-      service.description || 'Service cadastral professionnel'
-    ]);
+      service.description,
+      `$${service.price.toFixed(2)}`
+    ]),
+    theme: 'striped',
+    headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+    bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+    alternateRowStyles: { fillColor: [248, 248, 248] },
+    margin: { left: 20, right: 20 },
+    tableWidth: 'wrap',
+    columnStyles: {
+      0: { cellWidth: 50 },
+      1: { cellWidth: 90 },
+      2: { cellWidth: 25 }
+    }
+  });
+  
+  // Calculer le total
+  const totalAmount = includedServices.reduce((sum, service) => sum + Number(service.price), 0);
+  
+  currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 5 : currentY + 80;
 
-    autoTable(doc, {
-      head: [["Service", "Description"]],
-      body: servicesTableData,
-      startY: cursorY,
-      styles: { 
-        fontSize: 10, 
-        cellPadding: 5,
-        lineColor: [230, 230, 230],
-        lineWidth: 0.1
-      },
-      headStyles: { 
-        fillColor: [41, 128, 185], 
-        textColor: 255,
-        fontStyle: 'bold',
-        halign: 'left' 
-      },
-      columnStyles: {
-        0: { cellWidth: 60 },
-        1: { cellWidth: 115 }
-      },
-      theme: 'grid',
-      alternateRowStyles: { fillColor: [248, 249, 250] },
-      margin: { left: margin, right: margin }
-    });
+  // Total des services
+  doc.setTextColor(0, 0, 0);
+  doc.setFont(undefined, 'bold');
+  doc.setFontSize(11);
+  doc.text(`Total des services inclus: $${totalAmount.toFixed(2)} USD`, 20, currentY);
 
-    cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 20;
-  }
+  currentY += 10;
 
   // Notes importantes avec design moderne
-  checkPageSpace(35);
+  checkPageBreak(doc, 35);
   
-  // En-tête de section stylisé
-  doc.setFillColor(248, 249, 250);
-  doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
-  doc.setFont('helvetica', 'bold');
+  // Titre de section
+  doc.setFillColor(20, 84, 129);
+  doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont(undefined, 'bold');
   doc.setFontSize(12);
-  doc.setTextColor(41, 128, 185);
-  doc.text("NOTES IMPORTANTES", margin + 5, cursorY + 3);
-  cursorY += 12;
+  doc.text('ℹ️ NOTES IMPORTANTES', 25, currentY + 6);
+  
+  currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
 
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setTextColor(70, 70, 70);
   
   const notes = [
@@ -937,17 +958,10 @@ export function generateCadastralReport(
     "• La superficie calculée par GPS est fournie à titre indicatif et peut différer de la superficie officielle."
   ];
 
-  notes.forEach((note, index) => {
-    checkPageSpace(6);
-    
-    // Alternance subtile de couleurs pour les notes
-    if (index % 2 === 0) {
-      doc.setFillColor(252, 252, 252);
-      doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 5, 'F');
-    }
-    
-    doc.text(note, margin + 5, cursorY);
-    cursorY += 5;
+  notes.forEach((note) => {
+    checkPageBreak(doc, 6);
+    doc.text(note, 25, currentY);
+    currentY += 6;
   });
 
   // Pied de page professionnel avec informations complètes
