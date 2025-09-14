@@ -396,12 +396,12 @@ export function generateCadastralReport(
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
   const margin = 20;
-  let cursorY = margin;
+  let currentY = margin;
 
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = cadastralResult;
 
   // Fonction pour ajouter une nouvelle page si nécessaire avec en-tête
-  const checkPageBreak = (doc: jsPDF, neededSpace: number) => {
+  const checkPageBreak = (neededSpace: number) => {
     if (currentY + neededSpace > 250) { // 250mm from top to avoid footer
       doc.addPage();
       currentY = margin + 10;
@@ -439,9 +439,28 @@ export function generateCadastralReport(
     currentY += 5;
   };
 
-  // Variables pour gérer la position Y
-  let currentY = margin;
-  
+  // Fonction pour formater la superficie comme à l'écran
+  const formatArea = (area: number): string => {
+    if (area >= 10000) {
+      return `${(area / 10000).toFixed(2)} ha (${area.toLocaleString()} m²)`;
+    }
+    return `${area.toLocaleString()} m²`;
+  };
+
+  // Fonction pour traduire le statut de paiement (identique à l'écran)
+  const translatePaymentStatus = (status: string) => {
+    switch (status) {
+      case 'paid':
+        return 'Payé';
+      case 'overdue':
+        return 'En retard';
+      case 'pending':
+        return 'En attente';
+      default:
+        return status;
+    }
+  };
+
   // En-tête principal de la première page
   addPageHeader();
 
@@ -464,7 +483,7 @@ export function generateCadastralReport(
 
   // Section 1: Informations générales - Afficher seulement si le service 'information' est payé
   if (paidServices.includes('information')) {
-    checkPageBreak(doc, 50);
+    checkPageBreak(50);
     
     // Titre de section
     doc.setFillColor(20, 84, 129);
@@ -474,7 +493,7 @@ export function generateCadastralReport(
     doc.setFontSize(12);
     doc.text('📋 INFORMATIONS GÉNÉRALES', 25, currentY + 6);
     
-    currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+    currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
 
     // Calculer la superficie à partir des coordonnées GPS (si disponible)
     const calculateAreaFromGPS = () => {
@@ -497,7 +516,7 @@ export function generateCadastralReport(
     const formatCalculatedArea = calculatedArea ? formatArea(Math.round(calculatedArea)) : 'N/A';
 
     // Générer la table des informations générales
-    doc.autoTable({
+    (doc as any).autoTable({
       startY: currentY + 5,
       head: [['Propriété', 'Valeur']],
       body: [
@@ -521,12 +540,12 @@ export function generateCadastralReport(
       }
     });
 
-    currentY = doc.lastAutoTable.finalY + 10;
+    currentY = (doc as any).lastAutoTable.finalY + 10;
   }
 
   // Section 2: Localisation - Afficher seulement si le service 'location_history' est payé
   if (paidServices.includes('location_history')) {
-    checkPageBreak(doc, 40);
+    checkPageBreak(40);
     
     // Titre de section
     doc.setFillColor(20, 84, 129);
@@ -536,10 +555,10 @@ export function generateCadastralReport(
     doc.setFontSize(12);
     doc.text('📍 LOCALISATION', 25, currentY + 6);
     
-    currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+    currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
 
     // Table des informations de localisation
-    doc.autoTable({
+    (doc as any).autoTable({
       startY: currentY + 5,
       head: [['Propriété', 'Valeur']],
       body: [
@@ -563,12 +582,12 @@ export function generateCadastralReport(
       }
     });
 
-    currentY = doc.lastAutoTable.finalY + 10;
+    currentY = (doc as any).lastAutoTable.finalY + 10;
   }
 
   // Section 3: Coordonnées GPS - Afficher seulement si le service 'location_history' est payé
   if (paidServices.includes('location_history') && parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
-    checkPageBreak(doc, 40);
+    checkPageBreak(40);
     
     // Titre de section
     doc.setFillColor(20, 84, 129);
@@ -578,10 +597,10 @@ export function generateCadastralReport(
     doc.setFontSize(12);
     doc.text('🗺️ COORDONNÉES GPS DES BORNES', 25, currentY + 6);
     
-    currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+    currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
 
     // Table des coordonnées GPS
-    doc.autoTable({
+    (doc as any).autoTable({
       startY: currentY + 5,
       head: [['Point', 'Latitude', 'Longitude']],
       body: parcel.gps_coordinates.map((coord, index) => [
@@ -602,13 +621,13 @@ export function generateCadastralReport(
       }
     });
 
-    currentY = doc.lastAutoTable.finalY + 10;
+    currentY = (doc as any).lastAutoTable.finalY + 10;
   }
 
   // Section Historique des propriétés - Afficher seulement si le service 'history' est payé
   if (paidServices.includes('history')) {
     if (ownership_history && ownership_history.length > 0) {
-      checkPageBreak(doc, 50);
+      checkPageBreak(50);
       
       // Titre de section
       doc.setFillColor(20, 84, 129);
@@ -618,10 +637,10 @@ export function generateCadastralReport(
       doc.setFontSize(12);
       doc.text('📋 HISTORIQUE DES PROPRIÉTAIRES', 25, currentY + 6);
       
-      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+      currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
 
       // Table de l'historique des propriétaires
-      doc.autoTable({
+      (doc as any).autoTable({
         startY: currentY + 5,
         head: [['Propriétaire', 'Période', 'Type de transaction', 'Statut']],
         body: ownership_history.map(owner => [
@@ -644,14 +663,57 @@ export function generateCadastralReport(
         }
       });
 
-      currentY = doc.lastAutoTable.finalY + 10;
+      currentY = (doc as any).lastAutoTable.finalY + 10;
+    }
+
+    // Section Historique des modifications de limites - Afficher seulement si le service 'history' est payé
+    if (boundary_history && boundary_history.length > 0) {
+      checkPageBreak(50);
+      
+      // Titre de section
+      doc.setFillColor(20, 84, 129);
+      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFont(undefined, 'bold');
+      doc.setFontSize(12);
+      doc.text('📐 HISTORIQUE DES MODIFICATIONS DE LIMITES', 25, currentY + 6);
+      
+      currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
+
+      // Table de l'historique des modifications de limites
+      (doc as any).autoTable({
+        startY: currentY + 5,
+        head: [['Date de modification', 'Type de modification', 'Ancienne superficie', 'Nouvelle superficie', 'Raison']],
+        body: boundary_history.map(boundary => [
+          boundary.modification_date ? new Date(boundary.modification_date).toLocaleDateString('fr-FR') : 'N/A',
+          boundary.modification_type || 'N/A',
+          boundary.old_area ? formatArea(boundary.old_area) : 'N/A',
+          boundary.new_area ? formatArea(boundary.new_area) : 'N/A',
+          boundary.modification_reason || 'N/A'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
+        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
+        alternateRowStyles: { fillColor: [248, 248, 248] },
+        margin: { left: 20, right: 20 },
+        tableWidth: 'wrap',
+        columnStyles: {
+          0: { cellWidth: 35 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 30 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 35 }
+        }
+      });
+
+      currentY = (doc as any).lastAutoTable.finalY + 10;
     }
   }
 
   // Section Historique fiscal - Afficher seulement si le service 'obligations' est payé
   if (paidServices.includes('obligations')) {
     if (tax_history && tax_history.length > 0) {
-      checkPageBreak(doc, 50);
+      checkPageBreak(50);
       
       // Titre de section
       doc.setFillColor(20, 84, 129);
@@ -661,24 +723,10 @@ export function generateCadastralReport(
       doc.setFontSize(12);
       doc.text('💰 HISTORIQUE FISCAL', 25, currentY + 6);
       
-      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
-
-      // Fonction pour traduire le statut de paiement (identique à l'écran)
-      const translatePaymentStatus = (status: string) => {
-        switch (status) {
-          case 'paid':
-            return 'Payé';
-          case 'overdue':
-            return 'En retard';
-          case 'pending':
-            return 'En attente';
-          default:
-            return status;
-        }
-      };
+      currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
 
       // Table de l'historique fiscal
-      doc.autoTable({
+      (doc as any).autoTable({
         startY: currentY + 5,
         head: [['Année', 'Type d\'impôt', 'Montant (USD)', 'Date d\'échéance', 'Statut de paiement']],
         body: tax_history.map(tax => [
@@ -703,13 +751,12 @@ export function generateCadastralReport(
         }
       });
 
-      currentY = doc.lastAutoTable.finalY + 10;
+      currentY = (doc as any).lastAutoTable.finalY + 10;
     }
-  }
 
     // Section Historique des hypothèques - Afficher seulement si le service 'obligations' est payé
     if (mortgage_history && mortgage_history.length > 0) {
-      checkPageBreak(doc, 50);
+      checkPageBreak(50);
       
       // Titre de section
       doc.setFillColor(20, 84, 129);
@@ -719,10 +766,10 @@ export function generateCadastralReport(
       doc.setFontSize(12);
       doc.text('🏦 HISTORIQUE DES HYPOTHÈQUES', 25, currentY + 6);
       
-      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+      currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
 
       // Table de l'historique des hypothèques
-      doc.autoTable({
+      (doc as any).autoTable({
         startY: currentY + 5,
         head: [['Créancier', 'Montant (USD)', 'Date de création', 'Date d\'échéance', 'Statut']],
         body: mortgage_history.map(mortgage => [
@@ -747,142 +794,12 @@ export function generateCadastralReport(
         }
       });
 
-      currentY = doc.lastAutoTable.finalY + 10;
-    }
-  }
-
-    // Section Historique des modifications de limites - Afficher seulement si le service 'history' est payé
-    if (boundary_history && boundary_history.length > 0) {
-      checkPageBreak(doc, 50);
-      
-      // Titre de section
-      doc.setFillColor(20, 84, 129);
-      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(12);
-      doc.text('📐 HISTORIQUE DES MODIFICATIONS DE LIMITES', 25, currentY + 6);
-      
-      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
-
-      // Table de l'historique des modifications de limites
-      doc.autoTable({
-        startY: currentY + 5,
-        head: [['Date de modification', 'Type de modification', 'Ancienne superficie', 'Nouvelle superficie', 'Raison']],
-        body: boundary_history.map(boundary => [
-          boundary.modification_date ? new Date(boundary.modification_date).toLocaleDateString('fr-FR') : 'N/A',
-          boundary.modification_type || 'N/A',
-          boundary.old_area ? formatArea(boundary.old_area) : 'N/A',
-          boundary.new_area ? formatArea(boundary.new_area) : 'N/A',
-          boundary.modification_reason || 'N/A'
-        ]),
-        theme: 'striped',
-        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
-        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
-        alternateRowStyles: { fillColor: [248, 248, 248] },
-        margin: { left: 20, right: 20 },
-        tableWidth: 'wrap',
-        columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 35 }
-        }
-      });
-
-      currentY = doc.lastAutoTable.finalY + 10;
-    }
-
-    // Section Historique des hypothèques - Afficher seulement si le service 'obligations' est payé
-    if (mortgage_history && mortgage_history.length > 0) {
-      checkPageBreak(doc, 50);
-      
-      // Titre de section
-      doc.setFillColor(20, 84, 129);
-      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(12);
-      doc.text('🏦 HISTORIQUE DES HYPOTHÈQUES', 25, currentY + 6);
-      
-      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
-
-      // Table de l'historique des hypothèques
-      doc.autoTable({
-        startY: currentY + 5,
-        head: [['Créancier', 'Montant (USD)', 'Date de création', 'Date d\'échéance', 'Statut']],
-        body: mortgage_history.map(mortgage => [
-          mortgage.lender_name || 'N/A',
-          mortgage.mortgage_amount ? `$${mortgage.mortgage_amount.toFixed(2)}` : 'N/A',
-          mortgage.mortgage_date ? new Date(mortgage.mortgage_date).toLocaleDateString('fr-FR') : 'N/A',
-          mortgage.due_date ? new Date(mortgage.due_date).toLocaleDateString('fr-FR') : 'N/A',
-          mortgage.mortgage_status || 'N/A'
-        ]),
-        theme: 'striped',
-        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
-        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
-        alternateRowStyles: { fillColor: [248, 248, 248] },
-        margin: { left: 20, right: 20 },
-        tableWidth: 'wrap',
-        columnStyles: {
-          0: { cellWidth: 45 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 25 }
-        }
-      });
-
-      currentY = doc.lastAutoTable.finalY + 10;
-    }
-
-    // Section Historique des modifications de limites - Afficher seulement si le service 'history' est payé
-    if (boundary_history && boundary_history.length > 0) {
-      checkPageBreak(doc, 50);
-      
-      // Titre de section
-      doc.setFillColor(20, 84, 129);
-      doc.rect(20, currentY, pageWidth - 40, 10, 'F');
-      doc.setTextColor(255, 255, 255);
-      doc.setFont(undefined, 'bold');
-      doc.setFontSize(12);
-      doc.text('📐 HISTORIQUE DES MODIFICATIONS DE LIMITES', 25, currentY + 6);
-      
-      currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
-
-      // Table de l'historique des modifications de limites
-      doc.autoTable({
-        startY: currentY + 5,
-        head: [['Date de modification', 'Type de modification', 'Ancienne superficie', 'Nouvelle superficie', 'Raison']],
-        body: boundary_history.map(boundary => [
-          boundary.modification_date ? new Date(boundary.modification_date).toLocaleDateString('fr-FR') : 'N/A',
-          boundary.modification_type || 'N/A',
-          boundary.old_area ? formatArea(boundary.old_area) : 'N/A',
-          boundary.new_area ? formatArea(boundary.new_area) : 'N/A',
-          boundary.modification_reason || 'N/A'
-        ]),
-        theme: 'striped',
-        headStyles: { fillColor: [20, 84, 129], fontSize: 10, textColor: 255 },
-        bodyStyles: { fontSize: 9, lineColor: [200, 200, 200] },
-        alternateRowStyles: { fillColor: [248, 248, 248] },
-        margin: { left: 20, right: 20 },
-        tableWidth: 'wrap',
-        columnStyles: {
-          0: { cellWidth: 35 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 30 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 35 }
-        }
-      });
-
-      currentY = doc.lastAutoTable.finalY + 10;
+      currentY = (doc as any).lastAutoTable.finalY + 10;
     }
   }
 
   // Section des services inclus - Utiliser les vrais noms des services payés
-  checkPageBreak(doc, 50);
+  checkPageBreak(50);
   
   // Titre de section
   doc.setFillColor(20, 84, 129);
@@ -892,13 +809,13 @@ export function generateCadastralReport(
   doc.setFontSize(12);
   doc.text('📋 SERVICES INCLUS DANS CE RAPPORT', 25, currentY + 6);
   
-  currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+  currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
 
   // Filtrer les services selon les services payés
   const includedServices = servicesCatalog.filter(service => paidServices.includes(service.id));
   
   // Table des services inclus
-  doc.autoTable({
+  (doc as any).autoTable({
     startY: currentY + 5,
     head: [['Service', 'Description', 'Prix (USD)']],
     body: includedServices.map(service => [
@@ -922,7 +839,7 @@ export function generateCadastralReport(
   // Calculer le total
   const totalAmount = includedServices.reduce((sum, service) => sum + Number(service.price), 0);
   
-  currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 5 : currentY + 80;
+  currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 5 : currentY + 80;
 
   // Total des services
   doc.setTextColor(0, 0, 0);
@@ -933,7 +850,7 @@ export function generateCadastralReport(
   currentY += 10;
 
   // Notes importantes avec design moderne
-  checkPageBreak(doc, 35);
+  checkPageBreak(35);
   
   // Titre de section
   doc.setFillColor(20, 84, 129);
@@ -943,7 +860,7 @@ export function generateCadastralReport(
   doc.setFontSize(12);
   doc.text('ℹ️ NOTES IMPORTANTES', 25, currentY + 6);
   
-  currentY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 15 : currentY + 15;
+  currentY = (doc as any).lastAutoTable ? (doc as any).lastAutoTable.finalY + 15 : currentY + 15;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
@@ -959,10 +876,12 @@ export function generateCadastralReport(
   ];
 
   notes.forEach((note) => {
-    checkPageBreak(doc, 6);
+    checkPageBreak(6);
     doc.text(note, 25, currentY);
     currentY += 6;
   });
+
+  currentY += 5;
 
   // Pied de page professionnel avec informations complètes
   const totalPages = doc.internal.pages.length - 1;
