@@ -385,7 +385,7 @@ function saveDocument(doc: jsPDF, filename: string) {
 }
 
 /**
- * Génère un PDF A4 d'un rapport cadastral complet
+ * Génère un PDF A4 d'un rapport cadastral complet avec design épuré
  */
 export function generateCadastralReport(
   cadastralResult: any,
@@ -395,71 +395,162 @@ export function generateCadastralReport(
 ) {
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   const pageWidth = doc.internal.pageSize.getWidth();
-  const margin = 15;
+  const margin = 20;
   let cursorY = margin;
 
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = cadastralResult;
 
-  // Fonction pour ajouter une nouvelle page si nécessaire
+  // Fonction pour ajouter une nouvelle page si nécessaire avec en-tête
   const checkPageSpace = (neededSpace: number) => {
-    if (cursorY + neededSpace > 270) { // 270mm from top to avoid footer
+    if (cursorY + neededSpace > 260) { // 260mm from top to avoid footer
       doc.addPage();
       cursorY = margin;
+      addPageHeader();
     }
   };
 
-  // En-tête du rapport
+  // Fonction pour ajouter l'en-tête sur chaque page
+  const addPageHeader = () => {
+    const headerStartY = cursorY;
+    
+    // Logo et nom BIC (côté gauche)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.setTextColor(41, 128, 185); // Bleu professionnel
+    doc.text(BIC_COMPANY_INFO.abbreviation, margin, cursorY);
+    
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    doc.text(BIC_COMPANY_INFO.name, margin, cursorY + 8);
+    
+    // Informations légales (côté droit) - compact
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    const rightX = pageWidth - margin;
+    doc.text(BIC_COMPANY_INFO.address, rightX, cursorY, { align: 'right' });
+    doc.text(`${BIC_COMPANY_INFO.email} | ${BIC_COMPANY_INFO.phone}`, rightX, cursorY + 4, { align: 'right' });
+    doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, rightX, cursorY + 8, { align: 'right' });
+    doc.text(`ID NAT: ${BIC_COMPANY_INFO.idNat} | N°IMPÔT: ${BIC_COMPANY_INFO.numImpot}`, rightX, cursorY + 12, { align: 'right' });
+
+    cursorY += 20;
+
+    // Ligne de séparation élégante
+    doc.setLineWidth(0.8);
+    doc.setDrawColor(41, 128, 185);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    cursorY += 2;
+    
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, cursorY, pageWidth - margin, cursorY);
+    cursorY += 10;
+  };
+
+  // En-tête principal de la première page
+  addPageHeader();
+
+  // Titre du rapport avec style moderne
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(18);
+  doc.setFontSize(20);
+  doc.setTextColor(41, 128, 185);
   doc.text("RAPPORT CADASTRAL COMPLET", pageWidth / 2, cursorY, { align: 'center' });
   cursorY += 8;
   
-  doc.setFontSize(12);
-  doc.text("Bureau de l'Immobilier du Congo (BIC)", pageWidth / 2, cursorY, { align: 'center' });
-  cursorY += 15;
+  // Sous-titre avec informations de la parcelle
+  doc.setFontSize(14);
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Parcelle N° ${parcel.parcel_number || 'N/A'}`, pageWidth / 2, cursorY, { align: 'center' });
+  cursorY += 6;
+  
+  doc.setFontSize(10);
+  doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, pageWidth / 2, cursorY, { align: 'center' });
+  cursorY += 20;
 
-  // Section 1: Informations générales de la parcelle
-  checkPageSpace(50);
+  // Section 1: Informations générales avec design moderne
+  checkPageSpace(60);
+  
+  // En-tête de section stylisé
+  doc.setFillColor(248, 249, 250);
+  doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text("1. INFORMATIONS GÉNÉRALES", margin, cursorY);
-  cursorY += 8;
+  doc.setTextColor(41, 128, 185);
+  doc.text("1. INFORMATIONS GÉNÉRALES", margin + 5, cursorY + 3);
+  cursorY += 12;
+
+  // Calculer la superficie à partir des coordonnées GPS (si disponible)
+  const calculateAreaFromGPS = () => {
+    if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) return null;
+    
+    let area = 0;
+    const coords = parcel.gps_coordinates;
+    const n = coords.length;
+    
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      area += coords[i].lat * coords[j].lng;
+      area -= coords[j].lat * coords[i].lng;
+    }
+    
+    return Math.abs(area) / 2 * 111319.5 * 111319.5; // Conversion approximative en m²
+  };
+
+  const calculatedArea = calculateAreaFromGPS();
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
   
   const generalInfo = [
     ['Numéro de parcelle:', parcel.parcel_number || 'N/A'],
-    ['Type de parcelle:', parcel.parcel_type || 'N/A'],
+    ['Type de parcelle:', parcel.parcel_type ? (parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale') : 'N/A'],
     ['Type de titre foncier:', parcel.property_title_type || 'N/A'],
     ['Superficie officielle:', parcel.area_sqm ? `${Number(parcel.area_sqm).toLocaleString()} m² (${(Number(parcel.area_sqm) / 10000).toFixed(4)} ha)` : 'N/A'],
-    ['Superficie calculée (bornes):', parcel.surface_calculee_bornes ? `${Number(parcel.surface_calculee_bornes).toLocaleString()} m² (${(Number(parcel.surface_calculee_bornes) / 10000).toFixed(4)} ha)` : 'N/A'],
-    ['Nombre de bornes:', parcel.nombre_bornes?.toString() || 'N/A'],
+    ['Superficie calculée (GPS):', calculatedArea ? `${Math.round(calculatedArea).toLocaleString()} m² (${(calculatedArea / 10000).toFixed(4)} ha)` : 'N/A'],
+    ['Nombre de bornes GPS:', parcel.gps_coordinates ? parcel.gps_coordinates.length.toString() : 'N/A'],
     ['Propriétaire actuel:', parcel.current_owner_name || 'N/A'],
     ['Statut juridique:', parcel.current_owner_legal_status || 'N/A'],
     ['Propriétaire depuis:', parcel.current_owner_since ? new Date(parcel.current_owner_since).toLocaleDateString('fr-FR') : 'N/A']
   ];
 
-  generalInfo.forEach(([label, value]) => {
-    checkPageSpace(6);
+  // Affichage en tableau élégant
+  generalInfo.forEach(([label, value], index) => {
+    checkPageSpace(8);
+    
+    // Alternance de couleurs pour les lignes  
+    if (index % 2 === 0) {
+      doc.setFillColor(248, 249, 250);
+      doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 6, 'F');
+    }
+    
     doc.setFont('helvetica', 'bold');
-    doc.text(label, margin, cursorY);
+    doc.setTextColor(70, 70, 70);
+    doc.text(label, margin + 5, cursorY);
+    
     doc.setFont('helvetica', 'normal');
-    doc.text(value, margin + 60, cursorY);
+    doc.setTextColor(0, 0, 0);
+    doc.text(value, margin + 75, cursorY);
     cursorY += 6;
   });
 
-  cursorY += 10;
+  cursorY += 15;
 
-  // Section 2: Localisation
-  checkPageSpace(40);
+  // Section 2: Localisation avec design moderne
+  checkPageSpace(50);
+  
+  // En-tête de section stylisé
+  doc.setFillColor(248, 249, 250);
+  doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text("2. LOCALISATION", margin, cursorY);
-  cursorY += 8;
+  doc.setTextColor(41, 128, 185);
+  doc.text("2. LOCALISATION", margin + 5, cursorY + 3);
+  cursorY += 12;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0);
   
   const locationInfo = [
     ['Circonscription foncière:', parcel.circonscription_fonciere || 'N/A'],
@@ -474,26 +565,52 @@ export function generateCadastralReport(
     ['Village:', parcel.village || 'N/A']
   ];
 
-  locationInfo.forEach(([label, value]) => {
-    if (value !== 'N/A') {
-      checkPageSpace(6);
-      doc.setFont('helvetica', 'bold');
-      doc.text(label, margin, cursorY);
-      doc.setFont('helvetica', 'normal');
-      doc.text(value, margin + 60, cursorY);
-      cursorY += 6;
+  // Filtrer les informations non-vides et les afficher avec alternance de couleurs
+  const validLocationInfo = locationInfo.filter(([, value]) => value !== 'N/A');
+  
+  validLocationInfo.forEach(([label, value], index) => {
+    checkPageSpace(8);
+    
+    // Alternance de couleurs pour les lignes
+    if (index % 2 === 0) {
+      doc.setFillColor(248, 249, 250);
+      doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 6, 'F');
     }
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(70, 70, 70);
+    doc.text(label, margin + 5, cursorY);
+    
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0, 0, 0);
+    doc.text(value, margin + 75, cursorY);
+    cursorY += 6;
   });
 
-  cursorY += 10;
+  cursorY += 15;
 
-  // Section 3: Coordonnées GPS
+  // Section 3: Coordonnées GPS avec design moderne
   if (parcel.gps_coordinates && parcel.gps_coordinates.length > 0) {
-    checkPageSpace(30);
+    checkPageSpace(40);
+    
+    // En-tête de section stylisé
+    doc.setFillColor(248, 249, 250);
+    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text("3. COORDONNÉES GPS DES BORNES", margin, cursorY);
-    cursorY += 8;
+    doc.setTextColor(41, 128, 185);
+    doc.text("3. COORDONNÉES GPS DES BORNES", margin + 5, cursorY + 3);
+    cursorY += 12;
+
+    // Affichage des superficies calculées
+    const area = calculateAreaFromGPS();
+    if (area) {
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(70, 70, 70);
+      doc.text(`Superficie calculée : ${Math.round(area).toLocaleString()} m² (${(area / 10000).toFixed(4)} ha)`, margin + 5, cursorY);
+      cursorY += 8;
+    }
 
     const gpsData = parcel.gps_coordinates.map((coord: any, index: number) => [
       `Borne ${index + 1}`,
@@ -505,27 +622,43 @@ export function generateCadastralReport(
       head: [["Borne", "Latitude", "Longitude"]],
       body: gpsData,
       startY: cursorY,
-      styles: { fontSize: 10, cellPadding: 3 },
-      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 4,
+        lineColor: [230, 230, 230],
+        lineWidth: 0.1
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185], 
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center' 
+      },
       columnStyles: {
-        0: { cellWidth: 40, halign: 'center' },
-        1: { cellWidth: 60, halign: 'center' },
-        2: { cellWidth: 60, halign: 'center' }
+        0: { cellWidth: 50, halign: 'center' },
+        1: { cellWidth: 65, halign: 'center' },
+        2: { cellWidth: 65, halign: 'center' }
       },
       theme: 'grid',
+      alternateRowStyles: { fillColor: [248, 249, 250] },
       margin: { left: margin, right: margin }
     });
 
     cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 30;
   }
 
-  // Section 4: Historique de propriété
+  // Section 4: Historique de propriété avec design moderne
   if (ownership_history && ownership_history.length > 0) {
-    checkPageSpace(40);
+    checkPageSpace(50);
+    
+    // En-tête de section stylisé
+    doc.setFillColor(248, 249, 250);
+    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text("4. HISTORIQUE DE PROPRIÉTÉ", margin, cursorY);
-    cursorY += 8;
+    doc.setTextColor(41, 128, 185);
+    doc.text("4. HISTORIQUE DE PROPRIÉTÉ", margin + 5, cursorY + 3);
+    cursorY += 12;
 
     const ownershipData = ownership_history.map((owner: any) => [
       owner.owner_name || 'N/A',
@@ -539,8 +672,18 @@ export function generateCadastralReport(
       head: [["Propriétaire", "Statut juridique", "Début", "Fin", "Type de mutation"]],
       body: ownershipData,
       startY: cursorY,
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 3,
+        lineColor: [230, 230, 230],
+        lineWidth: 0.1
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185], 
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center' 
+      },
       columnStyles: {
         0: { cellWidth: 45 },
         1: { cellWidth: 35 },
@@ -549,19 +692,25 @@ export function generateCadastralReport(
         4: { cellWidth: 35 }
       },
       theme: 'grid',
+      alternateRowStyles: { fillColor: [248, 249, 250] },
       margin: { left: margin, right: margin }
     });
 
     cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
   }
 
-  // Section 5: Historique fiscal
+  // Section 5: Historique fiscal avec design moderne
   if (tax_history && tax_history.length > 0) {
-    checkPageSpace(40);
+    checkPageSpace(50);
+    
+    // En-tête de section stylisé
+    doc.setFillColor(248, 249, 250);
+    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text("5. HISTORIQUE FISCAL", margin, cursorY);
-    cursorY += 8;
+    doc.setTextColor(41, 128, 185);
+    doc.text("5. HISTORIQUE FISCAL", margin + 5, cursorY + 3);
+    cursorY += 12;
 
     const taxData = tax_history.map((tax: any) => [
       tax.tax_year?.toString() || 'N/A',
@@ -575,8 +724,18 @@ export function generateCadastralReport(
       head: [["Année", "Montant", "Date de paiement", "Statut"]],
       body: taxData,
       startY: cursorY,
-      styles: { fontSize: 10, cellPadding: 3 },
-      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 4,
+        lineColor: [230, 230, 230],
+        lineWidth: 0.1
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185], 
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center' 
+      },
       columnStyles: {
         0: { cellWidth: 30, halign: 'center' },
         1: { cellWidth: 40, halign: 'right' },
@@ -584,19 +743,25 @@ export function generateCadastralReport(
         3: { cellWidth: 35, halign: 'center' }
       },
       theme: 'grid',
+      alternateRowStyles: { fillColor: [248, 249, 250] },
       margin: { left: margin, right: margin }
     });
 
     cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
   }
 
-  // Section 6: Historique des hypothèques
+  // Section 6: Historique des hypothèques avec design moderne
   if (mortgage_history && mortgage_history.length > 0) {
-    checkPageSpace(40);
+    checkPageSpace(50);
+    
+    // En-tête de section stylisé
+    doc.setFillColor(248, 249, 250);
+    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text("6. HISTORIQUE DES HYPOTHÈQUES", margin, cursorY);
-    cursorY += 8;
+    doc.setTextColor(41, 128, 185);
+    doc.text("6. HISTORIQUE DES HYPOTHÈQUES", margin + 5, cursorY + 3);
+    cursorY += 12;
 
     const mortgageData = mortgage_history.map((mortgage: any) => [
       mortgage.creditor_name || 'N/A',
@@ -612,8 +777,18 @@ export function generateCadastralReport(
       head: [["Créancier", "Type", "Montant", "Durée", "Date contrat", "Statut"]],
       body: mortgageData,
       startY: cursorY,
-      styles: { fontSize: 9, cellPadding: 2 },
-      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      styles: { 
+        fontSize: 9, 
+        cellPadding: 3,
+        lineColor: [230, 230, 230],
+        lineWidth: 0.1
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185], 
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center' 
+      },
       columnStyles: {
         0: { cellWidth: 35 },
         1: { cellWidth: 25 },
@@ -623,19 +798,25 @@ export function generateCadastralReport(
         5: { cellWidth: 25, halign: 'center' }
       },
       theme: 'grid',
+      alternateRowStyles: { fillColor: [248, 249, 250] },
       margin: { left: margin, right: margin }
     });
 
     cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
   }
 
-  // Section 7: Historique de bornage
+  // Section 7: Historique de bornage avec design moderne
   if (boundary_history && boundary_history.length > 0) {
-    checkPageSpace(40);
+    checkPageSpace(50);
+    
+    // En-tête de section stylisé
+    doc.setFillColor(248, 249, 250);
+    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text("7. HISTORIQUE DE BORNAGE", margin, cursorY);
-    cursorY += 8;
+    doc.setTextColor(41, 128, 185);
+    doc.text("7. HISTORIQUE DE BORNAGE", margin + 5, cursorY + 3);
+    cursorY += 12;
 
     const boundaryData = boundary_history.map((boundary: any) => [
       boundary.surveyor_name || 'N/A',
@@ -648,8 +829,18 @@ export function generateCadastralReport(
       head: [["Géomètre", "Référence PV", "Date d'arpentage", "Objet"]],
       body: boundaryData,
       startY: cursorY,
-      styles: { fontSize: 10, cellPadding: 3 },
-      headStyles: { fillColor: [25, 113, 194], halign: 'center' },
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 4,
+        lineColor: [230, 230, 230],
+        lineWidth: 0.1
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185], 
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'center' 
+      },
       columnStyles: {
         0: { cellWidth: 45 },
         1: { cellWidth: 35 },
@@ -657,21 +848,27 @@ export function generateCadastralReport(
         3: { cellWidth: 45 }
       },
       theme: 'grid',
+      alternateRowStyles: { fillColor: [248, 249, 250] },
       margin: { left: margin, right: margin }
     });
 
     cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 40;
   }
 
-  // Section 8: Services inclus dans ce rapport
+  // Section 8: Services inclus dans ce rapport avec design moderne
   const selectedServices = servicesCatalog.filter(s => paidServices.includes(s.id));
   
   if (selectedServices.length > 0) {
-    checkPageSpace(40);
+    checkPageSpace(50);
+    
+    // En-tête de section stylisé
+    doc.setFillColor(248, 249, 250);
+    doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
-    doc.text("8. SERVICES INCLUS DANS CE RAPPORT", margin, cursorY);
-    cursorY += 8;
+    doc.setTextColor(41, 128, 185);
+    doc.text("8. SERVICES INCLUS DANS CE RAPPORT", margin + 5, cursorY + 3);
+    cursorY += 12;
 
     const servicesTableData = selectedServices.map(service => [
       service.name,
@@ -682,55 +879,96 @@ export function generateCadastralReport(
       head: [["Service", "Description"]],
       body: servicesTableData,
       startY: cursorY,
-      styles: { fontSize: 10, cellPadding: 4 },
-      headStyles: { fillColor: [25, 113, 194], halign: 'left' },
+      styles: { 
+        fontSize: 10, 
+        cellPadding: 5,
+        lineColor: [230, 230, 230],
+        lineWidth: 0.1
+      },
+      headStyles: { 
+        fillColor: [41, 128, 185], 
+        textColor: 255,
+        fontStyle: 'bold',
+        halign: 'left' 
+      },
       columnStyles: {
         0: { cellWidth: 60 },
         1: { cellWidth: 115 }
       },
       theme: 'grid',
+      alternateRowStyles: { fillColor: [248, 249, 250] },
       margin: { left: margin, right: margin }
     });
 
     cursorY = (doc as any).lastAutoTable?.finalY + 15 || cursorY + 20;
   }
 
-  // Notes importantes
-  checkPageSpace(30);
+  // Notes importantes avec design moderne
+  checkPageSpace(35);
+  
+  // En-tête de section stylisé
+  doc.setFillColor(248, 249, 250);
+  doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 8, 'F');
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
-  doc.text("NOTES IMPORTANTES", margin, cursorY);
-  cursorY += 8;
+  doc.setTextColor(41, 128, 185);
+  doc.text("NOTES IMPORTANTES", margin + 5, cursorY + 3);
+  cursorY += 12;
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);
+  doc.setTextColor(70, 70, 70);
+  
   const notes = [
     "• Ce rapport est basé sur les données officielles du Ministère des Affaires Foncières de la RDC.",
     "• Les informations contenues dans ce rapport sont valides à la date de génération.",
     "• Pour toute vérification, référez-vous aux documents officiels auprès de la circonscription foncière.",
     "• Ce document est généré automatiquement par le système BIC et certifié conforme.",
-    "• En cas de discordance, les documents officiels font foi."
+    "• En cas de discordance, les documents officiels font foi.",
+    "• La superficie calculée par GPS est fournie à titre indicatif et peut différer de la superficie officielle."
   ];
 
-  notes.forEach(note => {
-    checkPageSpace(5);
-    doc.text(note, margin, cursorY);
+  notes.forEach((note, index) => {
+    checkPageSpace(6);
+    
+    // Alternance subtile de couleurs pour les notes
+    if (index % 2 === 0) {
+      doc.setFillColor(252, 252, 252);
+      doc.rect(margin, cursorY - 2, pageWidth - 2 * margin, 5, 'F');
+    }
+    
+    doc.text(note, margin + 5, cursorY);
     cursorY += 5;
   });
 
-  // Ajouter le pied de page sur toutes les pages
-  const totalPages = doc.internal.pages.length - 1; // Exclude the first empty page
+  // Pied de page professionnel avec informations complètes
+  const totalPages = doc.internal.pages.length - 1;
   for (let i = 1; i <= totalPages; i++) {
     doc.setPage(i);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(9);
-    const footerY = 297 - 10; // A4 height ~297mm
-    doc.text(
-      `Document généré automatiquement par BIC - Page ${i}/${totalPages} - ${new Date().toLocaleDateString('fr-FR')}`,
-      pageWidth / 2,
-      footerY,
-      { align: 'center' }
-    );
+    
+    const footerY = 285; // Position du pied de page
+    
+    // Ligne de séparation du pied de page
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, footerY - 5, pageWidth - margin, footerY - 5);
+    
+    // Informations légales à gauche
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(BIC_COMPANY_INFO.name, margin, footerY);
+    doc.text(`${BIC_COMPANY_INFO.rccm} | ${BIC_COMPANY_INFO.idNat}`, margin, footerY + 4);
+    doc.text(`${BIC_COMPANY_INFO.address}`, margin, footerY + 8);
+    
+    // Informations de contact au centre
+    doc.text(`${BIC_COMPANY_INFO.phone} | ${BIC_COMPANY_INFO.email}`, pageWidth / 2, footerY, { align: 'center' });
+    doc.text("Sources : Ministère des Affaires Foncières de la RDC", pageWidth / 2, footerY + 4, { align: 'center' });
+    
+    // Numérotation des pages et date à droite
+    doc.text(`Page ${i}/${totalPages}`, pageWidth - margin, footerY, { align: 'right' });
+    doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')}`, pageWidth - margin, footerY + 4, { align: 'right' });
+    doc.text(`à ${new Date().toLocaleTimeString('fr-FR')}`, pageWidth - margin, footerY + 8, { align: 'right' });
   }
 
   // Sauvegarde
