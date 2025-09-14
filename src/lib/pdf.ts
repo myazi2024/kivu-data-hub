@@ -512,7 +512,7 @@ export function generateCadastralReport(
       currentY += 3;
       
       const statusText = overdueTaxes.length > 0 ? 'RETARDS DE PAIEMENT' : 'À JOUR';
-      const statusColor = overdueTaxes.length > 0 ? [200, 0, 0] : [0, 150, 0];
+      const statusColor: [number, number, number] = overdueTaxes.length > 0 ? [200, 0, 0] : [0, 150, 0];
       doc.setTextColor(...statusColor);
       doc.text(`Statut: ${statusText}`, margin, currentY);
       currentY += 3;
@@ -586,7 +586,6 @@ export function generateCadastralReport(
   saveDocument(doc, fn);
 }
 
-}
 
 // Fonction utilitaire pour calculer la superficie depuis les coordonnées GPS (identique à l'écran)
 function calculateSurfaceFromBounds(gpsCoordinates: Array<{lat: number, lng: number}>): number | null {
