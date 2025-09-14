@@ -3,7 +3,16 @@ import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
-import { toast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import CadastralResultCard from './CadastralResultCard';
 
 interface CadastralResultsDialogProps {
@@ -22,20 +31,21 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
   onPaymentSuccess
 }) => {
   const [paidServices, setPaidServices] = React.useState<string[]>(selectedServices);
+  const [showCloseConfirm, setShowCloseConfirm] = React.useState(false);
+  
   if (!isOpen) return null;
 
   const handleClose = () => {
-    // Afficher une notification d'avertissement avant fermeture
-    toast({
-      title: "⚠️ Attention !",
-      description: "Pensez à télécharger ou imprimer votre rapport cadastral avant de fermer. Vous devrez faire une nouvelle requête pour y accéder à nouveau.",
-      duration: 4000,
-    });
-    
-    // Fermer après un petit délai pour que l'utilisateur puisse voir le message
-    setTimeout(() => {
-      onClose();
-    }, 1000);
+    setShowCloseConfirm(true);
+  };
+
+  const confirmClose = () => {
+    setShowCloseConfirm(false);
+    onClose();
+  };
+
+  const cancelClose = () => {
+    setShowCloseConfirm(false);
   };
 
   const handlePaymentSuccess = (services: string[]) => {
@@ -94,6 +104,27 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
           />
         </div>
       </Card>
+
+      {/* Dialog de confirmation de fermeture */}
+      <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>⚠️ Confirmer la fermeture</AlertDialogTitle>
+            <AlertDialogDescription>
+              Attention ! Pensez à télécharger ou imprimer votre rapport cadastral avant de fermer. 
+              Une fois fermé, vous devrez faire une nouvelle requête pour y accéder à nouveau.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelClose}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClose}>
+              Fermer quand même
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
