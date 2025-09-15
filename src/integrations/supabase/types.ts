@@ -92,13 +92,6 @@ export type Database = {
             referencedRelation: "cadastral_parcels"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "cadastral_boundary_history_parcel_id_fkey"
-            columns: ["parcel_id"]
-            isOneToOne: false
-            referencedRelation: "cadastral_parcels_with_calculated_data"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cadastral_invoices: {
@@ -255,13 +248,6 @@ export type Database = {
             referencedRelation: "cadastral_parcels"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "fk_cadastral_mortgages_parcel"
-            columns: ["parcel_id"]
-            isOneToOne: false
-            referencedRelation: "cadastral_parcels_with_calculated_data"
-            referencedColumns: ["id"]
-          },
         ]
       }
       cadastral_ownership_history: {
@@ -301,13 +287,6 @@ export type Database = {
             columns: ["parcel_id"]
             isOneToOne: false
             referencedRelation: "cadastral_parcels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cadastral_ownership_history_parcel_id_fkey"
-            columns: ["parcel_id"]
-            isOneToOne: false
-            referencedRelation: "cadastral_parcels_with_calculated_data"
             referencedColumns: ["id"]
           },
         ]
@@ -474,13 +453,6 @@ export type Database = {
             columns: ["parcel_id"]
             isOneToOne: false
             referencedRelation: "cadastral_parcels"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "cadastral_tax_history_parcel_id_fkey"
-            columns: ["parcel_id"]
-            isOneToOne: false
-            referencedRelation: "cadastral_parcels_with_calculated_data"
             referencedColumns: ["id"]
           },
         ]
@@ -1076,102 +1048,6 @@ export type Database = {
       }
     }
     Views: {
-      cadastral_parcels_with_calculated_data: {
-        Row: {
-          area_hectares: number | null
-          area_sqm: number | null
-          avenue: string | null
-          calculated_area_hectares: number | null
-          calculated_surface_sqm: number | null
-          circonscription_fonciere: string | null
-          collectivite: string | null
-          commune: string | null
-          created_at: string | null
-          current_owner_legal_status: string | null
-          current_owner_name: string | null
-          current_owner_since: string | null
-          gps_coordinates: Json | null
-          groupement: string | null
-          id: string | null
-          latitude: number | null
-          location: string | null
-          longitude: number | null
-          nombre_bornes: number | null
-          parcel_number: string | null
-          parcel_type: string | null
-          property_title_type: string | null
-          province: string | null
-          quartier: string | null
-          surface_calculee_bornes: number | null
-          territoire: string | null
-          updated_at: string | null
-          village: string | null
-          ville: string | null
-        }
-        Insert: {
-          area_hectares?: number | null
-          area_sqm?: number | null
-          avenue?: string | null
-          calculated_area_hectares?: never
-          calculated_surface_sqm?: never
-          circonscription_fonciere?: string | null
-          collectivite?: string | null
-          commune?: string | null
-          created_at?: string | null
-          current_owner_legal_status?: string | null
-          current_owner_name?: string | null
-          current_owner_since?: string | null
-          gps_coordinates?: Json | null
-          groupement?: string | null
-          id?: string | null
-          latitude?: number | null
-          location?: string | null
-          longitude?: number | null
-          nombre_bornes?: number | null
-          parcel_number?: string | null
-          parcel_type?: string | null
-          property_title_type?: string | null
-          province?: string | null
-          quartier?: string | null
-          surface_calculee_bornes?: number | null
-          territoire?: string | null
-          updated_at?: string | null
-          village?: string | null
-          ville?: string | null
-        }
-        Update: {
-          area_hectares?: number | null
-          area_sqm?: number | null
-          avenue?: string | null
-          calculated_area_hectares?: never
-          calculated_surface_sqm?: never
-          circonscription_fonciere?: string | null
-          collectivite?: string | null
-          commune?: string | null
-          created_at?: string | null
-          current_owner_legal_status?: string | null
-          current_owner_name?: string | null
-          current_owner_since?: string | null
-          gps_coordinates?: Json | null
-          groupement?: string | null
-          id?: string | null
-          latitude?: number | null
-          location?: string | null
-          longitude?: number | null
-          nombre_bornes?: number | null
-          parcel_number?: string | null
-          parcel_type?: string | null
-          property_title_type?: string | null
-          province?: string | null
-          quartier?: string | null
-          surface_calculee_bornes?: number | null
-          territoire?: string | null
-          updated_at?: string | null
-          village?: string | null
-          ville?: string | null
-        }
-        Relationships: []
-      }
       properties_public: {
         Row: {
           address: string | null
@@ -1257,6 +1133,40 @@ export type Database = {
       generate_reseller_code: {
         Args: Record<PropertyKey, never>
         Returns: string
+      }
+      get_cadastral_parcel_with_calculations: {
+        Args: { parcel_number_param: string }
+        Returns: {
+          area_hectares: number
+          area_sqm: number
+          avenue: string
+          calculated_area_hectares: number
+          calculated_surface_sqm: number
+          circonscription_fonciere: string
+          collectivite: string
+          commune: string
+          created_at: string
+          current_owner_legal_status: string
+          current_owner_name: string
+          current_owner_since: string
+          gps_coordinates: Json
+          groupement: string
+          id: string
+          latitude: number
+          location: string
+          longitude: number
+          nombre_bornes: number
+          parcel_number: string
+          parcel_type: string
+          property_title_type: string
+          province: string
+          quartier: string
+          surface_calculee_bornes: number
+          territoire: string
+          updated_at: string
+          village: string
+          ville: string
+        }[]
       }
       get_current_user_role: {
         Args: Record<PropertyKey, never>

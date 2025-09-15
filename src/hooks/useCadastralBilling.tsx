@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
+import { useAuditLog } from '@/hooks/useAuditLog';
 
 export interface CadastralService {
   id: string;
@@ -65,6 +66,7 @@ export const useCadastralBilling = () => {
   const [currentInvoice, setCurrentInvoice] = useState<CadastralInvoice | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  const { logInvoiceGeneration } = useAuditLog();
 
   const toggleService = (serviceId: string) => {
     setSelectedServices(prev => 

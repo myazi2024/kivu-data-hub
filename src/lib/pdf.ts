@@ -441,8 +441,8 @@ export function generateCadastralReport(
       doc.text(`${parcel.gps_coordinates.length} points de délimitation`, rightCol, rightY);
       rightY += 3;
       
-      // Superficie calculée comme à l'écran
-      const calculatedArea = calculateSurfaceFromBounds(parcel.gps_coordinates);
+      // Superficie calculée côté serveur (garantit cohérence avec l'écran)
+      const calculatedArea = (parcel as any).calculated_surface_sqm;
       if (calculatedArea && calculatedArea > 0) {
         doc.text(`Surface GPS: ${formatArea(calculatedArea)}`, rightCol, rightY);
         rightY += 3;
@@ -587,19 +587,5 @@ export function generateCadastralReport(
 }
 
 
-// Fonction utilitaire pour calculer la superficie depuis les coordonnées GPS (identique à l'écran)
-function calculateSurfaceFromBounds(gpsCoordinates: Array<{lat: number, lng: number}>): number | null {
-  if (!gpsCoordinates || gpsCoordinates.length < 3) return null;
-  
-  let area = 0;
-  const coords = gpsCoordinates;
-  const n = coords.length;
-  
-  for (let i = 0; i < n; i++) {
-    const j = (i + 1) % n;
-    area += coords[i].lat * coords[j].lng;
-    area -= coords[j].lat * coords[i].lng;
-  }
-  
-  return Math.abs(area) / 2 * 111319.5 * 111319.5; // Conversion approximative en m²
-}
+// Les calculs de superficie sont maintenant effectués côté serveur
+// Cette fonction n'est plus nécessaire car les données arrivent déjà calculées
