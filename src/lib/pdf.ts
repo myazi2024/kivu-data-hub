@@ -1,6 +1,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import type { CadastralInvoice, CadastralService } from '@/hooks/useCadastralBilling';
+import type { CadastralInvoice } from '@/hooks/useCadastralBilling';
+import type { CadastralService } from '@/hooks/useCadastralServices';
 
 // Informations légales complètes de BIC
 const BIC_COMPANY_INFO = {

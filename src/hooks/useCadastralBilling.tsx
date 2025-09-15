@@ -3,16 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
+import { type CadastralService } from '@/hooks/useCadastralServices';
 
-export interface CadastralService {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-}
-
-// Services sont maintenant chargés depuis le backend via API sécurisée
-
+// Interface pour les factures cadastrales uniquement
 export interface CadastralInvoice {
   id: string;
   parcel_number: string;

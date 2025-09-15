@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, 
   Smartphone, 
@@ -22,6 +22,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePayment } from '@/hooks/usePayment';
 import { useCadastralBilling, CadastralInvoice } from '@/hooks/useCadastralBilling';
+import { useCadastralServices } from '@/hooks/useCadastralServices';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { useToast } from '@/hooks/use-toast';
 
@@ -40,14 +41,8 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   const [paymentStep, setPaymentStep] = useState<'selection' | 'processing' | 'success'>('selection');
   const { createStripePayment } = usePayment();
   const { updateInvoiceStatus } = useCadastralBilling();
+  const { services: availableServices } = useCadastralServices();
   const { toast } = useToast();
-
-  const { availableServices, fetchServices } = useCadastralBilling();
-
-  // Charger les services
-  React.useEffect(() => {
-    fetchServices();
-  }, []);
 
   const getSelectedServices = () => {
     return availableServices.filter(service => {
@@ -105,9 +100,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   const generatePDFInvoice = () => {
     // Génère un reçu PDF A4 pour la facture courante
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      import('@/hooks/useCadastralServices').then(({ getCadastralServicesSync }) => {
-        generateInvoicePDF(invoice, getCadastralServicesSync());
-      });
+      generateInvoicePDF(invoice, availableServices);
     });
   };
 
