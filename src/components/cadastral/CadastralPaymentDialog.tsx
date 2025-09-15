@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePayment } from '@/hooks/usePayment';
-import { useCadastralBilling, CADASTRAL_SERVICES, CadastralInvoice } from '@/hooks/useCadastralBilling';
+import { useCadastralBilling, CadastralInvoice } from '@/hooks/useCadastralBilling';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { useToast } from '@/hooks/use-toast';
 
@@ -42,8 +42,15 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   const { updateInvoiceStatus } = useCadastralBilling();
   const { toast } = useToast();
 
+  const { availableServices, fetchServices } = useCadastralBilling();
+
+  // Charger les services
+  React.useEffect(() => {
+    fetchServices();
+  }, []);
+
   const getSelectedServices = () => {
-    return CADASTRAL_SERVICES.filter(service => {
+    return availableServices.filter(service => {
       const selectedArray = Array.isArray(invoice.selected_services) 
         ? invoice.selected_services 
         : (typeof invoice.selected_services === 'string' ? JSON.parse(invoice.selected_services) : []);
@@ -98,7 +105,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   const generatePDFInvoice = () => {
     // Génère un reçu PDF A4 pour la facture courante
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      generateInvoicePDF(invoice, CADASTRAL_SERVICES);
+      import('@/hooks/useCadastralServices').then(({ getCadastralServicesSync }) => {
+        generateInvoicePDF(invoice, getCadastralServicesSync());
+      });
     });
   };
 

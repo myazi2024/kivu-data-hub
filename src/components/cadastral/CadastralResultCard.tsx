@@ -144,8 +144,9 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   // Gérer le téléchargement PDF de la facture
   const handleDownloadPDF = () => {
     // Calculer le total correct basé sur les services sélectionnés
-    import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
-      const selectedServicesList = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
+    import('@/hooks/useCadastralServices').then(({ getCadastralServicesSync }) => {
+      const services = getCadastralServicesSync();
+      const selectedServicesList = services.filter(s => paidServices.includes(s.id));
       const subtotal = selectedServicesList.reduce((sum, service) => sum + Number(service.price), 0);
       
       // Générer le même numéro de facture que dans l'affichage à l'écran (stable)
@@ -186,7 +187,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
       // Génère un PDF selon le format sélectionné
       import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-        generateInvoicePDF(invoice, CADASTRAL_SERVICES, invoiceFormat);
+        generateInvoicePDF(invoice, services, invoiceFormat);
       });
     });
   };
@@ -195,8 +196,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const handleDownloadReport = () => {
     // Génère un rapport cadastral PDF A4 complet avec toutes les données
     import('@/lib/pdf').then(({ generateCadastralReport }) => {
-      import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
-        generateCadastralReport(result, paidServices, CADASTRAL_SERVICES);
+      import('@/hooks/useCadastralServices').then(({ getCadastralServicesSync }) => {
+        generateCadastralReport(result, paidServices, getCadastralServicesSync());
       });
     });
   };

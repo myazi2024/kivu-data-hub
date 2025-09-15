@@ -15,7 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { useCadastralBilling, CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
+import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
@@ -48,11 +48,18 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     loading,
     selectedServices,
     currentInvoice,
+    availableServices,
     toggleService,
     getTotalAmount,
     createInvoice,
-    setCurrentInvoice
+    setCurrentInvoice,
+    fetchServices
   } = useCadastralBilling();
+
+  // Charger les services au montage
+  React.useEffect(() => {
+    fetchServices();
+  }, []);
 
   // Pré-sélectionner un service si demandé
   React.useEffect(() => {
@@ -144,7 +151,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </h3>
             
             <div className="grid grid-cols-1 xs:grid-cols-2 gap-2">
-              {CADASTRAL_SERVICES.map((service) => (
+              {availableServices.map((service) => (
                 <div 
                   key={service.id}
                   className={`p-2 rounded border cursor-pointer transition-all hover:border-primary/40 ${
