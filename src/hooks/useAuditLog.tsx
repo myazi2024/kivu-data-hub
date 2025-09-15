@@ -54,11 +54,11 @@ export const useAuditLog = () => {
   };
 
   // Log spécifique pour les consultations cadastrales
-  const logCadastralConsultation = async (parcelNumber: string, services: string[]) => {
+  const logCadastralConsultation = async (parcelNumber: string, services: string[], parcelId?: string) => {
     return logAction(
       'CADASTRAL_CONSULTATION',
       'cadastral_parcels',
-      parcelNumber,
+      parcelId || null, // Utiliser l'ID de la parcelle ou null si pas disponible
       null,
       { parcel_number: parcelNumber, services_consulted: services }
     );
@@ -76,11 +76,11 @@ export const useAuditLog = () => {
   };
 
   // Log spécifique pour les téléchargements de rapports
-  const logReportDownload = async (parcelNumber: string, reportType: string) => {
+  const logReportDownload = async (parcelNumber: string, reportType: string, parcelId?: string) => {
     return logAction(
       'REPORT_DOWNLOAD',
       'cadastral_parcels',
-      parcelNumber,
+      parcelId || null, // Utiliser l'ID de la parcelle ou null si pas disponible
       null,
       { parcel_number: parcelNumber, report_type: reportType }
     );

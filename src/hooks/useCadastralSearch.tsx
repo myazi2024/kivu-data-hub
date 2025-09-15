@@ -185,7 +185,7 @@ export const useCadastralSearch = () => {
       });
 
       // Log de la consultation cadastrale pour audit
-      await logCadastralConsultation(parcelNumber, ['basic_info']);
+      await logCadastralConsultation(parcelNumber, ['basic_info'], parcelData.id);
 
     } catch (err) {
       console.error('Erreur lors de la recherche cadastrale:', err);
