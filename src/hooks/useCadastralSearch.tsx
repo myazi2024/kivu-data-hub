@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { useAuditLog } from '@/hooks/useAuditLog';
 
 export interface CadastralParcel {
   id: string;
@@ -91,7 +90,6 @@ export const useCadastralSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const { logCadastralConsultation } = useAuditLog();
 
   // Fonction pour valider le format du numéro de parcelle
   const validateParcelNumber = (query: string): boolean => {
@@ -110,21 +108,21 @@ export const useCadastralSearch = () => {
     setError(null);
 
     try {
-      // Recherche de la parcelle principale avec calculs serveur
-      const { data: parcelDataArray, error: parcelError } = await supabase.rpc(
-        'get_cadastral_parcel_with_calculations',
-        { parcel_number_param: parcelNumber.trim() }
-      );
+      // Recherche de la parcelle principale
+      const { data: parcelData, error: parcelError } = await supabase
+        .from('cadastral_parcels')
+        .select('*')
+        .ilike('parcel_number', parcelNumber.trim())
+        .single();
 
-      if (parcelError) throw parcelError;
-
-      if (!parcelDataArray || parcelDataArray.length === 0) {
-        setError('Aucune parcelle trouvée avec ce numéro');
+      if (parcelError) {
+        if (parcelError.code === 'PGRST116') {
+          setError('Aucune parcelle trouvée avec ce numéro');
+        } else {
+          throw parcelError;
+        }
         return;
       }
-
-      const parcelData = parcelDataArray[0];
-
 
       // Recherche de l'historique des propriétaires
       const { data: ownershipData, error: ownershipError } = await supabase
@@ -177,15 +175,12 @@ export const useCadastralSearch = () => {
       })) || [];
 
       setSearchResult({
-        parcel: parcelData as unknown as CadastralParcel,
+        parcel: parcelData as CadastralParcel,
         ownership_history: ownershipData as OwnershipHistory[],
         tax_history: taxData as TaxHistory[],
         mortgage_history: formattedMortgageData as MortgageHistory[],
         boundary_history: boundaryData as BoundaryHistory[]
       });
-
-      // Log de la consultation cadastrale pour audit
-      await logCadastralConsultation(parcelNumber, ['basic_info'], parcelData.id);
 
     } catch (err) {
       console.error('Erreur lors de la recherche cadastrale:', err);

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,41 +62,16 @@ export const ZoneDetailsPanel: React.FC<ZoneDetailsPanelProps> = ({ zone, onClos
     return '🏘️';
   };
 
-  // Données de tendance depuis le backend
-  const [trendData, setTrendData] = useState<Array<{month: string, value: number}>>([]);
+  // Mock data pour les graphiques miniatures
+  const generateMockTrendData = () => {
+    const months = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'];
+    return months.map((month, index) => ({
+      month,
+      value: zone.prixmoyenloyer * (1 + (zone.variationloyer3mois_pct / 100) * (index / 6))
+    }));
+  };
 
-  useEffect(() => {
-    const fetchTrendData = async () => {
-      try {
-        const { data, error } = await supabase.rpc('get_zone_trend_data', {
-          zone_id_param: zone.id,
-          months_back: 6
-        });
-
-        if (error) throw error;
-
-        const formattedData = (data || []).map((item: any) => ({
-          month: item.month,
-          value: parseFloat(item.value) || zone.prixmoyenloyer
-        }));
-
-        setTrendData(formattedData);
-      } catch (error) {
-        console.error('Erreur lors du chargement des données de tendance:', error);
-        // Fallback avec données minimales basées sur la zone
-        setTrendData([
-          { month: 'Jan', value: zone.prixmoyenloyer },
-          { month: 'Fév', value: zone.prixmoyenloyer },
-          { month: 'Mar', value: zone.prixmoyenloyer },
-          { month: 'Avr', value: zone.prixmoyenloyer },
-          { month: 'Mai', value: zone.prixmoyenloyer },
-          { month: 'Jun', value: zone.prixmoyenloyer }
-        ]);
-      }
-    };
-
-    fetchTrendData();
-  }, [zone.id, zone.prixmoyenloyer]);
+  const trendData = generateMockTrendData();
 
   return (
     <Card className="fixed inset-1 sm:inset-2 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 max-w-full max-h-full">
