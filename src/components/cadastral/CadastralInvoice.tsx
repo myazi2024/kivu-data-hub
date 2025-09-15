@@ -7,8 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
-import { useCadastralBilling } from '@/hooks/useCadastralBilling';
-import { getCadastralServicesSync } from '@/hooks/useCadastralServices';
+import { CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
 
 interface CadastralInvoiceProps {
   isOpen: boolean;
@@ -43,8 +42,7 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
 
   // Générer les données de facture de manière stable
   const invoiceData = useMemo(() => {
-    const services = getCadastralServicesSync();
-    const selectedServices = services.filter(s => paidServices.includes(s.id));
+    const selectedServices = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
     const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
     const discountAmount = 0; // Pas de remise pour l'instant
     const tvaRate = 0.16; // 16% TVA en RDC

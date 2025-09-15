@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   CreditCard, 
   Smartphone, 
@@ -21,8 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePayment } from '@/hooks/usePayment';
-import { useCadastralBilling, CadastralInvoice } from '@/hooks/useCadastralBilling';
-import { useCadastralServices } from '@/hooks/useCadastralServices';
+import { useCadastralBilling, CADASTRAL_SERVICES, CadastralInvoice } from '@/hooks/useCadastralBilling';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { useToast } from '@/hooks/use-toast';
 
@@ -41,11 +40,10 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   const [paymentStep, setPaymentStep] = useState<'selection' | 'processing' | 'success'>('selection');
   const { createStripePayment } = usePayment();
   const { updateInvoiceStatus } = useCadastralBilling();
-  const { services: availableServices } = useCadastralServices();
   const { toast } = useToast();
 
   const getSelectedServices = () => {
-    return availableServices.filter(service => {
+    return CADASTRAL_SERVICES.filter(service => {
       const selectedArray = Array.isArray(invoice.selected_services) 
         ? invoice.selected_services 
         : (typeof invoice.selected_services === 'string' ? JSON.parse(invoice.selected_services) : []);
@@ -100,7 +98,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   const generatePDFInvoice = () => {
     // Génère un reçu PDF A4 pour la facture courante
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      generateInvoicePDF(invoice, availableServices);
+      generateInvoicePDF(invoice, CADASTRAL_SERVICES);
     });
   };
 

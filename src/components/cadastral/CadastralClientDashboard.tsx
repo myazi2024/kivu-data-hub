@@ -71,8 +71,8 @@ const CadastralClientDashboard: React.FC = () => {
   const generatePDFInvoice = (invoice: CadastralInvoice) => {
     // Génère un PDF A4 de la facture sélectionnée
     import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      import('@/hooks/useCadastralServices').then(({ getCadastralServicesSync }) => {
-        generateInvoicePDF(invoice, getCadastralServicesSync());
+      import('@/hooks/useCadastralBilling').then(({ CADASTRAL_SERVICES }) => {
+        generateInvoicePDF(invoice, CADASTRAL_SERVICES);
       });
     });
   };

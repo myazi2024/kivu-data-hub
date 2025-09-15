@@ -1,11 +1,43 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
-import { type CadastralService } from '@/hooks/useCadastralServices';
 
-// Interface pour les factures cadastrales uniquement
+export interface CadastralService {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+}
+
+export const CADASTRAL_SERVICES: CadastralService[] = [
+  {
+    id: 'information',
+    name: 'Informations générales',
+    price: 3,
+    description: 'Identité du propriétaire actuel, superficie exacte, statut juridique de la parcelle et coordonnées géographiques. Idéal pour vérifier la propriété et obtenir les données de base.'
+  },
+  {
+    id: 'location_history',
+    name: 'Localisation et Historique de bornage',
+    price: 2,
+    description: 'Position géographique précise, limites cadastrales, historique complet des opérations de bornage et modifications géométriques. Essentiel pour les projets de construction et délimitation de terrain.'
+  },
+  {
+    id: 'history',
+    name: 'Historique complet des propriétaires',
+    price: 3,
+    description: 'Chaîne complète de propriété depuis la création de la parcelle, toutes les transactions, mutations, héritages et transferts. Crucial pour vérifier la légalité des transactions passées.'
+  },
+  {
+    id: 'obligations',
+    name: 'Obligations fiscales et hypothécaires',
+    price: 15,
+    description: 'État détaillé des taxes foncières impayées, hypothèques en cours, servitudes, restrictions d\'usage et tous encumbrements juridiques. Indispensable avant tout achat immobilier.'
+  }
+];
+
 export interface CadastralInvoice {
   id: string;
   parcel_number: string;
@@ -31,47 +63,8 @@ export const useCadastralBilling = () => {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [invoices, setInvoices] = useState<CadastralInvoice[]>([]);
   const [currentInvoice, setCurrentInvoice] = useState<CadastralInvoice | null>(null);
-  const [availableServices, setAvailableServices] = useState<CadastralService[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
-
-  // Charger les services depuis le backend sécurisé
-  const fetchServices = async () => {
-    if (availableServices.length > 0) return; // Éviter les rechargements
-
-    try {
-      const { data, error } = await supabase.functions.invoke('cadastral-services', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (error) throw error;
-      
-      if (data?.services) {
-        const services = data.services.map((s: any) => ({
-          id: s.service_id,
-          name: s.name,
-          price: s.price_usd,
-          description: s.description
-        }));
-        setAvailableServices(services);
-      }
-    } catch (error) {
-      console.error('Erreur lors du chargement des services:', error);
-      toast({
-        title: "Erreur de chargement",
-        description: "Impossible de charger les services disponibles",
-        variant: "destructive"
-      });
-    }
-  };
-
-  // Charger les services au montage
-  useEffect(() => {
-    fetchServices();
-  }, []);
 
   const toggleService = (serviceId: string) => {
     setSelectedServices(prev => 
@@ -83,7 +76,7 @@ export const useCadastralBilling = () => {
 
   const getTotalAmount = () => {
     return selectedServices.reduce((total, serviceId) => {
-      const service = availableServices.find(s => s.id === serviceId);
+      const service = CADASTRAL_SERVICES.find(s => s.id === serviceId);
       return total + (service?.price || 0);
     }, 0);
   };
@@ -106,70 +99,47 @@ export const useCadastralBilling = () => {
     try {
       setLoading(true);
 
-      // Appeler l'edge function sécurisée pour créer la facture
-      const { data, error } = await supabase.functions.invoke('cadastral-services', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          parcel_number: searchResult.parcel.parcel_number,
-          selected_services: selectedServices,
-          discount_code: discountData?.code
-        })
-      });
+      const originalAmount = getTotalAmount();
+      const discountAmount = discountData?.amount || 0;
+      const finalAmount = Math.max(0, originalAmount - discountAmount);
+      const geographicalZone = `${searchResult.parcel?.commune || ''}, ${searchResult.parcel?.quartier || ''}, ${searchResult.parcel?.province || ''}`.replace(/^,\s*|,\s*$/g, '');
 
-      if (error) {
-        throw new Error(error.message || 'Erreur lors de la création de la facture');
-      }
-
-      if (data?.error) {
-        toast({
-          title: "Erreur de facturation",
-          description: data.error,
-          variant: "destructive"
-        });
-        return null;
-      }
-
-      const invoiceData = data.invoice;
-      
-      // Créer l'objet facture avec les données validées du serveur
-      const invoice: CadastralInvoice = {
-        id: invoiceData.id,
+      // Pour les tests, créer une facture simulée sans base de données
+      const simulatedInvoice: CadastralInvoice = {
+        id: `test-${Date.now()}`,
         parcel_number: searchResult.parcel.parcel_number,
         search_date: new Date().toISOString(),
         selected_services: selectedServices,
-        total_amount_usd: invoiceData.total_amount_usd,
-        original_amount_usd: invoiceData.original_amount_usd,
-        discount_amount_usd: invoiceData.discount_amount_usd,
-        discount_code_used: invoiceData.discount_code_used,
-        client_email: user?.email || '',
-        geographical_zone: `${searchResult.parcel?.commune || ''}, ${searchResult.parcel?.quartier || ''}, ${searchResult.parcel?.province || ''}`.replace(/^,\s*|,\s*$/g, ''),
-        invoice_number: invoiceData.invoice_number,
-        status: invoiceData.status,
+        total_amount_usd: finalAmount,
+        client_email: user?.email || 'guest@example.com',
+        geographical_zone: geographicalZone,
+        invoice_number: `INV-TEST-${Date.now()}`,
+        status: 'pending',
         client_name: user?.user_metadata?.full_name || null,
         client_organization: null,
         payment_method: null,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
+        discount_code_used: discountData?.code || null,
+        discount_amount_usd: discountAmount,
+        original_amount_usd: originalAmount
       };
 
-      setCurrentInvoice(invoice);
+      setCurrentInvoice(simulatedInvoice);
 
       toast({
-        title: "Facture créée avec succès",
-        description: invoiceData.discount_amount_usd > 0 ? 
-          `Code de remise appliqué ! Économie de ${invoiceData.discount_amount_usd.toFixed(2)} USD` :
-          "Facture générée, vous pouvez procéder au paiement"
+        title: "Accès accordé (mode test)",
+        description: discountData ? 
+          `Code de remise appliqué ! Économie de ${discountAmount.toFixed(2)} USD` :
+          "Vous pouvez maintenant consulter les données cadastrales"
       });
 
-      return invoice;
+      return simulatedInvoice;
     } catch (error) {
       console.error('Erreur lors de la création de la facture:', error);
       toast({
         title: "Erreur de facturation",
-        description: error instanceof Error ? error.message : "Une erreur s'est produite lors de la création de la facture",
+        description: "Une erreur s'est produite lors de la création de la facture",
         variant: "destructive"
       });
       return null;
@@ -214,24 +184,22 @@ export const useCadastralBilling = () => {
     if (!user) return false;
 
     try {
-      // Utiliser l'edge function sécurisée pour vérifier l'accès
-      const { data, error } = await supabase.functions.invoke('cadastral-services', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          parcel_number: parcelNumber,
-          service_type: serviceType
-        })
-      });
+      const { data, error } = await supabase
+        .from('cadastral_service_access')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('parcel_number', parcelNumber)
+        .eq('service_type', serviceType)
+        .maybeSingle();
 
-      if (error) {
-        console.error('Erreur lors de la vérification d\'accès:', error);
-        return false;
+      if (error) throw error;
+      
+      // Check if access has expired
+      if (data?.expires_at) {
+        return new Date(data.expires_at) > new Date();
       }
-
-      return data?.hasAccess || false;
+      
+      return !!data;
     } catch (error) {
       console.error('Erreur lors de la vérification d\'accès:', error);
       return false;
@@ -289,7 +257,6 @@ export const useCadastralBilling = () => {
     selectedServices,
     invoices,
     currentInvoice,
-    availableServices,
     toggleService,
     getTotalAmount,
     createInvoice,
@@ -297,7 +264,6 @@ export const useCadastralBilling = () => {
     checkServiceAccess,
     updateInvoiceStatus,
     resetBillingState,
-    setCurrentInvoice,
-    fetchServices
+    setCurrentInvoice
   };
 };

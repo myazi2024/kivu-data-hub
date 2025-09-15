@@ -14,45 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      audit_logs: {
-        Row: {
-          action: string
-          created_at: string
-          id: string
-          ip_address: unknown | null
-          new_values: Json | null
-          old_values: Json | null
-          record_id: string | null
-          table_name: string | null
-          user_agent: string | null
-          user_id: string | null
-        }
-        Insert: {
-          action: string
-          created_at?: string
-          id?: string
-          ip_address?: unknown | null
-          new_values?: Json | null
-          old_values?: Json | null
-          record_id?: string | null
-          table_name?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Update: {
-          action?: string
-          created_at?: string
-          id?: string
-          ip_address?: unknown | null
-          new_values?: Json | null
-          old_values?: Json | null
-          record_id?: string | null
-          table_name?: string | null
-          user_agent?: string | null
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       cadastral_boundary_history: {
         Row: {
           boundary_purpose: string
@@ -296,7 +257,6 @@ export type Database = {
           area_hectares: number | null
           area_sqm: number
           avenue: string | null
-          circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
           created_at: string
@@ -325,7 +285,6 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           created_at?: string
@@ -354,7 +313,6 @@ export type Database = {
           area_hectares?: number | null
           area_sqm?: number
           avenue?: string | null
-          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           created_at?: string
@@ -418,39 +376,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      cadastral_services_config: {
-        Row: {
-          created_at: string
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          price_usd: number
-          service_id: string
-          updated_at: string
-        }
-        Insert: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          price_usd?: number
-          service_id: string
-          updated_at?: string
-        }
-        Update: {
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          price_usd?: number
-          service_id?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       cadastral_tax_history: {
         Row: {
@@ -536,47 +461,6 @@ export type Database = {
             columns: ["reseller_id"]
             isOneToOne: false
             referencedRelation: "resellers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      market_trends: {
-        Row: {
-          average_rent_price: number
-          created_at: string
-          id: string
-          month: number
-          transaction_volume: number
-          vacancy_rate: number
-          year: number
-          zone_id: string
-        }
-        Insert: {
-          average_rent_price?: number
-          created_at?: string
-          id?: string
-          month: number
-          transaction_volume?: number
-          vacancy_rate?: number
-          year: number
-          zone_id: string
-        }
-        Update: {
-          average_rent_price?: number
-          created_at?: string
-          id?: string
-          month?: number
-          transaction_volume?: number
-          vacancy_rate?: number
-          year?: number
-          zone_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "market_trends_zone_id_fkey"
-            columns: ["zone_id"]
-            isOneToOne: false
-            referencedRelation: "territorial_zones"
             referencedColumns: ["id"]
           },
         ]
@@ -1155,27 +1039,6 @@ export type Database = {
       }
     }
     Functions: {
-      calculate_surface_from_coordinates: {
-        Args: { coordinates: Json }
-        Returns: number
-      }
-      create_cadastral_invoice_secure: {
-        Args: {
-          discount_code_param?: string
-          parcel_number_param: string
-          selected_services_param: string[]
-        }
-        Returns: {
-          discount_amount_usd: number
-          discount_code_used: string
-          error_message: string
-          invoice_id: string
-          invoice_number: string
-          original_amount_usd: number
-          services_data: Json
-          total_amount_usd: number
-        }[]
-      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1184,60 +1047,8 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
-      get_cadastral_parcel_with_calculations: {
-        Args: { parcel_number_param: string }
-        Returns: {
-          area_hectares: number
-          area_sqm: number
-          avenue: string
-          calculated_area_hectares: number
-          calculated_surface_sqm: number
-          circonscription_fonciere: string
-          collectivite: string
-          commune: string
-          created_at: string
-          current_owner_legal_status: string
-          current_owner_name: string
-          current_owner_since: string
-          gps_coordinates: Json
-          groupement: string
-          id: string
-          latitude: number
-          location: string
-          longitude: number
-          nombre_bornes: number
-          parcel_number: string
-          parcel_type: string
-          property_title_type: string
-          province: string
-          quartier: string
-          surface_calculee_bornes: number
-          territoire: string
-          updated_at: string
-          village: string
-          ville: string
-        }[]
-      }
       get_current_user_role: {
         Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      get_zone_trend_data: {
-        Args: { months_back?: number; zone_id_param: string }
-        Returns: {
-          month: string
-          period_date: string
-          value: number
-        }[]
-      }
-      log_audit_action: {
-        Args: {
-          action_param: string
-          new_values_param?: Json
-          old_values_param?: Json
-          record_id_param?: string
-          table_name_param?: string
-        }
         Returns: string
       }
       validate_and_apply_discount_code: {

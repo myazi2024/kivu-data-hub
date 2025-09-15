@@ -10,7 +10,7 @@ export interface CadastralParcel {
   property_title_type: string;
   area_sqm: number;
   area_hectares: number;
-  gps_coordinates: any; // JSONB peut contenir n'importe quel format
+  gps_coordinates: Array<{ lat: number; lng: number; borne: string }>;
   latitude: number;
   longitude: number;
   current_owner_name: string;

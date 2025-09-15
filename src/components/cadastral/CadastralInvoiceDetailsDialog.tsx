@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Calendar, FileText, MapPin, User, Building, CreditCard, Download } from 'lucide-react';
-import { CadastralInvoice } from '@/hooks/useCadastralBilling';
+import { CadastralInvoice, CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
 
 interface CadastralInvoiceDetailsDialogProps {
   invoice: CadastralInvoice | null;

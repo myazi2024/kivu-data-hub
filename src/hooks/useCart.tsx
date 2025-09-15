@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { CookieManager } from '@/lib/cookies';
-import { supabase } from '@/integrations/supabase/client';
 
 export interface CartItem {
   id: string;
@@ -43,9 +42,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const savedCart = localStorage.getItem('bic-cart');
       if (savedCart) {
-        const parsedCart = JSON.parse(savedCart);
-        // Valider le panier côté serveur
-        validateCartItems(parsedCart);
+        setCartItems(JSON.parse(savedCart));
         return;
       }
     } catch (error) {
@@ -56,50 +53,12 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const cartCookie = CookieManager.get('bic-cart');
       if (cartCookie) {
-        const parsedCart = JSON.parse(cartCookie);
-        validateCartItems(parsedCart);
+        setCartItems(JSON.parse(cartCookie));
       }
     } catch (error) {
       console.error('Error loading cart from cookies:', error);
     }
   }, []);
-
-  // Valider les items du panier côté serveur
-  const validateCartItems = async (items: CartItem[]) => {
-    if (!items.length) {
-      setCartItems([]);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('secure-cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'validate-cart',
-          items
-        })
-      });
-
-      if (error) {
-        console.error('Erreur de validation du panier:', error);
-        setCartItems(items); // Fallback sur les items originaux
-        return;
-      }
-
-      if (data?.validatedItems) {
-        setCartItems(data.validatedItems);
-        if (data.validatedItems.length !== items.length) {
-          console.warn('Certains articles du panier ont été supprimés car ils ne sont plus disponibles');
-        }
-      }
-    } catch (error) {
-      console.error('Erreur lors de la validation du panier:', error);
-      setCartItems(items); // Fallback en cas d'erreur
-    }
-  };
 
   // Persist cart to localStorage/cookies whenever it changes
   useEffect(() => {
@@ -121,41 +80,13 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [cartItems]);
 
-  const addToCart = async (item: CartItem, openCart?: () => void) => {
-    // Vérifier que l'item existe et récupérer le prix officiel
-    try {
-      const { data } = await supabase.functions.invoke('secure-cart', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          action: 'validate-cart',
-          items: [item]
-        })
-      });
-
-      if (data?.validatedItems && data.validatedItems.length > 0) {
-        const validatedItem = data.validatedItems[0];
-        setCartItems(prev => {
-          const exists = prev.some(ci => ci.id === validatedItem.id);
-          if (exists) return prev;
-          return [...prev, validatedItem];
-        });
-        if (openCart) setTimeout(() => openCart(), 100);
-      } else {
-        console.warn('Article non disponible ou prix modifié');
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'ajout au panier:', error);
-      // Fallback: ajouter l'item tel quel (mode dégradé)
-      setCartItems(prev => {
-        const exists = prev.some(ci => ci.id === item.id);
-        if (exists) return prev;
-        return [...prev, item];
-      });
-      if (openCart) setTimeout(() => openCart(), 100);
-    }
+  const addToCart = (item: CartItem, openCart?: () => void) => {
+    setCartItems(prev => {
+      const exists = prev.some(ci => ci.id === item.id);
+      if (exists) return prev;
+      return [...prev, item];
+    });
+    if (openCart) setTimeout(() => openCart(), 100);
   };
 
   const removeFromCart = (itemId: string) => {
