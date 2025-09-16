@@ -175,7 +175,10 @@ export const useCadastralSearch = () => {
       })) || [];
 
       setSearchResult({
-        parcel: parcelData as CadastralParcel,
+        parcel: {
+          ...parcelData,
+          gps_coordinates: parcelData.gps_coordinates as Array<{ lat: number; lng: number; borne: string }>
+        } as CadastralParcel,
         ownership_history: ownershipData as OwnershipHistory[],
         tax_history: taxData as TaxHistory[],
         mortgage_history: formattedMortgageData as MortgageHistory[],
