@@ -161,13 +161,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             ${(() => {
               const availableServices = CADASTRAL_SERVICES.length;
               if (availableServices === 4) {
-                return 'bg-gradient-to-br from-emerald-50 via-green-50/80 to-emerald-100/60 border-emerald-300/70 shadow-lg shadow-emerald-200/30 dark:from-emerald-950/40 dark:via-green-950/30 dark:to-emerald-900/20 dark:border-emerald-700/50 dark:shadow-emerald-900/20 animate-pulse';
+                return 'bg-green-50/30 border-green-200/50 dark:bg-green-950/10 dark:border-green-800/30 animate-pulse';
               } else if (availableServices === 3) {
-                return 'bg-gradient-to-br from-blue-50 via-cyan-50/80 to-blue-100/60 border-blue-300/70 shadow-lg shadow-blue-200/30 dark:from-blue-950/40 dark:via-cyan-950/30 dark:to-blue-900/20 dark:border-blue-700/50 dark:shadow-blue-900/20';
+                return 'bg-blue-50/30 border-blue-200/50 dark:bg-blue-950/10 dark:border-blue-800/30';
               } else if (availableServices === 2) {
-                return 'bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 border-amber-300/70 shadow-lg shadow-amber-200/30 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20 dark:border-amber-700/50 dark:shadow-amber-900/20';
+                return 'bg-amber-50/30 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-800/30';
               } else {
-                return 'bg-gradient-to-br from-slate-50 via-gray-50/80 to-slate-100/60 border-slate-300/70 shadow-lg shadow-slate-200/30 dark:from-slate-950/40 dark:via-gray-950/30 dark:to-slate-900/20 dark:border-slate-700/50 dark:shadow-slate-900/20';
+                return 'bg-slate-50/30 border-slate-200/50 dark:bg-slate-950/10 dark:border-slate-800/30';
               }
             })()}
           `}>
