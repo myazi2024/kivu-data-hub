@@ -25,6 +25,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
     name: ''
   });
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [showProviderReminder, setShowProviderReminder] = useState(false);
 
   const { loading, paymentStep, createPayment, resetPaymentState } = usePayment();
 
@@ -64,6 +65,13 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
       setTimeout(() => {
         onPaymentSuccess();
       }, 2000);
+    }
+  };
+
+  const handleProviderReminderClick = () => {
+    if (!paymentData.provider) {
+      setShowProviderReminder(true);
+      setTimeout(() => setShowProviderReminder(false), 1000);
     }
   };
 
@@ -146,7 +154,9 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
             onValueChange={(value) => setPaymentData({ ...paymentData, provider: value })}
             required
           >
-            <SelectTrigger className="h-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+            <SelectTrigger className={`h-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary ${
+              showProviderReminder ? 'animate-pulse ring-2 ring-orange-400 border-orange-400' : ''
+            }`}>
               <SelectValue placeholder="Choisissez votre fournisseur" />
             </SelectTrigger>
             <SelectContent>
@@ -173,6 +183,8 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
             onChange={(value) => setPaymentData({ ...paymentData, phoneNumber: value })}
             placeholder="97 123 4567"
             required
+            disabled={!paymentData.provider}
+            onDisabledClick={handleProviderReminderClick}
           />
         </div>
 
