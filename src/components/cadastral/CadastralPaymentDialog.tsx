@@ -167,39 +167,16 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Résumé compact pour mobile */}
-              <div className="p-3 bg-gradient-to-br from-secondary/15 to-secondary/5 rounded-xl border border-border/30">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Receipt className="h-3.5 w-3.5 text-primary" />
-                    <span className="text-sm font-medium">Résumé</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs px-2 py-0.5">{invoice.invoice_number}</Badge>
-                </div>
-                
-                <div className="space-y-1.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Parcelle:</span>
-                    <span className="font-mono font-medium text-xs">{invoice.parcel_number}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Services:</span>
-                    <span>{getSelectedServices().length} sélectionné{getSelectedServices().length > 1 ? 's' : ''}</span>
-                  </div>
-                </div>
-                
-                <div className="mt-3 pt-2 border-t border-border/20">
-                  <div className="flex justify-between items-center">
-                    <span className="font-semibold">Total:</span>
-                    <span className="text-lg font-bold text-primary">${invoice.total_amount_usd} USD</span>
-                  </div>
+              {/* Total simplifié */}
+              <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 text-center">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">Montant à payer</p>
+                  <p className="text-2xl font-bold text-primary">${invoice.total_amount_usd} USD</p>
                 </div>
               </div>
 
-              {/* Sélection du mode de paiement - Mobile optimisé */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-center">Mode de paiement</h3>
-                
+              {/* Modes de paiement simplifiés */}
+              <div className="space-y-3">                
                 <div className="space-y-2">
                   {/* Mobile Money */}
                   <Button
@@ -223,16 +200,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                             : 'text-primary'
                         }`} />
                       </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">Mobile Money</div>
-                        <div className={`text-xs ${
-                          paymentMethod === 'mobile_money' 
-                            ? 'text-primary-foreground/80' 
-                            : 'text-muted-foreground'
-                        }`}>
-                          Orange Money, Airtel Money
-                        </div>
-                      </div>
+                      <div className="font-medium text-sm">Mobile Money</div>
                     </div>
                   </Button>
 
@@ -258,16 +226,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                             : 'text-primary'
                         }`} />
                       </div>
-                      <div className="flex-1">
-                        <div className="font-medium text-sm">Carte bancaire</div>
-                        <div className={`text-xs ${
-                          paymentMethod === 'stripe' 
-                            ? 'text-primary-foreground/80' 
-                            : 'text-muted-foreground'
-                        }`}>
-                          Visa, Mastercard via Stripe
-                        </div>
-                      </div>
+                      <div className="font-medium text-sm">Carte bancaire</div>
                     </div>
                   </Button>
                 </div>
