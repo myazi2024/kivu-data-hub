@@ -110,11 +110,6 @@ const ServicesSection = () => {
                     {service.title}
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="pt-0 p-3 sm:p-4">
-                  <CardDescription className="text-center text-muted-foreground leading-snug text-xs sm:text-sm line-clamp-2 sm:line-clamp-3">
-                    {service.description}
-                  </CardDescription>
-                </CardContent>
               </Card>
             );
           })}
