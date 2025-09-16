@@ -159,13 +159,15 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           <div className={`
             p-3 md:p-4 rounded-xl border transition-all duration-500
             ${CADASTRAL_SERVICES.length === 4 
-              ? 'bg-gradient-to-br from-green-50/50 to-emerald-50/30 border-green-200/50 dark:from-green-950/10 dark:to-emerald-950/5 dark:border-green-800/30' 
+              ? 'bg-gradient-to-br from-green-50/60 to-emerald-50/40 border-green-200/60 shadow-green-100/50 dark:from-green-950/20 dark:to-emerald-950/10 dark:border-green-800/40 dark:shadow-green-900/20' 
               : CADASTRAL_SERVICES.length === 3
-              ? 'bg-gradient-to-br from-blue-50/50 to-cyan-50/30 border-blue-200/50 dark:from-blue-950/10 dark:to-cyan-950/5 dark:border-blue-800/30'
+              ? 'bg-gradient-to-br from-blue-50/60 to-cyan-50/40 border-blue-200/60 shadow-blue-100/50 dark:from-blue-950/20 dark:to-cyan-950/10 dark:border-blue-800/40 dark:shadow-blue-900/20'
               : CADASTRAL_SERVICES.length === 2
-              ? 'bg-gradient-to-br from-amber-50/50 to-yellow-50/30 border-amber-200/50 dark:from-amber-950/10 dark:to-yellow-950/5 dark:border-amber-800/30'
-              : 'bg-gradient-to-br from-slate-50/50 to-gray-50/30 border-slate-200/50 dark:from-slate-950/10 dark:to-gray-950/5 dark:border-slate-800/30'
+              ? 'bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200/60 shadow-amber-100/50 dark:from-amber-950/20 dark:to-yellow-950/10 dark:border-amber-800/40 dark:shadow-amber-900/20'
+              : 'bg-gradient-to-br from-slate-50/60 to-gray-50/40 border-slate-200/60 shadow-slate-100/50 dark:from-slate-950/20 dark:to-gray-950/10 dark:border-slate-800/40 dark:shadow-slate-900/20'
             }
+            ${CADASTRAL_SERVICES.length === 4 ? 'animate-pulse' : ''}
+            shadow-lg
           `}>
             <div className="space-y-1.5 md:space-y-2">
               <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
@@ -188,7 +190,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <div className={`
                   h-1.5 w-8 rounded-full transition-all duration-500
                   ${CADASTRAL_SERVICES.length === 4 
-                    ? 'bg-gradient-to-r from-green-400 to-emerald-500 animate-pulse' 
+                    ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
                     : CADASTRAL_SERVICES.length === 3
                     ? 'bg-gradient-to-r from-blue-400 to-cyan-500'
                     : CADASTRAL_SERVICES.length === 2
