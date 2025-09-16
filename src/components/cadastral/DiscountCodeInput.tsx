@@ -181,10 +181,9 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
           disabled={validating}
         />
         <Button
-          variant="ghost"
           onClick={handleValidateCode}
           disabled={!code.trim() || validating}
-          className="whitespace-nowrap text-xs sm:text-sm h-8 sm:h-11 px-2 sm:px-3 border border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-200 font-medium"
+          className="whitespace-nowrap text-xs sm:text-sm h-8 sm:h-11 px-2 sm:px-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 text-primary-foreground font-medium"
         >
           {validating ? (
             <>
