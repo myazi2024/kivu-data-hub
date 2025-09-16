@@ -119,10 +119,10 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   }
 
   return (
-    <div className={`space-y-3 p-3 border border-dashed border-primary/30 rounded-md pulse ${className}`}>
+    <div className={`space-y-2 sm:space-y-3 p-2 sm:p-3 border border-dashed border-primary/30 rounded-md pulse ${className}`}>
       <div className="flex items-center space-x-2">
-        <Tag className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">Code de remise (optionnel)</span>
+        <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
+        <span className="text-xs sm:text-sm font-medium">Code de remise (optionnel)</span>
       </div>
       
       <div className="flex space-x-2">
