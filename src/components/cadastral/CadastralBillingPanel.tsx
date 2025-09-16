@@ -222,8 +222,39 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <CheckCircle className="h-5 w-5 text-primary" />
                 Catalogue de Services
               </h3>
-              <Badge variant="outline" className="text-xs">
-                {CADASTRAL_SERVICES.length} services
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  {CADASTRAL_SERVICES.length} services
+                </Badge>
+              </div>
+            </div>
+            
+            {/* Option sélectionner tout */}
+            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-dashed">
+              <div className="flex items-center gap-2">
+                <Checkbox 
+                  checked={selectedServices.length === CADASTRAL_SERVICES.length}
+                  onCheckedChange={(checked) => {
+                    if (checked) {
+                      // Sélectionner tous les services
+                      CADASTRAL_SERVICES.forEach(service => {
+                        if (!selectedServices.includes(service.id)) {
+                          toggleService(service.id);
+                        }
+                      });
+                    } else {
+                      // Désélectionner tous les services
+                      selectedServices.forEach(serviceId => {
+                        toggleService(serviceId);
+                      });
+                    }
+                  }}
+                  className="h-4 w-4"
+                />
+                <span className="text-sm font-medium">Tout sélectionner</span>
+              </div>
+              <Badge variant="secondary" className="text-xs">
+                ${CADASTRAL_SERVICES.reduce((sum, service) => sum + service.price, 0).toFixed(2)}
               </Badge>
             </div>
             
@@ -315,28 +346,57 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
           {/* Code de remise modernisé */}
           {selectedServices.length > 0 && (
-            <div className="p-4 bg-gradient-to-br from-secondary/30 to-muted/20 rounded-xl border">
-              <DiscountCodeInput
-                invoiceAmount={totalAmount}
-                onDiscountApplied={setAppliedDiscount}
-                className="bg-transparent"
-              />
+            <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-background via-background to-secondary/10">
+              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
+              <div className="relative p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="p-1.5 rounded-lg bg-primary/10">
+                    <Receipt className="h-3 w-3 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-foreground/80">Code de remise</span>
+                  <Badge variant="outline" className="text-xs px-2">Optionnel</Badge>
+                </div>
+                <DiscountCodeInput
+                  invoiceAmount={totalAmount}
+                  onDiscountApplied={setAppliedDiscount}
+                  className="bg-background/50 backdrop-blur-sm border-border/50 focus-within:border-primary/50 transition-all duration-200"
+                />
+              </div>
             </div>
           )}
 
-          {/* Total simple */}
+          {/* Total avec TVA */}
           {selectedServices.length > 0 && (
-            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
-              <span className="font-semibold">Total à payer</span>
-              <div className="text-right">
-                <div className="text-xl font-bold text-primary">
-                  ${discountedAmount.toFixed(2)} USD
+            <div className="space-y-3">
+              {/* Sous-total et TVA */}
+              <div className="space-y-2 px-4 py-3 bg-muted/20 rounded-lg">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Sous-total services</span>
+                  <span className="font-medium">
+                    ${(appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount).toFixed(2)} USD
+                  </span>
                 </div>
-                {appliedDiscount && (
-                  <div className="text-xs text-green-600 dark:text-green-400">
-                    Économie: ${appliedDiscount.amount.toFixed(2)}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>TVA (16%)</span>
+                  <span>
+                    ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 0.16).toFixed(2)} USD
+                  </span>
+                </div>
+              </div>
+              
+              {/* Total final */}
+              <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <span className="font-semibold">Total à payer</span>
+                <div className="text-right">
+                  <div className="text-xl font-bold text-primary">
+                    ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 1.16).toFixed(2)} USD
                   </div>
-                )}
+                  {appliedDiscount && (
+                    <div className="text-xs text-green-600 dark:text-green-400">
+                      Économie: ${appliedDiscount.amount.toFixed(2)}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -425,7 +485,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       ? 'Sélectionner des services' 
                       : !acceptedTerms 
                       ? 'Accepter les conditions'
-                      : `Payer ${discountedAmount.toFixed(2)} USD`
+                      : `Payer ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 1.16).toFixed(2)} USD`
                     }
                   </span>
                   {selectedServices.length > 0 && acceptedTerms && (
