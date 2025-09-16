@@ -85,85 +85,56 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Smartphone className="w-5 h-5" />
-          Paiement Mobile Money
-        </CardTitle>
-        <div className="flex items-center gap-2 text-lg font-semibold">
-          <DollarSign className="w-5 h-5" />
-          {item.price} {currency}
-        </div>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handlePayment} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Fournisseur Mobile Money
-            </label>
-            <Select
-              value={paymentData.provider}
-              onValueChange={(value) => setPaymentData({ ...paymentData, provider: value })}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Choisir un fournisseur" />
-              </SelectTrigger>
-              <SelectContent>
-                {providers.map((provider) => (
-                  <SelectItem key={provider.value} value={provider.value}>
-                    {provider.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <div className="space-y-3">
+      {/* Prix compact */}
+      <div className="text-center">
+        <p className="text-base font-semibold text-primary">{item.price} {currency}</p>
+      </div>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Numéro de téléphone
-            </label>
-            <Input
-              type="tel"
-              placeholder="Ex: +243 97 123 4567"
-              value={paymentData.phoneNumber}
-              onChange={(e) => setPaymentData({ ...paymentData, phoneNumber: e.target.value })}
-              required
-            />
-            {paymentData.provider && (
-              <p className="text-xs text-muted-foreground mt-1">
-                Format attendu : {providers.find(p => p.value === paymentData.provider)?.prefix} XXX XXXX
-              </p>
-            )}
-          </div>
+      <form onSubmit={handlePayment} className="space-y-2">
+        {/* Fournisseur */}
+        <Select
+          value={paymentData.provider}
+          onValueChange={(value) => setPaymentData({ ...paymentData, provider: value })}
+          required
+        >
+          <SelectTrigger className="h-8 text-xs">
+            <SelectValue placeholder="Fournisseur" />
+          </SelectTrigger>
+          <SelectContent>
+            {providers.map((provider) => (
+              <SelectItem key={provider.value} value={provider.value} className="text-xs">
+                {provider.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <div>
-            <label className="block text-sm font-medium mb-2">
-              Nom du titulaire du compte
-            </label>
-            <Input
-              type="text"
-              placeholder="Votre nom complet"
-              value={paymentData.name}
-              onChange={(e) => setPaymentData({ ...paymentData, name: e.target.value })}
-              required
-            />
-          </div>
+        {/* Téléphone */}
+        <Input
+          type="tel"
+          placeholder="+243 97 123 4567"
+          value={paymentData.phoneNumber}
+          onChange={(e) => setPaymentData({ ...paymentData, phoneNumber: e.target.value })}
+          required
+          className="h-8 text-xs"
+        />
 
-          <div className="bg-yellow-50 p-3 rounded-lg">
-            <p className="text-xs text-yellow-800">
-              <strong>Note :</strong> Assurez-vous que votre compte Mobile Money dispose de suffisamment de fonds 
-              et que votre numéro est actif pour recevoir les notifications de paiement.
-            </p>
-          </div>
+        {/* Nom */}
+        <Input
+          type="text"
+          placeholder="Nom complet"
+          value={paymentData.name}
+          onChange={(e) => setPaymentData({ ...paymentData, name: e.target.value })}
+          required
+          className="h-8 text-xs"
+        />
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? 'Traitement...' : 'Payer maintenant'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        <Button type="submit" className="w-full h-8 text-xs" disabled={loading}>
+          {loading ? 'Traitement...' : 'Payer'}
+        </Button>
+      </form>
+    </div>
   );
 };
 
