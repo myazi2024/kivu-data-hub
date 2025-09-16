@@ -378,13 +378,20 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Sous-total services</span>
                   <span className="font-medium">
-                    ${(() => {
-                      const subtotal = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
-                      console.log('Calculating subtotal:', { totalAmount, appliedDiscount, subtotal });
-                      return subtotal.toFixed(2);
-                    })()} USD
+                    ${totalAmount.toFixed(2)} USD
                   </span>
                 </div>
+                
+                {/* Affichage de la remise si appliquée */}
+                {appliedDiscount && (
+                  <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Remise ({appliedDiscount.code})</span>
+                    <span className="font-medium">
+                      -${appliedDiscount.amount.toFixed(2)} USD
+                    </span>
+                  </div>
+                )}
+                
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>TVA (16%)</span>
                   <span>
