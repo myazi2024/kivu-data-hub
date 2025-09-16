@@ -71,7 +71,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   const handleProviderReminderClick = () => {
     if (!paymentData.provider) {
       setShowProviderReminder(true);
-      setTimeout(() => setShowProviderReminder(false), 1000);
+      setTimeout(() => setShowProviderReminder(false), 3000);
     }
   };
 
@@ -148,6 +148,11 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-foreground">
             Fournisseur Mobile Money
+            {showProviderReminder && (
+              <span className="ml-2 text-xs text-orange-600 dark:text-orange-400 animate-pulse font-semibold">
+                ⚠️ Sélectionnez d'abord un fournisseur
+              </span>
+            )}
           </label>
           <Select
             value={paymentData.provider}
@@ -155,7 +160,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
             required
           >
             <SelectTrigger className={`h-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-              showProviderReminder ? 'animate-pulse ring-2 ring-orange-400 border-orange-400' : ''
+              showProviderReminder ? 'animate-bounce ring-4 ring-orange-400/50 border-orange-400 bg-orange-50/50 dark:bg-orange-900/20 shadow-lg shadow-orange-400/25' : ''
             }`}>
               <SelectValue placeholder="Choisissez votre fournisseur" />
             </SelectTrigger>
