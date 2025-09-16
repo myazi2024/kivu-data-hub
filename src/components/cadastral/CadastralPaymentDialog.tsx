@@ -36,9 +36,8 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   onClose,
   onPaymentSuccess
 }) => {
-  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'stripe'>('mobile_money');
+  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_transfer'>('mobile_money');
   const [paymentStep, setPaymentStep] = useState<'selection' | 'processing' | 'success'>('selection');
-  const { createStripePayment } = usePayment();
   const { updateInvoiceStatus } = useCadastralBilling();
   const { toast } = useToast();
 
@@ -51,29 +50,13 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     });
   };
 
-  const handleStripePayment = async () => {
+  const handleBankTransferPayment = async () => {
     setPaymentStep('processing');
     
-    // Créer les items pour Stripe
-    const items = getSelectedServices().map(service => ({
-      id: service.id,
-      title: service.name,
-      price: service.price,
-      cover_image_url: undefined
-    }));
-
-    const result = await createStripePayment(items);
-    if (result?.url) {
-      // Ouvrir Stripe dans un nouvel onglet
-      window.open(result.url, '_blank');
-      
-      // Simuler le succès pour la démo (dans un vrai système, utilisez des webhooks)
-      setTimeout(() => {
-        handlePaymentSuccess();
-      }, 5000);
-    } else {
-      setPaymentStep('selection');
-    }
+    // Simuler le traitement du virement bancaire
+    setTimeout(() => {
+      handlePaymentSuccess();
+    }, 3000);
   };
 
   const handleMobileMoneySuccess = async () => {
@@ -185,18 +168,18 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                 </div>
 
                 <div 
-                  onClick={() => setPaymentMethod('stripe')}
+                  onClick={() => setPaymentMethod('bank_transfer')}
                   className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-muted/50"
                 >
                   <div className={`w-3 h-3 rounded-full border border-primary flex items-center justify-center ${
-                    paymentMethod === 'stripe' ? 'bg-primary' : 'bg-background'
+                    paymentMethod === 'bank_transfer' ? 'bg-primary' : 'bg-background'
                   }`}>
-                    {paymentMethod === 'stripe' && (
+                    {paymentMethod === 'bank_transfer' && (
                       <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
                     )}
                   </div>
                   <CreditCard className="h-3 w-3 text-muted-foreground" />
-                  <span className="text-xs font-medium">Carte bancaire</span>
+                  <span className="text-xs font-medium">Virement bancaire</span>
                 </div>
               </div>
 
@@ -213,13 +196,19 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                     onPaymentSuccess={handleMobileMoneySuccess}
                   />
                 ) : (
-                  <div className="text-center">
+                  <div className="space-y-2">
+                    <div className="bg-muted/50 p-2 rounded text-xs">
+                      <p className="font-medium mb-1">Coordonnées bancaires :</p>
+                      <p>Rawbank - Compte: 123456789</p>
+                      <p>IBAN: CD1234567890</p>
+                      <p>Référence: FAC-{invoice.invoice_number}</p>
+                    </div>
                     <Button 
-                      onClick={handleStripePayment}
+                      onClick={handleBankTransferPayment}
                       size="sm"
                       className="w-full bg-primary hover:bg-primary/90 h-8 text-xs"
                     >
-                      Payer ${invoice.total_amount_usd} USD
+                      Confirmer le virement
                     </Button>
                   </div>
                 )}
