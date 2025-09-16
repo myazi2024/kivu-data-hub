@@ -127,6 +127,9 @@ export const useCadastralBilling = () => {
 
       setCurrentInvoice(simulatedInvoice);
 
+      // Stocker les données de facture dans le localStorage pour la récupération par la facture
+      localStorage.setItem('currentCadastralInvoice', JSON.stringify(simulatedInvoice));
+
       toast({
         title: "Accès accordé (mode test)",
         description: discountData ? 

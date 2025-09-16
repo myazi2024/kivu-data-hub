@@ -43,10 +43,25 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
   // Générer les données de facture de manière stable
   const invoiceData = useMemo(() => {
     const selectedServices = CADASTRAL_SERVICES.filter(s => paidServices.includes(s.id));
-    const subtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
-    const discountAmount = 0; // Pas de remise pour l'instant
+    const originalSubtotal = selectedServices.reduce((sum, service) => sum + Number(service.price), 0);
+    
+    // Récupérer les informations de remise depuis le localStorage ou les props
+    const storedInvoice = localStorage.getItem('currentCadastralInvoice');
+    let discountAmount = 0;
+    let discountCode = '';
+    
+    if (storedInvoice) {
+      try {
+        const parsedInvoice = JSON.parse(storedInvoice);
+        discountAmount = parsedInvoice.discount_amount_usd || 0;
+        discountCode = parsedInvoice.discount_code_used || '';
+      } catch (e) {
+        console.log('Erreur lors de la lecture de la facture stockée:', e);
+      }
+    }
+    
     const tvaRate = 0.16; // 16% TVA en RDC
-    const netAmount = subtotal - discountAmount;
+    const netAmount = Math.max(0, originalSubtotal - discountAmount);
     const tvaAmount = netAmount * tvaRate;
     const total = netAmount + tvaAmount;
     
@@ -61,8 +76,9 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
     
     return {
       invoiceNumber,
-      subtotal,
+      subtotal: originalSubtotal,
       discountAmount,
+      discountCode,
       tvaAmount,
       total,
       selectedServices,
@@ -276,8 +292,8 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                 </div>
                 {invoiceData.discountAmount > 0 && (
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Remise</span>
-                    <span className="text-xs">-${invoiceData.discountAmount.toFixed(2)} USD</span>
+                    <span className="text-xs text-muted-foreground">Remise ({invoiceData.discountCode})</span>
+                    <span className="text-xs text-green-600">-${invoiceData.discountAmount.toFixed(2)} USD</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between">

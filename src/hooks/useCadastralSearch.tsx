@@ -175,7 +175,7 @@ export const useCadastralSearch = () => {
       })) || [];
 
       setSearchResult({
-        parcel: parcelData as CadastralParcel,
+        parcel: parcelData as unknown as CadastralParcel,
         ownership_history: ownershipData as OwnershipHistory[],
         tax_history: taxData as TaxHistory[],
         mortgage_history: formattedMortgageData as MortgageHistory[],
