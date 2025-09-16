@@ -169,13 +169,16 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
           </label>
           <div className="relative">
             <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <div className="absolute left-10 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm font-medium">
+              +243
+            </div>
             <Input
               type="tel"
-              placeholder="+243 97 123 4567"
+              placeholder="97 123 4567"
               value={paymentData.phoneNumber}
               onChange={(e) => setPaymentData({ ...paymentData, phoneNumber: e.target.value })}
               required
-              className="h-12 pl-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="h-12 pl-16 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
         </div>

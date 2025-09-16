@@ -76,16 +76,16 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 
   return (
     <Dialog open={true} onOpenChange={handleClose}>
-      <DialogContent className="w-[90vw] max-w-sm mx-auto p-0 gap-0 bg-background/95 backdrop-blur-sm border border-border/20 shadow-elegant rounded-xl overflow-hidden">
+      <DialogContent className="w-[85vw] max-w-xs mx-auto p-0 gap-0 bg-background/95 backdrop-blur-sm border border-border/20 shadow-elegant rounded-xl overflow-hidden">
         
         {/* Header épuré avec animation */}
-        <DialogHeader className={`relative px-4 py-3 border-b border-border/10 bg-gradient-subtle ${isAnimating ? 'animate-fade-in' : ''}`}>
+        <DialogHeader className={`relative px-3 py-2 border-b border-border/10 bg-gradient-subtle ${isAnimating ? 'animate-fade-in' : ''}`}>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                <CreditCard className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
+                <CreditCard className="h-3 w-3 text-primary" />
               </div>
-              <DialogTitle className="text-lg font-semibold text-foreground">
+              <DialogTitle className="text-base font-semibold text-foreground">
                 Paiement sécurisé
               </DialogTitle>
             </div>
@@ -93,9 +93,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               variant="ghost" 
               size="sm" 
               onClick={handleClose}
-              className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full transition-all duration-200 hover:scale-110"
+              className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full transition-all duration-200 hover:scale-110"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
         </DialogHeader>
@@ -103,7 +103,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
         {/* Contenu principal avec animations */}
         <div className="relative">
           {paymentStep === 'success' ? (
-            <div className="px-4 py-6 text-center space-y-4 animate-scale-in">
+            <div className="px-3 py-4 text-center space-y-3 animate-scale-in">
               {/* Icône de succès animée */}
               <div className="mx-auto w-12 h-12 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center animate-pulse-success">
                 <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
@@ -134,7 +134,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               </Button>
             </div>
           ) : paymentStep === 'processing' ? (
-            <div className="px-4 py-8 text-center space-y-4 animate-fade-in">
+            <div className="px-3 py-6 text-center space-y-3 animate-fade-in">
               {/* Indicateur de chargement */}
               <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
                 <Loader2 className="h-6 w-6 text-primary animate-spin" />
@@ -156,7 +156,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               </div>
             </div>
           ) : (
-            <div className={`px-4 py-4 space-y-4 ${isAnimating ? 'animate-slide-up' : ''}`}>
+            <div className={`px-3 py-3 space-y-3 ${isAnimating ? 'animate-slide-up' : ''}`}>
               
               {/* Informations facture compactes */}
               <div className="bg-muted/30 rounded-lg p-3 space-y-1">
@@ -191,9 +191,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 
         {/* Footer avec informations de sécurité */}
         {paymentStep === 'selection' && (
-          <div className="px-4 py-2 bg-muted/20 border-t border-border/10 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+          <div className="px-3 py-1.5 bg-muted/20 border-t border-border/10 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
               <span>Paiement sécurisé SSL</span>
             </div>
           </div>
