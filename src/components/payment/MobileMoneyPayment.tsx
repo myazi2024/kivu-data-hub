@@ -133,11 +133,11 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
     <div className={`space-y-4 ${isFormVisible ? 'animate-fade-in' : 'opacity-0'}`}>
       
       {/* Formulaire de paiement */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         
         {/* Sélection du fournisseur avec design amélioré */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">
             Fournisseur Mobile Money
           </label>
           <Select
@@ -145,7 +145,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
             onValueChange={(value) => setPaymentData({ ...paymentData, provider: value })}
             required
           >
-            <SelectTrigger className="h-12 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+            <SelectTrigger className="h-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary">
               <SelectValue placeholder="Choisissez votre fournisseur" />
             </SelectTrigger>
             <SelectContent>
@@ -163,14 +163,14 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
         </div>
 
         {/* Numéro de téléphone */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">
             Numéro de téléphone
           </label>
           <div className="relative">
-            <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <div className="absolute left-10 top-1/2 transform -translate-y-1/2 text-muted-foreground text-sm font-medium">
-              +243
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground bg-muted/50 px-2 py-1 rounded text-xs font-medium">
+              <Smartphone className="h-3 w-3" />
+              <span>+243</span>
             </div>
             <Input
               type="tel"
@@ -178,36 +178,36 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
               value={paymentData.phoneNumber}
               onChange={(e) => setPaymentData({ ...paymentData, phoneNumber: e.target.value })}
               required
-              className="h-12 pl-16 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="h-10 pl-16 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
         </div>
 
         {/* Code secret */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground">
+        <div className="space-y-1.5">
+          <label className="text-xs font-medium text-foreground">
             Code secret
           </label>
           <div className="relative">
-            <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
               type="password"
               placeholder="Votre code secret"
               value={paymentData.name}
               onChange={(e) => setPaymentData({ ...paymentData, name: e.target.value })}
               required
-              className="h-12 pl-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+              className="h-10 pl-9 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
           </div>
         </div>
       </div>
 
       {/* Bouton de paiement sticky sur mobile */}
-      <div className="sticky bottom-0 pt-4 bg-background/95 backdrop-blur-sm">
+      <div className="sticky bottom-0 pt-3 bg-background/95 backdrop-blur-sm">
         <Button 
           type="submit" 
           onClick={handlePayment}
-          className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-hover focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full h-10 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-hover focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
           disabled={loading || !paymentData.provider || !paymentData.phoneNumber || !paymentData.name}
         >
           {loading ? (
@@ -224,9 +224,9 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
         </Button>
         
         {/* Indicateur de sécurité */}
-        <div className="flex items-center justify-center gap-2 mt-3 text-xs text-muted-foreground">
+        <div className="flex items-center justify-center gap-1.5 mt-2 text-xs text-muted-foreground">
           <Shield className="h-3 w-3" />
-          <span>Transaction sécurisée SSL 256-bit</span>
+          <span>Sécurisé SSL</span>
         </div>
       </div>
     </div>

@@ -76,10 +76,10 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 
   return (
     <Dialog open={true} onOpenChange={handleClose}>
-      <DialogContent className="w-[85vw] max-w-xs mx-auto p-0 gap-0 bg-background/95 backdrop-blur-sm border border-border/20 shadow-elegant rounded-xl overflow-hidden">
+      <DialogContent className="w-[90vw] max-w-[320px] mx-auto p-0 gap-0 bg-background/95 backdrop-blur-sm border border-border/20 shadow-elegant rounded-xl overflow-hidden">
         
         {/* Header épuré avec animation */}
-        <DialogHeader className={`relative px-3 py-2 border-b border-border/10 bg-gradient-subtle ${isAnimating ? 'animate-fade-in' : ''}`}>
+        <DialogHeader className={`relative px-2 py-1.5 border-b border-border/10 bg-gradient-subtle ${isAnimating ? 'animate-fade-in' : ''}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center">
@@ -159,17 +159,10 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
             <div className={`px-3 py-3 space-y-3 ${isAnimating ? 'animate-slide-up' : ''}`}>
               
               {/* Informations facture compactes */}
-              <div className="bg-muted/30 rounded-lg p-3 space-y-1">
-                <h4 className="text-sm font-medium text-foreground">Détails de la facture</h4>
-                <div className="space-y-1 text-xs text-muted-foreground">
-                  <div className="flex justify-between">
-                    <span>Facture</span>
-                    <span className="font-mono text-foreground">#{invoice.invoice_number}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Services</span>
-                    <span className="text-foreground">{getSelectedServices().length}</span>
-                  </div>
+              <div className="bg-muted/30 rounded-lg p-2 space-y-1">
+                <h4 className="text-xs font-medium text-foreground">Facture #{invoice.invoice_number}</h4>
+                <div className="text-xs text-muted-foreground">
+                  {getSelectedServices().length} service(s) • {invoice.total_amount_usd} USD
                 </div>
               </div>
 
