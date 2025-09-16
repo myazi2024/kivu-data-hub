@@ -93,10 +93,19 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               variant="ghost" 
               size="sm" 
               onClick={handleClose}
-              className="group relative h-7 w-7 p-0 rounded-full transition-all duration-300 hover:bg-destructive/10 hover:text-destructive hover:rotate-90 hover:scale-110 focus:ring-2 focus:ring-destructive/20 focus:ring-offset-1"
+              className="group relative h-8 w-8 p-0 rounded-full overflow-hidden bg-background/40 backdrop-blur-sm border border-border/20 hover:border-destructive/30 transition-all duration-500 hover:bg-destructive/5 hover:scale-110 hover:shadow-lg hover:shadow-destructive/20 focus:ring-2 focus:ring-destructive/30 focus:ring-offset-2 focus:outline-none active:scale-95"
             >
-              <div className="absolute inset-0 rounded-full bg-background/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
-              <X className="relative h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-180" />
+              {/* Effet de fond animé */}
+              <div className="absolute inset-0 bg-gradient-to-br from-destructive/0 via-destructive/5 to-destructive/10 opacity-0 group-hover:opacity-100 transition-all duration-300 animate-pulse"></div>
+              
+              {/* Effet de rotation en arrière-plan */}
+              <div className="absolute inset-0 rounded-full bg-destructive/5 scale-0 group-hover:scale-100 transition-transform duration-300 ease-out"></div>
+              
+              {/* Icône avec animations multiples */}
+              <X className="relative h-4 w-4 text-muted-foreground group-hover:text-destructive transition-all duration-300 group-hover:rotate-90 group-hover:scale-110 drop-shadow-sm" />
+              
+              {/* Effet de brillance */}
+              <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-white/20 via-transparent to-transparent opacity-0 group-hover:opacity-30 transition-opacity duration-300 rounded-full"></div>
             </Button>
           </div>
         </DialogHeader>
