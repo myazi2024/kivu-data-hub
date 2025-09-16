@@ -86,17 +86,13 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
       setValidating(true);
       const validation = await validateDiscountCode(code.trim().toUpperCase(), invoiceAmount);
       
-      console.log('Validation result:', validation);
-      
-      if (validation?.is_valid) {
+      if (validation?.is_valid && validation.reseller_id && validation.code_id) {
         const discount = {
           code: code.trim().toUpperCase(),
           amount: validation.discount_amount,
-          reseller_id: validation.reseller_id || '',
-          code_id: validation.code_id || ''
+          reseller_id: validation.reseller_id,
+          code_id: validation.code_id
         };
-        
-        console.log('Applying discount:', discount);
         
         setAppliedDiscount(discount);
         onDiscountApplied(discount);
@@ -106,7 +102,6 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
           description: `Remise de ${validation.discount_amount.toFixed(2)} USD appliquée`
         });
       } else {
-        console.log('Code validation failed:', validation);
         toast({
           title: "Code invalide",
           description: "Ce code de remise n'est pas valide ou a expiré",

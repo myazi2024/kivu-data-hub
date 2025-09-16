@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   CreditCard, 
   CheckCircle, 
@@ -46,11 +46,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     reseller_id: string;
     code_id: string;
   } | null>(null);
-
-  // Debug: log applied discount changes
-  useEffect(() => {
-    console.log('Applied discount changed:', appliedDiscount);
-  }, [appliedDiscount]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [highlightTerms, setHighlightTerms] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
@@ -378,22 +373,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Sous-total services</span>
                   <span className="font-medium">
-                    ${totalAmount.toFixed(2)} USD
+                    ${(appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount).toFixed(2)} USD
                   </span>
                 </div>
-                
-                {/* Affichage de la remise si appliquée */}
-                {appliedDiscount && (
-                  <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
-                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
-                      Remise appliquée ({appliedDiscount.code})
-                    </span>
-                    <span className="text-sm font-bold text-green-700 dark:text-green-300">
-                      -${appliedDiscount.amount.toFixed(2)} USD
-                    </span>
-                  </div>
-                )}
-                
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>TVA (16%)</span>
                   <span>
