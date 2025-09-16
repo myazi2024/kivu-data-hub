@@ -160,15 +160,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <div className="flex-shrink-0 mt-0.5">
               <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
             </div>
-            <div className="space-y-1">
+            <div>
               <p className="text-[10px] md:text-sm leading-relaxed text-blue-800 dark:text-blue-200">
-                Informations cadastrales détaillées disponibles pour cette parcelle.
-              </p>
-              <p className="text-[10px] md:text-sm leading-relaxed text-blue-800 dark:text-blue-200">
-                Sélectionnez les services souhaités dans le catalogue ci-dessous.
-              </p>
-              <p className="text-[10px] md:text-sm leading-relaxed text-blue-800 dark:text-blue-200">
-                Données certifiées et vérifiées par nos experts.
+                Des informations cadastrales détaillées et certifiées sont disponibles pour cette parcelle. Sélectionnez les services de votre choix dans le catalogue ci-dessous.
               </p>
             </div>
           </div>
