@@ -104,15 +104,15 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 
   return (
     <Dialog open={true} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md sm:max-w-lg max-h-[95vh] overflow-y-auto p-0 gap-0 bg-background/95 backdrop-blur-md border-0 shadow-2xl">
-        {/* Header épuré */}
-        <DialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b border-border/50 bg-gradient-to-r from-background/80 to-secondary/20">
+      <DialogContent className="w-[95vw] max-w-sm mx-auto max-h-[90vh] overflow-y-auto p-0 gap-0 bg-background border border-border/20 shadow-xl rounded-2xl">
+        {/* Header mobile-optimized */}
+        <DialogHeader className="px-4 py-4 border-b border-border/30 bg-gradient-to-r from-background to-secondary/5">
           <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <DialogTitle className="text-lg sm:text-xl font-semibold text-foreground">
+            <div className="space-y-0.5">
+              <DialogTitle className="text-lg font-semibold text-foreground">
                 Paiement
               </DialogTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Facture {invoice.invoice_number}
               </p>
             </div>
@@ -120,21 +120,21 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               variant="ghost" 
               size="sm" 
               onClick={handleClose}
-              className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full"
+              className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full shrink-0"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </Button>
           </div>
         </DialogHeader>
 
-        <div className="px-4 sm:px-6 py-4 sm:py-6">
+        <div className="px-4 py-4">
           {paymentStep === 'success' ? (
-            <div className="space-y-6 py-4 text-center">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+            <div className="space-y-4 py-3 text-center">
+              <div className="mx-auto w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
               </div>
-              <div className="space-y-2">
-                <h3 className="text-xl font-semibold text-green-700 dark:text-green-400">
+              <div className="space-y-1">
+                <h3 className="text-lg font-semibold text-green-700 dark:text-green-400">
                   Paiement validé
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -144,19 +144,19 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               <Button 
                 onClick={generatePDFInvoice} 
                 variant="outline" 
-                size="lg"
-                className="w-full bg-background/50 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20"
+                size="default"
+                className="w-full bg-background/50 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 h-11"
               >
                 <Download className="h-4 w-4 mr-2" />
                 Télécharger le reçu PDF
               </Button>
             </div>
           ) : paymentStep === 'processing' ? (
-            <div className="space-y-6 py-8 text-center">
-              <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-                <Clock className="h-8 w-8 text-primary animate-pulse" />
+            <div className="space-y-4 py-6 text-center">
+              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                <Clock className="h-6 w-6 text-primary animate-pulse" />
               </div>
-              <div className="space-y-2">
+              <div className="space-y-1">
                 <h3 className="text-lg font-semibold">
                   Traitement en cours...
                 </h3>
@@ -166,21 +166,21 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-6">
-              {/* Résumé simplifié */}
-              <div className="p-4 bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-xl border border-border/50">
-                <div className="flex items-center justify-between mb-3">
+            <div className="space-y-4">
+              {/* Résumé compact pour mobile */}
+              <div className="p-3 bg-gradient-to-br from-secondary/15 to-secondary/5 rounded-xl border border-border/30">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Receipt className="h-4 w-4 text-primary" />
+                    <Receipt className="h-3.5 w-3.5 text-primary" />
                     <span className="text-sm font-medium">Résumé</span>
                   </div>
-                  <Badge variant="outline" className="text-xs">{invoice.invoice_number}</Badge>
+                  <Badge variant="outline" className="text-xs px-2 py-0.5">{invoice.invoice_number}</Badge>
                 </div>
                 
-                <div className="space-y-2 text-sm">
+                <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Parcelle:</span>
-                    <span className="font-mono font-medium">{invoice.parcel_number}</span>
+                    <span className="font-mono font-medium text-xs">{invoice.parcel_number}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Services:</span>
@@ -188,49 +188,49 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                   </div>
                 </div>
                 
-                <div className="mt-4 pt-3 border-t border-border/30">
+                <div className="mt-3 pt-2 border-t border-border/20">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Total:</span>
-                    <span className="text-xl font-bold text-primary">${invoice.total_amount_usd} USD</span>
+                    <span className="text-lg font-bold text-primary">${invoice.total_amount_usd} USD</span>
                   </div>
                 </div>
               </div>
 
-              {/* Sélection du mode de paiement - Design épuré */}
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold text-center">Choisir le mode de paiement</h3>
+              {/* Sélection du mode de paiement - Mobile optimisé */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-center">Mode de paiement</h3>
                 
-                <div className="grid gap-3">
+                <div className="space-y-2">
                   {/* Mobile Money */}
                   <Button
                     variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
                     onClick={() => setPaymentMethod('mobile_money')}
-                    className={`h-auto p-4 justify-start text-left transition-all duration-200 ${
+                    className={`h-auto p-3 justify-start text-left w-full transition-all duration-200 ${
                       paymentMethod === 'mobile_money' 
-                        ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02]' 
-                        : 'hover:bg-secondary/50 hover:scale-[1.01]'
+                        ? 'bg-primary text-primary-foreground shadow-md' 
+                        : 'hover:bg-secondary/30'
                     }`}
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <div className={`p-2 rounded-lg ${
+                      <div className={`p-1.5 rounded-lg ${
                         paymentMethod === 'mobile_money' 
                           ? 'bg-primary-foreground/20' 
                           : 'bg-primary/10'
                       }`}>
-                        <Smartphone className={`h-5 w-5 ${
+                        <Smartphone className={`h-4 w-4 ${
                           paymentMethod === 'mobile_money' 
                             ? 'text-primary-foreground' 
                             : 'text-primary'
                         }`} />
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium">Mobile Money</div>
+                        <div className="font-medium text-sm">Mobile Money</div>
                         <div className={`text-xs ${
                           paymentMethod === 'mobile_money' 
                             ? 'text-primary-foreground/80' 
                             : 'text-muted-foreground'
                         }`}>
-                          Orange Money, Airtel Money, M-Pesa
+                          Orange Money, Airtel Money
                         </div>
                       </div>
                     </div>
@@ -240,26 +240,26 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                   <Button
                     variant={paymentMethod === 'stripe' ? 'default' : 'outline'}
                     onClick={() => setPaymentMethod('stripe')}
-                    className={`h-auto p-4 justify-start text-left transition-all duration-200 ${
+                    className={`h-auto p-3 justify-start text-left w-full transition-all duration-200 ${
                       paymentMethod === 'stripe' 
-                        ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02]' 
-                        : 'hover:bg-secondary/50 hover:scale-[1.01]'
+                        ? 'bg-primary text-primary-foreground shadow-md' 
+                        : 'hover:bg-secondary/30'
                     }`}
                   >
                     <div className="flex items-center gap-3 w-full">
-                      <div className={`p-2 rounded-lg ${
+                      <div className={`p-1.5 rounded-lg ${
                         paymentMethod === 'stripe' 
                           ? 'bg-primary-foreground/20' 
                           : 'bg-primary/10'
                       }`}>
-                        <CreditCard className={`h-5 w-5 ${
+                        <CreditCard className={`h-4 w-4 ${
                           paymentMethod === 'stripe' 
                             ? 'text-primary-foreground' 
                             : 'text-primary'
                         }`} />
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium">Carte bancaire</div>
+                        <div className="font-medium text-sm">Carte bancaire</div>
                         <div className={`text-xs ${
                           paymentMethod === 'stripe' 
                             ? 'text-primary-foreground/80' 
@@ -273,7 +273,7 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                 </div>
 
                 {/* Contenu du paiement */}
-                <div className="mt-6 p-4 bg-background/50 rounded-xl border border-border/30">
+                <div className="mt-4 p-3 bg-background/50 rounded-xl border border-border/20">
                   {paymentMethod === 'mobile_money' ? (
                     <MobileMoneyPayment
                       item={{
@@ -285,9 +285,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                       onPaymentSuccess={handleMobileMoneySuccess}
                     />
                   ) : (
-                    <div className="space-y-4 text-center">
+                    <div className="space-y-3 text-center">
                       <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                        <CreditCard className="h-4 w-4 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
                         <p className="text-sm text-blue-700 dark:text-blue-300">
                           Paiement sécurisé avec Stripe
                         </p>
@@ -295,8 +295,8 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                       
                       <Button 
                         onClick={handleStripePayment}
-                        size="lg"
-                        className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
+                        size="default"
+                        className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 h-11"
                       >
                         <CreditCard className="h-4 w-4 mr-2" />
                         Payer ${invoice.total_amount_usd} USD
