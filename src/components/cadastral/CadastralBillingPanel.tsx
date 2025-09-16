@@ -95,12 +95,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     
     const invoice = await createInvoice(searchResult, appliedDiscount);
     if (invoice) {
-      // Pour les tests : accès direct sans paiement
-      toast({
-        title: "Accès accordé !",
-        description: "Vous pouvez maintenant consulter toutes les données cadastrales sélectionnées",
-      });
-      onPaymentSuccess(selectedServices);
+      setShowPaymentDialog(true);
     }
   };
 

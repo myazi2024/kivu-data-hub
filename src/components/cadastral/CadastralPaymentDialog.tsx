@@ -104,138 +104,177 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 
   return (
     <Dialog open={true} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="max-w-md sm:max-w-lg max-h-[95vh] overflow-y-auto p-0 gap-0 bg-background/95 backdrop-blur-md border-0 shadow-2xl">
+        {/* Header épuré */}
+        <DialogHeader className="px-4 sm:px-6 py-4 sm:py-5 border-b border-border/50 bg-gradient-to-r from-background/80 to-secondary/20">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl">
-              Paiement - Facture {invoice.invoice_number}
-            </DialogTitle>
+            <div className="space-y-1">
+              <DialogTitle className="text-lg sm:text-xl font-semibold text-foreground">
+                Paiement
+              </DialogTitle>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Facture {invoice.invoice_number}
+              </p>
+            </div>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleClose}
-              className="transition-all duration-300 ease-out hover:bg-destructive/10 hover:text-destructive hover:shadow-card hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-1"
+              className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full"
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         </DialogHeader>
 
-        {paymentStep === 'success' ? (
-          <div className="space-y-4 py-4">
-            <div className="text-center space-y-2">
-              <div className="mx-auto w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600" />
+        <div className="px-4 sm:px-6 py-4 sm:py-6">
+          {paymentStep === 'success' ? (
+            <div className="space-y-6 py-4 text-center">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
               </div>
-              <div>
-                <h3 className="text-base font-semibold text-green-700 dark:text-green-400">
+              <div className="space-y-2">
+                <h3 className="text-xl font-semibold text-green-700 dark:text-green-400">
                   Paiement validé
                 </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Reçu disponible en PDF
+                <p className="text-sm text-muted-foreground">
+                  Votre facture a été payée avec succès
                 </p>
               </div>
-            </div>
-
-            <div className="flex gap-2 justify-center">
               <Button 
                 onClick={generatePDFInvoice} 
                 variant="outline" 
-                size="sm"
-                className="transition-all duration-300 ease-out bg-background/80 backdrop-blur-sm border-border/50 hover:bg-accent hover:border-primary/30 shadow-card hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1"
+                size="lg"
+                className="w-full bg-background/50 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20"
               >
-                <Download className="h-4 w-4 mr-1 transition-colors" />
-                Télécharger le PDF
+                <Download className="h-4 w-4 mr-2" />
+                Télécharger le reçu PDF
               </Button>
             </div>
-          </div>
-        ) : paymentStep === 'processing' ? (
-          <div className="space-y-6 py-8">
-            <div className="text-center space-y-4">
+          ) : paymentStep === 'processing' ? (
+            <div className="space-y-6 py-8 text-center">
               <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
                 <Clock className="h-8 w-8 text-primary animate-pulse" />
               </div>
-              <div>
+              <div className="space-y-2">
                 <h3 className="text-lg font-semibold">
-                  Traitement du paiement en cours...
+                  Traitement en cours...
                 </h3>
                 <p className="text-sm text-muted-foreground">
-                  Veuillez patienter pendant que nous traitons votre paiement
+                  Nous traitons votre paiement
                 </p>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Résumé de la facture */}
-            <Card>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">Détails de la facture</CardTitle>
-                  <Badge variant="outline">{invoice.invoice_number}</Badge>
+          ) : (
+            <div className="space-y-6">
+              {/* Résumé simplifié */}
+              <div className="p-4 bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-xl border border-border/50">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Receipt className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-medium">Résumé</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs">{invoice.invoice_number}</Badge>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Référence SU/SR:</span>
-                    <p className="font-mono font-medium">{invoice.parcel_number}</p>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Parcelle:</span>
+                    <span className="font-mono font-medium">{invoice.parcel_number}</span>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Date de recherche:</span>
-                    <p>{new Date(invoice.search_date).toLocaleDateString('fr-FR')}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <span className="text-muted-foreground">Zone géographique:</span>
-                    <p>{invoice.geographical_zone || 'Non spécifiée'}</p>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Services:</span>
+                    <span>{getSelectedServices().length} sélectionné{getSelectedServices().length > 1 ? 's' : ''}</span>
                   </div>
                 </div>
+                
+                <div className="mt-4 pt-3 border-t border-border/30">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">Total:</span>
+                    <span className="text-xl font-bold text-primary">${invoice.total_amount_usd} USD</span>
+                  </div>
+                </div>
+              </div>
 
-                <Separator />
-
-                <div className="space-y-2">
-                  <h4 className="font-medium">Services sélectionnés:</h4>
-                  {getSelectedServices().map((service) => {
-                    const selectedArray = Array.isArray(invoice.selected_services) 
-                      ? invoice.selected_services 
-                      : (typeof invoice.selected_services === 'string' ? JSON.parse(invoice.selected_services) : []);
-                    return (
-                      <div key={service.id} className="flex justify-between text-sm">
-                        <span>{service.name}</span>
-                        <span className="font-medium">${service.price} USD</span>
+              {/* Sélection du mode de paiement - Design épuré */}
+              <div className="space-y-4">
+                <h3 className="text-base font-semibold text-center">Choisir le mode de paiement</h3>
+                
+                <div className="grid gap-3">
+                  {/* Mobile Money */}
+                  <Button
+                    variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
+                    onClick={() => setPaymentMethod('mobile_money')}
+                    className={`h-auto p-4 justify-start text-left transition-all duration-200 ${
+                      paymentMethod === 'mobile_money' 
+                        ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02]' 
+                        : 'hover:bg-secondary/50 hover:scale-[1.01]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className={`p-2 rounded-lg ${
+                        paymentMethod === 'mobile_money' 
+                          ? 'bg-primary-foreground/20' 
+                          : 'bg-primary/10'
+                      }`}>
+                        <Smartphone className={`h-5 w-5 ${
+                          paymentMethod === 'mobile_money' 
+                            ? 'text-primary-foreground' 
+                            : 'text-primary'
+                        }`} />
                       </div>
-                    );
-                  })}
+                      <div className="flex-1">
+                        <div className="font-medium">Mobile Money</div>
+                        <div className={`text-xs ${
+                          paymentMethod === 'mobile_money' 
+                            ? 'text-primary-foreground/80' 
+                            : 'text-muted-foreground'
+                        }`}>
+                          Orange Money, Airtel Money, M-Pesa
+                        </div>
+                      </div>
+                    </div>
+                  </Button>
+
+                  {/* Stripe */}
+                  <Button
+                    variant={paymentMethod === 'stripe' ? 'default' : 'outline'}
+                    onClick={() => setPaymentMethod('stripe')}
+                    className={`h-auto p-4 justify-start text-left transition-all duration-200 ${
+                      paymentMethod === 'stripe' 
+                        ? 'bg-primary text-primary-foreground shadow-lg scale-[1.02]' 
+                        : 'hover:bg-secondary/50 hover:scale-[1.01]'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 w-full">
+                      <div className={`p-2 rounded-lg ${
+                        paymentMethod === 'stripe' 
+                          ? 'bg-primary-foreground/20' 
+                          : 'bg-primary/10'
+                      }`}>
+                        <CreditCard className={`h-5 w-5 ${
+                          paymentMethod === 'stripe' 
+                            ? 'text-primary-foreground' 
+                            : 'text-primary'
+                        }`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-medium">Carte bancaire</div>
+                        <div className={`text-xs ${
+                          paymentMethod === 'stripe' 
+                            ? 'text-primary-foreground/80' 
+                            : 'text-muted-foreground'
+                        }`}>
+                          Visa, Mastercard via Stripe
+                        </div>
+                      </div>
+                    </div>
+                  </Button>
                 </div>
 
-                <Separator />
-
-                <div className="flex justify-between font-semibold">
-                  <span>Total à payer:</span>
-                  <span className="text-lg text-primary">${invoice.total_amount_usd} USD</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Options de paiement */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Choisissez votre mode de paiement</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs value={paymentMethod} onValueChange={(value) => setPaymentMethod(value as any)}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="mobile_money" className="flex items-center gap-2">
-                      <Smartphone className="h-4 w-4" />
-                      Mobile Money
-                    </TabsTrigger>
-                    <TabsTrigger value="stripe" className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4" />
-                      Carte bancaire
-                    </TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="mobile_money" className="mt-4">
+                {/* Contenu du paiement */}
+                <div className="mt-6 p-4 bg-background/50 rounded-xl border border-border/30">
+                  {paymentMethod === 'mobile_money' ? (
                     <MobileMoneyPayment
                       item={{
                         id: invoice.id,
@@ -245,32 +284,30 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                       currency="USD"
                       onPaymentSuccess={handleMobileMoneySuccess}
                     />
-                  </TabsContent>
-
-                  <TabsContent value="stripe" className="mt-4">
-                    <div className="space-y-4">
-                      <Alert>
-                        <CreditCard className="h-4 w-4" />
-                        <AlertDescription>
-                          Vous serez redirigé vers notre plateforme de paiement sécurisée Stripe.
-                        </AlertDescription>
-                      </Alert>
+                  ) : (
+                    <div className="space-y-4 text-center">
+                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          Paiement sécurisé avec Stripe
+                        </p>
+                      </div>
                       
                       <Button 
                         onClick={handleStripePayment}
-                        className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2"
                         size="lg"
+                        className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
                       >
                         <CreditCard className="h-4 w-4 mr-2" />
-                        Payer ${invoice.total_amount_usd} USD avec Stripe
+                        Payer ${invoice.total_amount_usd} USD
                       </Button>
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
