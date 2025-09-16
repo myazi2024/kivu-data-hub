@@ -157,17 +157,19 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
           {/* Information douce sur les données trouvées avec code couleur animé */}
           <div className={`
-            p-3 md:p-4 rounded-xl border transition-all duration-500
-            ${CADASTRAL_SERVICES.length === 4 
-              ? 'bg-gradient-to-br from-green-50/60 to-emerald-50/40 border-green-200/60 shadow-green-100/50 dark:from-green-950/20 dark:to-emerald-950/10 dark:border-green-800/40 dark:shadow-green-900/20' 
-              : CADASTRAL_SERVICES.length === 3
-              ? 'bg-gradient-to-br from-blue-50/60 to-cyan-50/40 border-blue-200/60 shadow-blue-100/50 dark:from-blue-950/20 dark:to-cyan-950/10 dark:border-blue-800/40 dark:shadow-blue-900/20'
-              : CADASTRAL_SERVICES.length === 2
-              ? 'bg-gradient-to-br from-amber-50/60 to-yellow-50/40 border-amber-200/60 shadow-amber-100/50 dark:from-amber-950/20 dark:to-yellow-950/10 dark:border-amber-800/40 dark:shadow-amber-900/20'
-              : 'bg-gradient-to-br from-slate-50/60 to-gray-50/40 border-slate-200/60 shadow-slate-100/50 dark:from-slate-950/20 dark:to-gray-950/10 dark:border-slate-800/40 dark:shadow-slate-900/20'
-            }
-            ${CADASTRAL_SERVICES.length === 4 ? 'animate-pulse' : ''}
-            shadow-lg
+            p-3 md:p-4 rounded-xl border transition-all duration-700 ease-in-out
+            ${(() => {
+              const availableServices = CADASTRAL_SERVICES.length;
+              if (availableServices === 4) {
+                return 'bg-gradient-to-br from-emerald-50 via-green-50/80 to-emerald-100/60 border-emerald-300/70 shadow-lg shadow-emerald-200/30 dark:from-emerald-950/40 dark:via-green-950/30 dark:to-emerald-900/20 dark:border-emerald-700/50 dark:shadow-emerald-900/20 animate-pulse';
+              } else if (availableServices === 3) {
+                return 'bg-gradient-to-br from-blue-50 via-cyan-50/80 to-blue-100/60 border-blue-300/70 shadow-lg shadow-blue-200/30 dark:from-blue-950/40 dark:via-cyan-950/30 dark:to-blue-900/20 dark:border-blue-700/50 dark:shadow-blue-900/20';
+              } else if (availableServices === 2) {
+                return 'bg-gradient-to-br from-amber-50 via-yellow-50/80 to-amber-100/60 border-amber-300/70 shadow-lg shadow-amber-200/30 dark:from-amber-950/40 dark:via-yellow-950/30 dark:to-amber-900/20 dark:border-amber-700/50 dark:shadow-amber-900/20';
+              } else {
+                return 'bg-gradient-to-br from-slate-50 via-gray-50/80 to-slate-100/60 border-slate-300/70 shadow-lg shadow-slate-200/30 dark:from-slate-950/40 dark:via-gray-950/30 dark:to-slate-900/20 dark:border-slate-700/50 dark:shadow-slate-900/20';
+              }
+            })()}
           `}>
             <div className="space-y-1.5 md:space-y-2">
               <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
