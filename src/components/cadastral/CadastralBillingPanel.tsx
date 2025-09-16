@@ -155,18 +155,61 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         </CardHeader>
 
         <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
-          {/* Information douce sur les données trouvées */}
-          <div className="p-4 bg-gradient-to-br from-primary/5 to-secondary/10 rounded-xl border border-border/50">
-            <div className="space-y-2 text-sm leading-relaxed text-foreground/90">
-              <p>
+          {/* Information douce sur les données trouvées avec code couleur animé */}
+          <div className={`
+            p-3 md:p-4 rounded-xl border transition-all duration-500
+            ${CADASTRAL_SERVICES.length === 4 
+              ? 'bg-gradient-to-br from-green-50/50 to-emerald-50/30 border-green-200/50 dark:from-green-950/10 dark:to-emerald-950/5 dark:border-green-800/30' 
+              : CADASTRAL_SERVICES.length === 3
+              ? 'bg-gradient-to-br from-blue-50/50 to-cyan-50/30 border-blue-200/50 dark:from-blue-950/10 dark:to-cyan-950/5 dark:border-blue-800/30'
+              : CADASTRAL_SERVICES.length === 2
+              ? 'bg-gradient-to-br from-amber-50/50 to-yellow-50/30 border-amber-200/50 dark:from-amber-950/10 dark:to-yellow-950/5 dark:border-amber-800/30'
+              : 'bg-gradient-to-br from-slate-50/50 to-gray-50/30 border-slate-200/50 dark:from-slate-950/10 dark:to-gray-950/5 dark:border-slate-800/30'
+            }
+          `}>
+            <div className="space-y-1.5 md:space-y-2">
+              <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
                 Nous avons trouvé des informations détaillées pour cette parcelle cadastrale incluant les données de propriété, l'historique des transactions et les vérifications légales.
               </p>
-              <p>
+              <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
                 Pour accéder à ces données complètes et certifiées, sélectionnez les services qui correspondent à vos besoins dans le catalogue ci-dessous.
               </p>
-              <p>
+              <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
                 Chaque service vous donnera accès à des informations spécifiques et vérifiées par nos experts cadastraux.
               </p>
+            </div>
+            
+            {/* Indicateur de complétude */}
+            <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/30">
+              <span className="text-xs text-foreground/60">
+                Données disponibles
+              </span>
+              <div className="flex items-center gap-2">
+                <div className={`
+                  h-1.5 w-8 rounded-full transition-all duration-500
+                  ${CADASTRAL_SERVICES.length === 4 
+                    ? 'bg-gradient-to-r from-green-400 to-emerald-500 animate-pulse' 
+                    : CADASTRAL_SERVICES.length === 3
+                    ? 'bg-gradient-to-r from-blue-400 to-cyan-500'
+                    : CADASTRAL_SERVICES.length === 2
+                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500'
+                    : 'bg-gradient-to-r from-slate-400 to-gray-500'
+                  }
+                `} />
+                <span className={`
+                  text-xs font-medium
+                  ${CADASTRAL_SERVICES.length === 4 
+                    ? 'text-green-600 dark:text-green-400' 
+                    : CADASTRAL_SERVICES.length === 3
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : CADASTRAL_SERVICES.length === 2
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : 'text-slate-600 dark:text-slate-400'
+                  }
+                `}>
+                  {Math.round((CADASTRAL_SERVICES.length / 4) * 100)}%
+                </span>
+              </div>
             </div>
           </div>
 
@@ -256,7 +299,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     <Collapsible open={isExpanded}>
                       <CollapsibleContent className="px-4 pb-4">
                         <div className="space-y-2">
-                          <p className="text-sm text-foreground leading-relaxed">
+                          <p className="text-xs md:text-sm text-foreground/80 leading-relaxed">
                             {service.description}
                           </p>
                         </div>
