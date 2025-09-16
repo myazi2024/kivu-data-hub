@@ -156,12 +156,54 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
         <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
           {/* Information douce sur les données trouvées avec code couleur animé */}
-          <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-200/50 dark:bg-blue-950/20 dark:border-blue-800/30">
+          <div className={`
+            flex items-start gap-3 p-3 rounded-lg border transition-all duration-300
+            ${(() => {
+              const availableServices = CADASTRAL_SERVICES.length;
+              if (availableServices === 4) {
+                return 'bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/20 dark:border-emerald-800/30 animate-pulse';
+              } else if (availableServices === 3) {
+                return 'bg-blue-50/50 border-blue-200/50 dark:bg-blue-950/20 dark:border-blue-800/30';
+              } else if (availableServices === 2) {
+                return 'bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/20 dark:border-amber-800/30';
+              } else {
+                return 'bg-slate-50/50 border-slate-200/50 dark:bg-slate-950/20 dark:border-slate-800/30';
+              }
+            })()}
+          `}>
             <div className="flex-shrink-0 mt-0.5">
-              <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <CheckCircle className={`
+                h-4 w-4 transition-colors duration-300
+                ${(() => {
+                  const availableServices = CADASTRAL_SERVICES.length;
+                  if (availableServices === 4) {
+                    return 'text-emerald-600 dark:text-emerald-400';
+                  } else if (availableServices === 3) {
+                    return 'text-blue-600 dark:text-blue-400';
+                  } else if (availableServices === 2) {
+                    return 'text-amber-600 dark:text-amber-400';
+                  } else {
+                    return 'text-slate-600 dark:text-slate-400';
+                  }
+                })()}
+              `} />
             </div>
             <div>
-              <p className="text-[10px] md:text-sm leading-relaxed text-blue-800 dark:text-blue-200">
+              <p className={`
+                text-[10px] md:text-sm leading-relaxed transition-colors duration-300
+                ${(() => {
+                  const availableServices = CADASTRAL_SERVICES.length;
+                  if (availableServices === 4) {
+                    return 'text-emerald-800 dark:text-emerald-200';
+                  } else if (availableServices === 3) {
+                    return 'text-blue-800 dark:text-blue-200';
+                  } else if (availableServices === 2) {
+                    return 'text-amber-800 dark:text-amber-200';
+                  } else {
+                    return 'text-slate-800 dark:text-slate-200';
+                  }
+                })()}
+              `}>
                 Des informations cadastrales détaillées et certifiées sont disponibles pour cette parcelle. Sélectionnez les services de votre choix dans le catalogue ci-dessous.
               </p>
             </div>
