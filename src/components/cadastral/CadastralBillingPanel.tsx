@@ -383,17 +383,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 </div>
                 
                 {/* Affichage de la remise si appliquée */}
-                {(() => {
-                  console.log('DEBUG - appliedDiscount dans le rendu:', appliedDiscount);
-                  return appliedDiscount && (
-                    <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
-                      <span>Remise ({appliedDiscount.code})</span>
-                      <span className="font-medium">
-                        -${appliedDiscount.amount.toFixed(2)} USD
-                      </span>
-                    </div>
-                  );
-                })()}
+                {appliedDiscount && (
+                  <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-900/20 rounded border border-green-200 dark:border-green-800">
+                    <span className="text-sm font-medium text-green-700 dark:text-green-300">
+                      Remise appliquée ({appliedDiscount.code})
+                    </span>
+                    <span className="text-sm font-bold text-green-700 dark:text-green-300">
+                      -${appliedDiscount.amount.toFixed(2)} USD
+                    </span>
+                  </div>
+                )}
                 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>TVA (16%)</span>
