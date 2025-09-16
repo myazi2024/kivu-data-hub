@@ -290,14 +290,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
                       {/* Détails du service alignés à gauche */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2 mb-1">
-                          <h4 className="font-medium text-xs sm:text-sm leading-tight truncate">
-                            {service.name}
-                          </h4>
-                          <Badge variant="secondary" className="text-xs shrink-0 ml-2">
-                            ${service.price}
-                          </Badge>
-                        </div>
+                        <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1">
+                          {service.name}
+                        </h4>
                         <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                           {service.description}
                         </p>
@@ -320,12 +315,17 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         </CollapsibleTrigger>
                       </Collapsible>
 
-                      {/* Checkbox */}
-                      <Checkbox 
-                        checked={isSelected}
-                        onCheckedChange={() => handleServiceToggle(service.id)}
-                        className="h-4 w-4"
-                      />
+                      {/* Prix et Checkbox */}
+                      <div className="flex flex-col items-center gap-1">
+                        <Badge variant="secondary" className="text-xs">
+                          ${service.price}
+                        </Badge>
+                        <Checkbox 
+                          checked={isSelected}
+                          onCheckedChange={() => handleServiceToggle(service.id)}
+                          className="h-4 w-4"
+                        />
+                      </div>
                     </div>
 
                     {/* Détails déroulants */}
