@@ -38,31 +38,31 @@ const PhoneNumberInput: React.FC<PhoneNumberInputProps> = ({
           if (currentIndex <= placeholder.length) {
             setDisplayValue(placeholder.slice(0, currentIndex));
             currentIndex++;
-            timeoutId = setTimeout(typeChar, 80);
+            timeoutId = setTimeout(typeChar, 100);
           } else {
-            // Pause puis effacement
+            // Pause avant effacement
             timeoutId = setTimeout(() => {
               const eraseChar = () => {
                 if (currentIndex > 0) {
                   currentIndex--;
                   setDisplayValue(placeholder.slice(0, currentIndex));
-                  timeoutId = setTimeout(eraseChar, 50);
+                  timeoutId = setTimeout(eraseChar, 75);
                 } else {
                   setIsTyping(false);
                   // Reprendre l'animation après une pause
-                  timeoutId = setTimeout(animatePlaceholder, 2000);
+                  timeoutId = setTimeout(animatePlaceholder, 1800);
                 }
               };
               eraseChar();
-            }, 1500);
+            }, 1200);
           }
         };
         
         typeChar();
       };
       
-      // Démarrer l'animation après une petite pause
-      timeoutId = setTimeout(animatePlaceholder, 500);
+      // Démarrer l'animation immédiatement
+      timeoutId = setTimeout(animatePlaceholder, 300);
       
       return () => clearTimeout(timeoutId);
     }

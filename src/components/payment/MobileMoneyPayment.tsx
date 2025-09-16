@@ -70,13 +70,15 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
 
   const handleProviderReminderClick = () => {
     if (!paymentData.provider) {
-      // Reset d'abord pour assurer la réactivation de l'animation
+      // Force reset de l'animation
       setShowProviderReminder(false);
-      // Déclencher l'animation après un très court délai
-      setTimeout(() => {
-        setShowProviderReminder(true);
-        setTimeout(() => setShowProviderReminder(false), 3000);
-      }, 10);
+      // Petit délai pour s'assurer que le reset est appliqué
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          setShowProviderReminder(true);
+          setTimeout(() => setShowProviderReminder(false), 2500);
+        }, 50);
+      });
     }
   };
 
@@ -165,7 +167,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
             required
           >
             <SelectTrigger className={`h-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary ${
-              showProviderReminder ? 'animate-bounce ring-4 ring-orange-400/50 border-orange-400 bg-orange-50/50 dark:bg-orange-900/20 shadow-lg shadow-orange-400/25' : ''
+              showProviderReminder ? 'animate-pulse ring-4 ring-red-400/60 border-red-400 bg-red-50/50 dark:bg-red-900/30 shadow-xl shadow-red-400/40 scale-105' : ''
             }`}>
               <SelectValue placeholder="Choisissez votre fournisseur" />
             </SelectTrigger>
