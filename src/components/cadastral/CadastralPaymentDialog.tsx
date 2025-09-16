@@ -104,20 +104,18 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 
   return (
     <Dialog open={true} onOpenChange={handleClose}>
-      <DialogContent className="w-[90vw] max-w-xs mx-auto max-h-[85vh] overflow-y-auto p-0 gap-0 bg-background border border-border/10 shadow-lg rounded-xl">
-        {/* Header ultra-compact */}
-        <DialogHeader className="px-3 py-2.5 border-b border-border/20">
+      <DialogContent className="w-[90vw] max-w-sm mx-auto max-h-[90vh] overflow-y-auto p-0 gap-0 bg-background border border-border/10 shadow-lg rounded-lg">
+        {/* Header minimal */}
+        <DialogHeader className="px-4 py-3 border-b border-border/10">
           <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="text-sm font-medium text-foreground">
-                Paiement
-              </DialogTitle>
-            </div>
+            <DialogTitle className="text-xs font-medium text-foreground">
+              Paiement
+            </DialogTitle>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleClose}
-              className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full"
+              className="h-5 w-5 p-0 hover:bg-destructive/10 hover:text-destructive rounded-md"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -163,99 +161,68 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               </div>
             </div>
           ) : (
-            <div className="space-y-3">
-              {/* Total ultra-simplifié */}
-              <div className="p-3 bg-primary/5 rounded-lg border border-primary/15 text-center">
-                <p className="text-xs text-muted-foreground mb-0.5">À payer</p>
-                <p className="text-xl font-bold text-primary">${invoice.total_amount_usd} USD</p>
+            <div className="space-y-2">
+              {/* Total simplifié */}
+              <div className="text-center py-2">
+                <p className="text-lg font-semibold text-primary">${invoice.total_amount_usd} USD</p>
               </div>
 
-              {/* Modes de paiement compacts */}
-              <div className="space-y-2">
-                {/* Mobile Money */}
-                <Button
-                  variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
+              {/* Sélection méthode - radio compacts */}
+              <div className="space-y-1">
+                <div 
                   onClick={() => setPaymentMethod('mobile_money')}
-                  className={`h-10 p-2.5 justify-start w-full text-xs ${
-                    paymentMethod === 'mobile_money' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'hover:bg-secondary/20'
-                  }`}
+                  className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-muted/50"
                 >
-                  <div className="flex items-center gap-2 w-full">
-                    <div className={`p-1 rounded ${
-                      paymentMethod === 'mobile_money' 
-                        ? 'bg-primary-foreground/20' 
-                        : 'bg-primary/10'
-                    }`}>
-                      <Smartphone className={`h-3 w-3 ${
-                        paymentMethod === 'mobile_money' 
-                          ? 'text-primary-foreground' 
-                          : 'text-primary'
-                      }`} />
-                    </div>
-                    <span className="font-medium">Mobile Money</span>
+                  <div className={`w-3 h-3 rounded-full border border-primary flex items-center justify-center ${
+                    paymentMethod === 'mobile_money' ? 'bg-primary' : 'bg-background'
+                  }`}>
+                    {paymentMethod === 'mobile_money' && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+                    )}
                   </div>
-                </Button>
-
-                {/* Stripe */}
-                <Button
-                  variant={paymentMethod === 'stripe' ? 'default' : 'outline'}
-                  onClick={() => setPaymentMethod('stripe')}
-                  className={`h-10 p-2.5 justify-start w-full text-xs ${
-                    paymentMethod === 'stripe' 
-                      ? 'bg-primary text-primary-foreground' 
-                      : 'hover:bg-secondary/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 w-full">
-                    <div className={`p-1 rounded ${
-                      paymentMethod === 'stripe' 
-                        ? 'bg-primary-foreground/20' 
-                        : 'bg-primary/10'
-                    }`}>
-                      <CreditCard className={`h-3 w-3 ${
-                        paymentMethod === 'stripe' 
-                          ? 'text-primary-foreground' 
-                          : 'text-primary'
-                      }`} />
-                    </div>
-                    <span className="font-medium">Carte bancaire</span>
-                  </div>
-                </Button>
-
-                {/* Contenu du paiement compact */}
-                <div className="mt-3 p-2.5 bg-background/30 rounded-lg border border-border/10">
-                  {paymentMethod === 'mobile_money' ? (
-                    <MobileMoneyPayment
-                      item={{
-                        id: invoice.id,
-                        title: `Facture ${invoice.invoice_number}`,
-                        price: invoice.total_amount_usd
-                      }}
-                      currency="USD"
-                      onPaymentSuccess={handleMobileMoneySuccess}
-                    />
-                  ) : (
-                    <div className="space-y-2.5 text-center">
-                      <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
-                        <CreditCard className="h-3 w-3 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
-                        <p className="text-xs text-blue-700 dark:text-blue-300">
-                          Paiement sécurisé Stripe
-                        </p>
-                      </div>
-                      
-                      <Button 
-                        onClick={handleStripePayment}
-                        size="sm"
-                        className="w-full bg-primary hover:bg-primary/90 h-9 text-xs"
-                      >
-                        <CreditCard className="h-3 w-3 mr-1.5" />
-                        Payer ${invoice.total_amount_usd} USD
-                      </Button>
-                    </div>
-                  )}
+                  <Smartphone className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs font-medium">Mobile Money</span>
                 </div>
+
+                <div 
+                  onClick={() => setPaymentMethod('stripe')}
+                  className="flex items-center gap-2 p-2 rounded-md cursor-pointer hover:bg-muted/50"
+                >
+                  <div className={`w-3 h-3 rounded-full border border-primary flex items-center justify-center ${
+                    paymentMethod === 'stripe' ? 'bg-primary' : 'bg-background'
+                  }`}>
+                    {paymentMethod === 'stripe' && (
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-foreground" />
+                    )}
+                  </div>
+                  <CreditCard className="h-3 w-3 text-muted-foreground" />
+                  <span className="text-xs font-medium">Carte bancaire</span>
+                </div>
+              </div>
+
+              {/* Contenu paiement */}
+              <div className="pt-1">
+                {paymentMethod === 'mobile_money' ? (
+                  <MobileMoneyPayment
+                    item={{
+                      id: invoice.id,
+                      title: `Facture ${invoice.invoice_number}`,
+                      price: invoice.total_amount_usd
+                    }}
+                    currency="USD"
+                    onPaymentSuccess={handleMobileMoneySuccess}
+                  />
+                ) : (
+                  <div className="text-center">
+                    <Button 
+                      onClick={handleStripePayment}
+                      size="sm"
+                      className="w-full bg-primary hover:bg-primary/90 h-8 text-xs"
+                    >
+                      Payer ${invoice.total_amount_usd} USD
+                    </Button>
+                  </div>
+                )}
               </div>
             </div>
           )}
