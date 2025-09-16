@@ -161,7 +161,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             ${(() => {
               const availableServices = CADASTRAL_SERVICES.length;
               if (availableServices === 4) {
-                return 'bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/20 dark:border-emerald-800/30 animate-pulse';
+                return 'bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/20 dark:border-emerald-800/30';
               } else if (availableServices === 3) {
                 return 'bg-blue-50/50 border-blue-200/50 dark:bg-blue-950/20 dark:border-blue-800/30';
               } else if (availableServices === 2) {
