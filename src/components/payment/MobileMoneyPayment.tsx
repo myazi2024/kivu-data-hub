@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { usePayment, PaymentData } from '@/hooks/usePayment';
 import { Smartphone, DollarSign, CheckCircle, Loader2, Shield } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
@@ -167,20 +168,12 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
           <label className="text-xs font-medium text-foreground">
             Numéro de téléphone
           </label>
-          <div className="relative">
-            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1.5 text-muted-foreground bg-muted/50 px-2 py-1 rounded text-xs font-medium">
-              <Smartphone className="h-3 w-3" />
-              <span>+243</span>
-            </div>
-            <Input
-              type="tel"
-              placeholder="97 123 4567"
-              value={paymentData.phoneNumber}
-              onChange={(e) => setPaymentData({ ...paymentData, phoneNumber: e.target.value })}
-              required
-              className="h-10 pl-16 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
-            />
-          </div>
+          <PhoneNumberInput
+            value={paymentData.phoneNumber}
+            onChange={(value) => setPaymentData({ ...paymentData, phoneNumber: value })}
+            placeholder="97 123 4567"
+            required
+          />
         </div>
 
         {/* Code secret */}
