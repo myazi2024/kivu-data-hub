@@ -196,10 +196,15 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
           <div className="relative">
             <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
-              type="password"
-              placeholder="Votre code secret"
+              type="tel"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="1234"
               value={paymentData.name}
-              onChange={(e) => setPaymentData({ ...paymentData, name: e.target.value })}
+              onChange={(e) => {
+                const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                setPaymentData({ ...paymentData, name: numericValue });
+              }}
               required
               className="h-10 pl-9 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
             />
