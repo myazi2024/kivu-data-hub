@@ -5,23 +5,21 @@ import {
   FileText, 
   DollarSign,
   Lock,
-  Unlock,
   Receipt,
   X,
   MapPin,
   History,
   Shield,
   Building2,
-  Clock,
-  ChevronRight,
-  Star
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { useCadastralBilling, CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
@@ -50,6 +48,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   } | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [highlightTerms, setHighlightTerms] = useState(false);
+  const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const {
     loading,
@@ -70,6 +69,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
   const handleServiceToggle = (serviceId: string) => {
     toggleService(serviceId);
+  };
+
+  const toggleServiceExpansion = (serviceId: string) => {
+    const newExpandedServices = new Set(expandedServices);
+    if (newExpandedServices.has(serviceId)) {
+      newExpandedServices.delete(serviceId);
+    } else {
+      newExpandedServices.add(serviceId);
+    }
+    setExpandedServices(newExpandedServices);
   };
   const handleProceedToPayment = async () => {
     if (!acceptedTerms) {
@@ -109,37 +118,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
       'legal_verification': Shield
     };
     return iconMap[serviceId as keyof typeof iconMap] || Building2;
-  };
-
-  // Priorité des services selon le contexte cadastral
-  const getServicePriority = (serviceId: string) => {
-    const priorities = {
-      'information': 'essential',
-      'legal_verification': 'recommended', 
-      'history': 'useful',
-      'location_history': 'optional'
-    };
-    return priorities[serviceId as keyof typeof priorities] || 'optional';
-  };
-
-  const getPriorityColor = (priority: string) => {
-    const colors = {
-      'essential': 'bg-primary/10 border-primary/20 text-primary',
-      'recommended': 'bg-orange-50 border-orange-200 text-orange-700 dark:bg-orange-950/50 dark:border-orange-800 dark:text-orange-400',
-      'useful': 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-950/50 dark:border-blue-800 dark:text-blue-400',
-      'optional': 'bg-muted/50 border-border text-muted-foreground'
-    };
-    return colors[priority as keyof typeof colors] || colors.optional;
-  };
-
-  const getPriorityLabel = (priority: string) => {
-    const labels = {
-      'essential': 'Essentiel',
-      'recommended': 'Recommandé', 
-      'useful': 'Utile',
-      'optional': 'Optionnel'
-    };
-    return labels[priority as keyof typeof labels] || 'Optionnel';
   };
 
   const totalAmount = getTotalAmount();
@@ -206,118 +184,89 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </Badge>
             </div>
             
-            {/* Services en cartes modernes */}
-            <div className="grid grid-cols-1 gap-3 md:gap-4">
-              {CADASTRAL_SERVICES
-                .sort((a, b) => {
-                  // Trier par priorité : essential > recommended > useful > optional
-                  const priorities = { essential: 0, recommended: 1, useful: 2, optional: 3 };
-                  return priorities[getServicePriority(a.id) as keyof typeof priorities] - 
-                         priorities[getServicePriority(b.id) as keyof typeof priorities];
-                })
-                .map((service) => {
-                  const IconComponent = getServiceIcon(service.id);
-                  const priority = getServicePriority(service.id);
-                  const isSelected = selectedServices.includes(service.id);
-                  
-                  return (
-                    <div 
-                      key={service.id}
-                      className={`
-                        group relative p-4 rounded-xl border-2 cursor-pointer
-                        transition-all duration-300 ease-out hover:shadow-lg
+            {/* Services simplifiés avec détails masquables */}
+            <div className="space-y-3">
+              {CADASTRAL_SERVICES.map((service) => {
+                const IconComponent = getServiceIcon(service.id);
+                const isSelected = selectedServices.includes(service.id);
+                const isExpanded = expandedServices.has(service.id);
+                
+                return (
+                  <div 
+                    key={service.id}
+                    className={`
+                      rounded-lg border transition-all duration-200
+                      ${isSelected 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-border bg-background hover:border-primary/30'
+                      }
+                    `}
+                  >
+                    <div className="flex items-center gap-3 p-4">
+                      {/* Icône du service */}
+                      <div className={`
+                        p-2 rounded-lg shrink-0 transition-colors
                         ${isSelected 
-                          ? 'border-primary bg-gradient-to-br from-primary/5 to-primary/10 shadow-card' 
-                          : 'border-border bg-gradient-to-br from-background to-secondary/20 hover:border-primary/30 hover:from-primary/2 hover:to-primary/5'
+                          ? 'bg-primary text-primary-foreground' 
+                          : 'bg-muted text-muted-foreground'
                         }
-                      `}
-                      onClick={() => handleServiceToggle(service.id)}
-                    >
-                      {/* Badge de priorité */}
-                      <div className="flex items-center justify-between mb-3">
-                        <Badge 
-                          variant="outline" 
-                          className={`text-xs px-2 py-1 ${getPriorityColor(priority)}`}
-                        >
-                          {getPriorityLabel(priority)}
-                        </Badge>
-                        {priority === 'essential' && (
-                          <Star className="h-3 w-3 text-primary fill-current" />
-                        )}
+                      `}>
+                        <IconComponent className="h-4 w-4" />
                       </div>
 
-                      <div className="flex items-start gap-4">
-                        {/* Icône du service */}
-                        <div className={`
-                          p-3 rounded-lg shrink-0 transition-all duration-300
-                          ${isSelected 
-                            ? 'bg-primary text-primary-foreground shadow-sm' 
-                            : 'bg-muted group-hover:bg-primary/10 group-hover:text-primary'
-                          }
-                        `}>
-                          <IconComponent className="h-5 w-5" />
+                      {/* Détails du service alignés à gauche */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h4 className="font-medium text-sm truncate">
+                            {service.name}
+                          </h4>
+                          <Badge variant="secondary" className="text-xs">
+                            ${service.price}
+                          </Badge>
                         </div>
+                        <p className="text-xs text-muted-foreground line-clamp-1">
+                          {service.description}
+                        </p>
+                      </div>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2 mb-2">
-                            <h4 className="font-semibold text-sm md:text-base text-foreground truncate">
-                              {service.name}
-                            </h4>
-                            <div className="flex items-center gap-2 shrink-0">
-                              <Badge 
-                                variant={isSelected ? "default" : "secondary"} 
-                                className="text-sm px-2 py-1 font-medium"
-                              >
-                                ${service.price}
-                              </Badge>
-                              <ChevronRight className={`h-4 w-4 transition-transform duration-200 ${isSelected ? 'rotate-90 text-primary' : 'text-muted-foreground group-hover:text-primary'}`} />
-                            </div>
-                          </div>
-                          
-                          <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                      {/* Bouton pour dérouler/masquer les détails */}
+                      <Collapsible>
+                        <CollapsibleTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleServiceExpansion(service.id);
+                            }}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                          </Button>
+                        </CollapsibleTrigger>
+                      </Collapsible>
+
+                      {/* Checkbox */}
+                      <Checkbox 
+                        checked={isSelected}
+                        onCheckedChange={() => handleServiceToggle(service.id)}
+                        className="h-4 w-4"
+                      />
+                    </div>
+
+                    {/* Détails déroulants */}
+                    <Collapsible open={isExpanded}>
+                      <CollapsibleContent className="px-4 pb-4">
+                        <div className="pl-10 space-y-2">
+                          <p className="text-sm text-foreground leading-relaxed">
                             {service.description}
                           </p>
-                          
-                          {/* Utilité contextuelle */}
-                          <div className={`
-                            p-3 rounded-lg border-l-4 transition-all duration-200
-                            ${isSelected 
-                              ? 'bg-primary/5 border-primary' 
-                              : 'bg-muted/30 border-muted-foreground/20 group-hover:bg-primary/5 group-hover:border-primary/50'
-                            }
-                          `}>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Clock className="h-3 w-3 text-muted-foreground" />
-                              <span className="text-xs font-medium text-muted-foreground">Cas d'usage</span>
-                            </div>
-                            <p className="text-xs text-foreground/80 leading-tight">
-                              {service.id === 'information' 
-                                ? 'Idéal pour vérification rapide de propriété et première analyse'
-                                : service.id === 'location_history'
-                                ? 'Essentiel pour projets de construction et développement urbain'
-                                : service.id === 'history'
-                                ? 'Crucial pour sécuriser les transactions immobilières'
-                                : 'Indispensable avant achat, prêt bancaire ou investissement'
-                              }
-                            </p>
-                          </div>
                         </div>
-
-                        {/* Checkbox modernisé */}
-                        <div className="shrink-0 mt-1">
-                          <Checkbox 
-                            checked={isSelected}
-                            onChange={() => handleServiceToggle(service.id)}
-                            className={`
-                              h-5 w-5 transition-all duration-200
-                              ${isSelected ? 'ring-2 ring-primary/20 ring-offset-1' : ''}
-                            `}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -332,76 +281,19 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           )}
 
-          {/* Récapitulatif modernisé */}
+          {/* Total simple */}
           {selectedServices.length > 0 && (
-            <div className="space-y-4 p-4 md:p-6 bg-gradient-to-br from-secondary/20 to-background rounded-xl border-2 border-primary/10">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Receipt className="h-4 w-4 text-primary" />
+            <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
+              <span className="font-semibold">Total à payer</span>
+              <div className="text-right">
+                <div className="text-xl font-bold text-primary">
+                  ${discountedAmount.toFixed(2)} USD
                 </div>
-                <h4 className="font-semibold text-base">Récapitulatif</h4>
-              </div>
-
-              <div className="space-y-3">
-                {/* Services sélectionnés */}
-                <div className="space-y-2">
-                  {CADASTRAL_SERVICES
-                    .filter(service => selectedServices.includes(service.id))
-                    .map(service => {
-                      const IconComponent = getServiceIcon(service.id);
-                      return (
-                        <div key={service.id} className="flex items-center justify-between p-3 bg-background/50 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="p-1.5 bg-primary/10 rounded">
-                              <IconComponent className="h-3 w-3 text-primary" />
-                            </div>
-                            <span className="text-sm font-medium truncate">{service.name}</span>
-                          </div>
-                          <span className="text-sm font-semibold">${service.price}</span>
-                        </div>
-                      );
-                    })}
-                </div>
-
-                <Separator className="my-4" />
-
-                {/* Calculs */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <DollarSign className="h-4 w-4" />
-                      <span>Sous-total ({selectedServices.length} service{selectedServices.length > 1 ? 's' : ''})</span>
-                    </div>
-                    <span className="font-medium">${totalAmount.toFixed(2)} USD</span>
+                {appliedDiscount && (
+                  <div className="text-xs text-green-600 dark:text-green-400">
+                    Économie: ${appliedDiscount.amount.toFixed(2)}
                   </div>
-                  
-                  {appliedDiscount && (
-                    <div className="flex items-center justify-between text-sm text-green-600 dark:text-green-400">
-                      <span>Remise ({appliedDiscount.code})</span>
-                      <span className="font-medium">-${appliedDiscount.amount.toFixed(2)} USD</span>
-                    </div>
-                  )}
-                </div>
-                
-                <Separator className="my-4" />
-                
-                {/* Total final */}
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-primary/10 rounded-lg border-2 border-primary/20">
-                  <div>
-                    <span className="text-lg font-bold text-foreground">Total à payer</span>
-                    {appliedDiscount && (
-                      <div className="text-xs text-muted-foreground">
-                        Économie de ${appliedDiscount.amount.toFixed(2)}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-primary">
-                      ${discountedAmount.toFixed(2)}
-                    </div>
-                    <div className="text-xs text-primary/70">USD</div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -525,56 +417,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                   <p className="text-sm">Prêt pour le paiement sécurisé</p>
                 </div>
               )}
-            </div>
-          </div>
-
-          {/* Informations de confiance modernisées */}
-          <div className="space-y-3 pt-6 border-t border-border/50">
-            <div className="flex items-center gap-2 mb-3">
-              <Shield className="h-4 w-4 text-primary" />
-              <h5 className="font-medium text-sm">Garanties & Sécurité</h5>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground">
-              <div className="flex items-start gap-2 p-2 bg-muted/20 rounded-lg">
-                <div className="p-1 bg-green-100 dark:bg-green-900/30 rounded">
-                  <Shield className="h-3 w-3 text-green-600 dark:text-green-400" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground mb-1">Paiement sécurisé SSL</p>
-                  <p className="leading-tight">Chiffrement bancaire via mobile money certifié</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-2 p-2 bg-muted/20 rounded-lg">
-                <div className="p-1 bg-blue-100 dark:bg-blue-900/30 rounded">
-                  <Clock className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground mb-1">Accès immédiat</p>
-                  <p className="leading-tight">Données disponibles dès validation du paiement</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-2 p-2 bg-muted/20 rounded-lg">
-                <div className="p-1 bg-purple-100 dark:bg-purple-900/30 rounded">
-                  <Receipt className="h-3 w-3 text-purple-600 dark:text-purple-400" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground mb-1">Facture officielle PDF</p>
-                  <p className="leading-tight">Document avec logo BIC et mentions légales</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-2 p-2 bg-muted/20 rounded-lg">
-                <div className="p-1 bg-amber-100 dark:bg-amber-900/30 rounded">
-                  <Building2 className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-                </div>
-                <div>
-                  <p className="font-medium text-foreground mb-1">Support client BIC</p>
-                  <p className="leading-tight">Assistance technique disponible 7j/7</p>
-                </div>
-              </div>
             </div>
           </div>
         </CardContent>
