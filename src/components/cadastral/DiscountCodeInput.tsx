@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Check, X, Tag } from 'lucide-react';
 import { useDiscountCodes } from '@/hooks/useDiscountCodes';
 import { useToast } from '@/hooks/use-toast';
+
+const PLACEHOLDER_EXAMPLES = ['BIC-RV001', 'PROMO2024', 'REMISE50'];
 
 interface DiscountCodeInputProps {
   invoiceAmount: number;
@@ -31,8 +33,51 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
     code_id: string;
   } | null>(null);
   
+  // Animation placeholder de type machine à écrire
+  const [placeholderText, setPlaceholderText] = useState('');
+  const [isTyping, setIsTyping] = useState(true);
+  const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
+  
   const { validateDiscountCode } = useDiscountCodes();
   const { toast } = useToast();
+
+  // Animation du placeholder
+  useEffect(() => {
+    if (code.length > 0) {
+      // Arrêter l'animation si l'utilisateur tape
+      setPlaceholderText('');
+      return;
+    }
+    
+    const currentExample = PLACEHOLDER_EXAMPLES[currentExampleIndex];
+    
+    if (isTyping) {
+      if (placeholderText.length < currentExample.length) {
+        const timeout = setTimeout(() => {
+          setPlaceholderText(currentExample.slice(0, placeholderText.length + 1));
+        }, 150);
+        return () => clearTimeout(timeout);
+      } else {
+        const timeout = setTimeout(() => {
+          setIsTyping(false);
+        }, 2000);
+        return () => clearTimeout(timeout);
+      }
+    } else {
+      if (placeholderText.length > 0) {
+        const timeout = setTimeout(() => {
+          setPlaceholderText(placeholderText.slice(0, -1));
+        }, 100);
+        return () => clearTimeout(timeout);
+      } else {
+        const timeout = setTimeout(() => {
+          setCurrentExampleIndex((prev) => (prev + 1) % PLACEHOLDER_EXAMPLES.length);
+          setIsTyping(true);
+        }, 500);
+        return () => clearTimeout(timeout);
+      }
+    }
+  }, [placeholderText, isTyping, currentExampleIndex, code]);
 
   const handleValidateCode = async () => {
     if (!code.trim()) return;
@@ -128,11 +173,11 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
       <div className="flex space-x-1 sm:space-x-2">
         <Input
           type="text"
-          placeholder="BIC-RV001"
+          placeholder={placeholderText}
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           onKeyPress={handleKeyPress}
-          className="uppercase text-xs sm:text-sm h-8 sm:h-11 animate-pulse"
+          className="uppercase text-xs sm:text-sm h-8 sm:h-11"
           disabled={validating}
         />
         <Button
