@@ -93,9 +93,10 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               variant="ghost" 
               size="sm" 
               onClick={handleClose}
-              className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full transition-all duration-200 hover:scale-110"
+              className="group relative h-7 w-7 p-0 rounded-full transition-all duration-300 hover:bg-destructive/10 hover:text-destructive hover:rotate-90 hover:scale-110 focus:ring-2 focus:ring-destructive/20 focus:ring-offset-1"
             >
-              <X className="h-3 w-3" />
+              <div className="absolute inset-0 rounded-full bg-background/50 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              <X className="relative h-3.5 w-3.5 transition-transform duration-200 group-hover:rotate-180" />
             </Button>
           </div>
         </DialogHeader>
