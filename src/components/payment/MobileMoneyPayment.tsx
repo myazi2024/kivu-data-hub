@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { usePayment, PaymentData } from '@/hooks/usePayment';
-import { Smartphone, DollarSign, CheckCircle } from 'lucide-react';
+import { Smartphone, DollarSign, CheckCircle, Loader2, Shield } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 
 interface MobileMoneyPaymentProps {
@@ -23,13 +23,35 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
     phoneNumber: '',
     name: ''
   });
+  const [isFormVisible, setIsFormVisible] = useState(false);
 
   const { loading, paymentStep, createPayment, resetPaymentState } = usePayment();
 
+  // Animation d'apparition du formulaire
+  useEffect(() => {
+    const timer = setTimeout(() => setIsFormVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   const providers = [
-    { value: 'airtel_money', label: 'Airtel Money', prefix: '+243 97' },
-    { value: 'orange_money', label: 'Orange Money', prefix: '+243 84' },
-    { value: 'mpesa', label: 'M-Pesa', prefix: '+243 99' }
+    { 
+      value: 'airtel_money', 
+      label: 'Airtel Money', 
+      prefix: '+243 97',
+      color: 'from-red-500 to-red-600'
+    },
+    { 
+      value: 'orange_money', 
+      label: 'Orange Money', 
+      prefix: '+243 84',
+      color: 'from-orange-500 to-orange-600'
+    },
+    { 
+      value: 'mpesa', 
+      label: 'M-Pesa', 
+      prefix: '+243 99',
+      color: 'from-green-500 to-green-600'
+    }
   ];
 
   const handlePayment = async (e: React.FormEvent) => {
@@ -46,94 +68,164 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
 
   if (paymentStep === 'success') {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="pt-6">
-          <div className="text-center space-y-4">
-            <CheckCircle className="w-16 h-16 text-green-600 mx-auto" />
-            <h3 className="text-lg font-semibold">Paiement réussi !</h3>
-            <p className="text-muted-foreground">
-              Votre paiement a été traité avec succès. Vous pouvez maintenant télécharger votre publication.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="animate-scale-in">
+        <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/10">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto animate-pulse-success">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-semibold text-green-700 dark:text-green-400">
+                  Paiement confirmé !
+                </h3>
+                <p className="text-sm text-green-600 dark:text-green-400">
+                  Transaction réussie
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   if (paymentStep === 'processing') {
     return (
-      <Card className="w-full max-w-md mx-auto">
-        <CardContent className="pt-6">
-          <div className="text-center space-y-4">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary mx-auto"></div>
-            <h3 className="text-lg font-semibold">Traitement du paiement...</h3>
-            <p className="text-muted-foreground">
-              Veuillez confirmer le paiement sur votre téléphone et patienter.
-            </p>
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Instructions :</strong><br />
-                1. Vérifiez votre téléphone pour la notification de paiement<br />
-                2. Saisissez votre code PIN pour confirmer<br />
-                3. Patientez pendant le traitement
-              </p>
+      <div className="animate-fade-in">
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-base font-semibold">Validation en cours...</h3>
+                <p className="text-sm text-muted-foreground">
+                  Confirmez le paiement sur votre téléphone
+                </p>
+              </div>
+              
+              {/* Instructions visuelles */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
+                <div className="flex items-start gap-3">
+                  <Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div className="text-left space-y-1">
+                    <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                      Étapes à suivre :
+                    </p>
+                    <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
+                      <li>• Vérifiez la notification sur votre téléphone</li>
+                      <li>• Saisissez votre code PIN</li>
+                      <li>• Confirmez la transaction</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {/* Prix compact */}
-      <div className="text-center">
-        <p className="text-base font-semibold text-primary">{item.price} {currency}</p>
-      </div>
+    <div className={`space-y-4 ${isFormVisible ? 'animate-fade-in' : 'opacity-0'}`}>
+      
+      {/* Formulaire de paiement */}
+      <div className="space-y-4">
+        
+        {/* Sélection du fournisseur avec design amélioré */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Fournisseur Mobile Money
+          </label>
+          <Select
+            value={paymentData.provider}
+            onValueChange={(value) => setPaymentData({ ...paymentData, provider: value })}
+            required
+          >
+            <SelectTrigger className="h-12 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+              <SelectValue placeholder="Choisissez votre fournisseur" />
+            </SelectTrigger>
+            <SelectContent>
+              {providers.map((provider) => (
+                <SelectItem key={provider.value} value={provider.value} className="py-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${provider.color}`}></div>
+                    <span className="font-medium">{provider.label}</span>
+                    <span className="text-xs text-muted-foreground ml-auto">{provider.prefix}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-      <form onSubmit={handlePayment} className="space-y-2">
-        {/* Fournisseur */}
-        <Select
-          value={paymentData.provider}
-          onValueChange={(value) => setPaymentData({ ...paymentData, provider: value })}
-          required
-        >
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Fournisseur" />
-          </SelectTrigger>
-          <SelectContent>
-            {providers.map((provider) => (
-              <SelectItem key={provider.value} value={provider.value} className="text-xs">
-                {provider.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* Téléphone */}
-        <Input
-          type="tel"
-          placeholder="+243 97 123 4567"
-          value={paymentData.phoneNumber}
-          onChange={(e) => setPaymentData({ ...paymentData, phoneNumber: e.target.value })}
-          required
-          className="h-8 text-xs"
-        />
+        {/* Numéro de téléphone */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Numéro de téléphone
+          </label>
+          <div className="relative">
+            <Smartphone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="tel"
+              placeholder="+243 97 123 4567"
+              value={paymentData.phoneNumber}
+              onChange={(e) => setPaymentData({ ...paymentData, phoneNumber: e.target.value })}
+              required
+              className="h-12 pl-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
+        </div>
 
         {/* Code secret */}
-        <Input
-          type="password"
-          placeholder="Code secret"
-          value={paymentData.name}
-          onChange={(e) => setPaymentData({ ...paymentData, name: e.target.value })}
-          required
-          className="h-8 text-xs"
-        />
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-foreground">
+            Code secret
+          </label>
+          <div className="relative">
+            <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="password"
+              placeholder="Votre code secret"
+              value={paymentData.name}
+              onChange={(e) => setPaymentData({ ...paymentData, name: e.target.value })}
+              required
+              className="h-12 pl-10 border-border/20 bg-background/50 hover:bg-background/80 transition-all duration-200 focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            />
+          </div>
+        </div>
+      </div>
 
-        <Button type="submit" className="w-full h-8 text-xs" disabled={loading}>
-          {loading ? 'Traitement...' : 'Payer'}
+      {/* Bouton de paiement sticky sur mobile */}
+      <div className="sticky bottom-0 pt-4 bg-background/95 backdrop-blur-sm">
+        <Button 
+          type="submit" 
+          onClick={handlePayment}
+          className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl transition-all duration-200 hover:scale-[1.02] hover:shadow-hover focus:ring-2 focus:ring-primary/20 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={loading || !paymentData.provider || !paymentData.phoneNumber || !paymentData.name}
+        >
+          {loading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Traitement...</span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4" />
+              <span>Payer {item.price} {currency}</span>
+            </div>
+          )}
         </Button>
-      </form>
+        
+        {/* Indicateur de sécurité */}
+        <div className="flex items-center justify-center gap-2 mt-3 text-xs text-muted-foreground">
+          <Shield className="h-3 w-3" />
+          <span>Transaction sécurisée SSL 256-bit</span>
+        </div>
+      </div>
     </div>
   );
 };
