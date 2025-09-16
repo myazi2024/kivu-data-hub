@@ -290,15 +290,15 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
                       {/* Détails du service alignés à gauche */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-medium text-sm truncate">
+                        <div className="flex flex-wrap items-start gap-2 mb-1">
+                          <h4 className="font-medium text-sm leading-tight flex-1 min-w-0">
                             {service.name}
                           </h4>
-                          <Badge variant="secondary" className="text-xs">
+                          <Badge variant="secondary" className="text-xs shrink-0">
                             ${service.price}
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-1">
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                           {service.description}
                         </p>
                       </div>
