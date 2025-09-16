@@ -155,22 +155,20 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         </CardHeader>
 
         <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
-          {/* Alert moderne avec meilleure visibilité */}
-          <Alert className="bg-gradient-to-r from-amber-50 to-orange-50 border-amber-200 dark:from-amber-950/20 dark:to-orange-950/20 dark:border-amber-800 p-3 md:p-4 rounded-lg">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-100 dark:bg-amber-900/50 rounded-full">
-                <Lock className="h-4 w-4 text-amber-600 dark:text-amber-400" />
-              </div>
-              <div>
-                <AlertDescription className="text-sm md:text-base text-amber-800 dark:text-amber-200 font-medium">
-                  Accès Premium Requis
-                </AlertDescription>
-                <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                  Déverrouillez les données détaillées de cette parcelle
-                </p>
-              </div>
+          {/* Information douce sur les données trouvées */}
+          <div className="p-4 bg-gradient-to-br from-primary/5 to-secondary/10 rounded-xl border border-border/50">
+            <div className="space-y-2 text-sm leading-relaxed text-foreground/90">
+              <p>
+                Nous avons trouvé des informations détaillées pour cette parcelle cadastrale incluant les données de propriété, l'historique des transactions et les vérifications légales.
+              </p>
+              <p>
+                Pour accéder à ces données complètes et certifiées, sélectionnez les services qui correspondent à vos besoins dans le catalogue ci-dessous.
+              </p>
+              <p>
+                Chaque service vous donnera accès à des informations spécifiques et vérifiées par nos experts cadastraux.
+              </p>
             </div>
-          </Alert>
+          </div>
 
           {/* Catalogue de services modernisé */}
           <div className="space-y-4">
@@ -257,7 +255,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     {/* Détails déroulants */}
                     <Collapsible open={isExpanded}>
                       <CollapsibleContent className="px-4 pb-4">
-                        <div className="pl-10 space-y-2">
+                        <div className="space-y-2">
                           <p className="text-sm text-foreground leading-relaxed">
                             {service.description}
                           </p>
