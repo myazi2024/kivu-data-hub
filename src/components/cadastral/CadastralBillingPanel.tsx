@@ -156,34 +156,40 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
         <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
           {/* Information douce sur les données trouvées avec code couleur animé */}
-          <div className={`
-            flex items-start gap-3 p-3 rounded-lg border transition-all duration-300
-            ${(() => {
-              const availableServices = CADASTRAL_SERVICES.length;
-              if (availableServices === 4) {
-                return 'bg-emerald-50/50 border-emerald-200/50 dark:bg-emerald-950/20 dark:border-emerald-800/30';
-              } else if (availableServices === 3) {
-                return 'bg-blue-50/50 border-blue-200/50 dark:bg-blue-950/20 dark:border-blue-800/30';
-              } else if (availableServices === 2) {
-                return 'bg-amber-50/50 border-amber-200/50 dark:bg-amber-950/20 dark:border-amber-800/30';
-              } else {
-                return 'bg-slate-50/50 border-slate-200/50 dark:bg-slate-950/20 dark:border-slate-800/30';
-              }
-            })()}
-          `}>
+          <div 
+            className={`
+              flex items-start gap-3 p-3 rounded-lg border transition-all duration-300 cursor-pointer
+              hover:scale-[1.01] active:scale-[0.99] active:transition-transform active:duration-75
+              ${(() => {
+                const availableServices = CADASTRAL_SERVICES.length;
+                if (availableServices === 4) {
+                  return 'bg-emerald-100/80 border-emerald-300/60 dark:bg-emerald-900/30 dark:border-emerald-700/50';
+                } else if (availableServices === 3) {
+                  return 'bg-blue-100/80 border-blue-300/60 dark:bg-blue-900/30 dark:border-blue-700/50';
+                } else if (availableServices === 2) {
+                  return 'bg-amber-100/80 border-amber-300/60 dark:bg-amber-900/30 dark:border-amber-700/50';
+                } else {
+                  return 'bg-slate-100/80 border-slate-300/60 dark:bg-slate-900/30 dark:border-slate-700/50';
+                }
+              })()}
+            `}
+            onClick={() => {
+              // Animation subtile déjà gérée par les classes CSS
+            }}
+          >
             <div className="flex-shrink-0 mt-0.5">
               <CheckCircle className={`
                 h-4 w-4 transition-colors duration-300
                 ${(() => {
                   const availableServices = CADASTRAL_SERVICES.length;
                   if (availableServices === 4) {
-                    return 'text-emerald-600 dark:text-emerald-400';
+                    return 'text-emerald-700 dark:text-emerald-300';
                   } else if (availableServices === 3) {
-                    return 'text-blue-600 dark:text-blue-400';
+                    return 'text-blue-700 dark:text-blue-300';
                   } else if (availableServices === 2) {
-                    return 'text-amber-600 dark:text-amber-400';
+                    return 'text-amber-700 dark:text-amber-300';
                   } else {
-                    return 'text-slate-600 dark:text-slate-400';
+                    return 'text-slate-700 dark:text-slate-300';
                   }
                 })()}
               `} />
@@ -194,13 +200,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 ${(() => {
                   const availableServices = CADASTRAL_SERVICES.length;
                   if (availableServices === 4) {
-                    return 'text-emerald-800 dark:text-emerald-200';
+                    return 'text-emerald-900 dark:text-emerald-100';
                   } else if (availableServices === 3) {
-                    return 'text-blue-800 dark:text-blue-200';
+                    return 'text-blue-900 dark:text-blue-100';
                   } else if (availableServices === 2) {
-                    return 'text-amber-800 dark:text-amber-200';
+                    return 'text-amber-900 dark:text-amber-100';
                   } else {
-                    return 'text-slate-800 dark:text-slate-200';
+                    return 'text-slate-900 dark:text-slate-100';
                   }
                 })()}
               `}>
