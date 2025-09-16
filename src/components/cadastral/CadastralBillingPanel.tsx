@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   CreditCard, 
   CheckCircle, 
@@ -46,6 +46,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     reseller_id: string;
     code_id: string;
   } | null>(null);
+
+  // Debug: log applied discount changes
+  useEffect(() => {
+    console.log('Applied discount changed:', appliedDiscount);
+  }, [appliedDiscount]);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [highlightTerms, setHighlightTerms] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
@@ -373,7 +378,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Sous-total services</span>
                   <span className="font-medium">
-                    ${(appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount).toFixed(2)} USD
+                    ${(() => {
+                      const subtotal = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
+                      console.log('Calculating subtotal:', { totalAmount, appliedDiscount, subtotal });
+                      return subtotal.toFixed(2);
+                    })()} USD
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
