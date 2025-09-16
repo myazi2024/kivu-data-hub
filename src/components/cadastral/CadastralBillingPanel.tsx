@@ -171,45 +171,20 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               }
             })()}
           `}>
-            <div className="space-y-1.5 md:space-y-2">
-              <p className="text-[10px] md:text-sm leading-relaxed text-foreground/80">
-                Informations cadastrales détaillées disponibles pour cette parcelle.
-              </p>
-              <p className="text-[10px] md:text-sm leading-relaxed text-foreground/80">
-                Sélectionnez les services souhaités dans le catalogue ci-dessous.
-              </p>
-              <p className="text-[10px] md:text-sm leading-relaxed text-foreground/80">
-                Données certifiées et vérifiées par nos experts.
-              </p>
-            </div>
-            
-            {/* Indicateur de complétude */}
-            <div className="flex items-center justify-end mt-3 pt-2 border-t border-border/30">
-              <div className="flex items-center gap-2">
-                <div className={`
-                  h-1.5 w-8 rounded-full transition-all duration-500
-                  ${CADASTRAL_SERVICES.length === 4 
-                    ? 'bg-gradient-to-r from-green-400 to-emerald-500' 
-                    : CADASTRAL_SERVICES.length === 3
-                    ? 'bg-gradient-to-r from-blue-400 to-cyan-500'
-                    : CADASTRAL_SERVICES.length === 2
-                    ? 'bg-gradient-to-r from-amber-400 to-yellow-500'
-                    : 'bg-gradient-to-r from-slate-400 to-gray-500'
-                  }
-                `} />
-                <span className={`
-                  text-xs font-medium
-                  ${CADASTRAL_SERVICES.length === 4 
-                    ? 'text-green-600 dark:text-green-400' 
-                    : CADASTRAL_SERVICES.length === 3
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : CADASTRAL_SERVICES.length === 2
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : 'text-slate-600 dark:text-slate-400'
-                  }
-                `}>
-                  Complet
-                </span>
+            <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50/50 border border-blue-200/50 dark:bg-blue-950/20 dark:border-blue-800/30">
+              <div className="flex-shrink-0 mt-0.5">
+                <CheckCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] md:text-sm leading-relaxed text-blue-800 dark:text-blue-200">
+                  Informations cadastrales détaillées disponibles pour cette parcelle.
+                </p>
+                <p className="text-[10px] md:text-sm leading-relaxed text-blue-800 dark:text-blue-200">
+                  Sélectionnez les services souhaités dans le catalogue ci-dessous.
+                </p>
+                <p className="text-[10px] md:text-sm leading-relaxed text-blue-800 dark:text-blue-200">
+                  Données certifiées et vérifiées par nos experts.
+                </p>
               </div>
             </div>
           </div>
