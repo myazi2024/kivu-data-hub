@@ -530,15 +530,7 @@ export type Database = {
           updated_at?: string
           usage_count?: number
         }
-        Relationships: [
-          {
-            foreignKeyName: "discount_codes_reseller_id_fkey"
-            columns: ["reseller_id"]
-            isOneToOne: false
-            referencedRelation: "resellers"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       market_trends: {
         Row: {
