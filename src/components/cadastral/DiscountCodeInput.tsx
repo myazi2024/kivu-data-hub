@@ -119,32 +119,33 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   }
 
   return (
-    <div className={`space-y-2 sm:space-y-3 p-2 sm:p-3 border border-dashed border-primary/30 rounded-md pulse ${className}`}>
-      <div className="flex items-center space-x-2">
+    <div className={`space-y-1 sm:space-y-3 p-1 sm:p-3 border border-dashed border-primary/30 rounded-md pulse ${className}`}>
+      <div className="flex items-center space-x-1 sm:space-x-2">
         <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
         <span className="text-xs sm:text-sm font-medium">Code de remise (optionnel)</span>
       </div>
       
-      <div className="flex space-x-2">
+      <div className="flex space-x-1 sm:space-x-2">
         <Input
           type="text"
-          placeholder="Ex: BIC-RV001"
+          placeholder="BIC-RV001"
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           onKeyPress={handleKeyPress}
-          className="uppercase"
+          className="uppercase text-xs sm:text-sm h-8 sm:h-11 animate-pulse"
           disabled={validating}
         />
         <Button
           variant="outline"
           onClick={handleValidateCode}
           disabled={!code.trim() || validating}
-          className="whitespace-nowrap"
+          className="whitespace-nowrap text-xs sm:text-sm h-8 sm:h-11 px-2 sm:px-4"
         >
           {validating ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Vérification...
+              <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+              <span className="hidden sm:inline">Vérification...</span>
+              <span className="sm:hidden">...</span>
             </>
           ) : (
             'Appliquer'
