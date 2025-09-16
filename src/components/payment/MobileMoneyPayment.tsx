@@ -70,8 +70,13 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
 
   const handleProviderReminderClick = () => {
     if (!paymentData.provider) {
-      setShowProviderReminder(true);
-      setTimeout(() => setShowProviderReminder(false), 3000);
+      // Reset d'abord pour assurer la réactivation de l'animation
+      setShowProviderReminder(false);
+      // Déclencher l'animation après un très court délai
+      setTimeout(() => {
+        setShowProviderReminder(true);
+        setTimeout(() => setShowProviderReminder(false), 3000);
+      }, 10);
     }
   };
 
