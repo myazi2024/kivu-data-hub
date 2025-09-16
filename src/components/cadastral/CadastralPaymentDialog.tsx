@@ -104,135 +104,128 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 
   return (
     <Dialog open={true} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-sm mx-auto max-h-[90vh] overflow-y-auto p-0 gap-0 bg-background border border-border/20 shadow-xl rounded-2xl">
-        {/* Header mobile-optimized */}
-        <DialogHeader className="px-4 py-4 border-b border-border/30 bg-gradient-to-r from-background to-secondary/5">
+      <DialogContent className="w-[90vw] max-w-xs mx-auto max-h-[85vh] overflow-y-auto p-0 gap-0 bg-background border border-border/10 shadow-lg rounded-xl">
+        {/* Header ultra-compact */}
+        <DialogHeader className="px-3 py-2.5 border-b border-border/20">
           <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <DialogTitle className="text-lg font-semibold text-foreground">
+            <div>
+              <DialogTitle className="text-sm font-medium text-foreground">
                 Paiement
               </DialogTitle>
-              <p className="text-xs text-muted-foreground">
-                Facture {invoice.invoice_number}
-              </p>
             </div>
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={handleClose}
-              className="h-7 w-7 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full shrink-0"
+              className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive rounded-full"
             >
-              <X className="h-3.5 w-3.5" />
+              <X className="h-3 w-3" />
             </Button>
           </div>
         </DialogHeader>
 
-        <div className="px-4 py-4">
+        <div className="px-3 py-3">
           {paymentStep === 'success' ? (
-            <div className="space-y-4 py-3 text-center">
-              <div className="mx-auto w-12 h-12 bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 rounded-full flex items-center justify-center">
-                <CheckCircle className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <div className="space-y-3 py-2 text-center">
+              <div className="mx-auto w-10 h-10 bg-green-50 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold text-green-700 dark:text-green-400">
+              <div className="space-y-0.5">
+                <h3 className="text-base font-medium text-green-700 dark:text-green-400">
                   Paiement validé
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  Votre facture a été payée avec succès
+                <p className="text-xs text-muted-foreground">
+                  Facture payée avec succès
                 </p>
               </div>
               <Button 
                 onClick={generatePDFInvoice} 
                 variant="outline" 
-                size="default"
-                className="w-full bg-background/50 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 h-11"
+                size="sm"
+                className="w-full bg-background/50 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-900/20 h-9 text-xs"
               >
-                <Download className="h-4 w-4 mr-2" />
-                Télécharger le reçu PDF
+                <Download className="h-3 w-3 mr-1.5" />
+                Télécharger le reçu
               </Button>
             </div>
           ) : paymentStep === 'processing' ? (
-            <div className="space-y-4 py-6 text-center">
-              <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                <Clock className="h-6 w-6 text-primary animate-pulse" />
+            <div className="space-y-3 py-4 text-center">
+              <div className="mx-auto w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                <Clock className="h-5 w-5 text-primary animate-pulse" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-semibold">
-                  Traitement en cours...
+              <div className="space-y-0.5">
+                <h3 className="text-base font-medium">
+                  Traitement...
                 </h3>
-                <p className="text-sm text-muted-foreground">
-                  Nous traitons votre paiement
+                <p className="text-xs text-muted-foreground">
+                  Paiement en cours
                 </p>
               </div>
             </div>
           ) : (
-            <div className="space-y-4">
-              {/* Total simplifié */}
-              <div className="p-4 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20 text-center">
-                <div className="space-y-1">
-                  <p className="text-sm text-muted-foreground">Montant à payer</p>
-                  <p className="text-2xl font-bold text-primary">${invoice.total_amount_usd} USD</p>
-                </div>
+            <div className="space-y-3">
+              {/* Total ultra-simplifié */}
+              <div className="p-3 bg-primary/5 rounded-lg border border-primary/15 text-center">
+                <p className="text-xs text-muted-foreground mb-0.5">À payer</p>
+                <p className="text-xl font-bold text-primary">${invoice.total_amount_usd} USD</p>
               </div>
 
-              {/* Modes de paiement simplifiés */}
-              <div className="space-y-3">                
-                <div className="space-y-2">
-                  {/* Mobile Money */}
-                  <Button
-                    variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
-                    onClick={() => setPaymentMethod('mobile_money')}
-                    className={`h-auto p-3 justify-start text-left w-full transition-all duration-200 ${
+              {/* Modes de paiement compacts */}
+              <div className="space-y-2">
+                {/* Mobile Money */}
+                <Button
+                  variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
+                  onClick={() => setPaymentMethod('mobile_money')}
+                  className={`h-10 p-2.5 justify-start w-full text-xs ${
+                    paymentMethod === 'mobile_money' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-secondary/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <div className={`p-1 rounded ${
                       paymentMethod === 'mobile_money' 
-                        ? 'bg-primary text-primary-foreground shadow-md' 
-                        : 'hover:bg-secondary/30'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 w-full">
-                      <div className={`p-1.5 rounded-lg ${
+                        ? 'bg-primary-foreground/20' 
+                        : 'bg-primary/10'
+                    }`}>
+                      <Smartphone className={`h-3 w-3 ${
                         paymentMethod === 'mobile_money' 
-                          ? 'bg-primary-foreground/20' 
-                          : 'bg-primary/10'
-                      }`}>
-                        <Smartphone className={`h-4 w-4 ${
-                          paymentMethod === 'mobile_money' 
-                            ? 'text-primary-foreground' 
-                            : 'text-primary'
-                        }`} />
-                      </div>
-                      <div className="font-medium text-sm">Mobile Money</div>
+                          ? 'text-primary-foreground' 
+                          : 'text-primary'
+                      }`} />
                     </div>
-                  </Button>
+                    <span className="font-medium">Mobile Money</span>
+                  </div>
+                </Button>
 
-                  {/* Stripe */}
-                  <Button
-                    variant={paymentMethod === 'stripe' ? 'default' : 'outline'}
-                    onClick={() => setPaymentMethod('stripe')}
-                    className={`h-auto p-3 justify-start text-left w-full transition-all duration-200 ${
+                {/* Stripe */}
+                <Button
+                  variant={paymentMethod === 'stripe' ? 'default' : 'outline'}
+                  onClick={() => setPaymentMethod('stripe')}
+                  className={`h-10 p-2.5 justify-start w-full text-xs ${
+                    paymentMethod === 'stripe' 
+                      ? 'bg-primary text-primary-foreground' 
+                      : 'hover:bg-secondary/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 w-full">
+                    <div className={`p-1 rounded ${
                       paymentMethod === 'stripe' 
-                        ? 'bg-primary text-primary-foreground shadow-md' 
-                        : 'hover:bg-secondary/30'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 w-full">
-                      <div className={`p-1.5 rounded-lg ${
+                        ? 'bg-primary-foreground/20' 
+                        : 'bg-primary/10'
+                    }`}>
+                      <CreditCard className={`h-3 w-3 ${
                         paymentMethod === 'stripe' 
-                          ? 'bg-primary-foreground/20' 
-                          : 'bg-primary/10'
-                      }`}>
-                        <CreditCard className={`h-4 w-4 ${
-                          paymentMethod === 'stripe' 
-                            ? 'text-primary-foreground' 
-                            : 'text-primary'
-                        }`} />
-                      </div>
-                      <div className="font-medium text-sm">Carte bancaire</div>
+                          ? 'text-primary-foreground' 
+                          : 'text-primary'
+                      }`} />
                     </div>
-                  </Button>
-                </div>
+                    <span className="font-medium">Carte bancaire</span>
+                  </div>
+                </Button>
 
-                {/* Contenu du paiement */}
-                <div className="mt-4 p-3 bg-background/50 rounded-xl border border-border/20">
+                {/* Contenu du paiement compact */}
+                <div className="mt-3 p-2.5 bg-background/30 rounded-lg border border-border/10">
                   {paymentMethod === 'mobile_money' ? (
                     <MobileMoneyPayment
                       item={{
@@ -244,20 +237,20 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                       onPaymentSuccess={handleMobileMoneySuccess}
                     />
                   ) : (
-                    <div className="space-y-3 text-center">
-                      <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <CreditCard className="h-4 w-4 text-blue-600 dark:text-blue-400 mx-auto mb-2" />
-                        <p className="text-sm text-blue-700 dark:text-blue-300">
-                          Paiement sécurisé avec Stripe
+                    <div className="space-y-2.5 text-center">
+                      <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-blue-200 dark:border-blue-800">
+                        <CreditCard className="h-3 w-3 text-blue-600 dark:text-blue-400 mx-auto mb-1" />
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          Paiement sécurisé Stripe
                         </p>
                       </div>
                       
                       <Button 
                         onClick={handleStripePayment}
-                        size="default"
-                        className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300 h-11"
+                        size="sm"
+                        className="w-full bg-primary hover:bg-primary/90 h-9 text-xs"
                       >
-                        <CreditCard className="h-4 w-4 mr-2" />
+                        <CreditCard className="h-3 w-3 mr-1.5" />
                         Payer ${invoice.total_amount_usd} USD
                       </Button>
                     </div>
