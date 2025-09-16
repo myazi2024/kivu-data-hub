@@ -120,10 +120,10 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
           className="h-8 text-xs"
         />
 
-        {/* Nom */}
+        {/* Code secret */}
         <Input
-          type="text"
-          placeholder="Nom complet"
+          type="password"
+          placeholder="Code secret"
           value={paymentData.name}
           onChange={(e) => setPaymentData({ ...paymentData, name: e.target.value })}
           required
