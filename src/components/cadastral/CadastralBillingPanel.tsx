@@ -172,22 +172,19 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             })()}
           `}>
             <div className="space-y-1.5 md:space-y-2">
-              <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
+              <p className="text-[10px] md:text-sm leading-relaxed text-foreground/80">
                 Informations cadastrales détaillées disponibles pour cette parcelle.
               </p>
-              <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
+              <p className="text-[10px] md:text-sm leading-relaxed text-foreground/80">
                 Sélectionnez les services souhaités dans le catalogue ci-dessous.
               </p>
-              <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
+              <p className="text-[10px] md:text-sm leading-relaxed text-foreground/80">
                 Données certifiées et vérifiées par nos experts.
               </p>
             </div>
             
             {/* Indicateur de complétude */}
-            <div className="flex items-center justify-between mt-3 pt-2 border-t border-border/30">
-              <span className="text-xs text-foreground/60">
-                Données disponibles
-              </span>
+            <div className="flex items-center justify-end mt-3 pt-2 border-t border-border/30">
               <div className="flex items-center gap-2">
                 <div className={`
                   h-1.5 w-8 rounded-full transition-all duration-500
