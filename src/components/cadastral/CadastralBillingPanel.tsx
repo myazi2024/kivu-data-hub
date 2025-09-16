@@ -157,17 +157,17 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
           {/* Information douce sur les données trouvées avec code couleur animé */}
           <div className={`
-            p-3 md:p-4 rounded-xl border transition-all duration-700 ease-in-out
+            p-3 md:p-4 rounded-xl border transition-all duration-300
             ${(() => {
               const availableServices = CADASTRAL_SERVICES.length;
               if (availableServices === 4) {
-                return 'bg-green-50/30 border-green-200/50 dark:bg-green-950/10 dark:border-green-800/30 animate-pulse';
+                return 'bg-green-100/80 border-green-300/60 dark:bg-green-900/30 dark:border-green-700/50';
               } else if (availableServices === 3) {
-                return 'bg-blue-50/30 border-blue-200/50 dark:bg-blue-950/10 dark:border-blue-800/30';
+                return 'bg-blue-100/80 border-blue-300/60 dark:bg-blue-900/30 dark:border-blue-700/50';
               } else if (availableServices === 2) {
-                return 'bg-amber-50/30 border-amber-200/50 dark:bg-amber-950/10 dark:border-amber-800/30';
+                return 'bg-amber-100/80 border-amber-300/60 dark:bg-amber-900/30 dark:border-amber-700/50';
               } else {
-                return 'bg-slate-50/30 border-slate-200/50 dark:bg-slate-950/10 dark:border-slate-800/30';
+                return 'bg-slate-100/80 border-slate-300/60 dark:bg-slate-900/30 dark:border-slate-700/50';
               }
             })()}
           `}>
