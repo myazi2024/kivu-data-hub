@@ -171,13 +171,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           `}>
             <div className="space-y-1.5 md:space-y-2">
               <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
-                Nous avons trouvé des informations détaillées pour cette parcelle cadastrale incluant les données de propriété, l'historique des transactions et les vérifications légales.
+                Informations cadastrales détaillées disponibles pour cette parcelle.
               </p>
               <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
-                Pour accéder à ces données complètes et certifiées, sélectionnez les services qui correspondent à vos besoins dans le catalogue ci-dessous.
+                Sélectionnez les services souhaités dans le catalogue ci-dessous.
               </p>
               <p className="text-xs md:text-sm leading-relaxed text-foreground/80">
-                Chaque service vous donnera accès à des informations spécifiques et vérifiées par nos experts cadastraux.
+                Données certifiées et vérifiées par nos experts.
               </p>
             </div>
             
@@ -209,7 +209,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     : 'text-slate-600 dark:text-slate-400'
                   }
                 `}>
-                  {Math.round((CADASTRAL_SERVICES.length / 4) * 100)}%
+                  Complet
                 </span>
               </div>
             </div>
