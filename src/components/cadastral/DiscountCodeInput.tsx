@@ -164,7 +164,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   }
 
   return (
-    <div className={`space-y-1 sm:space-y-3 p-1 sm:p-3 border border-dashed border-primary/30 rounded-md pulse ${className}`}>
+    <div className={`space-y-1 sm:space-y-3 p-1 sm:p-3 border border-dashed border-primary/30 rounded-md ${className}`}>
       <div className="flex items-center space-x-1 sm:space-x-2">
         <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
         <span className="text-xs sm:text-sm font-medium">Code de remise (optionnel)</span>
@@ -181,10 +181,10 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
           disabled={validating}
         />
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={handleValidateCode}
           disabled={!code.trim() || validating}
-          className="whitespace-nowrap text-xs sm:text-sm h-8 sm:h-11 px-2 sm:px-4"
+          className="whitespace-nowrap text-xs sm:text-sm h-8 sm:h-11 px-2 sm:px-3 border border-primary/20 hover:bg-primary/5 hover:border-primary/40 transition-all duration-200 font-medium"
         >
           {validating ? (
             <>
