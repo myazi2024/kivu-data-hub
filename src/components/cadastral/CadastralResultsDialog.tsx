@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -32,6 +32,22 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
 }) => {
   const [paidServices, setPaidServices] = React.useState<string[]>(selectedServices);
   const [showCloseConfirm, setShowCloseConfirm] = React.useState(false);
+
+  // Protection contre l'actualisation accidentelle de la page
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Vous allez perdre vos résultats de recherche cadastrale. Êtes-vous sûr de vouloir quitter cette page ?';
+      return 'Vous allez perdre vos résultats de recherche cadastrale. Êtes-vous sûr de vouloir quitter cette page ?';
+    };
+
+    if (isOpen) {
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }
+  }, [isOpen]);
   
   if (!isOpen) return null;
 
