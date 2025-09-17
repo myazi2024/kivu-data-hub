@@ -30,7 +30,35 @@ export const usePayment = () => {
       setLoading(true);
       setPaymentStep('processing');
 
-      // Créer l'enregistrement de paiement
+      // Vérifier si c'est un paiement test
+      const isTestPayment = (
+        (paymentData.phoneNumber === '97123456' || paymentData.phoneNumber === '97123TEST') && 
+        paymentData.name === '1234'
+      );
+
+      if (isTestPayment) {
+        // Paiement test - simulation rapide
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        setPaymentStep('success');
+        toast({
+          title: "Paiement test réussi ✓",
+          description: "Transaction de test validée avec succès"
+        });
+
+        // Retourner un objet de paiement test
+        return {
+          id: 'test-payment-' + Date.now(),
+          user_id: user.id,
+          publication_id: item.id,
+          amount_usd: item.price,
+          status: 'completed',
+          payment_method: 'mobile_money_test',
+          payment_provider: paymentData.provider
+        };
+      }
+
+      // Paiement réel - processus normal
       const { data: paymentRecord, error: paymentError } = await supabase
         .from('payments')
         .insert([{
