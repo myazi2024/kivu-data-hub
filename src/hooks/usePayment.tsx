@@ -47,10 +47,10 @@ export const usePayment = () => {
 
       if (paymentError) throw paymentError;
 
-      // Simuler le processus de paiement mobile money
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // BYPASS: Skip payment simulation and go directly to success
+      // await new Promise(resolve => setTimeout(resolve, 3000));
 
-      // Mise à jour du statut du paiement
+      // Mise à jour immédiate du statut du paiement
       const { error: updateError } = await supabase
         .from('payments')
         .update({ 
