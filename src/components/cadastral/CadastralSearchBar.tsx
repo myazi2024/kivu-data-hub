@@ -20,6 +20,7 @@ const CadastralSearchBar = () => {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   const {
     searchQuery,
@@ -27,8 +28,11 @@ const CadastralSearchBar = () => {
     searchResult,
     loading,
     error,
+    suggestions,
+    loadingSuggestions,
     clearSearch,
-    validateParcelNumber
+    validateParcelNumber,
+    getSuggestions
   } = useCadastralSearch();
 
   const [displayedText, setDisplayedText] = useState('');
@@ -94,18 +98,33 @@ const CadastralSearchBar = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.toUpperCase();
     setSearchQuery(value);
+    
+    // Déclencher les suggestions si on a au moins 2 caractères
+    if (value.length >= 2) {
+      getSuggestions(value);
+      setShowSuggestions(true);
+    } else {
+      setShowSuggestions(false);
+    }
   };
 
   const handleClear = () => {
     clearSearch();
     setIsExpanded(false);
     setShowResultsDialog(false);
+    setShowSuggestions(false);
   };
 
   const handleCloseResults = () => {
     setShowResultsDialog(false);
     clearSearch();
     setIsExpanded(false);
+    setShowSuggestions(false);
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion);
+    setShowSuggestions(false);
   };
 
   const getInputStatus = () => {
@@ -161,9 +180,14 @@ const CadastralSearchBar = () => {
               onFocus={() => {
                 setIsExpanded(true);
                 setIsFocused(true);
+                if (searchQuery.length >= 2) {
+                  setShowSuggestions(true);
+                }
               }}
               onBlur={() => {
                 setIsFocused(false);
+                // Délai pour permettre le clic sur les suggestions
+                setTimeout(() => setShowSuggestions(false), 200);
               }}
               className={`pl-10 pr-4 h-12 text-sm font-mono tracking-wide ${
                 inputStatus === 'error' ? 'border-destructive focus-visible:ring-destructive' :
@@ -171,6 +195,31 @@ const CadastralSearchBar = () => {
                 'border-input'
               }`}
             />
+
+            {/* Liste des suggestions */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full text-left px-3 py-2 text-sm font-mono hover:bg-accent hover:text-accent-foreground transition-colors duration-150 border-b border-border last:border-b-0"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Indicateur de chargement des suggestions */}
+            {loadingSuggestions && showSuggestions && (
+              <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg p-3">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent" />
+                  Recherche de suggestions...
+                </div>
+              </div>
+            )}
             
             {/* Texte animé machine à écrire */}
             {!searchQuery && !isFocused && (

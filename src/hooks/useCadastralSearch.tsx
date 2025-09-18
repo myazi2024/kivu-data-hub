@@ -89,6 +89,8 @@ export const useCadastralSearch = () => {
   const [searchResult, setSearchResult] = useState<CadastralSearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const { toast } = useToast();
 
   // Fonction pour valider le format du numéro de parcelle
@@ -209,10 +211,38 @@ export const useCadastralSearch = () => {
     }
   }, [searchQuery]);
 
+  // Fonction pour récupérer des suggestions
+  const getSuggestions = async (prefix: string) => {
+    if (prefix.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+
+    setLoadingSuggestions(true);
+    try {
+      const { data, error } = await supabase
+        .from('cadastral_parcels')
+        .select('parcel_number')
+        .ilike('parcel_number', `${prefix}%`)
+        .limit(10);
+
+      if (error) throw error;
+
+      const suggestionList = data?.map(item => item.parcel_number) || [];
+      setSuggestions(suggestionList);
+    } catch (err) {
+      console.error('Erreur lors de la récupération des suggestions:', err);
+      setSuggestions([]);
+    } finally {
+      setLoadingSuggestions(false);
+    }
+  };
+
   const clearSearch = () => {
     setSearchQuery('');
     setSearchResult(null);
     setError(null);
+    setSuggestions([]);
   };
 
   return {
@@ -221,8 +251,11 @@ export const useCadastralSearch = () => {
     searchResult,
     loading,
     error,
+    suggestions,
+    loadingSuggestions,
     searchParcel,
     clearSearch,
-    validateParcelNumber
+    validateParcelNumber,
+    getSuggestions
   };
 };
