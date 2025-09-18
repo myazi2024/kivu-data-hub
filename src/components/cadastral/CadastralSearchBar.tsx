@@ -136,9 +136,19 @@ const CadastralSearchBar = () => {
 
   const handleBlur = () => {
     setIsFocused(false);
-    setIsSearchActive(false);
     // Délai pour permettre le clic sur les suggestions
-    setTimeout(() => setShowSuggestions(false), 200);
+    setTimeout(() => {
+      setShowSuggestions(false);
+      if (!searchQuery) {
+        setIsSearchActive(false);
+      }
+    }, 200);
+  };
+
+  const handleOverlayClick = () => {
+    setIsSearchActive(false);
+    setShowSuggestions(false);
+    setIsFocused(false);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -169,7 +179,7 @@ const CadastralSearchBar = () => {
       {isSearchActive && (
         <div 
           className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 animate-fade-in"
-          onClick={handleBlur}
+          onClick={handleOverlayClick}
         />
       )}
       
@@ -220,11 +230,14 @@ const CadastralSearchBar = () => {
 
             {/* Liste des suggestions */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+              <div className="absolute z-[60] w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={index}
-                    onClick={() => handleSuggestionClick(suggestion)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSuggestionClick(suggestion);
+                    }}
                     className="w-full text-left px-3 py-2 text-sm font-mono hover:bg-accent hover:text-accent-foreground transition-colors duration-150 border-b border-border last:border-b-0"
                   >
                     {suggestion}
@@ -235,7 +248,7 @@ const CadastralSearchBar = () => {
 
             {/* Indicateur de chargement des suggestions */}
             {loadingSuggestions && showSuggestions && (
-              <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg p-3">
+              <div className="absolute z-[60] w-full mt-1 bg-background border border-border rounded-md shadow-lg p-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent" />
                   Recherche de suggestions...
