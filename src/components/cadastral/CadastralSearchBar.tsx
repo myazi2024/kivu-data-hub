@@ -21,7 +21,6 @@ const CadastralSearchBar = () => {
   const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isSearchActive, setIsSearchActive] = useState(false);
   
   const {
     searchQuery,
@@ -114,7 +113,6 @@ const CadastralSearchBar = () => {
     setIsExpanded(false);
     setShowResultsDialog(false);
     setShowSuggestions(false);
-    setIsSearchActive(false);
   };
 
   const handleCloseResults = () => {
@@ -122,33 +120,6 @@ const CadastralSearchBar = () => {
     clearSearch();
     setIsExpanded(false);
     setShowSuggestions(false);
-    setIsSearchActive(false);
-  };
-
-  const handleFocus = () => {
-    setIsExpanded(true);
-    setIsFocused(true);
-    setIsSearchActive(true);
-    if (searchQuery.length >= 2) {
-      setShowSuggestions(true);
-    }
-  };
-
-  const handleBlur = () => {
-    setIsFocused(false);
-    // Délai pour permettre le clic sur les suggestions
-    setTimeout(() => {
-      setShowSuggestions(false);
-      if (!searchQuery) {
-        setIsSearchActive(false);
-      }
-    }, 200);
-  };
-
-  const handleOverlayClick = () => {
-    setIsSearchActive(false);
-    setShowSuggestions(false);
-    setIsFocused(false);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -174,73 +145,64 @@ const CadastralSearchBar = () => {
   }, [searchResult, showResultsDialog]);
 
   return (
-    <>
-      {/* Overlay moderne avec transition subtile */}
-      {isSearchActive && (
-        <div 
-          className="fixed inset-0 bg-background/70 backdrop-blur-md z-40 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
-          style={{
-            background: 'linear-gradient(135deg, hsl(var(--background))/0.8, hsl(var(--background))/0.6)'
-          }}
-          onClick={handleOverlayClick}
-        />
-      )}
-      
-      <div className={`w-full max-w-4xl mx-auto transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-        isSearchActive 
-          ? 'fixed top-8 left-1/2 -translate-x-1/2 z-50 px-4 scale-[1.02]' 
-          : 'relative scale-100'
-      }`}>
-        {/* Barre de recherche principale */}
-        <Card className="p-4 shadow-lg border-border bg-background/95 backdrop-blur">
-          <div className="flex flex-col space-y-3">
-            {/* En-tête avec icône et titre */}
-            <div className="flex items-center gap-2 text-foreground">
-              <FileText className="h-5 w-5 text-primary" />
-              <h3 className="font-semibold text-base">Taper le numéro SU ou SR de la parcelle ici</h3>
-              <div className="flex-1" />
-              {searchResult && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={handleClear}
-                  className="h-8 w-8 p-0"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+    <div className="w-full max-w-4xl mx-auto">
+      {/* Barre de recherche principale */}
+      <Card className="p-4 shadow-lg border-border bg-background/95 backdrop-blur">
+        <div className="flex flex-col space-y-3">
+          {/* En-tête avec icône et titre */}
+          <div className="flex items-center gap-2 text-foreground">
+            <FileText className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold text-base">Taper le numéro SU ou SR de la parcelle ici</h3>
+            <div className="flex-1" />
+            {searchResult && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={handleClear}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
 
-            {/* Champ de recherche */}
-            <div className="relative">
-              <div className="absolute inset-y-0 left-3 flex items-center">
-                <Search className={`h-4 w-4 ${loading ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
-              </div>
-              
-              {/* Input principal */}
-              <Input
-                type="text"
-                value={searchQuery}
-                onChange={handleInputChange}
-                onFocus={handleFocus}
-                onBlur={handleBlur}
-                className={`pl-10 pr-4 h-12 text-sm font-mono tracking-wide ${
-                  inputStatus === 'error' ? 'border-destructive focus-visible:ring-destructive' :
-                  inputStatus === 'success' ? 'border-green-500 focus-visible:ring-green-500' :
-                  'border-input'
-                }`}
-              />
+          {/* Champ de recherche */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-3 flex items-center">
+              <Search className={`h-4 w-4 ${loading ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
+            </div>
+            
+            {/* Input principal */}
+            <Input
+              type="text"
+              value={searchQuery}
+              onChange={handleInputChange}
+              onFocus={() => {
+                setIsExpanded(true);
+                setIsFocused(true);
+                if (searchQuery.length >= 2) {
+                  setShowSuggestions(true);
+                }
+              }}
+              onBlur={() => {
+                setIsFocused(false);
+                // Délai pour permettre le clic sur les suggestions
+                setTimeout(() => setShowSuggestions(false), 200);
+              }}
+              className={`pl-10 pr-4 h-12 text-sm font-mono tracking-wide ${
+                inputStatus === 'error' ? 'border-destructive focus-visible:ring-destructive' :
+                inputStatus === 'success' ? 'border-green-500 focus-visible:ring-green-500' :
+                'border-input'
+              }`}
+            />
 
             {/* Liste des suggestions */}
             {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute z-[60] w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
+              <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((suggestion, index) => (
                   <button
                     key={index}
-                    onMouseDown={(e) => {
-                      e.preventDefault();
-                      handleSuggestionClick(suggestion);
-                    }}
+                    onClick={() => handleSuggestionClick(suggestion)}
                     className="w-full text-left px-3 py-2 text-sm font-mono hover:bg-accent hover:text-accent-foreground transition-colors duration-150 border-b border-border last:border-b-0"
                   >
                     {suggestion}
@@ -251,7 +213,7 @@ const CadastralSearchBar = () => {
 
             {/* Indicateur de chargement des suggestions */}
             {loadingSuggestions && showSuggestions && (
-              <div className="absolute z-[60] w-full mt-1 bg-background border border-border rounded-md shadow-lg p-3">
+              <div className="absolute z-50 w-full mt-1 bg-background border border-border rounded-md shadow-lg p-3">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <div className="animate-spin rounded-full h-3 w-3 border-2 border-primary border-t-transparent" />
                   Recherche de suggestions...
@@ -324,7 +286,6 @@ const CadastralSearchBar = () => {
         />
       )}
     </div>
-    </>
   );
 };
 
