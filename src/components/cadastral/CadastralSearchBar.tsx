@@ -175,18 +175,21 @@ const CadastralSearchBar = () => {
 
   return (
     <>
-      {/* Overlay sombre quand la recherche est active */}
+      {/* Overlay moderne avec transition subtile */}
       {isSearchActive && (
         <div 
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40 animate-fade-in"
+          className="fixed inset-0 bg-background/70 backdrop-blur-md z-40 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          style={{
+            background: 'linear-gradient(135deg, hsl(var(--background))/0.8, hsl(var(--background))/0.6)'
+          }}
           onClick={handleOverlayClick}
         />
       )}
       
-      <div className={`w-full max-w-4xl mx-auto transition-all duration-500 ease-out ${
+      <div className={`w-full max-w-4xl mx-auto transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
         isSearchActive 
-          ? 'fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4' 
-          : 'relative'
+          ? 'fixed top-8 left-1/2 -translate-x-1/2 z-50 px-4 scale-[1.02]' 
+          : 'relative scale-100'
       }`}>
         {/* Barre de recherche principale */}
         <Card className="p-4 shadow-lg border-border bg-background/95 backdrop-blur">
