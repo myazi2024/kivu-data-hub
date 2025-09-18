@@ -36,7 +36,6 @@ import { useAuth } from '@/hooks/useAuth';
 import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
-import CadastralDataExplanation from './CadastralDataExplanation';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -455,28 +454,22 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       <Building className="h-3 w-3" />
                       Titre de Propriété
                     </h4>
-                     <div className="space-y-1.5">
-                       <CadastralDataExplanation field="property_title_type" value={parcel.property_title_type}>
-                         <div className="flex justify-between items-center">
-                           <span className="text-[10px] text-muted-foreground">Type:</span>
-                           <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded text-right">{parcel.property_title_type}</span>
-                         </div>
-                       </CadastralDataExplanation>
-                       <CadastralDataExplanation field="area_sqm" value={parcel.area_sqm}>
-                         <div className="flex justify-between items-center">
-                           <span className="text-[10px] text-muted-foreground">Surface:</span>
-                           <span className="text-xs font-medium text-primary text-right">{formatArea(parcel.area_sqm)}</span>
-                         </div>
-                       </CadastralDataExplanation>
-                       {parcel.area_hectares > 0 && (
-                         <CadastralDataExplanation field="area_hectares" value={parcel.area_hectares}>
-                           <div className="flex justify-between items-center">
-                             <span className="text-[10px] text-muted-foreground">Hectares:</span>
-                             <span className="text-xs font-medium text-right">{parcel.area_hectares.toFixed(2)} ha</span>
-                           </div>
-                         </CadastralDataExplanation>
-                       )}
-                     </div>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Type:</span>
+                        <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded text-right">{parcel.property_title_type}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Surface:</span>
+                        <span className="text-xs font-medium text-primary text-right">{formatArea(parcel.area_sqm)}</span>
+                      </div>
+                      {parcel.area_hectares > 0 && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-muted-foreground">Hectares:</span>
+                          <span className="text-xs font-medium text-right">{parcel.area_hectares.toFixed(2)} ha</span>
+                        </div>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
 
@@ -487,26 +480,20 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       <User className="h-3 w-3" />
                       Propriétaire Actuel
                     </h4>
-                     <div className="space-y-1.5">
-                       <CadastralDataExplanation field="current_owner_name" value={parcel.current_owner_name}>
-                         <div className="flex justify-between items-start gap-2">
-                           <span className="text-[10px] text-muted-foreground flex-shrink-0">Nom:</span>
-                           <span className="text-xs font-medium text-right break-words leading-tight">{parcel.current_owner_name}</span>
-                         </div>
-                       </CadastralDataExplanation>
-                       <CadastralDataExplanation field="current_owner_legal_status" value={parcel.current_owner_legal_status}>
-                         <div className="flex justify-between items-center gap-2">
-                           <span className="text-[10px] text-muted-foreground flex-shrink-0">Statut:</span>
-                           <span className="text-xs font-medium bg-secondary/10 px-1.5 py-0.5 rounded text-right break-words">{parcel.current_owner_legal_status}</span>
-                         </div>
-                       </CadastralDataExplanation>
-                       <CadastralDataExplanation field="current_owner_since" value={parcel.current_owner_since}>
-                         <div className="flex justify-between items-center">
-                           <span className="text-[10px] text-muted-foreground">Depuis:</span>
-                           <span className="text-xs font-medium text-primary">{formatDate(parcel.current_owner_since)}</span>
-                         </div>
-                       </CadastralDataExplanation>
-                     </div>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">Nom:</span>
+                        <span className="text-xs font-medium text-right break-words leading-tight">{parcel.current_owner_name}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">Statut:</span>
+                        <span className="text-xs font-medium bg-secondary/10 px-1.5 py-0.5 rounded text-right break-words">{parcel.current_owner_legal_status}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Depuis:</span>
+                        <span className="text-xs font-medium text-primary">{formatDate(parcel.current_owner_since)}</span>
+                      </div>
+                    </div>
                   </CardContent>
                 </Card>
               </div>
@@ -542,94 +529,74 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       <MapPin className="h-3 w-3" />
                       Localisation
                     </h4>
-                     <div className="space-y-1.5">
-                       <CadastralDataExplanation field="province" value={parcel.province}>
-                         <div className="flex justify-between items-center">
-                           <span className="text-[10px] text-muted-foreground">Province:</span>
-                           <span className="text-xs font-medium text-right">{parcel.province}</span>
-                         </div>
-                       </CadastralDataExplanation>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Province:</span>
+                        <span className="text-xs font-medium text-right">{parcel.province}</span>
+                      </div>
                       
                       {parcel.parcel_type === 'SU' ? (
                         <>
-                           {parcel.ville && (
-                             <CadastralDataExplanation field="ville" value={parcel.ville}>
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] text-muted-foreground">Ville:</span>
-                                 <span className="text-xs font-medium text-right break-words">{parcel.ville}</span>
-                               </div>
-                             </CadastralDataExplanation>
-                           )}
-                           {parcel.commune && (
-                             <CadastralDataExplanation field="commune" value={parcel.commune}>
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] text-muted-foreground">Commune:</span>
-                                 <span className="text-xs font-medium text-right break-words">{parcel.commune}</span>
-                               </div>
-                             </CadastralDataExplanation>
-                           )}
-                           {parcel.quartier && (
-                             <CadastralDataExplanation field="quartier" value={parcel.quartier}>
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] text-muted-foreground">Quartier:</span>
-                                 <span className="text-xs font-medium text-right break-words">{parcel.quartier}</span>
-                               </div>
-                             </CadastralDataExplanation>
-                           )}
-                           {parcel.avenue && (
-                             <CadastralDataExplanation field="avenue" value={parcel.avenue}>
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] text-muted-foreground">Avenue:</span>
-                                 <span className="text-xs font-medium text-right break-words">{parcel.avenue}</span>
-                               </div>
-                             </CadastralDataExplanation>
-                           )}
+                          {parcel.ville && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Ville:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.ville}</span>
+                            </div>
+                          )}
+                          {parcel.commune && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Commune:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.commune}</span>
+                            </div>
+                          )}
+                          {parcel.quartier && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Quartier:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.quartier}</span>
+                            </div>
+                          )}
+                          {parcel.avenue && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Avenue:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.avenue}</span>
+                            </div>
+                          )}
                         </>
                       ) : (
                         <>
-                           {parcel.territoire && (
-                             <CadastralDataExplanation field="territoire" value={parcel.territoire}>
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] text-muted-foreground">Territoire:</span>
-                                 <span className="text-xs font-medium text-right break-words">{parcel.territoire}</span>
-                               </div>
-                             </CadastralDataExplanation>
-                           )}
-                           {parcel.collectivite && (
-                             <CadastralDataExplanation field="collectivite" value={parcel.collectivite}>
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] text-muted-foreground">Collectivité:</span>
-                                 <span className="text-xs font-medium text-right break-words">{parcel.collectivite}</span>
-                               </div>
-                             </CadastralDataExplanation>
-                           )}
-                           {parcel.groupement && (
-                             <CadastralDataExplanation field="groupement" value={parcel.groupement}>
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] text-muted-foreground">Groupement:</span>
-                                 <span className="text-xs font-medium text-right break-words">{parcel.groupement}</span>
-                               </div>
-                             </CadastralDataExplanation>
-                           )}
-                           {parcel.village && (
-                             <CadastralDataExplanation field="village" value={parcel.village}>
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] text-muted-foreground">Village:</span>
-                                 <span className="text-xs font-medium text-right break-words">{parcel.village}</span>
-                               </div>
-                             </CadastralDataExplanation>
-                           )}
+                          {parcel.territoire && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Territoire:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.territoire}</span>
+                            </div>
+                          )}
+                          {parcel.collectivite && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Collectivité:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.collectivite}</span>
+                            </div>
+                          )}
+                          {parcel.groupement && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Groupement:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.groupement}</span>
+                            </div>
+                          )}
+                          {parcel.village && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-[10px] text-muted-foreground">Village:</span>
+                              <span className="text-xs font-medium text-right break-words">{parcel.village}</span>
+                            </div>
+                          )}
                         </>
                       )}
                       
-                       <CadastralDataExplanation field="parcel_type" value={parcel.parcel_type}>
-                         <div className="flex justify-between items-center pt-1 border-t border-muted/30">
-                           <span className="text-[10px] text-muted-foreground">Type:</span>
-                           <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded">
-                             {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
-                           </span>
-                         </div>
-                       </CadastralDataExplanation>
+                      <div className="flex justify-between items-center pt-1 border-t border-muted/30">
+                        <span className="text-[10px] text-muted-foreground">Type:</span>
+                        <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded">
+                          {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
+                        </span>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -654,31 +621,23 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                        <div className="space-y-2">
                          {boundary_history.map((boundary) => (
                            <div key={boundary.id} className="p-2 bg-muted/30 rounded-lg border border-border/50">
-                              <div className="space-y-1">
-                                <CadastralDataExplanation field="pv_reference_number" value={boundary.pv_reference_number}>
-                                  <div className="flex justify-between items-center">
-                                    <span className="text-[10px] text-muted-foreground">Réf. PV:</span>
-                                    <span className="text-xs font-medium text-right">{boundary.pv_reference_number}</span>
-                                  </div>
-                                </CadastralDataExplanation>
-                                <CadastralDataExplanation field="boundary_purpose" value={boundary.boundary_purpose}>
-                                  <div className="flex justify-between items-start">
-                                    <span className="text-[10px] text-muted-foreground">Objet:</span>
-                                    <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.boundary_purpose}</span>
-                                  </div>
-                                </CadastralDataExplanation>
-                                <CadastralDataExplanation field="surveyor_name" value={boundary.surveyor_name}>
-                                  <div className="flex justify-between items-start">
-                                    <span className="text-[10px] text-muted-foreground">Géomètre:</span>
-                                    <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.surveyor_name}</span>
-                                  </div>
-                                </CadastralDataExplanation>
-                                <CadastralDataExplanation field="survey_date" value={boundary.survey_date}>
-                                  <div className="flex justify-between items-center pt-1 border-t border-muted/30">
-                                    <span className="text-[10px] text-muted-foreground">Date:</span>
-                                    <span className="text-xs font-medium text-primary">{formatDate(boundary.survey_date)}</span>
-                                  </div>
-                                </CadastralDataExplanation>
+                             <div className="space-y-1">
+                               <div className="flex justify-between items-center">
+                                 <span className="text-[10px] text-muted-foreground">Réf. PV:</span>
+                                 <span className="text-xs font-medium text-right">{boundary.pv_reference_number}</span>
+                               </div>
+                               <div className="flex justify-between items-start">
+                                 <span className="text-[10px] text-muted-foreground">Objet:</span>
+                                 <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.boundary_purpose}</span>
+                               </div>
+                               <div className="flex justify-between items-start">
+                                 <span className="text-[10px] text-muted-foreground">Géomètre:</span>
+                                 <span className="text-xs font-medium text-right break-words max-w-[60%]">{boundary.surveyor_name}</span>
+                               </div>
+                               <div className="flex justify-between items-center pt-1 border-t border-muted/30">
+                                 <span className="text-[10px] text-muted-foreground">Date:</span>
+                                 <span className="text-xs font-medium text-primary">{formatDate(boundary.survey_date)}</span>
+                               </div>
                                 <div className="mt-2 pt-2 border-t border-muted/30">
                                   <div className="flex items-center gap-1">
                                     <Button
@@ -831,34 +790,19 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                          {ownership_history.map((owner, index) => (
                            <div key={owner.id} className="flex items-start gap-2 p-2 bg-muted/30 rounded">
                              <div className="w-1.5 h-1.5 bg-muted-foreground rounded-full mt-1.5 flex-shrink-0" />
-                              <div className="flex-1">
-                                <div className="flex items-start justify-between gap-2">
-                                  <CadastralDataExplanation field="owner_name" value={owner.owner_name}>
-                                    <span className="text-xs font-medium break-words">{owner.owner_name}</span>
-                                  </CadastralDataExplanation>
-                                  {owner.mutation_type && (
-                                    <CadastralDataExplanation field="mutation_type" value={owner.mutation_type}>
-                                      <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">{owner.mutation_type}</Badge>
-                                    </CadastralDataExplanation>
-                                  )}
-                                </div>
-                                <CadastralDataExplanation field="legal_status" value={owner.legal_status}>
-                                  <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
-                                    {owner.legal_status}
-                                  </div>
-                                </CadastralDataExplanation>
-                                <div className="flex gap-2">
-                                  <CadastralDataExplanation field="ownership_start_date" value={owner.ownership_start_date}>
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                                      Du {formatDate(owner.ownership_start_date)}
-                                    </div>
-                                  </CadastralDataExplanation>
-                                  <CadastralDataExplanation field="ownership_end_date" value={owner.ownership_end_date}>
-                                    <div className="text-[10px] text-muted-foreground mt-0.5">
-                                      au {formatDate(owner.ownership_end_date)}
-                                    </div>
-                                  </CadastralDataExplanation>
-                                </div>
+                             <div className="flex-1">
+                               <div className="flex items-start justify-between gap-2">
+                                 <span className="text-xs font-medium break-words">{owner.owner_name}</span>
+                                 {owner.mutation_type && (
+                                   <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">{owner.mutation_type}</Badge>
+                                 )}
+                               </div>
+                               <div className="text-[10px] text-muted-foreground mt-0.5 leading-tight">
+                                 {owner.legal_status}
+                               </div>
+                               <div className="text-[10px] text-muted-foreground mt-0.5">
+                                 Du {formatDate(owner.ownership_start_date)} au {formatDate(owner.ownership_end_date)}
+                               </div>
                                <div className="mt-2 pt-2 border-t border-muted/30">
                                  <div className="flex items-center gap-1">
                                    <Button
@@ -974,33 +918,25 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         <div className="space-y-2">
                            {tax_history.map((tax) => (
                              <div key={tax.id} className="p-2 bg-muted/30 rounded">
-                                <div className="flex items-start justify-between gap-2 mb-1">
-                                  <div className="flex items-start gap-1.5">
-                                    {getPaymentStatusIcon(tax.payment_status)}
-                                    <div className="flex-1">
-                                      <CadastralDataExplanation field="tax_year" value={tax.tax_year}>
-                                        <div className="text-xs font-medium break-words">Taxe {tax.tax_year}</div>
-                                      </CadastralDataExplanation>
-                                      <CadastralDataExplanation field="tax_amount" value={tax.amount_usd}>
-                                        <div className="text-[10px] text-muted-foreground">
-                                          ${tax.amount_usd.toLocaleString()} USD
-                                        </div>
-                                      </CadastralDataExplanation>
-                                    </div>
-                                  </div>
-                                  <CadastralDataExplanation field="payment_status" value={tax.payment_status}>
-                                    <Badge variant={getPaymentStatusBadge(tax.payment_status)} className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
-                                      {translatePaymentStatus(tax.payment_status)}
-                                    </Badge>
-                                  </CadastralDataExplanation>
-                                </div>
-                                {tax.payment_date && (
-                                  <CadastralDataExplanation field="payment_date" value={tax.payment_date}>
-                                    <div className="text-[10px] text-primary">
-                                      Payé le {formatDate(tax.payment_date)}
-                                    </div>
-                                  </CadastralDataExplanation>
-                                )}
+                               <div className="flex items-start justify-between gap-2 mb-1">
+                                 <div className="flex items-start gap-1.5">
+                                   {getPaymentStatusIcon(tax.payment_status)}
+                                   <div className="flex-1">
+                                     <div className="text-xs font-medium break-words">Taxe {tax.tax_year}</div>
+                                     <div className="text-[10px] text-muted-foreground">
+                                       ${tax.amount_usd.toLocaleString()} USD
+                                     </div>
+                                   </div>
+                                 </div>
+                                 <Badge variant={getPaymentStatusBadge(tax.payment_status)} className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
+                                   {translatePaymentStatus(tax.payment_status)}
+                                 </Badge>
+                               </div>
+                               {tax.payment_date && (
+                                 <div className="text-[10px] text-primary">
+                                   Payé le {formatDate(tax.payment_date)}
+                                 </div>
+                               )}
                                <div className="mt-2 pt-2 border-t border-muted/30">
                                  <div className="flex items-center gap-1">
                                    <Button
@@ -1071,79 +1007,65 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                              
                              return (
                                <div key={mortgage.id} className="p-2 bg-muted/30 rounded">
-                                  <div className="flex items-start justify-between gap-2 mb-1">
-                                    <div className="flex items-start gap-1.5">
-                                      <Landmark className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
-                                      <div>
-                                        <CadastralDataExplanation field="mortgage_amount" value={mortgage.mortgage_amount_usd}>
-                                          <div className="text-xs font-medium">
-                                            ${mortgage.mortgage_amount_usd.toLocaleString()} USD
-                                          </div>
-                                        </CadastralDataExplanation>
-                                        <CadastralDataExplanation field="creditor_name" value={mortgage.creditor_name}>
-                                          <div className="text-[10px] text-muted-foreground break-words">
-                                            {mortgage.creditor_name}
-                                          </div>
-                                        </CadastralDataExplanation>
-                                      </div>
-                                    </div>
-                                    <CadastralDataExplanation field="mortgage_status" value={mortgage.mortgage_status}>
-                                      <Badge variant={
-                                        mortgage.mortgage_status === 'paid_off' ? 'default' :
-                                        mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
-                                      } className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
-                                        {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
-                                         mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
-                                      </Badge>
-                                    </CadastralDataExplanation>
-                                  </div>
+                                 <div className="flex items-start justify-between gap-2 mb-1">
+                                   <div className="flex items-start gap-1.5">
+                                     <Landmark className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />
+                                     <div>
+                                       <div className="text-xs font-medium">
+                                         ${mortgage.mortgage_amount_usd.toLocaleString()} USD
+                                       </div>
+                                       <div className="text-[10px] text-muted-foreground break-words">
+                                         {mortgage.creditor_name}
+                                       </div>
+                                     </div>
+                                   </div>
+                                   <Badge variant={
+                                     mortgage.mortgage_status === 'paid_off' ? 'default' :
+                                     mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
+                                   } className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
+                                     {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
+                                      mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
+                                   </Badge>
+                                 </div>
 
-                                  <div className="grid grid-cols-3 gap-2 my-1">
-                                    <div>
-                                      <CadastralDataExplanation field="duration_months" value={mortgage.duration_months}>
-                                        <div>
-                                          <div className="text-[9px] text-muted-foreground">Durée</div>
-                                          <div className="text-xs font-medium">{mortgage.duration_months}m</div>
-                                        </div>
-                                      </CadastralDataExplanation>
-                                    </div>
-                                    <div>
-                                      <div className="text-[9px] text-muted-foreground">Payé</div>
-                                      <div className="text-xs font-medium text-green-600">
-                                        ${totalPaid.toLocaleString()}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <div className="text-[9px] text-muted-foreground">Restant</div>
-                                      <div className="text-xs font-medium text-red-600">
-                                        ${remainingAmount.toLocaleString()}
-                                      </div>
-                                    </div>
-                                  </div>
+                                 <div className="grid grid-cols-3 gap-2 my-1">
+                                   <div>
+                                     <div className="text-[9px] text-muted-foreground">Durée</div>
+                                     <div className="text-xs font-medium">{mortgage.duration_months}m</div>
+                                   </div>
+                                   <div>
+                                     <div className="text-[9px] text-muted-foreground">Payé</div>
+                                     <div className="text-xs font-medium text-green-600">
+                                       ${totalPaid.toLocaleString()}
+                                     </div>
+                                   </div>
+                                   <div>
+                                     <div className="text-[9px] text-muted-foreground">Restant</div>
+                                     <div className="text-xs font-medium text-red-600">
+                                       ${remainingAmount.toLocaleString()}
+                                     </div>
+                                   </div>
+                                 </div>
 
-                                  <CadastralDataExplanation field="contract_date" value={mortgage.contract_date}>
-                                    <div className="text-[10px] text-muted-foreground border-t border-muted/30 pt-1">
-                                      Contrat: {formatDate(mortgage.contract_date)}
-                                    </div>
-                                  </CadastralDataExplanation>
+                                 <div className="text-[10px] text-muted-foreground border-t border-muted/30 pt-1">
+                                   Contrat: {formatDate(mortgage.contract_date)}
+                                 </div>
 
-                                  {mortgage.payments.length > 0 && (
-                                    <div className="mt-1 pt-1 border-t border-muted/30">
-                                      <div className="text-[10px] font-medium mb-1">Paiements récents:</div>
-                                      <div className="space-y-1 max-h-16 overflow-y-auto">
-                                        {mortgage.payments.slice(0, 2).map((payment) => (
-                                          <div key={payment.id} className="flex justify-between items-center text-[10px] bg-muted/20 rounded px-1 py-0.5">
-                                            <CadastralDataExplanation field="payment_amount" value={payment.payment_amount_usd}>
-                                              <span>${payment.payment_amount_usd.toLocaleString()}</span>
-                                            </CadastralDataExplanation>
-                                            <span className="text-muted-foreground">
-                                              {formatDate(payment.payment_date)}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
+                                 {mortgage.payments.length > 0 && (
+                                   <div className="mt-1 pt-1 border-t border-muted/30">
+                                     <div className="text-[10px] font-medium mb-1">Paiements récents:</div>
+                                     <div className="space-y-1 max-h-16 overflow-y-auto">
+                                       {mortgage.payments.slice(0, 2).map((payment) => (
+                                         <div key={payment.id} className="flex justify-between items-center text-[10px] bg-muted/20 rounded px-1 py-0.5">
+                                           <span>${payment.payment_amount_usd.toLocaleString()}</span>
+                                           <span className="text-muted-foreground">
+                                             {formatDate(payment.payment_date)}
+                                           </span>
+                                         </div>
+                                       ))}
+                                     </div>
+                                   </div>
+                                 )}
 
                                  <div className="mt-2 pt-2 border-t border-muted/30">
                                    <div className="flex items-center gap-1">
