@@ -56,10 +56,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     setPaymentStep('success');
     await updateInvoiceStatus(invoice.id, 'paid');
     
-    setTimeout(() => {
-      onPaymentSuccess();
-      onClose();
-    }, 2000);
+    // Ne pas fermer automatiquement la fenêtre pour permettre le téléchargement
+    // L'utilisateur fermera manuellement après avoir téléchargé le reçu
+    onPaymentSuccess();
   };
 
   const handleClose = () => {

@@ -211,6 +211,19 @@ export const useCadastralBilling = () => {
 
   const updateInvoiceStatus = async (invoiceId: string, status: 'paid' | 'failed', paymentId?: string) => {
     try {
+      // Pour les paiements de test, ne pas essayer de mettre à jour la base de données
+      if (invoiceId.startsWith('test-')) {
+        console.log('Paiement de test - pas de mise à jour en base');
+        toast({
+          title: status === 'paid' ? "Paiement de test réussi" : "Paiement de test échoué",
+          description: status === 'paid' 
+            ? "Mode test - Vos services sont simulés"
+            : "Le paiement de test n'a pas pu être traité",
+          variant: status === 'paid' ? "default" : "destructive"
+        });
+        return;
+      }
+
       const updateData: any = { status, updated_at: new Date().toISOString() };
       if (paymentId) updateData.payment_id = paymentId;
 
