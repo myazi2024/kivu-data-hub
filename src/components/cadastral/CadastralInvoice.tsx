@@ -253,7 +253,30 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                       </Badge>
                     </div>
                     <p className="text-xs text-muted-foreground">
-                      Visa •••• 4242
+                      {(() => {
+                        const storedInvoice = localStorage.getItem('currentCadastralInvoice');
+                        if (storedInvoice) {
+                          try {
+                            const invoice = JSON.parse(storedInvoice);
+                            const paymentMethod = invoice.payment_method;
+                            const phoneNumber = invoice.phone_number;
+                            
+                            if (paymentMethod && phoneNumber) {
+                              const providerMap: Record<string, string> = {
+                                'airtel_money': 'Airtel Money',
+                                'orange_money': 'Orange Money',
+                                'mpesa': 'M-Pesa'
+                              };
+                              const providerName = providerMap[paymentMethod] || paymentMethod;
+                              const maskedPhone = phoneNumber.replace(/(\d{3})(\d+)(\d{4})/, '$1***$3');
+                              return `${providerName} ${maskedPhone}`;
+                            }
+                          } catch (e) {
+                            console.log('Erreur lecture données paiement:', e);
+                          }
+                        }
+                        return 'Mobile Money ****';
+                      })()}
                     </p>
                   </div>
                 </div>

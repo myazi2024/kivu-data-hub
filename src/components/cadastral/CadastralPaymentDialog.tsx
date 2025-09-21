@@ -48,7 +48,21 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
     });
   };
 
-  const handleMobileMoneySuccess = async () => {
+  const handleMobileMoneySuccess = async (paymentData?: { provider: string; phoneNumber: string }) => {
+    if (paymentData) {
+      // Mettre à jour la facture avec les informations de paiement
+      const currentInvoice = localStorage.getItem('currentCadastralInvoice');
+      if (currentInvoice) {
+        try {
+          const invoice = JSON.parse(currentInvoice);
+          invoice.payment_method = paymentData.provider;
+          invoice.phone_number = paymentData.phoneNumber;
+          localStorage.setItem('currentCadastralInvoice', JSON.stringify(invoice));
+        } catch (e) {
+          console.log('Erreur mise à jour informations paiement:', e);
+        }
+      }
+    }
     await handlePaymentSuccess();
   };
 

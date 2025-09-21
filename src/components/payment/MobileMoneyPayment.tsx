@@ -11,7 +11,7 @@ import { CartItem } from '@/hooks/useCart';
 interface MobileMoneyPaymentProps {
   item: CartItem;
   currency: string;
-  onPaymentSuccess: () => void;
+  onPaymentSuccess: (paymentData?: { provider: string; phoneNumber: string }) => void;
 }
 
 const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
@@ -63,7 +63,10 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
     
     if (result) {
       setTimeout(() => {
-        onPaymentSuccess();
+        onPaymentSuccess({
+          provider: paymentData.provider,
+          phoneNumber: paymentData.phoneNumber
+        });
       }, 2000);
     }
   };
