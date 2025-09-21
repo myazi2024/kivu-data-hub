@@ -327,9 +327,9 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
             <Button 
               variant="ghost" 
               size="icon" 
-              onClick={() => window.print()} 
+              onClick={handleDownloadReport}
               className="h-8 w-8 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-              title="Imprimer le rapport"
+              title="Imprimer le rapport (génère un PDF identique au téléchargement)"
             >
               <Printer className="h-4 w-4" />
             </Button>
