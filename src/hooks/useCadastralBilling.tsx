@@ -221,6 +221,11 @@ export const useCadastralBilling = () => {
             : "Le paiement de test n'a pas pu être traité",
           variant: status === 'paid' ? "default" : "destructive"
         });
+        
+        // Déclencher un événement pour actualiser les statistiques même en mode test
+        if (status === 'paid') {
+          window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+        }
         return;
       }
 
@@ -257,6 +262,11 @@ export const useCadastralBilling = () => {
           : "Le paiement n'a pas pu être traité",
         variant: status === 'paid' ? "default" : "destructive"
       });
+
+      // Déclencher un événement pour actualiser les statistiques
+      if (status === 'paid') {
+        window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+      }
 
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la facture:', error);
