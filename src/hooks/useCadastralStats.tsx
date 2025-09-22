@@ -80,10 +80,30 @@ export const useCadastralStats = () => {
       setTimeout(() => fetchStats(), 500); // Petit délai pour laisser la base de données se mettre à jour
     };
 
+    // Écouter les mises à jour de factures
+    const handleInvoiceUpdated = () => {
+      setTimeout(() => fetchStats(), 300);
+    };
+
+    // Écouter les nouveaux paiements
+    const handleNewPayment = () => {
+      setTimeout(() => fetchStats(), 300);
+    };
+
     window.addEventListener('cadastralPaymentCompleted', handlePaymentCompleted);
+    window.addEventListener('cadastralInvoiceUpdated', handleInvoiceUpdated);
+    window.addEventListener('cadastralNewPayment', handleNewPayment);
+
+    // Actualiser les statistiques toutes les 30 secondes pour capturer les changements
+    const interval = setInterval(() => {
+      fetchStats();
+    }, 30000);
 
     return () => {
       window.removeEventListener('cadastralPaymentCompleted', handlePaymentCompleted);
+      window.removeEventListener('cadastralInvoiceUpdated', handleInvoiceUpdated);
+      window.removeEventListener('cadastralNewPayment', handleNewPayment);
+      clearInterval(interval);
     };
   }, []);
 

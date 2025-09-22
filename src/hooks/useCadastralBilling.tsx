@@ -137,6 +137,9 @@ export const useCadastralBilling = () => {
           "Vous pouvez maintenant consulter les données cadastrales"
       });
 
+      // Déclencher l'événement pour mettre à jour les statistiques même en mode test
+      window.dispatchEvent(new CustomEvent('cadastralNewPayment'));
+
       return simulatedInvoice;
     } catch (error) {
       console.error('Erreur lors de la création de la facture:', error);
@@ -266,6 +269,7 @@ export const useCadastralBilling = () => {
       // Déclencher un événement pour actualiser les statistiques
       if (status === 'paid') {
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+        window.dispatchEvent(new CustomEvent('cadastralInvoiceUpdated'));
       }
 
     } catch (error) {
