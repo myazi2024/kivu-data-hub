@@ -62,10 +62,10 @@ const HeroSection = () => {
         <div className="w-full max-w-4xl mx-auto">
           <CadastralSearchBar />
         </div>
-      </div>
 
-      {/* Compteur de statistiques cadastrales */}
-      <CadastralStatsCounter />
+        {/* Compteur de statistiques cadastrales */}
+        <CadastralStatsCounter />
+      </div>
     </section>
   );
 };
