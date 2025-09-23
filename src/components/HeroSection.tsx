@@ -27,10 +27,15 @@ const HeroSection = () => {
         {/* Main Heading */}
         <div className="mb-4 sm:mb-6">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 leading-tight">
-            Analyse. Visualisation. Décision.
+            Accédez aux informations de n'importe quelle propriété en RDC, sans quitter votre canapé.
           </h1>
           
           <TypewriterAnimation />
+        </div>
+
+        {/* Barre de recherche cadastrale */}
+        <div className="w-full max-w-4xl mx-auto mb-6 sm:mb-8">
+          <CadastralSearchBar />
         </div>
 
         {/* Call to Action Buttons - Premium Mobile Design */}
@@ -56,11 +61,6 @@ const HeroSection = () => {
               <span className="sm:hidden">Données foncières</span>
             </Button>
           </Link>
-        </div>
-
-        {/* Barre de recherche cadastrale */}
-        <div className="w-full max-w-4xl mx-auto">
-          <CadastralSearchBar />
         </div>
 
         {/* Compteur de statistiques cadastrales */}
