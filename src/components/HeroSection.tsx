@@ -34,12 +34,17 @@ const HeroSection = () => {
         </div>
 
         {/* Barre de recherche cadastrale */}
-        <div className="w-full max-w-4xl mx-auto mb-6 sm:mb-8">
+        <div className="w-full max-w-4xl mx-auto mb-4 sm:mb-6">
           <CadastralSearchBar />
         </div>
 
+        {/* Compteur de statistiques cadastrales */}
+        <div className="mb-8 sm:mb-10">
+          <CadastralStatsCounter />
+        </div>
+
         {/* Call to Action Buttons - Premium Mobile Design */}
-        <div className="flex flex-row gap-3 sm:gap-4 justify-center items-center mb-6 sm:mb-8 px-4">
+        <div className="flex flex-row gap-3 sm:gap-4 justify-center items-center px-4">
           <Link to="/publications" className="flex-1 max-w-[160px] sm:max-w-none sm:flex-none">
             <Button 
               className="w-full bg-white text-seloger-red hover:bg-white/95 hover:scale-[1.02] font-semibold px-4 sm:px-6 py-3 sm:py-3.5 text-sm sm:text-base group transition-all duration-300 h-12 sm:h-auto rounded-xl sm:rounded-lg shadow-lg hover:shadow-xl"
@@ -62,9 +67,6 @@ const HeroSection = () => {
             </Button>
           </Link>
         </div>
-
-        {/* Compteur de statistiques cadastrales */}
-        <CadastralStatsCounter />
       </div>
     </section>
   );
