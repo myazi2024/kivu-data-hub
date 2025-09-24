@@ -12,7 +12,8 @@ import {
   Shield,
   Building2,
   ChevronDown,
-  ChevronRight
+  ChevronRight,
+  Info
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useCadastralBilling, CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
@@ -119,7 +121,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const discountedAmount = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
 
   return (
-    <>
+    <TooltipProvider>
       <Card className="w-full border-primary/20 bg-gradient-to-br from-background to-secondary/5 relative">
         {/* Bouton fermer */}
         {onClose && (
@@ -285,9 +287,21 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
                       {/* Détails du service alignés à gauche */}
                       <div className="flex-1 min-w-0 text-left">
-                        <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1 text-left">
-                          {service.name}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1 text-left">
+                            {service.name}
+                          </h4>
+                          {service.tooltip && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Info className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-help" />
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-xs">
+                                <p className="text-xs">{service.tooltip}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
                       </div>
 
                       {/* Bouton pour dérouler/masquer les détails */}
@@ -525,7 +539,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           onPaymentSuccess={handlePaymentSuccess}
         />
       )}
-    </>
+    </TooltipProvider>
   );
 };
 
