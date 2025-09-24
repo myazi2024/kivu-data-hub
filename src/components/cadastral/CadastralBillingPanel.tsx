@@ -288,9 +288,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1">
                           {service.name}
                         </h4>
-                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                          {service.description}
-                        </p>
                       </div>
 
                       {/* Bouton pour dérouler/masquer les détails */}
