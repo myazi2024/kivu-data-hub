@@ -271,7 +271,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       }
                     `}
                   >
-                    <div className="flex items-center gap-3 p-4">
+                    <div className="flex items-start gap-3 p-4">
                       {/* Icône du service */}
                       <div className={`
                         p-2 rounded-lg shrink-0 transition-colors
@@ -284,8 +284,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       </div>
 
                       {/* Détails du service alignés à gauche */}
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1">
+                      <div className="flex-1 min-w-0 text-left">
+                        <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1 text-left">
                           {service.name}
                         </h4>
                       </div>
@@ -323,8 +323,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     {/* Détails déroulants */}
                     <Collapsible open={isExpanded}>
                       <CollapsibleContent className="px-4 pb-4">
-                        <div className="space-y-2">
-                          <p className="text-xs md:text-sm text-foreground/80 leading-relaxed">
+                        <div className="space-y-2 text-left">
+                          <p className="text-xs md:text-sm text-foreground/80 leading-relaxed text-left">
                             {service.description}
                           </p>
                         </div>
