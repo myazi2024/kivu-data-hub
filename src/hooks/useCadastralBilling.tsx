@@ -21,7 +21,7 @@ export const CADASTRAL_SERVICES: CadastralService[] = [
   },
   {
     id: 'location_history',
-    name: 'Localisation et Historique de bornage',
+    name: 'Croquis du terrain et Historique de bornage',
     price: 2,
     description: 'Croquis du terrain, limites cadastrales, historique complet des opérations de bornage et modifications géométriques. Essentiel pour les projets de construction et délimitation de terrain.',
     tooltip: 'Ce croquis est réalisé à partir des données du dernier bornage réalisé. En cas d\'incohérence, veuillez vous référer au dernier croquis enregistré au bureau de la circonscription foncière à laquelle est attachée cette parcelle.'

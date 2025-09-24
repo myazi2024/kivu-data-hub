@@ -296,8 +296,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                               <TooltipTrigger asChild>
                                 <Info className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-help" />
                               </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-xs">
-                                <p className="text-xs">{service.tooltip}</p>
+                              <TooltipContent 
+                                side="top" 
+                                className="max-w-xs bg-popover border border-border text-popover-foreground shadow-md z-50"
+                              >
+                                <p className="text-xs p-2">{service.tooltip}</p>
                               </TooltipContent>
                             </Tooltip>
                           )}
