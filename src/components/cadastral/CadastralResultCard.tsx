@@ -288,7 +288,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       searchResult={result} 
       onPaymentSuccess={(services) => handlePaymentSuccess(services)} 
       preselectServiceId={preselectServiceId}
-      onClose={() => setShowBillingPanel(false)}
+      onClose={onClose}
     />;
   }
 
