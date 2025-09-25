@@ -609,20 +609,20 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                     <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
                       <Map className="h-3 w-3" />
                       Croquis du terrain
-                       <Tooltip>
-                         <TooltipTrigger asChild>
+                       <Popover>
+                         <PopoverTrigger asChild>
                            <button className="inline-flex items-center">
                              <Info className="h-3 w-3 text-muted-foreground hover:text-primary cursor-help transition-colors" />
                            </button>
-                         </TooltipTrigger>
-                         <TooltipContent 
+                         </PopoverTrigger>
+                         <PopoverContent 
                            side="bottom" 
-                           className="max-w-xs bg-popover border border-border text-popover-foreground shadow-lg z-[100] p-3"
+                           className="max-w-xs text-sm z-[100]"
                            sideOffset={5}
                          >
                            <p className="text-xs leading-relaxed">Ce croquis est réalisé à partir des données du dernier bornage réalisé. En cas d'incohérence, veuillez vous référer au dernier croquis enregistré au bureau de la circonscription foncière à laquelle est attachée cette parcelle.</p>
-                         </TooltipContent>
-                       </Tooltip>
+                         </PopoverContent>
+                       </Popover>
                     </h4>
                     <div className="relative z-0">
                       <CadastralMap 
