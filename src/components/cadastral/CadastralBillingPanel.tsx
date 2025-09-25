@@ -207,7 +207,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                   }
                 })()}
               `}>
-                Des informations cadastrales détaillées et certifiées sont disponibles pour cette parcelle. Sélectionnez les services de votre choix dans le catalogue ci-dessous.
+                Bonne nouvelle : cette parcelle dispose d'informations cadastrales détaillées. Parcourez la liste ci-dessus et sélectionnez les données que vous souhaitez consulter.
               </p>
             </div>
           </div>
