@@ -30,6 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { useAuth } from '@/hooks/useAuth';
@@ -293,7 +294,8 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   }
 
   return (
-    <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
+    <TooltipProvider>
+      <Card className="w-full shadow-2xl border-0 bg-gradient-to-br from-background via-background to-primary/5 overflow-visible">
       <CardHeader className={`sticky top-0 z-20 pb-3 p-4 md:p-5 bg-gradient-to-r from-primary/5 to-secondary/5 border-b border-border/50 backdrop-blur-md bg-background/95 transition-all duration-500 ease-out ${isHeaderHidden ? 'transform -translate-y-full opacity-0' : 'transform translate-y-0 opacity-100'}`}>
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
@@ -602,13 +604,32 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                 </Card>
 
                 {/* Carte cadastrale */}
-                <div className="relative z-0">
-                  <CadastralMap 
-                    coordinates={parcel.gps_coordinates}
-                    center={{ lat: parcel.latitude, lng: parcel.longitude }}
-                    parcelNumber={parcel.parcel_number}
-                  />
-                </div>
+                <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
+                  <CardContent className="p-3">
+                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                      <Map className="h-3 w-3" />
+                      Croquis du terrain
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent 
+                          side="top" 
+                          className="max-w-xs bg-popover border border-border text-popover-foreground shadow-md z-50"
+                        >
+                          <p className="text-xs p-2">Ce croquis est réalisé à partir des données du dernier bornage réalisé. En cas d'incohérence, veuillez vous référer au dernier croquis enregistré au bureau de la circonscription foncière à laquelle est attachée cette parcelle.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </h4>
+                    <div className="relative z-0">
+                      <CadastralMap 
+                        coordinates={parcel.gps_coordinates}
+                        center={{ lat: parcel.latitude, lng: parcel.longitude }}
+                        parcelNumber={parcel.parcel_number}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
 
                 {/* Informations sur le bornage - Mobile First */}
                 <Card className="border-0 bg-gradient-to-br from-background to-secondary/5">
@@ -1150,6 +1171,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
         />
       </CardContent>
     </Card>
+    </TooltipProvider>
   );
 };
 
