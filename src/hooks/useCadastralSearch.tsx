@@ -31,6 +31,24 @@ export interface CadastralParcel {
   // Nouveaux champs de bornage
   nombre_bornes: number;
   surface_calculee_bornes: number | null;
+  // Nouveaux champs de construction
+  construction_type: string | null;
+  construction_nature: 'Durable' | 'Semi-durable' | 'Précaire' | null;
+  declared_usage: 'Résidentiel' | 'Commercial' | 'Mixte' | 'Institutionnel' | 'Industriel' | 'Agricole' | null;
+}
+
+export interface BuildingPermit {
+  id: string;
+  permit_number: string;
+  issue_date: string;
+  validity_period_months: number;
+  issuing_service: string;
+  administrative_status: 'Conforme' | 'En attente' | 'Non autorisé';
+  issuing_service_contact: string | null;
+  permit_document_url: string | null;
+  is_current: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface OwnershipHistory {
@@ -82,6 +100,7 @@ export interface CadastralSearchResult {
   tax_history: TaxHistory[];
   mortgage_history: MortgageHistory[];
   boundary_history: BoundaryHistory[];
+  building_permits: BuildingPermit[];
 }
 
 export const useCadastralSearch = () => {
@@ -168,6 +187,15 @@ export const useCadastralSearch = () => {
 
       if (boundaryError) throw boundaryError;
 
+      // Recherche des permis de construire
+      const { data: buildingPermitsData, error: buildingPermitsError } = await supabase
+        .from('cadastral_building_permits')
+        .select('*')
+        .eq('parcel_id', parcelData.id)
+        .order('issue_date', { ascending: false });
+
+      if (buildingPermitsError) throw buildingPermitsError;
+
       // Transformation des données d'hypothèques pour correspondre à l'interface
       const formattedMortgageData = mortgageData?.map(mortgage => ({
         ...mortgage,
@@ -179,7 +207,8 @@ export const useCadastralSearch = () => {
         ownership_history: ownershipData as OwnershipHistory[],
         tax_history: taxData as TaxHistory[],
         mortgage_history: formattedMortgageData as MortgageHistory[],
-        boundary_history: boundaryData as BoundaryHistory[]
+        boundary_history: boundaryData as BoundaryHistory[],
+        building_permits: buildingPermitsData as BuildingPermit[]
       });
 
     } catch (err) {

@@ -16,7 +16,7 @@ export const CADASTRAL_SERVICES: CadastralService[] = [
     id: 'information',
     name: 'Informations générales',
     price: 3,
-    description: 'Identité du propriétaire actuel, superficie exacte, statut juridique de la parcelle et coordonnées géographiques. Idéal pour vérifier la propriété et obtenir les données de base.'
+    description: 'Identité du propriétaire actuel, superficie exacte, statut juridique de la parcelle, coordonnées géographiques et informations sur la construction (type de bâti, nature du bâti, usage déclaré, permis de construire et leur historique). Idéal pour vérifier la propriété et obtenir les données de base complètes.'
   },
   {
     id: 'location_history',
