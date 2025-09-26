@@ -528,35 +528,96 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                             <span className="text-xs font-medium bg-accent/10 px-1.5 py-0.5 rounded text-right">{parcel.declared_usage}</span>
                           </div>
                         )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Permis de construire - Mobile First */}
-                {building_permits.length > 0 && (
-                  <Card className="border-0 bg-gradient-to-br from-background to-green-50">
-                    <CardContent className="p-3">
-                      <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
-                        <FileCheck className="h-3 w-3" />
-                        Permis de construire
-                        {building_permits.filter(permit => permit.is_current).length > 0 && (
-                          <Badge variant="outline" className="text-xs h-4 ml-1">
-                            {building_permits.filter(permit => permit.is_current).length} actuel{building_permits.filter(permit => permit.is_current).length > 1 ? 's' : ''}
-                          </Badge>
-                        )}
-                      </h4>
-                      <div className="space-y-2">
+                        
+                        {/* Informations du permis de construire actuel intégrées */}
                         {building_permits.filter(permit => permit.is_current).map((permit) => {
                           const issueDate = new Date(permit.issue_date);
                           const validityEndDate = new Date(issueDate.getTime() + permit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
                           const isValid = validityEndDate > new Date();
                           
                           return (
+                            <React.Fragment key={permit.id}>
+                              <Separator className="my-2" />
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-muted-foreground">Permis N°:</span>
+                                <span className="text-xs font-medium text-right">{permit.permit_number}</span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-muted-foreground">Statut admin:</span>
+                                <div className="flex items-center gap-1">
+                                  {permit.administrative_status === 'Conforme' && <CheckCircle className="h-3 w-3 text-green-500" />}
+                                  {permit.administrative_status === 'En attente' && <AlertCircle className="h-3 w-3 text-yellow-500" />}
+                                  {permit.administrative_status === 'Non autorisé' && <XCircle className="h-3 w-3 text-red-500" />}
+                                  <span className="text-xs font-medium">{permit.administrative_status}</span>
+                                </div>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-[10px] text-muted-foreground">Validité:</span>
+                                <span className={`text-xs font-medium ${isValid ? 'text-green-600' : 'text-red-600'}`}>
+                                  {isValid ? '✅ Valide' : '❌ Expiré'} ({validityEndDate.toLocaleDateString('fr-FR')})
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-start">
+                                <span className="text-[10px] text-muted-foreground">Service émetteur:</span>
+                                <span className="text-xs text-right leading-tight max-w-[60%]">{permit.issuing_service}</span>
+                              </div>
+                              {permit.issuing_service_contact && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[10px] text-muted-foreground">Contact:</span>
+                                  <Button variant="outline" size="sm" className="h-5 text-xs px-2" asChild>
+                                    <a href={`tel:${permit.issuing_service_contact}`}>
+                                      <ExternalLink className="h-2 w-2 mr-1" />
+                                      Voir contact
+                                    </a>
+                                  </Button>
+                                </div>
+                              )}
+                              {permit.permit_document_url && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-[10px] text-muted-foreground">Document:</span>
+                                  <Button variant="outline" size="sm" className="h-5 text-xs px-2" asChild>
+                                    <a href={permit.permit_document_url} target="_blank" rel="noopener noreferrer">
+                                      <ExternalLink className="h-2 w-2 mr-1" />
+                                      Voir le permis
+                                    </a>
+                                  </Button>
+                                </div>
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Historique des permis de construire - Mobile First */}
+                {building_permits.filter(permit => !permit.is_current).length > 0 && (
+                  <Card className="border-0 bg-gradient-to-br from-background to-orange-50">
+                    <CardContent className="p-3">
+                      <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                        <Clock className="h-3 w-3" />
+                        Historique de permis de construire
+                        <Badge variant="outline" className="text-xs h-4 ml-1">
+                          {building_permits.filter(permit => !permit.is_current).length} ancien{building_permits.filter(permit => !permit.is_current).length > 1 ? 's' : ''}
+                        </Badge>
+                      </h4>
+                      <div className="space-y-2">
+                        {building_permits.filter(permit => !permit.is_current).map((permit) => {
+                          const issueDate = new Date(permit.issue_date);
+                          const validityEndDate = new Date(issueDate.getTime() + permit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
+                          
+                          return (
                             <div key={permit.id} className="p-2 bg-background/50 rounded-lg border border-border/30">
                               <div className="flex justify-between items-start gap-2 mb-1">
                                 <span className="text-[10px] text-muted-foreground">Numéro:</span>
                                 <span className="text-xs font-medium text-right">{permit.permit_number}</span>
+                              </div>
+                              <div className="flex justify-between items-center gap-2 mb-1">
+                                <span className="text-[10px] text-muted-foreground">Période:</span>
+                                <span className="text-xs text-right">
+                                  {formatDate(permit.issue_date)} - {validityEndDate.toLocaleDateString('fr-FR')}
+                                </span>
                               </div>
                               <div className="flex justify-between items-center gap-2 mb-1">
                                 <span className="text-[10px] text-muted-foreground">Statut:</span>
@@ -567,18 +628,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                   <span className="text-xs font-medium">{permit.administrative_status}</span>
                                 </div>
                               </div>
-                              <div className="flex justify-between items-center gap-2 mb-1">
-                                <span className="text-[10px] text-muted-foreground">Validité:</span>
-                                <span className={`text-xs font-medium ${isValid ? 'text-green-600' : 'text-red-600'}`}>
-                                  {isValid ? 'Valide' : 'Expiré'} ({validityEndDate.toLocaleDateString('fr-FR')})
-                                </span>
-                              </div>
-                              <div className="flex justify-between items-start gap-2 mb-1">
-                                <span className="text-[10px] text-muted-foreground">Service:</span>
-                                <span className="text-xs text-right leading-tight">{permit.issuing_service}</span>
+                              <div className="flex justify-between items-start gap-2">
+                                <span className="text-[10px] text-muted-foreground">Service émetteur:</span>
+                                <span className="text-xs text-right leading-tight max-w-[60%]">{permit.issuing_service}</span>
                               </div>
                               {permit.issuing_service_contact && (
-                                <div className="flex justify-between items-center gap-2">
+                                <div className="flex justify-between items-center gap-2 mt-1">
                                   <span className="text-[10px] text-muted-foreground">Contact:</span>
                                   <Button variant="outline" size="sm" className="h-5 text-xs px-2" asChild>
                                     <a href={`tel:${permit.issuing_service_contact}`}>
@@ -591,27 +646,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                             </div>
                           );
                         })}
-                        
-                        {/* Historique des anciens permis */}
-                        {building_permits.filter(permit => !permit.is_current).length > 0 && (
-                          <div className="pt-2 border-t border-border/30">
-                            <details className="group">
-                              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-primary transition-colors">
-                                Historique ({building_permits.filter(permit => !permit.is_current).length} ancien{building_permits.filter(permit => !permit.is_current).length > 1 ? 's' : ''})
-                              </summary>
-                              <div className="mt-2 space-y-1">
-                                {building_permits.filter(permit => !permit.is_current).map((permit) => (
-                                  <div key={permit.id} className="p-1.5 bg-muted/30 rounded text-xs">
-                                    <div className="flex justify-between">
-                                      <span>{permit.permit_number}</span>
-                                      <span>{formatDate(permit.issue_date)}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </details>
-                          </div>
-                        )}
                       </div>
                     </CardContent>
                   </Card>
