@@ -94,6 +94,59 @@ export type Database = {
           },
         ]
       }
+      cadastral_building_permits: {
+        Row: {
+          administrative_status: string
+          created_at: string
+          id: string
+          is_current: boolean
+          issue_date: string
+          issuing_service: string
+          issuing_service_contact: string | null
+          parcel_id: string
+          permit_document_url: string | null
+          permit_number: string
+          updated_at: string
+          validity_period_months: number
+        }
+        Insert: {
+          administrative_status?: string
+          created_at?: string
+          id?: string
+          is_current?: boolean
+          issue_date: string
+          issuing_service: string
+          issuing_service_contact?: string | null
+          parcel_id: string
+          permit_document_url?: string | null
+          permit_number: string
+          updated_at?: string
+          validity_period_months?: number
+        }
+        Update: {
+          administrative_status?: string
+          created_at?: string
+          id?: string
+          is_current?: boolean
+          issue_date?: string
+          issuing_service?: string
+          issuing_service_contact?: string | null
+          parcel_id?: string
+          permit_document_url?: string | null
+          permit_number?: string
+          updated_at?: string
+          validity_period_months?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_building_permits_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_invoices: {
         Row: {
           client_email: string
@@ -299,10 +352,13 @@ export type Database = {
           circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
+          construction_nature: string | null
+          construction_type: string | null
           created_at: string
           current_owner_legal_status: string | null
           current_owner_name: string
           current_owner_since: string
+          declared_usage: string | null
           gps_coordinates: Json | null
           groupement: string | null
           id: string
@@ -328,10 +384,13 @@ export type Database = {
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
+          construction_nature?: string | null
+          construction_type?: string | null
           created_at?: string
           current_owner_legal_status?: string | null
           current_owner_name: string
           current_owner_since?: string
+          declared_usage?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
@@ -357,10 +416,13 @@ export type Database = {
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
+          construction_nature?: string | null
+          construction_type?: string | null
           created_at?: string
           current_owner_legal_status?: string | null
           current_owner_name?: string
           current_owner_since?: string
+          declared_usage?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
@@ -1221,6 +1283,10 @@ export type Database = {
           period_date: string
           value: number
         }[]
+      }
+      is_permit_valid: {
+        Args: { issue_date: string; validity_months: number }
+        Returns: boolean
       }
       log_audit_action: {
         Args: {
