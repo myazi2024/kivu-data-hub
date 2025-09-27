@@ -296,6 +296,30 @@ const CadastralInvoice: React.FC<CadastralInvoiceProps> = ({
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium leading-tight">{service.name}</p>
                         <p className="text-xs text-muted-foreground line-clamp-1">{service.description || 'Service cadastral professionnel'}</p>
+                        
+                        {/* Détails supplémentaires selon le service */}
+                        {service.id === 'information' && (
+                          <div className="mt-1 pt-1 border-t border-muted/30">
+                            <p className="text-xs text-muted-foreground">
+                              • Informations générales et propriétaire
+                            </p>
+                            {(result.parcel.construction_type || result.parcel.construction_nature || result.parcel.declared_usage) && (
+                              <p className="text-xs text-muted-foreground">
+                                • Informations sur la construction
+                              </p>
+                            )}
+                            {result.building_permits?.some(permit => permit.is_current) && (
+                              <p className="text-xs text-muted-foreground">
+                                • Permis de construire actuel
+                              </p>
+                            )}
+                            {result.building_permits?.some(permit => !permit.is_current) && (
+                              <p className="text-xs text-muted-foreground">
+                                • Historique de permis ({result.building_permits.filter(permit => !permit.is_current).length} ancien{result.building_permits.filter(permit => !permit.is_current).length > 1 ? 's' : ''})
+                              </p>
+                            )}
+                          </div>
+                        )}
                       </div>
                       <div className="text-right shrink-0">
                         <p className="text-xs font-medium">${Number(service.price).toFixed(2)}</p>

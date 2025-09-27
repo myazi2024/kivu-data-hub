@@ -283,7 +283,7 @@ export function generateCadastralReport(
   const margin = 10;
   let currentY = margin;
 
-  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history } = cadastralResult;
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = cadastralResult;
 
   // ===== FONCTIONS DE FORMATAGE IDENTIQUES À L'ÉCRAN =====
   const formatArea = (sqm: number): string => {
@@ -350,6 +350,29 @@ export function generateCadastralReport(
       ...(parcel.area_hectares > 0 ? [['Hectares:', `${parcel.area_hectares.toFixed(2)} ha`]] : [])
     ];
 
+    // Ajouter les informations de construction s'il y en a
+    const constructionData = [];
+    if (parcel.construction_type) {
+      constructionData.push(['Construction:', parcel.construction_type]);
+    }
+    if (parcel.construction_nature) {
+      constructionData.push(['Nature:', parcel.construction_nature]);
+    }
+    if (parcel.declared_usage) {
+      constructionData.push(['Usage:', parcel.declared_usage]);
+    }
+
+    // Ajouter le permis de construire actuel s'il existe
+    const currentPermit = building_permits?.find(permit => permit.is_current);
+    if (currentPermit) {
+      constructionData.push(['Permis N°:', currentPermit.permit_number]);
+      constructionData.push(['Statut Admin:', currentPermit.administrative_status]);
+      const issueDate = new Date(currentPermit.issue_date);
+      const validityEndDate = new Date(issueDate.getTime() + currentPermit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
+      const isValid = validityEndDate > new Date();
+      constructionData.push(['Validité:', isValid ? `Valide jusqu'au ${validityEndDate.toLocaleDateString('fr-FR')}` : `Expiré le ${validityEndDate.toLocaleDateString('fr-FR')}`]);
+    }
+
     infoData.forEach(([label, value]) => {
       doc.setFont('helvetica', 'bold');
       doc.text(label, leftCol, leftY);
@@ -383,6 +406,26 @@ export function generateCadastralReport(
       doc.text(lines, leftCol + 25, leftY);
       leftY += 3.5;
     });
+
+    // Ajouter les informations de construction si disponibles
+    if (constructionData.length > 0) {
+      leftY += 3;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text("INFORMATIONS SUR LA CONSTRUCTION", leftCol, leftY);
+      leftY += 5;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(7);
+      constructionData.forEach(([label, value]) => {
+        doc.setFont('helvetica', 'bold');
+        doc.text(label, leftCol, leftY);
+        doc.setFont('helvetica', 'normal');
+        const lines = doc.splitTextToSize(value, colWidth - 25);
+        doc.text(lines, leftCol + 25, leftY);
+        leftY += 3.5;
+      });
+    }
   } else {
     doc.setTextColor(200, 0, 0);
     doc.setFont('helvetica', 'italic');
@@ -518,6 +561,37 @@ export function generateCadastralReport(
       currentY += 3;
     } else {
       doc.text("Aucune donnée fiscale disponible", margin, currentY);
+      currentY += 3;
+    }
+  }
+
+  // ===== HISTORIQUE DE PERMIS DE CONSTRUIRE (Si disponible) =====
+  const oldPermits = building_permits?.filter(permit => !permit.is_current);
+  if (oldPermits && oldPermits.length > 0) {
+    currentY += 5;
+    doc.setTextColor(0, 51, 102);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.text("HISTORIQUE DE PERMIS DE CONSTRUIRE", margin, currentY);
+    currentY += 5;
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(60, 60, 60);
+
+    oldPermits.slice(0, 3).forEach((permit, index) => {
+      const issueDate = new Date(permit.issue_date);
+      const validityEndDate = new Date(issueDate.getTime() + permit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
+      doc.text(`${index + 1}. Permis ${permit.permit_number} | ${formatDate(permit.issue_date)} - ${validityEndDate.toLocaleDateString('fr-FR')} | ${permit.administrative_status}`, margin, currentY);
+      currentY += 3;
+      if (permit.issuing_service) {
+        doc.text(`   Service: ${permit.issuing_service}`, margin, currentY);
+        currentY += 3;
+      }
+    });
+    if (oldPermits.length > 3) {
+      doc.setFont('helvetica', 'italic');
+      doc.text(`... et ${oldPermits.length - 3} autre(s) permis`, margin, currentY);
       currentY += 3;
     }
   }
