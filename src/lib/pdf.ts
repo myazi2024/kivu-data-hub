@@ -284,7 +284,7 @@ function formatDateTimeForFilename(): string {
 }
 
 /**
- * Génère un rapport cadastral complet et professionnel sur plusieurs pages
+ * Génère un rapport cadastral complet structuré selon les onglets du résultat cadastral
  */
 export async function generateCadastralReport(
   cadastralResult: any,
@@ -301,13 +301,22 @@ export async function generateCadastralReport(
 
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = cadastralResult;
   
-  // Générer un ID unique pour ce rapport
+  // Générer un ID unique pour ce rapport et QR code
   const reportId = generateReportId();
   const reportDate = new Date();
   const reportDateTime = reportDate.toLocaleDateString('fr-FR') + ' à ' + reportDate.toLocaleTimeString('fr-FR');
+  
+  // Générer QR code pour vérification
+  let qrCodeDataUrl = '';
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(`https://bic.cd/verify-report/${reportId}`);
+  } catch (error) {
+    console.error('Failed to generate QR code:', error);
+  }
 
   // Fonction pour ajouter un en-tête de page
   const addPageHeader = () => {
+    // Logo et en-tête BIC
     doc.setTextColor(0, 51, 102);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(14);
@@ -315,39 +324,56 @@ export async function generateCadastralReport(
     
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text(`Avenue Patrice Lumumba, Goma, Nord-Kivu, RDC`, pageWidth - margin, 10, { align: 'right' });
-    doc.text(`contact@bic-congo.cd | +243 997 123 456`, pageWidth - margin, 14, { align: 'right' });
+    doc.text(`${BIC_COMPANY_INFO.address}, ${BIC_COMPANY_INFO.city}`, pageWidth - margin, 10, { align: 'right' });
+    doc.text(`${BIC_COMPANY_INFO.email} | ${BIC_COMPANY_INFO.phone}`, pageWidth - margin, 14, { align: 'right' });
     
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     doc.text("Bureau de l'Immobilier du Congo", margin, 19);
     
-    doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
-    doc.text(`RCCM: ${BIC_COMPANY_INFO.rccm}`, pageWidth - margin, 18, { align: 'right' });
-    doc.text(`ID NAT: ${BIC_COMPANY_INFO.idNat} | N°IMPÔT: ${BIC_COMPANY_INFO.numImpot}`, pageWidth - margin, 22, { align: 'right' });
+    // Titre du rapport
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.setTextColor(0, 51, 102);
+    doc.text("RAPPORT CADASTRAL COMPLET", pageWidth / 2, 25, { align: 'center' });
     
-    currentY = 30;
+    doc.setFontSize(12);
+    doc.text(`Parcelle ${parcel.parcel_number}`, pageWidth / 2, 32, { align: 'center' });
+    
+    // Info rapport à droite
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Rapport N° ${reportId}`, pageWidth - margin, 18, { align: 'right' });
+    doc.text(`Généré le ${reportDate.toLocaleDateString('fr-FR')}`, pageWidth - margin, 22, { align: 'right' });
+    
+    currentY = 45;
   };
 
-  // Fonction pour ajouter un pied de page
+  // Fonction pour ajouter un pied de page avec authentification
   const addPageFooter = () => {
     const footerY = pageHeight - 25;
     
-    doc.setDrawColor(0, 51, 102);
+    doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.3);
     doc.line(margin, footerY, pageWidth - margin, footerY);
     
-    doc.setTextColor(60, 60, 60);
+    doc.setTextColor(80, 80, 80);
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.text(`Bureau de l'Immobilier du Congo    +243 997 123 456 | contact@bic-congo.cd`, margin, footerY + 5);
-    doc.text(`Page ${pageNumber}/4`, pageWidth - margin, footerY + 5, { align: 'right' });
+    doc.text("Ce document a été généré par la plateforme BIC. Toute reproduction non vérifiée est considérée comme non conforme.", margin, footerY + 4);
+    doc.text("Vérifiez ce rapport sur bic.cd/verify", margin, footerY + 8);
     
-    doc.setFontSize(7);
-    doc.text(`${BIC_COMPANY_INFO.rccm} | ${BIC_COMPANY_INFO.idNat}`, margin, footerY + 9);
-    doc.text(`Sources : Ministère des Affaires Foncières de la RDC    Généré le ${reportDateTime}`, margin, footerY + 13);
-    doc.text(`Avenue Patrice Lumumba, Goma, Nord-Kivu, RDC    à ${reportDate.toLocaleTimeString('fr-FR')}`, margin, footerY + 17);
+    // QR Code pour vérification
+    if (qrCodeDataUrl) {
+      try {
+        doc.addImage(qrCodeDataUrl, 'PNG', pageWidth - 35, footerY - 10, 12, 12);
+      } catch (error) {
+        console.error('Failed to add QR code to PDF:', error);
+      }
+    }
+    
+    doc.text(`Page ${pageNumber}`, pageWidth - margin, footerY + 8, { align: 'right' });
+    doc.text(`${BIC_COMPANY_INFO.email} | ${BIC_COMPANY_INFO.phone}`, pageWidth - margin, footerY + 12, { align: 'right' });
   };
 
   // Fonction pour créer une nouvelle page
