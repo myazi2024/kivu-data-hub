@@ -520,71 +520,157 @@ export async function generateCadastralReport(
     currentY += 15;
   }
 
-  // 4. HISTORIQUE DE PROPRIÉTÉ
+  addPageFooter();
+
+  // ===== PAGE 4: OBLIGATIONS FINANCIÈRES (correspond à l'onglet "Obligations") =====
+  addNewPage();
+
+  // 4. OBLIGATIONS FINANCIÈRES ET FISCALES
   doc.setTextColor(0, 51, 102);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(14);
-  doc.text("4. HISTORIQUE DE PROPRIÉTÉ", margin, currentY);
+  doc.text("4. OBLIGATIONS FINANCIÈRES ET FISCALES", margin, currentY);
   currentY += 8;
 
-  if (ownership_history && ownership_history.length > 0) {
-    const ownershipData = ownership_history.map(owner => [
-      owner.owner_name || 'Inconnu',
-      owner.legal_status || 'N/A',
-      formatDate(owner.ownership_start_date),
-      owner.ownership_end_date ? formatDate(owner.ownership_end_date) : 'Actuel',
-      owner.mutation_type || 'N/A'
-    ]);
-
-    autoTable(doc, {
-      head: [['Propriétaire', 'Statut juridique', 'Début', 'Fin', 'Type de mutation']],
-      body: ownershipData,
-      startY: currentY,
-      styles: { fontSize: 9, cellPadding: 3 },
-      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255] },
-      margin: { left: margin, right: margin }
-    });
-
-    currentY = (doc as any).lastAutoTable?.finalY + 10;
-  } else {
-    doc.setTextColor(100, 100, 100);
-    doc.setFont('helvetica', 'italic');
-    doc.setFontSize(10);
-    doc.text("Aucun historique de propriété disponible", margin, currentY);
-    currentY += 15;
-  }
-
-  // 5. HISTORIQUE FISCAL
-  doc.setTextColor(0, 51, 102);
+  // 4.1 Historique des taxes foncières
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text("5. HISTORIQUE FISCAL", margin, currentY);
-  currentY += 8;
+  doc.setFontSize(11);
+  doc.setTextColor(0, 51, 102);
+  doc.text("4.1 Historique des taxes foncières", margin, currentY);
+  currentY += 6;
 
   if (tax_history && tax_history.length > 0) {
     const taxData = tax_history.map(tax => [
       tax.tax_year?.toString() || 'N/A',
-      `${Number(tax.amount_usd || 0).toFixed(2)} USD`,
-      tax.payment_date ? formatDate(tax.payment_date) : 'N/A',
+      `$${Number(tax.amount_usd || 0).toLocaleString()}`,
       tax.payment_status === 'paid' ? 'Payé' : 
-      tax.payment_status === 'pending' ? 'En attente' : 'En retard'
+      tax.payment_status === 'pending' ? 'En attente' : 'En retard',
+      tax.payment_date ? formatDate(tax.payment_date) : 'Non payé',
+      tax.payment_status === 'overdue' ? 'RETARD DE PAIEMENT' : 
+      tax.payment_status === 'paid' ? 'À jour' : 'En attente'
     ]);
 
     autoTable(doc, {
-      head: [['Année', 'Montant', 'Date de paiement', 'Statut']],
+      head: [['Année fiscale', 'Montant dû (USD)', 'Statut de paiement', 'Date de paiement', 'Observations']],
       body: taxData,
+      startY: currentY,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255] },
+      margin: { left: margin, right: margin }
+    });
+
+    currentY = (doc as any).lastAutoTable?.finalY + 8;
+
+    // Calcul du résumé fiscal
+    const totalTaxes = tax_history.reduce((sum, tax) => sum + Number(tax.amount_usd || 0), 0);
+    const paidTaxes = tax_history.filter(tax => tax.payment_status === 'paid').reduce((sum, tax) => sum + Number(tax.amount_usd || 0), 0);
+    const overdueTaxes = tax_history.filter(tax => tax.payment_status === 'overdue').reduce((sum, tax) => sum + Number(tax.amount_usd || 0), 0);
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 51, 102);
+    doc.text("Résumé fiscal:", margin, currentY);
+    currentY += 5;
+
+    const taxSummaryData = [
+      ['Total des taxes dues', `$${totalTaxes.toLocaleString()}`],
+      ['Montant payé', `$${paidTaxes.toLocaleString()}`],
+      ['Arriérés en retard', `$${overdueTaxes.toLocaleString()}`],
+      ['Statut global', overdueTaxes > 0 ? 'EN RETARD' : 'À JOUR']
+    ];
+
+    autoTable(doc, {
+      head: [['Élément', 'Montant']],
+      body: taxSummaryData,
       startY: currentY,
       styles: { fontSize: 9, cellPadding: 3 },
       headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255] },
       margin: { left: margin, right: margin }
     });
 
-    currentY = (doc as any).lastAutoTable?.finalY + 10;
+    currentY = (doc as any).lastAutoTable?.finalY + 8;
+
+    // Note explicative
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text("Note: Les taxes foncières sont dues annuellement selon la législation en vigueur en RDC.", margin, currentY);
+    currentY += 10;
   } else {
     doc.setTextColor(100, 100, 100);
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(10);
-    doc.text("Aucun historique fiscal disponible", margin, currentY);
+    doc.text("Aucun historique fiscal disponible pour cette parcelle", margin, currentY);
+    currentY += 15;
+  }
+
+  // 4.2 Hypothèques et charges financières
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 51, 102);
+  doc.text("4.2 Hypothèques et charges financières", margin, currentY);
+  currentY += 6;
+
+  if (mortgage_history && mortgage_history.length > 0) {
+    const mortgageData = mortgage_history.map(mortgage => [
+      mortgage.creditor_name || 'N/A',
+      mortgage.creditor_type || 'Non spécifié',
+      `$${Number(mortgage.mortgage_amount_usd || 0).toLocaleString()}`,
+      `${Number(mortgage.duration_months || 0)} mois`,
+      formatDate(mortgage.contract_date),
+      mortgage.mortgage_status || 'Actif'
+    ]);
+
+    autoTable(doc, {
+      head: [['Créancier', 'Type', 'Montant (USD)', 'Durée', 'Date contrat', 'Statut']],
+      body: mortgageData,
+      startY: currentY,
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255] },
+      margin: { left: margin, right: margin }
+    });
+
+    currentY = (doc as any).lastAutoTable?.finalY + 8;
+
+    // Calcul du résumé des hypothèques
+    const totalMortgages = mortgage_history.reduce((sum, mortgage) => sum + Number(mortgage.mortgage_amount_usd || 0), 0);
+    const activeMortgages = mortgage_history.filter(mortgage => (mortgage.mortgage_status || 'active') === 'active');
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 51, 102);
+    doc.text("Résumé des charges:", margin, currentY);
+    currentY += 5;
+
+    const mortgageSummaryData = [
+      ['Nombre d\'hypothèques', mortgage_history.length.toString()],
+      ['Hypothèques actives', activeMortgages.length.toString()],
+      ['Montant total engagé', `$${totalMortgages.toLocaleString()}`],
+      ['Statut de la parcelle', activeMortgages.length > 0 ? 'GREVÉE D\'HYPOTHÈQUE' : 'LIBRE DE CHARGES']
+    ];
+
+    autoTable(doc, {
+      head: [['Élément', 'Valeur']],
+      body: mortgageSummaryData,
+      startY: currentY,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255] },
+      margin: { left: margin, right: margin }
+    });
+
+    currentY = (doc as any).lastAutoTable?.finalY + 8;
+
+    // Note explicative
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text("Note: Les hypothèques constituent des sûretés réelles sur l'immeuble.", margin, currentY);
+    currentY += 10;
+  } else {
+    doc.setTextColor(100, 100, 100);
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    doc.text("Aucune hypothèque ou charge financière enregistrée sur cette parcelle", margin, currentY);
     currentY += 15;
   }
 
