@@ -14,6 +14,133 @@ export type Database = {
   }
   public: {
     Tables: {
+      article_favorites: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_favorites_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_themes: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          icon_name: string
+          id: string
+          is_active: boolean
+          name: string
+          short_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon_name: string
+          id?: string
+          is_active?: boolean
+          name: string
+          short_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon_name?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          short_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      articles: {
+        Row: {
+          author_id: string | null
+          author_name: string | null
+          content: string
+          cover_image_url: string | null
+          created_at: string
+          id: string
+          is_published: boolean
+          published_at: string | null
+          slug: string
+          summary: string
+          tags: string[] | null
+          theme_id: string
+          title: string
+          updated_at: string
+          view_count: number
+        }
+        Insert: {
+          author_id?: string | null
+          author_name?: string | null
+          content: string
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          slug: string
+          summary: string
+          tags?: string[] | null
+          theme_id: string
+          title: string
+          updated_at?: string
+          view_count?: number
+        }
+        Update: {
+          author_id?: string | null
+          author_name?: string | null
+          content?: string
+          cover_image_url?: string | null
+          created_at?: string
+          id?: string
+          is_published?: boolean
+          published_at?: string | null
+          slug?: string
+          summary?: string
+          tags?: string[] | null
+          theme_id?: string
+          title?: string
+          updated_at?: string
+          view_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "articles_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "article_themes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string

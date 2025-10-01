@@ -13,6 +13,7 @@ const Navigation = () => {
 
   const navigation = [
     { name: 'Accueil', href: '/' },
+    { name: 'Articles', href: '/articles' },
     { name: 'Kiosque', href: '/publications' },
     { name: 'Plateforme Myazi', href: '/myazi' },
     { name: 'Données foncières', href: '/map' },

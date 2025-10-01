@@ -302,4 +302,14 @@ All colors MUST be HSL.
   .charts-compact .recharts-text tspan {
     font-size: 10px;
   }
+
+  /* Hide scrollbar for theme menu */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
