@@ -274,6 +274,168 @@ export type Database = {
           },
         ]
       }
+      cadastral_contributions: {
+        Row: {
+          area_sqm: number | null
+          avenue: string | null
+          boundary_history: Json | null
+          collectivite: string | null
+          commune: string | null
+          construction_nature: string | null
+          construction_type: string | null
+          created_at: string
+          current_owner_legal_status: string | null
+          current_owner_name: string | null
+          current_owner_since: string | null
+          declared_usage: string | null
+          gps_coordinates: Json | null
+          groupement: string | null
+          id: string
+          mortgage_history: Json | null
+          ownership_history: Json | null
+          parcel_number: string
+          property_title_type: string | null
+          province: string | null
+          quartier: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          tax_history: Json | null
+          territoire: string | null
+          updated_at: string
+          user_id: string | null
+          village: string | null
+          ville: string | null
+          whatsapp_number: string | null
+        }
+        Insert: {
+          area_sqm?: number | null
+          avenue?: string | null
+          boundary_history?: Json | null
+          collectivite?: string | null
+          commune?: string | null
+          construction_nature?: string | null
+          construction_type?: string | null
+          created_at?: string
+          current_owner_legal_status?: string | null
+          current_owner_name?: string | null
+          current_owner_since?: string | null
+          declared_usage?: string | null
+          gps_coordinates?: Json | null
+          groupement?: string | null
+          id?: string
+          mortgage_history?: Json | null
+          ownership_history?: Json | null
+          parcel_number: string
+          property_title_type?: string | null
+          province?: string | null
+          quartier?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tax_history?: Json | null
+          territoire?: string | null
+          updated_at?: string
+          user_id?: string | null
+          village?: string | null
+          ville?: string | null
+          whatsapp_number?: string | null
+        }
+        Update: {
+          area_sqm?: number | null
+          avenue?: string | null
+          boundary_history?: Json | null
+          collectivite?: string | null
+          commune?: string | null
+          construction_nature?: string | null
+          construction_type?: string | null
+          created_at?: string
+          current_owner_legal_status?: string | null
+          current_owner_name?: string | null
+          current_owner_since?: string | null
+          declared_usage?: string | null
+          gps_coordinates?: Json | null
+          groupement?: string | null
+          id?: string
+          mortgage_history?: Json | null
+          ownership_history?: Json | null
+          parcel_number?: string
+          property_title_type?: string | null
+          province?: string | null
+          quartier?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          tax_history?: Json | null
+          territoire?: string | null
+          updated_at?: string
+          user_id?: string | null
+          village?: string | null
+          ville?: string | null
+          whatsapp_number?: string | null
+        }
+        Relationships: []
+      }
+      cadastral_contributor_codes: {
+        Row: {
+          code: string
+          contribution_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          invoice_id: string | null
+          is_used: boolean
+          parcel_number: string
+          used_at: string | null
+          user_id: string
+          value_usd: number
+        }
+        Insert: {
+          code: string
+          contribution_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invoice_id?: string | null
+          is_used?: boolean
+          parcel_number: string
+          used_at?: string | null
+          user_id: string
+          value_usd?: number
+        }
+        Update: {
+          code?: string
+          contribution_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invoice_id?: string | null
+          is_used?: boolean
+          parcel_number?: string
+          used_at?: string | null
+          user_id?: string
+          value_usd?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_contributor_codes_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_contributions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cadastral_contributor_codes_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_invoices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_invoices: {
         Row: {
           client_email: string
@@ -1357,6 +1519,10 @@ export type Database = {
           total_amount_usd: number
         }[]
       }
+      generate_ccc_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       generate_invoice_number: {
         Args: Record<PropertyKey, never>
         Returns: string
@@ -1424,6 +1590,15 @@ export type Database = {
           table_name_param?: string
         }
         Returns: string
+      }
+      validate_and_apply_ccc: {
+        Args: { code_input: string; invoice_amount: number }
+        Returns: {
+          code_id: string
+          discount_amount: number
+          is_valid: boolean
+          message: string
+        }[]
       }
       validate_and_apply_discount_code: {
         Args: { code_input: string; invoice_amount: number }

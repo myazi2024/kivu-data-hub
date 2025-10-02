@@ -1,5 +1,5 @@
 import React from 'react';
-import CadastralClientDashboard from '@/components/cadastral/CadastralClientDashboard';
+import CadastralDashboardTabs from '@/components/cadastral/CadastralDashboardTabs';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,13 +33,13 @@ const BillingDashboard: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Tableau de bord de facturation</h1>
+        <h1 className="text-2xl font-bold">Tableau de bord</h1>
         <p className="text-muted-foreground">
-          Gérez vos factures et l'historique de vos recherches cadastrales
+          Gérez vos factures, codes contributeurs et l'historique de vos recherches
         </p>
       </div>
       
-      <CadastralClientDashboard />
+      <CadastralDashboardTabs />
     </div>
   );
 };

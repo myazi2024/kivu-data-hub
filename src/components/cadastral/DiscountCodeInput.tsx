@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Loader2, Check, X, Tag } from 'lucide-react';
 import { useDiscountCodes } from '@/hooks/useDiscountCodes';
+import { useCadastralContribution } from '@/hooks/useCadastralContribution';
 import { useToast } from '@/hooks/use-toast';
 
 const PLACEHOLDER_EXAMPLES = ['BIC-RV001', 'PROMO2024', 'REMISE50'];
@@ -13,7 +16,7 @@ interface DiscountCodeInputProps {
   onDiscountApplied: (discount: {
     code: string;
     amount: number;
-    reseller_id: string;
+    reseller_id: string | null;
     code_id: string;
   } | null) => void;
   className?: string;
@@ -26,10 +29,11 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
 }) => {
   const [code, setCode] = useState('');
   const [validating, setValidating] = useState(false);
+  const [useCCC, setUseCCC] = useState(false);
   const [appliedDiscount, setAppliedDiscount] = useState<{
     code: string;
     amount: number;
-    reseller_id: string;
+    reseller_id: string | null;
     code_id: string;
   } | null>(null);
   
@@ -39,12 +43,12 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   const [currentExampleIndex, setCurrentExampleIndex] = useState(0);
   
   const { validateDiscountCode } = useDiscountCodes();
+  const { validateCCCCode } = useCadastralContribution();
   const { toast } = useToast();
 
   // Animation du placeholder
   useEffect(() => {
     if (code.length > 0) {
-      // Arrêter l'animation si l'utilisateur tape
       setPlaceholderText('');
       return;
     }
@@ -84,32 +88,62 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
 
     try {
       setValidating(true);
-      const validation = await validateDiscountCode(code.trim().toUpperCase(), invoiceAmount);
-      
-      if (validation?.is_valid && validation.reseller_id && validation.code_id) {
-        const discount = {
-          code: code.trim().toUpperCase(),
-          amount: validation.discount_amount,
-          reseller_id: validation.reseller_id,
-          code_id: validation.code_id
-        };
+
+      if (useCCC) {
+        // Validation du code CCC
+        const validation = await validateCCCCode(code.trim().toUpperCase(), invoiceAmount);
         
-        setAppliedDiscount(discount);
-        onDiscountApplied(discount);
-        
-        toast({
-          title: "Code appliqué",
-          description: `Remise de ${validation.discount_amount.toFixed(2)} USD appliquée`
-        });
+        if (validation && validation.is_valid) {
+          const discount = {
+            code: code.trim().toUpperCase(),
+            amount: validation.discount_amount,
+            reseller_id: null,
+            code_id: validation.code_id
+          };
+          
+          setAppliedDiscount(discount);
+          onDiscountApplied(discount);
+          
+          toast({
+            title: "Code CCC appliqué",
+            description: `Remise de ${validation.discount_amount.toFixed(2)} USD appliquée`
+          });
+        } else {
+          toast({
+            title: "Code invalide",
+            description: validation?.message || "Ce code CCC n'est pas valide ou a expiré",
+            variant: "destructive"
+          });
+        }
       } else {
-        toast({
-          title: "Code invalide",
-          description: "Ce code de remise n'est pas valide ou a expiré",
-          variant: "destructive"
-        });
+        // Validation du code de remise classique
+        const validation = await validateDiscountCode(code.trim().toUpperCase(), invoiceAmount);
+        
+        if (validation?.is_valid && validation.reseller_id && validation.code_id) {
+          const discount = {
+            code: code.trim().toUpperCase(),
+            amount: validation.discount_amount,
+            reseller_id: validation.reseller_id,
+            code_id: validation.code_id
+          };
+          
+          setAppliedDiscount(discount);
+          onDiscountApplied(discount);
+          
+          toast({
+            title: "Code appliqué",
+            description: `Remise de ${validation.discount_amount.toFixed(2)} USD appliquée`
+          });
+        } else {
+          toast({
+            title: "Code invalide",
+            description: "Ce code de remise n'est pas valide ou a expiré",
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
-      console.error('Error validating discount code:', error);
+      console.error('Error validating code:', error);
       toast({
         title: "Erreur",
         description: "Impossible de valider le code",
@@ -164,32 +198,46 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   }
 
   return (
-    <div className={`space-y-1 sm:space-y-3 p-1 sm:p-3 border border-dashed border-primary/30 rounded-md ${className}`}>
-      <div className="flex items-center space-x-1 sm:space-x-2">
-        <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
-        <span className="text-xs sm:text-sm font-medium">Code de remise (optionnel)</span>
+    <div className={`space-y-3 p-3 border border-dashed border-primary/30 rounded-md ${className}`}>
+      <div className="flex items-center space-x-2">
+        <Tag className="h-4 w-4 text-muted-foreground" />
+        <span className="text-sm font-medium">Code de remise (optionnel)</span>
+      </div>
+
+      <div className="flex items-center space-x-2">
+        <Checkbox 
+          id="use-ccc" 
+          checked={useCCC}
+          onCheckedChange={(checked) => {
+            setUseCCC(checked as boolean);
+            setCode('');
+            setPlaceholderText('');
+          }}
+        />
+        <Label htmlFor="use-ccc" className="text-sm cursor-pointer font-normal">
+          Utiliser un Code Contributeur Cadastral (CCC)
+        </Label>
       </div>
       
-      <div className="flex space-x-1 sm:space-x-2">
+      <div className="flex space-x-2">
         <Input
           type="text"
-          placeholder={placeholderText}
+          placeholder={useCCC ? "CCC-XXXXX" : placeholderText}
           value={code}
           onChange={(e) => setCode(e.target.value.toUpperCase())}
           onKeyPress={handleKeyPress}
-          className="uppercase text-xs sm:text-sm h-8 sm:h-11"
+          className="uppercase text-sm"
           disabled={validating}
         />
         <Button
           onClick={handleValidateCode}
           disabled={!code.trim() || validating}
-          className="whitespace-nowrap text-xs sm:text-sm h-8 sm:h-11 px-2 sm:px-3 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary transition-all duration-300 ease-out shadow-elegant hover:shadow-hover hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-foreground focus-visible:ring-offset-2 text-primary-foreground font-medium"
+          className="whitespace-nowrap"
         >
           {validating ? (
             <>
-              <Loader2 className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-              <span className="hidden sm:inline">Vérification...</span>
-              <span className="sm:hidden">...</span>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Vérification...
             </>
           ) : (
             'Appliquer'
@@ -198,7 +246,10 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
       </div>
       
       <p className="text-xs text-muted-foreground">
-        Saisissez un code de remise valide pour bénéficier d'une réduction
+        {useCCC 
+          ? "Les codes CCC ont une valeur de 5 USD et sont valables 90 jours"
+          : "Saisissez un code de remise valide pour bénéficier d'une réduction"
+        }
       </p>
     </div>
   );

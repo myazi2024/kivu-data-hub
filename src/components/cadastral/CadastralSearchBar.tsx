@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, MapPin, FileText } from 'lucide-react';
+import { Search, X, MapPin, FileText, AlertCircle, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import CadastralResultsDialog from './CadastralResultsDialog';
+import CadastralContributionDialog from './CadastralContributionDialog';
 
 const ANIMATED_TEXTS = [
   "identifier le propriétaire",
@@ -17,6 +18,7 @@ const FIXED_TEXT = "Avec le numéro SU ou SR, ";
 const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
@@ -219,16 +221,36 @@ const CadastralSearchBar = () => {
             </div>
           )}
 
-          {/* Message d'erreur */}
+          {/* Message d'erreur avec option de contribution */}
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 p-2 rounded border border-destructive/20">
-              {error}
+            <div className="space-y-3 animate-fade-in">
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+              
+              {error.includes('Aucune parcelle trouvée') && (
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
+                  <p className="text-sm text-foreground">
+                    Vous avez des informations sur cette propriété ? 
+                    <strong className="block mt-1">Contribuez à enrichir le cadastre.</strong>
+                  </p>
+                  <Button 
+                    onClick={() => setShowContributionDialog(true)}
+                    className="w-full group"
+                    variant="default"
+                  >
+                    <Plus className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
+                    Ajouter une information
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
       </Card>
 
-      {/* Dialog des résultats - Fenêtre flottante fullscreen */}
+      {/* Dialog des résultats */}
       {searchResult && (
         <CadastralResultsDialog
           result={searchResult}
@@ -236,6 +258,13 @@ const CadastralSearchBar = () => {
           onClose={handleCloseResults}
         />
       )}
+
+      {/* Dialog de contribution */}
+      <CadastralContributionDialog
+        open={showContributionDialog}
+        onOpenChange={setShowContributionDialog}
+        parcelNumber={searchQuery}
+      />
     </div>
   );
 };
