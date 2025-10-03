@@ -112,17 +112,19 @@ export const useCadastralSearch = () => {
 
   // Fonction pour valider le format du numéro de parcelle
   const validateParcelNumber = (query: string): boolean => {
-    // Format SU: SU/[Section]/[Parcelle]/[Code] ou SU/[Section]/[Parcelle]/[Subdivision]/[Code]
-    // Format SR: SR/[Section]/[Parcelle]/[Code]
-    // Exemples: SU/2130/KIN, SU/2130/1/KIN, SR/01/0987/BEN
-    const pattern = /^(SU|SR)\/\d+\/\d+(\/\d+)?\/[A-Z]{2,3}$/i;
-    return pattern.test(query.trim().toUpperCase());
+    // Format complet: SU/[Section]/[Parcelle]/[Code] ou SU/[Section]/[Parcelle]/[Subdivision]/[Code]
+    // Format simplifié: SU/[Parcelle]/[Code] (toléré localement)
+    // Exemples: SU/2130/KIN, SU/2130/1/KIN, SU/0123/GOM, SR/01/0987/BEN, SR/0321/MAS
+    const patternComplete = /^(SU|SR)\/\d+\/\d+(\/\d+)?\/[A-Z]{2,3}$/i;
+    const patternSimplified = /^(SU|SR)\/\d+\/[A-Z]{2,3}$/i;
+    const trimmed = query.trim().toUpperCase();
+    return patternComplete.test(trimmed) || patternSimplified.test(trimmed);
   };
 
   // Fonction de recherche
   const searchParcel = async (parcelNumber: string) => {
     if (!validateParcelNumber(parcelNumber)) {
-      setError('Format invalide. Utilisez le format SU/XXXX/CODE ou SR/XX/XXXX/CODE (ex: SU/2130/KIN, SR/01/0987/BEN)');
+      setError('Format invalide. Formats acceptés : SU/2130/KIN, SU/0123/GOM, SR/01/0987/BEN, SR/0321/MAS');
       return;
     }
 

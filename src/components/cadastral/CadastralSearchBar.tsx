@@ -218,10 +218,12 @@ const CadastralSearchBar = () => {
                 <div><strong>SU</strong> (Urbaine) : SU/[Section]/[Parcelle]/[Code]</div>
                 <div className="text-muted-foreground/80 ml-3">Ex: SU/2130/KIN, SU/0456/GOM</div>
                 <div className="text-muted-foreground/80 ml-3">Morcellement: SU/2130/1/KIN</div>
+                <div className="text-muted-foreground/80 ml-3">Simplifié: SU/0123/GOM</div>
               </div>
               <div className="ml-5 space-y-1">
                 <div><strong>SR</strong> (Rurale) : SR/[Section]/[Parcelle]/[Code]</div>
                 <div className="text-muted-foreground/80 ml-3">Ex: SR/01/0987/BEN</div>
+                <div className="text-muted-foreground/80 ml-3">Simplifié: SR/0321/MAS</div>
               </div>
             </div>
           )}
