@@ -8,12 +8,13 @@ import CadastralResultsDialog from './CadastralResultsDialog';
 import CadastralContributionDialog from './CadastralContributionDialog';
 
 const ANIMATED_TEXTS = [
-  "identifier le propriétaire",
-  "consulter les limites et bornage",
-  "vérifier les obligations fiscales"
+  "SU/2130/KIN",
+  "SU/0456/GOM",
+  "SR/01/0987/BEN",
+  "SR/0321/MAS"
 ];
 
-const FIXED_TEXT = "Format : SU/[Section]/[Parcelle]/[Code] - ";
+const FIXED_TEXT = "Ex: ";
 
 const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
