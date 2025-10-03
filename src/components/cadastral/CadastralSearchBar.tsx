@@ -13,7 +13,7 @@ const ANIMATED_TEXTS = [
   "vérifier les obligations fiscales"
 ];
 
-const FIXED_TEXT = "Avec le numéro SU ou SR, ";
+const FIXED_TEXT = "Format : SU/[Section]/[Parcelle]/[Code] - ";
 
 const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -135,7 +135,7 @@ const CadastralSearchBar = () => {
           {/* En-tête avec icône et titre */}
           <div className="flex items-center gap-2 text-foreground">
             <FileText className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-base">Taper le numéro SU ou SR de la parcelle ici</h3>
+            <h3 className="font-semibold text-base">Recherche cadastrale - Numéro SU ou SR</h3>
             <div className="flex-1" />
             {searchResult && (
               <Button 
@@ -209,14 +209,19 @@ const CadastralSearchBar = () => {
 
           {/* Instructions compactes - Mobile optimized */}
           {(isExpanded && !searchResult) && (
-            <div className="text-xs text-muted-foreground">
-              <div className="flex items-center gap-2 mb-1">
+            <div className="text-xs text-muted-foreground space-y-2">
+              <div className="flex items-center gap-2">
                 <MapPin className="h-3 w-3 shrink-0" />
-                <span className="truncate">Format : SU-LIEU-NUM ou SR-LIEU-NUM</span>
+                <span className="font-medium">Format cadastral RDC :</span>
               </div>
-              <div className="ml-5 space-y-0.5">
-                <div>• SU = Urbaine (SU-GOMA-0456)</div>
-                <div>• SR = Rurale (SR-RUTSHURU-0321)</div>
+              <div className="ml-5 space-y-1">
+                <div><strong>SU</strong> (Urbaine) : SU/[Section]/[Parcelle]/[Code]</div>
+                <div className="text-muted-foreground/80 ml-3">Ex: SU/2130/KIN, SU/0456/GOM</div>
+                <div className="text-muted-foreground/80 ml-3">Morcellement: SU/2130/1/KIN</div>
+              </div>
+              <div className="ml-5 space-y-1">
+                <div><strong>SR</strong> (Rurale) : SR/[Section]/[Parcelle]/[Code]</div>
+                <div className="text-muted-foreground/80 ml-3">Ex: SR/01/0987/BEN</div>
               </div>
             </div>
           )}

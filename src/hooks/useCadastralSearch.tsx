@@ -112,14 +112,17 @@ export const useCadastralSearch = () => {
 
   // Fonction pour valider le format du numéro de parcelle
   const validateParcelNumber = (query: string): boolean => {
-    const pattern = /^(SU|SR)-[A-Z]+(-[0-9]+)?$/i;
-    return pattern.test(query.trim());
+    // Format SU: SU/[Section]/[Parcelle]/[Code] ou SU/[Section]/[Parcelle]/[Subdivision]/[Code]
+    // Format SR: SR/[Section]/[Parcelle]/[Code]
+    // Exemples: SU/2130/KIN, SU/2130/1/KIN, SR/01/0987/BEN
+    const pattern = /^(SU|SR)\/\d+\/\d+(\/\d+)?\/[A-Z]{2,3}$/i;
+    return pattern.test(query.trim().toUpperCase());
   };
 
   // Fonction de recherche
   const searchParcel = async (parcelNumber: string) => {
     if (!validateParcelNumber(parcelNumber)) {
-      setError('Format invalide. Utilisez le format SU-LOCATION-XXXX ou SR-LOCATION-XXXX (ex: SU-GOMA-0456)');
+      setError('Format invalide. Utilisez le format SU/XXXX/CODE ou SR/XX/XXXX/CODE (ex: SU/2130/KIN, SR/01/0987/BEN)');
       return;
     }
 
