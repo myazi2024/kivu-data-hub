@@ -24,6 +24,8 @@ import Partnership from "./pages/Partnership";
 import Legal from "./pages/Legal";
 import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
+import AboutCCC from "./pages/AboutCCC";
+import AboutDiscountCodes from "./pages/AboutDiscountCodes";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -53,6 +55,8 @@ const App = () => (
               <Route path="/legal" element={<Legal />} />
               <Route path="/articles" element={<Articles />} />
               <Route path="/articles/:slug" element={<ArticleDetail />} />
+              <Route path="/about-ccc" element={<AboutCCC />} />
+              <Route path="/about-discount-codes" element={<AboutDiscountCodes />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

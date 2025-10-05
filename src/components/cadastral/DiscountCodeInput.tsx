@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Label } from '@/components/ui/label';
-import { Loader2, Check, X, Tag } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Check, X, Tag, Gift, ExternalLink } from 'lucide-react';
 import { useDiscountCodes } from '@/hooks/useDiscountCodes';
 import { useCadastralContribution } from '@/hooks/useCadastralContribution';
 import { useToast } from '@/hooks/use-toast';
+import { Link } from 'react-router-dom';
 
 const PLACEHOLDER_EXAMPLES = ['BIC-RV001', 'PROMO2024', 'REMISE50'];
 
@@ -29,7 +29,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
 }) => {
   const [code, setCode] = useState('');
   const [validating, setValidating] = useState(false);
-  const [useCCC, setUseCCC] = useState(false);
+  const [codeType, setCodeType] = useState<'discount' | 'ccc'>('discount');
   const [appliedDiscount, setAppliedDiscount] = useState<{
     code: string;
     amount: number;
@@ -89,7 +89,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
     try {
       setValidating(true);
 
-      if (useCCC) {
+      if (codeType === 'ccc') {
         // Validation du code CCC
         const validation = await validateCCCCode(code.trim().toUpperCase(), invoiceAmount);
         
@@ -198,59 +198,112 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   }
 
   return (
-    <div className={`space-y-3 p-3 border border-dashed border-primary/30 rounded-md ${className}`}>
-      <div className="flex items-center space-x-2">
-        <Tag className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">Code de remise (optionnel)</span>
+    <div className={`space-y-4 p-4 border border-dashed border-primary/30 rounded-lg ${className}`}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <Tag className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">Codes de réduction (optionnel)</span>
+        </div>
       </div>
 
-      <div className="flex items-center space-x-2">
-        <Checkbox 
-          id="use-ccc" 
-          checked={useCCC}
-          onCheckedChange={(checked) => {
-            setUseCCC(checked as boolean);
-            setCode('');
-            setPlaceholderText('');
-          }}
-        />
-        <Label htmlFor="use-ccc" className="text-sm cursor-pointer font-normal">
-          Utiliser un Code Contributeur Cadastral (CCC)
-        </Label>
-      </div>
-      
-      <div className="flex space-x-2">
-        <Input
-          type="text"
-          placeholder={useCCC ? "CCC-XXXXX" : placeholderText}
-          value={code}
-          onChange={(e) => setCode(e.target.value.toUpperCase())}
-          onKeyPress={handleKeyPress}
-          className="uppercase text-sm"
-          disabled={validating}
-        />
-        <Button
-          onClick={handleValidateCode}
-          disabled={!code.trim() || validating}
-          className="whitespace-nowrap"
-        >
-          {validating ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Vérification...
-            </>
-          ) : (
-            'Appliquer'
-          )}
-        </Button>
-      </div>
-      
-      <p className="text-xs text-muted-foreground">
-        {useCCC 
-          ? "Les codes CCC ont une valeur de 5 USD et sont valables 90 jours"
-          : "Saisissez un code de remise valide pour bénéficier d'une réduction"
-        }
-      </p>
+      <Tabs 
+        value={codeType} 
+        onValueChange={(value) => {
+          setCodeType(value as 'discount' | 'ccc');
+          setCode('');
+          setPlaceholderText('');
+        }}
+        className="w-full"
+      >
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="discount" className="text-xs sm:text-sm">
+            <Tag className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            Code de remise
+          </TabsTrigger>
+          <TabsTrigger value="ccc" className="text-xs sm:text-sm">
+            <Gift className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            Code CCC
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="discount" className="space-y-3 mt-4">
+          <div className="flex space-x-2">
+            <Input
+              type="text"
+              placeholder={placeholderText || "Ex: BIC-RV001"}
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              onKeyPress={handleKeyPress}
+              className="uppercase text-sm"
+              disabled={validating}
+            />
+            <Button
+              onClick={handleValidateCode}
+              disabled={!code.trim() || validating}
+              className="whitespace-nowrap"
+            >
+              {validating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span className="hidden sm:inline">Vérification...</span>
+                </>
+              ) : (
+                'Appliquer'
+              )}
+            </Button>
+          </div>
+          
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Saisissez un code de remise pour bénéficier d'une réduction.</p>
+            <Link 
+              to="/about-discount-codes" 
+              className="inline-flex items-center gap-1 text-primary hover:underline"
+            >
+              En savoir plus sur les codes de remise
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="ccc" className="space-y-3 mt-4">
+          <div className="flex space-x-2">
+            <Input
+              type="text"
+              placeholder="CCC-XXXXX"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              onKeyPress={handleKeyPress}
+              className="uppercase text-sm"
+              disabled={validating}
+            />
+            <Button
+              onClick={handleValidateCode}
+              disabled={!code.trim() || validating}
+              className="whitespace-nowrap"
+            >
+              {validating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <span className="hidden sm:inline">Vérification...</span>
+                </>
+              ) : (
+                'Appliquer'
+              )}
+            </Button>
+          </div>
+          
+          <div className="text-xs text-muted-foreground space-y-1">
+            <p>Codes CCC : 5 USD de réduction, valables 90 jours.</p>
+            <Link 
+              to="/about-ccc" 
+              className="inline-flex items-center gap-1 text-primary hover:underline"
+            >
+              Comment obtenir un Code Contributeur Cadastral ?
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
