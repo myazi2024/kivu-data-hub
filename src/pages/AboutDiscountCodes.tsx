@@ -1,9 +1,10 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tag, Users, Percent, CheckCircle2, ArrowRight, ExternalLink } from 'lucide-react';
+import { Tag, Users, Percent, CheckCircle2, ArrowRight, ExternalLink, Phone, Mail, MessageCircle, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const AboutDiscountCodes = () => {
   return (
@@ -160,6 +161,109 @@ const AboutDiscountCodes = () => {
                 <span>Les codes sont sensibles à la casse (majuscules/minuscules)</span>
               </li>
             </ul>
+          </div>
+
+          <div>
+            <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+              <HelpCircle className="h-6 w-6 text-primary" />
+              Questions fréquemment posées
+            </h2>
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="item-1">
+                <AccordionTrigger>Comment puis-je vérifier si mon code de remise est valide ?</AccordionTrigger>
+                <AccordionContent>
+                  Vous pouvez vérifier la validité de votre code en le saisissant dans le champ prévu à cet effet lors de votre commande. Si le code est valide, la réduction sera automatiquement appliquée et affichée. Si le code est expiré ou invalide, un message d'erreur s'affichera.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="item-2">
+                <AccordionTrigger>Puis-je combiner un code de remise avec un code CCC ?</AccordionTrigger>
+                <AccordionContent>
+                  Non, les codes de remise et les codes CCC ne sont pas cumulables. Vous devez choisir l'un ou l'autre lors de votre commande. Le système vous permettra d'utiliser celui qui vous offre le meilleur avantage.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="item-3">
+                <AccordionTrigger>Où puis-je trouver des codes de remise ?</AccordionTrigger>
+                <AccordionContent>
+                  Les codes de remise sont distribués par nos revendeurs partenaires agréés. Vous pouvez également recevoir des codes lors de campagnes promotionnelles en vous abonnant à notre newsletter ou en suivant nos réseaux sociaux. Contactez-nous pour connaître nos revendeurs dans votre région.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="item-4">
+                <AccordionTrigger>Mon code de remise ne fonctionne pas, que faire ?</AccordionTrigger>
+                <AccordionContent>
+                  Vérifiez d'abord que le code est correctement saisi (attention aux majuscules/minuscules). Assurez-vous également que le code n'est pas expiré et qu'il n'a pas déjà été utilisé. Si le problème persiste, contactez-nous via nos canaux de support avec le code concerné.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="item-5">
+                <AccordionTrigger>Les codes de remise ont-ils une limite d'utilisation ?</AccordionTrigger>
+                <AccordionContent>
+                  Oui, chaque code de remise a ses propres conditions. Certains codes peuvent être utilisés plusieurs fois par différents utilisateurs jusqu'à épuisement du quota, tandis que d'autres sont à usage unique. Ces informations sont généralement communiquées par le revendeur qui distribue le code.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="item-6">
+                <AccordionTrigger>Comment devenir revendeur et distribuer mes propres codes ?</AccordionTrigger>
+                <AccordionContent>
+                  Pour devenir revendeur partenaire et créer vos propres codes de remise, consultez notre page Partenariat ou contactez-nous directement. Nous vous expliquerons les conditions et les avantages du programme de revendeurs.
+                </AccordionContent>
+              </AccordionItem>
+              
+              <AccordionItem value="item-7">
+                <AccordionTrigger>Quelle est la différence entre un code de remise et un code CCC ?</AccordionTrigger>
+                <AccordionContent>
+                  Un code de remise est un code promotionnel distribué par nos partenaires ou lors de campagnes, avec une valeur variable. Un code CCC (Code Contributeur Cadastral) est un code que vous gagnez en contribuant à notre base de données, d'une valeur fixe de 5 USD et valable 90 jours. Les deux offrent des réductions mais ont des origines et conditions différentes.
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </div>
+
+          <div className="bg-primary/5 p-6 rounded-lg border border-primary/20">
+            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+              <MessageCircle className="h-6 w-6 text-primary" />
+              Besoin d'aide ?
+            </h2>
+            <p className="text-muted-foreground mb-4">
+              Notre équipe est disponible pour répondre à toutes vos questions sur les codes de remise et vous aider à trouver un revendeur partenaire.
+            </p>
+            <div className="grid md:grid-cols-3 gap-4">
+              <a 
+                href="tel:+243123456789" 
+                className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
+              >
+                <Phone className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Téléphone</p>
+                  <p className="text-xs text-muted-foreground">+243 123 456 789</p>
+                </div>
+              </a>
+              
+              <a 
+                href="https://wa.me/243123456789" 
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
+              >
+                <MessageCircle className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">WhatsApp</p>
+                  <p className="text-xs text-muted-foreground">+243 123 456 789</p>
+                </div>
+              </a>
+              
+              <a 
+                href="mailto:support@example.cd" 
+                className="flex items-center gap-3 p-4 bg-background rounded-lg border hover:border-primary transition-colors"
+              >
+                <Mail className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="font-medium text-sm">Email</p>
+                  <p className="text-xs text-muted-foreground">support@example.cd</p>
+                </div>
+              </a>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-4">
