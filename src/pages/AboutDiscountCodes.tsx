@@ -10,7 +10,7 @@ const AboutDiscountCodes = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
-        <Link to="/myazi" className="text-sm text-muted-foreground hover:text-primary">
+        <Link to="/" className="text-sm text-muted-foreground hover:text-primary">
           ← Retour au catalogue
         </Link>
       </div>
@@ -268,7 +268,7 @@ const AboutDiscountCodes = () => {
 
           <div className="flex gap-3 pt-4">
             <Button asChild>
-              <Link to="/myazi">Commencer une recherche</Link>
+              <Link to="/">Commencer une recherche</Link>
             </Button>
             <Button variant="outline" asChild>
               <Link to="/partnership">
