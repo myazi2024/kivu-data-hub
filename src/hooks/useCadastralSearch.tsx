@@ -35,6 +35,9 @@ export interface CadastralParcel {
   construction_type: string | null;
   construction_nature: 'Durable' | 'Semi-durable' | 'Précaire' | null;
   declared_usage: 'Résidentiel' | 'Commercial' | 'Mixte' | 'Institutionnel' | 'Industriel' | 'Agricole' | null;
+  // Pièces jointes
+  owner_document_url: string | null;
+  property_title_document_url: string | null;
 }
 
 export interface BuildingPermit {
@@ -58,6 +61,7 @@ export interface OwnershipHistory {
   ownership_start_date: string;
   ownership_end_date: string | null;
   mutation_type: string | null;
+  ownership_document_url: string | null;
 }
 
 export interface TaxHistory {
@@ -66,6 +70,7 @@ export interface TaxHistory {
   amount_usd: number;
   payment_status: 'pending' | 'paid' | 'overdue';
   payment_date: string | null;
+  receipt_document_url: string | null;
 }
 
 export interface MortgagePayment {
@@ -73,6 +78,7 @@ export interface MortgagePayment {
   payment_amount_usd: number;
   payment_date: string;
   payment_type: 'partial' | 'total';
+  payment_receipt_url: string | null;
 }
 
 export interface MortgageHistory {
@@ -92,6 +98,7 @@ export interface BoundaryHistory {
   boundary_purpose: 'Réajustement ou rectification' | 'Morcellement ou fusion' | 'Mise en valeur ou mutation';
   surveyor_name: string;
   survey_date: string;
+  boundary_document_url: string | null;
 }
 
 export interface CadastralSearchResult {
@@ -175,7 +182,8 @@ export const useCadastralSearch = () => {
             id,
             payment_amount_usd,
             payment_date,
-            payment_type
+            payment_type,
+            payment_receipt_url
           )
         `)
         .eq('parcel_id', parcelData.id)

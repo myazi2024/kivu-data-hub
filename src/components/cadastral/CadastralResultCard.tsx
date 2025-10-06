@@ -37,6 +37,7 @@ import { useAuth } from '@/hooks/useAuth';
 import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
+import DocumentAttachment from './DocumentAttachment';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -470,8 +471,19 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                           <span className="text-[10px] text-muted-foreground">Hectares:</span>
                           <span className="text-xs font-medium text-right">{parcel.area_hectares.toFixed(2)} ha</span>
                         </div>
-                      )}
+                       )}
                     </div>
+                    
+                    {/* Pièce jointe: Titre de propriété */}
+                    {parcel.property_title_document_url && (
+                      <div className="mt-3 pt-2 border-t border-muted/30">
+                        <DocumentAttachment 
+                          documentUrl={parcel.property_title_document_url}
+                          label="Titre de propriété"
+                          description="Document officiel du titre de propriété"
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -496,6 +508,17 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         <span className="text-xs font-medium text-primary">{formatDate(parcel.current_owner_since)}</span>
                       </div>
                     </div>
+                    
+                    {/* Pièce jointe: Document du propriétaire actuel */}
+                    {parcel.owner_document_url && (
+                      <div className="mt-3 pt-2 border-t border-muted/30">
+                        <DocumentAttachment 
+                          documentUrl={parcel.owner_document_url}
+                          label="Document d'identité"
+                          description="Justificatif du propriétaire actuel"
+                        />
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -857,10 +880,21 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                     </Popover>
                                   </div>
                                 </div>
-                             </div>
-                           </div>
-                         ))}
-                       </div>
+                              </div>
+                            
+                            {/* Pièce jointe: PV de bornage */}
+                            {boundary.boundary_document_url && (
+                              <div className="mt-2 pt-2 border-t border-muted/30">
+                                <DocumentAttachment 
+                                  documentUrl={boundary.boundary_document_url}
+                                  label="PV de bornage"
+                                  description={`Procès-verbal ${boundary.pv_reference_number}`}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          ))}
+                        </div>
                     ) : (
                       <div className="text-center text-xs text-muted-foreground py-2">
                         Aucun historique disponible
@@ -955,9 +989,30 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                 </PopoverContent>
                              </Popover>
                            </div>
-                         </div>
-                       </div>
-                     </div>
+                          </div>
+                        </div>
+                        
+                        {/* Pièces jointes: Documents du propriétaire actuel */}
+                        {(parcel.owner_document_url || parcel.property_title_document_url) && (
+                          <div className="mt-3 pt-2 border-t border-muted/30 space-y-2">
+                            {parcel.owner_document_url && (
+                              <DocumentAttachment 
+                                documentUrl={parcel.owner_document_url}
+                                label="Document d'identité"
+                                description="Justificatif du propriétaire actuel"
+                              />
+                            )}
+                            {parcel.property_title_document_url && (
+                              <DocumentAttachment 
+                                documentUrl={parcel.property_title_document_url}
+                                label="Titre de propriété actuel"
+                                description="Document officiel du titre"
+                              />
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Anciens propriétaires */}
                     {ownership_history.length > 0 && (
@@ -1019,15 +1074,26 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                         </div>
                                       </PopoverContent>
                                    </Popover>
-                                 </div>
-                               </div>
-                             </div>
-                           </div>
-                         ))}
-                      </>
-                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Pièce jointe: Titre de propriété historique */}
+                                {owner.ownership_document_url && (
+                                  <div className="mt-2 pt-2 border-t border-muted/30">
+                                    <DocumentAttachment 
+                                      documentUrl={owner.ownership_document_url}
+                                      label="Titre de propriété"
+                                      description={`Document pour ${owner.owner_name}`}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                       </>
+                     )}
 
-                    {ownership_history.length === 0 && (
+                     {ownership_history.length === 0 && (
                       <div className="text-center text-xs text-muted-foreground py-2">
                         Aucun historique disponible
                       </div>
@@ -1152,12 +1218,23 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                           </p>
                                         </div>
                                       </PopoverContent>
-                                   </Popover>
-                                 </div>
-                               </div>
-                             </div>
-                           ))}
-                        </div>
+                                    </Popover>
+                                  </div>
+                                </div>
+                                
+                                {/* Pièce jointe: Reçu fiscal */}
+                                {tax.receipt_document_url && (
+                                  <div className="mt-2 pt-2 border-t border-muted/30">
+                                    <DocumentAttachment 
+                                      documentUrl={tax.receipt_document_url}
+                                      label="Reçu de paiement"
+                                      description={`Reçu fiscal ${tax.tax_year}`}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                         </div>
                       ) : (
                         <div className="text-center text-xs text-muted-foreground py-2">
                           Aucun historique disponible

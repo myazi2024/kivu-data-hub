@@ -182,6 +182,7 @@ export type Database = {
       }
       cadastral_boundary_history: {
         Row: {
+          boundary_document_url: string | null
           boundary_purpose: string
           created_at: string
           id: string
@@ -192,6 +193,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          boundary_document_url?: string | null
           boundary_purpose: string
           created_at?: string
           id?: string
@@ -202,6 +204,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          boundary_document_url?: string | null
           boundary_purpose?: string
           created_at?: string
           id?: string
@@ -517,6 +520,7 @@ export type Database = {
           mortgage_id: string
           payment_amount_usd: number
           payment_date: string
+          payment_receipt_url: string | null
           payment_type: string
         }
         Insert: {
@@ -525,6 +529,7 @@ export type Database = {
           mortgage_id: string
           payment_amount_usd?: number
           payment_date?: string
+          payment_receipt_url?: string | null
           payment_type?: string
         }
         Update: {
@@ -533,6 +538,7 @@ export type Database = {
           mortgage_id?: string
           payment_amount_usd?: number
           payment_date?: string
+          payment_receipt_url?: string | null
           payment_type?: string
         }
         Relationships: [
@@ -599,6 +605,7 @@ export type Database = {
           legal_status: string | null
           mutation_type: string | null
           owner_name: string
+          ownership_document_url: string | null
           ownership_end_date: string | null
           ownership_start_date: string
           parcel_id: string
@@ -609,6 +616,7 @@ export type Database = {
           legal_status?: string | null
           mutation_type?: string | null
           owner_name: string
+          ownership_document_url?: string | null
           ownership_end_date?: string | null
           ownership_start_date: string
           parcel_id: string
@@ -619,6 +627,7 @@ export type Database = {
           legal_status?: string | null
           mutation_type?: string | null
           owner_name?: string
+          ownership_document_url?: string | null
           ownership_end_date?: string | null
           ownership_start_date?: string
           parcel_id?: string
@@ -655,8 +664,10 @@ export type Database = {
           location: string
           longitude: number | null
           nombre_bornes: number | null
+          owner_document_url: string | null
           parcel_number: string
           parcel_type: string
+          property_title_document_url: string | null
           property_title_type: string
           province: string | null
           quartier: string | null
@@ -687,8 +698,10 @@ export type Database = {
           location: string
           longitude?: number | null
           nombre_bornes?: number | null
+          owner_document_url?: string | null
           parcel_number: string
           parcel_type: string
+          property_title_document_url?: string | null
           property_title_type?: string
           province?: string | null
           quartier?: string | null
@@ -719,8 +732,10 @@ export type Database = {
           location?: string
           longitude?: number | null
           nombre_bornes?: number | null
+          owner_document_url?: string | null
           parcel_number?: string
           parcel_type?: string
+          property_title_document_url?: string | null
           property_title_type?: string
           province?: string | null
           quartier?: string | null
@@ -811,6 +826,7 @@ export type Database = {
           parcel_id: string
           payment_date: string | null
           payment_status: string
+          receipt_document_url: string | null
           tax_year: number
         }
         Insert: {
@@ -820,6 +836,7 @@ export type Database = {
           parcel_id: string
           payment_date?: string | null
           payment_status?: string
+          receipt_document_url?: string | null
           tax_year: number
         }
         Update: {
@@ -829,6 +846,7 @@ export type Database = {
           parcel_id?: string
           payment_date?: string | null
           payment_status?: string
+          receipt_document_url?: string | null
           tax_year?: number
         }
         Relationships: [
