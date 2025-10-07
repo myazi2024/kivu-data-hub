@@ -989,10 +989,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                 </PopoverContent>
                              </Popover>
                            </div>
-                          </div>
-                        </div>
-                        
-                        {/* Pièces jointes: Documents du propriétaire actuel */}
+                           </div>
+                         </div>
+                       </div>
+                         
+                       {/* Pièces jointes: Documents du propriétaire actuel */}
                         {(parcel.owner_document_url || parcel.property_title_document_url) && (
                           <div className="mt-3 pt-2 border-t border-muted/30 space-y-2">
                             {parcel.owner_document_url && (
@@ -1089,20 +1090,20 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                 )}
                               </div>
                             </div>
-                          ))}
+                           ))}
                        </>
                      )}
 
                      {ownership_history.length === 0 && (
-                      <div className="text-center text-xs text-muted-foreground py-2">
-                        Aucun historique disponible
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-          </TabsContent>
+                       <div className="text-center text-xs text-muted-foreground py-2">
+                         Aucun historique disponible
+                       </div>
+                     )}
+                   </div>
+                 </CardContent>
+               </Card>
+             )}
+           </TabsContent>
 
           {/* Onglet Obligations - Mobile First */}
           <TabsContent value="obligations" className="mt-3 space-y-3">
