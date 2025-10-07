@@ -987,33 +987,31 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                     </p>
                                   </div>
                                 </PopoverContent>
-                             </Popover>
-                           </div>
-                           </div>
-                         </div>
-                       </div>
-                         
-                       {/* Pièces jointes: Documents du propriétaire actuel */}
-                        {(parcel.owner_document_url || parcel.property_title_document_url) && (
-                          <div className="mt-3 pt-2 border-t border-muted/30 space-y-2">
-                            {parcel.owner_document_url && (
-                              <DocumentAttachment 
-                                documentUrl={parcel.owner_document_url}
-                                label="Document d'identité"
-                                description="Justificatif du propriétaire actuel"
-                              />
-                            )}
-                            {parcel.property_title_document_url && (
-                              <DocumentAttachment 
-                                documentUrl={parcel.property_title_document_url}
-                                label="Titre de propriété actuel"
-                                description="Document officiel du titre"
-                              />
-                            )}
+                              </Popover>
+                            </div>
                           </div>
-                        )}
+                          
+                          {/* Pièces jointes: Documents du propriétaire actuel */}
+                          {(parcel.owner_document_url || parcel.property_title_document_url) && (
+                            <div className="mt-3 pt-2 border-t border-muted/30 space-y-2">
+                              {parcel.owner_document_url && (
+                                <DocumentAttachment 
+                                  documentUrl={parcel.owner_document_url}
+                                  label="Document d'identité"
+                                  description="Justificatif du propriétaire actuel"
+                                />
+                              )}
+                              {parcel.property_title_document_url && (
+                                <DocumentAttachment 
+                                  documentUrl={parcel.property_title_document_url}
+                                  label="Titre de propriété actuel"
+                                  description="Document officiel du titre"
+                                />
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
                     {/* Anciens propriétaires */}
                     {ownership_history.length > 0 && (
