@@ -567,25 +567,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   if (showSuccess) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md">
-          <div className="flex flex-col items-center justify-center py-8 space-y-4">
-            <CheckCircle2 className="h-16 w-16 text-primary animate-scale-in" />
-            <DialogTitle className="text-2xl text-center">Merci pour votre contribution !</DialogTitle>
-            <DialogDescription className="text-center">
-              Votre contribution pour la parcelle <strong>{parcelNumber}</strong> a été enregistrée.
+        <DialogContent className="sm:max-w-md border-0 shadow-2xl">
+          <div className="flex flex-col items-center justify-center py-8 space-y-6 animate-fade-in">
+            <div className="relative">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse" />
+              <CheckCircle2 className="h-20 w-20 text-primary relative animate-scale-in" />
+            </div>
+            <DialogTitle className="text-2xl text-center font-semibold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              Merci pour votre contribution !
+            </DialogTitle>
+            <DialogDescription className="text-center text-base">
+              Votre contribution pour la parcelle <strong className="text-foreground">{parcelNumber}</strong> a été enregistrée.
               Elle sera vérifiée par notre équipe.
             </DialogDescription>
-            <div className="bg-primary/10 p-4 rounded-lg w-full">
-              <p className="text-sm text-muted-foreground mb-2">Votre Code Contributeur Cadastral :</p>
-              <p className="text-2xl font-bold text-primary text-center tracking-wider">{generatedCode}</p>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                Valeur : 5 USD • Expire dans 90 jours
-              </p>
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 rounded-xl w-full border border-primary/20 shadow-lg backdrop-blur-sm animate-scale-in">
+              <p className="text-sm text-muted-foreground mb-3 font-medium">Votre Code Contributeur Cadastral :</p>
+              <p className="text-3xl font-bold text-primary text-center tracking-wider font-mono">{generatedCode}</p>
+              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
+                <span className="px-2 py-1 bg-background/80 rounded-md">Valeur : 5 USD</span>
+                <span className="text-muted-foreground/50">•</span>
+                <span className="px-2 py-1 bg-background/80 rounded-md">Expire dans 90 jours</span>
+              </div>
             </div>
-            <p className="text-sm text-center text-muted-foreground">
+            <p className="text-sm text-center text-muted-foreground max-w-sm">
               Vous pouvez utiliser ce code pour payer vos prochains services cadastraux.
             </p>
-            <Button onClick={handleClose} className="w-full">
+            <Button onClick={handleClose} className="w-full shadow-lg hover:shadow-xl transition-all">
               Fermer
             </Button>
           </div>
@@ -596,25 +603,33 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Contribuer aux informations cadastrales</DialogTitle>
-          <DialogDescription>
-            Parcelle : <strong>{parcelNumber}</strong>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="text-2xl font-semibold">Contribuer aux informations cadastrales</DialogTitle>
+          <DialogDescription className="text-base mt-2">
+            Parcelle : <strong className="text-foreground font-semibold">{parcelNumber}</strong>
             <br />
-            Renseignez les informations que vous possédez sur cette parcelle.
+            <span className="text-sm">Renseignez les informations que vous possédez sur cette parcelle.</span>
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="general">Général</TabsTrigger>
-            <TabsTrigger value="location">Localisation</TabsTrigger>
-            <TabsTrigger value="history">Historiques</TabsTrigger>
-            <TabsTrigger value="obligations">Obligations</TabsTrigger>
+        <Tabs defaultValue="general" className="w-full px-6 pb-6">
+          <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50 p-1 rounded-lg shadow-inner">
+            <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all">
+              Général
+            </TabsTrigger>
+            <TabsTrigger value="location" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all">
+              Localisation
+            </TabsTrigger>
+            <TabsTrigger value="history" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all">
+              Historiques
+            </TabsTrigger>
+            <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all">
+              Obligations
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="general" className="space-y-4 mt-4">
+          <TabsContent value="general" className="space-y-6 mt-6 animate-fade-in">
             <div className="space-y-2">
               <Label htmlFor="titleType">Type de titre de propriété</Label>
               <Select onValueChange={(value) => handleInputChange('propertyTitleType', value)}>
@@ -663,12 +678,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               />
             </div>
 
-            <div className="space-y-3 pt-3 border-t">
+            <div className="space-y-4 pt-4 border-t">
               <Label className="text-base font-semibold">Superficie</Label>
               
-              <div className="space-y-3">
+              <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-transparent border border-border/50">
                 <div className="space-y-2">
-                  <Label className="text-sm">Dimensions de chaque côté (en mètres)</Label>
+                  <Label className="text-sm font-medium">Dimensions de chaque côté (en mètres)</Label>
                   <p className="text-xs text-muted-foreground">
                     Ajoutez les dimensions de chaque côté de la parcelle
                   </p>
@@ -676,27 +691,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 <div className="space-y-2">
                   {parcelSides.map((side, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={index} className="flex items-center gap-2 animate-fade-in">
                       <Input
                         placeholder="Nom du côté"
                         value={side.name}
                         onChange={(e) => updateParcelSide(index, 'name', e.target.value)}
-                        className="flex-1"
+                        className="flex-1 transition-all focus:scale-[1.01]"
                       />
                       <Input
                         type="number"
                         placeholder="Longueur"
                         value={side.length}
                         onChange={(e) => updateParcelSide(index, 'length', e.target.value)}
-                        className="w-32"
+                        className="w-32 transition-all focus:scale-[1.01]"
                       />
-                      <span className="text-xs text-muted-foreground">m</span>
+                      <span className="text-xs text-muted-foreground w-6">m</span>
                       {parcelSides.length > 2 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeParcelSide(index)}
+                          className="hover:bg-destructive/10 transition-all"
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -710,18 +726,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   variant="outline"
                   size="sm"
                   onClick={addParcelSide}
-                  className="w-full"
+                  className="w-full hover:bg-primary/5 transition-all hover:scale-[1.02]"
                 >
                   <Plus className="h-4 w-4 mr-2" />
                   Ajouter un côté
                 </Button>
 
                 {formData.areaSqm && (
-                  <div className="p-3 bg-primary/10 rounded-lg">
-                    <p className="text-sm font-medium">
-                      Superficie calculée : <span className="text-lg font-bold text-primary">{formData.areaSqm} m²</span>
+                  <div className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 animate-scale-in">
+                    <p className="text-sm font-medium text-muted-foreground mb-1">
+                      Superficie calculée
                     </p>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-3xl font-bold text-primary mb-2">{formData.areaSqm} m²</p>
+                    <p className="text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md inline-block">
                       {parcelSides.length === 2 && "Calcul rectangulaire simple"}
                       {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
                       {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
@@ -852,7 +869,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
           </TabsContent>
 
-          <TabsContent value="location" className="space-y-4 mt-4">
+          <TabsContent value="location" className="space-y-6 mt-6 animate-fade-in">
             {/* Choix du type de section */}
             <div className="space-y-2 pb-4 border-b">
               <Label htmlFor="sectionType">Type de section *</Label>
@@ -1066,7 +1083,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             )}
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-4 mt-4">
+          <TabsContent value="history" className="space-y-6 mt-6 animate-fade-in">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -1080,7 +1097,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   variant="outline"
                   size="sm"
                   onClick={addPreviousOwner}
-                  className="gap-2"
+                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
                 >
                   <Plus className="h-4 w-4" />
                   Ajouter
@@ -1088,22 +1105,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
 
               {previousOwners.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <p className="text-sm">Aucun ancien propriétaire ajouté</p>
-                  <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20 animate-fade-in">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Plus className="h-6 w-6 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium">Aucun ancien propriétaire ajouté</p>
+                    <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {previousOwners.map((owner, index) => (
-                    <div key={index} className="border rounded-lg p-4 space-y-4 relative">
+                    <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-medium">Propriétaire #{index + 1}</h4>
+                        <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Propriétaire #{index + 1}</h4>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removePreviousOwner(index)}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -1211,15 +1233,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
           </TabsContent>
 
-          <TabsContent value="obligations" className="space-y-4 mt-4">
+          <TabsContent value="obligations" className="space-y-6 mt-6 animate-fade-in">
             {/* Switch Taxes/Hypothèques redesigné */}
-            <div className="flex items-center gap-2 p-1 bg-muted rounded-lg w-fit">
+            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit shadow-inner">
               <Button
                 type="button"
                 variant={obligationType === 'taxes' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setObligationType('taxes')}
-                className="transition-all"
+                className="transition-all hover:scale-105 shadow-sm"
               >
                 Taxes
               </Button>
@@ -1228,7 +1250,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 variant={obligationType === 'mortgages' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setObligationType('mortgages')}
-                className="transition-all"
+                className="transition-all hover:scale-105 shadow-sm"
               >
                 Hypothèques
               </Button>
@@ -1249,7 +1271,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     variant="outline"
                     size="sm"
                     onClick={addTaxRecord}
-                    className="gap-2"
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
                   >
                     <Plus className="h-4 w-4" />
                     Ajouter
@@ -1257,22 +1279,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {taxRecords.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground border rounded-lg">
-                    <p className="text-sm">Aucune taxe ajoutée</p>
-                    <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20 animate-fade-in">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Plus className="h-6 w-6 text-primary" />
+                      </div>
+                      <p className="text-sm font-medium">Aucune taxe ajoutée</p>
+                      <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {taxRecords.map((tax, index) => (
-                      <div key={index} className="border rounded-lg p-4 space-y-4 relative">
+                      <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium">Taxe #{index + 1}</h4>
+                          <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Taxe #{index + 1}</h4>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => removeTaxRecord(index)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1411,7 +1438,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     variant="outline"
                     size="sm"
                     onClick={addMortgageRecord}
-                    className="gap-2"
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
                   >
                     <Plus className="h-4 w-4" />
                     Ajouter
@@ -1419,22 +1446,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {mortgageRecords.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground border rounded-lg">
-                    <p className="text-sm">Aucune hypothèque ajoutée</p>
-                    <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20 animate-fade-in">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
+                        <Plus className="h-6 w-6 text-primary" />
+                      </div>
+                      <p className="text-sm font-medium">Aucune hypothèque ajoutée</p>
+                      <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-6">
                     {mortgageRecords.map((mortgage, index) => (
-                      <div key={index} className="border rounded-lg p-4 space-y-4 relative">
+                      <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium">Hypothèque #{index + 1}</h4>
+                          <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Hypothèque #{index + 1}</h4>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => removeMortgageRecord(index)}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -1554,35 +1586,48 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center space-x-2 pt-4 border-t">
+        <div className="flex items-center space-x-3 px-6 py-4 border-t bg-muted/20">
           <Checkbox 
             id="whatsapp" 
             checked={requestWhatsAppNotif}
             onCheckedChange={(checked) => setRequestWhatsAppNotif(checked as boolean)}
+            className="transition-all"
           />
-          <Label htmlFor="whatsapp" className="text-sm cursor-pointer">
+          <Label htmlFor="whatsapp" className="text-sm cursor-pointer hover:text-primary transition-colors">
             M'informer par WhatsApp si les informations sont validées
           </Label>
         </div>
 
         {requestWhatsAppNotif && (
-          <div className="space-y-2">
-            <Label htmlFor="whatsapp-number">Numéro WhatsApp</Label>
-            <Input
-              id="whatsapp-number"
-              placeholder="+243 XXX XXX XXX"
-              value={formData.whatsappNumber || ''}
-              onChange={(e) => handleInputChange('whatsappNumber', e.target.value)}
-            />
+          <div className="px-6 pb-4 animate-fade-in">
+            <div className="space-y-2">
+              <Label htmlFor="whatsapp-number" className="text-sm font-medium">Numéro WhatsApp</Label>
+              <Input
+                id="whatsapp-number"
+                placeholder="+243 XXX XXX XXX"
+                value={formData.whatsappNumber || ''}
+                onChange={(e) => handleInputChange('whatsappNumber', e.target.value)}
+                className="transition-all focus:scale-[1.01]"
+              />
+            </div>
           </div>
         )}
 
-        <div className="flex gap-2 pt-4">
-          <Button variant="outline" onClick={handleClose} disabled={loading} className="flex-1">
+        <div className="flex gap-3 px-6 pb-6">
+          <Button 
+            variant="outline" 
+            onClick={handleClose} 
+            disabled={loading} 
+            className="flex-1 h-12 hover:bg-muted transition-all hover:scale-[1.02]"
+          >
             Annuler
           </Button>
-          <Button onClick={handleSubmit} disabled={loading || uploading} className="flex-1">
-            {(loading || uploading) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button 
+            onClick={handleSubmit} 
+            disabled={loading || uploading} 
+            className="flex-1 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
+          >
+            {(loading || uploading) && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
             {uploading ? 'Téléchargement...' : 'Soumettre la contribution'}
           </Button>
         </div>
