@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,13 @@ import { Loader2, CheckCircle2, Upload, X, FileText } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { 
+  getAllProvinces, 
+  getVillesForProvince, 
+  getCommunesForVille,
+  getTerritoiresForProvince,
+  getCollectivitesForTerritoire
+} from '@/lib/geographicData';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -36,6 +43,69 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     parcelNumber: parcelNumber,
     whatsappNumber: '',
   });
+
+  // États pour gérer les listes déroulantes dépendantes
+  const [availableVilles, setAvailableVilles] = useState<string[]>([]);
+  const [availableCommunes, setAvailableCommunes] = useState<string[]>([]);
+  const [availableTerritoires, setAvailableTerritoires] = useState<string[]>([]);
+  const [availableCollectivites, setAvailableCollectivites] = useState<string[]>([]);
+
+  // Mise à jour des villes quand la province change
+  useEffect(() => {
+    if (formData.province) {
+      const villes = getVillesForProvince(formData.province);
+      setAvailableVilles(villes);
+      const territoires = getTerritoiresForProvince(formData.province);
+      setAvailableTerritoires(territoires);
+      
+      // Réinitialiser les niveaux inférieurs si la province change
+      if (!villes.includes(formData.ville || '')) {
+        handleInputChange('ville', undefined);
+        setAvailableCommunes([]);
+        handleInputChange('commune', undefined);
+      }
+      if (!territoires.includes(formData.territoire || '')) {
+        handleInputChange('territoire', undefined);
+        setAvailableCollectivites([]);
+        handleInputChange('collectivite', undefined);
+      }
+    } else {
+      setAvailableVilles([]);
+      setAvailableCommunes([]);
+      setAvailableTerritoires([]);
+      setAvailableCollectivites([]);
+    }
+  }, [formData.province]);
+
+  // Mise à jour des communes quand la ville change
+  useEffect(() => {
+    if (formData.province && formData.ville) {
+      const communes = getCommunesForVille(formData.province, formData.ville);
+      setAvailableCommunes(communes);
+      
+      // Réinitialiser la commune si elle n'est plus valide
+      if (!communes.includes(formData.commune || '')) {
+        handleInputChange('commune', undefined);
+      }
+    } else {
+      setAvailableCommunes([]);
+    }
+  }, [formData.province, formData.ville]);
+
+  // Mise à jour des collectivités quand le territoire change
+  useEffect(() => {
+    if (formData.province && formData.territoire) {
+      const collectivites = getCollectivitesForTerritoire(formData.province, formData.territoire);
+      setAvailableCollectivites(collectivites);
+      
+      // Réinitialiser la collectivité si elle n'est plus valide
+      if (!collectivites.includes(formData.collectivite || '')) {
+        handleInputChange('collectivite', undefined);
+      }
+    } else {
+      setAvailableCollectivites([]);
+    }
+  }, [formData.province, formData.territoire]);
 
   const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -401,150 +471,144 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="location" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label htmlFor="province">Province</Label>
-              <Select onValueChange={(value) => handleInputChange('province', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la province" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Nord-Kivu">Nord-Kivu</SelectItem>
-                  <SelectItem value="Sud-Kivu">Sud-Kivu</SelectItem>
-                  <SelectItem value="Kinshasa">Kinshasa</SelectItem>
-                  <SelectItem value="Kongo-Central">Kongo-Central</SelectItem>
-                  <SelectItem value="Kwilu">Kwilu</SelectItem>
-                  <SelectItem value="Kwango">Kwango</SelectItem>
-                  <SelectItem value="Mai-Ndombe">Mai-Ndombe</SelectItem>
-                  <SelectItem value="Kasaï">Kasaï</SelectItem>
-                  <SelectItem value="Kasaï-Central">Kasaï-Central</SelectItem>
-                  <SelectItem value="Kasaï-Oriental">Kasaï-Oriental</SelectItem>
-                  <SelectItem value="Lomami">Lomami</SelectItem>
-                  <SelectItem value="Sankuru">Sankuru</SelectItem>
-                  <SelectItem value="Maniema">Maniema</SelectItem>
-                  <SelectItem value="Ituri">Ituri</SelectItem>
-                  <SelectItem value="Haut-Uele">Haut-Uele</SelectItem>
-                  <SelectItem value="Bas-Uele">Bas-Uele</SelectItem>
-                  <SelectItem value="Tshopo">Tshopo</SelectItem>
-                  <SelectItem value="Mongala">Mongala</SelectItem>
-                  <SelectItem value="Nord-Ubangi">Nord-Ubangi</SelectItem>
-                  <SelectItem value="Sud-Ubangi">Sud-Ubangi</SelectItem>
-                  <SelectItem value="Équateur">Équateur</SelectItem>
-                  <SelectItem value="Tshuapa">Tshuapa</SelectItem>
-                  <SelectItem value="Tanganyika">Tanganyika</SelectItem>
-                  <SelectItem value="Haut-Lomami">Haut-Lomami</SelectItem>
-                  <SelectItem value="Lualaba">Lualaba</SelectItem>
-                  <SelectItem value="Haut-Katanga">Haut-Katanga</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="space-y-3">
+              <h4 className="text-sm font-semibold text-muted-foreground">Système Urbain (SU)</h4>
+              
+              <div className="space-y-2">
+                <Label htmlFor="province">Province *</Label>
+                <Select 
+                  value={formData.province} 
+                  onValueChange={(value) => handleInputChange('province', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner la province" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAllProvinces().map(province => (
+                      <SelectItem key={province} value={province}>{province}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ville">Ville</Label>
-              <Select onValueChange={(value) => handleInputChange('ville', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la ville" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Goma">Goma</SelectItem>
-                  <SelectItem value="Bukavu">Bukavu</SelectItem>
-                  <SelectItem value="Kinshasa">Kinshasa</SelectItem>
-                  <SelectItem value="Lubumbashi">Lubumbashi</SelectItem>
-                  <SelectItem value="Kisangani">Kisangani</SelectItem>
-                  <SelectItem value="Butembo">Butembo</SelectItem>
-                  <SelectItem value="Beni">Beni</SelectItem>
-                  <SelectItem value="Uvira">Uvira</SelectItem>
-                  <SelectItem value="Bunia">Bunia</SelectItem>
-                  <SelectItem value="Kolwezi">Kolwezi</SelectItem>
-                  <SelectItem value="Matadi">Matadi</SelectItem>
-                  <SelectItem value="Mbandaka">Mbandaka</SelectItem>
-                  <SelectItem value="Kananga">Kananga</SelectItem>
-                  <SelectItem value="Mbuji-Mayi">Mbuji-Mayi</SelectItem>
-                  <SelectItem value="Likasi">Likasi</SelectItem>
-                  <SelectItem value="Autre">Autre</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="ville">Ville</Label>
+                <Select 
+                  value={formData.ville}
+                  onValueChange={(value) => handleInputChange('ville', value)}
+                  disabled={!formData.province || availableVilles.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      !formData.province 
+                        ? "Sélectionner d'abord une province" 
+                        : availableVilles.length === 0 
+                        ? "Aucune ville disponible"
+                        : "Sélectionner la ville"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableVilles.map(ville => (
+                      <SelectItem key={ville} value={ville}>{ville}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="commune">Commune</Label>
-              <Select onValueChange={(value) => handleInputChange('commune', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la commune" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Goma">Goma</SelectItem>
-                  <SelectItem value="Karisimbi">Karisimbi</SelectItem>
-                  <SelectItem value="Ibanda">Ibanda</SelectItem>
-                  <SelectItem value="Bagira">Bagira</SelectItem>
-                  <SelectItem value="Kadutu">Kadutu</SelectItem>
-                  <SelectItem value="Kampemba">Kampemba</SelectItem>
-                  <SelectItem value="Kenya">Kenya</SelectItem>
-                  <SelectItem value="Katuba">Katuba</SelectItem>
-                  <SelectItem value="Annexe">Annexe</SelectItem>
-                  <SelectItem value="Lubumbashi">Lubumbashi</SelectItem>
-                  <SelectItem value="Autre">Autre</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="commune">Commune</Label>
+                <Select 
+                  value={formData.commune}
+                  onValueChange={(value) => handleInputChange('commune', value)}
+                  disabled={!formData.ville || availableCommunes.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      !formData.ville 
+                        ? "Sélectionner d'abord une ville" 
+                        : availableCommunes.length === 0 
+                        ? "Aucune commune disponible"
+                        : "Sélectionner la commune"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCommunes.map(commune => (
+                      <SelectItem key={commune} value={commune}>{commune}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quartier">Quartier</Label>
-              <Input
-                id="quartier"
-                placeholder="ex: Himbi"
-                value={formData.quartier || ''}
-                onChange={(e) => handleInputChange('quartier', e.target.value)}
-              />
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="quartier">Quartier</Label>
+                <Input
+                  id="quartier"
+                  placeholder="ex: Himbi"
+                  value={formData.quartier || ''}
+                  onChange={(e) => handleInputChange('quartier', e.target.value)}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="avenue">Avenue</Label>
-              <Input
-                id="avenue"
-                placeholder="ex: Avenue de l'Université"
-                value={formData.avenue || ''}
-                onChange={(e) => handleInputChange('avenue', e.target.value)}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="avenue">Avenue</Label>
+                <Input
+                  id="avenue"
+                  placeholder="ex: Avenue de l'Université"
+                  value={formData.avenue || ''}
+                  onChange={(e) => handleInputChange('avenue', e.target.value)}
+                />
+              </div>
             </div>
 
             <div className="space-y-3 pt-4 border-t">
-              <h4 className="text-sm font-semibold text-muted-foreground">Pour les zones rurales</h4>
+              <h4 className="text-sm font-semibold text-muted-foreground">Système Rural (SR)</h4>
               
               <div className="space-y-2">
                 <Label htmlFor="territoire">Territoire</Label>
-                <Select onValueChange={(value) => handleInputChange('territoire', value)}>
+                <Select 
+                  value={formData.territoire}
+                  onValueChange={(value) => handleInputChange('territoire', value)}
+                  disabled={!formData.province || availableTerritoires.length === 0}
+                >
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le territoire" />
+                    <SelectValue placeholder={
+                      !formData.province 
+                        ? "Sélectionner d'abord une province" 
+                        : availableTerritoires.length === 0 
+                        ? "Aucun territoire disponible"
+                        : "Sélectionner le territoire"
+                    } />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Masisi">Masisi</SelectItem>
-                    <SelectItem value="Rutshuru">Rutshuru</SelectItem>
-                    <SelectItem value="Nyiragongo">Nyiragongo</SelectItem>
-                    <SelectItem value="Walikale">Walikale</SelectItem>
-                    <SelectItem value="Lubero">Lubero</SelectItem>
-                    <SelectItem value="Beni">Beni</SelectItem>
-                    <SelectItem value="Oicha">Oicha</SelectItem>
-                    <SelectItem value="Fizi">Fizi</SelectItem>
-                    <SelectItem value="Uvira">Uvira</SelectItem>
-                    <SelectItem value="Mwenga">Mwenga</SelectItem>
-                    <SelectItem value="Shabunda">Shabunda</SelectItem>
-                    <SelectItem value="Walungu">Walungu</SelectItem>
-                    <SelectItem value="Kabare">Kabare</SelectItem>
-                    <SelectItem value="Kalehe">Kalehe</SelectItem>
-                    <SelectItem value="Idjwi">Idjwi</SelectItem>
-                    <SelectItem value="Autre">Autre</SelectItem>
+                    {availableTerritoires.map(territoire => (
+                      <SelectItem key={territoire} value={territoire}>{territoire}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="collectivite">Collectivité</Label>
-                <Input
-                  id="collectivite"
-                  placeholder="ex: Osso-Banyungu"
-                  value={formData.collectivite || ''}
-                  onChange={(e) => handleInputChange('collectivite', e.target.value)}
-                />
+                <Select 
+                  value={formData.collectivite}
+                  onValueChange={(value) => handleInputChange('collectivite', value)}
+                  disabled={!formData.territoire || availableCollectivites.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={
+                      !formData.territoire 
+                        ? "Sélectionner d'abord un territoire" 
+                        : availableCollectivites.length === 0 
+                        ? "Aucune collectivité disponible"
+                        : "Sélectionner la collectivité"
+                    } />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableCollectivites.map(collectivite => (
+                      <SelectItem key={collectivite} value={collectivite}>{collectivite}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -555,6 +619,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   value={formData.groupement || ''}
                   onChange={(e) => handleInputChange('groupement', e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Saisie manuelle - optionnel
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -565,6 +632,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   value={formData.village || ''}
                   onChange={(e) => handleInputChange('village', e.target.value)}
                 />
+                <p className="text-xs text-muted-foreground">
+                  Saisie manuelle - optionnel
+                </p>
               </div>
             </div>
           </TabsContent>
