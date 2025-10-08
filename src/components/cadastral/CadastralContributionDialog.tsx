@@ -48,6 +48,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     mutationType: string;
   }>>([]);
 
+  // État pour gérer plusieurs taxes
+  const [taxRecords, setTaxRecords] = useState<Array<{
+    taxType: string;
+    taxYear: string;
+    taxAmount: string;
+    paymentStatus: string;
+    paymentDate: string;
+  }>>([]);
+
+  // État pour gérer plusieurs hypothèques
+  const [mortgageRecords, setMortgageRecords] = useState<Array<{
+    mortgageAmount: string;
+    duration: string;
+    creditorName: string;
+    creditorType: string;
+    contractDate: string;
+    mortgageStatus: string;
+  }>>([]);
+
+  // État pour le switch Taxes/Hypothèques dans l'onglet obligations
+  const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
+
   const [formData, setFormData] = useState<CadastralContributionData>({
     parcelNumber: parcelNumber,
     whatsappNumber: '',
@@ -278,6 +300,49 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setPreviousOwners(updated);
   };
 
+  // Fonctions pour gérer les taxes
+  const addTaxRecord = () => {
+    setTaxRecords([...taxRecords, {
+      taxType: '',
+      taxYear: '',
+      taxAmount: '',
+      paymentStatus: '',
+      paymentDate: ''
+    }]);
+  };
+
+  const removeTaxRecord = (index: number) => {
+    setTaxRecords(taxRecords.filter((_, i) => i !== index));
+  };
+
+  const updateTaxRecord = (index: number, field: string, value: string) => {
+    const updated = [...taxRecords];
+    updated[index] = { ...updated[index], [field]: value };
+    setTaxRecords(updated);
+  };
+
+  // Fonctions pour gérer les hypothèques
+  const addMortgageRecord = () => {
+    setMortgageRecords([...mortgageRecords, {
+      mortgageAmount: '',
+      duration: '',
+      creditorName: '',
+      creditorType: '',
+      contractDate: '',
+      mortgageStatus: ''
+    }]);
+  };
+
+  const removeMortgageRecord = (index: number) => {
+    setMortgageRecords(mortgageRecords.filter((_, i) => i !== index));
+  };
+
+  const updateMortgageRecord = (index: number, field: string, value: string) => {
+    const updated = [...mortgageRecords];
+    updated[index] = { ...updated[index], [field]: value };
+    setMortgageRecords(updated);
+  };
+
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber, whatsappNumber: '' });
     setShowSuccess(false);
@@ -287,6 +352,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setTitleDocFile(null);
     setSectionType('');
     setPreviousOwners([]);
+    setTaxRecords([]);
+    setMortgageRecords([]);
+    setObligationType('taxes');
     onOpenChange(false);
   };
 
@@ -895,132 +963,283 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="obligations" className="space-y-4 mt-4">
-            <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-semibold">Historique des taxes (optionnel)</Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Si vous connaissez une taxe payée, renseignez ces informations
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="taxYear">Année fiscale</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner l'année" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="2024">2024</SelectItem>
-                    <SelectItem value="2023">2023</SelectItem>
-                    <SelectItem value="2022">2022</SelectItem>
-                    <SelectItem value="2021">2021</SelectItem>
-                    <SelectItem value="2020">2020</SelectItem>
-                    <SelectItem value="2019">2019</SelectItem>
-                    <SelectItem value="2018">2018</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="taxAmount">Montant payé (USD)</Label>
-                <Input
-                  id="taxAmount"
-                  type="number"
-                  placeholder="ex: 150"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="paymentStatus">Statut de paiement</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Payé">Payé</SelectItem>
-                    <SelectItem value="Payé partiellement">Payé partiellement</SelectItem>
-                    <SelectItem value="En attente">En attente</SelectItem>
-                    <SelectItem value="En retard">En retard</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="paymentDate">Date de paiement</Label>
-                <Input id="paymentDate" type="date" />
-              </div>
+            {/* Switch Taxes/Hypothèques redesigné */}
+            <div className="flex items-center gap-2 p-1 bg-muted rounded-lg w-fit">
+              <Button
+                type="button"
+                variant={obligationType === 'taxes' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setObligationType('taxes')}
+                className="transition-all"
+              >
+                Taxes
+              </Button>
+              <Button
+                type="button"
+                variant={obligationType === 'mortgages' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setObligationType('mortgages')}
+                className="transition-all"
+              >
+                Hypothèques
+              </Button>
             </div>
 
-            <div className="pt-4 border-t space-y-4">
-              <div>
-                <Label className="text-sm font-semibold">Hypothèque (optionnel)</Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Si la parcelle a une hypothèque, renseignez ces informations
-                </p>
-              </div>
+            {/* Section Taxes */}
+            {obligationType === 'taxes' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold">Historique des taxes (optionnel)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Ajoutez les taxes que vous connaissez pour cette parcelle
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addTaxRecord}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter
+                  </Button>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="mortgageAmount">Montant de l'hypothèque (USD)</Label>
-                <Input
-                  id="mortgageAmount"
-                  type="number"
-                  placeholder="ex: 50000"
-                />
-              </div>
+                {taxRecords.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                    <p className="text-sm">Aucune taxe ajoutée</p>
+                    <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {taxRecords.map((tax, index) => (
+                      <div key={index} className="border rounded-lg p-4 space-y-4 relative">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium">Taxe #{index + 1}</h4>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeTaxRecord(index)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="duration">Durée (mois)</Label>
-                <Input
-                  id="duration"
-                  type="number"
-                  placeholder="ex: 120"
-                />
-              </div>
+                        <div className="space-y-2">
+                          <Label>Type de taxe</Label>
+                          <Select
+                            value={tax.taxType}
+                            onValueChange={(value) => updateTaxRecord(index, 'taxType', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner le type de taxe" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Impôt foncier annuel">Impôt foncier annuel</SelectItem>
+                              <SelectItem value="Impôt sur les revenus locatifs">Impôt sur les revenus locatifs</SelectItem>
+                              <SelectItem value="Taxe de superficie">Taxe de superficie</SelectItem>
+                              <SelectItem value="Taxe de plus-value immobilière">Taxe de plus-value immobilière</SelectItem>
+                              <SelectItem value="Taxe d'habitation">Taxe d'habitation</SelectItem>
+                              <SelectItem value="Autre taxe">Autre taxe</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="creditorName">Nom du créancier</Label>
-                <Input
-                  id="creditorName"
-                  placeholder="ex: Banque XYZ"
-                />
-              </div>
+                        <div className="space-y-2">
+                          <Label>Année fiscale</Label>
+                          <Select
+                            value={tax.taxYear}
+                            onValueChange={(value) => updateTaxRecord(index, 'taxYear', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner l'année" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="2024">2024</SelectItem>
+                              <SelectItem value="2023">2023</SelectItem>
+                              <SelectItem value="2022">2022</SelectItem>
+                              <SelectItem value="2021">2021</SelectItem>
+                              <SelectItem value="2020">2020</SelectItem>
+                              <SelectItem value="2019">2019</SelectItem>
+                              <SelectItem value="2018">2018</SelectItem>
+                              <SelectItem value="2017">2017</SelectItem>
+                              <SelectItem value="2016">2016</SelectItem>
+                              <SelectItem value="2015">2015</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="creditorType">Type de créancier</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Banque">Banque</SelectItem>
-                    <SelectItem value="Microfinance">Microfinance</SelectItem>
-                    <SelectItem value="Coopérative">Coopérative</SelectItem>
-                    <SelectItem value="Particulier">Particulier</SelectItem>
-                    <SelectItem value="Autre institution">Autre institution</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                        <div className="space-y-2">
+                          <Label>Montant payé (USD)</Label>
+                          <Input
+                            type="number"
+                            placeholder="ex: 150"
+                            value={tax.taxAmount}
+                            onChange={(e) => updateTaxRecord(index, 'taxAmount', e.target.value)}
+                          />
+                        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="contractDate">Date du contrat</Label>
-                <Input id="contractDate" type="date" />
-              </div>
+                        <div className="space-y-2">
+                          <Label>Statut de paiement</Label>
+                          <Select
+                            value={tax.paymentStatus}
+                            onValueChange={(value) => updateTaxRecord(index, 'paymentStatus', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner le statut" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Payé">Payé</SelectItem>
+                              <SelectItem value="Payé partiellement">Payé partiellement</SelectItem>
+                              <SelectItem value="En attente">En attente</SelectItem>
+                              <SelectItem value="En retard">En retard</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="mortgageStatus">Statut de l'hypothèque</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Remboursée">Remboursée</SelectItem>
-                    <SelectItem value="En défaut">En défaut</SelectItem>
-                    <SelectItem value="Renégociée">Renégociée</SelectItem>
-                  </SelectContent>
-                </Select>
+                        <div className="space-y-2">
+                          <Label>Date de paiement</Label>
+                          <Input
+                            type="date"
+                            value={tax.paymentDate}
+                            onChange={(e) => updateTaxRecord(index, 'paymentDate', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            )}
+
+            {/* Section Hypothèques */}
+            {obligationType === 'mortgages' && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold">Hypothèque (optionnel)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Ajoutez les hypothèques que vous connaissez pour cette parcelle
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addMortgageRecord}
+                    className="gap-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter
+                  </Button>
+                </div>
+
+                {mortgageRecords.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground border rounded-lg">
+                    <p className="text-sm">Aucune hypothèque ajoutée</p>
+                    <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {mortgageRecords.map((mortgage, index) => (
+                      <div key={index} className="border rounded-lg p-4 space-y-4 relative">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="text-sm font-medium">Hypothèque #{index + 1}</h4>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeMortgageRecord(index)}
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Montant de l'hypothèque (USD)</Label>
+                          <Input
+                            type="number"
+                            placeholder="ex: 50000"
+                            value={mortgage.mortgageAmount}
+                            onChange={(e) => updateMortgageRecord(index, 'mortgageAmount', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Durée (mois)</Label>
+                          <Input
+                            type="number"
+                            placeholder="ex: 120"
+                            value={mortgage.duration}
+                            onChange={(e) => updateMortgageRecord(index, 'duration', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Nom du créancier</Label>
+                          <Input
+                            placeholder="ex: Banque XYZ"
+                            value={mortgage.creditorName}
+                            onChange={(e) => updateMortgageRecord(index, 'creditorName', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Type de créancier</Label>
+                          <Select
+                            value={mortgage.creditorType}
+                            onValueChange={(value) => updateMortgageRecord(index, 'creditorType', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner le type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Banque">Banque</SelectItem>
+                              <SelectItem value="Microfinance">Microfinance</SelectItem>
+                              <SelectItem value="Coopérative">Coopérative</SelectItem>
+                              <SelectItem value="Particulier">Particulier</SelectItem>
+                              <SelectItem value="Autre institution">Autre institution</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Date du contrat</Label>
+                          <Input
+                            type="date"
+                            value={mortgage.contractDate}
+                            onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Statut de l'hypothèque</Label>
+                          <Select
+                            value={mortgage.mortgageStatus}
+                            onValueChange={(value) => updateMortgageRecord(index, 'mortgageStatus', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner le statut" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Active">Active</SelectItem>
+                              <SelectItem value="Remboursée">Remboursée</SelectItem>
+                              <SelectItem value="En défaut">En défaut</SelectItem>
+                              <SelectItem value="Renégociée">Renégociée</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
 
