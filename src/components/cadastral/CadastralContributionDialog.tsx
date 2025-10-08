@@ -103,6 +103,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   
   // État pour déterminer le type de section (SU ou SR)
   const [sectionType, setSectionType] = useState<'urbaine' | 'rurale' | ''>('');
+  const [sectionTypeAutoDetected, setSectionTypeAutoDetected] = useState(false);
+
+  // Détecter automatiquement le type de section à partir du préfixe du numéro de parcelle
+  useEffect(() => {
+    if (parcelNumber) {
+      const upperParcelNumber = parcelNumber.toUpperCase().trim();
+      
+      if (upperParcelNumber.startsWith('SU')) {
+        setSectionType('urbaine');
+        setSectionTypeAutoDetected(true);
+      } else if (upperParcelNumber.startsWith('SR')) {
+        setSectionType('rurale');
+        setSectionTypeAutoDetected(true);
+      } else {
+        setSectionType('');
+        setSectionTypeAutoDetected(false);
+      }
+    }
+  }, [parcelNumber]);
 
   // Recalculer automatiquement la superficie quand les dimensions changent
   useEffect(() => {
@@ -598,6 +617,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setOwnerDocFile(null);
     setTitleDocFile(null);
     setSectionType('');
+    setSectionTypeAutoDetected(false);
     setPreviousOwners([]);
     setTaxRecords([]);
     setMortgageRecords([]);
@@ -927,8 +947,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <Select 
                 value={sectionType} 
                 onValueChange={(value: 'urbaine' | 'rurale') => handleSectionTypeChange(value)}
+                disabled={sectionTypeAutoDetected}
               >
-                <SelectTrigger>
+                <SelectTrigger className={sectionTypeAutoDetected ? 'bg-muted/50 cursor-not-allowed' : ''}>
                   <SelectValue placeholder="Choisir le type de section" />
                 </SelectTrigger>
                 <SelectContent>
@@ -936,9 +957,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <SelectItem value="rurale">Section rurale (SR)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground">
-                Choisissez si vous renseignez un numéro SU (zone urbaine) ou SR (zone rurale)
-              </p>
+              {sectionTypeAutoDetected ? (
+                <p className="text-xs text-primary flex items-center gap-1.5">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Type détecté automatiquement à partir du préfixe "{parcelNumber.toUpperCase().startsWith('SU') ? 'SU' : 'SR'}"
+                </p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Choisissez si vous renseignez un numéro SU (zone urbaine) ou SR (zone rurale)
+                </p>
+              )}
             </div>
 
             {/* Province - toujours visible */}
