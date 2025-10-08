@@ -46,6 +46,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     startDate: string;
     endDate: string;
     mutationType: string;
+    surveyDate?: string;
+    surveyorName?: string;
   }>>([]);
 
   // État pour gérer plusieurs taxes
@@ -339,7 +341,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       legalStatus: '',
       startDate: '',
       endDate: '',
-      mutationType: ''
+      mutationType: '',
+      surveyDate: '',
+      surveyorName: ''
     }]);
   };
 
@@ -1010,56 +1014,33 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Informations de bornage intégrées */}
+                      <div className="pt-3 border-t space-y-3">
+                        <Label className="text-sm font-medium text-muted-foreground">Bornage (optionnel)</Label>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-xs">Date du bornage</Label>
+                          <Input
+                            type="date"
+                            value={owner.surveyDate || ''}
+                            onChange={(e) => updatePreviousOwner(index, 'surveyDate', e.target.value)}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label className="text-xs">Nom du géomètre</Label>
+                          <Input
+                            placeholder="ex: Géomètre Kalala"
+                            value={owner.surveyorName || ''}
+                            onChange={(e) => updatePreviousOwner(index, 'surveyorName', e.target.value)}
+                          />
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-
-            <div className="pt-4 border-t space-y-4">
-              <div>
-                <Label className="text-sm font-semibold">Historique de bornage (optionnel)</Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Si vous connaissez une opération de bornage, renseignez ces informations
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="pvRef">Numéro de référence du PV</Label>
-                <Input
-                  id="pvRef"
-                  placeholder="ex: PV-NK-2023-001"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="boundaryPurpose">Objectif du bornage</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner l'objectif" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Délimitation initiale">Délimitation initiale</SelectItem>
-                    <SelectItem value="Bornage contradictoire">Bornage contradictoire</SelectItem>
-                    <SelectItem value="Réfection de bornes">Réfection de bornes</SelectItem>
-                    <SelectItem value="Division parcellaire">Division parcellaire</SelectItem>
-                    <SelectItem value="Régularisation">Régularisation</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="surveyorName">Nom du géomètre</Label>
-                <Input
-                  id="surveyorName"
-                  placeholder="ex: Géomètre Kalala"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="surveyDate">Date de l'opération</Label>
-                <Input id="surveyDate" type="date" />
-              </div>
             </div>
           </TabsContent>
 
