@@ -463,6 +463,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           };
         })
       );
+      
+      // Transform building permits data
+      const buildingPermitsData = buildingPermits.length > 0 ? buildingPermits.map(permit => ({
+        permitNumber: permit.permitNumber,
+        issuingService: permit.issuingService,
+        issueDate: permit.issueDate,
+        validityMonths: parseInt(permit.validityMonths),
+        administrativeStatus: permit.administrativeStatus,
+        issuingServiceContact: permit.issuingServiceContact || undefined
+      })) : undefined;
+      
+      // Transform GPS coordinates data
+      const gpsCoordinatesData = gpsCoordinates.length > 0 ? gpsCoordinates.map(coord => ({
+        borne: coord.borne,
+        lat: parseFloat(coord.lat),
+        lng: parseFloat(coord.lng)
+      })) : undefined;
 
       // Add document URLs to form data
       const dataToSubmit = {
@@ -471,6 +488,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         titleDocumentUrl: titleDocUrl || undefined,
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
+        buildingPermits: buildingPermitsData,
+        gpsCoordinates: gpsCoordinatesData,
       };
 
       const result = await submitContribution(dataToSubmit);
@@ -1011,6 +1030,119 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </p>
               </div>
             </div>
+            
+            {/* Section Permis de construire */}
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">Permis de construire (optionnel)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Ajoutez les permis de construire si disponibles
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addBuildingPermit}
+                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02]"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter
+                </Button>
+              </div>
+
+              {buildingPermits.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
+                  <p className="text-sm">Aucun permis ajouté</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {buildingPermits.map((permit, index) => (
+                    <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold">Permis #{index + 1}</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeBuildingPermit(index)}
+                          className="text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Numéro du permis</Label>
+                          <Input
+                            placeholder="ex: PC-2024-001"
+                            value={permit.permitNumber}
+                            onChange={(e) => updateBuildingPermit(index, 'permitNumber', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Date d'émission</Label>
+                          <Input
+                            type="date"
+                            max={new Date().toISOString().split('T')[0]}
+                            value={permit.issueDate}
+                            onChange={(e) => updateBuildingPermit(index, 'issueDate', e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Service émetteur</Label>
+                        <Input
+                          placeholder="ex: Direction de l'Urbanisme"
+                          value={permit.issuingService}
+                          onChange={(e) => updateBuildingPermit(index, 'issuingService', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label className="text-xs">Validité (mois)</Label>
+                          <Input
+                            type="number"
+                            placeholder="36"
+                            value={permit.validityMonths}
+                            onChange={(e) => updateBuildingPermit(index, 'validityMonths', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-xs">Statut administratif</Label>
+                          <Select
+                            value={permit.administrativeStatus}
+                            onValueChange={(value) => updateBuildingPermit(index, 'administrativeStatus', value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="En attente">En attente</SelectItem>
+                              <SelectItem value="Conforme">Conforme</SelectItem>
+                              <SelectItem value="Non autorisé">Non autorisé</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-xs">Contact du service</Label>
+                        <Input
+                          placeholder="ex: +243 XXX XXX XXX"
+                          value={permit.issuingServiceContact}
+                          onChange={(e) => updateBuildingPermit(index, 'issuingServiceContact', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="location" className="space-y-6 mt-6 animate-fade-in">
@@ -1271,6 +1403,101 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     {!formData.collectivite ? "Sélectionner d'abord une collectivité" : "Saisie manuelle - optionnel"}
                   </p>
                 </div>
+              </div>
+            )}
+            
+            {/* Circonscription foncière - Toujours visible après sélection province */}
+            {sectionType && (
+              <div className="space-y-3 pt-4 border-t">
+                <div>
+                  <Label htmlFor="circonscription">Circonscription foncière (optionnel)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Indiquez le bureau de la circonscription foncière
+                  </p>
+                </div>
+                <Input
+                  id="circonscription"
+                  placeholder="ex: Circonscription Foncière de Goma"
+                  value={formData.circonscriptionFonciere || ''}
+                  onChange={(e) => handleInputChange('circonscriptionFonciere', e.target.value)}
+                />
+              </div>
+            )}
+            
+            {/* Coordonnées GPS des bornes */}
+            {sectionType && (
+              <div className="space-y-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-semibold">Coordonnées GPS des bornes (optionnel)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Ajoutez les coordonnées GPS de chaque borne du terrain
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addGPSCoordinate}
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter
+                  </Button>
+                </div>
+
+                {gpsCoordinates.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
+                    <p className="text-sm">Aucune coordonnée GPS ajoutée</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {gpsCoordinates.map((coord, index) => (
+                      <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
+                        <div className="flex items-center justify-between">
+                          <Input
+                            placeholder="Nom de la borne"
+                            value={coord.borne}
+                            onChange={(e) => updateGPSCoordinate(index, 'borne', e.target.value)}
+                            className="flex-1 mr-2"
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeGPSCoordinate(index)}
+                            className="text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-2">
+                            <Label className="text-xs">Latitude</Label>
+                            <Input
+                              type="number"
+                              step="0.000001"
+                              placeholder="ex: -1.674"
+                              value={coord.lat}
+                              onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label className="text-xs">Longitude</Label>
+                            <Input
+                              type="number"
+                              step="0.000001"
+                              placeholder="ex: 29.224"
+                              value={coord.lng}
+                              onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </TabsContent>
