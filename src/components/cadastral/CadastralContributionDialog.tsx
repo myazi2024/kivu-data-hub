@@ -49,6 +49,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [availableCommunes, setAvailableCommunes] = useState<string[]>([]);
   const [availableTerritoires, setAvailableTerritoires] = useState<string[]>([]);
   const [availableCollectivites, setAvailableCollectivites] = useState<string[]>([]);
+  
+  // Déterminer si on est en mode SU (urbain) ou SR (rural)
+  const isUrbanMode = !!(formData.ville || formData.commune || formData.quartier || formData.avenue);
+  const isRuralMode = !!(formData.territoire || formData.collectivite || formData.groupement || formData.village);
 
   // Mise à jour des villes quand la province change
   useEffect(() => {
@@ -108,7 +112,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [formData.province, formData.territoire]);
 
   const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      
+      // Si on commence à remplir SU, réinitialiser SR
+      if (['ville', 'commune', 'quartier', 'avenue'].includes(field) && value) {
+        updated.territoire = undefined;
+        updated.collectivite = undefined;
+        updated.groupement = undefined;
+        updated.village = undefined;
+      }
+      
+      // Si on commence à remplir SR, réinitialiser SU
+      if (['territoire', 'collectivite', 'groupement', 'village'].includes(field) && value) {
+        updated.ville = undefined;
+        updated.commune = undefined;
+        updated.quartier = undefined;
+        updated.avenue = undefined;
+      }
+      
+      return updated;
+    });
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'owner' | 'title') => {
@@ -473,6 +497,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           <TabsContent value="location" className="space-y-4 mt-4">
             <div className="space-y-3">
               <h4 className="text-sm font-semibold text-muted-foreground">Système Urbain (SU)</h4>
+              <p className="text-xs text-muted-foreground">
+                Remplissez ces champs pour les zones urbaines. Si vous remplissez la section urbaine, la section rurale sera désactivée.
+              </p>
               
               <div className="space-y-2">
                 <Label htmlFor="province">Province *</Label>
@@ -496,11 +523,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Select 
                   value={formData.ville}
                   onValueChange={(value) => handleInputChange('ville', value)}
-                  disabled={!formData.province || availableVilles.length === 0}
+                  disabled={isRuralMode || !formData.province || availableVilles.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      !formData.province 
+                      isRuralMode
+                        ? "Désactivé (mode rural actif)"
+                        : !formData.province 
                         ? "Sélectionner d'abord une province" 
                         : availableVilles.length === 0 
                         ? "Aucune ville disponible"
@@ -520,11 +549,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Select 
                   value={formData.commune}
                   onValueChange={(value) => handleInputChange('commune', value)}
-                  disabled={!formData.ville || availableCommunes.length === 0}
+                  disabled={isRuralMode || !formData.ville || availableCommunes.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      !formData.ville 
+                      isRuralMode
+                        ? "Désactivé (mode rural actif)"
+                        : !formData.ville 
                         ? "Sélectionner d'abord une ville" 
                         : availableCommunes.length === 0 
                         ? "Aucune commune disponible"
@@ -543,36 +574,53 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Label htmlFor="quartier">Quartier</Label>
                 <Input
                   id="quartier"
-                  placeholder="ex: Himbi"
+                  placeholder={isRuralMode ? "Désactivé (mode rural actif)" : "ex: Himbi"}
                   value={formData.quartier || ''}
                   onChange={(e) => handleInputChange('quartier', e.target.value)}
+                  disabled={isRuralMode || !formData.commune}
                 />
+                {!isRuralMode && (
+                  <p className="text-xs text-muted-foreground">
+                    {!formData.commune ? "Sélectionner d'abord une commune" : "Saisie manuelle - optionnel"}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="avenue">Avenue</Label>
                 <Input
                   id="avenue"
-                  placeholder="ex: Avenue de l'Université"
+                  placeholder={isRuralMode ? "Désactivé (mode rural actif)" : "ex: Avenue de l'Université"}
                   value={formData.avenue || ''}
                   onChange={(e) => handleInputChange('avenue', e.target.value)}
+                  disabled={isRuralMode || !formData.commune}
                 />
+                {!isRuralMode && (
+                  <p className="text-xs text-muted-foreground">
+                    {!formData.commune ? "Sélectionner d'abord une commune" : "Saisie manuelle - optionnel"}
+                  </p>
+                )}
               </div>
             </div>
 
             <div className="space-y-3 pt-4 border-t">
               <h4 className="text-sm font-semibold text-muted-foreground">Système Rural (SR)</h4>
+              <p className="text-xs text-muted-foreground">
+                Remplissez ces champs pour les zones rurales. Si vous remplissez la section rurale, la section urbaine sera désactivée.
+              </p>
               
               <div className="space-y-2">
                 <Label htmlFor="territoire">Territoire</Label>
                 <Select 
                   value={formData.territoire}
                   onValueChange={(value) => handleInputChange('territoire', value)}
-                  disabled={!formData.province || availableTerritoires.length === 0}
+                  disabled={isUrbanMode || !formData.province || availableTerritoires.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      !formData.province 
+                      isUrbanMode
+                        ? "Désactivé (mode urbain actif)"
+                        : !formData.province 
                         ? "Sélectionner d'abord une province" 
                         : availableTerritoires.length === 0 
                         ? "Aucun territoire disponible"
@@ -592,11 +640,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Select 
                   value={formData.collectivite}
                   onValueChange={(value) => handleInputChange('collectivite', value)}
-                  disabled={!formData.territoire || availableCollectivites.length === 0}
+                  disabled={isUrbanMode || !formData.territoire || availableCollectivites.length === 0}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder={
-                      !formData.territoire 
+                      isUrbanMode
+                        ? "Désactivé (mode urbain actif)"
+                        : !formData.territoire 
                         ? "Sélectionner d'abord un territoire" 
                         : availableCollectivites.length === 0 
                         ? "Aucune collectivité disponible"
@@ -615,26 +665,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Label htmlFor="groupement">Groupement</Label>
                 <Input
                   id="groupement"
-                  placeholder="ex: Katoyi"
+                  placeholder={isUrbanMode ? "Désactivé (mode urbain actif)" : "ex: Katoyi"}
                   value={formData.groupement || ''}
                   onChange={(e) => handleInputChange('groupement', e.target.value)}
+                  disabled={isUrbanMode || !formData.collectivite}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Saisie manuelle - optionnel
-                </p>
+                {!isUrbanMode && (
+                  <p className="text-xs text-muted-foreground">
+                    {!formData.collectivite ? "Sélectionner d'abord une collectivité" : "Saisie manuelle - optionnel"}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="village">Village</Label>
                 <Input
                   id="village"
-                  placeholder="ex: Mushaki"
+                  placeholder={isUrbanMode ? "Désactivé (mode urbain actif)" : "ex: Mushaki"}
                   value={formData.village || ''}
                   onChange={(e) => handleInputChange('village', e.target.value)}
+                  disabled={isUrbanMode || !formData.collectivite}
                 />
-                <p className="text-xs text-muted-foreground">
-                  Saisie manuelle - optionnel
-                </p>
+                {!isUrbanMode && (
+                  <p className="text-xs text-muted-foreground">
+                    {!formData.collectivite ? "Sélectionner d'abord une collectivité" : "Saisie manuelle - optionnel"}
+                  </p>
+                )}
               </div>
             </div>
           </TabsContent>
