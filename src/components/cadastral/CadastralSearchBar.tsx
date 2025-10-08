@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, MapPin, FileText, AlertCircle, Plus } from 'lucide-react';
+import { Search, X, MapPin, FileText, AlertCircle, Plus, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Separator } from '@/components/ui/separator';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import CadastralResultsDialog from './CadastralResultsDialog';
 import CadastralContributionDialog from './CadastralContributionDialog';
@@ -137,6 +139,85 @@ const CadastralSearchBar = () => {
           <div className="flex items-center gap-2 text-foreground">
             <FileText className="h-5 w-5 text-primary" />
             <h3 className="font-semibold text-base">Recherche cadastrale - Numéro SU ou SR</h3>
+            
+            {/* Popover avec informations format */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Info className="h-4 w-4" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80" align="start">
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Format cadastral RDC
+                    </h4>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    {/* Section Urbaine */}
+                    <div className="space-y-2">
+                      <div className="flex items-baseline gap-2">
+                        <code className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">SU</code>
+                        <span className="text-xs text-muted-foreground">Section Urbaine</span>
+                      </div>
+                      <div className="ml-1 space-y-1.5 text-xs">
+                        <div className="font-mono text-foreground/80">
+                          SU/[Section]/[Parcelle]/[Code]
+                        </div>
+                        <div className="space-y-1 text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-primary/40"></span>
+                            <code className="text-xs">SU/2130/KIN</code>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-primary/40"></span>
+                            <code className="text-xs">SU/0456/GOM</code>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-primary/40"></span>
+                            <code className="text-xs">SU/2130/1/KIN</code>
+                            <span className="text-[10px] opacity-60">(Morcellement)</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <Separator />
+
+                    {/* Section Rurale */}
+                    <div className="space-y-2">
+                      <div className="flex items-baseline gap-2">
+                        <code className="px-2 py-0.5 bg-accent/50 text-accent-foreground rounded text-xs font-semibold">SR</code>
+                        <span className="text-xs text-muted-foreground">Section Rurale</span>
+                      </div>
+                      <div className="ml-1 space-y-1.5 text-xs">
+                        <div className="font-mono text-foreground/80">
+                          SR/[Section]/[Parcelle]/[Code]
+                        </div>
+                        <div className="space-y-1 text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-accent/60"></span>
+                            <code className="text-xs">SR/01/0987/BEN</code>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="w-1 h-1 rounded-full bg-accent/60"></span>
+                            <code className="text-xs">SR/0321/MAS</code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+
             <div className="flex-1" />
             {searchResult && (
               <Button 
@@ -208,26 +289,6 @@ const CadastralSearchBar = () => {
             )}
           </div>
 
-          {/* Instructions compactes - Mobile optimized */}
-          {(isExpanded && !searchResult) && (
-            <div className="text-xs text-muted-foreground space-y-2">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3 w-3 shrink-0" />
-                <span className="font-medium">Format cadastral RDC :</span>
-              </div>
-              <div className="ml-5 space-y-1">
-                <div><strong>SU</strong> (Urbaine) : SU/[Section]/[Parcelle]/[Code]</div>
-                <div className="text-muted-foreground/80 ml-3">Ex: SU/2130/KIN, SU/0456/GOM</div>
-                <div className="text-muted-foreground/80 ml-3">Morcellement: SU/2130/1/KIN</div>
-                <div className="text-muted-foreground/80 ml-3">Simplifié: SU/0123/GOM</div>
-              </div>
-              <div className="ml-5 space-y-1">
-                <div><strong>SR</strong> (Rurale) : SR/[Section]/[Parcelle]/[Code]</div>
-                <div className="text-muted-foreground/80 ml-3">Ex: SR/01/0987/BEN</div>
-                <div className="text-muted-foreground/80 ml-3">Simplifié: SR/0321/MAS</div>
-              </div>
-            </div>
-          )}
 
           {/* Message d'erreur avec option de contribution */}
           {error && (
