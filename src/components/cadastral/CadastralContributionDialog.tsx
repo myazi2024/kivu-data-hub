@@ -50,9 +50,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [availableTerritoires, setAvailableTerritoires] = useState<string[]>([]);
   const [availableCollectivites, setAvailableCollectivites] = useState<string[]>([]);
   
-  // Déterminer si on est en mode SU (urbain) ou SR (rural)
-  const isUrbanMode = !!(formData.ville || formData.commune || formData.quartier || formData.avenue);
-  const isRuralMode = !!(formData.territoire || formData.collectivite || formData.groupement || formData.village);
+  // État pour déterminer le type de section (SU ou SR)
+  const [sectionType, setSectionType] = useState<'urbaine' | 'rurale' | ''>('');
 
   // Mise à jour des villes quand la province change
   useEffect(() => {
@@ -112,27 +111,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [formData.province, formData.territoire]);
 
   const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
-    setFormData(prev => {
-      const updated = { ...prev, [field]: value };
-      
-      // Si on commence à remplir SU, réinitialiser SR
-      if (['ville', 'commune', 'quartier', 'avenue'].includes(field) && value) {
-        updated.territoire = undefined;
-        updated.collectivite = undefined;
-        updated.groupement = undefined;
-        updated.village = undefined;
-      }
-      
-      // Si on commence à remplir SR, réinitialiser SU
-      if (['territoire', 'collectivite', 'groupement', 'village'].includes(field) && value) {
-        updated.ville = undefined;
-        updated.commune = undefined;
-        updated.quartier = undefined;
-        updated.avenue = undefined;
-      }
-      
-      return updated;
-    });
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
+    setSectionType(type);
+    
+    // Réinitialiser tous les champs de localisation sauf la province
+    setFormData(prev => ({
+      ...prev,
+      ville: undefined,
+      commune: undefined,
+      quartier: undefined,
+      avenue: undefined,
+      territoire: undefined,
+      collectivite: undefined,
+      groupement: undefined,
+      village: undefined
+    }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'owner' | 'title') => {
@@ -260,6 +256,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setRequestWhatsAppNotif(false);
     setOwnerDocFile(null);
     setTitleDocFile(null);
+    setSectionType('');
     onOpenChange(false);
   };
 
@@ -495,26 +492,48 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="location" className="space-y-4 mt-4">
-            {/* Province - toujours visible */}
-            <div className="space-y-2">
-              <Label htmlFor="province">Province *</Label>
+            {/* Choix du type de section */}
+            <div className="space-y-2 pb-4 border-b">
+              <Label htmlFor="sectionType">Type de section *</Label>
               <Select 
-                value={formData.province} 
-                onValueChange={(value) => handleInputChange('province', value)}
+                value={sectionType} 
+                onValueChange={(value: 'urbaine' | 'rurale') => handleSectionTypeChange(value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la province" />
+                  <SelectValue placeholder="Choisir le type de section" />
                 </SelectTrigger>
                 <SelectContent>
-                  {getAllProvinces().map(province => (
-                    <SelectItem key={province} value={province}>{province}</SelectItem>
-                  ))}
+                  <SelectItem value="urbaine">Section Urbaine (SU)</SelectItem>
+                  <SelectItem value="rurale">Section rurale (SR)</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                Choisissez si vous renseignez un numéro SU (zone urbaine) ou SR (zone rurale)
+              </p>
             </div>
 
-            {/* Section Urbaine (SU) - cachée si mode rural actif */}
-            {!isRuralMode && (
+            {/* Province - toujours visible */}
+            {sectionType && (
+              <div className="space-y-2">
+                <Label htmlFor="province">Province *</Label>
+                <Select 
+                  value={formData.province} 
+                  onValueChange={(value) => handleInputChange('province', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner la province" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getAllProvinces().map(province => (
+                      <SelectItem key={province} value={province}>{province}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+
+            {/* Section Urbaine (SU) - visible uniquement si type urbain sélectionné */}
+            {sectionType === 'urbaine' && (
               <div className="space-y-3 pt-4 border-t">
                 <h4 className="text-sm font-semibold text-muted-foreground">Section Urbaine (SU)</h4>
                 <p className="text-xs text-muted-foreground">
@@ -599,8 +618,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
             )}
 
-            {/* Section Rurale (SR) - cachée si mode urbain actif */}
-            {!isUrbanMode && (
+            {/* Section Rurale (SR) - visible uniquement si type rural sélectionné */}
+            {sectionType === 'rurale' && (
               <div className="space-y-3 pt-4 border-t">
                 <h4 className="text-sm font-semibold text-muted-foreground">Section rurale (SR)</h4>
                 <p className="text-xs text-muted-foreground">
