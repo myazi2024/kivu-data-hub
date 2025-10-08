@@ -99,6 +99,66 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour déterminer le type de section (SU ou SR)
   const [sectionType, setSectionType] = useState<'urbaine' | 'rurale' | ''>('');
 
+  // Recalculer automatiquement la superficie quand les dimensions changent
+  useEffect(() => {
+    const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+    
+    if (sides.length < 2) return;
+
+    // Pour une forme rectangulaire simple (4 côtés)
+    if (sides.length === 4) {
+      const lengths = sides.map(s => parseFloat(s.length));
+      
+      // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
+      // Indices : 0=Nord, 1=Sud, 2=Est, 3=Ouest
+      const isRectangle = (
+        Math.abs(lengths[0] - lengths[1]) < 0.1 &&  // Nord ≈ Sud
+        Math.abs(lengths[2] - lengths[3]) < 0.1     // Est ≈ Ouest
+      );
+      
+      if (isRectangle) {
+        // Rectangle: côté Nord × côté Est
+        const area = lengths[0] * lengths[2];
+        handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+        return;
+      }
+      
+      // Si pas un rectangle parfait, utiliser la formule de Brahmagupta
+      const s = (lengths[0] + lengths[1] + lengths[2] + lengths[3]) / 2;
+      const area = Math.sqrt(
+        (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]) * (s - lengths[3])
+      );
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+      return;
+    }
+    
+    // Pour 2 côtés (forme rectangulaire simplifiée)
+    if (sides.length === 2) {
+      const length1 = parseFloat(sides[0].length);
+      const length2 = parseFloat(sides[1].length);
+      const area = length1 * length2;
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+      return;
+    }
+    
+    // Pour 3 côtés (triangle) : formule de Héron
+    if (sides.length === 3) {
+      const lengths = sides.map(s => parseFloat(s.length));
+      const s = (lengths[0] + lengths[1] + lengths[2]) / 2;
+      const area = Math.sqrt(s * (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]));
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+      return;
+    }
+    
+    // Pour plus de 4 côtés, utiliser une approximation
+    if (sides.length > 4) {
+      const lengths = sides.map(s => parseFloat(s.length));
+      const perimeter = lengths.reduce((a, b) => a + b, 0);
+      const area = (perimeter * perimeter) / (4 * sides.length * Math.tan(Math.PI / sides.length));
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+    }
+  }, [parcelSides]);
+
   // Mise à jour des villes quand la province change
   useEffect(() => {
     if (formData.province) {
@@ -478,72 +538,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const updated = [...parcelSides];
     updated[index] = { ...updated[index], [field]: value };
     setParcelSides(updated);
-    
-    // Recalculer automatiquement la superficie
-    calculateArea();
   };
 
-  // Fonction pour calculer la superficie
-  const calculateArea = () => {
-    const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-    
-    if (sides.length < 2) return;
-
-    // Pour une forme rectangulaire simple (4 côtés)
-    if (sides.length === 4) {
-      const lengths = sides.map(s => parseFloat(s.length));
-      
-      // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
-      // Indices : 0=Nord, 1=Sud, 2=Est, 3=Ouest
-      const isRectangle = (
-        Math.abs(lengths[0] - lengths[1]) < 0.1 &&  // Nord ≈ Sud
-        Math.abs(lengths[2] - lengths[3]) < 0.1     // Est ≈ Ouest
-      );
-      
-      if (isRectangle) {
-        // Rectangle: côté Nord × côté Est
-        const area = lengths[0] * lengths[2];
-        handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-        return;
-      }
-      
-      // Si pas un rectangle parfait, utiliser la formule de Brahmagupta
-      // pour un quadrilatère quelconque (approximation)
-      const s = (lengths[0] + lengths[1] + lengths[2] + lengths[3]) / 2;
-      const area = Math.sqrt(
-        (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]) * (s - lengths[3])
-      );
-      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-      return;
-    }
-    
-    // Pour 2 côtés (forme rectangulaire simplifiée)
-    if (sides.length === 2) {
-      const length1 = parseFloat(sides[0].length);
-      const length2 = parseFloat(sides[1].length);
-      const area = length1 * length2;
-      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-      return;
-    }
-    
-    // Pour 3 côtés (triangle) : formule de Héron
-    if (sides.length === 3) {
-      const lengths = sides.map(s => parseFloat(s.length));
-      const s = (lengths[0] + lengths[1] + lengths[2]) / 2;
-      const area = Math.sqrt(s * (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]));
-      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-      return;
-    }
-    
-    // Pour plus de 4 côtés, utiliser une approximation
-    if (sides.length > 4) {
-      const lengths = sides.map(s => parseFloat(s.length));
-      const perimeter = lengths.reduce((a, b) => a + b, 0);
-      // Approximation: supposer un polygone régulier
-      const area = (perimeter * perimeter) / (4 * sides.length * Math.tan(Math.PI / sides.length));
-      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-    }
-  };
 
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber, whatsappNumber: '' });
