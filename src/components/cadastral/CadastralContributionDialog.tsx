@@ -281,12 +281,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             <div className="space-y-2">
               <Label htmlFor="constructionType">Type de construction</Label>
-              <Input
-                id="constructionType"
-                placeholder="ex: Résidentielle, Commerciale, Industrielle"
-                value={formData.constructionType || ''}
-                onChange={(e) => handleInputChange('constructionType', e.target.value)}
-              />
+              <Select onValueChange={(value) => handleInputChange('constructionType', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner le type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Résidentielle">Résidentielle</SelectItem>
+                  <SelectItem value="Commerciale">Commerciale</SelectItem>
+                  <SelectItem value="Industrielle">Industrielle</SelectItem>
+                  <SelectItem value="Agricole">Agricole</SelectItem>
+                  <SelectItem value="Usage mixte">Usage mixte</SelectItem>
+                  <SelectItem value="Terrain nu">Terrain nu</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -299,18 +306,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <SelectItem value="Durable">Durable</SelectItem>
                   <SelectItem value="Semi-durable">Semi-durable</SelectItem>
                   <SelectItem value="Précaire">Précaire</SelectItem>
+                  <SelectItem value="Non bâti">Non bâti</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="declaredUsage">Usage déclaré</Label>
-              <Input
-                id="declaredUsage"
-                placeholder="ex: Habitation, Commerce, Usage mixte"
-                value={formData.declaredUsage || ''}
-                onChange={(e) => handleInputChange('declaredUsage', e.target.value)}
-              />
+              <Select onValueChange={(value) => handleInputChange('declaredUsage', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner l'usage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Habitation">Habitation</SelectItem>
+                  <SelectItem value="Commerce">Commerce</SelectItem>
+                  <SelectItem value="Bureau">Bureau</SelectItem>
+                  <SelectItem value="Industrie">Industrie</SelectItem>
+                  <SelectItem value="Agriculture">Agriculture</SelectItem>
+                  <SelectItem value="Usage mixte">Usage mixte</SelectItem>
+                  <SelectItem value="Entrepôt">Entrepôt</SelectItem>
+                  <SelectItem value="Terrain vacant">Terrain vacant</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* File uploads section */}
@@ -386,32 +403,88 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           <TabsContent value="location" className="space-y-4 mt-4">
             <div className="space-y-2">
               <Label htmlFor="province">Province</Label>
-              <Input
-                id="province"
-                placeholder="ex: Nord-Kivu"
-                value={formData.province || ''}
-                onChange={(e) => handleInputChange('province', e.target.value)}
-              />
+              <Select onValueChange={(value) => handleInputChange('province', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner la province" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Nord-Kivu">Nord-Kivu</SelectItem>
+                  <SelectItem value="Sud-Kivu">Sud-Kivu</SelectItem>
+                  <SelectItem value="Kinshasa">Kinshasa</SelectItem>
+                  <SelectItem value="Kongo-Central">Kongo-Central</SelectItem>
+                  <SelectItem value="Kwilu">Kwilu</SelectItem>
+                  <SelectItem value="Kwango">Kwango</SelectItem>
+                  <SelectItem value="Mai-Ndombe">Mai-Ndombe</SelectItem>
+                  <SelectItem value="Kasaï">Kasaï</SelectItem>
+                  <SelectItem value="Kasaï-Central">Kasaï-Central</SelectItem>
+                  <SelectItem value="Kasaï-Oriental">Kasaï-Oriental</SelectItem>
+                  <SelectItem value="Lomami">Lomami</SelectItem>
+                  <SelectItem value="Sankuru">Sankuru</SelectItem>
+                  <SelectItem value="Maniema">Maniema</SelectItem>
+                  <SelectItem value="Ituri">Ituri</SelectItem>
+                  <SelectItem value="Haut-Uele">Haut-Uele</SelectItem>
+                  <SelectItem value="Bas-Uele">Bas-Uele</SelectItem>
+                  <SelectItem value="Tshopo">Tshopo</SelectItem>
+                  <SelectItem value="Mongala">Mongala</SelectItem>
+                  <SelectItem value="Nord-Ubangi">Nord-Ubangi</SelectItem>
+                  <SelectItem value="Sud-Ubangi">Sud-Ubangi</SelectItem>
+                  <SelectItem value="Équateur">Équateur</SelectItem>
+                  <SelectItem value="Tshuapa">Tshuapa</SelectItem>
+                  <SelectItem value="Tanganyika">Tanganyika</SelectItem>
+                  <SelectItem value="Haut-Lomami">Haut-Lomami</SelectItem>
+                  <SelectItem value="Lualaba">Lualaba</SelectItem>
+                  <SelectItem value="Haut-Katanga">Haut-Katanga</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="ville">Ville</Label>
-              <Input
-                id="ville"
-                placeholder="ex: Goma"
-                value={formData.ville || ''}
-                onChange={(e) => handleInputChange('ville', e.target.value)}
-              />
+              <Select onValueChange={(value) => handleInputChange('ville', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner la ville" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Goma">Goma</SelectItem>
+                  <SelectItem value="Bukavu">Bukavu</SelectItem>
+                  <SelectItem value="Kinshasa">Kinshasa</SelectItem>
+                  <SelectItem value="Lubumbashi">Lubumbashi</SelectItem>
+                  <SelectItem value="Kisangani">Kisangani</SelectItem>
+                  <SelectItem value="Butembo">Butembo</SelectItem>
+                  <SelectItem value="Beni">Beni</SelectItem>
+                  <SelectItem value="Uvira">Uvira</SelectItem>
+                  <SelectItem value="Bunia">Bunia</SelectItem>
+                  <SelectItem value="Kolwezi">Kolwezi</SelectItem>
+                  <SelectItem value="Matadi">Matadi</SelectItem>
+                  <SelectItem value="Mbandaka">Mbandaka</SelectItem>
+                  <SelectItem value="Kananga">Kananga</SelectItem>
+                  <SelectItem value="Mbuji-Mayi">Mbuji-Mayi</SelectItem>
+                  <SelectItem value="Likasi">Likasi</SelectItem>
+                  <SelectItem value="Autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="commune">Commune</Label>
-              <Input
-                id="commune"
-                placeholder="ex: Goma"
-                value={formData.commune || ''}
-                onChange={(e) => handleInputChange('commune', e.target.value)}
-              />
+              <Select onValueChange={(value) => handleInputChange('commune', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner la commune" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Goma">Goma</SelectItem>
+                  <SelectItem value="Karisimbi">Karisimbi</SelectItem>
+                  <SelectItem value="Ibanda">Ibanda</SelectItem>
+                  <SelectItem value="Bagira">Bagira</SelectItem>
+                  <SelectItem value="Kadutu">Kadutu</SelectItem>
+                  <SelectItem value="Kampemba">Kampemba</SelectItem>
+                  <SelectItem value="Kenya">Kenya</SelectItem>
+                  <SelectItem value="Katuba">Katuba</SelectItem>
+                  <SelectItem value="Annexe">Annexe</SelectItem>
+                  <SelectItem value="Lubumbashi">Lubumbashi</SelectItem>
+                  <SelectItem value="Autre">Autre</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -439,12 +512,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               
               <div className="space-y-2">
                 <Label htmlFor="territoire">Territoire</Label>
-                <Input
-                  id="territoire"
-                  placeholder="ex: Masisi"
-                  value={formData.territoire || ''}
-                  onChange={(e) => handleInputChange('territoire', e.target.value)}
-                />
+                <Select onValueChange={(value) => handleInputChange('territoire', value)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le territoire" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Masisi">Masisi</SelectItem>
+                    <SelectItem value="Rutshuru">Rutshuru</SelectItem>
+                    <SelectItem value="Nyiragongo">Nyiragongo</SelectItem>
+                    <SelectItem value="Walikale">Walikale</SelectItem>
+                    <SelectItem value="Lubero">Lubero</SelectItem>
+                    <SelectItem value="Beni">Beni</SelectItem>
+                    <SelectItem value="Oicha">Oicha</SelectItem>
+                    <SelectItem value="Fizi">Fizi</SelectItem>
+                    <SelectItem value="Uvira">Uvira</SelectItem>
+                    <SelectItem value="Mwenga">Mwenga</SelectItem>
+                    <SelectItem value="Shabunda">Shabunda</SelectItem>
+                    <SelectItem value="Walungu">Walungu</SelectItem>
+                    <SelectItem value="Kabare">Kabare</SelectItem>
+                    <SelectItem value="Kalehe">Kalehe</SelectItem>
+                    <SelectItem value="Idjwi">Idjwi</SelectItem>
+                    <SelectItem value="Autre">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="space-y-2">
@@ -480,41 +570,237 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Historique des propriétaires</Label>
-              <Textarea
-                placeholder="Décrivez l'historique de propriété si vous le connaissez..."
-                className="min-h-[100px]"
-              />
-              <p className="text-xs text-muted-foreground">
-                Exemple : "Propriété de M. X de 2010 à 2015, puis vendue à M. Y"
-              </p>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-semibold">Historique de propriété (optionnel)</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Si vous connaissez un ancien propriétaire, renseignez ces informations
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="prevOwner">Nom de l'ancien propriétaire</Label>
+                <Input
+                  id="prevOwner"
+                  placeholder="ex: Jean Mukendi"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="prevOwnerStatus">Statut juridique</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Personne physique">Personne physique</SelectItem>
+                    <SelectItem value="Personne morale">Personne morale</SelectItem>
+                    <SelectItem value="État">État</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="prevStartDate">Date début</Label>
+                  <Input id="prevStartDate" type="date" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="prevEndDate">Date fin</Label>
+                  <Input id="prevEndDate" type="date" />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mutationType">Type de mutation</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Vente">Vente</SelectItem>
+                    <SelectItem value="Donation">Donation</SelectItem>
+                    <SelectItem value="Succession">Succession</SelectItem>
+                    <SelectItem value="Expropriation">Expropriation</SelectItem>
+                    <SelectItem value="Échange">Échange</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Historique de bornage</Label>
-              <Textarea
-                placeholder="Informations sur les opérations de bornage..."
-                className="min-h-[100px]"
-              />
+            <div className="pt-4 border-t space-y-4">
+              <div>
+                <Label className="text-sm font-semibold">Historique de bornage (optionnel)</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Si vous connaissez une opération de bornage, renseignez ces informations
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="pvRef">Numéro de référence du PV</Label>
+                <Input
+                  id="pvRef"
+                  placeholder="ex: PV-NK-2023-001"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="boundaryPurpose">Objectif du bornage</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner l'objectif" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Délimitation initiale">Délimitation initiale</SelectItem>
+                    <SelectItem value="Bornage contradictoire">Bornage contradictoire</SelectItem>
+                    <SelectItem value="Réfection de bornes">Réfection de bornes</SelectItem>
+                    <SelectItem value="Division parcellaire">Division parcellaire</SelectItem>
+                    <SelectItem value="Régularisation">Régularisation</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="surveyorName">Nom du géomètre</Label>
+                <Input
+                  id="surveyorName"
+                  placeholder="ex: Géomètre Kalala"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="surveyDate">Date de l'opération</Label>
+                <Input id="surveyDate" type="date" />
+              </div>
             </div>
           </TabsContent>
 
           <TabsContent value="obligations" className="space-y-4 mt-4">
-            <div className="space-y-2">
-              <Label>Historique des taxes</Label>
-              <Textarea
-                placeholder="Informations sur les taxes foncières payées..."
-                className="min-h-[100px]"
-              />
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-semibold">Historique des taxes (optionnel)</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Si vous connaissez une taxe payée, renseignez ces informations
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="taxYear">Année fiscale</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner l'année" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="2024">2024</SelectItem>
+                    <SelectItem value="2023">2023</SelectItem>
+                    <SelectItem value="2022">2022</SelectItem>
+                    <SelectItem value="2021">2021</SelectItem>
+                    <SelectItem value="2020">2020</SelectItem>
+                    <SelectItem value="2019">2019</SelectItem>
+                    <SelectItem value="2018">2018</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="taxAmount">Montant payé (USD)</Label>
+                <Input
+                  id="taxAmount"
+                  type="number"
+                  placeholder="ex: 150"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="paymentStatus">Statut de paiement</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Payé">Payé</SelectItem>
+                    <SelectItem value="Payé partiellement">Payé partiellement</SelectItem>
+                    <SelectItem value="En attente">En attente</SelectItem>
+                    <SelectItem value="En retard">En retard</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="paymentDate">Date de paiement</Label>
+                <Input id="paymentDate" type="date" />
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label>Hypothèques</Label>
-              <Textarea
-                placeholder="Informations sur les hypothèques ou charges..."
-                className="min-h-[100px]"
-              />
+            <div className="pt-4 border-t space-y-4">
+              <div>
+                <Label className="text-sm font-semibold">Hypothèque (optionnel)</Label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Si la parcelle a une hypothèque, renseignez ces informations
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mortgageAmount">Montant de l'hypothèque (USD)</Label>
+                <Input
+                  id="mortgageAmount"
+                  type="number"
+                  placeholder="ex: 50000"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="duration">Durée (mois)</Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  placeholder="ex: 120"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="creditorName">Nom du créancier</Label>
+                <Input
+                  id="creditorName"
+                  placeholder="ex: Banque XYZ"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="creditorType">Type de créancier</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Banque">Banque</SelectItem>
+                    <SelectItem value="Microfinance">Microfinance</SelectItem>
+                    <SelectItem value="Coopérative">Coopérative</SelectItem>
+                    <SelectItem value="Particulier">Particulier</SelectItem>
+                    <SelectItem value="Autre institution">Autre institution</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="contractDate">Date du contrat</Label>
+                <Input id="contractDate" type="date" />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="mortgageStatus">Statut de l'hypothèque</Label>
+                <Select>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Active">Active</SelectItem>
+                    <SelectItem value="Remboursée">Remboursée</SelectItem>
+                    <SelectItem value="En défaut">En défaut</SelectItem>
+                    <SelectItem value="Renégociée">Renégociée</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </TabsContent>
         </Tabs>
