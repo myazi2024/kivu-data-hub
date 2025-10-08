@@ -493,18 +493,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (sides.length === 4) {
       const lengths = sides.map(s => parseFloat(s.length));
       
-      // Vérifier si c'est un rectangle (côtés opposés égaux)
+      // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
+      // Indices : 0=Nord, 1=Sud, 2=Est, 3=Ouest
       const isRectangle = (
-        Math.abs(lengths[0] - lengths[2]) < 0.1 && 
-        Math.abs(lengths[1] - lengths[3]) < 0.1
+        Math.abs(lengths[0] - lengths[1]) < 0.1 &&  // Nord ≈ Sud
+        Math.abs(lengths[2] - lengths[3]) < 0.1     // Est ≈ Ouest
       );
       
       if (isRectangle) {
-        // Rectangle: longueur × largeur
-        const area = lengths[0] * lengths[1];
+        // Rectangle: côté Nord × côté Est
+        const area = lengths[0] * lengths[2];
         handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
         return;
       }
+      
+      // Si pas un rectangle parfait, utiliser la formule de Brahmagupta
+      // pour un quadrilatère quelconque (approximation)
+      const s = (lengths[0] + lengths[1] + lengths[2] + lengths[3]) / 2;
+      const area = Math.sqrt(
+        (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]) * (s - lengths[3])
+      );
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+      return;
     }
     
     // Pour 2 côtés (forme rectangulaire simplifiée)
@@ -516,12 +526,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
     
-    // Pour d'autres formes, utiliser une approximation
-    // (moyenne des côtés opposés pour un trapèze)
-    if (sides.length >= 3) {
+    // Pour 3 côtés (triangle) : formule de Héron
+    if (sides.length === 3) {
       const lengths = sides.map(s => parseFloat(s.length));
-      const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
-      const area = avgLength * avgLength; // Approximation carrée
+      const s = (lengths[0] + lengths[1] + lengths[2]) / 2;
+      const area = Math.sqrt(s * (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]));
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+      return;
+    }
+    
+    // Pour plus de 4 côtés, utiliser une approximation
+    if (sides.length > 4) {
+      const lengths = sides.map(s => parseFloat(s.length));
+      const perimeter = lengths.reduce((a, b) => a + b, 0);
+      // Approximation: supposer un polygone régulier
+      const area = (perimeter * perimeter) / (4 * sides.length * Math.tan(Math.PI / sides.length));
       handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
     }
   };
