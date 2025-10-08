@@ -79,6 +79,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     whatsappNumber: '',
   });
 
+  // État pour gérer le mode de calcul de superficie
+  const [areaInputMode, setAreaInputMode] = useState<'manual' | 'calculated'>('manual');
+  const [parcelSides, setParcelSides] = useState<Array<{
+    name: string;
+    length: string;
+  }>>([
+    { name: 'Côté Nord', length: '' },
+    { name: 'Côté Sud', length: '' },
+    { name: 'Côté Est', length: '' },
+    { name: 'Côté Ouest', length: '' }
+  ]);
+
   // États pour gérer les listes déroulantes dépendantes
   const [availableVilles, setAvailableVilles] = useState<string[]>([]);
   const [availableCommunes, setAvailableCommunes] = useState<string[]>([]);
@@ -448,6 +460,75 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setMortgageRecords(updated);
   };
 
+  // Fonctions pour gérer les côtés de la parcelle
+  const addParcelSide = () => {
+    const sideNumber = parcelSides.length + 1;
+    setParcelSides([...parcelSides, {
+      name: `Côté ${sideNumber}`,
+      length: ''
+    }]);
+  };
+
+  const removeParcelSide = (index: number) => {
+    if (parcelSides.length > 2) {
+      setParcelSides(parcelSides.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateParcelSide = (index: number, field: 'name' | 'length', value: string) => {
+    const updated = [...parcelSides];
+    updated[index] = { ...updated[index], [field]: value };
+    setParcelSides(updated);
+    
+    // Recalculer automatiquement la superficie si le mode est "calculated"
+    if (areaInputMode === 'calculated') {
+      calculateArea();
+    }
+  };
+
+  // Fonction pour calculer la superficie
+  const calculateArea = () => {
+    const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+    
+    if (sides.length < 2) return;
+
+    // Pour une forme rectangulaire simple (4 côtés)
+    if (sides.length === 4) {
+      const lengths = sides.map(s => parseFloat(s.length));
+      
+      // Vérifier si c'est un rectangle (côtés opposés égaux)
+      const isRectangle = (
+        Math.abs(lengths[0] - lengths[2]) < 0.1 && 
+        Math.abs(lengths[1] - lengths[3]) < 0.1
+      );
+      
+      if (isRectangle) {
+        // Rectangle: longueur × largeur
+        const area = lengths[0] * lengths[1];
+        handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+        return;
+      }
+    }
+    
+    // Pour 2 côtés (forme rectangulaire simplifiée)
+    if (sides.length === 2) {
+      const length1 = parseFloat(sides[0].length);
+      const length2 = parseFloat(sides[1].length);
+      const area = length1 * length2;
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+      return;
+    }
+    
+    // Pour d'autres formes, utiliser une approximation
+    // (moyenne des côtés opposés pour un trapèze)
+    if (sides.length >= 3) {
+      const lengths = sides.map(s => parseFloat(s.length));
+      const avgLength = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+      const area = avgLength * avgLength; // Approximation carrée
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+    }
+  };
+
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber, whatsappNumber: '' });
     setShowSuccess(false);
@@ -460,6 +541,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setTaxRecords([]);
     setMortgageRecords([]);
     setObligationType('taxes');
+    setAreaInputMode('manual');
+    setParcelSides([
+      { name: 'Côté Nord', length: '' },
+      { name: 'Côté Sud', length: '' },
+      { name: 'Côté Est', length: '' },
+      { name: 'Côté Ouest', length: '' }
+    ]);
     onOpenChange(false);
   };
 
@@ -562,15 +650,111 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="area">Superficie (m²)</Label>
-              <Input
-                id="area"
-                type="number"
-                placeholder="ex: 500"
-                value={formData.areaSqm || ''}
-                onChange={(e) => handleInputChange('areaSqm', parseFloat(e.target.value))}
-              />
+            <div className="space-y-3 pt-3 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-base font-semibold">Superficie</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant={areaInputMode === 'manual' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setAreaInputMode('manual');
+                      handleInputChange('areaSqm', undefined);
+                    }}
+                  >
+                    Saisie manuelle
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={areaInputMode === 'calculated' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setAreaInputMode('calculated');
+                      calculateArea();
+                    }}
+                  >
+                    Calculer
+                  </Button>
+                </div>
+              </div>
+
+              {areaInputMode === 'manual' ? (
+                <div className="space-y-2">
+                  <Label htmlFor="area">Superficie (m²)</Label>
+                  <Input
+                    id="area"
+                    type="number"
+                    placeholder="ex: 500"
+                    value={formData.areaSqm || ''}
+                    onChange={(e) => handleInputChange('areaSqm', parseFloat(e.target.value))}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label className="text-sm">Dimensions de chaque côté (en mètres)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Ajoutez les dimensions de chaque côté de la parcelle
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {parcelSides.map((side, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <Input
+                          placeholder="Nom du côté"
+                          value={side.name}
+                          onChange={(e) => updateParcelSide(index, 'name', e.target.value)}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Longueur"
+                          value={side.length}
+                          onChange={(e) => updateParcelSide(index, 'length', e.target.value)}
+                          className="w-32"
+                        />
+                        <span className="text-xs text-muted-foreground">m</span>
+                        {parcelSides.length > 2 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeParcelSide(index)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addParcelSide}
+                    className="w-full"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter un côté
+                  </Button>
+
+                  {formData.areaSqm && (
+                    <div className="p-3 bg-primary/10 rounded-lg">
+                      <p className="text-sm font-medium">
+                        Superficie calculée : <span className="text-lg font-bold text-primary">{formData.areaSqm} m²</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {parcelSides.length === 2 && "Calcul rectangulaire simple"}
+                        {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
+                        {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">
