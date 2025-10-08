@@ -138,7 +138,7 @@ const CadastralSearchBar = () => {
           {/* En-tête avec icône et titre */}
           <div className="flex items-center gap-2 text-foreground">
             <FileText className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-base">Recherche cadastrale - Numéro SU ou SR</h3>
+            <h3 className="font-semibold text-base">Recherche cadastrale</h3>
             
             {/* Popover avec informations format */}
             <Popover>
