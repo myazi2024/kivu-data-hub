@@ -8,6 +8,7 @@ export interface CadastralContributionData {
   
   // Informations générales
   propertyTitleType?: string;
+  titleReferenceNumber?: string;
   currentOwnerName?: string;
   currentOwnerLegalStatus?: string;
   currentOwnerSince?: string;
