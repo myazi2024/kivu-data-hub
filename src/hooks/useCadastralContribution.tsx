@@ -17,6 +17,16 @@ export interface CadastralContributionData {
   constructionNature?: string;
   declaredUsage?: string;
   
+  // Permis de construire
+  buildingPermits?: Array<{
+    permitNumber: string;
+    issuingService: string;
+    issueDate: string;
+    validityMonths: number;
+    administrativeStatus: string;
+    issuingServiceContact?: string;
+  }>;
+  
   // Localisation
   province?: string;
   ville?: string;
@@ -27,6 +37,7 @@ export interface CadastralContributionData {
   collectivite?: string;
   groupement?: string;
   village?: string;
+  circonscriptionFonciere?: string;
   gpsCoordinates?: Array<{ lat: number; lng: number; borne: string }>;
   
   // Historiques
