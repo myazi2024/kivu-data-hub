@@ -48,6 +48,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     mutationType: string;
     surveyDate?: string;
     surveyorName?: string;
+    pvReferenceNumber?: string;
   }>>([]);
 
   // État pour gérer plusieurs taxes
@@ -414,7 +415,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       endDate: '',
       mutationType: '',
       surveyDate: '',
-      surveyorName: ''
+      surveyorName: '',
+      pvReferenceNumber: ''
     }]);
   };
 
@@ -1175,6 +1177,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <div className="pt-3 border-t space-y-3">
                         <Label className="text-sm font-medium text-muted-foreground">Bornage (optionnel)</Label>
                         
+                        <div className="space-y-2">
+                          <Label className="text-xs">Numéro de référence du PV</Label>
+                          <Input
+                            placeholder="ex: PV/2024/001"
+                            value={owner.pvReferenceNumber || ''}
+                            onChange={(e) => updatePreviousOwner(index, 'pvReferenceNumber', e.target.value)}
+                          />
+                        </div>
+
                         <div className="space-y-2">
                           <Label className="text-xs">Date du bornage</Label>
                           <Input
