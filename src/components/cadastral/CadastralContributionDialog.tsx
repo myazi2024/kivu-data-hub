@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, Info } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Separator } from '@/components/ui/separator';
 import { 
   getAllProvinces, 
   getVillesForProvince, 
@@ -676,9 +678,88 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
           <DialogTitle className="text-2xl font-semibold">Contribuer aux informations cadastrales</DialogTitle>
           <DialogDescription className="text-base mt-2">
-            Parcelle : <strong className="text-foreground font-semibold">{parcelNumber}</strong>
-            <br />
-            <span className="text-sm">Renseignez les informations que vous possédez sur cette parcelle.</span>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                Parcelle : <strong className="text-foreground font-semibold">{parcelNumber}</strong>
+                <br />
+                <span className="text-sm">Renseignez les informations que vous possédez sur cette parcelle.</span>
+              </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-8 px-3 text-xs shrink-0 hover:bg-primary/10 transition-colors"
+                  >
+                    <Info className="h-3.5 w-3.5 mr-1.5" />
+                    Format cadastral
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80" align="end">
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h4 className="font-semibold text-sm">Format cadastral RDC</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Guide des formats de numéros cadastraux
+                      </p>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-4">
+                      {/* Section Urbaine */}
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 shrink-0">
+                            <span className="text-sm font-bold text-primary">SU</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">Section Urbaine</p>
+                            <p className="text-xs text-muted-foreground font-mono">SU/[Section]/[Parcelle]/[Code]</p>
+                          </div>
+                        </div>
+                        <div className="ml-12 space-y-1.5">
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
+                            <code className="px-2 py-1 bg-muted rounded text-xs font-mono">SU/2130/KIN</code>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
+                            <code className="px-2 py-1 bg-muted rounded text-xs font-mono">SU/0456/GOM</code>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-1.5 h-1.5 rounded-full bg-primary/60 shrink-0" />
+                            <code className="px-2 py-1 bg-muted rounded text-xs font-mono">SU/2130/1/KIN</code>
+                            <span className="text-muted-foreground">(Morcellement)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Separator className="my-3" />
+
+                      {/* Section Rurale */}
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2.5">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-accent/10 shrink-0">
+                            <span className="text-sm font-bold text-accent-foreground">SR</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold">Section Rurale</p>
+                            <p className="text-xs text-muted-foreground font-mono">SR/[Section]/[Parcelle]/[Code]</p>
+                          </div>
+                        </div>
+                        <div className="ml-12 space-y-1.5">
+                          <div className="flex items-center gap-2 text-xs">
+                            <div className="w-1.5 h-1.5 rounded-full bg-accent/60 shrink-0" />
+                            <code className="px-2 py-1 bg-muted rounded text-xs font-mono">SR/01/0987/BEN</code>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </DialogDescription>
         </DialogHeader>
 
