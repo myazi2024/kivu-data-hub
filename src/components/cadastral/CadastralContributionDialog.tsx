@@ -722,9 +722,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <Input
                 id="ownerSince"
                 type="date"
+                max={new Date().toISOString().split('T')[0]}
                 value={formData.currentOwnerSince || ''}
                 onChange={(e) => handleInputChange('currentOwnerSince', e.target.value)}
               />
+              <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
             </div>
 
             <div className="space-y-4 pt-4 border-t">
@@ -1251,17 +1253,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Label>Date début</Label>
                           <Input
                             type="date"
+                            max={formData.currentOwnerSince || new Date().toISOString().split('T')[0]}
                             value={owner.startDate}
                             onChange={(e) => updatePreviousOwner(index, 'startDate', e.target.value)}
                           />
+                          {owner.startDate && owner.endDate && owner.startDate > owner.endDate && (
+                            <p className="text-xs text-destructive">La date de début doit être avant la date de fin</p>
+                          )}
                         </div>
                         <div className="space-y-2">
                           <Label>Date fin</Label>
                           <Input
                             type="date"
+                            min={owner.startDate || undefined}
+                            max={formData.currentOwnerSince || new Date().toISOString().split('T')[0]}
                             value={owner.endDate}
                             onChange={(e) => updatePreviousOwner(index, 'endDate', e.target.value)}
                           />
+                          {owner.endDate && formData.currentOwnerSince && owner.endDate > formData.currentOwnerSince && (
+                            <p className="text-xs text-destructive">La date de fin doit être avant la date du propriétaire actuel</p>
+                          )}
                         </div>
                       </div>
 
@@ -1301,9 +1312,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Label className="text-xs">Date du bornage</Label>
                           <Input
                             type="date"
+                            max={new Date().toISOString().split('T')[0]}
                             value={owner.surveyDate || ''}
                             onChange={(e) => updatePreviousOwner(index, 'surveyDate', e.target.value)}
                           />
+                          <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
                         </div>
 
                         <div className="space-y-2">
@@ -1424,18 +1437,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectValue placeholder="Sélectionner l'année" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="2024">2024</SelectItem>
-                              <SelectItem value="2023">2023</SelectItem>
-                              <SelectItem value="2022">2022</SelectItem>
-                              <SelectItem value="2021">2021</SelectItem>
-                              <SelectItem value="2020">2020</SelectItem>
-                              <SelectItem value="2019">2019</SelectItem>
-                              <SelectItem value="2018">2018</SelectItem>
-                              <SelectItem value="2017">2017</SelectItem>
-                              <SelectItem value="2016">2016</SelectItem>
-                              <SelectItem value="2015">2015</SelectItem>
+                              {Array.from({ length: 10 }, (_, i) => {
+                                const year = new Date().getFullYear() - i;
+                                return <SelectItem key={year} value={year.toString()}>{year}</SelectItem>;
+                              })}
                             </SelectContent>
                           </Select>
+                          <p className="text-xs text-muted-foreground">Années fiscales valides uniquement</p>
                         </div>
 
                         <div className="space-y-2">
@@ -1470,9 +1478,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Label>Date de paiement</Label>
                           <Input
                             type="date"
+                            max={new Date().toISOString().split('T')[0]}
                             value={tax.paymentDate}
                             onChange={(e) => updateTaxRecord(index, 'paymentDate', e.target.value)}
                           />
+                          <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
                         </div>
 
                         {/* Pièce jointe pour la taxe */}
@@ -1613,9 +1623,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Label>Date du contrat</Label>
                           <Input
                             type="date"
+                            max={new Date().toISOString().split('T')[0]}
                             value={mortgage.contractDate}
                             onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
                           />
+                          <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
                         </div>
 
                         <div className="space-y-2">
