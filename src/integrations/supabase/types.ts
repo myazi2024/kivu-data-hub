@@ -295,8 +295,10 @@ export type Database = {
           groupement: string | null
           id: string
           mortgage_history: Json | null
+          owner_document_url: string | null
           ownership_history: Json | null
           parcel_number: string
+          property_title_document_url: string | null
           property_title_type: string | null
           province: string | null
           quartier: string | null
@@ -329,8 +331,10 @@ export type Database = {
           groupement?: string | null
           id?: string
           mortgage_history?: Json | null
+          owner_document_url?: string | null
           ownership_history?: Json | null
           parcel_number: string
+          property_title_document_url?: string | null
           property_title_type?: string | null
           province?: string | null
           quartier?: string | null
@@ -363,8 +367,10 @@ export type Database = {
           groupement?: string | null
           id?: string
           mortgage_history?: Json | null
+          owner_document_url?: string | null
           ownership_history?: Json | null
           parcel_number?: string
+          property_title_document_url?: string | null
           property_title_type?: string | null
           province?: string | null
           quartier?: string | null

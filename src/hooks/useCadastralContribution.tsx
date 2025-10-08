@@ -126,6 +126,8 @@ export const useCadastralContribution = () => {
           tax_history: data.taxHistory,
           mortgage_history: data.mortgageHistory,
           whatsapp_number: data.whatsappNumber,
+          owner_document_url: data.ownerDocumentUrl,
+          property_title_document_url: data.titleDocumentUrl,
           status: 'pending'
         })
         .select()
