@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2 } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -662,6 +662,65 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const updated = [...gpsCoordinates];
     updated[index] = { ...updated[index], [field]: value };
     setGpsCoordinates(updated);
+  };
+  
+  const captureCurrentLocation = (index: number) => {
+    if (!navigator.geolocation) {
+      toast({
+        title: "Erreur",
+        description: "La géolocalisation n'est pas supportée par votre navigateur",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    toast({
+      title: "Capture en cours",
+      description: "Récupération de votre position GPS...",
+    });
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const updated = [...gpsCoordinates];
+        updated[index] = {
+          ...updated[index],
+          lat: position.coords.latitude.toFixed(6),
+          lng: position.coords.longitude.toFixed(6)
+        };
+        setGpsCoordinates(updated);
+        
+        toast({
+          title: "Position capturée",
+          description: `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}`,
+        });
+      },
+      (error) => {
+        let errorMessage = "Impossible de récupérer votre position";
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = "Veuillez autoriser l'accès à votre position";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = "Position indisponible";
+            break;
+          case error.TIMEOUT:
+            errorMessage = "La demande de position a expiré";
+            break;
+        }
+        
+        toast({
+          title: "Erreur de géolocalisation",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
   };
 
   // Fonctions pour gérer les côtés de la parcelle
@@ -1472,27 +1531,40 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </Button>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-2">
-                            <Label className="text-xs">Latitude</Label>
-                            <Input
-                              type="number"
-                              step="0.000001"
-                              placeholder="ex: -1.674"
-                              value={coord.lat}
-                              onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
-                            />
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label className="text-xs">Latitude</Label>
+                              <Input
+                                type="number"
+                                step="0.000001"
+                                placeholder="ex: -1.674"
+                                value={coord.lat}
+                                onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Longitude</Label>
+                              <Input
+                                type="number"
+                                step="0.000001"
+                                placeholder="ex: 29.224"
+                                value={coord.lng}
+                                onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <Label className="text-xs">Longitude</Label>
-                            <Input
-                              type="number"
-                              step="0.000001"
-                              placeholder="ex: 29.224"
-                              value={coord.lng}
-                              onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
-                            />
-                          </div>
+                          
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => captureCurrentLocation(index)}
+                            className="w-full gap-2 hover:bg-primary/10 transition-all"
+                          >
+                            <MapPin className="h-4 w-4" />
+                            Capturer ma position actuelle
+                          </Button>
                         </div>
                       </div>
                     ))}
