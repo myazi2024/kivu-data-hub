@@ -105,6 +105,7 @@ export const useCadastralContribution = () => {
           user_id: user.id,
           parcel_number: data.parcelNumber,
           property_title_type: data.propertyTitleType,
+          title_reference_number: data.titleReferenceNumber,
           current_owner_name: data.currentOwnerName,
           current_owner_legal_status: data.currentOwnerLegalStatus,
           current_owner_since: data.currentOwnerSince,

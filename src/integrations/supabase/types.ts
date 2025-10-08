@@ -308,6 +308,7 @@ export type Database = {
           status: string
           tax_history: Json | null
           territoire: string | null
+          title_reference_number: string | null
           updated_at: string
           user_id: string | null
           village: string | null
@@ -344,6 +345,7 @@ export type Database = {
           status?: string
           tax_history?: Json | null
           territoire?: string | null
+          title_reference_number?: string | null
           updated_at?: string
           user_id?: string | null
           village?: string | null
@@ -380,6 +382,7 @@ export type Database = {
           status?: string
           tax_history?: Json | null
           territoire?: string | null
+          title_reference_number?: string | null
           updated_at?: string
           user_id?: string | null
           village?: string | null
