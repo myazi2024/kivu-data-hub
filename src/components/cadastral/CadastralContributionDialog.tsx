@@ -713,18 +713,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="titleReference">Numéro de référence du titre</Label>
-              <Input
-                id="titleReference"
-                placeholder="Ex: TF-123456 ou CE-987654"
-                value={formData.titleReferenceNumber || ''}
-                onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
-              />
-              <p className="text-xs text-muted-foreground">
-                Numéro de référence figurant sur le document de propriété
-              </p>
-            </div>
+            {formData.propertyTitleType && (
+              <div className="space-y-2 animate-fade-in">
+                <Label htmlFor="titleReference">Numéro de référence du titre</Label>
+                <Input
+                  id="titleReference"
+                  placeholder="Ex: TF-123456 ou CE-987654"
+                  value={formData.titleReferenceNumber || ''}
+                  onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Numéro de référence figurant sur le document de propriété
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="ownerName">Nom du propriétaire actuel</Label>
