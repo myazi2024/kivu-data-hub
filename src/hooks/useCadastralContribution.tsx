@@ -59,6 +59,10 @@ export interface CadastralContributionData {
     mortgageStatus: string;
   }>;
   
+  // Pièces jointes
+  ownerDocumentUrl?: string;
+  titleDocumentUrl?: string;
+  
   // Métadonnées
   whatsappNumber?: string;
 }
