@@ -16,7 +16,9 @@ import {
   getVillesForProvince, 
   getCommunesForVille,
   getTerritoiresForProvince,
-  getCollectivitesForTerritoire
+  getCollectivitesForTerritoire,
+  getQuartiersForCommune,
+  getAvenuesForQuartier
 } from '@/lib/geographicData';
 
 interface CadastralContributionDialogProps {
@@ -96,6 +98,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [availableCommunes, setAvailableCommunes] = useState<string[]>([]);
   const [availableTerritoires, setAvailableTerritoires] = useState<string[]>([]);
   const [availableCollectivites, setAvailableCollectivites] = useState<string[]>([]);
+  const [availableQuartiers, setAvailableQuartiers] = useState<string[]>([]);
+  const [availableAvenues, setAvailableAvenues] = useState<string[]>([]);
   
   // État pour déterminer le type de section (SU ou SR)
   const [sectionType, setSectionType] = useState<'urbaine' | 'rurale' | ''>('');
@@ -196,11 +200,50 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       // Réinitialiser la commune si elle n'est plus valide
       if (!communes.includes(formData.commune || '')) {
         handleInputChange('commune', undefined);
+        setAvailableQuartiers([]);
+        handleInputChange('quartier', undefined);
+        setAvailableAvenues([]);
+        handleInputChange('avenue', undefined);
       }
     } else {
       setAvailableCommunes([]);
+      setAvailableQuartiers([]);
+      setAvailableAvenues([]);
     }
   }, [formData.province, formData.ville]);
+
+  // Mise à jour des quartiers quand la commune change
+  useEffect(() => {
+    if (formData.province && formData.ville && formData.commune) {
+      const quartiers = getQuartiersForCommune(formData.province, formData.ville, formData.commune);
+      setAvailableQuartiers(quartiers);
+      
+      // Réinitialiser le quartier si il n'est plus valide
+      if (!quartiers.includes(formData.quartier || '')) {
+        handleInputChange('quartier', undefined);
+        setAvailableAvenues([]);
+        handleInputChange('avenue', undefined);
+      }
+    } else {
+      setAvailableQuartiers([]);
+      setAvailableAvenues([]);
+    }
+  }, [formData.province, formData.ville, formData.commune]);
+
+  // Mise à jour des avenues quand le quartier change
+  useEffect(() => {
+    if (formData.province && formData.ville && formData.commune && formData.quartier) {
+      const avenues = getAvenuesForQuartier(formData.province, formData.ville, formData.commune, formData.quartier);
+      setAvailableAvenues(avenues);
+      
+      // Réinitialiser l'avenue si elle n'est plus valide
+      if (!avenues.includes(formData.avenue || '')) {
+        handleInputChange('avenue', undefined);
+      }
+    } else {
+      setAvailableAvenues([]);
+    }
+  }, [formData.province, formData.ville, formData.commune, formData.quartier]);
 
   // Mise à jour des collectivités quand le territoire change
   useEffect(() => {
@@ -236,6 +279,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       groupement: undefined,
       village: undefined
     }));
+    
+    // Réinitialiser les listes
+    setAvailableQuartiers([]);
+    setAvailableAvenues([]);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'owner' | 'title') => {
@@ -561,6 +608,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       { name: 'Côté Est', length: '' },
       { name: 'Côté Ouest', length: '' }
     ]);
+    setAvailableQuartiers([]);
+    setAvailableAvenues([]);
     onOpenChange(false);
   };
 
@@ -968,30 +1017,70 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 <div className="space-y-2">
                   <Label htmlFor="quartier">Quartier</Label>
-                  <Input
-                    id="quartier"
-                    placeholder="ex: Himbi"
-                    value={formData.quartier || ''}
-                    onChange={(e) => handleInputChange('quartier', e.target.value)}
-                    disabled={!formData.commune}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {!formData.commune ? "Sélectionner d'abord une commune" : "Saisie manuelle - optionnel"}
-                  </p>
+                  <Select 
+                    value={formData.quartier}
+                    onValueChange={(value) => handleInputChange('quartier', value)}
+                    disabled={!formData.commune || availableQuartiers.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !formData.commune 
+                        ? "Sélectionner d'abord une commune" 
+                        : availableQuartiers.length === 0 
+                        ? "Aucun quartier disponible - saisie manuelle possible"
+                        : "Sélectionner le quartier"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableQuartiers.map(quartier => (
+                        <SelectItem key={quartier} value={quartier}>{quartier}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {availableQuartiers.length === 0 && formData.commune && (
+                    <div className="space-y-2 mt-2">
+                      <Input
+                        placeholder="Saisir le nom du quartier"
+                        value={formData.quartier || ''}
+                        onChange={(e) => handleInputChange('quartier', e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">Aucun quartier prédéfini - saisie manuelle</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="avenue">Avenue</Label>
-                  <Input
-                    id="avenue"
-                    placeholder="ex: Avenue de l'Université"
-                    value={formData.avenue || ''}
-                    onChange={(e) => handleInputChange('avenue', e.target.value)}
-                    disabled={!formData.commune}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {!formData.commune ? "Sélectionner d'abord une commune" : "Saisie manuelle - optionnel"}
-                  </p>
+                  <Select 
+                    value={formData.avenue}
+                    onValueChange={(value) => handleInputChange('avenue', value)}
+                    disabled={!formData.quartier || availableAvenues.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !formData.quartier 
+                        ? "Sélectionner d'abord un quartier" 
+                        : availableAvenues.length === 0 
+                        ? "Aucune avenue disponible - saisie manuelle possible"
+                        : "Sélectionner l'avenue"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableAvenues.map(avenue => (
+                        <SelectItem key={avenue} value={avenue}>{avenue}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {availableAvenues.length === 0 && formData.quartier && (
+                    <div className="space-y-2 mt-2">
+                      <Input
+                        placeholder="Saisir le nom de l'avenue"
+                        value={formData.avenue || ''}
+                        onChange={(e) => handleInputChange('avenue', e.target.value)}
+                      />
+                      <p className="text-xs text-muted-foreground">Aucune avenue prédéfinie - saisie manuelle</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

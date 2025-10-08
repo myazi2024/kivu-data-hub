@@ -1,5 +1,17 @@
 // Structure hiérarchique pour les données géographiques de la RDC
 
+export interface QuartierAvenue {
+  [quartier: string]: string[]; // avenues par quartier
+}
+
+export interface CommuneQuartiers {
+  [commune: string]: QuartierAvenue;
+}
+
+export interface VilleCommunes {
+  [ville: string]: CommuneQuartiers;
+}
+
 export interface GeographicHierarchy {
   [province: string]: {
     villes: {
@@ -362,4 +374,114 @@ export const getCollectivitesForTerritoire = (province: string, territoire: stri
 
 export const getAllProvinces = (): string[] => {
   return Object.keys(geographicData);
+};
+
+// Données détaillées des quartiers et avenues par ville
+export const quartiersAvenuesData: { [province: string]: VilleCommunes } = {
+  "Nord-Kivu": {
+    "Goma": {
+      "Goma": {
+        "Himbi": ["Avenue de l'Indépendance", "Avenue Mobutu", "Avenue de la Paix", "Avenue Rond-Point"],
+        "Les Volcans": ["Avenue du Rond-Point", "Avenue de l'Aéroport", "Avenue Mama Yemo"],
+        "Katindo": ["Avenue Katindo", "Avenue Munene", "Avenue Mapendo"],
+        "Ndosho": ["Avenue Ndosho", "Avenue Maman Olive", "Avenue de la Frontière"],
+        "Kasika": ["Avenue Kasika", "Avenue Keshero", "Avenue Mutiri"],
+        "Majengo": ["Avenue Majengo", "Avenue de la Révolution", "Avenue du Travail"]
+      },
+      "Karisimbi": {
+        "Kahembe": ["Avenue Kahembe", "Avenue Mikeno", "Avenue Nyiragongo"],
+        "Katoyi": ["Avenue Katoyi", "Avenue Mugunga", "Avenue Lac Vert"],
+        "Mugunga": ["Avenue Mugunga", "Avenue de la Paix", "Avenue Unity"],
+        "Virunga": ["Avenue Virunga", "Avenue Muhabura", "Avenue Karisimbi"],
+        "Kyeshero": ["Avenue Kyeshero", "Avenue de l'Université", "Avenue UNIGOM"]
+      }
+    },
+    "Butembo": {
+      "Bulengera": {
+        "Bulengera Centre": ["Avenue Bulengera", "Avenue Musienene", "Avenue Kalau"],
+        "Kalengera": ["Avenue Kalengera", "Avenue de la Victoire"],
+        "Kambali": ["Avenue Kambali", "Avenue Kimemi"]
+      },
+      "Kimemi": {
+        "Kimemi Centre": ["Avenue Kimemi", "Avenue Isale", "Avenue Kawaya"],
+        "Kikyo": ["Avenue Kikyo", "Avenue du 30 Juin"],
+        "Kagheri": ["Avenue Kagheri", "Avenue Katolo"]
+      }
+    }
+  },
+  "Sud-Kivu": {
+    "Bukavu": {
+      "Ibanda": {
+        "Panzi": ["Avenue Panzi", "Avenue Hôpital", "Avenue Dr. Mukwege"],
+        "Nyamugo": ["Avenue Nyamugo", "Avenue Essence", "Avenue Nguba"],
+        "Ndendere": ["Avenue Ndendere", "Avenue Funu", "Avenue de la Mission"]
+      },
+      "Bagira": {
+        "Bagira Centre": ["Avenue Bagira", "Avenue Lumumba", "Avenue Nyawera"],
+        "Mudaka": ["Avenue Mudaka", "Avenue Cimetière", "Avenue Kasha"],
+        "Nyalukemba": ["Avenue Nyalukemba", "Avenue Ruzizi", "Avenue du Marché"]
+      },
+      "Kadutu": {
+        "Kadutu Centre": ["Avenue Kadutu", "Avenue de la Paix", "Avenue Mulengeza"],
+        "Nyamugo": ["Avenue Nyamugo", "Avenue Clinique", "Avenue Radar"],
+        "Essence": ["Avenue Essence", "Avenue du Lac", "Avenue OCC"]
+      }
+    }
+  },
+  "Kinshasa": {
+    "Kinshasa": {
+      "Gombe": {
+        "Centre-Ville": ["Boulevard du 30 Juin", "Avenue de la Justice", "Avenue de la Paix", "Avenue des Aviateurs"],
+        "Socimat": ["Avenue Socimat", "Avenue Tombalbaye", "Avenue Kasa-Vubu"],
+        "Huileries": ["Avenue Huileries", "Avenue Colonel Mondjiba", "Avenue Wagenia"]
+      },
+      "Kalamu": {
+        "Matonge": ["Avenue Kasa-Vubu", "Avenue de la Victoire", "Avenue Tabora"],
+        "Yolo": ["Avenue Yolo Nord", "Avenue Yolo Sud", "Avenue de la Libération"],
+        "Victoire": ["Avenue de la Victoire", "Avenue Luambo Makiadi", "Avenue Musique"]
+      },
+      "Ngaliema": {
+        "Mont-Fleury": ["Avenue Mont-Fleury", "Avenue de la Gombe", "Avenue Pumbu"],
+        "Binza": ["Avenue Binza", "Avenue de l'Université", "Avenue UNIKIN"],
+        "Camp Luka": ["Avenue Camp Luka", "Avenue Saio", "Avenue Monastère"]
+      },
+      "Limete": {
+        "Limete Industriel": ["Avenue Industrielle", "Avenue de l'Usine", "Avenue Kingabwa"],
+        "Limete Résidentiel": ["Avenue Bokasa", "Avenue Kimpwanza", "Avenue Mulumba"],
+        "Kingabwa": ["Avenue Kingabwa", "Avenue de la Fraternité", "Avenue Ma Campagne"]
+      }
+    }
+  },
+  "Haut-Katanga": {
+    "Lubumbashi": {
+      "Lubumbashi": {
+        "Centre-Ville": ["Avenue Moero", "Avenue Kasai", "Avenue Lumumba", "Boulevard Kamanyola"],
+        "Commerce": ["Avenue du Commerce", "Avenue Tabora", "Avenue du Marché"],
+        "Golf": ["Avenue Golf", "Avenue Likasi", "Avenue Kasapa"]
+      },
+      "Katuba": {
+        "Katuba Centre": ["Avenue Katuba", "Avenue de l'Aéroport", "Avenue Kamalondo"],
+        "Kamalondo": ["Avenue Kamalondo", "Avenue Kasapa", "Avenue Tshamilemba"],
+        "Golf": ["Avenue Golf", "Avenue Kaponda", "Avenue Munua"]
+      },
+      "Kenya": {
+        "Kenya Centre": ["Avenue Kenya", "Avenue Kasenga", "Avenue de la Frontière"],
+        "Kampemba": ["Avenue Kampemba", "Avenue Kabalo", "Avenue Lufira"],
+        "Kasapa": ["Avenue Kasapa", "Avenue Kisanga", "Avenue Likasi"]
+      }
+    }
+  }
+};
+
+// Helper functions pour quartiers et avenues
+export const getQuartiersForCommune = (province: string, ville: string, commune: string): string[] => {
+  const villeData = quartiersAvenuesData[province]?.[ville];
+  if (!villeData || !villeData[commune]) return [];
+  return Object.keys(villeData[commune]);
+};
+
+export const getAvenuesForQuartier = (province: string, ville: string, commune: string, quartier: string): string[] => {
+  const communeData = quartiersAvenuesData[province]?.[ville]?.[commune];
+  if (!communeData) return [];
+  return communeData[quartier] || [];
 };
