@@ -282,6 +282,8 @@ export type Database = {
           area_sqm: number | null
           avenue: string | null
           boundary_history: Json | null
+          building_permits: Json | null
+          circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
           construction_nature: string | null
@@ -319,6 +321,8 @@ export type Database = {
           area_sqm?: number | null
           avenue?: string | null
           boundary_history?: Json | null
+          building_permits?: Json | null
+          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_nature?: string | null
@@ -356,6 +360,8 @@ export type Database = {
           area_sqm?: number | null
           avenue?: string | null
           boundary_history?: Json | null
+          building_permits?: Json | null
+          circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_nature?: string | null

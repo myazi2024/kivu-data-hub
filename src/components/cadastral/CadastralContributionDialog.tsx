@@ -73,6 +73,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     mortgageStatus: string;
     receiptFile: File | null;
   }>>([]);
+  
+  // État pour gérer les permis de construire
+  const [buildingPermits, setBuildingPermits] = useState<Array<{
+    permitNumber: string;
+    issuingService: string;
+    issueDate: string;
+    validityMonths: string;
+    administrativeStatus: string;
+    issuingServiceContact: string;
+  }>>([]);
+  
+  // État pour gérer les coordonnées GPS des bornes
+  const [gpsCoordinates, setGpsCoordinates] = useState<Array<{
+    borne: string;
+    lat: string;
+    lng: string;
+  }>>([]);
 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
@@ -585,6 +602,47 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const updated = [...mortgageRecords];
     updated[index] = { ...updated[index], receiptFile: null };
     setMortgageRecords(updated);
+  };
+  
+  // Fonctions pour gérer les permis de construire
+  const addBuildingPermit = () => {
+    setBuildingPermits([...buildingPermits, {
+      permitNumber: '',
+      issuingService: '',
+      issueDate: '',
+      validityMonths: '36',
+      administrativeStatus: 'En attente',
+      issuingServiceContact: ''
+    }]);
+  };
+  
+  const removeBuildingPermit = (index: number) => {
+    setBuildingPermits(buildingPermits.filter((_, i) => i !== index));
+  };
+  
+  const updateBuildingPermit = (index: number, field: string, value: string) => {
+    const updated = [...buildingPermits];
+    updated[index] = { ...updated[index], [field]: value };
+    setBuildingPermits(updated);
+  };
+  
+  // Fonctions pour gérer les coordonnées GPS
+  const addGPSCoordinate = () => {
+    setGpsCoordinates([...gpsCoordinates, {
+      borne: `Borne ${gpsCoordinates.length + 1}`,
+      lat: '',
+      lng: ''
+    }]);
+  };
+  
+  const removeGPSCoordinate = (index: number) => {
+    setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
+  };
+  
+  const updateGPSCoordinate = (index: number, field: string, value: string) => {
+    const updated = [...gpsCoordinates];
+    updated[index] = { ...updated[index], [field]: value };
+    setGpsCoordinates(updated);
   };
 
   // Fonctions pour gérer les côtés de la parcelle
