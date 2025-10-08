@@ -55,6 +55,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     taxAmount: string;
     paymentStatus: string;
     paymentDate: string;
+    receiptFile: File | null;
   }>>([]);
 
   // État pour gérer plusieurs hypothèques
@@ -65,6 +66,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     creditorType: string;
     contractDate: string;
     mortgageStatus: string;
+    receiptFile: File | null;
   }>>([]);
 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
@@ -262,11 +264,56 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }
       }
 
+      // Upload tax receipt files and transform data
+      const taxHistoryData = await Promise.all(
+        taxRecords.map(async (tax) => {
+          let receiptUrl = null;
+          if (tax.receiptFile) {
+            receiptUrl = await uploadFile(tax.receiptFile, 'tax-receipts');
+            if (!receiptUrl) {
+              throw new Error('Erreur lors du téléchargement du reçu de taxe');
+            }
+          }
+          return {
+            taxYear: parseInt(tax.taxYear),
+            amountUsd: parseFloat(tax.taxAmount),
+            paymentStatus: tax.paymentStatus,
+            paymentDate: tax.paymentDate || undefined,
+            receiptUrl: receiptUrl || undefined,
+            taxType: tax.taxType
+          };
+        })
+      );
+
+      // Upload mortgage receipt files and transform data
+      const mortgageHistoryData = await Promise.all(
+        mortgageRecords.map(async (mortgage) => {
+          let receiptUrl = null;
+          if (mortgage.receiptFile) {
+            receiptUrl = await uploadFile(mortgage.receiptFile, 'mortgage-documents');
+            if (!receiptUrl) {
+              throw new Error('Erreur lors du téléchargement du document d\'hypothèque');
+            }
+          }
+          return {
+            mortgageAmountUsd: parseFloat(mortgage.mortgageAmount),
+            durationMonths: parseInt(mortgage.duration),
+            creditorName: mortgage.creditorName,
+            creditorType: mortgage.creditorType,
+            contractDate: mortgage.contractDate,
+            mortgageStatus: mortgage.mortgageStatus,
+            receiptUrl: receiptUrl || undefined
+          };
+        })
+      );
+
       // Add document URLs to form data
       const dataToSubmit = {
         ...formData,
         ownerDocumentUrl: ownerDocUrl || undefined,
         titleDocumentUrl: titleDocUrl || undefined,
+        taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
+        mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
       };
 
       const result = await submitContribution(dataToSubmit);
@@ -275,6 +322,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         setGeneratedCode(result.code);
         setShowSuccess(true);
       }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: error instanceof Error ? error.message : "Une erreur est survenue lors du téléchargement",
+        variant: "destructive"
+      });
     } finally {
       setUploading(false);
     }
@@ -307,7 +360,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       taxYear: '',
       taxAmount: '',
       paymentStatus: '',
-      paymentDate: ''
+      paymentDate: '',
+      receiptFile: null
     }]);
   };
 
@@ -321,6 +375,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setTaxRecords(updated);
   };
 
+  const handleTaxFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Fichier trop volumineux",
+          description: "La taille maximale est de 5 MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      const updated = [...taxRecords];
+      updated[index] = { ...updated[index], receiptFile: file };
+      setTaxRecords(updated);
+    }
+  };
+
+  const removeTaxFile = (index: number) => {
+    const updated = [...taxRecords];
+    updated[index] = { ...updated[index], receiptFile: null };
+    setTaxRecords(updated);
+  };
+
   // Fonctions pour gérer les hypothèques
   const addMortgageRecord = () => {
     setMortgageRecords([...mortgageRecords, {
@@ -329,7 +406,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       creditorName: '',
       creditorType: '',
       contractDate: '',
-      mortgageStatus: ''
+      mortgageStatus: '',
+      receiptFile: null
     }]);
   };
 
@@ -340,6 +418,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const updateMortgageRecord = (index: number, field: string, value: string) => {
     const updated = [...mortgageRecords];
     updated[index] = { ...updated[index], [field]: value };
+    setMortgageRecords(updated);
+  };
+
+  const handleMortgageFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "Fichier trop volumineux",
+          description: "La taille maximale est de 5 MB",
+          variant: "destructive"
+        });
+        return;
+      }
+      const updated = [...mortgageRecords];
+      updated[index] = { ...updated[index], receiptFile: file };
+      setMortgageRecords(updated);
+    }
+  };
+
+  const removeMortgageFile = (index: number) => {
+    const updated = [...mortgageRecords];
+    updated[index] = { ...updated[index], receiptFile: null };
     setMortgageRecords(updated);
   };
 
@@ -1109,6 +1210,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             onChange={(e) => updateTaxRecord(index, 'paymentDate', e.target.value)}
                           />
                         </div>
+
+                        {/* Pièce jointe pour la taxe */}
+                        <div className="space-y-2 pt-2 border-t">
+                          <Label>Pièce justificative (optionnel)</Label>
+                          {!tax.receiptFile ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                onChange={(e) => handleTaxFileChange(index, e)}
+                                className="cursor-pointer"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                              <FileText className="h-4 w-4 text-primary" />
+                              <span className="text-sm flex-1 truncate">{tax.receiptFile.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeTaxFile(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Reçu de paiement (JPG, PNG, WEBP ou PDF - Max 5 MB)
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -1233,6 +1365,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <SelectItem value="Renégociée">Renégociée</SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+
+                        {/* Pièce jointe pour l'hypothèque */}
+                        <div className="space-y-2 pt-2 border-t">
+                          <Label>Pièce justificative (optionnel)</Label>
+                          {!mortgage.receiptFile ? (
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="file"
+                                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                                onChange={(e) => handleMortgageFileChange(index, e)}
+                                className="cursor-pointer"
+                              />
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                              <FileText className="h-4 w-4 text-primary" />
+                              <span className="text-sm flex-1 truncate">{mortgage.receiptFile.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeMortgageFile(index)}
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground">
+                            Contrat ou justificatif (JPG, PNG, WEBP ou PDF - Max 5 MB)
+                          </p>
                         </div>
                       </div>
                     ))}
