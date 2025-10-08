@@ -495,204 +495,195 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="location" className="space-y-4 mt-4">
-            <div className="space-y-3">
-              <h4 className="text-sm font-semibold text-muted-foreground">Système Urbain (SU)</h4>
-              <p className="text-xs text-muted-foreground">
-                Remplissez ces champs pour les zones urbaines. Si vous remplissez la section urbaine, la section rurale sera désactivée.
-              </p>
-              
-              <div className="space-y-2">
-                <Label htmlFor="province">Province *</Label>
-                <Select 
-                  value={formData.province} 
-                  onValueChange={(value) => handleInputChange('province', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner la province" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {getAllProvinces().map(province => (
-                      <SelectItem key={province} value={province}>{province}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Province - toujours visible */}
+            <div className="space-y-2">
+              <Label htmlFor="province">Province *</Label>
+              <Select 
+                value={formData.province} 
+                onValueChange={(value) => handleInputChange('province', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner la province" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAllProvinces().map(province => (
+                    <SelectItem key={province} value={province}>{province}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="ville">Ville</Label>
-                <Select 
-                  value={formData.ville}
-                  onValueChange={(value) => handleInputChange('ville', value)}
-                  disabled={isRuralMode || !formData.province || availableVilles.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      isRuralMode
-                        ? "Désactivé (mode rural actif)"
-                        : !formData.province 
+            {/* Section Urbaine (SU) - cachée si mode rural actif */}
+            {!isRuralMode && (
+              <div className="space-y-3 pt-4 border-t">
+                <h4 className="text-sm font-semibold text-muted-foreground">Système Urbain (SU)</h4>
+                <p className="text-xs text-muted-foreground">
+                  Remplissez ces champs pour les zones urbaines.
+                </p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="ville">Ville</Label>
+                  <Select 
+                    value={formData.ville}
+                    onValueChange={(value) => handleInputChange('ville', value)}
+                    disabled={!formData.province || availableVilles.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !formData.province 
                         ? "Sélectionner d'abord une province" 
                         : availableVilles.length === 0 
                         ? "Aucune ville disponible"
                         : "Sélectionner la ville"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableVilles.map(ville => (
-                      <SelectItem key={ville} value={ville}>{ville}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableVilles.map(ville => (
+                        <SelectItem key={ville} value={ville}>{ville}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="commune">Commune</Label>
-                <Select 
-                  value={formData.commune}
-                  onValueChange={(value) => handleInputChange('commune', value)}
-                  disabled={isRuralMode || !formData.ville || availableCommunes.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      isRuralMode
-                        ? "Désactivé (mode rural actif)"
-                        : !formData.ville 
+                <div className="space-y-2">
+                  <Label htmlFor="commune">Commune</Label>
+                  <Select 
+                    value={formData.commune}
+                    onValueChange={(value) => handleInputChange('commune', value)}
+                    disabled={!formData.ville || availableCommunes.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !formData.ville 
                         ? "Sélectionner d'abord une ville" 
                         : availableCommunes.length === 0 
                         ? "Aucune commune disponible"
                         : "Sélectionner la commune"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableCommunes.map(commune => (
-                      <SelectItem key={commune} value={commune}>{commune}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCommunes.map(commune => (
+                        <SelectItem key={commune} value={commune}>{commune}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="quartier">Quartier</Label>
-                <Input
-                  id="quartier"
-                  placeholder={isRuralMode ? "Désactivé (mode rural actif)" : "ex: Himbi"}
-                  value={formData.quartier || ''}
-                  onChange={(e) => handleInputChange('quartier', e.target.value)}
-                  disabled={isRuralMode || !formData.commune}
-                />
-                {!isRuralMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="quartier">Quartier</Label>
+                  <Input
+                    id="quartier"
+                    placeholder="ex: Himbi"
+                    value={formData.quartier || ''}
+                    onChange={(e) => handleInputChange('quartier', e.target.value)}
+                    disabled={!formData.commune}
+                  />
                   <p className="text-xs text-muted-foreground">
                     {!formData.commune ? "Sélectionner d'abord une commune" : "Saisie manuelle - optionnel"}
                   </p>
-                )}
-              </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="avenue">Avenue</Label>
-                <Input
-                  id="avenue"
-                  placeholder={isRuralMode ? "Désactivé (mode rural actif)" : "ex: Avenue de l'Université"}
-                  value={formData.avenue || ''}
-                  onChange={(e) => handleInputChange('avenue', e.target.value)}
-                  disabled={isRuralMode || !formData.commune}
-                />
-                {!isRuralMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="avenue">Avenue</Label>
+                  <Input
+                    id="avenue"
+                    placeholder="ex: Avenue de l'Université"
+                    value={formData.avenue || ''}
+                    onChange={(e) => handleInputChange('avenue', e.target.value)}
+                    disabled={!formData.commune}
+                  />
                   <p className="text-xs text-muted-foreground">
                     {!formData.commune ? "Sélectionner d'abord une commune" : "Saisie manuelle - optionnel"}
                   </p>
-                )}
+                </div>
               </div>
-            </div>
+            )}
 
-            <div className="space-y-3 pt-4 border-t">
-              <h4 className="text-sm font-semibold text-muted-foreground">Système Rural (SR)</h4>
-              <p className="text-xs text-muted-foreground">
-                Remplissez ces champs pour les zones rurales. Si vous remplissez la section rurale, la section urbaine sera désactivée.
-              </p>
-              
-              <div className="space-y-2">
-                <Label htmlFor="territoire">Territoire</Label>
-                <Select 
-                  value={formData.territoire}
-                  onValueChange={(value) => handleInputChange('territoire', value)}
-                  disabled={isUrbanMode || !formData.province || availableTerritoires.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      isUrbanMode
-                        ? "Désactivé (mode urbain actif)"
-                        : !formData.province 
+            {/* Section Rurale (SR) - cachée si mode urbain actif */}
+            {!isUrbanMode && (
+              <div className="space-y-3 pt-4 border-t">
+                <h4 className="text-sm font-semibold text-muted-foreground">Système Rural (SR)</h4>
+                <p className="text-xs text-muted-foreground">
+                  Remplissez ces champs pour les zones rurales.
+                </p>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="territoire">Territoire</Label>
+                  <Select 
+                    value={formData.territoire}
+                    onValueChange={(value) => handleInputChange('territoire', value)}
+                    disabled={!formData.province || availableTerritoires.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !formData.province 
                         ? "Sélectionner d'abord une province" 
                         : availableTerritoires.length === 0 
                         ? "Aucun territoire disponible"
                         : "Sélectionner le territoire"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableTerritoires.map(territoire => (
-                      <SelectItem key={territoire} value={territoire}>{territoire}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableTerritoires.map(territoire => (
+                        <SelectItem key={territoire} value={territoire}>{territoire}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="collectivite">Collectivité</Label>
-                <Select 
-                  value={formData.collectivite}
-                  onValueChange={(value) => handleInputChange('collectivite', value)}
-                  disabled={isUrbanMode || !formData.territoire || availableCollectivites.length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      isUrbanMode
-                        ? "Désactivé (mode urbain actif)"
-                        : !formData.territoire 
+                <div className="space-y-2">
+                  <Label htmlFor="collectivite">Collectivité</Label>
+                  <Select 
+                    value={formData.collectivite}
+                    onValueChange={(value) => handleInputChange('collectivite', value)}
+                    disabled={!formData.territoire || availableCollectivites.length === 0}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        !formData.territoire 
                         ? "Sélectionner d'abord un territoire" 
                         : availableCollectivites.length === 0 
                         ? "Aucune collectivité disponible"
                         : "Sélectionner la collectivité"
-                    } />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableCollectivites.map(collectivite => (
-                      <SelectItem key={collectivite} value={collectivite}>{collectivite}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCollectivites.map(collectivite => (
+                        <SelectItem key={collectivite} value={collectivite}>{collectivite}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="groupement">Groupement</Label>
-                <Input
-                  id="groupement"
-                  placeholder={isUrbanMode ? "Désactivé (mode urbain actif)" : "ex: Katoyi"}
-                  value={formData.groupement || ''}
-                  onChange={(e) => handleInputChange('groupement', e.target.value)}
-                  disabled={isUrbanMode || !formData.collectivite}
-                />
-                {!isUrbanMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="groupement">Groupement</Label>
+                  <Input
+                    id="groupement"
+                    placeholder="ex: Katoyi"
+                    value={formData.groupement || ''}
+                    onChange={(e) => handleInputChange('groupement', e.target.value)}
+                    disabled={!formData.collectivite}
+                  />
                   <p className="text-xs text-muted-foreground">
                     {!formData.collectivite ? "Sélectionner d'abord une collectivité" : "Saisie manuelle - optionnel"}
                   </p>
-                )}
-              </div>
+                </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="village">Village</Label>
-                <Input
-                  id="village"
-                  placeholder={isUrbanMode ? "Désactivé (mode urbain actif)" : "ex: Mushaki"}
-                  value={formData.village || ''}
-                  onChange={(e) => handleInputChange('village', e.target.value)}
-                  disabled={isUrbanMode || !formData.collectivite}
-                />
-                {!isUrbanMode && (
+                <div className="space-y-2">
+                  <Label htmlFor="village">Village</Label>
+                  <Input
+                    id="village"
+                    placeholder="ex: Mushaki"
+                    value={formData.village || ''}
+                    onChange={(e) => handleInputChange('village', e.target.value)}
+                    disabled={!formData.collectivite}
+                  />
                   <p className="text-xs text-muted-foreground">
                     {!formData.collectivite ? "Sélectionner d'abord une collectivité" : "Saisie manuelle - optionnel"}
                   </p>
-                )}
+                </div>
               </div>
-            </div>
+            )}
           </TabsContent>
 
           <TabsContent value="history" className="space-y-4 mt-4">
