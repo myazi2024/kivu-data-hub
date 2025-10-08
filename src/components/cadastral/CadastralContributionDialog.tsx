@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, FileText } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -39,6 +39,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [ownerDocFile, setOwnerDocFile] = useState<File | null>(null);
   const [titleDocFile, setTitleDocFile] = useState<File | null>(null);
   
+  // État pour gérer plusieurs anciens propriétaires
+  const [previousOwners, setPreviousOwners] = useState<Array<{
+    name: string;
+    legalStatus: string;
+    startDate: string;
+    endDate: string;
+    mutationType: string;
+  }>>([]);
+
   const [formData, setFormData] = useState<CadastralContributionData>({
     parcelNumber: parcelNumber,
     whatsappNumber: '',
@@ -249,6 +258,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   };
 
+  const addPreviousOwner = () => {
+    setPreviousOwners([...previousOwners, {
+      name: '',
+      legalStatus: '',
+      startDate: '',
+      endDate: '',
+      mutationType: ''
+    }]);
+  };
+
+  const removePreviousOwner = (index: number) => {
+    setPreviousOwners(previousOwners.filter((_, i) => i !== index));
+  };
+
+  const updatePreviousOwner = (index: number, field: string, value: string) => {
+    const updated = [...previousOwners];
+    updated[index] = { ...updated[index], [field]: value };
+    setPreviousOwners(updated);
+  };
+
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber, whatsappNumber: '' });
     setShowSuccess(false);
@@ -257,6 +286,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setOwnerDocFile(null);
     setTitleDocFile(null);
     setSectionType('');
+    setPreviousOwners([]);
     onOpenChange(false);
   };
 
@@ -707,61 +737,114 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
           <TabsContent value="history" className="space-y-4 mt-4">
             <div className="space-y-4">
-              <div>
-                <Label className="text-sm font-semibold">Historique de propriété (optionnel)</Label>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Si vous connaissez un ancien propriétaire, renseignez ces informations
-                </p>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="prevOwner">Nom de l'ancien propriétaire</Label>
-                <Input
-                  id="prevOwner"
-                  placeholder="ex: Jean Mukendi"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="prevOwnerStatus">Statut juridique</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le statut" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Personne physique">Personne physique</SelectItem>
-                    <SelectItem value="Personne morale">Personne morale</SelectItem>
-                    <SelectItem value="État">État</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="prevStartDate">Date début</Label>
-                  <Input id="prevStartDate" type="date" />
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">Historique de propriété (optionnel)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Ajoutez les anciens propriétaires que vous connaissez
+                  </p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="prevEndDate">Date fin</Label>
-                  <Input id="prevEndDate" type="date" />
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addPreviousOwner}
+                  className="gap-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter
+                </Button>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="mutationType">Type de mutation</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner le type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Vente">Vente</SelectItem>
-                    <SelectItem value="Donation">Donation</SelectItem>
-                    <SelectItem value="Succession">Succession</SelectItem>
-                    <SelectItem value="Expropriation">Expropriation</SelectItem>
-                    <SelectItem value="Échange">Échange</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              {previousOwners.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p className="text-sm">Aucun ancien propriétaire ajouté</p>
+                  <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {previousOwners.map((owner, index) => (
+                    <div key={index} className="border rounded-lg p-4 space-y-4 relative">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-sm font-medium">Propriétaire #{index + 1}</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removePreviousOwner(index)}
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Nom de l'ancien propriétaire</Label>
+                        <Input
+                          placeholder="ex: Jean Mukendi"
+                          value={owner.name}
+                          onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Statut juridique</Label>
+                        <Select
+                          value={owner.legalStatus}
+                          onValueChange={(value) => updatePreviousOwner(index, 'legalStatus', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner le statut" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Personne physique">Personne physique</SelectItem>
+                            <SelectItem value="Personne morale">Personne morale</SelectItem>
+                            <SelectItem value="État">État</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <Label>Date début</Label>
+                          <Input
+                            type="date"
+                            value={owner.startDate}
+                            onChange={(e) => updatePreviousOwner(index, 'startDate', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Date fin</Label>
+                          <Input
+                            type="date"
+                            value={owner.endDate}
+                            onChange={(e) => updatePreviousOwner(index, 'endDate', e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Type de mutation</Label>
+                        <Select
+                          value={owner.mutationType}
+                          onValueChange={(value) => updatePreviousOwner(index, 'mutationType', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner le type" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Vente">Vente</SelectItem>
+                            <SelectItem value="Donation">Donation</SelectItem>
+                            <SelectItem value="Succession">Succession</SelectItem>
+                            <SelectItem value="Expropriation">Expropriation</SelectItem>
+                            <SelectItem value="Échange">Échange</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="pt-4 border-t space-y-4">
