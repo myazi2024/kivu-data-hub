@@ -516,9 +516,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Section Urbaine (SU) - cachée si mode rural actif */}
             {!isRuralMode && (
               <div className="space-y-3 pt-4 border-t">
-                <h4 className="text-sm font-semibold text-muted-foreground">Système Urbain (SU)</h4>
+                <h4 className="text-sm font-semibold text-muted-foreground">Section Urbaine (SU)</h4>
                 <p className="text-xs text-muted-foreground">
-                  Remplissez ces champs pour les zones urbaines.
+                  Remplissez ces champs pour les zones urbaines (numéro SU).
                 </p>
                 
                 <div className="space-y-2">
@@ -602,9 +602,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Section Rurale (SR) - cachée si mode urbain actif */}
             {!isUrbanMode && (
               <div className="space-y-3 pt-4 border-t">
-                <h4 className="text-sm font-semibold text-muted-foreground">Système Rural (SR)</h4>
+                <h4 className="text-sm font-semibold text-muted-foreground">Section rurale (SR)</h4>
                 <p className="text-xs text-muted-foreground">
-                  Remplissez ces champs pour les zones rurales.
+                  Remplissez ces champs pour les zones rurales (numéro SR).
                 </p>
                 
                 <div className="space-y-2">
