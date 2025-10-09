@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { InfoIcon } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface InputWithPopoverProps extends React.ComponentPropsWithoutRef<typeof Input> {
   helpText: string;
@@ -13,6 +14,7 @@ export const InputWithPopover: React.FC<InputWithPopoverProps> = ({
   helpTitle = "Aide",
   ...inputProps 
 }) => {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [hasFocus, setHasFocus] = useState(false);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
@@ -83,17 +85,22 @@ export const InputWithPopover: React.FC<InputWithPopoverProps> = ({
         </div>
       </PopoverTrigger>
       <PopoverContent 
-        side="right" 
-        align="start"
-        className="animate-in fade-in-0 zoom-in-95 slide-in-from-left-2 duration-300"
+        side={isMobile ? "top" : "right"} 
+        align={isMobile ? "center" : "start"}
+        className={`animate-in fade-in-0 zoom-in-95 duration-300 ${
+          isMobile 
+            ? 'w-[calc(100vw-3rem)] max-w-sm slide-in-from-bottom-2' 
+            : 'w-72 slide-in-from-left-2'
+        }`}
+        sideOffset={isMobile ? 8 : 4}
         onOpenAutoFocus={(e) => e.preventDefault()}
       >
-        <div className="space-y-2">
+        <div className={isMobile ? "space-y-1.5" : "space-y-2"}>
           <div className="flex items-center gap-2">
-            <InfoIcon className="h-4 w-4 text-primary" />
-            <h4 className="font-semibold text-sm">{helpTitle}</h4>
+            <InfoIcon className={isMobile ? "h-3.5 w-3.5 text-primary flex-shrink-0" : "h-4 w-4 text-primary"} />
+            <h4 className={`font-semibold ${isMobile ? "text-xs" : "text-sm"}`}>{helpTitle}</h4>
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className={`text-muted-foreground leading-relaxed ${isMobile ? "text-xs" : "text-sm"}`}>
             {helpText}
           </p>
         </div>
