@@ -38,7 +38,7 @@ const ContributorCodesPanel: React.FC = () => {
           </CardTitle>
           <CardDescription>
             Gagnez des codes CCC en contribuant aux informations cadastrales. 
-            Chaque code vaut 5 USD et peut être utilisé pour payer vos services.
+            La valeur de chaque code (0.50 à 5 USD) dépend de la complétude de votre contribution (29 champs dont pièces jointes).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

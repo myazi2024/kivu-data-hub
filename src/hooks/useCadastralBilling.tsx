@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -11,7 +11,8 @@ export interface CadastralService {
   description: string;
 }
 
-export const CADASTRAL_SERVICES: CadastralService[] = [
+// Service prices will be loaded from database
+export let CADASTRAL_SERVICES: CadastralService[] = [
   {
     id: 'information',
     name: 'Informations générales',
@@ -37,6 +38,32 @@ export const CADASTRAL_SERVICES: CadastralService[] = [
     description: 'État détaillé des taxes foncières impayées, hypothèques en cours, servitudes, restrictions d\'usage et tous encumbrements juridiques. Indispensable avant tout achat immobilier.'
   }
 ];
+
+// Load services from database
+export const loadCadastralServices = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('cadastral_services_config')
+      .select('*')
+      .eq('is_active', true);
+
+    if (error) throw error;
+
+    if (data && data.length > 0) {
+      CADASTRAL_SERVICES = data.map(service => ({
+        id: service.service_id,
+        name: service.name,
+        price: Number(service.price_usd),
+        description: service.description || ''
+      }));
+    }
+  } catch (error) {
+    console.error('Error loading cadastral services from database:', error);
+  }
+};
+
+// Initialize services on module load
+loadCadastralServices();
 
 export interface CadastralInvoice {
   id: string;
@@ -65,6 +92,11 @@ export const useCadastralBilling = () => {
   const [currentInvoice, setCurrentInvoice] = useState<CadastralInvoice | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  // Reload services when component mounts
+  useEffect(() => {
+    loadCadastralServices();
+  }, []);
 
   const toggleService = (serviceId: string) => {
     setSelectedServices(prev => 

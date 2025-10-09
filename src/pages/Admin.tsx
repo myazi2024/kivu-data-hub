@@ -42,25 +42,43 @@ const Admin = () => {
         .from('publications')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch total revenue
-      const { data: payments } = await supabase
+      // Fetch total revenue from publications
+      const { data: publicationPayments } = await supabase
         .from('payments')
         .select('amount_usd')
         .eq('status', 'completed');
 
-      const totalRevenue = payments?.reduce((sum, payment) => sum + (payment.amount_usd || 0), 0) || 0;
+      const publicationRevenue = publicationPayments?.reduce((sum, payment) => sum + (payment.amount_usd || 0), 0) || 0;
 
-      // Fetch pending payments count
-      const { count: pendingCount } = await supabase
+      // Fetch total revenue from cadastral services
+      const { data: cadastralInvoices } = await supabase
+        .from('cadastral_invoices')
+        .select('total_amount_usd')
+        .eq('status', 'paid');
+
+      const cadastralRevenue = cadastralInvoices?.reduce((sum, invoice) => sum + (Number(invoice.total_amount_usd) || 0), 0) || 0;
+
+      // Total revenue from both systems
+      const totalRevenue = publicationRevenue + cadastralRevenue;
+
+      // Fetch pending payments count from both systems
+      const { count: pendingPublicationPayments } = await supabase
         .from('payments')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
+
+      const { count: pendingCadastralInvoices } = await supabase
+        .from('cadastral_invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+
+      const totalPending = (pendingPublicationPayments || 0) + (pendingCadastralInvoices || 0);
 
       setStats({
         totalUsers: usersCount || 0,
         totalPublications: publicationsCount || 0,
         totalRevenue,
-        pendingPayments: pendingCount || 0
+        pendingPayments: totalPending
       });
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
