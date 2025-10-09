@@ -11,6 +11,7 @@ import { toast } from 'sonner';
 import AdminPublications from '@/components/admin/AdminPublications';
 import AdminPayments from '@/components/admin/AdminPayments';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
+import AdminStatisticsCharts from '@/components/statistics/AdminStatisticsCharts';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminResellers from '@/components/admin/AdminResellers';
 import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
@@ -188,7 +189,7 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <AnalyticsDashboard />
+            <AdminStatisticsCharts onExport={() => console.log('Export statistiques')} />
           </TabsContent>
 
           <TabsContent value="territorial">

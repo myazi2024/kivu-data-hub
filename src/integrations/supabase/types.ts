@@ -1808,6 +1808,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_admin_statistics: {
+        Args: { end_date?: string; start_date?: string; stat_type?: string }
+        Returns: Json
+      }
       get_cadastral_parcel_with_calculations: {
         Args: { parcel_number_param: string }
         Returns: {
@@ -1846,9 +1850,22 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_reseller_statistics: {
+        Args: {
+          end_date?: string
+          reseller_user_id: string
+          start_date?: string
+          stat_type?: string
+        }
+        Returns: Json
+      }
       get_user_highest_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      get_user_statistics: {
+        Args: { end_date?: string; start_date?: string; target_user_id: string }
+        Returns: Json
       }
       get_zone_trend_data: {
         Args: { months_back?: number; zone_id_param: string }

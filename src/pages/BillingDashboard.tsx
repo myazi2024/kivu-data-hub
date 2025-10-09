@@ -2,6 +2,7 @@ import React from 'react';
 import CadastralDashboardTabs from '@/components/cadastral/CadastralDashboardTabs';
 import UserProfileHeader from '@/components/user/UserProfileHeader';
 import { UserPreferences } from '@/components/user/UserPreferences';
+import UserStatisticsCharts from '@/components/statistics/UserStatisticsCharts';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,13 +39,18 @@ const BillingDashboard: React.FC = () => {
       <UserProfileHeader />
       
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+          <TabsTrigger value="statistics">Statistiques</TabsTrigger>
           <TabsTrigger value="preferences">Préférences</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
           <CadastralDashboardTabs />
+        </TabsContent>
+
+        <TabsContent value="statistics">
+          <UserStatisticsCharts />
         </TabsContent>
 
         <TabsContent value="preferences">

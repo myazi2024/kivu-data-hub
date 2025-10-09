@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import ResellerDashboard from '@/components/reseller/ResellerDashboard';
+import ResellerStatisticsCharts from '@/components/statistics/ResellerStatisticsCharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const ResellerDashboardPage: React.FC = () => {
   const { user } = useAuth();
@@ -39,7 +41,20 @@ const ResellerDashboardPage: React.FC = () => {
         </p>
       </div>
       
-      <ResellerDashboard />
+      <Tabs defaultValue="overview" className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="statistics">Statistiques détaillées</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview">
+          <ResellerDashboard />
+        </TabsContent>
+
+        <TabsContent value="statistics">
+          <ResellerStatisticsCharts />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
