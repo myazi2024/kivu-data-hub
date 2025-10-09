@@ -20,6 +20,7 @@ import {
   getQuartiersForCommune,
   getAvenuesForQuartier
 } from '@/lib/geographicData';
+import { InputWithPopover } from './InputWithPopover';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -856,7 +857,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   {formData.propertyTitleType === "Titre foncier" && "Numéro du titre foncier"}
                   {formData.propertyTitleType === "Concession perpétuelle" && "Numéro de la concession perpétuelle"}
                 </Label>
-                <Input
+                <InputWithPopover
                   id="titleReference"
                   placeholder={
                     formData.propertyTitleType === "Certificat d'enregistrement" ? "Ex: CE-123456 ou CE/2024/001" :
@@ -865,6 +866,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   }
                   value={formData.titleReferenceNumber || ''}
                   onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
+                  helpTitle="Numéro de référence"
+                  helpText={
+                    formData.propertyTitleType === "Certificat d'enregistrement" 
+                      ? "Le numéro de certificat d'enregistrement se trouve en haut à droite de votre document. Il commence généralement par 'CE' suivi de chiffres ou d'une combinaison de lettres et chiffres." 
+                      : formData.propertyTitleType === "Titre foncier" 
+                      ? "Le numéro de titre foncier est inscrit en première page de votre titre. Il peut commencer par 'TF' et contient souvent le code de la province (ex: NK pour Nord-Kivu)."
+                      : "Le numéro de concession perpétuelle figure sur votre document de concession. Il commence généralement par 'CP' et inclut l'année d'attribution."
+                  }
                 />
                 <p className="text-xs text-muted-foreground">
                   {formData.propertyTitleType === "Certificat d'enregistrement" && "Numéro figurant sur votre certificat d'enregistrement"}
@@ -876,11 +885,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             <div className="space-y-2">
               <Label htmlFor="ownerName">Nom du propriétaire actuel</Label>
-              <Input
+              <InputWithPopover
                 id="ownerName"
                 placeholder="Nom complet"
                 value={formData.currentOwnerName || ''}
                 onChange={(e) => handleInputChange('currentOwnerName', e.target.value)}
+                helpTitle="Propriétaire actuel"
+                helpText="Indiquez le nom complet du propriétaire actuel tel qu'il apparaît sur le titre de propriété. Pour une personne morale, indiquez la raison sociale complète."
               />
             </div>
 
@@ -900,12 +911,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             <div className="space-y-2">
               <Label htmlFor="ownerSince">Propriétaire depuis</Label>
-              <Input
+              <InputWithPopover
                 id="ownerSince"
                 type="date"
                 max={new Date().toISOString().split('T')[0]}
                 value={formData.currentOwnerSince || ''}
                 onChange={(e) => handleInputChange('currentOwnerSince', e.target.value)}
+                helpTitle="Date d'acquisition"
+                helpText="Indiquez la date à laquelle le propriétaire actuel a acquis cette parcelle. Cette information se trouve généralement sur l'acte de vente ou le certificat d'enregistrement."
               />
               <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
             </div>
@@ -1145,10 +1158,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <div className="grid grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label className="text-xs">Numéro du permis</Label>
-                          <Input
+                          <InputWithPopover
                             placeholder="ex: PC-2024-001"
                             value={permit.permitNumber}
                             onChange={(e) => updateBuildingPermit(index, 'permitNumber', e.target.value)}
+                            helpTitle="Numéro de permis"
+                            helpText="Le numéro de permis de construire est un identifiant unique délivré par les services d'urbanisme. Il figure généralement en haut du document officiel du permis."
                           />
                         </div>
                         <div className="space-y-2">
@@ -1523,29 +1538,33 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </Button>
                         </div>
 
-                        <div className="space-y-3">
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <Label className="text-xs">Latitude</Label>
-                              <Input
-                                type="number"
-                                step="0.000001"
-                                placeholder="ex: -1.674"
-                                value={coord.lat}
-                                onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
-                              />
+                          <div className="space-y-3">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-2">
+                                <Label className="text-xs">Latitude</Label>
+                                <InputWithPopover
+                                  type="number"
+                                  step="0.000001"
+                                  placeholder="ex: -1.674"
+                                  value={coord.lat}
+                                  onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
+                                  helpTitle="Latitude"
+                                  helpText="La latitude représente la position nord-sud. Au Congo, les valeurs sont généralement négatives (entre -13° et 5°). Vous pouvez utiliser votre smartphone ou un GPS pour obtenir cette coordonnée précise."
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label className="text-xs">Longitude</Label>
+                                <InputWithPopover
+                                  type="number"
+                                  step="0.000001"
+                                  placeholder="ex: 29.224"
+                                  value={coord.lng}
+                                  onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
+                                  helpTitle="Longitude"
+                                  helpText="La longitude représente la position est-ouest. Au Congo, les valeurs sont généralement positives (entre 12° et 31°). Assurez-vous d'utiliser au moins 6 décimales pour une précision optimale."
+                                />
+                              </div>
                             </div>
-                            <div className="space-y-2">
-                              <Label className="text-xs">Longitude</Label>
-                              <Input
-                                type="number"
-                                step="0.000001"
-                                placeholder="ex: 29.224"
-                                value={coord.lng}
-                                onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
-                              />
-                            </div>
-                          </div>
                           
                           <Button
                             type="button"
@@ -1614,12 +1633,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </Button>
                       </div>
 
-                      <div className="space-y-2">
+                       <div className="space-y-2">
                         <Label>Nom de l'ancien propriétaire</Label>
-                        <Input
+                        <InputWithPopover
                           placeholder="ex: Jean Mukendi"
                           value={owner.name}
                           onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
+                          helpTitle="Ancien propriétaire"
+                          helpText="Indiquez le nom complet de l'ancien propriétaire tel qu'il figurait sur les documents officiels. Cette information aide à retracer l'historique de la propriété."
                         />
                       </div>
 
@@ -1693,10 +1714,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         
                         <div className="space-y-2">
                           <Label className="text-xs">Numéro de référence du PV</Label>
-                          <Input
+                          <InputWithPopover
                             placeholder="ex: PV/2024/001"
                             value={owner.pvReferenceNumber || ''}
                             onChange={(e) => updatePreviousOwner(index, 'pvReferenceNumber', e.target.value)}
+                            helpTitle="Numéro du PV de bornage"
+                            helpText="Le procès-verbal (PV) de bornage est un document officiel établi par un géomètre. Son numéro de référence se trouve généralement en en-tête du document et permet de l'identifier de façon unique."
                           />
                         </div>
 
@@ -1713,10 +1736,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                         <div className="space-y-2">
                           <Label className="text-xs">Nom du géomètre</Label>
-                          <Input
+                          <InputWithPopover
                             placeholder="ex: Géomètre Kalala"
                             value={owner.surveyorName || ''}
                             onChange={(e) => updatePreviousOwner(index, 'surveyorName', e.target.value)}
+                            helpTitle="Géomètre"
+                            helpText="Indiquez le nom du géomètre agréé qui a effectué le bornage de la parcelle. Cette information se trouve généralement sur le procès-verbal de bornage avec le numéro d'agrément du géomètre."
                           />
                         </div>
                       </div>
@@ -1840,11 +1865,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                         <div className="space-y-2">
                           <Label>Montant payé (USD)</Label>
-                          <Input
+                          <InputWithPopover
                             type="number"
                             placeholder="ex: 150"
                             value={tax.taxAmount}
                             onChange={(e) => updateTaxRecord(index, 'taxAmount', e.target.value)}
+                            helpTitle="Montant de la taxe"
+                            helpText="Indiquez le montant total payé pour cette taxe en dollars américains. Ce montant devrait correspondre à celui indiqué sur votre reçu de paiement officiel."
                           />
                         </div>
 
@@ -1868,11 +1895,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                         <div className="space-y-2">
                           <Label>Date de paiement</Label>
-                          <Input
+                          <InputWithPopover
                             type="date"
                             max={new Date().toISOString().split('T')[0]}
                             value={tax.paymentDate}
                             onChange={(e) => updateTaxRecord(index, 'paymentDate', e.target.value)}
+                            helpTitle="Date de paiement"
+                            helpText="Indiquez la date exacte à laquelle vous avez effectué le paiement de cette taxe. Cette date doit correspondre à celle figurant sur votre reçu officiel."
                           />
                           <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
                         </div>
@@ -1965,30 +1994,36 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                         <div className="space-y-2">
                           <Label>Montant de l'hypothèque (USD)</Label>
-                          <Input
+                          <InputWithPopover
                             type="number"
                             placeholder="ex: 50000"
                             value={mortgage.mortgageAmount}
                             onChange={(e) => updateMortgageRecord(index, 'mortgageAmount', e.target.value)}
+                            helpTitle="Montant de l'hypothèque"
+                            helpText="Indiquez le montant total de l'hypothèque en dollars américains. Il s'agit du capital emprunté garanti par la parcelle, tel qu'indiqué dans le contrat d'hypothèque."
                           />
                         </div>
 
                         <div className="space-y-2">
                           <Label>Durée (mois)</Label>
-                          <Input
+                          <InputWithPopover
                             type="number"
                             placeholder="ex: 120"
                             value={mortgage.duration}
                             onChange={(e) => updateMortgageRecord(index, 'duration', e.target.value)}
+                            helpTitle="Durée de l'hypothèque"
+                            helpText="Indiquez la durée totale de l'hypothèque en mois. Par exemple, pour un prêt de 10 ans, saisissez 120 mois. Cette information figure dans votre contrat d'hypothèque."
                           />
                         </div>
 
                         <div className="space-y-2">
                           <Label>Nom du créancier</Label>
-                          <Input
+                          <InputWithPopover
                             placeholder="ex: Banque XYZ"
                             value={mortgage.creditorName}
                             onChange={(e) => updateMortgageRecord(index, 'creditorName', e.target.value)}
+                            helpTitle="Créancier"
+                            helpText="Indiquez le nom complet de l'institution financière ou de la personne qui a accordé l'hypothèque. Ce nom doit correspondre exactement à celui figurant sur le contrat d'hypothèque."
                           />
                         </div>
 
@@ -2013,11 +2048,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                         <div className="space-y-2">
                           <Label>Date du contrat</Label>
-                          <Input
+                          <InputWithPopover
                             type="date"
                             max={new Date().toISOString().split('T')[0]}
                             value={mortgage.contractDate}
                             onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
+                            helpTitle="Date du contrat"
+                            helpText="Indiquez la date de signature du contrat d'hypothèque. Cette date marque le début de l'engagement hypothécaire sur la parcelle."
                           />
                           <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
                         </div>
