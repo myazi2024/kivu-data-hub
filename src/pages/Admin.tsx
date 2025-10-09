@@ -14,6 +14,7 @@ import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminResellers from '@/components/admin/AdminResellers';
 import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
+import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -156,10 +157,11 @@ const Admin = () => {
 
         {/* Main Content Tabs */}
           <Tabs defaultValue="publications" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="publications">Publications</TabsTrigger>
               <TabsTrigger value="payments">Paiements</TabsTrigger>
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
+              <TabsTrigger value="roles">Rôles</TabsTrigger>
               <TabsTrigger value="resellers">Revendeurs</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="territorial">Zones</TabsTrigger>
@@ -173,11 +175,15 @@ const Admin = () => {
             <AdminPayments onRefresh={fetchStats} />
           </TabsContent>
 
-          <TabsContent value="users">
-            <AdminUsers onRefresh={fetchStats} />
-          </TabsContent>
+            <TabsContent value="users">
+              <AdminUsers onRefresh={fetchStats} />
+            </TabsContent>
 
-          <TabsContent value="resellers">
+            <TabsContent value="roles">
+              <AdminUserRoles />
+            </TabsContent>
+
+            <TabsContent value="resellers">
             <AdminResellers onRefresh={fetchStats} />
           </TabsContent>
 

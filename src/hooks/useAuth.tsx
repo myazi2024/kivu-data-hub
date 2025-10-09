@@ -8,7 +8,7 @@ interface Profile {
   email: string;
   full_name?: string;
   organization?: string;
-  role: 'admin' | 'partner' | 'user';
+  role: 'super_admin' | 'admin' | 'partner' | 'user';
   avatar_url?: string;
   created_at: string;
   updated_at: string;
@@ -36,19 +36,37 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      // Fetch profile
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching profile:', error);
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('Error fetching profile:', profileError);
         setProfile(null);
         return;
       }
 
-      setProfile(data);
+      // Fetch highest role from user_roles
+      const { data: roleData } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId)
+        .order('role', { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      // Combine profile with role
+      if (profileData) {
+        setProfile({
+          ...profileData,
+          role: (roleData?.role as 'super_admin' | 'admin' | 'partner' | 'user') || 'user'
+        });
+      } else {
+        setProfile(null);
+      }
     } catch (error) {
       console.error('Error fetching profile:', error);
       setProfile(null);
