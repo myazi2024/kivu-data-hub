@@ -1611,6 +1611,10 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_ccc_value: {
+        Args: { contribution_id: string }
+        Returns: number
+      }
       calculate_surface_from_coordinates: {
         Args: { coordinates: Json }
         Returns: number
