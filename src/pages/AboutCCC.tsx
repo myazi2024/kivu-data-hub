@@ -1,7 +1,26 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Gift, Clock, DollarSign, CheckCircle2, ArrowRight, Phone, Mail, MessageCircle, HelpCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { 
+  Gift, 
+  Clock, 
+  DollarSign, 
+  CheckCircle2, 
+  ArrowRight, 
+  Phone, 
+  Mail, 
+  MessageCircle, 
+  HelpCircle,
+  Shield,
+  AlertCircle,
+  AlertTriangle,
+  Ban,
+  XCircle,
+  Target,
+  Info
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -207,17 +226,36 @@ const AboutCCC = () => {
               <div className="flex gap-4 p-4 bg-accent/20 rounded-lg border border-accent/50">
                 <Badge className="shrink-0 h-8 w-8 rounded-full p-0 flex items-center justify-center text-base">4</Badge>
                 <div className="space-y-2">
-                  <p className="font-semibold text-lg text-foreground">Recevez instantanément votre code CCC</p>
+                  <p className="font-semibold text-lg text-foreground">Soumettez votre contribution pour validation</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
-                    Dès que vous soumettez votre contribution, un <strong>code CCC unique</strong> est généré automatiquement 
-                    et ajouté à votre compte. Vous le verrez apparaître immédiatement dans l'onglet <strong>"Codes CCC"</strong> 
-                    de votre tableau de bord. Le code sera valable pendant 90 jours.
+                    Une fois votre formulaire complété, cliquez sur <strong>"Soumettre"</strong>. Votre contribution 
+                    est enregistrée et sera <strong>examinée par notre équipe sous 24 à 48 heures</strong>. Cette étape 
+                    de validation garantit la fiabilité et l'exactitude des données cadastrales.
                   </p>
+                  <div className="bg-background/80 p-3 rounded border border-border mt-2">
+                    <p className="text-xs font-semibold text-foreground mb-1">⏱️ Délai de traitement :</p>
+                    <p className="text-xs text-muted-foreground">
+                      Votre contribution sera validée dans un délai de <strong>24 à 48 heures</strong>. Vous recevrez 
+                      une notification par email dès que votre code CCC sera disponible.
+                    </p>
+                  </div>
                 </div>
               </div>
 
               <div className="flex gap-4 p-4 bg-accent/20 rounded-lg border border-accent/50">
                 <Badge className="shrink-0 h-8 w-8 rounded-full p-0 flex items-center justify-center text-base">5</Badge>
+                <div className="space-y-2">
+                  <p className="font-semibold text-lg text-foreground">Recevez votre code CCC après approbation</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Après validation de votre contribution, un <strong>code CCC unique</strong> est généré automatiquement 
+                    et ajouté à votre compte. Vous le verrez apparaître dans l'onglet <strong>"Codes CCC"</strong> 
+                    de votre tableau de bord. Le code sera valable pendant 90 jours à partir de sa génération.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-4 p-4 bg-accent/20 rounded-lg border border-accent/50">
+                <Badge className="shrink-0 h-8 w-8 rounded-full p-0 flex items-center justify-center text-base">6</Badge>
                 <div className="space-y-2">
                   <p className="font-semibold text-lg text-foreground">Utilisez votre code pour économiser</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
@@ -275,6 +313,124 @@ const AboutCCC = () => {
             </ul>
           </div>
 
+          {/* Section Anti-Fraude */}
+          <Card className="border-amber-200 bg-amber-50/50">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Shield className="h-6 w-6 text-amber-600" />
+                <CardTitle className="text-2xl text-amber-900">Système de Lutte Anti-Fraude</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Alert className="border-amber-300 bg-amber-100">
+                <AlertCircle className="h-4 w-4 text-amber-700" />
+                <AlertTitle className="text-amber-900">Protection de la fiabilité du cadastre</AlertTitle>
+                <AlertDescription className="text-amber-800">
+                  Pour garantir la qualité et la fiabilité des données cadastrales, nous avons mis en place un système automatique de détection et de prévention des fraudes.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-foreground">
+                    <CheckCircle2 className="h-5 w-5 text-primary" />
+                    Validation avant attribution du code CCC
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+                    Les codes CCC ne sont <strong>plus générés automatiquement</strong> lors de la soumission d'une contribution. Désormais :
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground ml-4">
+                    <li>Votre contribution est d'abord <strong>examinée par notre équipe</strong></li>
+                    <li>Les informations sont <strong>vérifiées et validées</strong></li>
+                    <li>Le code CCC est <strong>généré uniquement après approbation</strong></li>
+                    <li>Vous êtes notifié dès que votre code est disponible</li>
+                  </ul>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-foreground">
+                    <AlertTriangle className="h-5 w-5 text-amber-600" />
+                    Détection automatique des comportements suspects
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-2 leading-relaxed">
+                    Notre système surveille automatiquement plusieurs indicateurs de fraude potentielle :
+                  </p>
+                  <div className="grid gap-3 mt-3">
+                    <div className="flex items-start gap-2 p-3 bg-background rounded-lg border">
+                      <Target className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Volume de contributions</p>
+                        <p className="text-xs text-muted-foreground">Plus de 5 contributions en 24 heures déclenchent une alerte automatique</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-3 bg-background rounded-lg border">
+                      <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Contributions répétitives</p>
+                        <p className="text-xs text-muted-foreground">Plusieurs soumissions pour la même parcelle en peu de temps sont signalées</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-2 p-3 bg-background rounded-lg border">
+                      <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Historique d'avertissements</p>
+                        <p className="text-xs text-muted-foreground">Les utilisateurs avec des tentatives de fraude antérieures font l'objet d'une surveillance accrue</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-foreground">
+                    <Ban className="h-5 w-5 text-destructive" />
+                    Système de sanctions progressives
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                    En cas de détection de fraude avérée, nous appliquons des sanctions progressives :
+                  </p>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-50 border border-yellow-200">
+                      <span className="font-bold text-yellow-700 text-lg">1er</span>
+                      <p className="text-sm text-yellow-800"><strong>Premier avertissement</strong> - Contribution rejetée</p>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-orange-50 border border-orange-200">
+                      <span className="font-bold text-orange-700 text-lg">2ème</span>
+                      <p className="text-sm text-orange-800"><strong>Deuxième avertissement</strong> - Surveillance accrue de vos contributions</p>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 rounded-lg bg-red-50 border border-red-200">
+                      <span className="font-bold text-red-700 text-lg">3ème</span>
+                      <p className="text-sm text-red-800"><strong>Blocage du compte</strong> - Plus de contributions possibles</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h3 className="font-semibold text-lg mb-3 flex items-center gap-2 text-foreground">
+                    <XCircle className="h-5 w-5 text-destructive" />
+                    Invalidation des codes frauduleux
+                  </h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Si une contribution est rejetée pour cause de fraude, tous les codes CCC associés sont <strong>automatiquement invalidés</strong> et ne peuvent plus être utilisés. Les codes invalidés ne peuvent pas être restaurés, même après contestation.
+                  </p>
+                </div>
+
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Info className="h-4 w-4 text-blue-700" />
+                  <AlertTitle className="text-blue-900">Contestation possible</AlertTitle>
+                  <AlertDescription className="text-blue-800">
+                    Si vous estimez que votre compte a été bloqué ou votre contribution rejetée par erreur, vous pouvez contacter notre équipe via la page de contact. Chaque cas est examiné individuellement.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            </CardContent>
+          </Card>
+
           <div>
             <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
               <HelpCircle className="h-6 w-6 text-primary" />
@@ -304,12 +460,17 @@ const AboutCCC = () => {
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed space-y-2">
                   <p>
-                    <strong className="text-foreground">Génération automatique immédiate :</strong> Dès que vous soumettez 
-                    votre contribution, un code CCC est généré automatiquement et devient utilisable immédiatement. 
-                    Vous n'avez pas besoin d'attendre une validation manuelle.
+                    <strong className="text-foreground">Validation manuelle par notre équipe :</strong> Après votre soumission, 
+                    nos experts examinent chaque contribution pour vérifier l'exactitude et la cohérence des informations avant 
+                    de générer votre code CCC.
                   </p>
                   <p>
-                    <strong className="text-foreground">Responsabilité :</strong> En contrepartie, nous comptons sur votre 
+                    <strong className="text-foreground">Délai de traitement :</strong> La validation prend généralement 24 à 48 heures. 
+                    Vous recevrez une notification par email dès que votre code sera disponible ou si des clarifications sont nécessaires.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Détection anti-fraude :</strong> Notre système surveille automatiquement les contributions 
+                    suspectes pour garantir la fiabilité du cadastre. En contrepartie, nous comptons sur votre
                     honnêteté. Les informations fausses ou inexactes peuvent nuire à d'autres utilisateurs et compromettre 
                     la qualité de notre base de données cadastrale. C'est pourquoi vous devez accepter les conditions 
                     d'utilisation avant de contribuer.

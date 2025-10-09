@@ -36,7 +36,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const { submitContribution, loading } = useCadastralContribution();
   const { toast } = useToast();
   const [showSuccess, setShowSuccess] = useState(false);
-  const [generatedCode, setGeneratedCode] = useState<string>('');
   const [requestWhatsAppNotif, setRequestWhatsAppNotif] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [ownerDocFile, setOwnerDocFile] = useState<File | null>(null);
@@ -495,8 +494,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
       const result = await submitContribution(dataToSubmit);
       
-      if (result.success && result.code) {
-        setGeneratedCode(result.code);
+      if (result.success) {
         setShowSuccess(true);
       }
     } catch (error) {
@@ -749,7 +747,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber, whatsappNumber: '' });
     setShowSuccess(false);
-    setGeneratedCode('');
     setRequestWhatsAppNotif(false);
     setOwnerDocFile(null);
     setTitleDocFile(null);
@@ -787,16 +784,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               Elle sera vérifiée par notre équipe.
             </DialogDescription>
             <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 rounded-xl w-full border border-primary/20 shadow-lg backdrop-blur-sm animate-scale-in">
-              <p className="text-sm text-muted-foreground mb-3 font-medium">Votre Code Contributeur Cadastral :</p>
-              <p className="text-3xl font-bold text-primary text-center tracking-wider font-mono">{generatedCode}</p>
-              <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-                <span className="px-2 py-1 bg-background/80 rounded-md">Valeur : 5 USD</span>
-                <span className="text-muted-foreground/50">•</span>
-                <span className="px-2 py-1 bg-background/80 rounded-md">Expire dans 90 jours</span>
+              <div className="flex items-center justify-center mb-4">
+                <CheckCircle2 className="h-12 w-12 text-primary" />
+              </div>
+              <p className="text-lg font-semibold text-center text-foreground mb-2">
+                Contribution en cours de validation
+              </p>
+              <p className="text-sm text-muted-foreground text-center mb-4">
+                Notre équipe examine actuellement vos informations pour garantir leur exactitude.
+              </p>
+              <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span>Votre code CCC sera généré après approbation</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span>Délai de validation : 24 à 48 heures</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <span>Vous serez notifié par email</span>
+                </div>
               </div>
             </div>
             <p className="text-sm text-center text-muted-foreground max-w-sm">
-              Vous pouvez utiliser ce code pour payer vos prochains services cadastraux.
+              Consultez l'onglet "Codes CCC" de votre tableau de bord pour suivre l'état de votre contribution.
             </p>
             <Button onClick={handleClose} className="w-full shadow-lg hover:shadow-xl transition-all">
               Fermer

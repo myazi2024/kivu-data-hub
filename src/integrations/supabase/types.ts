@@ -293,9 +293,12 @@ export type Database = {
           current_owner_name: string | null
           current_owner_since: string | null
           declared_usage: string | null
+          fraud_reason: string | null
+          fraud_score: number | null
           gps_coordinates: Json | null
           groupement: string | null
           id: string
+          is_suspicious: boolean | null
           mortgage_history: Json | null
           owner_document_url: string | null
           ownership_history: Json | null
@@ -313,6 +316,8 @@ export type Database = {
           title_reference_number: string | null
           updated_at: string
           user_id: string | null
+          verified_at: string | null
+          verified_by: string | null
           village: string | null
           ville: string | null
           whatsapp_number: string | null
@@ -332,9 +337,12 @@ export type Database = {
           current_owner_name?: string | null
           current_owner_since?: string | null
           declared_usage?: string | null
+          fraud_reason?: string | null
+          fraud_score?: number | null
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
+          is_suspicious?: boolean | null
           mortgage_history?: Json | null
           owner_document_url?: string | null
           ownership_history?: Json | null
@@ -352,6 +360,8 @@ export type Database = {
           title_reference_number?: string | null
           updated_at?: string
           user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
           village?: string | null
           ville?: string | null
           whatsapp_number?: string | null
@@ -371,9 +381,12 @@ export type Database = {
           current_owner_name?: string | null
           current_owner_since?: string | null
           declared_usage?: string | null
+          fraud_reason?: string | null
+          fraud_score?: number | null
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
+          is_suspicious?: boolean | null
           mortgage_history?: Json | null
           owner_document_url?: string | null
           ownership_history?: Json | null
@@ -391,6 +404,8 @@ export type Database = {
           title_reference_number?: string | null
           updated_at?: string
           user_id?: string | null
+          verified_at?: string | null
+          verified_by?: string | null
           village?: string | null
           ville?: string | null
           whatsapp_number?: string | null
@@ -404,8 +419,11 @@ export type Database = {
           created_at: string
           expires_at: string
           id: string
+          invalidated_at: string | null
+          invalidation_reason: string | null
           invoice_id: string | null
           is_used: boolean
+          is_valid: boolean | null
           parcel_number: string
           used_at: string | null
           user_id: string
@@ -417,8 +435,11 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
           invoice_id?: string | null
           is_used?: boolean
+          is_valid?: boolean | null
           parcel_number: string
           used_at?: string | null
           user_id: string
@@ -430,8 +451,11 @@ export type Database = {
           created_at?: string
           expires_at?: string
           id?: string
+          invalidated_at?: string | null
+          invalidation_reason?: string | null
           invoice_id?: string | null
           is_used?: boolean
+          is_valid?: boolean | null
           parcel_number?: string
           used_at?: string | null
           user_id?: string
@@ -922,6 +946,44 @@ export type Database = {
         }
         Relationships: []
       }
+      fraud_attempts: {
+        Row: {
+          contribution_id: string | null
+          created_at: string
+          description: string | null
+          fraud_type: string
+          id: string
+          severity: string
+          user_id: string
+        }
+        Insert: {
+          contribution_id?: string | null
+          created_at?: string
+          description?: string | null
+          fraud_type: string
+          id?: string
+          severity?: string
+          user_id: string
+        }
+        Update: {
+          contribution_id?: string | null
+          created_at?: string
+          description?: string | null
+          fraud_type?: string
+          id?: string
+          severity?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fraud_attempts_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       market_trends: {
         Row: {
           average_rent_price: number
@@ -1055,10 +1117,14 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          blocked_at: string | null
+          blocked_reason: string | null
           created_at: string
           email: string
+          fraud_strikes: number | null
           full_name: string | null
           id: string
+          is_blocked: boolean | null
           organization: string | null
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string
@@ -1066,10 +1132,14 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          blocked_at?: string | null
+          blocked_reason?: string | null
           created_at?: string
           email: string
+          fraud_strikes?: number | null
           full_name?: string | null
           id?: string
+          is_blocked?: boolean | null
           organization?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -1077,10 +1147,14 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          blocked_at?: string | null
+          blocked_reason?: string | null
           created_at?: string
           email?: string
+          fraud_strikes?: number | null
           full_name?: string | null
           id?: string
+          is_blocked?: boolean | null
           organization?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string
@@ -1556,6 +1630,14 @@ export type Database = {
           original_amount_usd: number
           services_data: Json
           total_amount_usd: number
+        }[]
+      }
+      detect_suspicious_contribution: {
+        Args: { p_parcel_number: string; p_user_id: string }
+        Returns: {
+          fraud_score: number
+          is_suspicious: boolean
+          reasons: string[]
         }[]
       }
       generate_ccc_code: {

@@ -109,6 +109,40 @@ export const useCadastralContribution = () => {
     setLoading(true);
 
     try {
+      // Vérifier si l'utilisateur est bloqué
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('is_blocked, blocked_reason, fraud_strikes')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      if (profile?.is_blocked) {
+        toast({
+          title: "Compte bloqué",
+          description: `Votre compte a été bloqué pour fraude : ${profile.blocked_reason || 'Violations répétées'}`,
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+
+      // Détecter les contributions suspectes
+      const { data: fraudCheck, error: fraudError } = await supabase
+        .rpc('detect_suspicious_contribution', {
+          p_user_id: user.id,
+          p_parcel_number: data.parcelNumber
+        });
+
+      if (fraudError) {
+        console.error('Erreur lors de la vérification anti-fraude:', fraudError);
+      }
+
+      const suspicionData = fraudCheck && fraudCheck.length > 0 ? fraudCheck[0] : null;
+      const isSuspicious = suspicionData?.is_suspicious || false;
+      const fraudScore = suspicionData?.fraud_score || 0;
+      const fraudReasons = suspicionData?.reasons || [];
+
       // Soumettre la contribution
       const { data: contributionData, error: contributionError } = await supabase
         .from('cadastral_contributions')
@@ -143,39 +177,45 @@ export const useCadastralContribution = () => {
           whatsapp_number: data.whatsappNumber,
           owner_document_url: data.ownerDocumentUrl,
           property_title_document_url: data.titleDocumentUrl,
-          status: 'pending'
+          status: 'pending',
+          is_suspicious: isSuspicious,
+          fraud_score: fraudScore,
+          fraud_reason: fraudReasons.length > 0 ? fraudReasons.join('; ') : null
         })
         .select()
         .single();
 
       if (contributionError) throw contributionError;
 
-      // Générer un code CCC
-      const { data: cccCode, error: codeError } = await supabase.rpc('generate_ccc_code');
-      
-      if (codeError) throw codeError;
+      // Enregistrer une tentative de fraude si détectée
+      if (isSuspicious) {
+        await supabase
+          .from('fraud_attempts')
+          .insert({
+            user_id: user.id,
+            contribution_id: contributionData.id,
+            fraud_type: 'suspicious_contribution',
+            description: fraudReasons.join('; '),
+            severity: fraudScore >= 80 ? 'critical' : fraudScore >= 50 ? 'high' : 'medium'
+          });
+      }
 
-      // Créer le code contributeur
-      const { error: insertCodeError } = await supabase
-        .from('cadastral_contributor_codes')
-        .insert({
-          code: cccCode,
-          user_id: user.id,
-          contribution_id: contributionData.id,
-          parcel_number: data.parcelNumber,
-          value_usd: 5.00
+      // Message différent selon si la contribution est suspecte ou non
+      if (isSuspicious) {
+        toast({
+          title: "Contribution enregistrée",
+          description: "Votre contribution a été reçue et sera examinée par notre équipe. Vous recevrez votre code CCC après validation.",
         });
-
-      if (insertCodeError) throw insertCodeError;
-
-      toast({
-        title: "Contribution enregistrée !",
-        description: `Merci pour votre contribution. Votre code CCC : ${cccCode}`,
-      });
+      } else {
+        toast({
+          title: "Contribution enregistrée !",
+          description: "Merci pour votre contribution. Elle sera vérifiée et vous recevrez votre code CCC après validation par notre équipe.",
+        });
+      }
 
       await fetchUserCodes();
 
-      return { success: true, code: cccCode };
+      return { success: true };
     } catch (err) {
       console.error('Erreur lors de la soumission:', err);
       toast({
@@ -217,7 +257,15 @@ export const useCadastralContribution = () => {
       if (error) throw error;
 
       if (data && data.length > 0) {
-        return data[0];
+        const result = data[0];
+        if (!result.is_valid) {
+          toast({
+            title: "Code invalide",
+            description: result.message || "Ce code n'est plus valide",
+            variant: "destructive",
+          });
+        }
+        return result;
       }
 
       return null;
