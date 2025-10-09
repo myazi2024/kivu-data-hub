@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import CadastralResultsDialog from './CadastralResultsDialog';
 import CadastralContributionDialog from './CadastralContributionDialog';
@@ -25,6 +26,7 @@ const CadastralSearchBar = () => {
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   
   const {
     searchQuery,
@@ -300,14 +302,40 @@ const CadastralSearchBar = () => {
               
               {error.includes('Aucune parcelle trouvée') && (
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
-                  <p className="text-sm text-foreground">
-                    Vous avez des informations sur cette propriété ? 
-                    <strong className="block mt-1">Contribuez à enrichir le cadastre.</strong>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    Il est possible qu'il y ait une erreur de saisie ou que cette parcelle ne soit pas encore enregistrée dans notre base de données.
+                    <strong className="block mt-2">Vérifiez les informations disponibles et aidez-nous à compléter notre cadastre.</strong>
                   </p>
+                  
+                  <div className="flex items-start gap-3 py-2">
+                    <Checkbox 
+                      id="terms-acceptance"
+                      checked={termsAccepted}
+                      onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                      className="mt-1"
+                    />
+                    <label 
+                      htmlFor="terms-acceptance" 
+                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                    >
+                      J'accepte les{' '}
+                      <a 
+                        href="/legal" 
+                        target="_blank"
+                        className="text-primary hover:underline font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        termes et conditions d'utilisation
+                      </a>
+                      {' '}et je certifie que les informations que je fournirai sont exactes.
+                    </label>
+                  </div>
+                  
                   <Button 
                     onClick={() => setShowContributionDialog(true)}
                     className="w-full group"
                     variant="default"
+                    disabled={!termsAccepted}
                   >
                     <Plus className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
                     Ajouter une information
