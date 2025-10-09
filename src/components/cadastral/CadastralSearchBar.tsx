@@ -301,10 +301,10 @@ const CadastralSearchBar = () => {
               </div>
               
               {error.includes('Aucune parcelle trouvée') && (
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3">
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 animate-fade-in shadow-sm hover:shadow-md transition-all duration-300">
                   <p className="text-sm text-foreground leading-relaxed">
-                    Il est possible qu'il y ait une erreur de saisie ou que cette parcelle ne soit pas encore enregistrée dans notre base de données.
-                    <strong className="block mt-2">Vérifiez les informations disponibles et aidez-nous à compléter notre cadastre.</strong>
+                    Il est possible qu'il y ait une erreur de saisie ou que cette parcelle ne soit pas encore enregistrée dans notre base de données ou n'a pas encore été attribué un numéro parcellaire.
+                    <strong className="block mt-2">Vérifiez les informations à votre disposition pour s'en assurer.</strong>
                   </p>
                   
                   <div className="flex items-start gap-3 py-2">
@@ -333,11 +333,11 @@ const CadastralSearchBar = () => {
                   
                   <Button 
                     onClick={() => setShowContributionDialog(true)}
-                    className="w-full group"
+                    className="w-full group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:hover:scale-100 disabled:hover:shadow-none"
                     variant="default"
                     disabled={!termsAccepted}
                   >
-                    <Plus className="mr-2 h-4 w-4 transition-transform group-hover:scale-110" />
+                    <Plus className="mr-2 h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-90" />
                     Ajouter une information
                   </Button>
                 </div>
