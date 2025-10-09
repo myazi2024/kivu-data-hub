@@ -1465,24 +1465,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
             )}
             
-            {/* Circonscription foncière - Toujours visible après sélection province */}
-            {sectionType && (
-              <div className="space-y-3 pt-4 border-t">
-                <div>
-                  <Label htmlFor="circonscription">Circonscription foncière (optionnel)</Label>
-                  <p className="text-xs text-muted-foreground mb-2">
-                    Indiquez le bureau de la circonscription foncière
-                  </p>
-                </div>
-                <Input
-                  id="circonscription"
-                  placeholder="ex: Circonscription Foncière de Goma"
-                  value={formData.circonscriptionFonciere || ''}
-                  onChange={(e) => handleInputChange('circonscriptionFonciere', e.target.value)}
-                />
-              </div>
-            )}
-            
             {/* Coordonnées GPS des bornes */}
             {sectionType && (
               <div className="space-y-4 pt-4 border-t">
