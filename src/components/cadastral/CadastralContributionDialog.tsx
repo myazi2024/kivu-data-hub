@@ -851,15 +851,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             {formData.propertyTitleType && (
               <div className="space-y-2 animate-fade-in">
-                <Label htmlFor="titleReference">Numéro de référence du titre</Label>
+                <Label htmlFor="titleReference">
+                  {formData.propertyTitleType === "Certificat d'enregistrement" && "Numéro du certificat d'enregistrement"}
+                  {formData.propertyTitleType === "Titre foncier" && "Numéro du titre foncier"}
+                  {formData.propertyTitleType === "Concession perpétuelle" && "Numéro de la concession perpétuelle"}
+                </Label>
                 <Input
                   id="titleReference"
-                  placeholder="Ex: TF-123456 ou CE-987654"
+                  placeholder={
+                    formData.propertyTitleType === "Certificat d'enregistrement" ? "Ex: CE-123456 ou CE/2024/001" :
+                    formData.propertyTitleType === "Titre foncier" ? "Ex: TF-123456 ou TF/NK/2024/001" :
+                    "Ex: CP-123456 ou CP/2024/001"
+                  }
                   value={formData.titleReferenceNumber || ''}
                   onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Numéro de référence figurant sur le document de propriété
+                  {formData.propertyTitleType === "Certificat d'enregistrement" && "Numéro figurant sur votre certificat d'enregistrement"}
+                  {formData.propertyTitleType === "Titre foncier" && "Numéro figurant sur votre titre foncier délivré par les services du cadastre"}
+                  {formData.propertyTitleType === "Concession perpétuelle" && "Numéro de référence de votre concession perpétuelle"}
                 </p>
               </div>
             )}
