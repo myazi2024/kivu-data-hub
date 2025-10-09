@@ -29,39 +29,42 @@ const ContributorCodesPanel: React.FC = () => {
   const expiredCodes = codes.filter(c => !c.is_used && new Date(c.expires_at) <= new Date());
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5 text-primary" />
-            Mes Codes Contributeur Cadastral (CCC)
-          </CardTitle>
-          <CardDescription>
-            Gagnez des codes CCC en contribuant aux informations cadastrales. 
-            La valeur de chaque code (0.50 à 5 USD) dépend de la complétude de votre contribution (29 champs dont pièces jointes).
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {activeCodes.length === 0 && usedCodes.length === 0 && expiredCodes.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Gift className="h-12 w-12 mx-auto mb-3 opacity-50" />
-              <p>Vous n'avez pas encore de codes CCC</p>
-              <p className="text-sm mt-2">
-                Contribuez aux informations cadastrales pour en gagner
-              </p>
-            </div>
-          ) : (
-            <>
-              {activeCodes.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm text-primary">Codes actifs ({activeCodes.length})</h3>
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Gift className="h-5 w-5 text-primary" />
+          Mes Codes Contributeur Cadastral (CCC)
+        </CardTitle>
+        <CardDescription>
+          Gagnez des codes CCC en contribuant aux informations cadastrales. 
+          La valeur de chaque code (0.50 à 5 USD) dépend de la complétude de votre contribution (29 champs dont pièces jointes).
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {activeCodes.length === 0 && usedCodes.length === 0 && expiredCodes.length === 0 ? (
+          <div className="text-center py-12">
+            <Gift className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
+            <h3 className="text-lg font-semibold mb-2">Aucun code CCC disponible</h3>
+            <p className="text-muted-foreground text-sm">
+              Contribuez aux informations cadastrales pour gagner des codes CCC
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {activeCodes.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2">
+                  <span className="text-primary">Codes actifs</span>
+                  <Badge variant="secondary" className="rounded-full">{activeCodes.length}</Badge>
+                </h3>
+                <div className="grid gap-3 md:grid-cols-2">
                   {activeCodes.map((code) => (
-                    <Card key={code.id} className="border-primary/20 bg-primary/5">
+                    <Card key={code.id} className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent hover:border-primary/40 transition-all">
                       <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                          <div className="space-y-1">
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
-                              <p className="font-mono font-bold text-lg">{code.code}</p>
+                              <span className="font-mono font-bold text-lg">{code.code}</span>
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -71,77 +74,87 @@ const ContributorCodesPanel: React.FC = () => {
                                 <Copy className="h-3 w-3" />
                               </Button>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              Parcelle : {code.parcel_number}
-                            </p>
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Badge className="bg-primary text-primary-foreground">
+                              {code.value_usd} USD
+                            </Badge>
+                          </div>
+                          
+                          <div className="space-y-1.5 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground">
+                              <span className="font-medium">Parcelle:</span>
+                              <span className="font-mono">{code.parcel_number}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-muted-foreground">
                               <Clock className="h-3 w-3" />
-                              Expire le {format(new Date(code.expires_at), 'dd MMMM yyyy', { locale: fr })}
+                              <span>Expire le {format(new Date(code.expires_at), 'dd MMMM yyyy', { locale: fr })}</span>
                             </div>
                           </div>
-                          <Badge variant="default" className="bg-primary">
-                            {code.value_usd} USD
-                          </Badge>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {usedCodes.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm text-muted-foreground">Codes utilisés ({usedCodes.length})</h3>
+            {usedCodes.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground">
+                  <span>Codes utilisés</span>
+                  <Badge variant="outline" className="rounded-full">{usedCodes.length}</Badge>
+                </h3>
+                <div className="space-y-2">
                   {usedCodes.map((code) => (
-                    <Card key={code.id} className="opacity-60">
-                      <CardContent className="p-4">
+                    <Card key={code.id} className="border-muted bg-muted/30">
+                      <CardContent className="p-3">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-3">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 flex-shrink-0" />
+                            <div className="space-y-0.5">
                               <p className="font-mono font-bold text-sm line-through">{code.code}</p>
-                              <CheckCircle2 className="h-4 w-4 text-primary" />
+                              <p className="text-xs text-muted-foreground">
+                                Utilisé le {code.used_at ? format(new Date(code.used_at), 'dd/MM/yyyy', { locale: fr }) : '-'}
+                              </p>
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              Utilisé le {code.used_at ? format(new Date(code.used_at), 'dd/MM/yyyy', { locale: fr }) : '-'}
-                            </p>
                           </div>
-                          <Badge variant="outline">
-                            Utilisé
-                          </Badge>
+                          <span className="text-xs text-muted-foreground">{code.value_usd} USD</span>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {expiredCodes.length > 0 && (
-                <div className="space-y-3">
-                  <h3 className="font-semibold text-sm text-muted-foreground">Codes expirés ({expiredCodes.length})</h3>
+            {expiredCodes.length > 0 && (
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm flex items-center gap-2 text-muted-foreground">
+                  <span>Codes expirés</span>
+                  <Badge variant="outline" className="rounded-full">{expiredCodes.length}</Badge>
+                </h3>
+                <div className="space-y-2">
                   {expiredCodes.map((code) => (
-                    <Card key={code.id} className="opacity-60">
-                      <CardContent className="p-4">
+                    <Card key={code.id} className="border-destructive/30 bg-destructive/5">
+                      <CardContent className="p-3">
                         <div className="flex items-center justify-between">
-                          <div className="space-y-1">
+                          <div className="space-y-0.5">
                             <p className="font-mono font-bold text-sm line-through">{code.code}</p>
                             <p className="text-xs text-muted-foreground">
                               Expiré le {format(new Date(code.expires_at), 'dd/MM/yyyy', { locale: fr })}
                             </p>
                           </div>
-                          <Badge variant="destructive" className="opacity-70">
-                            Expiré
-                          </Badge>
+                          <Badge variant="destructive" className="text-xs">Expiré</Badge>
                         </div>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
