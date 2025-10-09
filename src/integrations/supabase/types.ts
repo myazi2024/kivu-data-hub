@@ -688,9 +688,11 @@ export type Database = {
           quartier: string | null
           surface_calculee_bornes: number | null
           territoire: string | null
+          title_reference_number: string | null
           updated_at: string
           village: string | null
           ville: string | null
+          whatsapp_number: string | null
         }
         Insert: {
           area_hectares?: number | null
@@ -722,9 +724,11 @@ export type Database = {
           quartier?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
+          title_reference_number?: string | null
           updated_at?: string
           village?: string | null
           ville?: string | null
+          whatsapp_number?: string | null
         }
         Update: {
           area_hectares?: number | null
@@ -756,9 +760,11 @@ export type Database = {
           quartier?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
+          title_reference_number?: string | null
           updated_at?: string
           village?: string | null
           ville?: string | null
+          whatsapp_number?: string | null
         }
         Relationships: []
       }
