@@ -1,11 +1,13 @@
 import React from 'react';
 import CadastralDashboardTabs from '@/components/cadastral/CadastralDashboardTabs';
 import UserProfileHeader from '@/components/user/UserProfileHeader';
+import { UserPreferences } from '@/components/user/UserPreferences';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 const BillingDashboard: React.FC = () => {
   const { user } = useAuth();
@@ -35,7 +37,20 @@ const BillingDashboard: React.FC = () => {
     <div className="container mx-auto px-4 py-8 space-y-6">
       <UserProfileHeader />
       
-      <CadastralDashboardTabs />
+      <Tabs defaultValue="dashboard" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
+          <TabsTrigger value="preferences">Préférences</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="dashboard">
+          <CadastralDashboardTabs />
+        </TabsContent>
+
+        <TabsContent value="preferences">
+          <UserPreferences />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

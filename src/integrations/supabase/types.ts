@@ -86,6 +86,7 @@ export type Database = {
           content: string
           cover_image_url: string | null
           created_at: string
+          deleted_at: string | null
           id: string
           is_published: boolean
           published_at: string | null
@@ -103,6 +104,7 @@ export type Database = {
           content: string
           cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_published?: boolean
           published_at?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           content?: string
           cover_image_url?: string | null
           created_at?: string
+          deleted_at?: string | null
           id?: string
           is_published?: boolean
           published_at?: string | null
@@ -696,6 +699,7 @@ export type Database = {
           current_owner_name: string
           current_owner_since: string
           declared_usage: string | null
+          deleted_at: string | null
           gps_coordinates: Json | null
           groupement: string | null
           id: string
@@ -732,6 +736,7 @@ export type Database = {
           current_owner_name: string
           current_owner_since?: string
           declared_usage?: string | null
+          deleted_at?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
@@ -768,6 +773,7 @@ export type Database = {
           current_owner_name?: string
           current_owner_since?: string
           declared_usage?: string | null
+          deleted_at?: string | null
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
@@ -1025,6 +1031,42 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          action_url: string | null
+          created_at: string | null
+          id: string
+          is_read: boolean | null
+          message: string
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          action_url?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message: string
+          read_at?: string | null
+          title: string
+          type?: string
+          user_id: string
+        }
+        Update: {
+          action_url?: string | null
+          created_at?: string | null
+          id?: string
+          is_read?: boolean | null
+          message?: string
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           amount: number
@@ -1120,6 +1162,7 @@ export type Database = {
           blocked_at: string | null
           blocked_reason: string | null
           created_at: string
+          deleted_at: string | null
           email: string
           fraud_strikes: number | null
           full_name: string | null
@@ -1135,6 +1178,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_reason?: string | null
           created_at?: string
+          deleted_at?: string | null
           email: string
           fraud_strikes?: number | null
           full_name?: string | null
@@ -1150,6 +1194,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_reason?: string | null
           created_at?: string
+          deleted_at?: string | null
           email?: string
           fraud_strikes?: number | null
           full_name?: string | null
@@ -1292,6 +1337,7 @@ export type Database = {
           cover_image_url: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
           description: string | null
           download_count: number
           featured: boolean
@@ -1309,6 +1355,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           download_count?: number
           featured?: boolean
@@ -1326,6 +1373,7 @@ export type Database = {
           cover_image_url?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           download_count?: number
           featured?: boolean
@@ -1535,6 +1583,42 @@ export type Database = {
           },
         ]
       }
+      user_preferences: {
+        Row: {
+          created_at: string | null
+          data_sharing_consent: boolean | null
+          email_notifications: boolean | null
+          id: string
+          language: string | null
+          marketing_emails: boolean | null
+          timezone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data_sharing_consent?: boolean | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          marketing_emails?: boolean | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data_sharing_consent?: boolean | null
+          email_notifications?: boolean | null
+          id?: string
+          language?: string | null
+          marketing_emails?: boolean | null
+          timezone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -1555,6 +1639,42 @@ export type Database = {
           created_by?: string | null
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_sessions: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string
+          ip_address: unknown | null
+          is_active: boolean | null
+          last_activity: string | null
+          session_token: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          last_activity?: string | null
+          session_token: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean | null
+          last_activity?: string | null
+          session_token?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
@@ -1643,6 +1763,10 @@ export type Database = {
         Args: { coordinates: Json }
         Returns: number
       }
+      cleanup_expired_data: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       create_cadastral_invoice_secure: {
         Args: {
           discount_code_param?: string
@@ -1667,6 +1791,10 @@ export type Database = {
           is_suspicious: boolean
           reasons: string[]
         }[]
+      }
+      export_user_data: {
+        Args: { target_user_id: string }
+        Returns: Json
       }
       generate_ccc_code: {
         Args: Record<PropertyKey, never>
@@ -1775,6 +1903,10 @@ export type Database = {
           is_valid: boolean
           reseller_id: string
         }[]
+      }
+      validate_file_upload: {
+        Args: { allowed_types: string[]; file_name: string; file_size: number }
+        Returns: Json
       }
     }
     Enums: {
