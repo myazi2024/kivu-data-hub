@@ -5,9 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Building2, ArrowLeft } from "lucide-react";
+import { Loader2, Building2, ArrowLeft, Smartphone } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
+import { FaFacebook, FaApple } from "react-icons/fa";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -15,6 +18,8 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [organization, setOrganization] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [showPhoneAuth, setShowPhoneAuth] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -151,6 +156,61 @@ const Auth = () => {
     }
   };
 
+  const handleOAuthSignIn = async (provider: 'google' | 'facebook' | 'apple') => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        }
+      });
+
+      if (error) throw error;
+    } catch (error: any) {
+      toast({
+        title: "Erreur de connexion",
+        description: error.message || "Impossible de se connecter avec ce fournisseur",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+    }
+  };
+
+  const handlePhoneSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phoneNumber) {
+      toast({
+        title: "Erreur",
+        description: "Veuillez entrer un numéro de téléphone",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        phone: phoneNumber,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Code envoyé",
+        description: "Veuillez vérifier votre téléphone pour le code de vérification",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible d'envoyer le code",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 to-primary/10 flex items-center justify-center p-4">
       {/* Back Button */}
@@ -187,44 +247,191 @@ const Auth = () => {
                 <TabsTrigger value="signup">Inscription</TabsTrigger>
               </TabsList>
               
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      type="email"
-                      placeholder="votre@email.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Mot de passe</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="Votre mot de passe"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  
-                  <Button 
-                    type="submit" 
-                    className="w-full" 
-                    disabled={isLoading}
-                  >
-                    {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Se connecter
-                  </Button>
-                </form>
+              <TabsContent value="signin" className="space-y-4">
+                {!showPhoneAuth ? (
+                  <>
+                    {/* Social Login Buttons */}
+                    <div className="space-y-3">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleOAuthSignIn('google')}
+                        disabled={isLoading}
+                      >
+                        <FcGoogle className="mr-2 h-5 w-5" />
+                        Continuer avec Google
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleOAuthSignIn('facebook')}
+                        disabled={isLoading}
+                      >
+                        <FaFacebook className="mr-2 h-5 w-5 text-[#1877F2]" />
+                        Continuer avec Facebook
+                      </Button>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => handleOAuthSignIn('apple')}
+                        disabled={isLoading}
+                      >
+                        <FaApple className="mr-2 h-5 w-5" />
+                        Continuer avec Apple
+                      </Button>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowPhoneAuth(true)}
+                        disabled={isLoading}
+                      >
+                        <Smartphone className="mr-2 h-4 w-4" />
+                        Continuer avec un téléphone
+                      </Button>
+                    </div>
+
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <Separator className="w-full" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          Ou par email
+                        </span>
+                      </div>
+                    </div>
+
+                    <form onSubmit={handleSignIn} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-email">Email</Label>
+                        <Input
+                          id="signin-email"
+                          type="email"
+                          placeholder="votre@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="signin-password">Mot de passe</Label>
+                        <Input
+                          id="signin-password"
+                          type="password"
+                          placeholder="Votre mot de passe"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                        />
+                      </div>
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={isLoading}
+                      >
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Se connecter
+                      </Button>
+                    </form>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      className="w-full mb-4"
+                      onClick={() => setShowPhoneAuth(false)}
+                    >
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Retour aux autres options
+                    </Button>
+                    
+                    <form onSubmit={handlePhoneSignIn} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="phone-number">Numéro de téléphone</Label>
+                        <Input
+                          id="phone-number"
+                          type="tel"
+                          placeholder="+243 XX XXX XXXX"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          required
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Format international requis (ex: +243...)
+                        </p>
+                      </div>
+                      
+                      <Button 
+                        type="submit" 
+                        className="w-full" 
+                        disabled={isLoading}
+                      >
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Envoyer le code
+                      </Button>
+                    </form>
+                  </>
+                )}
               </TabsContent>
               
-              <TabsContent value="signup">
+              <TabsContent value="signup" className="space-y-4">
+                {/* Social Signup Buttons */}
+                <div className="space-y-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleOAuthSignIn('google')}
+                    disabled={isLoading}
+                  >
+                    <FcGoogle className="mr-2 h-5 w-5" />
+                    S'inscrire avec Google
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleOAuthSignIn('facebook')}
+                    disabled={isLoading}
+                  >
+                    <FaFacebook className="mr-2 h-5 w-5 text-[#1877F2]" />
+                    S'inscrire avec Facebook
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleOAuthSignIn('apple')}
+                    disabled={isLoading}
+                  >
+                    <FaApple className="mr-2 h-5 w-5" />
+                    S'inscrire avec Apple
+                  </Button>
+                </div>
+
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <Separator className="w-full" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      Ou par email
+                    </span>
+                  </div>
+                </div>
+
                 <form onSubmit={handleSignUp} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="signup-fullname">Nom complet *</Label>
