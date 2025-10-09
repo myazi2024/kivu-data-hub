@@ -304,7 +304,7 @@ const CadastralSearchBar = () => {
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 animate-fade-in shadow-sm hover:shadow-md transition-all duration-300">
                   <p className="text-sm text-foreground leading-relaxed">
                     Il est possible qu'il y ait une erreur de saisie ou que cette parcelle ne soit pas encore enregistrée dans notre base de données ou n'a pas encore été attribué un numéro parcellaire.
-                    <strong className="block mt-2">Vérifiez les informations à votre disposition pour s'en assurer.</strong>
+                    <strong className="block mt-2">Vérifiez manuellement dans notre base des données les informations à votre disposition pour s'en assurer.</strong>
                   </p>
                   
                   <div className="flex items-start gap-3 py-2">
@@ -320,7 +320,7 @@ const CadastralSearchBar = () => {
                     >
                       J'accepte les{' '}
                       <a 
-                        href="/legal" 
+                        href="/about-ccc" 
                         target="_blank"
                         className="text-primary hover:underline font-medium"
                         onClick={(e) => e.stopPropagation()}
