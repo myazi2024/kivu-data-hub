@@ -111,9 +111,18 @@ const AboutCCC = () => {
 
               <p className="text-muted-foreground leading-relaxed">
                 Chaque fois que vous contribuez avec des informations vérifiées sur une parcelle, 
-                notre système génère automatiquement un code CCC que vous pouvez ensuite utiliser comme une 
-                <span className="text-foreground font-medium"> réduction de 5 USD</span> sur vos prochains achats de services cadastraux.
+                notre système génère automatiquement un code CCC dont la <span className="text-foreground font-medium">valeur varie 
+                de 0,50 USD à 5 USD</span> selon la quantité et la qualité des informations que vous fournissez.
               </p>
+              
+              <Alert className="mt-4">
+                <Target className="h-4 w-4" />
+                <AlertTitle>Valeur calculée automatiquement</AlertTitle>
+                <AlertDescription>
+                  Plus vous remplissez de champs dans le formulaire de contribution (informations générales, 
+                  localisation, historiques, documents), plus la valeur de votre code CCC sera élevée !
+                </AlertDescription>
+              </Alert>
             </div>
           </div>
 
@@ -122,11 +131,11 @@ const AboutCCC = () => {
             <div className="grid md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <DollarSign className="h-10 w-10 text-primary mb-2" />
-                <h4 className="font-semibold text-foreground">Valeur fixe de 5 USD</h4>
+                <h4 className="font-semibold text-foreground">Valeur variable selon votre contribution</h4>
                 <p className="text-sm text-muted-foreground leading-relaxed">
-                  Chaque code que vous gagnez vous donne droit à une <strong>réduction de 5 dollars américains</strong>. 
-                  Cette réduction s'applique directement sur le montant total de votre facture lors de l'achat de services 
-                  cadastraux (extraits, recherches, consultations, etc.).
+                  La valeur de votre code CCC varie <strong>entre 0,50 USD et 5 USD</strong> selon le nombre d'informations 
+                  que vous renseignez. Une contribution complète (tous les champs remplis + documents joints) vous donne 
+                  un code de <strong>5 USD</strong>, tandis qu'une contribution partielle vous donne une valeur proportionnelle.
                 </p>
               </div>
 
@@ -203,21 +212,40 @@ const AboutCCC = () => {
               <div className="flex gap-4 p-4 bg-accent/20 rounded-lg border border-accent/50">
                 <Badge className="shrink-0 h-8 w-8 rounded-full p-0 flex items-center justify-center text-base">3</Badge>
                 <div className="space-y-2">
-                  <p className="font-semibold text-lg text-foreground">Remplissez le formulaire de contribution</p>
+                   <p className="font-semibold text-lg text-foreground">Remplissez le formulaire de contribution</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Cliquez sur "Ajouter une information" et remplissez le formulaire avec les données que vous possédez. 
                     Ne vous inquiétez pas : <strong>vous n'êtes pas obligé de tout remplir</strong>. Chaque information, 
-                    même partielle, est précieuse.
+                    même partielle, est précieuse et contribue à augmenter la valeur de votre code CCC.
                   </p>
                   <div className="bg-background/80 p-3 rounded border border-border mt-2">
-                    <p className="text-xs font-semibold text-foreground mb-1">📋 Exemples d'informations utiles :</p>
+                    <p className="text-xs font-semibold text-foreground mb-1">💰 Calcul de la valeur de votre code CCC :</p>
+                    <p className="text-xs text-muted-foreground mb-2">
+                      Notre système analyse <strong>29 champs d'information</strong> pour calculer la valeur de votre code :
+                    </p>
+                    <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
+                      <li><strong>Informations générales</strong> (9 champs) : type de titre, propriétaire, superficie, construction, usage...</li>
+                      <li><strong>Localisation</strong> (11 champs) : province, ville, commune, quartier, coordonnées GPS...</li>
+                      <li><strong>Permis de construire</strong> (1 champ) : détails des autorisations de construction</li>
+                      <li><strong>Historiques</strong> (3 champs) : propriétaires précédents, bornages, taxes</li>
+                      <li><strong>Obligations</strong> (1 champ) : hypothèques éventuelles</li>
+                      <li><strong>Pièces jointes</strong> (2 champs) : document du propriétaire et document du titre de propriété</li>
+                      <li><strong>Contact</strong> (1 champ) : numéro WhatsApp pour vérification</li>
+                    </ul>
+                    <p className="text-xs text-muted-foreground mt-2 font-semibold">
+                      → Contribution complète = code de 5 USD | Contribution partielle = code proportionnel (minimum 0,50 USD)
+                    </p>
+                  </div>
+                  <div className="bg-background/80 p-3 rounded border border-border mt-2">
+                    <p className="text-xs font-semibold text-foreground mb-1">📋 Définitions des termes techniques :</p>
                     <ul className="text-xs text-muted-foreground space-y-1 ml-4 mt-1 list-disc">
-                      <li><strong>Titre de propriété :</strong> Le document officiel qui prouve la propriété d'un terrain (certificat d'enregistrement, concession, etc.)</li>
-                      <li><strong>Superficie :</strong> La surface du terrain en mètres carrés (m²) ou en hectares (ha). 1 hectare = 10 000 m²</li>
-                      <li><strong>Coordonnées GPS :</strong> La position exacte du terrain sur une carte (latitude et longitude)</li>
-                      <li><strong>Circonscription foncière :</strong> Le bureau administratif qui gère les terres de cette zone (ex : Circonscription Foncière de Goma)</li>
-                      <li><strong>Hypothèque :</strong> Une garantie sur le terrain en cas de prêt bancaire. Si le terrain a une hypothèque, la banque a un droit dessus</li>
-                      <li><strong>Permis de bâtir :</strong> L'autorisation officielle de construire sur le terrain, délivrée par la mairie</li>
+                      <li><strong>Titre de propriété :</strong> Document officiel prouvant la propriété d'un terrain (certificat d'enregistrement, concession...)</li>
+                      <li><strong>Superficie :</strong> Surface du terrain en mètres carrés (m²) ou hectares (ha). 1 hectare = 10 000 m²</li>
+                      <li><strong>Coordonnées GPS :</strong> Position exacte du terrain sur une carte (latitude et longitude)</li>
+                      <li><strong>Circonscription foncière :</strong> Bureau administratif gérant les terres de la zone (ex : Circonscription Foncière de Goma)</li>
+                      <li><strong>Hypothèque :</strong> Garantie sur le terrain en cas de prêt bancaire</li>
+                      <li><strong>Permis de bâtir :</strong> Autorisation officielle de construire, délivrée par la mairie</li>
+                      <li><strong>Bornage :</strong> Délimitation officielle des limites du terrain par un géomètre</li>
                     </ul>
                   </div>
                 </div>
@@ -248,8 +276,9 @@ const AboutCCC = () => {
                   <p className="font-semibold text-lg text-foreground">Recevez votre code CCC après approbation</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Après validation de votre contribution, un <strong>code CCC unique</strong> est généré automatiquement 
-                    et ajouté à votre compte. Vous le verrez apparaître dans l'onglet <strong>"Codes CCC"</strong> 
-                    de votre tableau de bord. Le code sera valable pendant 90 jours à partir de sa génération.
+                    avec une <strong>valeur calculée selon les informations fournies</strong> (de 0,50 USD à 5 USD). 
+                    Vous le verrez apparaître dans l'onglet <strong>"Codes CCC"</strong> de votre tableau de bord avec 
+                    sa valeur exacte. Le code sera valable pendant 90 jours à partir de sa génération.
                   </p>
                 </div>
               </div>
@@ -262,7 +291,8 @@ const AboutCCC = () => {
                     Lors de votre prochaine commande de services cadastraux (consultation, extrait, etc.), 
                     vous arriverez à une page de paiement. À cette étape, sélectionnez l'option 
                     <strong> "Code Contributeur Cadastral"</strong> et saisissez votre code. 
-                    La réduction de 5 USD sera appliquée automatiquement sur le montant total de votre facture.
+                    La réduction (jusqu'à 5 USD selon la valeur de votre code) sera appliquée automatiquement 
+                    sur le montant total de votre facture.
                   </p>
                   <div className="bg-background/80 p-3 rounded border border-border mt-2">
                     <p className="text-xs font-semibold text-foreground mb-1">✅ Important :</p>
@@ -448,8 +478,9 @@ const AboutCCC = () => {
                   </p>
                   <p>
                     <strong className="text-foreground">Mais vous pouvez accumuler plusieurs codes !</strong> Si vous avez 
-                    contribué sur 5 parcelles différentes, vous aurez 5 codes CCC dans votre compte. Vous pourrez les utiliser 
-                    sur 5 factures différentes (une par facture), ce qui vous fera économiser 25 USD au total (5 codes × 5 USD).
+                    contribué sur 5 parcelles différentes, vous aurez 5 codes CCC dans votre compte (chacun avec sa propre valeur 
+                    selon ce que vous avez renseigné). Vous pourrez les utiliser sur 5 factures différentes (un par facture), 
+                    ce qui vous fera économiser jusqu'à 25 USD au total si tous vos codes valent 5 USD.
                   </p>
                 </AccordionContent>
               </AccordionItem>
@@ -592,8 +623,8 @@ const AboutCCC = () => {
                     </li>
                   </ul>
                   <p className="text-xs bg-primary/10 p-2 rounded mt-2">
-                    📊 <strong>Statistiques d'économies :</strong> Vous pourrez facilement calculer combien vous avez économisé 
-                    en comptant vos codes utilisés (chaque code = 5 USD d'économie).
+                    📊 <strong>Statistiques d'économies :</strong> Vous pourrez facilement voir la valeur totale de vos codes 
+                    actifs et calculer combien vous avez économisé avec vos codes utilisés (chaque code varie entre 0,50 USD et 5 USD).
                   </p>
                 </AccordionContent>
               </AccordionItem>
@@ -621,16 +652,60 @@ const AboutCCC = () => {
 
               <AccordionItem value="item-7">
                 <AccordionTrigger className="text-left">
+                  Comment est calculée la valeur de mon code CCC ?
+                </AccordionTrigger>
+                <AccordionContent className="text-muted-foreground leading-relaxed space-y-2">
+                  <p>
+                    <strong className="text-foreground">Calcul automatique et transparent :</strong> Notre système analyse 
+                    automatiquement votre contribution pour calculer la valeur de votre code CCC. Plus vous remplissez de champs 
+                    d'information, plus la valeur de votre code sera élevée.
+                  </p>
+                  <p>
+                    <strong className="text-foreground">Barème de calcul :</strong>
+                  </p>
+                  <ul className="space-y-1 ml-4 text-sm">
+                    <li className="flex gap-2">
+                      <span className="text-primary">•</span>
+                      <span><strong>29 champs au total</strong> sont évalués par le système</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-primary">•</span>
+                      <span><strong>Contribution complète</strong> (tous les champs remplis + documents joints) = code de <strong>5 USD</strong></span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-primary">•</span>
+                      <span><strong>Contribution partielle</strong> = code proportionnel au taux de renseignement</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="text-primary">•</span>
+                      <span><strong>Valeur minimum</strong> garantie = <strong>0,50 USD</strong> (même avec peu d'informations)</span>
+                    </li>
+                  </ul>
+                  <p>
+                    <strong className="text-foreground">Les pièces jointes comptent !</strong> Joindre des documents 
+                    (titre de propriété, document du propriétaire) augmente significativement la valeur de votre code car 
+                    ces documents permettent de vérifier et authentifier les informations cadastrales.
+                  </p>
+                  <p className="text-xs bg-accent/30 p-2 rounded mt-2">
+                    💡 <strong>Conseil :</strong> Pour maximiser la valeur de votre code, remplissez un maximum de champs 
+                    et joignez des documents si vous en avez. Chaque information supplémentaire augmente la valeur de votre code !
+                  </p>
+                </AccordionContent>
+              </AccordionItem>
+
+              <AccordionItem value="item-8">
+                <AccordionTrigger className="text-left">
                   Que faire si je n'ai pas de titre de propriété ou de documents officiels ?
                 </AccordionTrigger>
                 <AccordionContent className="text-muted-foreground leading-relaxed space-y-2">
                   <p>
                     <strong className="text-foreground">Pas de panique, vous pouvez quand même contribuer !</strong> 
-                    Les documents officiels sont utiles, mais ils ne sont pas obligatoires. Vous pouvez apporter d'autres 
-                    types d'informations tout aussi précieuses.
+                    Les documents officiels augmentent la valeur de votre code, mais ils ne sont pas obligatoires. 
+                    Vous obtiendrez un code CCC même sans documents, avec une valeur calculée selon les informations 
+                    que vous renseignez.
                   </p>
                   <p>
-                    <strong className="text-foreground">Exemples d'informations sans documents officiels :</strong>
+                    <strong className="text-foreground">Exemples d'informations précieuses sans documents officiels :</strong>
                   </p>
                   <ul className="space-y-1 ml-4 text-sm">
                     <li className="flex gap-2">
@@ -639,7 +714,7 @@ const AboutCCC = () => {
                     </li>
                     <li className="flex gap-2">
                       <span className="text-primary">•</span>
-                      <span>Description de l'usage actuel du terrain (habitation, commerce, terrain vide, agriculture, etc.)</span>
+                      <span>Description de l'usage actuel du terrain (habitation, commerce, terrain vide, agriculture...)</span>
                     </li>
                     <li className="flex gap-2">
                       <span className="text-primary">•</span>
@@ -652,7 +727,7 @@ const AboutCCC = () => {
                   </ul>
                   <p className="text-xs bg-accent/30 p-2 rounded mt-2">
                     ✅ <strong>L'important :</strong> Partagez ce que vous savez avec honnêteté. Même des informations 
-                    partielles aident à compléter notre base de données !
+                    partielles vous permettent d'obtenir un code CCC et contribuent à enrichir notre base de données !
                   </p>
                 </AccordionContent>
               </AccordionItem>
