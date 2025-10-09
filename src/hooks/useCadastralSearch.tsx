@@ -8,6 +8,7 @@ export interface CadastralParcel {
   parcel_type: 'SU' | 'SR';
   location: string;
   property_title_type: string;
+  title_reference_number: string | null;
   area_sqm: number;
   area_hectares: number;
   gps_coordinates: Array<{ lat: number; lng: number; borne: string }>;
@@ -16,6 +17,7 @@ export interface CadastralParcel {
   current_owner_name: string;
   current_owner_legal_status: string;
   current_owner_since: string;
+  whatsapp_number: string | null;
   created_at: string;
   updated_at: string;
   // Nouveaux champs de localisation

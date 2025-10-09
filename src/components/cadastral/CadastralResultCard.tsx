@@ -462,6 +462,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         <span className="text-[10px] text-muted-foreground">Type:</span>
                         <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded text-right">{parcel.property_title_type}</span>
                       </div>
+                      {parcel.title_reference_number && (
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-[10px] text-muted-foreground flex-shrink-0">Référence:</span>
+                          <span className="text-xs font-medium font-mono text-right break-words leading-tight">{parcel.title_reference_number}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center">
                         <span className="text-[10px] text-muted-foreground">Surface:</span>
                         <span className="text-xs font-medium text-primary text-right">{formatArea(parcel.area_sqm)}</span>
@@ -507,6 +513,17 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         <span className="text-[10px] text-muted-foreground">Depuis:</span>
                         <span className="text-xs font-medium text-primary">{formatDate(parcel.current_owner_since)}</span>
                       </div>
+                      {parcel.whatsapp_number && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-muted-foreground">WhatsApp:</span>
+                          <Button variant="outline" size="sm" className="h-5 text-xs px-2" asChild>
+                            <a href={`https://wa.me/${parcel.whatsapp_number.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-2 w-2 mr-1" />
+                              {parcel.whatsapp_number}
+                            </a>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Pièce jointe: Document du propriétaire actuel */}
