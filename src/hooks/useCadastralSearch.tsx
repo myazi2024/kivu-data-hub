@@ -123,9 +123,9 @@ export const useCadastralSearch = () => {
   const validateParcelNumber = (query: string): boolean => {
     // Format complet: SU/[Section]/[Parcelle]/[Code] ou SU/[Section]/[Parcelle]/[Subdivision]/[Code]
     // Format simplifié: SU/[Parcelle]/[Code] (toléré localement)
-    // Exemples: SU/2130/KIN, SU/2130/1/KIN, SU/0123/GOM, SR/01/0987/BEN, SR/0321/MAS
-    const patternComplete = /^(SU|SR)\/\d+\/\d+(\/\d+)?\/[A-Z]{2,3}$/i;
-    const patternSimplified = /^(SU|SR)\/\d+\/[A-Z]{2,3}$/i;
+    // Exemples: SU/2130/KIN, SU/2130/1/KIN, SU/0123/GOM, SR/01/0987/BEN, SR/0321/MAS, SU/2130/TEST
+    const patternComplete = /^(SU|SR)\/\d+\/\d+(\/\d+)?\/[A-Z]{2,5}$/i;
+    const patternSimplified = /^(SU|SR)\/\d+\/[A-Z]{2,5}$/i;
     const trimmed = query.trim().toUpperCase();
     return patternComplete.test(trimmed) || patternSimplified.test(trimmed);
   };
