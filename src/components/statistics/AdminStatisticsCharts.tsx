@@ -43,15 +43,40 @@ const AdminStatisticsCharts: React.FC<AdminStatisticsChartsProps> = ({ onExport 
   const [dateRange, setDateRange] = useState<string>('30');
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState<string>('revenue');
 
-  // Fetch all statistics types
+  // Charger les statistiques selon l'onglet actif pour optimiser les performances
   const { statistics: overview, loading: loadingOverview } = useAdminStatistics(startDate, endDate, 'overview');
-  const { statistics: revenueByDay } = useAdminStatistics(startDate, endDate, 'revenue_by_day');
-  const { statistics: servicesUsage } = useAdminStatistics(startDate, endDate, 'services_usage');
-  const { statistics: userGrowth } = useAdminStatistics(startDate, endDate, 'user_growth');
-  const { statistics: contributionsStatus } = useAdminStatistics(startDate, endDate, 'contributions_status');
-  const { statistics: paymentMethods } = useAdminStatistics(startDate, endDate, 'payment_methods');
-  const { statistics: resellerPerformance } = useAdminStatistics(startDate, endDate, 'reseller_performance');
+  const { statistics: revenueByDay, loading: loadingRevenue } = useAdminStatistics(
+    startDate, 
+    endDate, 
+    activeTab === 'revenue' ? 'revenue_by_day' : 'overview'
+  );
+  const { statistics: servicesUsage, loading: loadingServices } = useAdminStatistics(
+    startDate, 
+    endDate, 
+    activeTab === 'services' ? 'services_usage' : 'overview'
+  );
+  const { statistics: userGrowth, loading: loadingUsers } = useAdminStatistics(
+    startDate, 
+    endDate, 
+    activeTab === 'users' ? 'user_growth' : 'overview'
+  );
+  const { statistics: contributionsStatus, loading: loadingContributions } = useAdminStatistics(
+    startDate, 
+    endDate, 
+    activeTab === 'contributions' ? 'contributions_status' : 'overview'
+  );
+  const { statistics: paymentMethods, loading: loadingPayments } = useAdminStatistics(
+    startDate, 
+    endDate, 
+    activeTab === 'revenue' ? 'payment_methods' : 'overview'
+  );
+  const { statistics: resellerPerformance, loading: loadingResellers } = useAdminStatistics(
+    startDate, 
+    endDate, 
+    activeTab === 'resellers' ? 'reseller_performance' : 'overview'
+  );
 
   const handleDateRangeChange = (value: string) => {
     setDateRange(value);
@@ -178,7 +203,7 @@ const AdminStatisticsCharts: React.FC<AdminStatisticsChartsProps> = ({ onExport 
       </div>
 
       {/* Graphiques détaillés */}
-      <Tabs defaultValue="revenue" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="revenue">Revenus</TabsTrigger>
           <TabsTrigger value="users">Utilisateurs</TabsTrigger>
@@ -189,7 +214,14 @@ const AdminStatisticsCharts: React.FC<AdminStatisticsChartsProps> = ({ onExport 
 
         {/* Revenus par jour */}
         <TabsContent value="revenue">
-          <Card>
+          {loadingRevenue || loadingPayments ? (
+            <Card>
+              <CardContent className="pt-6 flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
             <CardHeader>
               <CardTitle>Évolution des revenus</CardTitle>
               <CardDescription>Revenus quotidiens et nombre de factures</CardDescription>
@@ -253,11 +285,19 @@ const AdminStatisticsCharts: React.FC<AdminStatisticsChartsProps> = ({ onExport 
               </div>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         {/* Croissance utilisateurs */}
         <TabsContent value="users">
-          <Card>
+          {loadingUsers ? (
+            <Card>
+              <CardContent className="pt-6 flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
             <CardHeader>
               <CardTitle>Croissance des utilisateurs</CardTitle>
               <CardDescription>Nouveaux utilisateurs et total cumulé</CardDescription>
@@ -296,11 +336,19 @@ const AdminStatisticsCharts: React.FC<AdminStatisticsChartsProps> = ({ onExport 
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         {/* Utilisation des services */}
         <TabsContent value="services">
-          <Card>
+          {loadingServices ? (
+            <Card>
+              <CardContent className="pt-6 flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
             <CardHeader>
               <CardTitle>Utilisation des services</CardTitle>
               <CardDescription>Services les plus utilisés et revenus générés</CardDescription>
@@ -324,11 +372,19 @@ const AdminStatisticsCharts: React.FC<AdminStatisticsChartsProps> = ({ onExport 
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         {/* Statut des contributions */}
         <TabsContent value="contributions">
-          <Card>
+          {loadingContributions ? (
+            <Card>
+              <CardContent className="pt-6 flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
             <CardHeader>
               <CardTitle>Statut des contributions</CardTitle>
               <CardDescription>Répartition des contributions par statut</CardDescription>
@@ -366,11 +422,19 @@ const AdminStatisticsCharts: React.FC<AdminStatisticsChartsProps> = ({ onExport 
               </div>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         {/* Performance des revendeurs */}
         <TabsContent value="resellers">
-          <Card>
+          {loadingResellers ? (
+            <Card>
+              <CardContent className="pt-6 flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
             <CardHeader>
               <CardTitle>Performance des revendeurs</CardTitle>
               <CardDescription>Ventes et commissions par revendeur</CardDescription>
@@ -394,6 +458,7 @@ const AdminStatisticsCharts: React.FC<AdminStatisticsChartsProps> = ({ onExport 
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -3,14 +3,26 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DollarSign, FileText, CheckCircle, Tag } from 'lucide-react';
 import { useUserStatistics } from '@/hooks/useUserStatistics';
+import { useAuth } from '@/hooks/useAuth';
 import { subDays } from 'date-fns';
 
 const UserStatisticsCharts: React.FC = () => {
   const [dateRange, setDateRange] = useState<string>('30');
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const { user } = useAuth();
 
   const { statistics, loading } = useUserStatistics(startDate, endDate);
+
+  if (!user) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <p className="text-center text-muted-foreground">Veuillez vous connecter pour voir vos statistiques</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const handleDateRangeChange = (value: string) => {
     setDateRange(value);

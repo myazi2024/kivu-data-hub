@@ -25,10 +25,19 @@ const ResellerStatisticsCharts: React.FC = () => {
   const [dateRange, setDateRange] = useState<string>('30');
   const [startDate, setStartDate] = useState<Date>(subDays(new Date(), 30));
   const [endDate, setEndDate] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState<'sales' | 'codes'>('sales');
 
   const { statistics: overview, loading } = useResellerStatistics(startDate, endDate, 'overview');
-  const { statistics: salesByDay } = useResellerStatistics(startDate, endDate, 'sales_by_day');
-  const { statistics: codesPerformance } = useResellerStatistics(startDate, endDate, 'discount_codes_performance');
+  const { statistics: salesByDay, loading: loadingSales } = useResellerStatistics(
+    startDate, 
+    endDate, 
+    'sales_by_day'
+  );
+  const { statistics: codesPerformance, loading: loadingCodes } = useResellerStatistics(
+    startDate, 
+    endDate, 
+    'discount_codes_performance'
+  );
 
   const handleDateRangeChange = (value: string) => {
     setDateRange(value);
@@ -136,21 +145,28 @@ const ResellerStatisticsCharts: React.FC = () => {
       </div>
 
       {/* Graphiques */}
-      <Tabs defaultValue="sales" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'sales' | 'codes')} className="space-y-4">
         <TabsList>
           <TabsTrigger value="sales">Évolution des ventes</TabsTrigger>
           <TabsTrigger value="codes">Performance des codes</TabsTrigger>
         </TabsList>
 
         <TabsContent value="sales">
-          <Card>
-            <CardHeader>
-              <CardTitle>Évolution quotidienne</CardTitle>
-              <CardDescription>Ventes, revenus et commissions par jour</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={400}>
-                <AreaChart data={salesByDay?.sales_by_day || []}>
+          {loadingSales ? (
+            <Card>
+              <CardContent className="pt-6 flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Évolution quotidienne</CardTitle>
+                <CardDescription>Ventes, revenus et commissions par jour</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ResponsiveContainer width="100%" height={400}>
+                  <AreaChart data={salesByDay?.sales_by_day || []}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
@@ -196,10 +212,18 @@ const ResellerStatisticsCharts: React.FC = () => {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="codes">
-          <Card>
+          {loadingCodes ? (
+            <Card>
+              <CardContent className="pt-6 flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card>
             <CardHeader>
               <CardTitle>Performance des codes de remise</CardTitle>
               <CardDescription>Utilisation et revenus générés par code</CardDescription>
@@ -270,6 +294,7 @@ const ResellerStatisticsCharts: React.FC = () => {
               </div>
             </CardContent>
           </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

@@ -58,7 +58,9 @@ export const useUserStatistics = (
   };
 
   useEffect(() => {
-    fetchStatistics();
+    if (user?.id) {
+      fetchStatistics();
+    }
   }, [startDate, endDate, user?.id]);
 
   return {

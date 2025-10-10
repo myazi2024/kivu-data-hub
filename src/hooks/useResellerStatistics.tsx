@@ -84,7 +84,9 @@ export const useResellerStatistics = (
   };
 
   useEffect(() => {
-    fetchStatistics();
+    if (user?.id) {
+      fetchStatistics();
+    }
   }, [startDate, endDate, statType, user?.id]);
 
   return {
