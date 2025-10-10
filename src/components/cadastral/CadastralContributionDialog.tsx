@@ -21,6 +21,7 @@ import {
   getAvenuesForQuartier
 } from '@/lib/geographicData';
 import { InputWithPopover } from './InputWithPopover';
+import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -849,49 +850,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsList>
 
           <TabsContent value="general" className="space-y-6 mt-6 animate-fade-in">
-            <div className="space-y-2">
-              <Label htmlFor="titleType">Type de titre de propriété</Label>
-              <Select onValueChange={(value) => handleInputChange('propertyTitleType', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Certificat d'enregistrement">Certificat d'enregistrement</SelectItem>
-                  <SelectItem value="Titre foncier">Titre foncier</SelectItem>
-                  <SelectItem value="Concession perpétuelle">Concession perpétuelle</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <PropertyTitleTypeSelect 
+              value={formData.propertyTitleType || ''}
+              onValueChange={(value) => handleInputChange('propertyTitleType', value)}
+            />
 
             {formData.propertyTitleType && (
               <div className="space-y-2 animate-fade-in">
                 <Label htmlFor="titleReference">
-                  {formData.propertyTitleType === "Certificat d'enregistrement" && "Numéro du certificat d'enregistrement"}
-                  {formData.propertyTitleType === "Titre foncier" && "Numéro du titre foncier"}
-                  {formData.propertyTitleType === "Concession perpétuelle" && "Numéro de la concession perpétuelle"}
+                  Numéro de référence du {formData.propertyTitleType.toLowerCase()}
                 </Label>
                 <InputWithPopover
                   id="titleReference"
-                  placeholder={
-                    formData.propertyTitleType === "Certificat d'enregistrement" ? "Ex: CE-123456 ou CE/2024/001" :
-                    formData.propertyTitleType === "Titre foncier" ? "Ex: TF-123456 ou TF/NK/2024/001" :
-                    "Ex: CP-123456 ou CP/2024/001"
-                  }
+                  placeholder={PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "Ex: XXX-123456"}
                   value={formData.titleReferenceNumber || ''}
                   onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
                   helpTitle="Numéro de référence"
-                  helpText={
-                    formData.propertyTitleType === "Certificat d'enregistrement" 
-                      ? "Le numéro de certificat d'enregistrement se trouve en haut à droite de votre document. Il commence généralement par 'CE' suivi de chiffres ou d'une combinaison de lettres et chiffres." 
-                      : formData.propertyTitleType === "Titre foncier" 
-                      ? "Le numéro de titre foncier est inscrit en première page de votre titre. Il peut commencer par 'TF' et contient souvent le code de la province (ex: NK pour Nord-Kivu)."
-                      : "Le numéro de concession perpétuelle figure sur votre document de concession. Il commence généralement par 'CP' et inclut l'année d'attribution."
-                  }
+                  helpText={`Le numéro de référence se trouve généralement en haut de votre document. Format attendu : ${PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "XXX-123456"}`}
                 />
                 <p className="text-xs text-muted-foreground">
-                  {formData.propertyTitleType === "Certificat d'enregistrement" && "Numéro figurant sur votre certificat d'enregistrement"}
-                  {formData.propertyTitleType === "Titre foncier" && "Numéro figurant sur votre titre foncier délivré par les services du cadastre"}
-                  {formData.propertyTitleType === "Concession perpétuelle" && "Numéro de référence de votre concession perpétuelle"}
+                  {PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.description}
                 </p>
               </div>
             )}

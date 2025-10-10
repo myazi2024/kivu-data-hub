@@ -38,6 +38,7 @@ import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
 import DocumentAttachment from './DocumentAttachment';
+import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -458,9 +459,27 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                       Titre de Propriété
                     </h4>
                     <div className="space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[10px] text-muted-foreground">Type:</span>
-                        <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded text-right">{parcel.property_title_type}</span>
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">Type:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded text-right">{parcel.property_title_type}</span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-4 w-4 p-0.5">
+                                <Info className="h-3 w-3 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-[calc(100vw-2rem)] sm:w-96 max-w-md" side="left">
+                              <div className="space-y-2">
+                                <h4 className="font-semibold text-sm">{parcel.property_title_type}</h4>
+                                <p className="text-xs leading-relaxed">
+                                  {PROPERTY_TITLE_TYPES.find(t => t.value === parcel.property_title_type)?.details || 
+                                   "Type de titre de propriété reconnu par la législation foncière de la RDC."}
+                                </p>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                       </div>
                       {parcel.title_reference_number && (
                         <div className="flex justify-between items-start gap-2">

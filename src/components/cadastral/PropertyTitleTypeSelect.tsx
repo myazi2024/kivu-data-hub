@@ -1,0 +1,179 @@
+import React from 'react';
+import { Info } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+
+interface PropertyTitleType {
+  value: string;
+  label: string;
+  description: string;
+  details: string;
+  reference: string;
+}
+
+const PROPERTY_TITLE_TYPES: PropertyTitleType[] = [
+  {
+    value: "Certificat d'enregistrement",
+    label: "Certificat d'enregistrement",
+    description: "Document administratif prouvant l'enregistrement d'un droit foncier",
+    details: "Le certificat d'enregistrement est délivré par le Conservateur des Titres Immobiliers après enregistrement d'un acte de mutation, de concession ou d'autre droit foncier. Il atteste que le droit a été régulièrement enregistré conformément aux dispositions légales en vigueur.",
+    reference: "Ex: CE-123456 ou CE/NK/2024/001"
+  },
+  {
+    value: "Titre foncier",
+    label: "Titre foncier (ancien système)",
+    description: "Ancien titre de propriété délivré avant la réforme foncière",
+    details: "Le titre foncier est l'ancien document de propriété délivré sous le régime colonial et dans les premières décennies de l'indépendance. Il atteste de la propriété définitive et incommutable d'un terrain. Bien que l'ancien système, ces titres restent valables et peuvent être convertis.",
+    reference: "Ex: TF-123456 ou TF/NK/2024/001"
+  },
+  {
+    value: "Concession perpétuelle",
+    label: "Concession perpétuelle",
+    description: "Droit d'usage perpétuel accordé par l'État sur un terrain du domaine privé",
+    details: "La concession perpétuelle confère à son titulaire un droit d'usage, de jouissance et de disposition perpétuel sur un terrain appartenant au domaine privé de l'État. Ce droit est transmissible par succession ou aliénation et constitue l'un des droits fonciers les plus sûrs en RDC.",
+    reference: "Ex: CP-123456 ou CP/2024/001"
+  },
+  {
+    value: "Concession ordinaire",
+    label: "Concession ordinaire",
+    description: "Droit d'usage temporaire accordé par l'État pour une durée déterminée",
+    details: "La concession ordinaire est un droit d'usage temporaire accordé par l'État pour une durée généralement de 25 ans renouvelable. Elle peut être transformée en concession perpétuelle après accomplissement des obligations de mise en valeur définies dans le contrat de concession.",
+    reference: "Ex: CO-123456 ou CO/2024/001"
+  },
+  {
+    value: "Bail emphytéotique",
+    label: "Bail emphytéotique",
+    description: "Bail de longue durée (18 à 99 ans) conférant des droits étendus",
+    details: "Le bail emphytéotique est un contrat de location de longue durée (minimum 18 ans, maximum 99 ans) qui confère à l'emphytéote des droits très étendus d'usage, de jouissance et de transformation du bien. L'emphytéote peut construire, planter et même hypothéquer ses droits.",
+    reference: "Ex: BE-123456 ou BE/2024/001"
+  },
+  {
+    value: "Certificat de location",
+    label: "Certificat de location",
+    description: "Document attestant d'un contrat de location régulièrement enregistré",
+    details: "Le certificat de location est délivré après enregistrement d'un bail locatif ordinaire auprès des services compétents. Il atteste de l'existence d'un contrat de location régulier entre bailleur et locataire pour une durée déterminée.",
+    reference: "Ex: CL-123456 ou CL/2024/001"
+  },
+  {
+    value: "Autorisation d'occupation provisoire",
+    label: "Autorisation d'occupation provisoire",
+    description: "Droit précaire d'occupation d'un terrain en attente de régularisation",
+    details: "L'autorisation d'occupation provisoire (AOP) est un droit précaire accordé temporairement en attendant la régularisation définitive du statut foncier. Elle n'est pas transmissible et peut être révoquée. Le titulaire doit entreprendre les démarches de régularisation dans les délais impartis.",
+    reference: "Ex: AOP-123456 ou AOP/2024/001"
+  },
+  {
+    value: "Permis d'occupation urbain",
+    label: "Permis d'occupation urbain",
+    description: "Autorisation d'occuper un terrain en zone urbaine",
+    details: "Le permis d'occupation urbain est délivré par les autorités communales pour l'occupation d'une parcelle en zone urbaine. Il précède généralement l'obtention d'un titre foncier définitif et impose au titulaire de respecter les règles d'urbanisme et de mise en valeur.",
+    reference: "Ex: POU-123456 ou POU/2024/001"
+  },
+  {
+    value: "Permis d'occupation rural",
+    label: "Permis d'occupation rural",
+    description: "Autorisation d'occuper un terrain en zone rurale",
+    details: "Le permis d'occupation rural permet l'occupation et l'exploitation agricole d'une terre en zone rurale. Il est délivré conformément aux règles coutumières locales et aux dispositions légales régissant les terres rurales. Il peut évoluer vers un titre plus stable.",
+    reference: "Ex: POR-123456 ou POR/2024/001"
+  }
+];
+
+interface PropertyTitleTypeSelectProps {
+  value?: string;
+  onValueChange: (value: string) => void;
+}
+
+const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ value, onValueChange }) => {
+  const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
+        <label className="text-sm font-medium">Type de titre de propriété</label>
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full">
+              <Info className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-80 sm:w-96" side="top">
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm">Types de titres de propriété en RDC</h4>
+              <p className="text-xs text-muted-foreground">
+                Le système foncier congolais reconnaît plusieurs types de titres de propriété. 
+                Sélectionnez le type qui correspond à votre document et cliquez sur l'icône ⓘ 
+                à côté de chaque option pour plus de détails.
+              </p>
+            </div>
+          </PopoverContent>
+        </Popover>
+      </div>
+      
+      <Select value={value} onValueChange={onValueChange}>
+        <SelectTrigger>
+          <SelectValue placeholder="Sélectionner le type de titre" />
+        </SelectTrigger>
+        <SelectContent className="max-h-[400px]">
+          {PROPERTY_TITLE_TYPES.map((type) => (
+            <div key={type.value} className="flex items-center justify-between group">
+              <SelectItem value={type.value} className="flex-1 pr-2">
+                <div className="flex flex-col">
+                  <span className="font-medium">{type.label}</span>
+                  <span className="text-xs text-muted-foreground hidden sm:block">{type.description}</span>
+                </div>
+              </SelectItem>
+              <Popover 
+                open={openPopoverId === type.value} 
+                onOpenChange={(open) => setOpenPopoverId(open ? type.value : null)}
+              >
+                <PopoverTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity mr-2"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setOpenPopoverId(openPopoverId === type.value ? null : type.value);
+                    }}
+                  >
+                    <Info className="h-4 w-4 text-primary" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent 
+                  className="w-[calc(100vw-2rem)] sm:w-96 max-w-md" 
+                  side="left"
+                  sideOffset={10}
+                  align="start"
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <h4 className="font-semibold text-sm mb-1">{type.label}</h4>
+                      <p className="text-xs text-muted-foreground italic">{type.description}</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs leading-relaxed">{type.details}</p>
+                      <div className="p-2 bg-muted/50 rounded-md">
+                        <p className="text-xs font-medium mb-1">Format du numéro de référence :</p>
+                        <code className="text-xs text-primary">{type.reference}</code>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+          ))}
+        </SelectContent>
+      </Select>
+      
+      {value && (
+        <p className="text-xs text-muted-foreground">
+          {PROPERTY_TITLE_TYPES.find(t => t.value === value)?.description}
+        </p>
+      )}
+    </div>
+  );
+};
+
+export { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES };
+export type { PropertyTitleType };
