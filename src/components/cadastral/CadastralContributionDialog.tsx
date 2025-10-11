@@ -22,6 +22,7 @@ import {
 } from '@/lib/geographicData';
 import { InputWithPopover } from './InputWithPopover';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
+import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -53,6 +54,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     surveyorName?: string;
     pvReferenceNumber?: string;
   }>>([]);
+
+  // État pour gérer plusieurs propriétaires actuels (copropriété)
+  const [currentOwners, setCurrentOwners] = useState<Array<{
+    lastName: string;
+    middleName: string;
+    firstName: string;
+    legalStatus: string;
+    since: string;
+  }>>([{
+    lastName: '',
+    middleName: '',
+    firstName: '',
+    legalStatus: 'Personne physique',
+    since: ''
+  }]);
 
   // État pour gérer plusieurs taxes
   const [taxRecords, setTaxRecords] = useState<Array<{
@@ -485,6 +501,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       // Add document URLs to form data
       const dataToSubmit = {
         ...formData,
+        currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownerDocumentUrl: ownerDocUrl || undefined,
         titleDocumentUrl: titleDocUrl || undefined,
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
@@ -530,6 +547,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const updated = [...previousOwners];
     updated[index] = { ...updated[index], [field]: value };
     setPreviousOwners(updated);
+  };
+
+  // Fonctions pour gérer les propriétaires actuels
+  const addCurrentOwner = () => {
+    setCurrentOwners([...currentOwners, {
+      lastName: '',
+      middleName: '',
+      firstName: '',
+      legalStatus: 'Personne physique',
+      since: ''
+    }]);
+  };
+
+  const removeCurrentOwner = (index: number) => {
+    if (currentOwners.length > 1) {
+      setCurrentOwners(currentOwners.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateCurrentOwner = (index: number, field: string, value: string) => {
+    const updated = [...currentOwners];
+    updated[index] = { ...updated[index], [field]: value };
+    setCurrentOwners(updated);
   };
 
   // Fonctions pour gérer les taxes
@@ -754,6 +794,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setSectionType('');
     setSectionTypeAutoDetected(false);
     setPreviousOwners([]);
+    setCurrentOwners([{
+      lastName: '',
+      middleName: '',
+      firstName: '',
+      legalStatus: 'Personne physique',
+      since: ''
+    }]);
     setTaxRecords([]);
     setMortgageRecords([]);
     setObligationType('taxes');
@@ -874,44 +921,100 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="ownerName">Nom du propriétaire actuel</Label>
-              <InputWithPopover
-                id="ownerName"
-                placeholder="Nom complet"
-                value={formData.currentOwnerName || ''}
-                onChange={(e) => handleInputChange('currentOwnerName', e.target.value)}
-                helpTitle="Propriétaire actuel"
-                helpText="Indiquez le nom complet du propriétaire actuel tel qu'il apparaît sur le titre de propriété. Pour une personne morale, indiquez la raison sociale complète."
-              />
-            </div>
+            {/* Section Propriétaire(s) actuel(s) */}
+            <div className="space-y-4 pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Indiquez le(s) propriétaire(s) actuel(s) de la parcelle
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addCurrentOwner}
+                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02]"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter
+                </Button>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="legalStatus">Statut juridique</Label>
-              <Select onValueChange={(value) => handleInputChange('currentOwnerLegalStatus', value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le statut" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Personne physique">Personne physique</SelectItem>
-                  <SelectItem value="Personne morale">Personne morale</SelectItem>
-                  <SelectItem value="État">État</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              {currentOwners.map((owner, index) => (
+                <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-sm font-semibold">Propriétaire #{index + 1}</h4>
+                    {currentOwners.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeCurrentOwner(index)}
+                        className="text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="ownerSince">Propriétaire depuis</Label>
-              <InputWithPopover
-                id="ownerSince"
-                type="date"
-                max={new Date().toISOString().split('T')[0]}
-                value={formData.currentOwnerSince || ''}
-                onChange={(e) => handleInputChange('currentOwnerSince', e.target.value)}
-                helpTitle="Date d'acquisition"
-                helpText="Indiquez la date à laquelle le propriétaire actuel a acquis cette parcelle. Cette information se trouve généralement sur l'acte de vente ou le certificat d'enregistrement."
-              />
-              <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Nom *</Label>
+                      <Input
+                        placeholder="Nom de famille"
+                        value={owner.lastName}
+                        onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Post-nom</Label>
+                      <Input
+                        placeholder="Post-nom (optionnel)"
+                        value={owner.middleName}
+                        onChange={(e) => updateCurrentOwner(index, 'middleName', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Prénom *</Label>
+                      <Input
+                        placeholder="Prénom"
+                        value={owner.firstName}
+                        onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Statut juridique</Label>
+                      <Select 
+                        value={owner.legalStatus}
+                        onValueChange={(value) => updateCurrentOwner(index, 'legalStatus', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Personne physique">Personne physique</SelectItem>
+                          <SelectItem value="Personne morale">Personne morale</SelectItem>
+                          <SelectItem value="État">État</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Propriétaire depuis</Label>
+                      <Input
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={owner.since}
+                        onChange={(e) => updateCurrentOwner(index, 'since', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="space-y-4 pt-4 border-t">
@@ -1169,11 +1272,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="text-xs">Service émetteur</Label>
-                        <Input
-                          placeholder="ex: Direction de l'Urbanisme"
+                        <BuildingPermitIssuingServiceSelect
                           value={permit.issuingService}
-                          onChange={(e) => updateBuildingPermit(index, 'issuingService', e.target.value)}
+                          onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
                         />
                       </div>
 
@@ -1203,15 +1304,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label className="text-xs">Contact du service</Label>
-                        <Input
-                          placeholder="ex: +243 XXX XXX XXX"
-                          value={permit.issuingServiceContact}
-                          onChange={(e) => updateBuildingPermit(index, 'issuingServiceContact', e.target.value)}
-                        />
                       </div>
                     </div>
                   ))}
@@ -1657,7 +1749,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Label>Date début</Label>
                           <Input
                             type="date"
-                            max={formData.currentOwnerSince || new Date().toISOString().split('T')[0]}
+                            max={currentOwners[0]?.since || new Date().toISOString().split('T')[0]}
                             value={owner.startDate}
                             onChange={(e) => updatePreviousOwner(index, 'startDate', e.target.value)}
                           />
@@ -1670,11 +1762,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Input
                             type="date"
                             min={owner.startDate || undefined}
-                            max={formData.currentOwnerSince || new Date().toISOString().split('T')[0]}
+                            max={currentOwners[0]?.since || new Date().toISOString().split('T')[0]}
                             value={owner.endDate}
                             onChange={(e) => updatePreviousOwner(index, 'endDate', e.target.value)}
                           />
-                          {owner.endDate && formData.currentOwnerSince && owner.endDate > formData.currentOwnerSince && (
+                          {owner.endDate && currentOwners[0]?.since && owner.endDate > currentOwners[0].since && (
                             <p className="text-xs text-destructive">La date de fin doit être avant la date du propriétaire actuel</p>
                           )}
                         </div>

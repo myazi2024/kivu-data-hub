@@ -9,10 +9,13 @@ export interface CadastralContributionData {
   // Informations générales
   propertyTitleType?: string;
   titleReferenceNumber?: string;
-  currentOwnerName?: string;
-  currentOwnerLegalStatus?: string;
-  currentOwnerSince?: string;
-  areaSqm?: number;
+  currentOwners?: Array<{
+    lastName: string;  // Nom
+    middleName?: string;  // Post-nom
+    firstName: string;  // Prénom
+    legalStatus: string;
+    since: string;
+  }>;
   constructionType?: string;
   constructionNature?: string;
   declaredUsage?: string;
@@ -24,10 +27,10 @@ export interface CadastralContributionData {
     issueDate: string;
     validityMonths: number;
     administrativeStatus: string;
-    issuingServiceContact?: string;
   }>;
   
   // Localisation
+  areaSqm?: number;  // Déplacé ici depuis informations générales
   province?: string;
   ville?: string;
   commune?: string;
@@ -151,9 +154,15 @@ export const useCadastralContribution = () => {
           parcel_number: data.parcelNumber,
           property_title_type: data.propertyTitleType,
           title_reference_number: data.titleReferenceNumber,
-          current_owner_name: data.currentOwnerName,
-          current_owner_legal_status: data.currentOwnerLegalStatus,
-          current_owner_since: data.currentOwnerSince,
+          current_owner_name: data.currentOwners && data.currentOwners.length > 0 
+            ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
+            : undefined,
+          current_owner_legal_status: data.currentOwners && data.currentOwners.length > 0 
+            ? data.currentOwners[0].legalStatus 
+            : undefined,
+          current_owner_since: data.currentOwners && data.currentOwners.length > 0 
+            ? data.currentOwners[0].since 
+            : undefined,
           area_sqm: data.areaSqm,
           construction_type: data.constructionType,
           construction_nature: data.constructionNature,
