@@ -1318,23 +1318,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             {/* Section Propriétaire(s) actuel(s) */}
             <div className="space-y-4 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Indiquez le(s) propriétaire(s) actuel(s) de la parcelle
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addCurrentOwner}
-                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02]"
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter
-                </Button>
+              <div>
+                <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
+                <p className="text-xs text-muted-foreground">
+                  Indiquez le(s) propriétaire(s) actuel(s) de la parcelle
+                </p>
               </div>
 
               {currentOwners.map((owner, index) => (
@@ -1450,6 +1438,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
                 </div>
               ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addCurrentOwner}
+                className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] w-full"
+              >
+                <Plus className="h-4 w-4" />
+                Ajouter un propriétaire
+              </Button>
             </div>
 
             <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
