@@ -1404,104 +1404,114 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               </div>
 
-              <div className="relative overflow-hidden">
+              {/* Conteneur avec transition latérale */}
+              <div className="relative min-h-[200px]">
+                {/* Bloc "Demander" */}
                 <div 
-                  className={`flex transition-transform duration-500 ease-in-out ${
-                    permitActionMode === 'ajouter' ? '-translate-x-full' : 'translate-x-0'
+                  className={`absolute inset-0 transition-all duration-500 ease-in-out ${
+                    permitActionMode === 'demander' 
+                      ? 'translate-x-0 opacity-100' 
+                      : 'translate-x-full opacity-0 pointer-events-none'
                   }`}
-                  style={{ width: '200%' }}
                 >
-                  {/* Bloc "Demander" */}
-                  <div className="w-1/2 flex-shrink-0">
-                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
-                      <p className="text-sm">Aucun permis ajouté</p>
-                    </div>
+                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
+                    <FileText className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                    <p className="text-sm font-medium">Mode Demande de Permis</p>
+                    <p className="text-xs mt-1 text-muted-foreground/70">Aucun permis en demande</p>
                   </div>
-                  
-                  {/* Bloc "Ajouter" */}
-                  <div className="w-1/2 flex-shrink-0 pl-4">
-                    {buildingPermits.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
-                        <p className="text-sm">Aucun permis ajouté</p>
-                      </div>
-                    ) : (
-                    <div className="space-y-4">
+                </div>
+                
+                {/* Bloc "Ajouter" */}
+                <div 
+                  className={`absolute inset-0 transition-all duration-500 ease-in-out ${
+                    permitActionMode === 'ajouter' 
+                      ? 'translate-x-0 opacity-100' 
+                      : '-translate-x-full opacity-0 pointer-events-none'
+                  }`}
+                >
+                  {buildingPermits.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
+                      <Plus className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                      <p className="text-sm font-medium">Mode Ajout de Permis</p>
+                      <p className="text-xs mt-1 text-muted-foreground/70">Aucun permis ajouté</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
                       {buildingPermits.map((permit, index) => (
                         <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold">Permis #{index + 1}</h4>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeBuildingPermit(index)}
-                          className="text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-sm font-semibold">Permis #{index + 1}</h4>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeBuildingPermit(index)}
+                              className="text-destructive hover:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Numéro du permis</Label>
-                          <InputWithPopover
-                            placeholder="ex: PC-2024-001"
-                            value={permit.permitNumber}
-                            onChange={(e) => updateBuildingPermit(index, 'permitNumber', e.target.value)}
-                            helpTitle="Numéro de permis"
-                            helpText="Le numéro de permis de construire est un identifiant unique délivré par les services d'urbanisme. Il figure généralement en haut du document officiel du permis."
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Date d'émission</Label>
-                          <Input
-                            type="date"
-                            max={new Date().toISOString().split('T')[0]}
-                            value={permit.issueDate}
-                            onChange={(e) => updateBuildingPermit(index, 'issueDate', e.target.value)}
-                          />
-                        </div>
-                      </div>
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label className="text-xs">Numéro du permis</Label>
+                              <InputWithPopover
+                                placeholder="ex: PC-2024-001"
+                                value={permit.permitNumber}
+                                onChange={(e) => updateBuildingPermit(index, 'permitNumber', e.target.value)}
+                                helpTitle="Numéro de permis"
+                                helpText="Le numéro de permis de construire est un identifiant unique délivré par les services d'urbanisme. Il figure généralement en haut du document officiel du permis."
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Date d'émission</Label>
+                              <Input
+                                type="date"
+                                max={new Date().toISOString().split('T')[0]}
+                                value={permit.issueDate}
+                                onChange={(e) => updateBuildingPermit(index, 'issueDate', e.target.value)}
+                              />
+                            </div>
+                          </div>
 
-                      <div className="space-y-2">
-                        <BuildingPermitIssuingServiceSelect
-                          value={permit.issuingService}
-                          onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
-                        />
-                      </div>
+                          <div className="space-y-2">
+                            <BuildingPermitIssuingServiceSelect
+                              value={permit.issuingService}
+                              onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
+                            />
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Validité (mois)</Label>
-                          <Input
-                            type="number"
-                            placeholder="36"
-                            value={permit.validityMonths}
-                            onChange={(e) => updateBuildingPermit(index, 'validityMonths', e.target.value)}
-                          />
+                          <div className="grid grid-cols-2 gap-3">
+                            <div className="space-y-2">
+                              <Label className="text-xs">Validité (mois)</Label>
+                              <Input
+                                type="number"
+                                placeholder="36"
+                                value={permit.validityMonths}
+                                onChange={(e) => updateBuildingPermit(index, 'validityMonths', e.target.value)}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label className="text-xs">Statut administratif</Label>
+                              <Select
+                                value={permit.administrativeStatus}
+                                onValueChange={(value) => updateBuildingPermit(index, 'administrativeStatus', value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="En attente">En attente</SelectItem>
+                                  <SelectItem value="Conforme">Conforme</SelectItem>
+                                  <SelectItem value="Non autorisé">Non autorisé</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
                         </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Statut administratif</Label>
-                          <Select
-                            value={permit.administrativeStatus}
-                            onValueChange={(value) => updateBuildingPermit(index, 'administrativeStatus', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="En attente">En attente</SelectItem>
-                              <SelectItem value="Conforme">Conforme</SelectItem>
-                              <SelectItem value="Non autorisé">Non autorisé</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
