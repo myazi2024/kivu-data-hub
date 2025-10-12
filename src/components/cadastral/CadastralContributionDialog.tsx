@@ -7,7 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
@@ -24,6 +24,7 @@ import {
 import { InputWithPopover } from './InputWithPopover';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
+import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -43,6 +44,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [uploading, setUploading] = useState(false);
   const [ownerDocFile, setOwnerDocFile] = useState<File | null>(null);
   const [titleDocFiles, setTitleDocFiles] = useState<File[]>([]);
+  const [showPermitRequestDialog, setShowPermitRequestDialog] = useState(false);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -1001,7 +1003,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <>
+      <BuildingPermitRequestDialog
+        open={showPermitRequestDialog}
+        onOpenChange={setShowPermitRequestDialog}
+        parcelNumber={parcelNumber}
+        hasExistingConstruction={formData.constructionType !== '' && formData.constructionType !== 'Terrain nu'}
+      />
+      <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0">
         <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
           <DialogTitle className="text-2xl font-semibold">Contribuer aux informations cadastrales</DialogTitle>
@@ -2488,6 +2497,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 };
 
