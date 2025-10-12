@@ -334,7 +334,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       case 'Résidentielle':
       case 'Commerciale':
       case 'Industrielle':
-      case 'Usage mixte':
         natures = ['Durable', 'Semi-durable', 'Précaire'];
         break;
       case 'Agricole':
@@ -367,7 +366,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     
     // Pour les terrains non bâtis
     if (formData.constructionNature === 'Non bâti') {
-      usages = ['Terrain vacant', 'Agriculture'];
+      usages = ['Terrain vacant', 'Agriculture', 'Parking'];
     }
     // Pour les constructions résidentielles
     else if (formData.constructionType === 'Résidentielle') {
@@ -407,19 +406,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         usages = ['Agriculture', 'Habitation'];
       }
     }
-    // Pour l'usage mixte
-    else if (formData.constructionType === 'Usage mixte') {
-      if (formData.constructionNature === 'Durable') {
-        usages = ['Usage mixte', 'Habitation', 'Commerce', 'Bureau'];
-      } else if (formData.constructionNature === 'Semi-durable') {
-        usages = ['Usage mixte', 'Habitation', 'Commerce'];
-      } else if (formData.constructionNature === 'Précaire') {
-        usages = ['Habitation', 'Commerce'];
-      }
-    }
     // Pour les terrains nus (redondant avec le premier test, mais pour la clarté)
     else if (formData.constructionType === 'Terrain nu') {
-      usages = ['Terrain vacant', 'Agriculture'];
+      usages = ['Terrain vacant', 'Agriculture', 'Parking'];
     }
     
     setAvailableDeclaredUsages(usages);
@@ -1269,7 +1258,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <SelectItem value="Commerciale">Commerciale</SelectItem>
                   <SelectItem value="Industrielle">Industrielle</SelectItem>
                   <SelectItem value="Agricole">Agricole</SelectItem>
-                  <SelectItem value="Usage mixte">Usage mixte</SelectItem>
                   <SelectItem value="Terrain nu">Terrain nu</SelectItem>
                 </SelectContent>
               </Select>
