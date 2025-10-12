@@ -162,7 +162,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   useEffect(() => {
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     
-    if (sides.length < 2) return;
+    if (sides.length < 3) return;
 
     // Pour une forme rectangulaire simple (4 côtés)
     if (sides.length === 4) {
@@ -1626,14 +1626,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </p>
                     {(() => {
                       const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                      const isSuperficieCompleted = filledSides.length >= 2;
+                      const isSuperficieCompleted = filledSides.length >= 3;
                       const canAddMore = gpsCoordinates.length < filledSides.length;
                       
                       if (!isSuperficieCompleted) {
                         return (
                           <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 flex items-center gap-1">
                             <Info className="h-3 w-3" />
-                            Complétez d'abord le bloc "Dimensions de chaque côté" (au moins 2 côtés)
+                            Complétez d'abord le bloc "Dimensions de chaque côté" (au moins 3 côtés)
                           </p>
                         );
                       }
@@ -1657,7 +1657,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     onClick={addGPSCoordinate}
                     disabled={(() => {
                       const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                      const isSuperficieCompleted = filledSides.length >= 2;
+                      const isSuperficieCompleted = filledSides.length >= 3;
                       const canAddMore = gpsCoordinates.length < filledSides.length;
                       return !isSuperficieCompleted || !canAddMore;
                     })()}
