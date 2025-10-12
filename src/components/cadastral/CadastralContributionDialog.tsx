@@ -112,6 +112,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
 
+  // États pour gérer les options de dépendance Type de construction -> Nature -> Usage
+  const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
+  const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
+
   const [formData, setFormData] = useState<CadastralContributionData>({
     parcelNumber: parcelNumber,
     whatsappNumber: '',
@@ -313,6 +317,118 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       setAvailableCollectivites([]);
     }
   }, [formData.province, formData.territoire]);
+
+  // Logique de dépendance: Type de construction -> Nature de construction
+  useEffect(() => {
+    if (!formData.constructionType) {
+      setAvailableConstructionNatures([]);
+      handleInputChange('constructionNature', undefined);
+      setAvailableDeclaredUsages([]);
+      handleInputChange('declaredUsage', undefined);
+      return;
+    }
+
+    let natures: string[] = [];
+    
+    switch (formData.constructionType) {
+      case 'Résidentielle':
+      case 'Commerciale':
+      case 'Industrielle':
+      case 'Usage mixte':
+        natures = ['Durable', 'Semi-durable', 'Précaire'];
+        break;
+      case 'Agricole':
+        natures = ['Durable', 'Semi-durable', 'Précaire', 'Non bâti'];
+        break;
+      case 'Terrain nu':
+        natures = ['Non bâti'];
+        break;
+      default:
+        natures = [];
+    }
+    
+    setAvailableConstructionNatures(natures);
+    
+    // Réinitialiser la nature si elle n'est plus valide
+    if (formData.constructionNature && !natures.includes(formData.constructionNature)) {
+      handleInputChange('constructionNature', undefined);
+    }
+  }, [formData.constructionType]);
+
+  // Logique de dépendance: Type + Nature -> Usage déclaré
+  useEffect(() => {
+    if (!formData.constructionType || !formData.constructionNature) {
+      setAvailableDeclaredUsages([]);
+      handleInputChange('declaredUsage', undefined);
+      return;
+    }
+
+    let usages: string[] = [];
+    
+    // Pour les terrains non bâtis
+    if (formData.constructionNature === 'Non bâti') {
+      usages = ['Terrain vacant', 'Agriculture'];
+    }
+    // Pour les constructions résidentielles
+    else if (formData.constructionType === 'Résidentielle') {
+      if (formData.constructionNature === 'Durable') {
+        usages = ['Habitation', 'Usage mixte'];
+      } else if (formData.constructionNature === 'Semi-durable') {
+        usages = ['Habitation', 'Usage mixte'];
+      } else if (formData.constructionNature === 'Précaire') {
+        usages = ['Habitation'];
+      }
+    }
+    // Pour les constructions commerciales
+    else if (formData.constructionType === 'Commerciale') {
+      if (formData.constructionNature === 'Durable') {
+        usages = ['Commerce', 'Bureau', 'Usage mixte', 'Entrepôt'];
+      } else if (formData.constructionNature === 'Semi-durable') {
+        usages = ['Commerce', 'Bureau', 'Entrepôt'];
+      } else if (formData.constructionNature === 'Précaire') {
+        usages = ['Commerce'];
+      }
+    }
+    // Pour les constructions industrielles
+    else if (formData.constructionType === 'Industrielle') {
+      if (formData.constructionNature === 'Durable') {
+        usages = ['Industrie', 'Entrepôt'];
+      } else if (formData.constructionNature === 'Semi-durable') {
+        usages = ['Industrie', 'Entrepôt'];
+      } else if (formData.constructionNature === 'Précaire') {
+        usages = ['Industrie'];
+      }
+    }
+    // Pour l'usage agricole
+    else if (formData.constructionType === 'Agricole') {
+      if (formData.constructionNature === 'Non bâti') {
+        usages = ['Agriculture'];
+      } else {
+        usages = ['Agriculture', 'Habitation'];
+      }
+    }
+    // Pour l'usage mixte
+    else if (formData.constructionType === 'Usage mixte') {
+      if (formData.constructionNature === 'Durable') {
+        usages = ['Usage mixte', 'Habitation', 'Commerce', 'Bureau'];
+      } else if (formData.constructionNature === 'Semi-durable') {
+        usages = ['Usage mixte', 'Habitation', 'Commerce'];
+      } else if (formData.constructionNature === 'Précaire') {
+        usages = ['Habitation', 'Commerce'];
+      }
+    }
+    // Pour les terrains nus (redondant avec le premier test, mais pour la clarté)
+    else if (formData.constructionType === 'Terrain nu') {
+      usages = ['Terrain vacant', 'Agriculture'];
+    }
+    
+    setAvailableDeclaredUsages(usages);
+    
+    // Réinitialiser l'usage si il n'est plus valide
+    if (formData.declaredUsage && !usages.includes(formData.declaredUsage)) {
+      handleInputChange('declaredUsage', undefined);
+    }
+  }, [formData.constructionType, formData.constructionNature]);
 
   const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -1141,7 +1257,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             <div className="space-y-2">
               <Label htmlFor="constructionType">Type de construction</Label>
-              <Select onValueChange={(value) => handleInputChange('constructionType', value)}>
+              <Select 
+                value={formData.constructionType || ''}
+                onValueChange={(value) => handleInputChange('constructionType', value)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner le type" />
                 </SelectTrigger>
@@ -1158,36 +1277,56 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             <div className="space-y-2">
               <Label htmlFor="constructionNature">Nature de construction</Label>
-              <Select onValueChange={(value) => handleInputChange('constructionNature', value)}>
+              <Select 
+                value={formData.constructionNature || ''}
+                onValueChange={(value) => handleInputChange('constructionNature', value)}
+                disabled={!formData.constructionType}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner la nature" />
+                  <SelectValue placeholder={
+                    !formData.constructionType 
+                      ? "Sélectionner d'abord le type de construction" 
+                      : "Sélectionner la nature"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Durable">Durable</SelectItem>
-                  <SelectItem value="Semi-durable">Semi-durable</SelectItem>
-                  <SelectItem value="Précaire">Précaire</SelectItem>
-                  <SelectItem value="Non bâti">Non bâti</SelectItem>
+                  {availableConstructionNatures.map((nature) => (
+                    <SelectItem key={nature} value={nature}>{nature}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {!formData.constructionType && (
+                <p className="text-xs text-muted-foreground">
+                  Veuillez d'abord sélectionner le type de construction
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="declaredUsage">Usage déclaré</Label>
-              <Select onValueChange={(value) => handleInputChange('declaredUsage', value)}>
+              <Select 
+                value={formData.declaredUsage || ''}
+                onValueChange={(value) => handleInputChange('declaredUsage', value)}
+                disabled={!formData.constructionType || !formData.constructionNature}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner l'usage" />
+                  <SelectValue placeholder={
+                    !formData.constructionType || !formData.constructionNature
+                      ? "Sélectionner d'abord le type et la nature" 
+                      : "Sélectionner l'usage"
+                  } />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Habitation">Habitation</SelectItem>
-                  <SelectItem value="Commerce">Commerce</SelectItem>
-                  <SelectItem value="Bureau">Bureau</SelectItem>
-                  <SelectItem value="Industrie">Industrie</SelectItem>
-                  <SelectItem value="Agriculture">Agriculture</SelectItem>
-                  <SelectItem value="Usage mixte">Usage mixte</SelectItem>
-                  <SelectItem value="Entrepôt">Entrepôt</SelectItem>
-                  <SelectItem value="Terrain vacant">Terrain vacant</SelectItem>
+                  {availableDeclaredUsages.map((usage) => (
+                    <SelectItem key={usage} value={usage}>{usage}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {(!formData.constructionType || !formData.constructionNature) && (
+                <p className="text-xs text-muted-foreground">
+                  Veuillez d'abord sélectionner le type et la nature de construction
+                </p>
+              )}
             </div>
 
             
