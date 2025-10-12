@@ -1691,7 +1691,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </Popover>
               </div>
 
-              {formData.constructionType !== "terrain nu" && (
+              {formData.constructionType !== "Terrain nu" && (
                 <div className="space-y-4">
                   {buildingPermits.map((permit, index) => (
                       <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
@@ -1823,7 +1823,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               )}
                 
                 {/* Bouton Ajouter déplacé en dessous des blocs */}
-                {formData.constructionType !== "terrain nu" && (
+                {formData.constructionType !== "Terrain nu" && (
                   <div className="space-y-2">
                   {/* Notification d'avertissement */}
                   {showPermitWarning && (
