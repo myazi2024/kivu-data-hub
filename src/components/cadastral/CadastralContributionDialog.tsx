@@ -46,6 +46,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [titleDocFiles, setTitleDocFiles] = useState<File[]>([]);
   const [showPermitRequestDialog, setShowPermitRequestDialog] = useState(false);
   const [permitActionMode, setPermitActionMode] = useState<'demander' | 'ajouter' | null>(null);
+  const [showRequiredFieldsPopover, setShowRequiredFieldsPopover] = useState(false);
+  const [highlightRequiredFields, setHighlightRequiredFields] = useState(false);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -1254,11 +1256,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               ))}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="constructionType">Type de construction</Label>
+            <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
+              <Label htmlFor="constructionType" className="flex items-center gap-1">
+                Type de construction
+                {highlightRequiredFields && !formData.constructionType && (
+                  <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
+                )}
+              </Label>
               <Select 
                 value={formData.constructionType || ''}
-                onValueChange={(value) => handleInputChange('constructionType', value)}
+                onValueChange={(value) => {
+                  handleInputChange('constructionType', value);
+                  setHighlightRequiredFields(false);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner le type" />
@@ -1273,11 +1283,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="constructionNature">Nature de construction</Label>
+            <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
+              <Label htmlFor="constructionNature" className="flex items-center gap-1">
+                Nature de construction
+                {highlightRequiredFields && !formData.constructionNature && (
+                  <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
+                )}
+              </Label>
               <Select 
                 value={formData.constructionNature || ''}
-                onValueChange={(value) => handleInputChange('constructionNature', value)}
+                onValueChange={(value) => {
+                  handleInputChange('constructionNature', value);
+                  setHighlightRequiredFields(false);
+                }}
                 disabled={!formData.constructionType}
               >
                 <SelectTrigger>
@@ -1300,11 +1318,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="declaredUsage">Usage déclaré</Label>
+            <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
+              <Label htmlFor="declaredUsage" className="flex items-center gap-1">
+                Usage déclaré
+                {highlightRequiredFields && !formData.declaredUsage && (
+                  <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
+                )}
+              </Label>
               <Select 
                 value={formData.declaredUsage || ''}
-                onValueChange={(value) => handleInputChange('declaredUsage', value)}
+                onValueChange={(value) => {
+                  handleInputChange('declaredUsage', value);
+                  setHighlightRequiredFields(false);
+                }}
                 disabled={!formData.constructionType || !formData.constructionNature}
               >
                 <SelectTrigger>
@@ -1384,24 +1410,111 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <FileText className="h-3.5 w-3.5" />
                     Demander
                   </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setPermitActionMode('ajouter');
-                      addBuildingPermit();
-                    }}
-                    disabled={!formData.constructionType || !formData.constructionNature || !formData.declaredUsage}
-                    className={`gap-1.5 h-8 px-3 rounded-md transition-all text-xs font-medium ${
-                      permitActionMode === 'ajouter' 
-                        ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90' 
-                        : 'hover:bg-background/60'
-                    }`}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    Ajouter
-                  </Button>
+                  <Popover open={showRequiredFieldsPopover} onOpenChange={setShowRequiredFieldsPopover}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          const fieldsIncomplete = !formData.constructionType || !formData.constructionNature || !formData.declaredUsage;
+                          
+                          if (fieldsIncomplete) {
+                            e.preventDefault();
+                            setShowRequiredFieldsPopover(true);
+                            setHighlightRequiredFields(true);
+                            
+                            // Scroll to the top of the form to show highlighted fields
+                            setTimeout(() => {
+                              const formElement = document.querySelector('[id^="radix-"]');
+                              if (formElement) {
+                                formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                              }
+                            }, 100);
+                            
+                            // Auto-close popover after 5 seconds
+                            setTimeout(() => {
+                              setShowRequiredFieldsPopover(false);
+                            }, 5000);
+                          } else {
+                            setPermitActionMode('ajouter');
+                            addBuildingPermit();
+                          }
+                        }}
+                        className={`gap-1.5 h-8 px-3 rounded-md transition-all text-xs font-medium ${
+                          permitActionMode === 'ajouter' 
+                            ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90' 
+                            : 'hover:bg-background/60'
+                        } ${!formData.constructionType || !formData.constructionNature || !formData.declaredUsage ? 'opacity-60' : ''}`}
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Ajouter
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent 
+                      className="w-80 p-0 border-2 border-primary/20 shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-2"
+                      side="top"
+                      align="center"
+                      sideOffset={8}
+                    >
+                      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-primary/5 via-background to-primary/5">
+                        {/* Animated background pattern */}
+                        <div className="absolute inset-0 bg-grid-primary/5 animate-pulse" />
+                        
+                        <div className="relative p-5 space-y-4">
+                          {/* Icon and Title */}
+                          <div className="flex items-start gap-3">
+                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center animate-scale-in">
+                              <Info className="h-5 w-5 text-primary" />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <h4 className="font-semibold text-sm leading-tight">
+                                Champs requis manquants
+                              </h4>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Veuillez d'abord compléter les informations suivantes en surbrillance :
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Required fields list */}
+                          <div className="space-y-2 pl-13">
+                            {!formData.constructionType && (
+                              <div className="flex items-center gap-2 text-xs animate-fade-in">
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                <span className="font-medium">Type de construction</span>
+                              </div>
+                            )}
+                            {!formData.constructionNature && (
+                              <div className="flex items-center gap-2 text-xs animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                <span className="font-medium">Nature de construction</span>
+                              </div>
+                            )}
+                            {!formData.declaredUsage && (
+                              <div className="flex items-center gap-2 text-xs animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                                <span className="font-medium">Usage déclaré</span>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Close button */}
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => {
+                              setShowRequiredFieldsPopover(false);
+                              setTimeout(() => setHighlightRequiredFields(false), 3000);
+                            }}
+                            className="w-full mt-3 bg-primary/10 hover:bg-primary/20 text-primary font-medium text-xs h-8"
+                          >
+                            Compris
+                          </Button>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
