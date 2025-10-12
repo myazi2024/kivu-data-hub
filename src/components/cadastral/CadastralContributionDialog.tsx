@@ -1392,6 +1392,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       setPermitActionMode('ajouter');
                       addBuildingPermit();
                     }}
+                    disabled={!formData.constructionType || !formData.constructionNature || !formData.declaredUsage}
                     className={`gap-1.5 h-8 px-3 rounded-md transition-all text-xs font-medium ${
                       permitActionMode === 'ajouter' 
                         ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90' 
