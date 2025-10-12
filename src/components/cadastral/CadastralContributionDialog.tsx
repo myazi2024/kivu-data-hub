@@ -53,6 +53,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [permitActionMode, setPermitActionMode] = useState<'demander' | 'ajouter' | null>(null);
   const [showRequiredFieldsPopover, setShowRequiredFieldsPopover] = useState(false);
   const [highlightRequiredFields, setHighlightRequiredFields] = useState(false);
+  const [showOwnerWarning, setShowOwnerWarning] = useState(false);
+  const [highlightIncompleteOwner, setHighlightIncompleteOwner] = useState(false);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -739,6 +741,31 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Fonctions pour gérer les propriétaires actuels
   const addCurrentOwner = () => {
+    const lastOwner = currentOwners[currentOwners.length - 1];
+    
+    // Vérifier si le dernier propriétaire est complété
+    if (!lastOwner?.lastName || !lastOwner?.firstName) {
+      // Afficher la notification et mettre en surbrillance
+      setShowOwnerWarning(true);
+      setHighlightIncompleteOwner(true);
+      
+      // Masquer la notification après 5 secondes
+      setTimeout(() => {
+        setShowOwnerWarning(false);
+      }, 5000);
+      
+      // Retirer la surbrillance après 3 secondes
+      setTimeout(() => {
+        setHighlightIncompleteOwner(false);
+      }, 3000);
+      
+      return;
+    }
+    
+    // Réinitialiser les états d'avertissement
+    setShowOwnerWarning(false);
+    setHighlightIncompleteOwner(false);
+    
     setCurrentOwners([...currentOwners, {
       lastName: '',
       middleName: '',
@@ -1326,7 +1353,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
 
               {currentOwners.map((owner, index) => (
-                <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in">
+                <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
+                  highlightIncompleteOwner && index === currentOwners.length - 1 && (!owner.lastName || !owner.firstName) 
+                    ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
+                    : ''
+                }`}>
                   <div className="flex items-center justify-between">
                     <h4 className="text-sm font-semibold">Propriétaire #{index + 1}</h4>
                     {currentOwners.length > 1 && (
@@ -1439,18 +1470,36 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               ))}
 
-              <div className="flex justify-center sm:justify-start pt-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={addCurrentOwner}
-                  disabled={!currentOwners[currentOwners.length - 1]?.lastName || !currentOwners[currentOwners.length - 1]?.firstName}
-                  className="gap-2 text-primary hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter un propriétaire
-                </Button>
+              <div className="space-y-2">
+                {/* Notification d'avertissement */}
+                {showOwnerWarning && (
+                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                          Complétez d'abord le propriétaire actuel
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                          Veuillez renseigner le nom et le prénom du propriétaire #{currentOwners.length} avant d'en ajouter un nouveau.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex justify-center sm:justify-start">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={addCurrentOwner}
+                    className="gap-2 text-primary hover:text-primary hover:bg-primary/10 transition-all"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter un propriétaire
+                  </Button>
+                </div>
               </div>
             </div>
 
