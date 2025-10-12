@@ -1273,77 +1273,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="location" className="space-y-6 mt-6 animate-fade-in">
-            {/* Section Superficie */}
-            <div className="space-y-4 pb-4 border-b">
-              <Label className="text-base font-semibold">Superficie</Label>
-              
-              <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-transparent border border-border/50">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">Dimensions de chaque côté (en mètres)</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Ajoutez les dimensions de chaque côté de la parcelle
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  {parcelSides.map((side, index) => (
-                    <div key={index} className="flex items-center gap-2 animate-fade-in">
-                      <Input
-                        placeholder="Nom du côté"
-                        value={side.name}
-                        onChange={(e) => updateParcelSide(index, 'name', e.target.value)}
-                        className="flex-1 transition-all focus:scale-[1.01]"
-                      />
-                      <Input
-                        type="number"
-                        placeholder="Longueur"
-                        value={side.length}
-                        onChange={(e) => updateParcelSide(index, 'length', e.target.value)}
-                        className="w-32 transition-all focus:scale-[1.01]"
-                      />
-                      <span className="text-xs text-muted-foreground w-6">m</span>
-                      {parcelSides.length > 2 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeParcelSide(index)}
-                          className="hover:bg-destructive/10 transition-all"
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addParcelSide}
-                  className="w-full hover:bg-primary/5 transition-all hover:scale-[1.02]"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Ajouter un côté
-                </Button>
-
-                {formData.areaSqm && (
-                  <div className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 animate-scale-in">
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      Superficie calculée
-                    </p>
-                    <p className="text-3xl font-bold text-primary mb-2">{formData.areaSqm} m²</p>
-                    <p className="text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md inline-block">
-                      {parcelSides.length === 2 && "Calcul rectangulaire simple"}
-                      {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
-                      {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Choix du type de section */}
             <div className="space-y-2 pb-4 border-t">
               <Label htmlFor="sectionType">Type de section *</Label>
@@ -1600,6 +1529,77 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <p className="text-xs text-muted-foreground">
                     {!formData.collectivite ? "Sélectionner d'abord une collectivité" : "Saisie manuelle - optionnel"}
                   </p>
+                </div>
+              </div>
+            )}
+
+            {/* Dimensions de la parcelle et calcul de la superficie */}
+            {sectionType && (
+              <div className="space-y-2 pt-4 border-t">
+                <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-transparent border border-border/50">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">Dimensions de chaque côté (en mètres)</Label>
+                    <p className="text-xs text-muted-foreground">
+                      Ajoutez les dimensions de chaque côté de la parcelle
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {parcelSides.map((side, index) => (
+                      <div key={index} className="flex items-center gap-2 animate-fade-in">
+                        <Input
+                          placeholder="Nom du côté"
+                          value={side.name}
+                          onChange={(e) => updateParcelSide(index, 'name', e.target.value)}
+                          className="flex-1 transition-all focus:scale-[1.01]"
+                        />
+                        <Input
+                          type="number"
+                          placeholder="Longueur"
+                          value={side.length}
+                          onChange={(e) => updateParcelSide(index, 'length', e.target.value)}
+                          className="w-32 transition-all focus:scale-[1.01]"
+                        />
+                        <span className="text-xs text-muted-foreground w-6">m</span>
+                        {parcelSides.length > 2 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeParcelSide(index)}
+                            className="hover:bg-destructive/10 transition-all"
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addParcelSide}
+                    className="w-full hover:bg-primary/5 transition-all hover:scale-[1.02]"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Ajouter un côté
+                  </Button>
+
+                  {formData.areaSqm && (
+                    <div className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 animate-scale-in">
+                      <p className="text-sm font-medium text-muted-foreground mb-1">
+                        Superficie calculée
+                      </p>
+                      <p className="text-3xl font-bold text-primary mb-2">{formData.areaSqm} m²</p>
+                      <p className="text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md inline-block">
+                        {parcelSides.length === 2 && "Calcul rectangulaire simple"}
+                        {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
+                        {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
