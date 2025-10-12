@@ -1839,37 +1839,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   )}
 
-                  <Popover open={showRequiredFieldsPopover} onOpenChange={setShowRequiredFieldsPopover}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={(e) => {
-                          const fieldsIncomplete = !formData.constructionType || !formData.constructionNature || !formData.declaredUsage;
-                          
-                          if (fieldsIncomplete) {
-                            e.preventDefault();
-                            setShowRequiredFieldsPopover(true);
-                            setHighlightRequiredFields(true);
-                          } else {
-                            setPermitActionMode('ajouter');
-                            addBuildingPermit();
-                          }
-                        }}
-                        className={`gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm ${!formData.constructionType || !formData.constructionNature || !formData.declaredUsage ? 'opacity-60' : ''}`}
-                      >
-                        <Plus className="h-4 w-4" />
-                        Ajouter un permis
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <div className="space-y-2">
-                        <p className="text-sm font-semibold">Champs requis manquants</p>
-                        <p className="text-xs text-muted-foreground">Complétez d'abord : Type, Nature et Usage de construction</p>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setPermitActionMode('ajouter');
+                      addBuildingPermit();
+                    }}
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter un permis
+                  </Button>
                 </div>
               </div>
           </TabsContent>
