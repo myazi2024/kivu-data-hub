@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink, UserPlus, LogIn } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -931,6 +932,61 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
 
+  // Calculer le pourcentage de complétion du formulaire
+  const calculateProgress = () => {
+    let totalFields = 0;
+    let filledFields = 0;
+
+    // Onglet Général
+    if (formData.propertyTitleType) filledFields++;
+    totalFields++;
+    
+    if (formData.titleReferenceNumber) filledFields++;
+    totalFields++;
+    
+    if (formData.constructionType) filledFields++;
+    totalFields++;
+    
+    if (formData.constructionNature) filledFields++;
+    totalFields++;
+    
+    if (formData.declaredUsage) filledFields++;
+    totalFields++;
+    
+    const hasValidOwner = currentOwners.some(o => o.lastName && o.firstName);
+    if (hasValidOwner) filledFields++;
+    totalFields++;
+
+    // Onglet Localisation
+    if (formData.province) filledFields++;
+    totalFields++;
+    
+    if (sectionType === 'urbaine') {
+      if (formData.ville) filledFields++;
+      totalFields++;
+      if (formData.commune) filledFields++;
+      totalFields++;
+    } else if (sectionType === 'rurale') {
+      if (formData.territoire) filledFields++;
+      totalFields++;
+      if (formData.collectivite) filledFields++;
+      totalFields++;
+    }
+    
+    if (formData.areaSqm) filledFields++;
+    totalFields++;
+
+    // Onglet Historiques (optionnel mais compté)
+    if (previousOwners.length > 0) filledFields++;
+    totalFields++;
+
+    // Onglet Obligations (optionnel mais compté)
+    if (taxRecords.length > 0 || mortgageRecords.length > 0) filledFields++;
+    totalFields++;
+
+    return Math.round((filledFields / totalFields) * 100);
+  };
+
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
@@ -958,6 +1014,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     ]);
     setAvailableQuartiers([]);
     setAvailableAvenues([]);
+    setBuildingPermits([]);
+    setGpsCoordinates([]);
+    setShowRequiredFieldsPopover(false);
+    setHighlightRequiredFields(false);
     onOpenChange(false);
   };
 
@@ -1033,21 +1093,47 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="general" className="w-full px-6 pb-6">
-          <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50 p-1 rounded-lg shadow-inner">
-            <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all">
-              Général
-            </TabsTrigger>
-            <TabsTrigger value="location" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all">
-              Localisation
-            </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all">
-              Historiques
-            </TabsTrigger>
-            <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all">
-              Obligations
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="general" className="w-full">
+          <div className="sticky top-0 z-20 bg-background px-6 pt-4 pb-3 -mx-6 border-b shadow-sm">
+            <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3">
+              <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
+                Général
+              </TabsTrigger>
+              <TabsTrigger value="location" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
+                Localisation
+              </TabsTrigger>
+              <TabsTrigger value="history" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
+                Historiques
+              </TabsTrigger>
+              <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
+                Obligations
+              </TabsTrigger>
+            </TabsList>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs sm:text-sm">
+                <span className="text-muted-foreground font-medium">Progression</span>
+                <span className="text-primary font-semibold">{calculateProgress()}%</span>
+              </div>
+              <Progress 
+                value={calculateProgress()} 
+                className="h-2 animate-fade-in"
+              />
+              {calculateProgress() < 100 && (
+                <p className="text-xs text-muted-foreground">
+                  Continuez à remplir le formulaire pour soumettre votre contribution
+                </p>
+              )}
+              {calculateProgress() === 100 && (
+                <p className="text-xs text-primary font-medium flex items-center gap-1 animate-fade-in">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Formulaire complété ! Vous pouvez maintenant soumettre.
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <div className="px-6 pb-6">
 
           <TabsContent value="general" className="space-y-6 mt-6 animate-fade-in">
             <PropertyTitleTypeSelect 
@@ -2578,26 +2664,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
             )}
           </TabsContent>
+          </div>
         </Tabs>
-
-        <div className="flex gap-3 px-6 pb-6 pt-6 border-t mt-6">
-          <Button 
-            variant="outline" 
-            onClick={handleClose} 
-            disabled={loading} 
-            className="flex-1 h-12 hover:bg-muted transition-all hover:scale-[1.02]"
-          >
-            Annuler
-          </Button>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={loading || uploading} 
-            className="flex-1 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all hover:scale-[1.02]"
-          >
-            {(loading || uploading) && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-            {uploading ? 'Téléchargement...' : 'Soumettre la contribution'}
-          </Button>
-        </div>
       </DialogContent>
 
       {/* Dialog d'authentification */}
