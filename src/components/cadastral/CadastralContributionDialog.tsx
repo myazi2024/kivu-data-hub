@@ -2477,32 +2477,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
         </Tabs>
 
-        <div className="flex items-center space-x-3 px-6 py-4 border-t bg-muted/20">
-          <Checkbox 
-            id="whatsapp" 
-            checked={requestWhatsAppNotif}
-            onCheckedChange={(checked) => setRequestWhatsAppNotif(checked as boolean)}
-            className="transition-all"
-          />
-          <Label htmlFor="whatsapp" className="text-sm cursor-pointer hover:text-primary transition-colors">
-            M'informer par WhatsApp si les informations sont validées
-          </Label>
-        </div>
-
-        {requestWhatsAppNotif && (
-          <div className="px-6 pb-4 animate-fade-in">
-            <div className="space-y-2">
-              <Label htmlFor="whatsapp-number" className="text-sm font-medium">Numéro WhatsApp</Label>
-              <Input
-                id="whatsapp-number"
-                placeholder="+243 XXX XXX XXX"
-                value={formData.whatsappNumber || ''}
-                onChange={(e) => handleInputChange('whatsappNumber', e.target.value)}
-                className="transition-all focus:scale-[1.01]"
+        {/* Section finale - Notification WhatsApp */}
+        <div className="mt-6 px-6 space-y-4">
+          <div className="border-t pt-6">
+            <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/30 border">
+              <Checkbox 
+                id="whatsapp" 
+                checked={requestWhatsAppNotif}
+                onCheckedChange={(checked) => setRequestWhatsAppNotif(checked as boolean)}
+                className="transition-all"
               />
+              <Label htmlFor="whatsapp" className="text-sm cursor-pointer hover:text-primary transition-colors font-medium">
+                M'informer par WhatsApp si les informations sont validées
+              </Label>
             </div>
+
+            {requestWhatsAppNotif && (
+              <div className="mt-4 animate-fade-in">
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp-number" className="text-sm font-medium">Numéro WhatsApp</Label>
+                  <Input
+                    id="whatsapp-number"
+                    placeholder="+243 XXX XXX XXX"
+                    value={formData.whatsappNumber || ''}
+                    onChange={(e) => handleInputChange('whatsappNumber', e.target.value)}
+                    className="transition-all focus:scale-[1.01]"
+                  />
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         <div className="flex gap-3 px-6 pb-6">
           <Button 
