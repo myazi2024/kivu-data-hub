@@ -11,7 +11,7 @@ import { Separator } from '@/components/ui/separator';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Building2, CheckCircle2, AlertCircle, ArrowLeft, Upload, X, FileImage } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 
 interface BuildingPermitRequestDialogProps {
@@ -35,7 +35,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     hasExistingConstruction ? 'regularization' : 'new'
   );
   const [loading, setLoading] = useState(false);
-  const [constructionFiles, setConstructionFiles] = useState<File[]>([]);
   
   const [formData, setFormData] = useState({
     constructionType: '',
@@ -114,20 +113,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const newFiles = Array.from(e.target.files);
-      setConstructionFiles(prev => [...prev, ...newFiles]);
-    }
-  };
-
-  const removeFile = (index: number) => {
-    setConstructionFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
   const handleClose = () => {
     setActiveStep('form');
-    setConstructionFiles([]);
     setFormData({
       constructionType: '',
       constructionNature: '',
@@ -274,37 +261,25 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   const FormContent = () => (
     <form onSubmit={handleSubmit} className="space-y-4 p-4">
-      {/* Type de demande - Mobile-optimized segmented control */}
+      {/* Type de demande */}
       <div className="space-y-3">
         <Label className="text-sm font-semibold">Type de demande</Label>
-        <div className="inline-flex items-center w-full rounded-lg bg-muted p-1 gap-1 border border-border/50">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setRequestType('new')}
-            className={`flex-1 h-9 text-xs font-medium transition-all ${
-              requestType === 'new'
-                ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
-                : 'hover:bg-background/60'
-            }`}
-          >
-            Nouveau permis
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setRequestType('regularization')}
-            className={`flex-1 h-9 text-xs font-medium transition-all ${
-              requestType === 'regularization'
-                ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
-                : 'hover:bg-background/60'
-            }`}
-          >
-            Régularisation
-          </Button>
-        </div>
+        <RadioGroup value={requestType} onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} className="space-y-2">
+          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+            <RadioGroupItem value="new" id="new" />
+            <Label htmlFor="new" className="flex-1 cursor-pointer">
+              <div className="font-medium text-sm">Nouveau permis</div>
+              <div className="text-xs text-muted-foreground">Construction à venir</div>
+            </Label>
+          </div>
+          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+            <RadioGroupItem value="regularization" id="regularization" />
+            <Label htmlFor="regularization" className="flex-1 cursor-pointer">
+              <div className="font-medium text-sm">Régularisation</div>
+              <div className="text-xs text-muted-foreground">Construction existante</div>
+            </Label>
+          </div>
+        </RadioGroup>
         
         {requestType === 'regularization' && (
           <div className="p-3 bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-900 rounded-lg flex items-start gap-2">
@@ -318,31 +293,23 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
       <Separator />
 
-      {/* Navigation par onglets - Mobile-optimized */}
-      <div className="inline-flex items-center w-full rounded-lg bg-muted p-1 gap-1 border border-border/50">
+      {/* Navigation par onglets */}
+      <div className="flex gap-2">
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant={currentTab === 'construction' ? 'default' : 'outline'}
           onClick={() => setCurrentTab('construction')}
-          className={`flex-1 h-9 text-xs font-medium transition-all ${
-            currentTab === 'construction'
-              ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
-              : 'hover:bg-background/60'
-          }`}
+          size="sm"
+          className="flex-1"
         >
           Construction
         </Button>
         <Button
           type="button"
-          variant="ghost"
-          size="sm"
+          variant={currentTab === 'applicant' ? 'default' : 'outline'}
           onClick={() => setCurrentTab('applicant')}
-          className={`flex-1 h-9 text-xs font-medium transition-all ${
-            currentTab === 'applicant'
-              ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90'
-              : 'hover:bg-background/60'
-          }`}
+          size="sm"
+          className="flex-1"
         >
           Demandeur
         </Button>
@@ -501,48 +468,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             </div>
           </>
         )}
-
-        {/* Section Pièces jointes */}
-        <div className="space-y-2 pt-2">
-          <Label className="text-xs font-medium">
-            {requestType === 'new' ? 'Plans de construction' : 'Images de la construction'}
-          </Label>
-          <div className="space-y-2">
-            <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
-              <Upload className="h-4 w-4 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">
-                {requestType === 'new' ? 'Ajouter des plans' : 'Ajouter des images'}
-              </span>
-              <input
-                type="file"
-                multiple
-                accept="image/*,.pdf"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-            </label>
-            
-            {constructionFiles.length > 0 && (
-              <div className="space-y-2">
-                {constructionFiles.map((file, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                    <FileImage className="h-4 w-4 text-primary flex-shrink-0" />
-                    <span className="text-xs flex-1 truncate">{file.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFile(index)}
-                      className="h-6 w-6 p-0 hover:bg-destructive/10"
-                    >
-                      <X className="h-3 w-3 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* Onglet Demandeur */}
