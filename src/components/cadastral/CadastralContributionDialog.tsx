@@ -2219,6 +2219,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               )}
             </div>
+          </TabsContent>
 
           <TabsContent value="history" className="space-y-6 mt-6 animate-fade-in">
             <div className="space-y-4">
@@ -2802,7 +2803,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </Dialog>
     </>
   );
 };
