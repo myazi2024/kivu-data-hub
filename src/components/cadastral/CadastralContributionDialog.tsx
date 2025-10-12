@@ -1365,16 +1365,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </PopoverContent>
                   </Popover>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addBuildingPermit}
-                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02]"
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPermitRequestDialog(true)}
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02]"
+                  >
+                    <FileText className="h-4 w-4" />
+                    Demander un permis
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addBuildingPermit}
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter
+                  </Button>
+                </div>
               </div>
 
               {buildingPermits.length === 0 ? (
