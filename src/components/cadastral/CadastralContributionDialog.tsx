@@ -6,12 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink, UserPlus, LogIn } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { 
   getAllProvinces, 
   getVillesForProvince, 
@@ -39,8 +41,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 }) => {
   const { submitContribution, loading } = useCadastralContribution();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [showSuccess, setShowSuccess] = useState(false);
-  const [requestWhatsAppNotif, setRequestWhatsAppNotif] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [ownerDocFile, setOwnerDocFile] = useState<File | null>(null);
   const [titleDocFiles, setTitleDocFiles] = useState<File[]>([]);
@@ -123,7 +127,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   const [formData, setFormData] = useState<CadastralContributionData>({
     parcelNumber: parcelNumber,
-    whatsappNumber: '',
   });
 
   // État pour gérer les dimensions des côtés de la parcelle
@@ -528,6 +531,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   const handleSubmit = async () => {
+    // Vérifier si l'utilisateur est connecté
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
+
     setUploading(true);
     
     try {
@@ -923,9 +932,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
 
   const handleClose = () => {
-    setFormData({ parcelNumber: parcelNumber, whatsappNumber: '' });
+    setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
-    setRequestWhatsAppNotif(false);
+    setShowAuthDialog(false);
     setOwnerDocFile(null);
     setTitleDocFiles([]);
     setSectionType('');
@@ -2571,39 +2580,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
         </Tabs>
 
-        {/* Section finale - Notification WhatsApp */}
-        <div className="mt-6 px-6 space-y-4">
-          <div className="border-t pt-6">
-            <div className="flex items-center space-x-3 p-4 rounded-lg bg-muted/30 border">
-              <Checkbox 
-                id="whatsapp" 
-                checked={requestWhatsAppNotif}
-                onCheckedChange={(checked) => setRequestWhatsAppNotif(checked as boolean)}
-                className="transition-all"
-              />
-              <Label htmlFor="whatsapp" className="text-sm cursor-pointer hover:text-primary transition-colors font-medium">
-                M'informer par WhatsApp si les informations sont validées
-              </Label>
-            </div>
-
-            {requestWhatsAppNotif && (
-              <div className="mt-4 animate-fade-in">
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp-number" className="text-sm font-medium">Numéro WhatsApp</Label>
-                  <Input
-                    id="whatsapp-number"
-                    placeholder="+243 XXX XXX XXX"
-                    value={formData.whatsappNumber || ''}
-                    onChange={(e) => handleInputChange('whatsappNumber', e.target.value)}
-                    className="transition-all focus:scale-[1.01]"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-3 px-6 pb-6">
+        <div className="flex gap-3 px-6 pb-6 pt-6 border-t mt-6">
           <Button 
             variant="outline" 
             onClick={handleClose} 
@@ -2622,6 +2599,85 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </Button>
         </div>
       </DialogContent>
+
+      {/* Dialog d'authentification */}
+      <AlertDialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+        <AlertDialogContent className="sm:max-w-md border-0 shadow-2xl">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <UserPlus className="h-8 w-8 text-primary" />
+            </div>
+            <AlertDialogTitle className="text-2xl text-center">
+              Authentification requise
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center space-y-4 pt-4">
+              <p className="text-base">
+                Pour soumettre votre contribution et bénéficier de tous nos services, vous devez créer un compte ou vous connecter.
+              </p>
+              <div className="bg-muted/50 p-4 rounded-lg space-y-3 text-left">
+                <p className="font-semibold text-foreground text-sm flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  Avec un compte, vous pouvez :
+                </p>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Soumettre vos contributions cadastrales</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Suivre l'état de validation de vos données</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Être informé de la valeur accordée à votre contribution</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Contester les décisions de validation si nécessaire</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                    <span>Gérer tous vos codes CCC depuis un tableau de bord</span>
+                  </li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-2">
+            <Button 
+              onClick={() => {
+                setShowAuthDialog(false);
+                onOpenChange(false);
+                navigate('/auth');
+              }}
+              className="w-full h-12 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
+            >
+              <UserPlus className="h-5 w-5" />
+              Créer un compte
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => {
+                setShowAuthDialog(false);
+                onOpenChange(false);
+                navigate('/auth');
+              }}
+              className="w-full h-12 text-base font-semibold gap-2 hover:bg-muted transition-all"
+            >
+              <LogIn className="h-5 w-5" />
+              Se connecter
+            </Button>
+            <Button 
+              variant="ghost"
+              onClick={() => setShowAuthDialog(false)}
+              className="w-full mt-2"
+            >
+              Annuler
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
     </>
   );
