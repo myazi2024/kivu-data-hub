@@ -32,10 +32,10 @@ export const geographicData: GeographicHierarchy = {
     },
     territoires: {
       "Masisi": ["Bashali-Kaembe", "Bashali-Mokoto", "Katoyi", "Kisimba-Ikobo", "Luholu", "Osso-Banyungu", "Bahunde-Nord", "Bahunde-Sud"],
-      "Rutshuru": ["Bwisha", "Bwito", "Jomba", "Kiwanja", "Nyamilima", "Bukoma", "Bwito", "Kisigari"],
+      "Rutshuru": ["Bwisha", "Bwito", "Jomba", "Kiwanja", "Nyamilima", "Bukoma", "Kisigari"],
       "Nyiragongo": ["Kibumba", "Rugari", "Busanza", "Kibati", "Munigi"],
       "Walikale": ["Bakano", "Ikobo", "Wanianga", "Bakano-Pinga", "Osso", "Walikale-Centre"],
-      "Lubero": ["Bapakombe", "Bapere", "Baswaga", "Batangi", "Bamate", "Banyungu", "Batangi", "Lubero-Centre"],
+      "Lubero": ["Bapakombe", "Bapere", "Baswaga", "Batangi", "Bamate", "Banyungu", "Lubero-Centre"],
       "Beni": ["Bashu", "Bapakombe", "Babila-Bakeulu", "Beni-Centre", "Bashu-Kikingi"],
       "Oicha": ["Watalinga", "Bashu", "Beni-Mbau"]
     }
@@ -79,19 +79,26 @@ export const geographicData: GeographicHierarchy = {
       "Madimba": ["Madimba", "Kimpese"],
       "Lukula": ["Lukula", "Tshela"],
       "Tshela": ["Tshela", "Loango"],
-      "Songololo": ["Songololo", "Kimvula"]
+      "Songololo": ["Songololo", "Kimvula"],
+      "Luozi": ["Luozi", "Yema"],
+      "Seke-Banza": ["Seke-Banza", "Kimpangu"],
+      "Mbanza-Ngungu": ["Mbanza-Ngungu", "Kwilu-Ngongo"],
+      "Moanda": ["Moanda", "Nzadi"]
     }
   },
   "Kwilu": {
     villes: {
-      "Kikwit": ["Kikwit", "Lukemi", "Nzinda"]
+      "Kikwit": ["Kikwit", "Lukemi", "Nzinda"],
+      "Bandundu": ["Bandundu"]
     },
     territoires: {
       "Bulungu": ["Bulungu", "Kipuka"],
       "Gungu": ["Gungu", "Kiyaka"],
       "Idiofa": ["Idiofa", "Yasa-Bonga"],
       "Masi-Manimba": ["Masi-Manimba", "Kinzau-Vuete"],
-      "Bagata": ["Bagata", "Kwilu-Ngongo"]
+      "Bagata": ["Bagata", "Kwilu-Ngongo"],
+      "Mangai": ["Mangai", "Bokoro"],
+      "Kasongo-Lunda": ["Kasongo-Lunda"]
     }
   },
   "Haut-Katanga": {
@@ -104,7 +111,8 @@ export const geographicData: GeographicHierarchy = {
       "Kambove": ["Kambove", "Kasenga"],
       "Mitwaba": ["Mitwaba", "Pweto"],
       "Pweto": ["Pweto", "Kilwa"],
-      "Sakania": ["Sakania"]
+      "Sakania": ["Sakania"],
+      "Kasenga": ["Kasenga"]
     }
   },
   "Lualaba": {
@@ -114,8 +122,9 @@ export const geographicData: GeographicHierarchy = {
     },
     territoires: {
       "Mutshatsha": ["Mutshatsha", "Kafakumba"],
-      "Kaponga": ["Kaponga", "Sandoa"],
-      "Dilolo": ["Dilolo"]
+      "Kapanga": ["Kapanga", "Sandoa"],
+      "Dilolo": ["Dilolo"],
+      "Sandoa": ["Sandoa"]
     }
   },
   "Ituri": {
@@ -139,19 +148,24 @@ export const geographicData: GeographicHierarchy = {
       "Basoko": ["Basoko", "Yatolema"],
       "Bafwasende": ["Bafwasende", "Babombi"],
       "Ubundu": ["Ubundu", "Wanie-Rukula"],
-      "Isangi": ["Isangi", "Yaselia"]
+      "Isangi": ["Isangi", "Yaselia"],
+      "Yahuma": ["Yahuma"],
+      "Opala": ["Opala"]
     }
   },
   "Kasaï": {
     villes: {
-      "Tshikapa": ["Tshikapa"]
+      "Tshikapa": ["Tshikapa"],
+      "Kananga": ["Kananga", "Katoka", "Lukonga", "Ndesha"]
     },
     territoires: {
       "Dekese": ["Dekese", "Bena-Leka"],
       "Dimbelenge": ["Dimbelenge"],
       "Ilebo": ["Ilebo", "Bena-Dibele"],
       "Kamonia": ["Kamonia", "Luiza"],
-      "Luebo": ["Luebo", "Territoire"]
+      "Luebo": ["Luebo", "Territoire"],
+      "Mweka": ["Mweka"],
+      "Luiza": ["Luiza"]
     }
   },
   "Kasaï-Central": {
@@ -194,7 +208,8 @@ export const geographicData: GeographicHierarchy = {
   },
   "Haut-Uele": {
     villes: {
-      "Isiro": ["Isiro"]
+      "Isiro": ["Isiro"],
+      "Wamba": ["Wamba"]
     },
     territoires: {
       "Dungu": ["Dungu", "Bangadi"],
@@ -243,7 +258,8 @@ export const geographicData: GeographicHierarchy = {
   },
   "Lomami": {
     villes: {
-      "Mwene-Ditu": ["Mwene-Ditu"]
+      "Mwene-Ditu": ["Mwene-Ditu"],
+      "Kabinda": ["Kabinda"]
     },
     territoires: {
       "Kabinda": ["Kabinda", "Lomela"],
@@ -254,7 +270,8 @@ export const geographicData: GeographicHierarchy = {
   },
   "Sankuru": {
     villes: {
-      "Lodja": ["Lodja"]
+      "Lodja": ["Lodja"],
+      "Lusambo": ["Lusambo"]
     },
     territoires: {
       "Katako-Kombe": ["Katako-Kombe", "Wembo-Nyama"],
@@ -279,7 +296,8 @@ export const geographicData: GeographicHierarchy = {
   },
   "Haut-Lomami": {
     villes: {
-      "Kamina": ["Kamina"]
+      "Kamina": ["Kamina"],
+      "Bukama": ["Bukama"]
     },
     territoires: {
       "Bukama": ["Bukama", "Kaniama"],
@@ -384,7 +402,7 @@ export const quartiersAvenuesData: { [province: string]: VilleCommunes } = {
         "Himbi": ["Avenue de l'Indépendance", "Avenue Mobutu", "Avenue de la Paix", "Avenue Rond-Point", "Avenue Président"],
         "Les Volcans": ["Avenue du Rond-Point", "Avenue de l'Aéroport", "Avenue Mama Yemo", "Avenue BCDC", "Boulevard Kanyamuhanga"],
         "Katindo": ["Avenue Katindo", "Avenue Munene", "Avenue Mapendo", "Avenue Birere", "Avenue du Lac"],
-        "Ndosho": ["Avenue Ndosho", "Avenue Maman Olive", "Avenue de la Frontière", "Avenue Ndosho", "Avenue de l'Amitié"],
+        "Ndosho": ["Avenue Ndosho", "Avenue Maman Olive", "Avenue de la Frontière", "Avenue de l'Amitié"],
         "Kasika": ["Avenue Kasika", "Avenue Keshero", "Avenue Mutiri", "Avenue Mabanga", "Avenue Saké"],
         "Majengo": ["Avenue Majengo", "Avenue de la Révolution", "Avenue du Travail", "Avenue du Commerce", "Avenue Maman Mobutu"],
         "Murara": ["Avenue Murara", "Avenue Masisi", "Avenue Rutshuru"],
@@ -395,7 +413,7 @@ export const quartiersAvenuesData: { [province: string]: VilleCommunes } = {
         "Katoyi": ["Avenue Katoyi", "Avenue Mugunga", "Avenue Lac Vert", "Avenue Mabanga Nord"],
         "Mugunga": ["Avenue Mugunga", "Avenue de la Paix", "Avenue Unity", "Avenue Lac Kivu"],
         "Virunga": ["Avenue Virunga", "Avenue Muhabura", "Avenue Karisimbi", "Avenue Sabyinyo"],
-        "Kyeshero": ["Avenue Kyeshero", "Avenue de l'Université", "Avenue UNIGOM", "Avenue Université Libre des Pays des Grands Lacs"],
+        "Kyeshero": ["Avenue Kyeshero", "Avenue de l'Université", "Avenue UNIGOM", "Avenue ULPGL"],
         "Bujovu": ["Avenue Bujovu", "Avenue Mabanga Sud", "Avenue Mugunga"],
         "Majengo": ["Avenue Kanyamuhanga", "Avenue Goma", "Avenue Bulengo"]
       }
