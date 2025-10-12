@@ -688,6 +688,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   
   // Fonctions pour gérer les coordonnées GPS
   const addGPSCoordinate = () => {
+    // Vérifier si le nombre de bornes n'excède pas le nombre de côtés
+    const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+    if (gpsCoordinates.length >= filledSides.length) {
+      toast({
+        title: "Limite atteinte",
+        description: `Vous ne pouvez ajouter que ${filledSides.length} borne(s) correspondant aux ${filledSides.length} côté(s) de la parcelle.`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setGpsCoordinates([...gpsCoordinates, {
       borne: `Borne ${gpsCoordinates.length + 1}`,
       lat: '',
@@ -1608,18 +1619,49 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {sectionType && (
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex-1">
                     <Label className="text-sm font-semibold">Coordonnées GPS des bornes (optionnel)</Label>
                     <p className="text-xs text-muted-foreground">
                       Ajoutez les coordonnées GPS de chaque borne du terrain
                     </p>
+                    {(() => {
+                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+                      const isSuperficieCompleted = filledSides.length >= 2;
+                      const canAddMore = gpsCoordinates.length < filledSides.length;
+                      
+                      if (!isSuperficieCompleted) {
+                        return (
+                          <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 flex items-center gap-1">
+                            <Info className="h-3 w-3" />
+                            Complétez d'abord le bloc "Dimensions de chaque côté" (au moins 2 côtés)
+                          </p>
+                        );
+                      }
+                      
+                      if (!canAddMore && gpsCoordinates.length > 0) {
+                        return (
+                          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                            <Info className="h-3 w-3" />
+                            Limite atteinte : {filledSides.length} borne(s) pour {filledSides.length} côté(s)
+                          </p>
+                        );
+                      }
+                      
+                      return null;
+                    })()}
                   </div>
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={addGPSCoordinate}
-                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02]"
+                    disabled={(() => {
+                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+                      const isSuperficieCompleted = filledSides.length >= 2;
+                      const canAddMore = gpsCoordinates.length < filledSides.length;
+                      return !isSuperficieCompleted || !canAddMore;
+                    })()}
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus className="h-4 w-4" />
                     Ajouter
