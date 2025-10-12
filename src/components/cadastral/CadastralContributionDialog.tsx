@@ -55,6 +55,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [highlightRequiredFields, setHighlightRequiredFields] = useState(false);
   const [showOwnerWarning, setShowOwnerWarning] = useState(false);
   const [highlightIncompleteOwner, setHighlightIncompleteOwner] = useState(false);
+  const [showPermitWarning, setShowPermitWarning] = useState(false);
+  const [highlightIncompletePermit, setHighlightIncompletePermit] = useState(false);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -880,6 +882,31 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   
   // Fonctions pour gérer les permis de construire
   const addBuildingPermit = () => {
+    const lastPermit = buildingPermits[buildingPermits.length - 1];
+    
+    // Vérifier si le dernier permis est complété
+    if (!lastPermit?.permitNumber || !lastPermit?.issuingService || !lastPermit?.issueDate) {
+      // Afficher la notification et mettre en surbrillance
+      setShowPermitWarning(true);
+      setHighlightIncompletePermit(true);
+      
+      // Masquer la notification après 5 secondes
+      setTimeout(() => {
+        setShowPermitWarning(false);
+      }, 5000);
+      
+      // Retirer la surbrillance après 3 secondes
+      setTimeout(() => {
+        setHighlightIncompletePermit(false);
+      }, 3000);
+      
+      return;
+    }
+    
+    // Réinitialiser les états d'avertissement
+    setShowPermitWarning(false);
+    setHighlightIncompletePermit(false);
+    
     setBuildingPermits([...buildingPermits, {
       permitNumber: '',
       issuingService: '',
@@ -1666,7 +1693,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
               <div className="space-y-4">
                 {buildingPermits.map((permit, index) => (
-                    <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
+                    <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
+                      highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issuingService || !permit.issueDate) 
+                        ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
+                        : ''
+                    }`}>
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold">Permis #{index + 1}</h4>
                         <Button
@@ -1790,37 +1821,56 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
                 
                 {/* Bouton Ajouter déplacé en dessous des blocs */}
-                <Popover open={showRequiredFieldsPopover} onOpenChange={setShowRequiredFieldsPopover}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        const fieldsIncomplete = !formData.constructionType || !formData.constructionNature || !formData.declaredUsage;
-                        
-                        if (fieldsIncomplete) {
-                          e.preventDefault();
-                          setShowRequiredFieldsPopover(true);
-                          setHighlightRequiredFields(true);
-                        } else {
-                          setPermitActionMode('ajouter');
-                          addBuildingPermit();
-                        }
-                      }}
-                      className={`gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm ${!formData.constructionType || !formData.constructionNature || !formData.declaredUsage ? 'opacity-60' : ''}`}
-                    >
-                      <Plus className="h-4 w-4" />
-                      Ajouter un permis
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <div className="space-y-2">
-                      <p className="text-sm font-semibold">Champs requis manquants</p>
-                      <p className="text-xs text-muted-foreground">Complétez d'abord : Type, Nature et Usage de construction</p>
+                <div className="space-y-2">
+                  {/* Notification d'avertissement */}
+                  {showPermitWarning && (
+                    <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                            Complétez d'abord le permis actuel
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Veuillez renseigner le numéro, le service émetteur et la date d'émission du Permis #{buildingPermits.length} avant d'en ajouter un nouveau.
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                  </PopoverContent>
-                </Popover>
+                  )}
+
+                  <Popover open={showRequiredFieldsPopover} onOpenChange={setShowRequiredFieldsPopover}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          const fieldsIncomplete = !formData.constructionType || !formData.constructionNature || !formData.declaredUsage;
+                          
+                          if (fieldsIncomplete) {
+                            e.preventDefault();
+                            setShowRequiredFieldsPopover(true);
+                            setHighlightRequiredFields(true);
+                          } else {
+                            setPermitActionMode('ajouter');
+                            addBuildingPermit();
+                          }
+                        }}
+                        className={`gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm ${!formData.constructionType || !formData.constructionNature || !formData.declaredUsage ? 'opacity-60' : ''}`}
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter un permis
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <div className="space-y-2">
+                        <p className="text-sm font-semibold">Champs requis manquants</p>
+                        <p className="text-xs text-muted-foreground">Complétez d'abord : Type, Nature et Usage de construction</p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
               </div>
           </TabsContent>
 
