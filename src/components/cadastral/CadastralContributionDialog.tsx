@@ -1767,7 +1767,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </PopoverContent>
                 </Popover>
               </div>
-            </div>
           </TabsContent>
 
           <TabsContent value="location" className="space-y-6 mt-6 animate-fade-in">
@@ -2218,7 +2217,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </Button>
                 </div>
               )}
-            </div>
           </TabsContent>
 
           <TabsContent value="history" className="space-y-6 mt-6 animate-fade-in">
@@ -2725,8 +2723,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       </DialogContent>
     </Dialog>
 
-      {/* Dialog d'authentification */}
-      <AlertDialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
+    {/* Dialog d'authentification */}
+    <AlertDialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
         <AlertDialogContent className="sm:max-w-md border-0 shadow-2xl">
           <AlertDialogHeader>
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -2801,8 +2799,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               Annuler
             </Button>
           </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 };
