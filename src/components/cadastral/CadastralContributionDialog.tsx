@@ -45,6 +45,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [ownerDocFile, setOwnerDocFile] = useState<File | null>(null);
   const [titleDocFiles, setTitleDocFiles] = useState<File[]>([]);
   const [showPermitRequestDialog, setShowPermitRequestDialog] = useState(false);
+  const [permitActionMode, setPermitActionMode] = useState<'demander' | 'ajouter' | null>(null);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -1365,13 +1366,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </PopoverContent>
                   </Popover>
                 </div>
-                <div className="inline-flex items-center rounded-lg bg-muted/50 p-1 gap-1 border border-border/50">
+                <div className="inline-flex items-center rounded-lg bg-muted p-1 gap-1 border border-border/50 shadow-sm">
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => setShowPermitRequestDialog(true)}
-                    className="gap-1.5 h-8 px-3 rounded-md hover:bg-background data-[active=true]:bg-background data-[active=true]:shadow-sm transition-all text-xs font-medium"
+                    onClick={() => {
+                      setPermitActionMode('demander');
+                      setShowPermitRequestDialog(true);
+                    }}
+                    className={`gap-1.5 h-8 px-3 rounded-md transition-all text-xs font-medium ${
+                      permitActionMode === 'demander' 
+                        ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90' 
+                        : 'hover:bg-background/60'
+                    }`}
                   >
                     <FileText className="h-3.5 w-3.5" />
                     Demander
@@ -1380,8 +1388,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={addBuildingPermit}
-                    className="gap-1.5 h-8 px-3 rounded-md hover:bg-background data-[active=true]:bg-background data-[active=true]:shadow-sm transition-all text-xs font-medium"
+                    onClick={() => {
+                      setPermitActionMode('ajouter');
+                      addBuildingPermit();
+                    }}
+                    className={`gap-1.5 h-8 px-3 rounded-md transition-all text-xs font-medium ${
+                      permitActionMode === 'ajouter' 
+                        ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90' 
+                        : 'hover:bg-background/60'
+                    }`}
                   >
                     <Plus className="h-3.5 w-3.5" />
                     Ajouter
