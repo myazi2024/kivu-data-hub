@@ -1439,16 +1439,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               ))}
 
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addCurrentOwner}
-                className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] w-full"
-              >
-                <Plus className="h-4 w-4" />
-                Ajouter un propriétaire
-              </Button>
+              <div className="flex justify-center sm:justify-start pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addCurrentOwner}
+                  className="gap-2 text-primary hover:text-primary hover:bg-primary/10 transition-all"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter un propriétaire
+                </Button>
+              </div>
             </div>
 
             <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
