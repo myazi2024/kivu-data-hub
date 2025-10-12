@@ -1404,14 +1404,40 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               </div>
 
-              {buildingPermits.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
-                  <p className="text-sm">Aucun permis ajouté</p>
+              <div className="relative overflow-hidden">
+                <div 
+                  className={`transition-all duration-300 ease-in-out ${
+                    permitActionMode === 'demander' 
+                      ? 'translate-x-0 opacity-100' 
+                      : permitActionMode === 'ajouter'
+                      ? '-translate-x-full opacity-0 absolute inset-0'
+                      : 'translate-x-0 opacity-100'
+                  }`}
+                >
+                  {buildingPermits.length === 0 && permitActionMode !== 'ajouter' && (
+                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
+                      <p className="text-sm">Aucun permis ajouté</p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="space-y-4">
-                  {buildingPermits.map((permit, index) => (
-                    <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
+                
+                <div 
+                  className={`transition-all duration-300 ease-in-out ${
+                    permitActionMode === 'ajouter' 
+                      ? 'translate-x-0 opacity-100' 
+                      : permitActionMode === 'demander'
+                      ? 'translate-x-full opacity-0 absolute inset-0'
+                      : buildingPermits.length === 0 ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 absolute inset-0'
+                  }`}
+                >
+                  {buildingPermits.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
+                      <p className="text-sm">Aucun permis ajouté</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {buildingPermits.map((permit, index) => (
+                        <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold">Permis #{index + 1}</h4>
                         <Button
@@ -1483,8 +1509,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
                     </div>
                   ))}
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
           </TabsContent>
 
