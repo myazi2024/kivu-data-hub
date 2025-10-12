@@ -1445,7 +1445,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   variant="ghost"
                   size="sm"
                   onClick={addCurrentOwner}
-                  className="gap-2 text-primary hover:text-primary hover:bg-primary/10 transition-all"
+                  disabled={!currentOwners[currentOwners.length - 1]?.lastName || !currentOwners[currentOwners.length - 1]?.firstName}
+                  className="gap-2 text-primary hover:text-primary hover:bg-primary/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="h-4 w-4" />
                   Ajouter un propriétaire
