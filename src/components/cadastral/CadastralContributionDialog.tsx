@@ -1555,40 +1555,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Section Permis de construire */}
             <div className="space-y-4 pt-4 border-t">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div>
-                    <Label className="text-sm font-semibold">Permis de construire (optionnel)</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Ajoutez les permis de construire si disponibles
-                    </p>
-                  </div>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full hover:bg-muted">
-                        <Info className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 text-sm" align="start" side="top">
-                      <div className="space-y-2">
-                        <h4 className="font-semibold">À propos du permis de construire</h4>
-                        <p className="text-muted-foreground">
-                          Le permis de construire est un document administratif délivré par les services 
-                          compétents (DUH, DUHDA, services municipaux) autorisant les travaux de construction, 
-                          de rénovation ou d'agrandissement d'un bâtiment.
-                        </p>
-                        <div className="pt-2 border-t">
-                          <p className="font-medium text-xs">Informations requises :</p>
-                          <ul className="list-disc list-inside text-xs text-muted-foreground mt-1 space-y-1">
-                            <li>Numéro du permis</li>
-                            <li>Service émetteur</li>
-                            <li>Date de délivrance</li>
-                            <li>Durée de validité (généralement 36 mois)</li>
-                            <li>Statut administratif du permis</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                <div>
+                  <Label className="text-sm font-semibold">Permis de construire (optionnel)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Ajoutez les permis de construire si disponibles
+                  </p>
                 </div>
                 <Popover>
                   <PopoverTrigger asChild>
