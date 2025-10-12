@@ -42,7 +42,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [requestWhatsAppNotif, setRequestWhatsAppNotif] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [ownerDocFile, setOwnerDocFile] = useState<File | null>(null);
-  const [titleDocFile, setTitleDocFile] = useState<File | null>(null);
+  const [titleDocFiles, setTitleDocFiles] = useState<File[]>([]);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -367,15 +367,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (type === 'owner') {
       setOwnerDocFile(file);
     } else {
-      setTitleDocFile(file);
+      // Check if we can add more title files
+      if (titleDocFiles.length >= 5) {
+        toast({
+          title: "Limite atteinte",
+          description: "Vous ne pouvez ajouter que 5 pièces jointes maximum",
+          variant: "destructive"
+        });
+        return;
+      }
+      setTitleDocFiles(prev => [...prev, file]);
     }
+    
+    // Reset the input
+    e.target.value = '';
   };
 
-  const removeFile = (type: 'owner' | 'title') => {
+  const removeFile = (type: 'owner' | 'title', index?: number) => {
     if (type === 'owner') {
       setOwnerDocFile(null);
-    } else {
-      setTitleDocFile(null);
+    } else if (index !== undefined) {
+      setTitleDocFiles(prev => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -411,7 +423,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     try {
       // Upload files if provided
       let ownerDocUrl = null;
-      let titleDocUrl = null;
+      let titleDocUrls: string[] = [];
 
       if (ownerDocFile) {
         ownerDocUrl = await uploadFile(ownerDocFile, 'owner-documents');
@@ -426,16 +438,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }
       }
 
-      if (titleDocFile) {
-        titleDocUrl = await uploadFile(titleDocFile, 'title-documents');
-        if (!titleDocUrl) {
-          toast({
-            title: "Erreur de téléchargement",
-            description: "Impossible de télécharger le document de titre",
-            variant: "destructive"
-          });
-          setUploading(false);
-          return;
+      if (titleDocFiles.length > 0) {
+        for (const file of titleDocFiles) {
+          const url = await uploadFile(file, 'title-documents');
+          if (!url) {
+            toast({
+              title: "Erreur de téléchargement",
+              description: "Impossible de télécharger un document de titre",
+              variant: "destructive"
+            });
+            setUploading(false);
+            return;
+          }
+          titleDocUrls.push(url);
         }
       }
 
@@ -504,7 +519,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         ...formData,
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownerDocumentUrl: ownerDocUrl || undefined,
-        titleDocumentUrl: titleDocUrl || undefined,
+        titleDocumentUrl: titleDocUrls.length > 0 ? JSON.stringify(titleDocUrls) : undefined,
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsData,
@@ -802,7 +817,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setShowSuccess(false);
     setRequestWhatsAppNotif(false);
     setOwnerDocFile(null);
-    setTitleDocFile(null);
+    setTitleDocFiles([]);
     setSectionType('');
     setSectionTypeAutoDetected(false);
     setPreviousOwners([]);
@@ -933,32 +948,47 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 {/* Title document attachment */}
                 <div className="space-y-2 mt-4">
-                  <Label htmlFor="titleDoc">Document du titre de propriété (optionnel)</Label>
-                  {!titleDocFile ? (
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="titleDoc">Document du titre de propriété (optionnel)</Label>
+                    <span className="text-xs text-muted-foreground">
+                      {titleDocFiles.length}/5 fichiers
+                    </span>
+                  </div>
+                  
+                  {/* Liste des fichiers ajoutés */}
+                  {titleDocFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {titleDocFiles.map((file, index) => (
+                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                          <FileText className="h-4 w-4 text-primary" />
+                          <span className="text-sm flex-1 truncate">{file.name}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile('title', index)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Bouton pour ajouter un fichier */}
+                  {titleDocFiles.length < 5 && (
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => document.getElementById('titleDoc')?.click()}
-                      className="gap-2 hover:bg-primary/5 transition-all"
+                      className="gap-2 hover:bg-primary/5 transition-all w-full"
                     >
                       <Plus className="h-4 w-4" />
                       Ajouter le titre de propriété
                     </Button>
-                  ) : (
-                    <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                      <FileText className="h-4 w-4 text-primary" />
-                      <span className="text-sm flex-1 truncate">{titleDocFile.name}</span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeFile('title')}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    </div>
                   )}
+                  
                   <Input
                     id="titleDoc"
                     type="file"
@@ -967,7 +997,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     className="hidden"
                   />
                   <p className="text-xs text-muted-foreground">
-                    JPG, PNG, WEBP ou PDF - Max 5 MB
+                    JPG, PNG, WEBP ou PDF - Max 5 MB par fichier - Maximum 5 fichiers
                   </p>
                 </div>
               </div>
