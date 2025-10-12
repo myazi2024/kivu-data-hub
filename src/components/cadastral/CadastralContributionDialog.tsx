@@ -64,7 +64,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     surveyDate?: string;
     surveyorName?: string;
     pvReferenceNumber?: string;
-  }>>([]);
+  }>>([{
+    name: '',
+    legalStatus: 'Personne physique',
+    startDate: '',
+    endDate: '',
+    mutationType: 'Vente',
+    surveyDate: '',
+    surveyorName: '',
+    pvReferenceNumber: ''
+  }]);
 
   // État pour gérer plusieurs propriétaires actuels (copropriété)
   const [currentOwners, setCurrentOwners] = useState<Array<{
@@ -89,7 +98,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     paymentStatus: string;
     paymentDate: string;
     receiptFile: File | null;
-  }>>([]);
+  }>>([{
+    taxType: 'Taxe foncière',
+    taxYear: '',
+    taxAmount: '',
+    paymentStatus: 'Non payée',
+    paymentDate: '',
+    receiptFile: null
+  }]);
 
   // État pour gérer plusieurs hypothèques
   const [mortgageRecords, setMortgageRecords] = useState<Array<{
@@ -100,7 +116,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     contractDate: string;
     mortgageStatus: string;
     receiptFile: File | null;
-  }>>([]);
+  }>>([{
+    mortgageAmount: '',
+    duration: '',
+    creditorName: '',
+    creditorType: 'Banque',
+    contractDate: '',
+    mortgageStatus: 'Active',
+    receiptFile: null
+  }]);
   
   // État pour gérer les permis de construire
   const [buildingPermits, setBuildingPermits] = useState<Array<{
@@ -111,14 +135,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     administrativeStatus: string;
     issuingServiceContact: string;
     attachmentFile: File | null;
-  }>>([]);
+  }>>([{
+    permitNumber: '',
+    issuingService: '',
+    issueDate: '',
+    validityMonths: '36',
+    administrativeStatus: 'En attente',
+    issuingServiceContact: '',
+    attachmentFile: null
+  }]);
   
   // État pour gérer les coordonnées GPS des bornes
   const [gpsCoordinates, setGpsCoordinates] = useState<Array<{
     borne: string;
     lat: string;
     lng: string;
-  }>>([]);
+  }>>([{
+    borne: 'Borne 1',
+    lat: '',
+    lng: ''
+  }]);
 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
@@ -1024,7 +1060,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setTitleDocFiles([]);
     setSectionType('');
     setSectionTypeAutoDetected(false);
-    setPreviousOwners([]);
+    setPreviousOwners([{
+      name: '',
+      legalStatus: 'Personne physique',
+      startDate: '',
+      endDate: '',
+      mutationType: 'Vente',
+      surveyDate: '',
+      surveyorName: '',
+      pvReferenceNumber: ''
+    }]);
     setCurrentOwners([{
       lastName: '',
       middleName: '',
@@ -1032,8 +1077,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       legalStatus: 'Personne physique',
       since: ''
     }]);
-    setTaxRecords([]);
-    setMortgageRecords([]);
+    setTaxRecords([{
+      taxType: 'Taxe foncière',
+      taxYear: '',
+      taxAmount: '',
+      paymentStatus: 'Non payée',
+      paymentDate: '',
+      receiptFile: null
+    }]);
+    setMortgageRecords([{
+      mortgageAmount: '',
+      duration: '',
+      creditorName: '',
+      creditorType: 'Banque',
+      contractDate: '',
+      mortgageStatus: 'Active',
+      receiptFile: null
+    }]);
     setObligationType('taxes');
     setParcelSides([
       { name: 'Côté Nord', length: '' },
@@ -1043,8 +1103,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     ]);
     setAvailableQuartiers([]);
     setAvailableAvenues([]);
-    setBuildingPermits([]);
-    setGpsCoordinates([]);
+    setBuildingPermits([{
+      permitNumber: '',
+      issuingService: '',
+      issueDate: '',
+      validityMonths: '36',
+      administrativeStatus: 'En attente',
+      issuingServiceContact: '',
+      attachmentFile: null
+    }]);
+    setGpsCoordinates([{
+      borne: 'Borne 1',
+      lat: '',
+      lng: ''
+    }]);
     setShowRequiredFieldsPopover(false);
     setHighlightRequiredFields(false);
     onOpenChange(false);
@@ -1534,121 +1606,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <FileText className="h-3.5 w-3.5" />
                     Demander
                   </Button>
-                  <Popover open={showRequiredFieldsPopover} onOpenChange={setShowRequiredFieldsPopover}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          const fieldsIncomplete = !formData.constructionType || !formData.constructionNature || !formData.declaredUsage;
-                          
-                          if (fieldsIncomplete) {
-                            e.preventDefault();
-                            setShowRequiredFieldsPopover(true);
-                            setHighlightRequiredFields(true);
-                            
-                            // Scroll to the top of the form to show highlighted fields
-                            setTimeout(() => {
-                              const formElement = document.querySelector('[id^="radix-"]');
-                              if (formElement) {
-                                formElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                              }
-                            }, 100);
-                            
-                            // Auto-close popover after 5 seconds
-                            setTimeout(() => {
-                              setShowRequiredFieldsPopover(false);
-                            }, 5000);
-                          } else {
-                            setPermitActionMode('ajouter');
-                            addBuildingPermit();
-                          }
-                        }}
-                        className={`gap-1.5 h-8 px-3 rounded-md transition-all text-xs font-medium ${
-                          permitActionMode === 'ajouter' 
-                            ? 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90' 
-                            : 'hover:bg-background/60'
-                        } ${!formData.constructionType || !formData.constructionNature || !formData.declaredUsage ? 'opacity-60' : ''}`}
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Ajouter
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent 
-                      className="w-80 p-0 border-2 border-primary/20 shadow-lg animate-in fade-in-0 zoom-in-95 slide-in-from-top-2"
-                      side="top"
-                      align="center"
-                      sideOffset={8}
-                    >
-                      <div className="relative overflow-hidden rounded-lg bg-gradient-to-br from-primary/5 via-background to-primary/5">
-                        {/* Animated background pattern */}
-                        <div className="absolute inset-0 bg-grid-primary/5 animate-pulse" />
-                        
-                        <div className="relative p-5 space-y-4">
-                          {/* Icon and Title */}
-                          <div className="flex items-start gap-3">
-                            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center animate-scale-in">
-                              <Info className="h-5 w-5 text-primary" />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <h4 className="font-semibold text-sm leading-tight">
-                                Champs requis manquants
-                              </h4>
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                Veuillez d'abord compléter les informations suivantes en surbrillance :
-                              </p>
-                            </div>
-                          </div>
-                          
-                          {/* Required fields list */}
-                          <div className="space-y-2 pl-13">
-                            {!formData.constructionType && (
-                              <div className="flex items-center gap-2 text-xs animate-fade-in">
-                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                <span className="font-medium">Type de construction</span>
-                              </div>
-                            )}
-                            {!formData.constructionNature && (
-                              <div className="flex items-center gap-2 text-xs animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                <span className="font-medium">Nature de construction</span>
-                              </div>
-                            )}
-                            {!formData.declaredUsage && (
-                              <div className="flex items-center gap-2 text-xs animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                                <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                                <span className="font-medium">Usage déclaré</span>
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Close button */}
-                          <Button
-                            type="button"
-                            size="sm"
-                            onClick={() => {
-                              setShowRequiredFieldsPopover(false);
-                              setTimeout(() => setHighlightRequiredFields(false), 3000);
-                            }}
-                            className="w-full mt-3 bg-primary/10 hover:bg-primary/20 text-primary font-medium text-xs h-8"
-                          >
-                            Compris
-                          </Button>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
                 </div>
               </div>
 
-              {buildingPermits.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
-                  <p className="text-sm">Aucun permis ajouté</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {buildingPermits.map((permit, index) => (
+              <div className="space-y-4">
+                {buildingPermits.map((permit, index) => (
                     <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold">Permis #{index + 1}</h4>
@@ -1771,7 +1733,40 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   ))}
                 </div>
-              )}
+                
+                {/* Bouton Ajouter déplacé en dessous des blocs */}
+                <Popover open={showRequiredFieldsPopover} onOpenChange={setShowRequiredFieldsPopover}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={(e) => {
+                        const fieldsIncomplete = !formData.constructionType || !formData.constructionNature || !formData.declaredUsage;
+                        
+                        if (fieldsIncomplete) {
+                          e.preventDefault();
+                          setShowRequiredFieldsPopover(true);
+                          setHighlightRequiredFields(true);
+                        } else {
+                          setPermitActionMode('ajouter');
+                          addBuildingPermit();
+                        }
+                      }}
+                      className={`gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm ${!formData.constructionType || !formData.constructionNature || !formData.declaredUsage ? 'opacity-60' : ''}`}
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajouter un permis
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <div className="space-y-2">
+                      <p className="text-sm font-semibold">Champs requis manquants</p>
+                      <p className="text-xs text-muted-foreground">Complétez d'abord : Type, Nature et Usage de construction</p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
           </TabsContent>
 
@@ -2140,13 +2135,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </Button>
                 </div>
 
-                {gpsCoordinates.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
-                    <p className="text-sm">Aucune coordonnée GPS ajoutée</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {gpsCoordinates.map((coord, index) => (
+                <div className="space-y-3">
+                  {gpsCoordinates.map((coord, index) => (
                       <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
                         <div className="flex items-center justify-between">
                           <Input
@@ -2208,10 +2198,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-          </TabsContent>
+                  
+                  {/* Bouton Ajouter déplacé en dessous des blocs */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addGPSCoordinate}
+                    disabled={(() => {
+                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+                      const isSuperficieCompleted = filledSides.length >= 3;
+                      const canAddMore = gpsCoordinates.length < filledSides.length;
+                      return !isSuperficieCompleted || !canAddMore;
+                    })()}
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter une coordonnée GPS
+                  </Button>
+                </div>
+              )}
+            </div>
 
           <TabsContent value="history" className="space-y-6 mt-6 animate-fade-in">
             <div className="space-y-4">
@@ -2222,31 +2229,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     Ajoutez les anciens propriétaires que vous connaissez
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addPreviousOwner}
-                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter
-                </Button>
               </div>
 
-              {previousOwners.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20 animate-fade-in">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Plus className="h-6 w-6 text-primary" />
-                    </div>
-                    <p className="text-sm font-medium">Aucun ancien propriétaire ajouté</p>
-                    <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {previousOwners.map((owner, index) => (
+              <div className="space-y-6">
+                {previousOwners.map((owner, index) => (
                     <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Propriétaire #{index + 1}</h4>
@@ -2373,10 +2359,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           />
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Bouton Ajouter déplacé en dessous des blocs */}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addPreviousOwner}
+                className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+              >
+                <Plus className="h-4 w-4" />
+                Ajouter un ancien propriétaire
+              </Button>
             </div>
           </TabsContent>
 
@@ -2413,31 +2410,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       Ajoutez les taxes que vous connaissez pour cette parcelle
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addTaxRecord}
-                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter
-                  </Button>
                 </div>
 
-                {taxRecords.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20 animate-fade-in">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Plus className="h-6 w-6 text-primary" />
-                      </div>
-                      <p className="text-sm font-medium">Aucune taxe ajoutée</p>
-                      <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {taxRecords.map((tax, index) => (
+                <div className="space-y-6">
+                  {taxRecords.map((tax, index) => (
                       <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Taxe #{index + 1}</h4>
@@ -2564,10 +2540,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             Reçu de paiement (JPG, PNG, WEBP ou PDF - Max 5 MB)
                           </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Bouton Ajouter déplacé en dessous des blocs */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addTaxRecord}
+                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter une taxe
+                </Button>
               </div>
             )}
 
@@ -2581,31 +2568,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       Ajoutez les hypothèques que vous connaissez pour cette parcelle
                     </p>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addMortgageRecord}
-                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter
-                  </Button>
                 </div>
 
-                {mortgageRecords.length === 0 ? (
-                  <div className="text-center py-12 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20 animate-fade-in">
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <Plus className="h-6 w-6 text-primary" />
-                      </div>
-                      <p className="text-sm font-medium">Aucune hypothèque ajoutée</p>
-                      <p className="text-xs mt-1">Cliquez sur "Ajouter" pour commencer</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {mortgageRecords.map((mortgage, index) => (
+                <div className="space-y-6">
+                  {mortgageRecords.map((mortgage, index) => (
                       <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Hypothèque #{index + 1}</h4>
@@ -2735,16 +2701,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             Contrat ou justificatif (JPG, PNG, WEBP ou PDF - Max 5 MB)
                           </p>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Bouton Ajouter déplacé en dessous des blocs */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addMortgageRecord}
+                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter une hypothèque
+                </Button>
               </div>
             )}
           </TabsContent>
           </div>
         </Tabs>
       </DialogContent>
+    </Dialog>
 
       {/* Dialog d'authentification */}
       <AlertDialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
