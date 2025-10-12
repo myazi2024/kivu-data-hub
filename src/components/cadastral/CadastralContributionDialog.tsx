@@ -1404,33 +1404,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               </div>
 
-              <div className="relative overflow-hidden min-h-[120px]">
-                {/* Bloc "Demander" - slide from left to right */}
+              <div className="relative overflow-hidden">
                 <div 
-                  className={`absolute inset-0 transition-all duration-500 ease-in-out ${
-                    permitActionMode === 'demander' 
-                      ? 'translate-x-0 opacity-100' 
-                      : '-translate-x-full opacity-0 pointer-events-none'
+                  className={`flex transition-transform duration-500 ease-in-out ${
+                    permitActionMode === 'ajouter' ? '-translate-x-full' : 'translate-x-0'
                   }`}
+                  style={{ width: '200%' }}
                 >
-                  <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
-                    <p className="text-sm">Aucun permis ajouté</p>
-                  </div>
-                </div>
-                
-                {/* Bloc "Ajouter" - slide from right to left */}
-                <div 
-                  className={`absolute inset-0 transition-all duration-500 ease-in-out ${
-                    permitActionMode === 'ajouter' 
-                      ? 'translate-x-0 opacity-100' 
-                      : 'translate-x-full opacity-0 pointer-events-none'
-                  }`}
-                >
-                  {buildingPermits.length === 0 ? (
+                  {/* Bloc "Demander" */}
+                  <div className="w-1/2 flex-shrink-0">
                     <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
                       <p className="text-sm">Aucun permis ajouté</p>
                     </div>
-                  ) : (
+                  </div>
+                  
+                  {/* Bloc "Ajouter" */}
+                  <div className="w-1/2 flex-shrink-0 pl-4">
+                    {buildingPermits.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
+                        <p className="text-sm">Aucun permis ajouté</p>
+                      </div>
+                    ) : (
                     <div className="space-y-4">
                       {buildingPermits.map((permit, index) => (
                         <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
@@ -1505,8 +1499,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
                     </div>
                   ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
