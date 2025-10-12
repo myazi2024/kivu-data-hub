@@ -1691,13 +1691,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </Popover>
               </div>
 
-              <div className="space-y-4">
-                {buildingPermits.map((permit, index) => (
-                    <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
-                      highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issuingService || !permit.issueDate) 
-                        ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
-                        : ''
-                    }`}>
+              {formData.constructionType !== "terrain nu" && (
+                <div className="space-y-4">
+                  {buildingPermits.map((permit, index) => (
+                      <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
+                        highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issuingService || !permit.issueDate) 
+                          ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
+                          : ''
+                      }`}>
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-semibold">Permis #{index + 1}</h4>
                         <Button
@@ -1819,9 +1820,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   ))}
                 </div>
+              )}
                 
                 {/* Bouton Ajouter déplacé en dessous des blocs */}
-                <div className="space-y-2">
+                {formData.constructionType !== "terrain nu" && (
+                  <div className="space-y-2">
                   {/* Notification d'avertissement */}
                   {showPermitWarning && (
                     <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
@@ -1852,7 +1855,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <Plus className="h-4 w-4" />
                     Ajouter un permis
                   </Button>
-                </div>
+                  </div>
+                )}
               </div>
           </TabsContent>
 
