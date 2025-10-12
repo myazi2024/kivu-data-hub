@@ -110,6 +110,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     validityMonths: string;
     administrativeStatus: string;
     issuingServiceContact: string;
+    attachmentFile: File | null;
   }>>([]);
   
   // État pour gérer les coordonnées GPS des bornes
@@ -617,15 +618,30 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         })
       );
       
+      // Upload building permit files and transform data
+      const buildingPermitsData = await Promise.all(
+        buildingPermits.map(async (permit) => {
+          let attachmentUrl = null;
+          if (permit.attachmentFile) {
+            attachmentUrl = await uploadFile(permit.attachmentFile, 'building-permits');
+            if (!attachmentUrl) {
+              throw new Error('Erreur lors du téléchargement du permis de construire');
+            }
+          }
+          return {
+            permitNumber: permit.permitNumber,
+            issuingService: permit.issuingService,
+            issueDate: permit.issueDate,
+            validityMonths: parseInt(permit.validityMonths),
+            administrativeStatus: permit.administrativeStatus,
+            issuingServiceContact: permit.issuingServiceContact || undefined,
+            attachmentUrl: attachmentUrl || undefined
+          };
+        })
+      );
+      
       // Transform building permits data
-      const buildingPermitsData = buildingPermits.length > 0 ? buildingPermits.map(permit => ({
-        permitNumber: permit.permitNumber,
-        issuingService: permit.issuingService,
-        issueDate: permit.issueDate,
-        validityMonths: parseInt(permit.validityMonths),
-        administrativeStatus: permit.administrativeStatus,
-        issuingServiceContact: permit.issuingServiceContact || undefined
-      })) : undefined;
+      const buildingPermitsDataFinal = buildingPermitsData.length > 0 ? buildingPermitsData : undefined;
       
       // Transform GPS coordinates data
       const gpsCoordinatesData = gpsCoordinates.length > 0 ? gpsCoordinates.map(coord => ({
@@ -642,7 +658,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         titleDocumentUrl: titleDocUrls.length > 0 ? JSON.stringify(titleDocUrls) : undefined,
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
-        buildingPermits: buildingPermitsData,
+        buildingPermits: buildingPermitsDataFinal,
         gpsCoordinates: gpsCoordinatesData,
       };
 
@@ -807,7 +823,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       issueDate: '',
       validityMonths: '36',
       administrativeStatus: 'En attente',
-      issuingServiceContact: ''
+      issuingServiceContact: '',
+      attachmentFile: null
     }]);
   };
   
@@ -818,6 +835,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const updateBuildingPermit = (index: number, field: string, value: string) => {
     const updated = [...buildingPermits];
     updated[index] = { ...updated[index], [field]: value };
+    setBuildingPermits(updated);
+  };
+
+  const updateBuildingPermitFile = (index: number, file: File | null) => {
+    const updated = [...buildingPermits];
+    updated[index] = { ...updated[index], attachmentFile: file };
+    setBuildingPermits(updated);
+  };
+
+  const removeBuildingPermitFile = (index: number) => {
+    const updated = [...buildingPermits];
+    updated[index] = { ...updated[index], attachmentFile: null };
     setBuildingPermits(updated);
   };
   
@@ -1689,6 +1718,55 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+
+                      {/* Pièce jointe du permis */}
+                      <div className="space-y-2">
+                        <Label className="text-xs">Pièce jointe (PDF, JPG, PNG)</Label>
+                        {!permit.attachmentFile ? (
+                          <div className="flex gap-2">
+                            <Input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  // Vérifier la taille (max 10MB)
+                                  if (file.size > 10 * 1024 * 1024) {
+                                    toast({
+                                      title: "Fichier trop volumineux",
+                                      description: "La taille maximale est de 10 MB",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+                                  updateBuildingPermitFile(index, file);
+                                }
+                              }}
+                              className="flex-1"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <span className="text-xs flex-1 truncate">{permit.attachmentFile.name}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {(permit.attachmentFile.size / 1024).toFixed(1)} KB
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeBuildingPermitFile(index)}
+                              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground">
+                          Ajoutez une copie du permis de construire pour validation
+                        </p>
                       </div>
                     </div>
                   ))}
