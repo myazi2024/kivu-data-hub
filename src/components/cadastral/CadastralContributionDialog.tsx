@@ -1629,36 +1629,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 <div className="space-y-2">
                   <Label htmlFor="avenue">Avenue</Label>
-                  <Select 
-                    value={formData.avenue}
-                    onValueChange={(value) => handleInputChange('avenue', value)}
-                    disabled={!formData.quartier || availableAvenues.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        !formData.quartier 
-                        ? "Sélectionner d'abord un quartier" 
-                        : availableAvenues.length === 0 
-                        ? "Aucune avenue disponible - saisie manuelle possible"
-                        : "Sélectionner l'avenue"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableAvenues.map(avenue => (
-                        <SelectItem key={avenue} value={avenue}>{avenue}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {availableAvenues.length === 0 && formData.quartier && (
-                    <div className="space-y-2 mt-2">
-                      <Input
-                        placeholder="Saisir le nom de l'avenue"
-                        value={formData.avenue || ''}
-                        onChange={(e) => handleInputChange('avenue', e.target.value)}
-                      />
-                      <p className="text-xs text-muted-foreground">Aucune avenue prédéfinie - saisie manuelle</p>
-                    </div>
-                  )}
+                  <Input
+                    id="avenue"
+                    placeholder="Saisir le nom de l'avenue"
+                    value={formData.avenue || ''}
+                    onChange={(e) => handleInputChange('avenue', e.target.value)}
+                    disabled={!formData.quartier}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {!formData.quartier ? "Sélectionner d'abord un quartier" : "Saisie manuelle"}
+                  </p>
                 </div>
               </div>
             )}
