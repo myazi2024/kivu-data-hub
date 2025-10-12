@@ -930,6 +930,46 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <p className="text-xs text-muted-foreground">
                   {PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.description}
                 </p>
+
+                {/* Title document attachment */}
+                <div className="space-y-2 mt-4">
+                  <Label htmlFor="titleDoc">Document du titre de propriété (optionnel)</Label>
+                  {!titleDocFile ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => document.getElementById('titleDoc')?.click()}
+                      className="gap-2 hover:bg-primary/5 transition-all"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajouter le titre de propriété
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                      <FileText className="h-4 w-4 text-primary" />
+                      <span className="text-sm flex-1 truncate">{titleDocFile.name}</span>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removeFile('title')}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                  <Input
+                    id="titleDoc"
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                    onChange={(e) => handleFileChange(e, 'title')}
+                    className="hidden"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    JPG, PNG, WEBP ou PDF - Max 5 MB
+                  </p>
+                </div>
               </div>
             )}
 
@@ -1025,6 +1065,46 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       />
                     </div>
                   </div>
+
+                  {/* Owner document attachment */}
+                  <div className="space-y-2 mt-3 pt-3 border-t">
+                    <Label className="text-xs">Pièce d'identité du propriétaire (optionnel)</Label>
+                    {!ownerDocFile ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('ownerDoc')?.click()}
+                        className="gap-2 hover:bg-primary/5 transition-all w-full"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter la pièce d'identité
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
+                        <FileText className="h-4 w-4 text-primary" />
+                        <span className="text-sm flex-1 truncate">{ownerDocFile.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeFile('owner')}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    <Input
+                      id="ownerDoc"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                      onChange={(e) => handleFileChange(e, 'owner')}
+                      className="hidden"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      JPG, PNG, WEBP ou PDF - Max 5 MB
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1080,74 +1160,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Select>
             </div>
 
-            {/* File uploads section */}
-            <div className="space-y-3 pt-4 border-t">
-              <h4 className="text-sm font-semibold">Pièces jointes (optionnel)</h4>
-              
-              {/* Owner document */}
-              <div className="space-y-2">
-                <Label htmlFor="ownerDoc">Document d'identité du propriétaire</Label>
-                {!ownerDocFile ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="ownerDoc"
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                      onChange={(e) => handleFileChange(e, 'owner')}
-                      className="cursor-pointer"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="text-sm flex-1 truncate">{ownerDocFile.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFile('owner')}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  JPG, PNG, WEBP ou PDF - Max 5 MB
-                </p>
-              </div>
-
-              {/* Title document */}
-              <div className="space-y-2">
-                <Label htmlFor="titleDoc">Document du titre de propriété</Label>
-                {!titleDocFile ? (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      id="titleDoc"
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                      onChange={(e) => handleFileChange(e, 'title')}
-                      className="cursor-pointer"
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                    <FileText className="h-4 w-4 text-primary" />
-                    <span className="text-sm flex-1 truncate">{titleDocFile.name}</span>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeFile('title')}
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  JPG, PNG, WEBP ou PDF - Max 5 MB
-                </p>
-              </div>
-            </div>
             
             {/* Section Permis de construire */}
             <div className="space-y-4 pt-4 border-t">
