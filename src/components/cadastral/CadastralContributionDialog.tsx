@@ -1405,29 +1405,31 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
 
               <div className="relative overflow-hidden">
+                {/* Bloc "Demander" - slide from left to right */}
                 <div 
-                  className={`transition-all duration-300 ease-in-out ${
+                  className={`transition-all duration-500 ease-in-out ${
                     permitActionMode === 'demander' 
                       ? 'translate-x-0 opacity-100' 
                       : permitActionMode === 'ajouter'
-                      ? '-translate-x-full opacity-0 absolute inset-0'
-                      : 'translate-x-0 opacity-100'
+                      ? '-translate-x-full opacity-0 absolute inset-0 pointer-events-none'
+                      : '-translate-x-full opacity-0'
                   }`}
                 >
-                  {buildingPermits.length === 0 && permitActionMode !== 'ajouter' && (
+                  {(buildingPermits.length === 0 || permitActionMode === 'demander') && (
                     <div className="text-center py-8 text-muted-foreground border-2 border-dashed rounded-xl bg-muted/20">
                       <p className="text-sm">Aucun permis ajouté</p>
                     </div>
                   )}
                 </div>
                 
+                {/* Bloc "Ajouter" - slide from right to left */}
                 <div 
-                  className={`transition-all duration-300 ease-in-out ${
+                  className={`transition-all duration-500 ease-in-out ${
                     permitActionMode === 'ajouter' 
                       ? 'translate-x-0 opacity-100' 
                       : permitActionMode === 'demander'
-                      ? 'translate-x-full opacity-0 absolute inset-0'
-                      : buildingPermits.length === 0 ? 'translate-x-0 opacity-100' : '-translate-x-full opacity-0 absolute inset-0'
+                      ? 'translate-x-full opacity-0 absolute inset-0 pointer-events-none'
+                      : buildingPermits.length === 0 ? 'translate-x-full opacity-0' : 'translate-x-0 opacity-100'
                   }`}
                 >
                   {buildingPermits.length === 0 ? (
