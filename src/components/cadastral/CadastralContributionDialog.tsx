@@ -205,6 +205,119 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [sectionType, setSectionType] = useState<'urbaine' | 'rurale' | ''>('');
   const [sectionTypeAutoDetected, setSectionTypeAutoDetected] = useState(false);
 
+  // Clé pour le localStorage basée sur le numéro de parcelle
+  const STORAGE_KEY = `cadastral_contribution_${parcelNumber}`;
+
+  // Fonction pour sauvegarder les données dans localStorage
+  const saveFormDataToStorage = () => {
+    const dataToSave = {
+      formData,
+      currentOwners,
+      previousOwners,
+      taxRecords: taxRecords.map(tax => ({
+        ...tax,
+        receiptFile: null // Les fichiers ne peuvent pas être sauvegardés dans localStorage
+      })),
+      mortgageRecords: mortgageRecords.map(mortgage => ({
+        ...mortgage,
+        receiptFile: null
+      })),
+      buildingPermits: buildingPermits.map(permit => ({
+        ...permit,
+        attachmentFile: null
+      })),
+      gpsCoordinates,
+      parcelSides,
+      obligationType,
+      sectionType,
+      timestamp: new Date().toISOString()
+    };
+    
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      console.log('Données du formulaire sauvegardées');
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde des données:', error);
+    }
+  };
+
+  // Fonction pour charger les données depuis localStorage
+  const loadFormDataFromStorage = () => {
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        
+        // Restaurer toutes les données
+        if (parsed.formData) setFormData(parsed.formData);
+        if (parsed.currentOwners) setCurrentOwners(parsed.currentOwners);
+        if (parsed.previousOwners) setPreviousOwners(parsed.previousOwners);
+        if (parsed.taxRecords) setTaxRecords(parsed.taxRecords);
+        if (parsed.mortgageRecords) setMortgageRecords(parsed.mortgageRecords);
+        if (parsed.buildingPermits) setBuildingPermits(parsed.buildingPermits);
+        if (parsed.gpsCoordinates) setGpsCoordinates(parsed.gpsCoordinates);
+        if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
+        if (parsed.obligationType) setObligationType(parsed.obligationType);
+        if (parsed.sectionType) setSectionType(parsed.sectionType);
+        
+        toast({
+          title: "Données restaurées",
+          description: "Vos données précédentes ont été restaurées. Vous pouvez continuer là où vous vous étiez arrêté.",
+        });
+        
+        console.log('Données du formulaire restaurées');
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des données:', error);
+    }
+  };
+
+  // Fonction pour effacer les données sauvegardées
+  const clearSavedFormData = () => {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      console.log('Données du formulaire effacées');
+    } catch (error) {
+      console.error('Erreur lors de l\'effacement des données:', error);
+    }
+  };
+
+  // Charger les données au montage si l'utilisateur est connecté
+  useEffect(() => {
+    if (open && user) {
+      loadFormDataFromStorage();
+    }
+  }, [open, user]);
+
+  // Sauvegarder automatiquement les données toutes les 30 secondes
+  useEffect(() => {
+    if (!open || !user) return;
+
+    const autoSaveInterval = setInterval(() => {
+      saveFormDataToStorage();
+    }, 30000); // 30 secondes
+
+    return () => clearInterval(autoSaveInterval);
+  }, [open, user, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides]);
+
+  // Sauvegarder les données quand le dialogue se ferme
+  useEffect(() => {
+    if (!open && formData.parcelNumber) {
+      // Sauvegarder uniquement si des données ont été renseignées
+      const hasData = Object.keys(formData).length > 1 || 
+                     currentOwners.some(o => o.lastName || o.firstName) ||
+                     previousOwners.some(o => o.name) ||
+                     taxRecords.some(t => t.taxAmount) ||
+                     mortgageRecords.some(m => m.mortgageAmount) ||
+                     buildingPermits.some(p => p.permitNumber) ||
+                     gpsCoordinates.some(g => g.lat || g.lng);
+      
+      if (hasData) {
+        saveFormDataToStorage();
+      }
+    }
+  }, [open]);
+
   // Détecter automatiquement le type de section à partir du préfixe du numéro de parcelle
   useEffect(() => {
     if (parcelNumber) {
@@ -716,6 +829,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       const result = await submitContribution(dataToSubmit);
       
       if (result.success) {
+        // Effacer les données sauvegardées après une soumission réussie
+        clearSavedFormData();
         setShowSuccess(true);
       }
     } catch (error) {
@@ -2976,7 +3091,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <Button
                         type="button"
                         size="lg"
-                        onClick={() => setShowAuthDialog(true)}
+                        onClick={() => {
+                          // Sauvegarder les données avant de rediriger
+                          saveFormDataToStorage();
+                          setShowAuthDialog(true);
+                        }}
                         className="w-full sm:w-auto px-8 py-6 text-lg font-semibold gap-3 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]"
                       >
                         <UserPlus className="h-6 w-6" />
