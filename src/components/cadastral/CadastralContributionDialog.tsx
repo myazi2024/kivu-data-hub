@@ -11,12 +11,10 @@ import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink, UserPlus, LogIn, Sparkles } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { 
   getAllProvinces, 
   getVillesForProvince, 
@@ -46,7 +44,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isMobile = useIsMobile();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -1638,126 +1635,67 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <div>
                   <Label className="text-sm font-semibold">Permis de construire (optionnel)</Label>
                 </div>
-                
-                {/* Version mobile avec Sheet */}
-                {isMobile ? (
-                  <>
+                <Popover open={showPermitInfoPopover} onOpenChange={setShowPermitInfoPopover}>
+                  <PopoverTrigger asChild>
                     <Button
                       type="button"
                       size="sm"
-                      onClick={() => setShowPermitInfoPopover(true)}
+                      onMouseEnter={() => setShowPermitInfoPopover(true)}
+                      onMouseLeave={() => setShowPermitInfoPopover(false)}
+                      onClick={() => {
+                        setShowPermitInfoPopover(false);
+                        setPermitActionMode('demander');
+                        setShowPermitRequestDialog(true);
+                      }}
                       className="group relative gap-2 h-9 px-4 rounded-lg font-medium text-sm bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-md hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 overflow-hidden"
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                       <Sparkles className="h-4 w-4 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
                       <span className="relative z-10">Demander un permis</span>
                     </Button>
-                    <Sheet open={showPermitInfoPopover} onOpenChange={setShowPermitInfoPopover}>
-                      <SheetContent side="bottom" className="h-auto">
-                        <SheetHeader>
-                          <SheetTitle className="flex items-center gap-2">
-                            <Sparkles className="h-5 w-5 text-primary" />
-                            Obtenez votre permis facilement !
-                          </SheetTitle>
-                          <SheetDescription>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-80" 
+                    align="end" 
+                    side="top"
+                    onMouseEnter={() => setShowPermitInfoPopover(true)}
+                    onMouseLeave={() => setShowPermitInfoPopover(false)}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm mb-1">Obtenez votre permis facilement !</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
                             En quelques clics, complétez votre demande de permis de construire en ligne. 
                             C'est <span className="font-semibold text-primary">simple</span>, <span className="font-semibold text-primary">rapide</span> et <span className="font-semibold text-primary">efficace</span>.
-                          </SheetDescription>
-                        </SheetHeader>
-                        <div className="space-y-4 mt-6">
-                          <div className="space-y-3">
-                            <div className="flex items-center gap-2 text-sm">
-                              <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
-                              <span className="text-muted-foreground">Formulaire guidé étape par étape</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
-                              <span className="text-muted-foreground">Traitement accéléré de votre dossier</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-sm">
-                              <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
-                              <span className="text-muted-foreground">Support disponible à chaque étape</span>
-                            </div>
-                          </div>
-                          <Button
-                            onClick={() => {
-                              setShowPermitInfoPopover(false);
-                              setPermitActionMode('demander');
-                              setShowPermitRequestDialog(true);
-                            }}
-                            className="w-full gap-2 bg-gradient-to-r from-primary via-primary to-primary/90"
-                          >
-                            <Sparkles className="h-4 w-4" />
-                            Commencer ma demande
-                          </Button>
-                        </div>
-                      </SheetContent>
-                    </Sheet>
-                  </>
-                ) : (
-                  /* Version desktop avec Popover */
-                  <Popover open={showPermitInfoPopover} onOpenChange={setShowPermitInfoPopover}>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        size="sm"
-                        onMouseEnter={() => setShowPermitInfoPopover(true)}
-                        onMouseLeave={() => setShowPermitInfoPopover(false)}
-                        onClick={() => {
-                          setShowPermitInfoPopover(false);
-                          setPermitActionMode('demander');
-                          setShowPermitRequestDialog(true);
-                        }}
-                        className="group relative gap-2 h-9 px-4 rounded-lg font-medium text-sm bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-md hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 overflow-hidden"
-                      >
-                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                        <Sparkles className="h-4 w-4 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
-                        <span className="relative z-10">Demander un permis</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent 
-                      className="w-80" 
-                      align="end" 
-                      side="top"
-                      onMouseEnter={() => setShowPermitInfoPopover(true)}
-                      onMouseLeave={() => setShowPermitInfoPopover(false)}
-                    >
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-primary/10">
-                            <Sparkles className="h-5 w-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-semibold text-sm mb-1">Obtenez votre permis facilement !</h4>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                              En quelques clics, complétez votre demande de permis de construire en ligne. 
-                              C'est <span className="font-semibold text-primary">simple</span>, <span className="font-semibold text-primary">rapide</span> et <span className="font-semibold text-primary">efficace</span>.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="pt-2 border-t space-y-2">
-                          <div className="flex items-center gap-2 text-xs">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                            <span className="text-muted-foreground">Formulaire guidé étape par étape</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                            <span className="text-muted-foreground">Traitement accéléré de votre dossier</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs">
-                            <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-                            <span className="text-muted-foreground">Support disponible à chaque étape</span>
-                          </div>
-                        </div>
-                        <div className="pt-2">
-                          <p className="text-xs text-center font-medium text-primary">
-                            👉 Cliquez sur le bouton pour commencer !
                           </p>
                         </div>
                       </div>
-                    </PopoverContent>
-                  </Popover>
-                )}
+                      <div className="pt-2 border-t space-y-2">
+                        <div className="flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">Formulaire guidé étape par étape</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">Traitement accéléré de votre dossier</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">Support disponible à chaque étape</span>
+                        </div>
+                      </div>
+                      <div className="pt-2">
+                        <p className="text-xs text-center font-medium text-primary">
+                          👉 Cliquez sur le bouton pour commencer !
+                        </p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {formData.constructionType !== "Terrain nu" && (
