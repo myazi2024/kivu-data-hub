@@ -1905,9 +1905,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </Popover>
               </div>
 
-              {formData.constructionType !== "Terrain nu" && (
-                <div className="space-y-4">
-                  {buildingPermits.map((permit, index) => (
+              <div className="space-y-4">
+                {buildingPermits.map((permit, index) => (
                       <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
                         highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issuingService || !permit.issueDate) 
                           ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
@@ -2032,13 +2031,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
+                ))}
+              </div>
                 
                 {/* Bouton Ajouter déplacé en dessous des blocs */}
-                {formData.constructionType !== "Terrain nu" && (
-                  <div className="space-y-2">
+                <div className="space-y-2">
                   {/* Notification d'avertissement */}
                   {showPermitWarning && (
                     <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
@@ -2069,8 +2066,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <Plus className="h-4 w-4" />
                     Ajouter un permis
                   </Button>
-                  </div>
-                )}
+                </div>
               </div>
           </TabsContent>
 
