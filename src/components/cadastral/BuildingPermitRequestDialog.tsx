@@ -382,7 +382,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <SelectTrigger id="constructionType" className="h-11">
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
-              <SelectContent className="z-[9999]">
+              <SelectContent position="popper" className="z-[9999]" sideOffset={4}>
                 <SelectItem value="Résidentielle">Résidentielle</SelectItem>
                 <SelectItem value="Commerciale">Commerciale</SelectItem>
                 <SelectItem value="Industrielle">Industrielle</SelectItem>
@@ -397,7 +397,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <SelectTrigger id="constructionNature" className="h-11">
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
-              <SelectContent className="z-[9999]">
+              <SelectContent position="popper" className="z-[9999]" sideOffset={4}>
                 <SelectItem value="Durable">Durable</SelectItem>
                 <SelectItem value="Semi-durable">Semi-durable</SelectItem>
                 <SelectItem value="Précaire">Précaire</SelectItem>
@@ -412,7 +412,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             <SelectTrigger id="declaredUsage" className="h-11">
               <SelectValue placeholder="Sélectionner l'usage" />
             </SelectTrigger>
-            <SelectContent className="z-[9999]">
+            <SelectContent position="popper" className="z-[9999]" sideOffset={4}>
               <SelectItem value="Habitation">Habitation</SelectItem>
               <SelectItem value="Commerce">Commerce</SelectItem>
               <SelectItem value="Bureau">Bureau</SelectItem>
@@ -516,7 +516,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                 <SelectTrigger id="currentState" className="h-11">
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
-                <SelectContent className="z-[9999]">
+                <SelectContent position="popper" className="z-[9999]" sideOffset={4}>
                   <SelectItem value="Achevée">Achevée</SelectItem>
                   <SelectItem value="En cours">En cours</SelectItem>
                   <SelectItem value="Abandonnée">Abandonnée</SelectItem>
@@ -608,20 +608,18 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   );
 
   const FormContent = () => (
-    <div className="flex flex-col min-h-0 flex-1">
-      <div className="flex-shrink-0 px-4 md:px-6">
+    <div className="flex flex-col h-full">
+      <div className="flex-shrink-0 px-4 md:px-6 pt-2">
         <StepIndicator />
       </div>
       
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-4 min-h-0">
-        <div className="pb-2">
-          {currentFormStep === 1 && <FormStep1 />}
-          {currentFormStep === 2 && <FormStep2 />}
-          {currentFormStep === 3 && <FormStep3 />}
-        </div>
+      <div className="flex-1 px-4 md:px-6 overflow-y-auto" style={{ maxHeight: isMobile ? 'calc(95vh - 140px)' : 'calc(90vh - 140px)' }}>
+        {currentFormStep === 1 && <FormStep1 />}
+        {currentFormStep === 2 && <FormStep2 />}
+        {currentFormStep === 3 && <FormStep3 />}
       </div>
 
-      <div className="flex-shrink-0 border-t bg-background px-4 md:px-6 py-4 sticky bottom-0 z-10">
+      <div className="flex-shrink-0 border-t bg-background px-4 md:px-6 py-4">
         <div className="flex gap-3">
           {currentFormStep > 1 && (
             <Button
@@ -629,6 +627,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               variant="outline"
               onClick={handlePreviousStep}
               className="gap-2"
+              disabled={loading}
             >
               <ArrowLeft className="h-4 w-4" />
               Précédent
@@ -640,8 +639,17 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             className="flex-1 gap-2"
             disabled={loading}
           >
-            {currentFormStep === 3 ? 'Passer au paiement' : 'Suivant'}
-            {currentFormStep < 3 && <ArrowRight className="h-4 w-4" />}
+            {currentFormStep === 3 ? (
+              <>
+                Continuer vers le paiement
+                <DollarSign className="h-4 w-4" />
+              </>
+            ) : (
+              <>
+                Suivant
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -657,8 +665,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   return (
     <Container open={open} onOpenChange={handleClose}>
       <Content className={cn(
-        isMobile ? "h-[95vh] max-h-[95vh]" : "sm:max-w-2xl max-h-[90vh]",
-        "flex flex-col"
+        "flex flex-col",
+        isMobile ? "h-[95vh]" : "sm:max-w-2xl h-[90vh]"
       )}>
         <Header className="flex-shrink-0">
           <Title>Demande de permis de construire</Title>
