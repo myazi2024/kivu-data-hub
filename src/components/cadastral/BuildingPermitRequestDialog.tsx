@@ -8,11 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Building2, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle, ArrowLeft, User, FileText } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
+import { cn } from '@/lib/utils';
 
 interface BuildingPermitRequestDialogProps {
   open: boolean;
@@ -30,7 +32,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [activeStep, setActiveStep] = useState<'form' | 'payment' | 'success'>('form');
-  const [currentTab, setCurrentTab] = useState<'construction' | 'applicant'>('construction');
   const [requestType, setRequestType] = useState<'new' | 'regularization'>(
     hasExistingConstruction ? 'regularization' : 'new'
   );
@@ -145,32 +146,32 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   };
 
   const SuccessContent = () => (
-    <div className="flex flex-col items-center justify-center py-6 px-4 space-y-4">
+    <div className="flex flex-col items-center justify-center py-8 px-4 space-y-6">
       <div className="relative">
-        <div className="absolute inset-0 bg-primary/20 blur-2xl rounded-full" />
-        <CheckCircle2 className="h-16 w-16 text-primary relative" />
+        <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse" />
+        <CheckCircle2 className="h-20 w-20 text-primary relative animate-scale-in" />
       </div>
-      <div className="text-center space-y-2">
-        <h3 className="text-xl font-semibold">Demande enregistrée !</h3>
-        <p className="text-sm text-muted-foreground">
-          Votre demande de {requestType === 'new' ? 'permis de construire' : 'régularisation'} pour la parcelle <strong>{parcelNumber}</strong> a été enregistrée.
+      <div className="text-center space-y-3">
+        <h3 className="text-2xl font-semibold">Demande enregistrée !</h3>
+        <p className="text-sm text-muted-foreground max-w-sm">
+          Votre demande de {requestType === 'new' ? 'permis de construire' : 'régularisation'} pour la parcelle <strong className="text-foreground">{parcelNumber}</strong> a été enregistrée avec succès.
         </p>
       </div>
-      <div className="w-full space-y-2 text-sm p-4 bg-muted/50 rounded-lg">
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+      <div className="w-full max-w-sm space-y-3 text-sm p-5 bg-gradient-to-br from-primary/5 to-primary/10 rounded-xl border border-primary/20">
+        <div className="flex items-center gap-3">
+          <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
           <span>Dossier en cours d'instruction</span>
         </div>
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
-          <span>Délai : 15 à 30 jours</span>
+        <div className="flex items-center gap-3">
+          <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+          <span>Délai de traitement : 15 à 30 jours</span>
         </div>
-        <div className="flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+        <div className="flex items-center gap-3">
+          <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
           <span>Notification par email et SMS</span>
         </div>
       </div>
-      <Button onClick={handleClose} className="w-full">
+      <Button onClick={handleClose} className="w-full max-w-sm" size="lg">
         Fermer
       </Button>
     </div>
@@ -260,285 +261,308 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   }
 
   const FormContent = () => (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4">
-      {/* Type de demande */}
-      <div className="space-y-3">
-        <Label className="text-sm font-semibold">Type de demande</Label>
-        <RadioGroup value={requestType} onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} className="space-y-2">
-          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="new" id="new" />
-            <Label htmlFor="new" className="flex-1 cursor-pointer">
-              <div className="font-medium text-sm">Nouveau permis</div>
-              <div className="text-xs text-muted-foreground">Construction à venir</div>
-            </Label>
+    <ScrollArea className="h-full">
+      <form onSubmit={handleSubmit} className="space-y-6 p-4 md:p-6">
+        {/* Type de demande */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <FileText className="h-5 w-5 text-primary" />
+            <Label className="text-base font-semibold">Type de demande</Label>
           </div>
-          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="regularization" id="regularization" />
-            <Label htmlFor="regularization" className="flex-1 cursor-pointer">
-              <div className="font-medium text-sm">Régularisation</div>
-              <div className="text-xs text-muted-foreground">Construction existante</div>
-            </Label>
-          </div>
-        </RadioGroup>
-        
-        {requestType === 'regularization' && (
-          <div className="p-3 bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-900 rounded-lg flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-orange-700 dark:text-orange-300">
-              Requis pour les constructions sans autorisation préalable.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Navigation par onglets */}
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={currentTab === 'construction' ? 'default' : 'outline'}
-          onClick={() => setCurrentTab('construction')}
-          size="sm"
-          className="flex-1"
-        >
-          Construction
-        </Button>
-        <Button
-          type="button"
-          variant={currentTab === 'applicant' ? 'default' : 'outline'}
-          onClick={() => setCurrentTab('applicant')}
-          size="sm"
-          className="flex-1"
-        >
-          Demandeur
-        </Button>
-      </div>
-
-      {/* Onglet Construction */}
-      <div className={currentTab !== 'construction' ? 'hidden' : 'space-y-3'}>
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Type de construction *</Label>
-          <Select value={formData.constructionType} onValueChange={(v) => handleInputChange('constructionType', v)}>
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-              <SelectItem value="Commerciale">Commerciale</SelectItem>
-              <SelectItem value="Industrielle">Industrielle</SelectItem>
-              <SelectItem value="Agricole">Agricole</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Nature de construction *</Label>
-          <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Durable">Durable</SelectItem>
-              <SelectItem value="Semi-durable">Semi-durable</SelectItem>
-              <SelectItem value="Précaire">Précaire</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Usage déclaré *</Label>
-          <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Habitation">Habitation</SelectItem>
-              <SelectItem value="Commerce">Commerce</SelectItem>
-              <SelectItem value="Bureau">Bureau</SelectItem>
-              <SelectItem value="Entrepôt">Entrepôt</SelectItem>
-              <SelectItem value="Usage mixte">Usage mixte</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">Surface (m²) *</Label>
-            <Input
-              type="number"
-              placeholder="150"
-              value={formData.plannedArea}
-              onChange={(e) => handleInputChange('plannedArea', e.target.value)}
-              className="h-10"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label className="text-xs font-medium">Étages *</Label>
-            <Input
-              type="number"
-              min="1"
-              placeholder="2"
-              value={formData.numberOfFloors}
-              onChange={(e) => handleInputChange('numberOfFloors', e.target.value)}
-              className="h-10"
-            />
-          </div>
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Coût estimé (USD)</Label>
-          <Input
-            type="number"
-            placeholder="50000"
-            value={formData.estimatedCost}
-            onChange={(e) => handleInputChange('estimatedCost', e.target.value)}
-            className="h-10"
-          />
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Description du projet *</Label>
-          <Textarea
-            placeholder="Décrivez brièvement votre projet..."
-            value={formData.projectDescription}
-            onChange={(e) => handleInputChange('projectDescription', e.target.value)}
-            rows={3}
-            className="resize-none text-sm"
-          />
-        </div>
-
-        {requestType === 'new' ? (
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Date début *</Label>
-              <Input
-                type="date"
-                min={new Date().toISOString().split('T')[0]}
-                value={formData.startDate}
-                onChange={(e) => handleInputChange('startDate', e.target.value)}
-                className="h-10"
-              />
+          <RadioGroup 
+            value={requestType} 
+            onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} 
+            className="grid gap-3"
+          >
+            <div className={cn(
+              "relative flex items-center space-x-4 p-4 rounded-xl border-2 transition-all cursor-pointer",
+              requestType === 'new' 
+                ? "border-primary bg-primary/5 shadow-sm" 
+                : "border-border bg-card hover:border-primary/50"
+            )}>
+              <RadioGroupItem value="new" id="new" className="mt-0" />
+              <Label htmlFor="new" className="flex-1 cursor-pointer">
+                <div className="font-semibold">Nouveau permis</div>
+                <div className="text-sm text-muted-foreground">Pour une construction future</div>
+              </Label>
             </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">Durée (mois)</Label>
-              <Input
-                type="number"
-                placeholder="12"
-                value={formData.estimatedDuration}
-                onChange={(e) => handleInputChange('estimatedDuration', e.target.value)}
-                className="h-10"
-              />
+            <div className={cn(
+              "relative flex items-center space-x-4 p-4 rounded-xl border-2 transition-all cursor-pointer",
+              requestType === 'regularization' 
+                ? "border-primary bg-primary/5 shadow-sm" 
+                : "border-border bg-card hover:border-primary/50"
+            )}>
+              <RadioGroupItem value="regularization" id="regularization" className="mt-0" />
+              <Label htmlFor="regularization" className="flex-1 cursor-pointer">
+                <div className="font-semibold">Régularisation</div>
+                <div className="text-sm text-muted-foreground">Pour une construction existante</div>
+              </Label>
             </div>
+          </RadioGroup>
+          
+          {requestType === 'regularization' && (
+            <div className="p-4 bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-900 rounded-xl flex items-start gap-3 animate-fade-in">
+              <AlertCircle className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-orange-700 dark:text-orange-300">
+                Requis pour les constructions réalisées sans autorisation préalable.
+              </p>
+            </div>
+          )}
+        </div>
+
+        <Separator />
+
+        {/* Section Construction */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="h-5 w-5 text-primary" />
+            <Label className="text-base font-semibold">Informations sur la construction</Label>
           </div>
-        ) : (
-          <>
+
+          <div className="grid gap-4">
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Date de construction *</Label>
-              <Input
-                type="date"
-                max={new Date().toISOString().split('T')[0]}
-                value={formData.constructionDate}
-                onChange={(e) => handleInputChange('constructionDate', e.target.value)}
-                className="h-10"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-xs font-medium">État actuel *</Label>
-              <Select value={formData.currentState} onValueChange={(v) => handleInputChange('currentState', v)}>
-                <SelectTrigger className="h-10">
-                  <SelectValue placeholder="Sélectionner" />
+              <Label htmlFor="constructionType" className="text-sm font-medium">Type de construction *</Label>
+              <Select value={formData.constructionType} onValueChange={(v) => handleInputChange('constructionType', v)}>
+                <SelectTrigger id="constructionType" className="h-12">
+                  <SelectValue placeholder="Sélectionner le type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="En cours">En cours</SelectItem>
-                  <SelectItem value="Terminée">Terminée</SelectItem>
-                  <SelectItem value="Partiellement terminée">Partiellement terminée</SelectItem>
+                  <SelectItem value="Résidentielle">Résidentielle</SelectItem>
+                  <SelectItem value="Commerciale">Commerciale</SelectItem>
+                  <SelectItem value="Industrielle">Industrielle</SelectItem>
+                  <SelectItem value="Agricole">Agricole</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             <div className="space-y-2">
-              <Label className="text-xs font-medium">Problèmes de conformité</Label>
-              <Textarea
-                placeholder="Décrivez les problèmes..."
-                value={formData.complianceIssues}
-                onChange={(e) => handleInputChange('complianceIssues', e.target.value)}
-                rows={2}
-                className="resize-none text-sm"
+              <Label htmlFor="constructionNature" className="text-sm font-medium">Nature de construction *</Label>
+              <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
+                <SelectTrigger id="constructionNature" className="h-12">
+                  <SelectValue placeholder="Sélectionner la nature" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Durable">Durable</SelectItem>
+                  <SelectItem value="Semi-durable">Semi-durable</SelectItem>
+                  <SelectItem value="Précaire">Précaire</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="declaredUsage" className="text-sm font-medium">Usage déclaré *</Label>
+              <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
+                <SelectTrigger id="declaredUsage" className="h-12">
+                  <SelectValue placeholder="Sélectionner l'usage" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Habitation">Habitation</SelectItem>
+                  <SelectItem value="Commerce">Commerce</SelectItem>
+                  <SelectItem value="Bureau">Bureau</SelectItem>
+                  <SelectItem value="Entrepôt">Entrepôt</SelectItem>
+                  <SelectItem value="Usage mixte">Usage mixte</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="plannedArea" className="text-sm font-medium">Surface (m²) *</Label>
+                <Input
+                  id="plannedArea"
+                  type="number"
+                  placeholder="150"
+                  value={formData.plannedArea}
+                  onChange={(e) => handleInputChange('plannedArea', e.target.value)}
+                  className="h-12"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="numberOfFloors" className="text-sm font-medium">Nombre d'étages *</Label>
+                <Input
+                  id="numberOfFloors"
+                  type="number"
+                  min="1"
+                  placeholder="2"
+                  value={formData.numberOfFloors}
+                  onChange={(e) => handleInputChange('numberOfFloors', e.target.value)}
+                  className="h-12"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="estimatedCost" className="text-sm font-medium">Coût estimé (USD)</Label>
+              <Input
+                id="estimatedCost"
+                type="number"
+                placeholder="50000"
+                value={formData.estimatedCost}
+                onChange={(e) => handleInputChange('estimatedCost', e.target.value)}
+                className="h-12"
               />
             </div>
-          </>
-        )}
-      </div>
 
-      {/* Onglet Demandeur */}
-      <div className={currentTab !== 'applicant' ? 'hidden' : 'space-y-3'}>
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Nom complet *</Label>
-          <Input
-            type="text"
-            placeholder="Jean Dupont"
-            value={formData.applicantName}
-            onChange={(e) => handleInputChange('applicantName', e.target.value)}
-            className="h-10"
-          />
+            <div className="space-y-2">
+              <Label htmlFor="projectDescription" className="text-sm font-medium">Description du projet *</Label>
+              <Textarea
+                id="projectDescription"
+                placeholder="Décrivez brièvement votre projet de construction..."
+                value={formData.projectDescription}
+                onChange={(e) => handleInputChange('projectDescription', e.target.value)}
+                rows={4}
+                className="resize-none"
+              />
+            </div>
+
+            {requestType === 'new' ? (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="startDate" className="text-sm font-medium">Date de début *</Label>
+                  <Input
+                    id="startDate"
+                    type="date"
+                    min={new Date().toISOString().split('T')[0]}
+                    value={formData.startDate}
+                    onChange={(e) => handleInputChange('startDate', e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="estimatedDuration" className="text-sm font-medium">Durée (mois)</Label>
+                  <Input
+                    id="estimatedDuration"
+                    type="number"
+                    placeholder="12"
+                    value={formData.estimatedDuration}
+                    onChange={(e) => handleInputChange('estimatedDuration', e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="constructionDate" className="text-sm font-medium">Date de construction *</Label>
+                  <Input
+                    id="constructionDate"
+                    type="date"
+                    max={new Date().toISOString().split('T')[0]}
+                    value={formData.constructionDate}
+                    onChange={(e) => handleInputChange('constructionDate', e.target.value)}
+                    className="h-12"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="currentState" className="text-sm font-medium">État actuel *</Label>
+                  <Select value={formData.currentState} onValueChange={(v) => handleInputChange('currentState', v)}>
+                    <SelectTrigger id="currentState" className="h-12">
+                      <SelectValue placeholder="Sélectionner l'état" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="En cours">En cours</SelectItem>
+                      <SelectItem value="Terminée">Terminée</SelectItem>
+                      <SelectItem value="Partiellement terminée">Partiellement terminée</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="complianceIssues" className="text-sm font-medium">Problèmes de conformité</Label>
+                  <Textarea
+                    id="complianceIssues"
+                    placeholder="Décrivez les éventuels problèmes de conformité..."
+                    value={formData.complianceIssues}
+                    onChange={(e) => handleInputChange('complianceIssues', e.target.value)}
+                    rows={3}
+                    className="resize-none"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Téléphone *</Label>
-          <Input
-            type="tel"
-            placeholder="+243 900 000 000"
-            value={formData.applicantPhone}
-            onChange={(e) => handleInputChange('applicantPhone', e.target.value)}
-            className="h-10"
-          />
+        <Separator />
+
+        {/* Section Demandeur */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <User className="h-5 w-5 text-primary" />
+            <Label className="text-base font-semibold">Informations du demandeur</Label>
+          </div>
+
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="applicantName" className="text-sm font-medium">Nom complet *</Label>
+              <Input
+                id="applicantName"
+                type="text"
+                placeholder="Jean Dupont"
+                value={formData.applicantName}
+                onChange={(e) => handleInputChange('applicantName', e.target.value)}
+                className="h-12"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="applicantPhone" className="text-sm font-medium">Téléphone *</Label>
+              <Input
+                id="applicantPhone"
+                type="tel"
+                placeholder="+243 900 000 000"
+                value={formData.applicantPhone}
+                onChange={(e) => handleInputChange('applicantPhone', e.target.value)}
+                className="h-12"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="applicantEmail" className="text-sm font-medium">Email</Label>
+              <Input
+                id="applicantEmail"
+                type="email"
+                placeholder="jean@example.com"
+                value={formData.applicantEmail}
+                onChange={(e) => handleInputChange('applicantEmail', e.target.value)}
+                className="h-12"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="applicantAddress" className="text-sm font-medium">Adresse complète</Label>
+              <Textarea
+                id="applicantAddress"
+                placeholder="Votre adresse complète..."
+                value={formData.applicantAddress}
+                onChange={(e) => handleInputChange('applicantAddress', e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Email</Label>
-          <Input
-            type="email"
-            placeholder="jean@example.com"
-            value={formData.applicantEmail}
-            onChange={(e) => handleInputChange('applicantEmail', e.target.value)}
-            className="h-10"
-          />
+        <Separator />
+
+        <div className="flex gap-3 pt-2 sticky bottom-0 bg-background pb-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleClose}
+            className="flex-1 h-12"
+          >
+            Annuler
+          </Button>
+          <Button
+            type="submit"
+            disabled={!isFormValid()}
+            className="flex-1 h-12 font-semibold"
+          >
+            Procéder au paiement
+          </Button>
         </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Adresse</Label>
-          <Textarea
-            placeholder="Votre adresse complète..."
-            value={formData.applicantAddress}
-            onChange={(e) => handleInputChange('applicantAddress', e.target.value)}
-            rows={2}
-            className="resize-none text-sm"
-          />
-        </div>
-      </div>
-
-      <Separator />
-
-      <div className="flex gap-3 pt-2">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleClose}
-          className="flex-1"
-          size="sm"
-        >
-          Annuler
-        </Button>
-        <Button
-          type="submit"
-          disabled={!isFormValid()}
-          className="flex-1"
-          size="sm"
-        >
-          Paiement
-        </Button>
-      </div>
-    </form>
+      </form>
+    </ScrollArea>
   );
 
   const Container = isMobile ? Drawer : Dialog;
@@ -549,14 +573,14 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   return (
     <Container open={open} onOpenChange={handleClose}>
-      <Content className={isMobile ? "max-h-[90vh]" : "sm:max-w-lg max-h-[90vh] overflow-y-auto"}>
-        <Header className={isMobile ? "px-4" : undefined}>
-          <Title className="flex items-center gap-2 text-base">
-            <Building2 className="h-5 w-5 text-primary" />
-            Demande de permis
+      <Content className={isMobile ? "max-h-[95vh] flex flex-col" : "sm:max-w-2xl max-h-[90vh] flex flex-col"}>
+        <Header className={isMobile ? "px-4 pb-4" : "pb-4"}>
+          <Title className="flex items-center gap-2 text-lg">
+            <Building2 className="h-6 w-6 text-primary" />
+            Demande de permis de construire
           </Title>
-          <Description className="text-xs">
-            Parcelle {parcelNumber}
+          <Description>
+            Parcelle <strong className="text-foreground">{parcelNumber}</strong>
           </Description>
         </Header>
         <FormContent />
