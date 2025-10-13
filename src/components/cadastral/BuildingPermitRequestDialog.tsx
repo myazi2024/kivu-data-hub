@@ -260,107 +260,99 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   }
 
   const FormContent = () => (
-    <form onSubmit={handleSubmit} className="space-y-4 p-4">
-      {/* Type de demande */}
-      <div className="space-y-3">
-        <Label className="text-sm font-semibold">Type de demande</Label>
-        <RadioGroup value={requestType} onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} className="space-y-2">
-          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="new" id="new" />
-            <Label htmlFor="new" className="flex-1 cursor-pointer">
-              <div className="font-medium text-sm">Nouveau permis</div>
-              <div className="text-xs text-muted-foreground">Construction à venir</div>
-            </Label>
-          </div>
-          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-            <RadioGroupItem value="regularization" id="regularization" />
-            <Label htmlFor="regularization" className="flex-1 cursor-pointer">
-              <div className="font-medium text-sm">Régularisation</div>
-              <div className="text-xs text-muted-foreground">Construction existante</div>
-            </Label>
-          </div>
-        </RadioGroup>
-        
-        {requestType === 'regularization' && (
-          <div className="p-3 bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-900 rounded-lg flex items-start gap-2">
-            <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-orange-700 dark:text-orange-300">
-              Requis pour les constructions sans autorisation préalable.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <Separator />
-
-      {/* Navigation par onglets */}
-      <div className="flex gap-2">
-        <Button
-          type="button"
-          variant={currentTab === 'construction' ? 'default' : 'outline'}
-          onClick={() => setCurrentTab('construction')}
-          size="sm"
-          className="flex-1"
-        >
-          Construction
-        </Button>
-        <Button
-          type="button"
-          variant={currentTab === 'applicant' ? 'default' : 'outline'}
-          onClick={() => setCurrentTab('applicant')}
-          size="sm"
-          className="flex-1"
-        >
-          Demandeur
-        </Button>
-      </div>
-
-      {/* Onglet Construction */}
-      <div className={currentTab !== 'construction' ? 'hidden' : 'space-y-3'}>
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Type de construction *</Label>
-          <Select value={formData.constructionType} onValueChange={(v) => handleInputChange('constructionType', v)}>
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-              <SelectItem value="Commerciale">Commerciale</SelectItem>
-              <SelectItem value="Industrielle">Industrielle</SelectItem>
-              <SelectItem value="Agricole">Agricole</SelectItem>
-            </SelectContent>
-          </Select>
+    <form onSubmit={handleSubmit} className="flex flex-col h-full">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-4 space-y-4">
+        {/* Type de demande */}
+        <div className="space-y-3 pt-4">
+          <Label className="text-sm font-semibold">Type de demande</Label>
+          <RadioGroup value={requestType} onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} className="space-y-2">
+            <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+              <RadioGroupItem value="new" id="new" />
+              <Label htmlFor="new" className="flex-1 cursor-pointer">
+                <div className="font-medium text-sm">Nouveau permis</div>
+                <div className="text-xs text-muted-foreground">Construction à venir</div>
+              </Label>
+            </div>
+            <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+              <RadioGroupItem value="regularization" id="regularization" />
+              <Label htmlFor="regularization" className="flex-1 cursor-pointer">
+                <div className="font-medium text-sm">Régularisation</div>
+                <div className="text-xs text-muted-foreground">Construction existante</div>
+              </Label>
+            </div>
+          </RadioGroup>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Nature de construction *</Label>
-          <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Durable">Durable</SelectItem>
-              <SelectItem value="Semi-durable">Semi-durable</SelectItem>
-              <SelectItem value="Précaire">Précaire</SelectItem>
-            </SelectContent>
-          </Select>
+        <Separator />
+
+        {/* Navigation par onglets */}
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant={currentTab === 'construction' ? 'default' : 'outline'}
+            onClick={() => setCurrentTab('construction')}
+            size="sm"
+            className="flex-1"
+          >
+            Construction
+          </Button>
+          <Button
+            type="button"
+            variant={currentTab === 'applicant' ? 'default' : 'outline'}
+            onClick={() => setCurrentTab('applicant')}
+            size="sm"
+            className="flex-1"
+          >
+            Demandeur
+          </Button>
         </div>
 
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Usage déclaré *</Label>
-          <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Habitation">Habitation</SelectItem>
-              <SelectItem value="Commerce">Commerce</SelectItem>
-              <SelectItem value="Bureau">Bureau</SelectItem>
-              <SelectItem value="Entrepôt">Entrepôt</SelectItem>
-              <SelectItem value="Usage mixte">Usage mixte</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Onglet Construction */}
+        <div className={currentTab !== 'construction' ? 'hidden' : 'space-y-3'}>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Type de construction *</Label>
+            <Select value={formData.constructionType} onValueChange={(v) => handleInputChange('constructionType', v)}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="z-[100]">
+                <SelectItem value="Résidentielle">Résidentielle</SelectItem>
+                <SelectItem value="Commerciale">Commerciale</SelectItem>
+                <SelectItem value="Industrielle">Industrielle</SelectItem>
+                <SelectItem value="Agricole">Agricole</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Nature de construction *</Label>
+            <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="z-[100]">
+                <SelectItem value="Durable">Durable</SelectItem>
+                <SelectItem value="Semi-durable">Semi-durable</SelectItem>
+                <SelectItem value="Précaire">Précaire</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Usage déclaré *</Label>
+            <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={4} className="z-[100]">
+                <SelectItem value="Habitation">Habitation</SelectItem>
+                <SelectItem value="Commerce">Commerce</SelectItem>
+                <SelectItem value="Bureau">Bureau</SelectItem>
+                <SelectItem value="Entrepôt">Entrepôt</SelectItem>
+                <SelectItem value="Usage mixte">Usage mixte</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
@@ -449,7 +441,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent position="popper" sideOffset={4} className="z-[100]">
                   <SelectItem value="En cours">En cours</SelectItem>
                   <SelectItem value="Terminée">Terminée</SelectItem>
                   <SelectItem value="Partiellement terminée">Partiellement terminée</SelectItem>
@@ -468,10 +460,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             </div>
           </>
         )}
-      </div>
+        </div>
 
-      {/* Onglet Demandeur */}
-      <div className={currentTab !== 'applicant' ? 'hidden' : 'space-y-3'}>
+        {/* Onglet Demandeur */}
+        <div className={currentTab !== 'applicant' ? 'hidden' : 'space-y-3'}>
         <div className="space-y-2">
           <Label className="text-xs font-medium">Nom complet *</Label>
           <Input
@@ -515,11 +507,13 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             className="resize-none text-sm"
           />
         </div>
+        </div>
+
+        <Separator className="my-4" />
       </div>
 
-      <Separator />
-
-      <div className="flex gap-3 pt-2">
+      {/* Boutons d'action fixes en bas */}
+      <div className="flex gap-3 p-4 bg-background border-t">
         <Button
           type="button"
           variant="outline"
@@ -549,8 +543,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   return (
     <Container open={open} onOpenChange={handleClose}>
-      <Content className={isMobile ? "max-h-[90vh]" : "sm:max-w-lg max-h-[90vh] overflow-y-auto"}>
-        <Header className={isMobile ? "px-4" : undefined}>
+      <Content className={isMobile ? "h-[92vh] flex flex-col" : "sm:max-w-lg h-[85vh] flex flex-col"}>
+        <Header className={isMobile ? "px-4 flex-shrink-0" : "flex-shrink-0"}>
           <Title className="flex items-center gap-2 text-base">
             <Building2 className="h-5 w-5 text-primary" />
             Demande de permis
