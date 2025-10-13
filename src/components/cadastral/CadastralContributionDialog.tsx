@@ -3074,32 +3074,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Bouton de soumission finale */}
-                <div className="pt-8 border-t mt-8">
-                  <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background p-6 rounded-xl border-2 border-primary/20 shadow-lg">
-                    <div className="flex flex-col items-center text-center space-y-4">
-                      <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
-                        <CheckCircle2 className="h-8 w-8 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-foreground mb-2">
-                          Prêt à soumettre votre contribution ?
-                        </h3>
-                        <p className="text-sm text-muted-foreground max-w-md">
-                          Créez un compte ou connectez-vous pour finaliser votre contribution cadastrale et recevoir votre code CCC.
+                <div className="sticky bottom-0 left-0 right-0 mt-8 -mx-6 -mb-6 bg-background/95 backdrop-blur-sm border-t p-4 sm:p-6 z-10">
+                  <div className="max-w-2xl mx-auto">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                      {/* Info compacte */}
+                      <div className="flex-1 text-center sm:text-left">
+                        <p className="text-sm font-medium text-foreground mb-1">
+                          Formulaire complété
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Connectez-vous pour soumettre et obtenir votre code CCC
                         </p>
                       </div>
+                      
+                      {/* Bouton principal */}
                       <Button
                         type="button"
                         size="lg"
                         onClick={() => {
-                          // Sauvegarder les données avant de rediriger
                           saveFormDataToStorage();
                           setShowAuthDialog(true);
                         }}
-                        className="w-full sm:w-auto px-8 py-6 text-lg font-semibold gap-3 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]"
+                        className="w-full sm:w-auto px-6 sm:px-8 h-12 sm:h-14 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
                       >
-                        <UserPlus className="h-6 w-6" />
-                        Soumettre votre contribution
+                        <CheckCircle2 className="h-5 w-5" />
+                        <span className="hidden sm:inline">Soumettre ma contribution</span>
+                        <span className="sm:hidden">Soumettre</span>
                       </Button>
                     </div>
                   </div>
