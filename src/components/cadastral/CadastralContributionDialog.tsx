@@ -1918,7 +1918,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeBuildingPermit(index)}
+                          onClick={() => {
+                            if (index === 0) {
+                              toast({
+                                title: "Suppression impossible",
+                                description: "Le premier bloc de permis ne peut pas être supprimé. Vous pouvez le laisser vide si vous n'avez pas de permis.",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+                            removeBuildingPermit(index);
+                          }}
                           className="text-destructive hover:bg-destructive/10"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -2572,7 +2582,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removePreviousOwner(index)}
+                          onClick={() => {
+                            if (index === 0) {
+                              toast({
+                                title: "Suppression impossible",
+                                description: "Le premier bloc de l'historique ne peut pas être supprimé. Vous pouvez le laisser vide si vous n'avez pas d'informations.",
+                                variant: "destructive"
+                              });
+                              return;
+                            }
+                            removePreviousOwner(index);
+                          }}
                           className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -2735,7 +2755,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeTaxRecord(index)}
+                            onClick={() => {
+                              if (index === 0) {
+                                toast({
+                                  title: "Suppression impossible",
+                                  description: "Le premier bloc de taxe ne peut pas être supprimé. Vous pouvez le laisser vide si vous n'avez pas d'informations.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              removeTaxRecord(index);
+                            }}
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -2912,7 +2942,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => removeMortgageRecord(index)}
+                            onClick={() => {
+                              if (index === 0) {
+                                toast({
+                                  title: "Suppression impossible",
+                                  description: "Le premier bloc d'hypothèque ne peut pas être supprimé. Vous pouvez le laisser vide si vous n'avez pas d'informations.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              removeMortgageRecord(index);
+                            }}
                             className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
                           >
                             <Trash2 className="h-4 w-4" />
