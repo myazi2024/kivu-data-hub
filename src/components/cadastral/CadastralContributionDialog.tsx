@@ -57,6 +57,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [highlightIncompleteOwner, setHighlightIncompleteOwner] = useState(false);
   const [showPermitWarning, setShowPermitWarning] = useState(false);
   const [highlightIncompletePermit, setHighlightIncompletePermit] = useState(false);
+  const [showPreviousOwnerWarning, setShowPreviousOwnerWarning] = useState(false);
+  const [highlightIncompletePreviousOwner, setHighlightIncompletePreviousOwner] = useState(false);
   const [showPermitInfoPopover, setShowPermitInfoPopover] = useState(false);
   const [highlightSuperficie, setHighlightSuperficie] = useState(false);
   const [showGPSWarning, setShowGPSWarning] = useState(false);
@@ -68,18 +70,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     startDate: string;
     endDate: string;
     mutationType: string;
-    surveyDate?: string;
-    surveyorName?: string;
-    pvReferenceNumber?: string;
   }>>([{
     name: '',
     legalStatus: 'Personne physique',
     startDate: '',
     endDate: '',
-    mutationType: 'Vente',
-    surveyDate: '',
-    surveyorName: '',
-    pvReferenceNumber: ''
+    mutationType: 'Vente'
   }]);
 
   // État pour gérer plusieurs propriétaires actuels (copropriété)
@@ -730,15 +726,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   const addPreviousOwner = () => {
+    const firstOwner = previousOwners[0];
+    
+    // Vérifier si le premier propriétaire est complété
+    if (!firstOwner?.name || !firstOwner?.legalStatus || !firstOwner?.mutationType) {
+      // Afficher la notification et mettre en surbrillance
+      setShowPreviousOwnerWarning(true);
+      setHighlightIncompletePreviousOwner(true);
+      
+      // Masquer la notification après 5 secondes
+      setTimeout(() => {
+        setShowPreviousOwnerWarning(false);
+      }, 5000);
+      
+      // Retirer la surbrillance après 3 secondes
+      setTimeout(() => {
+        setHighlightIncompletePreviousOwner(false);
+      }, 3000);
+      
+      return;
+    }
+    
+    // Réinitialiser les états d'avertissement
+    setShowPreviousOwnerWarning(false);
+    setHighlightIncompletePreviousOwner(false);
+    
     setPreviousOwners([...previousOwners, {
       name: '',
-      legalStatus: '',
+      legalStatus: 'Personne physique',
       startDate: '',
       endDate: '',
-      mutationType: '',
-      surveyDate: '',
-      surveyorName: '',
-      pvReferenceNumber: ''
+      mutationType: 'Vente'
     }]);
   };
 
@@ -1143,10 +1161,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       legalStatus: 'Personne physique',
       startDate: '',
       endDate: '',
-      mutationType: 'Vente',
-      surveyDate: '',
-      surveyorName: '',
-      pvReferenceNumber: ''
+      mutationType: 'Vente'
     }]);
     setCurrentOwners([{
       lastName: '',
@@ -2474,58 +2489,40 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </Select>
                       </div>
 
-                      {/* Informations de bornage intégrées */}
-                      <div className="pt-3 border-t space-y-3">
-                        <Label className="text-sm font-medium text-muted-foreground">Bornage (optionnel)</Label>
-                        
-                        <div className="space-y-2">
-                          <Label className="text-xs">Numéro de référence du PV</Label>
-                          <InputWithPopover
-                            placeholder="ex: PV/2024/001"
-                            value={owner.pvReferenceNumber || ''}
-                            onChange={(e) => updatePreviousOwner(index, 'pvReferenceNumber', e.target.value)}
-                            helpTitle="Numéro du PV de bornage"
-                            helpText="Le procès-verbal (PV) de bornage est un document officiel établi par un géomètre. Son numéro de référence se trouve généralement en en-tête du document et permet de l'identifier de façon unique."
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs">Date du bornage</Label>
-                          <Input
-                            type="date"
-                            max={new Date().toISOString().split('T')[0]}
-                            value={owner.surveyDate || ''}
-                            onChange={(e) => updatePreviousOwner(index, 'surveyDate', e.target.value)}
-                          />
-                          <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label className="text-xs">Nom du géomètre</Label>
-                          <InputWithPopover
-                            placeholder="ex: Géomètre Kalala"
-                            value={owner.surveyorName || ''}
-                            onChange={(e) => updatePreviousOwner(index, 'surveyorName', e.target.value)}
-                            helpTitle="Géomètre"
-                            helpText="Indiquez le nom du géomètre agréé qui a effectué le bornage de la parcelle. Cette information se trouve généralement sur le procès-verbal de bornage avec le numéro d'agrément du géomètre."
-                          />
-                        </div>
-                      </div>
                   </div>
                 ))}
               </div>
               
               {/* Bouton Ajouter déplacé en dessous des blocs */}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addPreviousOwner}
-                className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-              >
-                <Plus className="h-4 w-4" />
-                Ajouter un ancien propriétaire
-              </Button>
+              <div className="space-y-2">
+                {/* Notification d'avertissement */}
+                {showPreviousOwnerWarning && (
+                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                          Complétez d'abord le propriétaire actuel
+                        </p>
+                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                          Veuillez renseigner le nom, le statut juridique et le type de mutation de l'ancien propriétaire avant d'en ajouter un nouveau.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addPreviousOwner}
+                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter un ancien propriétaire
+                </Button>
+              </div>
             </div>
           </TabsContent>
 
