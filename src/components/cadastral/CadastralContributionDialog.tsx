@@ -62,6 +62,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showPermitInfoPopover, setShowPermitInfoPopover] = useState(false);
   const [highlightSuperficie, setHighlightSuperficie] = useState(false);
   const [showGPSWarning, setShowGPSWarning] = useState(false);
+  const [showTaxWarning, setShowTaxWarning] = useState(false);
+  const [highlightIncompleteTax, setHighlightIncompleteTax] = useState(false);
+  const [showMortgageWarning, setShowMortgageWarning] = useState(false);
+  const [highlightIncompleteMortgage, setHighlightIncompleteMortgage] = useState(false);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -820,6 +824,31 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Fonctions pour gérer les taxes
   const addTaxRecord = () => {
+    const firstTax = taxRecords[0];
+    
+    // Vérifier si la première taxe est complétée
+    if (!firstTax?.taxType || !firstTax?.taxYear || !firstTax?.taxAmount || !firstTax?.paymentStatus || !firstTax?.paymentDate) {
+      // Afficher la notification et mettre en surbrillance
+      setShowTaxWarning(true);
+      setHighlightIncompleteTax(true);
+      
+      // Masquer la notification après 5 secondes
+      setTimeout(() => {
+        setShowTaxWarning(false);
+      }, 5000);
+      
+      // Retirer la surbrillance après 3 secondes
+      setTimeout(() => {
+        setHighlightIncompleteTax(false);
+      }, 3000);
+      
+      return;
+    }
+    
+    // Réinitialiser les états d'avertissement
+    setShowTaxWarning(false);
+    setHighlightIncompleteTax(false);
+    
     setTaxRecords([...taxRecords, {
       taxType: '',
       taxYear: '',
@@ -865,6 +894,31 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Fonctions pour gérer les hypothèques
   const addMortgageRecord = () => {
+    const firstMortgage = mortgageRecords[0];
+    
+    // Vérifier si la première hypothèque est complétée
+    if (!firstMortgage?.mortgageAmount || !firstMortgage?.duration || !firstMortgage?.creditorName || !firstMortgage?.creditorType || !firstMortgage?.contractDate || !firstMortgage?.mortgageStatus) {
+      // Afficher la notification et mettre en surbrillance
+      setShowMortgageWarning(true);
+      setHighlightIncompleteMortgage(true);
+      
+      // Masquer la notification après 5 secondes
+      setTimeout(() => {
+        setShowMortgageWarning(false);
+      }, 5000);
+      
+      // Retirer la surbrillance après 3 secondes
+      setTimeout(() => {
+        setHighlightIncompleteMortgage(false);
+      }, 3000);
+      
+      return;
+    }
+    
+    // Réinitialiser les états d'avertissement
+    setShowMortgageWarning(false);
+    setHighlightIncompleteMortgage(false);
+    
     setMortgageRecords([...mortgageRecords, {
       mortgageAmount: '',
       duration: '',
@@ -2563,7 +2617,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 <div className="space-y-6">
                   {taxRecords.map((tax, index) => (
-                      <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
+                      <div key={index} className={`border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in ${index === 0 && highlightIncompleteTax ? 'ring-2 ring-amber-500 animate-pulse' : ''}`}>
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Taxe #{index + 1}</h4>
                           <Button
@@ -2694,16 +2748,35 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
                 
                 {/* Bouton Ajouter déplacé en dessous des blocs */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addTaxRecord}
-                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter une taxe
-                </Button>
+                <div className="space-y-2">
+                  {/* Notification d'avertissement */}
+                  {showTaxWarning && (
+                    <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                            Complétez d'abord la première taxe
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Veuillez renseigner tous les champs obligatoires (type, année, montant, statut et date de paiement) avant d'ajouter une nouvelle taxe.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addTaxRecord}
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter une taxe
+                  </Button>
+                </div>
               </div>
             )}
 
@@ -2721,7 +2794,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 <div className="space-y-6">
                   {mortgageRecords.map((mortgage, index) => (
-                      <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
+                      <div key={index} className={`border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in ${index === 0 && highlightIncompleteMortgage ? 'ring-2 ring-amber-500 animate-pulse' : ''}`}>
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Hypothèque #{index + 1}</h4>
                           <Button
@@ -2855,16 +2928,35 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
                 
                 {/* Bouton Ajouter déplacé en dessous des blocs */}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addMortgageRecord}
-                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter une hypothèque
-                </Button>
+                <div className="space-y-2">
+                  {/* Notification d'avertissement */}
+                  {showMortgageWarning && (
+                    <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                            Complétez d'abord la première hypothèque
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Veuillez renseigner tous les champs obligatoires (montant, durée, nom du créancier, type, date du contrat et statut) avant d'ajouter une nouvelle hypothèque.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addMortgageRecord}
+                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter une hypothèque
+                  </Button>
+                </div>
               </div>
             )}
           </TabsContent>
