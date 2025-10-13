@@ -1903,19 +1903,67 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <div>
                   <Label className="text-sm font-semibold">Permis de construire (optionnel)</Label>
                 </div>
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => {
-                    setPermitActionMode('demander');
-                    setShowPermitRequestDialog(true);
-                  }}
-                  className="group relative gap-2 h-9 px-4 rounded-lg font-medium text-sm bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-md hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                  <Sparkles className="h-4 w-4 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
-                  <span className="relative z-10">Demander un permis</span>
-                </Button>
+                <Popover open={showPermitInfoPopover} onOpenChange={setShowPermitInfoPopover}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onMouseEnter={() => setShowPermitInfoPopover(true)}
+                      onMouseLeave={() => setShowPermitInfoPopover(false)}
+                      onClick={() => {
+                        setShowPermitInfoPopover(false);
+                        setPermitActionMode('demander');
+                        setShowPermitRequestDialog(true);
+                      }}
+                      className="group relative gap-2 h-9 px-4 rounded-lg font-medium text-sm bg-gradient-to-r from-primary via-primary to-primary/90 text-primary-foreground shadow-md hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 hover:scale-105 hover:-translate-y-0.5 overflow-hidden"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <Sparkles className="h-4 w-4 relative z-10 group-hover:rotate-12 transition-transform duration-300" />
+                      <span className="relative z-10">Demander un permis</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-80" 
+                    align="end" 
+                    side="top"
+                    onMouseEnter={() => setShowPermitInfoPopover(true)}
+                    onMouseLeave={() => setShowPermitInfoPopover(false)}
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Sparkles className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm mb-1">Obtenez votre permis facilement !</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            En quelques clics, complétez votre demande de permis de construire en ligne. 
+                            C'est <span className="font-semibold text-primary">simple</span>, <span className="font-semibold text-primary">rapide</span> et <span className="font-semibold text-primary">efficace</span>.
+                          </p>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t space-y-2">
+                        <div className="flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">Formulaire guidé étape par étape</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">Traitement accéléré de votre dossier</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <CheckCircle2 className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                          <span className="text-muted-foreground">Support disponible à chaque étape</span>
+                        </div>
+                      </div>
+                      <div className="pt-2">
+                        <p className="text-xs text-center font-medium text-primary">
+                          👉 Cliquez sur le bouton pour commencer !
+                        </p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               <div className="space-y-4">
