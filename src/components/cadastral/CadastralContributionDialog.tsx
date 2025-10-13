@@ -158,6 +158,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     lat: string;
     lng: string;
   }>>([]);
+  
+  // Synchroniser initialement les bornes GPS avec les côtés par défaut
+  useEffect(() => {
+    if (gpsCoordinates.length === 0 && parcelSides.length > 0) {
+      const initialBornes = parcelSides.map((_, index) => ({
+        borne: `Borne ${index + 1}`,
+        lat: '',
+        lng: ''
+      }));
+      setGpsCoordinates(initialBornes);
+    }
+  }, []);
 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
@@ -1030,11 +1042,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       name: `Côté ${sideNumber}`,
       length: ''
     }]);
+    
+    // Ajouter automatiquement une borne GPS correspondante
+    const borneNumber = gpsCoordinates.length + 1;
+    setGpsCoordinates([...gpsCoordinates, {
+      borne: `Borne ${borneNumber}`,
+      lat: '',
+      lng: ''
+    }]);
   };
 
   const removeParcelSide = (index: number) => {
     if (parcelSides.length > 2) {
       setParcelSides(parcelSides.filter((_, i) => i !== index));
+      
+      // Supprimer automatiquement la borne GPS correspondante
+      if (gpsCoordinates.length > 0) {
+        setGpsCoordinates(gpsCoordinates.slice(0, -1));
+      }
     }
   };
 
