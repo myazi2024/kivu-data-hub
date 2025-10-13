@@ -59,6 +59,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [highlightIncompletePermit, setHighlightIncompletePermit] = useState(false);
   const [showPermitInfoPopover, setShowPermitInfoPopover] = useState(false);
   const [highlightSuperficie, setHighlightSuperficie] = useState(false);
+  const [showGPSWarning, setShowGPSWarning] = useState(false);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -2283,47 +2284,64 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
                   
                   {/* Bouton Ajouter déplacé en dessous des blocs */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                      const isSuperficieCompleted = filledSides.length >= 3;
-                      const canAddMore = gpsCoordinates.length < filledSides.length;
-                      
-                      // Si la limite est atteinte, afficher la notification et surbrillance
-                      if (isSuperficieCompleted && !canAddMore) {
-                        toast({
-                          title: "Limite de coordonnées GPS atteinte",
-                          description: `Vous avez atteint la limite de ${filledSides.length} borne(s) correspondant aux ${filledSides.length} côté(s) de votre parcelle. Pour ajouter plus de coordonnées GPS, vous devez d'abord ajouter un nouveau côté dans le bloc "Dimensions de chaque côté" ci-dessus.`,
-                          variant: "default",
-                        });
+                  <div className="space-y-2">
+                    {/* Notification d'avertissement pour GPS */}
+                    {showGPSWarning && (
+                      <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
+                        <div className="flex items-start gap-2">
+                          <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                              Limite de coordonnées GPS atteinte
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                              Vous avez atteint la limite de {parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length} borne(s) correspondant aux {parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length} côté(s) de votre parcelle. Pour ajouter plus de coordonnées GPS, vous devez d'abord ajouter un nouveau côté dans le bloc "Dimensions de chaque côté" ci-dessus.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+                        const isSuperficieCompleted = filledSides.length >= 3;
+                        const canAddMore = gpsCoordinates.length < filledSides.length;
                         
-                        // Mettre en surbrillance le bloc superficie
-                        setHighlightSuperficie(true);
+                        // Si la limite est atteinte, afficher la notification et surbrillance
+                        if (isSuperficieCompleted && !canAddMore) {
+                          setShowGPSWarning(true);
+                          setHighlightSuperficie(true);
+                          
+                          // Retirer la notification après 5 secondes
+                          setTimeout(() => {
+                            setShowGPSWarning(false);
+                          }, 5000);
+                          
+                          // Retirer la surbrillance après 3 secondes
+                          setTimeout(() => {
+                            setHighlightSuperficie(false);
+                          }, 3000);
+                          
+                          return;
+                        }
                         
-                        // Retirer la surbrillance après 3 secondes
-                        setTimeout(() => {
-                          setHighlightSuperficie(false);
-                        }, 3000);
-                        
-                        return;
-                      }
-                      
-                      addGPSCoordinate();
-                    }}
-                    disabled={(() => {
-                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                      const isSuperficieCompleted = filledSides.length >= 3;
-                      const canAddMore = gpsCoordinates.length < filledSides.length;
-                      return !isSuperficieCompleted || !canAddMore;
-                    })()}
-                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter une coordonnée GPS
-                  </Button>
+                        addGPSCoordinate();
+                      }}
+                      disabled={(() => {
+                        const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+                        const isSuperficieCompleted = filledSides.length >= 3;
+                        return !isSuperficieCompleted;
+                      })()}
+                      className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajouter une coordonnée GPS
+                    </Button>
+                  </div>
                 </div>
               )}
           </TabsContent>
