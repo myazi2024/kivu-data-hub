@@ -2957,6 +2957,34 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     Ajouter une hypothèque
                   </Button>
                 </div>
+
+                {/* Bouton de soumission finale */}
+                <div className="pt-8 border-t mt-8">
+                  <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background p-6 rounded-xl border-2 border-primary/20 shadow-lg">
+                    <div className="flex flex-col items-center text-center space-y-4">
+                      <div className="h-16 w-16 rounded-full bg-primary/20 flex items-center justify-center">
+                        <CheckCircle2 className="h-8 w-8 text-primary" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-foreground mb-2">
+                          Prêt à soumettre votre contribution ?
+                        </h3>
+                        <p className="text-sm text-muted-foreground max-w-md">
+                          Créez un compte ou connectez-vous pour finaliser votre contribution cadastrale et recevoir votre code CCC.
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="lg"
+                        onClick={() => setShowAuthDialog(true)}
+                        className="w-full sm:w-auto px-8 py-6 text-lg font-semibold gap-3 shadow-xl hover:shadow-2xl transition-all hover:scale-[1.02]"
+                      >
+                        <UserPlus className="h-6 w-6" />
+                        Soumettre votre contribution
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
