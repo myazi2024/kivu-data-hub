@@ -157,11 +157,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     borne: string;
     lat: string;
     lng: string;
-  }>>([{
-    borne: 'Borne 1',
-    lat: '',
-    lng: ''
-  }]);
+  }>>([]);
 
   // État pour le switch Taxes/Hypothèques dans l'onglet obligations
   const [obligationType, setObligationType] = useState<'taxes' | 'mortgages'>('taxes');
