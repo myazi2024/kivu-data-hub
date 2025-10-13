@@ -1739,12 +1739,34 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
 
             <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
-              <Label htmlFor="constructionType" className="flex items-center gap-1">
-                Type de construction
-                {highlightRequiredFields && !formData.constructionType && (
-                  <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
-                )}
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="constructionType" className="flex items-center gap-1">
+                  Type de construction
+                  {highlightRequiredFields && !formData.constructionType && (
+                    <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
+                  )}
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 text-sm">
+                    <h4 className="font-semibold mb-2">Type de construction</h4>
+                    <p className="text-muted-foreground">
+                      Définit la catégorie principale de votre bien immobilier. Cette classification détermine les taxes applicables et les règlements d'urbanisme à respecter.
+                    </p>
+                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      <li>• <strong>Résidentielle</strong>: Habitations et logements</li>
+                      <li>• <strong>Commerciale</strong>: Bureaux, magasins, commerces</li>
+                      <li>• <strong>Industrielle</strong>: Usines, ateliers, entrepôts</li>
+                      <li>• <strong>Agricole</strong>: Exploitations agricoles</li>
+                      <li>• <strong>Terrain nu</strong>: Parcelle sans construction</li>
+                    </ul>
+                  </PopoverContent>
+                </Popover>
+              </div>
               <Select 
                 value={formData.constructionType || ''}
                 onValueChange={(value) => {
@@ -1766,12 +1788,33 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
 
             <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
-              <Label htmlFor="constructionNature" className="flex items-center gap-1">
-                Nature de construction
-                {highlightRequiredFields && !formData.constructionNature && (
-                  <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
-                )}
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="constructionNature" className="flex items-center gap-1">
+                  Nature de construction
+                  {highlightRequiredFields && !formData.constructionNature && (
+                    <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
+                  )}
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 text-sm">
+                    <h4 className="font-semibold mb-2">Nature de construction</h4>
+                    <p className="text-muted-foreground">
+                      Indique la solidité et la durabilité de la construction, critère essentiel pour l'évaluation cadastrale et la détermination de la valeur du bien.
+                    </p>
+                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      <li>• <strong>Durable</strong>: Matériaux solides (béton, briques)</li>
+                      <li>• <strong>Semi-durable</strong>: Matériaux mixtes</li>
+                      <li>• <strong>Précaire</strong>: Matériaux temporaires</li>
+                      <li>• <strong>Non bâti</strong>: Terrain sans construction</li>
+                    </ul>
+                  </PopoverContent>
+                </Popover>
+              </div>
               <Select 
                 value={formData.constructionNature || ''}
                 onValueChange={(value) => {
@@ -1801,12 +1844,30 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
 
             <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
-              <Label htmlFor="declaredUsage" className="flex items-center gap-1">
-                Usage déclaré
-                {highlightRequiredFields && !formData.declaredUsage && (
-                  <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
-                )}
-              </Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="declaredUsage" className="flex items-center gap-1">
+                  Usage déclaré
+                  {highlightRequiredFields && !formData.declaredUsage && (
+                    <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
+                  )}
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 text-sm">
+                    <h4 className="font-semibold mb-2">Usage déclaré</h4>
+                    <p className="text-muted-foreground">
+                      Précise l'utilisation effective ou prévue du bien. Cette information est cruciale pour la conformité réglementaire et détermine les autorisations nécessaires.
+                    </p>
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      L'usage doit correspondre à l'utilisation réelle du bien et être conforme aux règles d'urbanisme en vigueur dans votre zone.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              </div>
               <Select 
                 value={formData.declaredUsage || ''}
                 onValueChange={(value) => {
@@ -2083,7 +2144,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           <TabsContent value="location" className="space-y-6 mt-6 animate-fade-in">
             {/* Choix du type de section */}
             <div className="space-y-2 pb-4 border-t">
-              <Label htmlFor="sectionType">Type de section *</Label>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="sectionType">Type de section *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                      <Info className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 text-sm">
+                    <h4 className="font-semibold mb-2">Type de section cadastrale</h4>
+                    <p className="text-muted-foreground">
+                      La RDC divise les parcelles en sections urbaines (SU) et sections rurales (SR). Cette classification détermine la structure administrative de localisation de votre bien.
+                    </p>
+                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                      <li>• <strong>SU (Section Urbaine)</strong>: Zones urbanisées avec Ville → Commune → Quartier</li>
+                      <li>• <strong>SR (Section Rurale)</strong>: Zones rurales avec Territoire → Collectivité → Village</li>
+                    </ul>
+                  </PopoverContent>
+                </Popover>
+              </div>
               <Select 
                 value={sectionType} 
                 onValueChange={(value: 'urbaine' | 'rurale') => handleSectionTypeChange(value)}
@@ -2332,7 +2412,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   }`}
                 >
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Dimensions de chaque côté (en mètres)</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-medium">Dimensions de chaque côté (en mètres)</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                            <Info className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80 text-sm">
+                          <h4 className="font-semibold mb-2">Dimensions de la parcelle</h4>
+                          <p className="text-muted-foreground">
+                            Indiquez la longueur en mètres de chaque côté de votre parcelle. Ces mesures permettent de calculer automatiquement la superficie cadastrale.
+                          </p>
+                          <p className="mt-2 text-xs text-muted-foreground">
+                            Les dimensions doivent être mesurées sur le terrain ou extraites de documents cadastraux officiels pour garantir leur précision.
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       Ajoutez les dimensions de chaque côté de la parcelle
                     </p>
@@ -2611,7 +2709,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Statut juridique</Label>
+                        <div className="flex items-center gap-2">
+                          <Label>Statut juridique</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 text-sm">
+                              <h4 className="font-semibold mb-2">Statut juridique du propriétaire</h4>
+                              <p className="text-muted-foreground">
+                                Définit la nature légale du propriétaire pour établir ses droits et obligations.
+                              </p>
+                              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                <li>• <strong>Personne physique</strong>: Individu (citoyen)</li>
+                                <li>• <strong>Personne morale</strong>: Société, association</li>
+                                <li>• <strong>État</strong>: Propriété publique</li>
+                              </ul>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         <Select
                           value={owner.legalStatus}
                           onValueChange={(value) => updatePreviousOwner(index, 'legalStatus', value)}
@@ -2656,7 +2774,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
 
                       <div className="space-y-2">
-                        <Label>Type de mutation</Label>
+                        <div className="flex items-center gap-2">
+                          <Label>Type de mutation</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80 text-sm">
+                              <h4 className="font-semibold mb-2">Type de mutation</h4>
+                              <p className="text-muted-foreground">
+                                Indique le mode de transfert de propriété entre l'ancien et le nouveau propriétaire. Cette information est importante pour l'historique juridique de la parcelle.
+                              </p>
+                              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                <li>• <strong>Vente</strong>: Transaction commerciale</li>
+                                <li>• <strong>Donation</strong>: Transfert gratuit</li>
+                                <li>• <strong>Succession</strong>: Héritage</li>
+                                <li>• <strong>Expropriation</strong>: Acquisition forcée</li>
+                              </ul>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         <Select
                           value={owner.mutationType}
                           onValueChange={(value) => updatePreviousOwner(index, 'mutationType', value)}
@@ -2773,7 +2912,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Type de taxe</Label>
+                          <div className="flex items-center gap-2">
+                            <Label>Type de taxe</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 text-sm">
+                                <h4 className="font-semibold mb-2">Type de taxe foncière</h4>
+                                <p className="text-muted-foreground">
+                                  Les taxes foncières sont des impôts périodiques dus par les propriétaires. Le paiement régulier démontre la conformité fiscale du bien.
+                                </p>
+                                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                  <li>• <strong>Impôt foncier annuel</strong>: Taxe principale</li>
+                                  <li>• <strong>Taxe de superficie</strong>: Basée sur la taille</li>
+                                  <li>• <strong>Revenus locatifs</strong>: Si location</li>
+                                </ul>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                           <Select
                             value={tax.taxType}
                             onValueChange={(value) => updateTaxRecord(index, 'taxType', value)}
@@ -2824,7 +2983,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Statut de paiement</Label>
+                          <div className="flex items-center gap-2">
+                            <Label>Statut de paiement</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 text-sm">
+                                <h4 className="font-semibold mb-2">Statut de paiement</h4>
+                                <p className="text-muted-foreground">
+                                  Indique si la taxe a été acquittée. Un historique de paiement régulier améliore la valeur et la crédibilité du bien.
+                                </p>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  Conservez toujours vos reçus de paiement comme preuve de conformité fiscale.
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                           <Select
                             value={tax.paymentStatus}
                             onValueChange={(value) => updateTaxRecord(index, 'paymentStatus', value)}
@@ -2995,7 +3172,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Type de créancier</Label>
+                          <div className="flex items-center gap-2">
+                            <Label>Type de créancier</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 text-sm">
+                                <h4 className="font-semibold mb-2">Type de créancier</h4>
+                                <p className="text-muted-foreground">
+                                  Précise la nature de l'institution ou de la personne ayant accordé le prêt hypothécaire. Cette information aide à identifier le type d'engagement financier.
+                                </p>
+                                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                  <li>• <strong>Banque</strong>: Institution bancaire classique</li>
+                                  <li>• <strong>Microfinance</strong>: Institution de microfinance</li>
+                                  <li>• <strong>Particulier</strong>: Prêt entre particuliers</li>
+                                </ul>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                           <Select
                             value={mortgage.creditorType}
                             onValueChange={(value) => updateMortgageRecord(index, 'creditorType', value)}
@@ -3027,7 +3224,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </div>
 
                         <div className="space-y-2">
-                          <Label>Statut de l'hypothèque</Label>
+                          <div className="flex items-center gap-2">
+                            <Label>Statut de l'hypothèque</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                                  <Info className="h-4 w-4 text-muted-foreground" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80 text-sm">
+                                <h4 className="font-semibold mb-2">Statut de l'hypothèque</h4>
+                                <p className="text-muted-foreground">
+                                  Indique l'état actuel de l'hypothèque. Un bien avec hypothèque active a une charge financière qui peut affecter sa transaction.
+                                </p>
+                                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                                  <li>• <strong>Active</strong>: Hypothèque en cours de remboursement</li>
+                                  <li>• <strong>Remboursée</strong>: Hypothèque soldée</li>
+                                  <li>• <strong>En défaut</strong>: Retard de paiement</li>
+                                  <li>• <strong>Renégociée</strong>: Conditions modifiées</li>
+                                </ul>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                           <Select
                             value={mortgage.mortgageStatus}
                             onValueChange={(value) => updateMortgageRecord(index, 'mortgageStatus', value)}
