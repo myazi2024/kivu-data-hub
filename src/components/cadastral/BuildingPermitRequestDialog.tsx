@@ -7,12 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Building2, CheckCircle2, AlertCircle, ArrowLeft, User, FileText, DollarSign, ArrowRight, Check, ChevronsUpDown } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle, ArrowLeft, User, FileText, DollarSign, ArrowRight } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import { cn } from '@/lib/utils';
 
@@ -87,29 +86,14 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   const handleNextStep = () => {
     if (currentFormStep === 1 && !isStep1Valid()) {
-      toast({
-        title: "Type de demande requis",
-        description: "Veuillez sélectionner un type de demande",
-        variant: "destructive"
-      });
       return;
     }
     
     if (currentFormStep === 2 && !isStep2Valid()) {
-      toast({
-        title: "Informations incomplètes",
-        description: "Veuillez remplir tous les champs obligatoires de la construction",
-        variant: "destructive"
-      });
       return;
     }
 
     if (currentFormStep === 3 && !isStep3Valid()) {
-      toast({
-        title: "Informations du demandeur",
-        description: "Veuillez renseigner au moins le nom et le téléphone",
-        variant: "destructive"
-      });
       return;
     }
 
@@ -130,18 +114,9 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setLoading(true);
     
     try {
-      toast({
-        title: "Demande enregistrée",
-        description: "Votre demande de permis a été enregistrée avec succès",
-      });
-      
       setActiveStep('success');
     } catch (error) {
-      toast({
-        title: "Erreur",
-        description: "Une erreur est survenue lors de l'enregistrement",
-        variant: "destructive"
-      });
+      console.error(error);
     } finally {
       setLoading(false);
     }
@@ -406,108 +381,51 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label>Type de construction *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  className={cn("h-11 w-full justify-between font-normal", !formData.constructionType && "text-muted-foreground")}
-                >
-                  {formData.constructionType || "Sélectionner"}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandList>
-                    <CommandEmpty>Aucun résultat.</CommandEmpty>
-                    <CommandGroup>
-                      {constructionTypes.map((type) => (
-                        <CommandItem
-                          key={type.value}
-                          value={type.value}
-                          onSelect={() => handleInputChange('constructionType', type.value)}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", formData.constructionType === type.value ? "opacity-100" : "opacity-0")} />
-                          {type.label}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <Select value={formData.constructionType} onValueChange={(value) => handleInputChange('constructionType', value)}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                {constructionTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
             <Label>Nature *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  className={cn("h-11 w-full justify-between font-normal", !formData.constructionNature && "text-muted-foreground")}
-                >
-                  {formData.constructionNature || "Sélectionner"}
-                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0" align="start">
-                <Command>
-                  <CommandList>
-                    <CommandEmpty>Aucun résultat.</CommandEmpty>
-                    <CommandGroup>
-                      {constructionNatures.map((nature) => (
-                        <CommandItem
-                          key={nature.value}
-                          value={nature.value}
-                          onSelect={() => handleInputChange('constructionNature', nature.value)}
-                        >
-                          <Check className={cn("mr-2 h-4 w-4", formData.constructionNature === nature.value ? "opacity-100" : "opacity-0")} />
-                          {nature.label}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
+            <Select value={formData.constructionNature} onValueChange={(value) => handleInputChange('constructionNature', value)}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Sélectionner" />
+              </SelectTrigger>
+              <SelectContent>
+                {constructionNatures.map((nature) => (
+                  <SelectItem key={nature.value} value={nature.value}>
+                    {nature.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
         <div className="space-y-2">
           <Label>Usage déclaré *</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                className={cn("h-11 w-full justify-between font-normal", !formData.declaredUsage && "text-muted-foreground")}
-              >
-                {formData.declaredUsage || "Sélectionner l'usage"}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-full p-0" align="start">
-              <Command>
-                <CommandList>
-                  <CommandEmpty>Aucun résultat.</CommandEmpty>
-                  <CommandGroup>
-                    {usageTypes.map((usage) => (
-                      <CommandItem
-                        key={usage.value}
-                        value={usage.value}
-                        onSelect={() => handleInputChange('declaredUsage', usage.value)}
-                      >
-                        <Check className={cn("mr-2 h-4 w-4", formData.declaredUsage === usage.value ? "opacity-100" : "opacity-0")} />
-                        {usage.label}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </PopoverContent>
-          </Popover>
+          <Select value={formData.declaredUsage} onValueChange={(value) => handleInputChange('declaredUsage', value)}>
+            <SelectTrigger className="h-11">
+              <SelectValue placeholder="Sélectionner l'usage" />
+            </SelectTrigger>
+            <SelectContent>
+              {usageTypes.map((usage) => (
+                <SelectItem key={usage.value} value={usage.value}>
+                  {usage.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -600,37 +518,18 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             </div>
             <div className="space-y-2">
               <Label>État actuel *</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    className={cn("h-11 w-full justify-between font-normal", !formData.currentState && "text-muted-foreground")}
-                  >
-                    {formData.currentState || "Sélectionner"}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-full p-0" align="start">
-                  <Command>
-                    <CommandList>
-                      <CommandEmpty>Aucun résultat.</CommandEmpty>
-                      <CommandGroup>
-                        {constructionStates.map((state) => (
-                          <CommandItem
-                            key={state.value}
-                            value={state.value}
-                            onSelect={() => handleInputChange('currentState', state.value)}
-                          >
-                            <Check className={cn("mr-2 h-4 w-4", formData.currentState === state.value ? "opacity-100" : "opacity-0")} />
-                            {state.label}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <Select value={formData.currentState} onValueChange={(value) => handleInputChange('currentState', value)}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent>
+                  {constructionStates.map((state) => (
+                    <SelectItem key={state.value} value={state.value}>
+                      {state.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="complianceIssues">Non-conformités identifiées</Label>
