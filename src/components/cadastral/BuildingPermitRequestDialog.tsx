@@ -261,8 +261,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   }
 
   const FormContent = () => (
-    <ScrollArea className="h-full">
-      <form onSubmit={handleSubmit} className="space-y-6 p-4 md:p-6">
+    <div className="flex-1 overflow-y-auto px-4 md:px-6">
+      <form onSubmit={handleSubmit} className="space-y-6 py-4">
         {/* Type de demande */}
         <div className="space-y-4">
           <div className="flex items-center gap-2">
@@ -544,7 +544,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
         <Separator />
 
-        <div className="flex gap-3 pt-2 sticky bottom-0 bg-background pb-4">
+        <div className="flex gap-3 pt-4">
           <Button
             type="button"
             variant="outline"
@@ -562,7 +562,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           </Button>
         </div>
       </form>
-    </ScrollArea>
+    </div>
   );
 
   const Container = isMobile ? Drawer : Dialog;
