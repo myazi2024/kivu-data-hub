@@ -2214,22 +2214,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       return null;
                     })()}
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addGPSCoordinate}
-                    disabled={(() => {
-                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                      const isSuperficieCompleted = filledSides.length >= 3;
-                      const canAddMore = gpsCoordinates.length < filledSides.length;
-                      return !isSuperficieCompleted || !canAddMore;
-                    })()}
-                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter
-                  </Button>
                 </div>
 
                 <div className="space-y-3">
