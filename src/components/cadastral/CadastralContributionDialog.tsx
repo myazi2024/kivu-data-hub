@@ -58,6 +58,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showPermitWarning, setShowPermitWarning] = useState(false);
   const [highlightIncompletePermit, setHighlightIncompletePermit] = useState(false);
   const [showPermitInfoPopover, setShowPermitInfoPopover] = useState(false);
+  const [highlightSuperficie, setHighlightSuperficie] = useState(false);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -946,12 +947,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // Vérifier si le nombre de bornes n'excède pas le nombre de côtés
     const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     if (gpsCoordinates.length >= filledSides.length) {
-      toast({
-        title: "Limite atteinte",
-        description: `Vous ne pouvez ajouter que ${filledSides.length} borne(s) correspondant aux ${filledSides.length} côté(s) de la parcelle.`,
-        variant: "destructive"
-      });
-      return;
+      return; // La notification est gérée par le onClick du bouton
     }
     
     setGpsCoordinates([...gpsCoordinates, {
@@ -2111,7 +2107,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Dimensions de la parcelle et calcul de la superficie */}
             {sectionType && (
               <div className="space-y-2 pt-4 border-t">
-                <div className="space-y-4 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-transparent border border-border/50">
+                <div 
+                  className={`space-y-4 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-transparent border transition-all duration-500 ${
+                    highlightSuperficie 
+                      ? 'border-amber-500 shadow-lg shadow-amber-500/20 ring-2 ring-amber-500/30' 
+                      : 'border-border/50'
+                  }`}
+                >
                   <div className="space-y-2">
                     <Label className="text-sm font-medium">Dimensions de chaque côté (en mètres)</Label>
                     <p className="text-xs text-muted-foreground">
@@ -2285,7 +2287,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={addGPSCoordinate}
+                    onClick={() => {
+                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+                      const isSuperficieCompleted = filledSides.length >= 3;
+                      const canAddMore = gpsCoordinates.length < filledSides.length;
+                      
+                      // Si la limite est atteinte, afficher la notification et surbrillance
+                      if (isSuperficieCompleted && !canAddMore) {
+                        toast({
+                          title: "Limite de coordonnées GPS atteinte",
+                          description: `Vous avez atteint la limite de ${filledSides.length} borne(s) correspondant aux ${filledSides.length} côté(s) de votre parcelle. Pour ajouter plus de coordonnées GPS, vous devez d'abord ajouter un nouveau côté dans le bloc "Dimensions de chaque côté" ci-dessus.`,
+                          variant: "default",
+                        });
+                        
+                        // Mettre en surbrillance le bloc superficie
+                        setHighlightSuperficie(true);
+                        
+                        // Retirer la surbrillance après 3 secondes
+                        setTimeout(() => {
+                          setHighlightSuperficie(false);
+                        }, 3000);
+                        
+                        return;
+                      }
+                      
+                      addGPSCoordinate();
+                    }}
                     disabled={(() => {
                       const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
                       const isSuperficieCompleted = filledSides.length >= 3;
