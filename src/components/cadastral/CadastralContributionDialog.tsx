@@ -57,6 +57,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [highlightIncompleteOwner, setHighlightIncompleteOwner] = useState(false);
   const [showPermitWarning, setShowPermitWarning] = useState(false);
   const [highlightIncompletePermit, setHighlightIncompletePermit] = useState(false);
+  const [showPermitInfoPopover, setShowPermitInfoPopover] = useState(false);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -1633,16 +1634,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="text-sm font-semibold">Permis de construire (optionnel)</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Ajoutez les permis de construire si disponibles
-                  </p>
                 </div>
-                <Popover>
+                <Popover open={showPermitInfoPopover} onOpenChange={setShowPermitInfoPopover}>
                   <PopoverTrigger asChild>
                     <Button
                       type="button"
                       size="sm"
+                      onMouseEnter={() => setShowPermitInfoPopover(true)}
+                      onMouseLeave={() => setShowPermitInfoPopover(false)}
                       onClick={() => {
+                        setShowPermitInfoPopover(false);
                         setPermitActionMode('demander');
                         setShowPermitRequestDialog(true);
                       }}
@@ -1653,7 +1654,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <span className="relative z-10">Demander un permis</span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80" align="end" side="top">
+                  <PopoverContent 
+                    className="w-80" 
+                    align="end" 
+                    side="top"
+                    onMouseEnter={() => setShowPermitInfoPopover(true)}
+                    onMouseLeave={() => setShowPermitInfoPopover(false)}
+                  >
                     <div className="space-y-3">
                       <div className="flex items-start gap-3">
                         <div className="p-2 rounded-lg bg-primary/10">
