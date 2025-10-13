@@ -968,6 +968,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   
   const removeGPSCoordinate = (index: number) => {
     setGpsCoordinates(gpsCoordinates.filter((_, i) => i !== index));
+    
+    // Supprimer automatiquement le côté correspondant
+    if (parcelSides.length > 2 && index < parcelSides.length) {
+      setParcelSides(parcelSides.filter((_, i) => i !== index));
+    }
   };
   
   const updateGPSCoordinate = (index: number, field: string, value: string) => {
