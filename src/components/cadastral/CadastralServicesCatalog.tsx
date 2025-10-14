@@ -10,15 +10,32 @@ import {
   Shield, 
   DollarSign,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  AlertCircle,
+  Lock
 } from 'lucide-react';
 import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { useNavigate } from 'react-router-dom';
+import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
+import { useCadastralDataCompleteness } from '@/hooks/useCadastralDataCompleteness';
+import PartialServiceNotification from './PartialServiceNotification';
+import { useAuth } from '@/hooks/useAuth';
 
-const CadastralServicesCatalog: React.FC = () => {
+interface CadastralServicesCatalogProps {
+  searchResult?: CadastralSearchResult | null;
+  onContributeClick?: (serviceId: string, missingFields: string[]) => void;
+}
+
+const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
+  searchResult,
+  onContributeClick
+}) => {
   const { services, loading } = useCadastralServices();
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [showPartialWarning, setShowPartialWarning] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { servicesCompleteness } = useCadastralDataCompleteness(searchResult);
 
   const getServiceIcon = (serviceId: string) => {
     if (serviceId.includes('information') || serviceId.includes('general')) {
@@ -33,12 +50,57 @@ const CadastralServicesCatalog: React.FC = () => {
     return Info;
   };
 
+  // Mapper les service_id de la BDD aux serviceId de complétude
+  const getCompletenessForService = (serviceId: string) => {
+    const mapping: Record<string, string> = {
+      'information_generale': 'information_generale',
+      'localisation': 'localisation',
+      'historique_proprietaires': 'historique_proprietaires',
+      'obligations': 'obligations'
+    };
+    const completenessId = mapping[serviceId] || serviceId;
+    return servicesCompleteness.find(s => s.serviceId === completenessId);
+  };
+
   const handleServiceToggle = (serviceId: string) => {
+    // Vérifier la complétude si searchResult est fourni
+    if (searchResult) {
+      const completeness = getCompletenessForService(serviceId);
+      
+      // Si le service est vide, ne pas permettre la sélection
+      if (completeness && completeness.status === 'empty') {
+        return;
+      }
+      
+      // Si le service est partiel et qu'on essaie de le sélectionner
+      if (completeness && completeness.status === 'partial' && !selectedServices.includes(serviceId)) {
+        setShowPartialWarning(serviceId);
+        return;
+      }
+    }
+
     setSelectedServices(prev => 
       prev.includes(serviceId) 
         ? prev.filter(id => id !== serviceId)
         : [...prev, serviceId]
     );
+  };
+
+  const handleConfirmPartialService = (serviceId: string) => {
+    setSelectedServices(prev => [...prev, serviceId]);
+    setShowPartialWarning(null);
+  };
+
+  const handleContribute = (serviceId: string, missingFields: string[]) => {
+    if (!user) {
+      navigate('/auth', { state: { from: '/services-cadastraux' } });
+      return;
+    }
+    
+    if (onContributeClick) {
+      onContributeClick(serviceId, missingFields);
+    }
+    setShowPartialWarning(null);
   };
 
   const totalPrice = services
@@ -97,56 +159,113 @@ const CadastralServicesCatalog: React.FC = () => {
         {services.map((service) => {
           const IconComponent = getServiceIcon(service.service_id);
           const isSelected = selectedServices.includes(service.service_id);
+          const completeness = searchResult ? getCompletenessForService(service.service_id) : null;
+          const isEmpty = completeness?.status === 'empty';
+          const isPartial = completeness?.status === 'partial';
+          const isComplete = completeness?.status === 'complete';
+          const showWarning = showPartialWarning === service.service_id;
           
           return (
-            <Card 
-              key={service.id}
-              className={`group hover:shadow-lg transition-all duration-300 cursor-pointer ${
-                isSelected ? 'border-primary shadow-md ring-2 ring-primary/20' : 'border-border'
-              }`}
-              onClick={() => handleServiceToggle(service.service_id)}
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex items-start gap-4 flex-1">
-                    <div className={`p-3 rounded-lg transition-colors duration-300 ${
-                      isSelected ? 'bg-primary text-primary-foreground' : 'bg-secondary group-hover:bg-primary/10'
-                    }`}>
-                      <IconComponent className={`h-6 w-6 ${
-                        isSelected ? 'text-primary-foreground' : 'text-primary'
-                      }`} />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300">
-                          {service.name}
-                        </CardTitle>
-                        {isSelected && (
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
+            <div key={service.id} className="space-y-3">
+              <Card 
+                className={`group transition-all duration-300 ${
+                  isEmpty 
+                    ? 'opacity-50 cursor-not-allowed border-muted' 
+                    : 'hover:shadow-lg cursor-pointer'
+                } ${
+                  isSelected ? 'border-primary shadow-md ring-2 ring-primary/20' : 'border-border'
+                } ${
+                  showWarning ? 'ring-2 ring-amber-500' : ''
+                }`}
+                onClick={() => !isEmpty && handleServiceToggle(service.service_id)}
+              >
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className={`p-3 rounded-lg transition-colors duration-300 relative ${
+                        isEmpty 
+                          ? 'bg-muted' 
+                          : isSelected 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-secondary group-hover:bg-primary/10'
+                      }`}>
+                        {isEmpty && (
+                          <Lock className="absolute -top-1 -right-1 h-3 w-3 text-muted-foreground" />
                         )}
+                        <IconComponent className={`h-6 w-6 ${
+                          isEmpty 
+                            ? 'text-muted-foreground' 
+                            : isSelected 
+                              ? 'text-primary-foreground' 
+                              : 'text-primary'
+                        }`} />
                       </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <Badge variant="outline" className="font-mono">
-                          {service.service_id}
-                        </Badge>
-                        <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          {service.price_usd.toFixed(2)} USD
-                        </Badge>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <CardTitle className={`text-lg transition-colors duration-300 ${
+                            isEmpty ? 'text-muted-foreground' : 'group-hover:text-primary'
+                          }`}>
+                            {service.name}
+                          </CardTitle>
+                          {isSelected && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                          {isPartial && !isSelected && (
+                            <AlertCircle className="h-5 w-5 text-amber-500" />
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mb-3 flex-wrap">
+                          <Badge variant="outline" className="font-mono text-xs">
+                            {service.service_id}
+                          </Badge>
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400 text-xs">
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            {service.price_usd.toFixed(2)} USD
+                          </Badge>
+                          {completeness && (
+                            <>
+                              {isEmpty && (
+                                <Badge variant="destructive" className="text-xs">
+                                  Pas de données
+                                </Badge>
+                              )}
+                              {isPartial && (
+                                <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+                                  Données partielles ({completeness.missingFields.length} manquantes)
+                                </Badge>
+                              )}
+                              {isComplete && (
+                                <Badge variant="secondary" className="text-xs bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+                                  Complet
+                                </Badge>
+                              )}
+                            </>
+                          )}
+                        </div>
+                        <CardDescription className="text-sm leading-relaxed">
+                          {service.description || 'Service cadastral professionnel'}
+                        </CardDescription>
                       </div>
-                      <CardDescription className="text-sm leading-relaxed">
-                        {service.description || 'Service cadastral professionnel'}
-                      </CardDescription>
                     </div>
+                    <Checkbox 
+                      checked={isSelected}
+                      disabled={isEmpty}
+                      onCheckedChange={() => !isEmpty && handleServiceToggle(service.service_id)}
+                      onClick={(e) => e.stopPropagation()}
+                    />
                   </div>
-                  <Checkbox 
-                    checked={isSelected}
-                    onCheckedChange={() => handleServiceToggle(service.service_id)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
-              </CardHeader>
-            </Card>
+                </CardHeader>
+              </Card>
+
+              {/* Afficher la notification si le service est partiellement sélectionné */}
+              {showWarning && completeness && (
+                <PartialServiceNotification
+                  service={completeness}
+                  serviceName={service.name}
+                  onClose={() => setShowPartialWarning(null)}
+                  onContinueAnyway={() => handleConfirmPartialService(service.service_id)}
+                  onContribute={(missingFields) => handleContribute(service.service_id, missingFields)}
+                />
+              )}
+            </div>
           );
         })}
       </div>
