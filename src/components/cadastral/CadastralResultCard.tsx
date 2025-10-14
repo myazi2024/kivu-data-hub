@@ -34,13 +34,11 @@ import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/comp
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { useAuth } from '@/hooks/useAuth';
-import { useMissingCadastralData } from '@/hooks/useMissingCadastralData';
 import CadastralMap from './CadastralMap';
 import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
 import DocumentAttachment from './DocumentAttachment';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
-import MissingDataSection from './MissingDataSection';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -62,10 +60,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
-  const { analyzeMissingData } = useMissingCadastralData();
-  
-  // Analyser les données manquantes
-  const missingDataCategories = React.useMemo(() => analyzeMissingData(result), [result]);
 
   // Logique de scroll pour masquer/afficher l'en-tête
   useEffect(() => {
@@ -457,16 +451,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Afficher les données manquantes si applicable */}
-                {missingDataCategories.find(cat => cat.category === 'information')?.hasMissingData && (
-                  <MissingDataSection 
-                    categoryName="Informations générales"
-                    missingFields={missingDataCategories.find(cat => cat.category === 'information')?.missingFields || []}
-                    parcelNumber={parcel.parcel_number}
-                    categoryTab="general"
-                  />
-                )}
-                
                 {/* Informations de propriété - Mobile First */}
                 <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
                   <CardContent className="p-3">
@@ -751,16 +735,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               </div>
             ) : (
               <>
-                {/* Afficher les données manquantes si applicable */}
-                {missingDataCategories.find(cat => cat.category === 'location_history')?.hasMissingData && (
-                  <MissingDataSection 
-                    categoryName="Localisation"
-                    missingFields={missingDataCategories.find(cat => cat.category === 'location_history')?.missingFields || []}
-                    parcelNumber={parcel.parcel_number}
-                    categoryTab="location"
-                  />
-                )}
-                
                 {/* Informations de localisation - Mobile First */}
                 <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
                   <CardContent className="p-3">
@@ -1034,23 +1008,12 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                 </div>
               </div>
             ) : (
-              <>
-                {/* Afficher les données manquantes si applicable */}
-                {missingDataCategories.find(cat => cat.category === 'history')?.hasMissingData && (
-                  <MissingDataSection 
-                    categoryName="Historique"
-                    missingFields={missingDataCategories.find(cat => cat.category === 'history')?.missingFields || []}
-                    parcelNumber={parcel.parcel_number}
-                    categoryTab="history"
-                  />
-                )}
-                
-                <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
-                  <CardContent className="p-3">
-                    <h4 className="text-xs font-semibold mb-3 flex items-center gap-1.5 text-primary">
-                      <Clock className="h-3 w-3" />
-                      Historique des Propriétaires
-                    </h4>
+              <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
+                <CardContent className="p-3">
+                  <h4 className="text-xs font-semibold mb-3 flex items-center gap-1.5 text-primary">
+                    <Clock className="h-3 w-3" />
+                    Historique des Propriétaires
+                  </h4>
                   <div className="space-y-2">
                      {/* Propriétaire actuel */}
                      <div className="flex items-start gap-2 p-2 bg-primary/10 rounded">
@@ -1216,11 +1179,10 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                        </div>
                      )}
                    </div>
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </TabsContent>
+                 </CardContent>
+               </Card>
+             )}
+           </TabsContent>
 
           {/* Onglet Obligations - Mobile First */}
           <TabsContent value="obligations" className="mt-3 space-y-3">
@@ -1244,16 +1206,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
               </div>
             ) : (
               <div className="space-y-3">
-                {/* Afficher les données manquantes si applicable */}
-                {missingDataCategories.find(cat => cat.category === 'obligations')?.hasMissingData && (
-                  <MissingDataSection 
-                    categoryName="Obligations"
-                    missingFields={missingDataCategories.find(cat => cat.category === 'obligations')?.missingFields || []}
-                    parcelNumber={parcel.parcel_number}
-                    categoryTab="obligations"
-                  />
-                )}
-                
                 {/* Navigation des sous-sections - Mobile First */}
                 <div className="flex bg-muted p-0.5 rounded-lg">
                   <button
