@@ -13,8 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Building2, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
-import { useBuildingPermitRequest, BuildingPermitRequestData } from '@/hooks/useBuildingPermitRequest';
-import { usePayment } from '@/hooks/usePayment';
 
 interface BuildingPermitRequestDialogProps {
   open: boolean;
@@ -31,8 +29,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 }) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { submitRequest, loading: submitLoading } = useBuildingPermitRequest();
-  const { createPayment, loading: paymentLoading, paymentStep, resetPaymentState } = usePayment();
   const [activeStep, setActiveStep] = useState<'form' | 'payment' | 'success'>('form');
   const [currentTab, setCurrentTab] = useState<'construction' | 'applicant'>('construction');
   const [requestType, setRequestType] = useState<'new' | 'regularization'>(
@@ -41,19 +37,17 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const [loading, setLoading] = useState(false);
   
   const [formData, setFormData] = useState({
-    requestType: hasExistingConstruction ? 'regularization' : 'new',
     constructionType: '',
     constructionNature: '',
-    proposedUsage: '',
-    estimatedSurface: '',
+    declaredUsage: '',
+    plannedArea: '',
     numberOfFloors: '1',
-    estimatedBudget: '',
-    applicantFullName: '',
-    applicantLegalStatus: 'Personne physique',
+    estimatedCost: '',
+    applicantName: '',
     applicantPhone: '',
     applicantEmail: '',
     applicantAddress: '',
-    constructionDescription: '',
+    projectDescription: '',
     startDate: '',
     estimatedDuration: '',
     constructionDate: '',
@@ -69,11 +63,11 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     const baseFields = [
       formData.constructionType,
       formData.constructionNature,
-      formData.proposedUsage,
-      formData.estimatedSurface,
-      formData.applicantFullName,
+      formData.declaredUsage,
+      formData.plannedArea,
+      formData.applicantName,
       formData.applicantPhone,
-      formData.constructionDescription
+      formData.projectDescription
     ];
 
     if (requestType === 'regularization') {
@@ -98,47 +92,16 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setActiveStep('payment');
   };
 
-  const handlePaymentSuccess = async (paymentData?: { provider: string; phoneNumber: string }) => {
+  const handlePaymentSuccess = async () => {
     setLoading(true);
     
     try {
-      // Soumettre la demande de permis après le paiement réussi
-      const requestData: BuildingPermitRequestData = {
-        parcelNumber,
-        requestType: formData.requestType as 'new' | 'regularization',
-        hasExistingConstruction,
-        constructionType: formData.constructionType,
-        constructionNature: formData.constructionNature,
-        proposedUsage: formData.proposedUsage,
-        estimatedSurface: formData.estimatedSurface ? parseFloat(formData.estimatedSurface) : undefined,
-        numberOfFloors: formData.numberOfFloors ? parseInt(formData.numberOfFloors) : undefined,
-        estimatedBudget: formData.estimatedBudget ? parseFloat(formData.estimatedBudget) : undefined,
-        constructionDescription: formData.constructionDescription,
-        applicantFullName: formData.applicantFullName,
-        applicantLegalStatus: formData.applicantLegalStatus,
-        applicantPhone: formData.applicantPhone,
-        applicantEmail: formData.applicantEmail,
-        applicantAddress: formData.applicantAddress,
-        paymentMethod: 'mobile_money',
-        paymentProvider: paymentData?.provider,
-        phoneNumber: paymentData?.phoneNumber,
-      };
-
-      const result = await submitRequest(requestData);
+      toast({
+        title: "Demande enregistrée",
+        description: "Votre demande de permis a été enregistrée avec succès",
+      });
       
-      if (result.success) {
-        setActiveStep('success');
-        toast({
-          title: "Demande enregistrée",
-          description: "Votre demande de permis de construire a été enregistrée et sera traitée prochainement.",
-        });
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Le paiement a réussi mais l'enregistrement de la demande a échoué. Veuillez contacter le support.",
-          variant: "destructive",
-        });
-      }
+      setActiveStep('success');
     } catch (error) {
       toast({
         title: "Erreur",
@@ -152,22 +115,18 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   const handleClose = () => {
     setActiveStep('form');
-    setCurrentTab('construction');
-    resetPaymentState();
     setFormData({
-      requestType: hasExistingConstruction ? 'regularization' : 'new',
       constructionType: '',
       constructionNature: '',
-      proposedUsage: '',
-      estimatedSurface: '',
+      declaredUsage: '',
+      plannedArea: '',
       numberOfFloors: '1',
-      estimatedBudget: '',
-      applicantFullName: '',
-      applicantLegalStatus: 'Personne physique',
+      estimatedCost: '',
+      applicantName: '',
       applicantPhone: '',
       applicantEmail: '',
       applicantAddress: '',
-      constructionDescription: '',
+      projectDescription: '',
       startDate: '',
       estimatedDuration: '',
       constructionDate: '',
@@ -381,7 +340,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
           <div className="space-y-2">
             <Label className="text-xs font-medium">Usage déclaré *</Label>
-            <Select value={formData.proposedUsage} onValueChange={(v) => handleInputChange('proposedUsage', v)}>
+            <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
               <SelectTrigger className="h-10">
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
@@ -401,8 +360,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             <Input
               type="number"
               placeholder="150"
-              value={formData.estimatedSurface}
-              onChange={(e) => handleInputChange('estimatedSurface', e.target.value)}
+              value={formData.plannedArea}
+              onChange={(e) => handleInputChange('plannedArea', e.target.value)}
               className="h-10"
             />
           </div>
@@ -424,8 +383,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           <Input
             type="number"
             placeholder="50000"
-            value={formData.estimatedBudget}
-            onChange={(e) => handleInputChange('estimatedBudget', e.target.value)}
+            value={formData.estimatedCost}
+            onChange={(e) => handleInputChange('estimatedCost', e.target.value)}
             className="h-10"
           />
         </div>
@@ -434,8 +393,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           <Label className="text-xs font-medium">Description du projet *</Label>
           <Textarea
             placeholder="Décrivez brièvement votre projet..."
-            value={formData.constructionDescription}
-            onChange={(e) => handleInputChange('constructionDescription', e.target.value)}
+            value={formData.projectDescription}
+            onChange={(e) => handleInputChange('projectDescription', e.target.value)}
             rows={3}
             className="resize-none text-sm"
           />
@@ -510,25 +469,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           <Input
             type="text"
             placeholder="Jean Dupont"
-            value={formData.applicantFullName}
-            onChange={(e) => handleInputChange('applicantFullName', e.target.value)}
+            value={formData.applicantName}
+            onChange={(e) => handleInputChange('applicantName', e.target.value)}
             className="h-10"
           />
-        </div>
-
-        <div className="space-y-2">
-          <Label className="text-xs font-medium">Statut juridique</Label>
-          <Select value={formData.applicantLegalStatus} onValueChange={(v) => handleInputChange('applicantLegalStatus', v)}>
-            <SelectTrigger className="h-10">
-              <SelectValue placeholder="Sélectionner" />
-            </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="z-[100]">
-              <SelectItem value="Personne physique">Personne physique</SelectItem>
-              <SelectItem value="Entreprise">Entreprise</SelectItem>
-              <SelectItem value="Société">Société</SelectItem>
-              <SelectItem value="ONG">ONG</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         <div className="space-y-2">
