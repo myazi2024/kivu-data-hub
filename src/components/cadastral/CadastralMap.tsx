@@ -16,9 +16,6 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
   const mapInstanceRef = useRef<any>(null);
   const [calculatedSurface, setCalculatedSurface] = useState<number | null>(null);
 
-  // Gérer le cas où coordinates est null ou undefined
-  const safeCoordinates = coordinates || [];
-
   // Stabiliser l'initialisation de la carte
   useEffect(() => {
     // Fonction pour initialiser la carte OpenStreetMap avec Leaflet
@@ -93,7 +90,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
         });
 
         // Ajouter les nouveaux marqueurs
-        safeCoordinates.forEach((coord) => {
+        coordinates.forEach((coord) => {
           const marker = L.marker([coord.lat, coord.lng]).addTo(map);
           marker.bindPopup(`
             <div style="font-family: system-ui;">
@@ -105,8 +102,8 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
         });
 
         // Créer un polygone si nous avons assez de coordonnées
-        if (safeCoordinates.length >= 3) {
-          const polygonPoints: [number, number][] = safeCoordinates.map(coord => [coord.lat, coord.lng]);
+        if (coordinates.length >= 3) {
+          const polygonPoints: [number, number][] = coordinates.map(coord => [coord.lat, coord.lng]);
           
           const polygon = L.polygon(polygonPoints, {
             color: 'red',
@@ -117,9 +114,9 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
 
           // Ajuster la vue pour inclure tout le polygone
           map.fitBounds(polygon.getBounds());
-        } else if (safeCoordinates.length > 0) {
+        } else if (coordinates.length > 0) {
           // Si pas de polygone mais des coordonnées, centrer sur la première
-          map.setView([safeCoordinates[0].lat, safeCoordinates[0].lng], 16);
+          map.setView([coordinates[0].lat, coordinates[0].lng], 16);
         } else {
           // Centrer sur le centre fourni
           map.setView([center.lat, center.lng], 16);
@@ -130,11 +127,11 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
     };
 
     updateMapData();
-  }, [safeCoordinates, center, parcelNumber]); // Dépendances pour mise à jour des données
+  }, [coordinates, center, parcelNumber]); // Dépendances pour mise à jour des données
 
   // Calculer automatiquement la surface géodésique précise
   useEffect(() => {
-    if (safeCoordinates.length < 3) {
+    if (coordinates.length < 3) {
       setCalculatedSurface(null);
       return;
     }
@@ -147,13 +144,13 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
     
     // Calcul de l'aire géodésique en utilisant la formule sphérique
     let area = 0;
-    const n = safeCoordinates.length;
+    const n = coordinates.length;
     
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      const lat1 = toRadians(safeCoordinates[i].lat);
-      const lat2 = toRadians(safeCoordinates[j].lat);
-      const deltaLng = toRadians(safeCoordinates[j].lng - safeCoordinates[i].lng);
+      const lat1 = toRadians(coordinates[i].lat);
+      const lat2 = toRadians(coordinates[j].lat);
+      const deltaLng = toRadians(coordinates[j].lng - coordinates[i].lng);
       
       // Formule géodésique pour petites surfaces
       area += deltaLng * (2 + Math.sin(lat1) + Math.sin(lat2));
@@ -162,7 +159,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
     // Conversion en mètres carrés
     const surfaceM2 = Math.abs(area) * earthRadius * earthRadius / 2;
     setCalculatedSurface(surfaceM2);
-  }, [safeCoordinates]);
+  }, [coordinates]);
 
   return (
     <div className="space-y-4">
@@ -195,11 +192,11 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 hover:bg-muted transition-colors cursor-help">
                     <MapPin className="h-3 w-3 text-muted-foreground" />
-                    <span className="text-xs font-medium">{safeCoordinates.length}</span>
+                    <span className="text-xs font-medium">{coordinates.length}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent side="left">
-                  <p className="text-xs">Nombre de bornes: {safeCoordinates.length}</p>
+                  <p className="text-xs">Nombre de bornes: {coordinates.length}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -207,7 +204,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-2 md:grid-cols-2 gap-2">
-            {safeCoordinates.map((coord, index) => (
+            {coordinates.map((coord, index) => (
               <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   <div className="w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] font-bold">
@@ -249,7 +246,7 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
             </div>
           )}
           
-          {safeCoordinates.length === 0 && (
+          {coordinates.length === 0 && (
             <div className="text-center text-muted-foreground py-4">
               Aucune coordonnée GPS disponible
             </div>
