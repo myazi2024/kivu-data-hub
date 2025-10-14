@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import { Separator } from '@/components/ui/separator';
 import { 
   Gift, 
@@ -26,6 +29,27 @@ import { Button } from '@/components/ui/button';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
 const AboutCCC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [showContributionDialog, setShowContributionDialog] = React.useState(false);
+  const [contributionParcelNumber, setContributionParcelNumber] = React.useState<string>('');
+  
+  // Gérer l'ouverture automatique du formulaire si venu depuis le catalogue de services
+  useEffect(() => {
+    const state = location.state as { 
+      parcelNumber?: string; 
+      contributionMode?: 'missing_data';
+      targetTab?: string;
+      missingFields?: string[];
+    } | null;
+    
+    if (state?.contributionMode === 'missing_data' && state.parcelNumber) {
+      setContributionParcelNumber(state.parcelNumber);
+      setShowContributionDialog(true);
+    }
+  }, [location.state]);
+  
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-6">
@@ -33,6 +57,18 @@ const AboutCCC = () => {
           ← Retour au catalogue
         </Link>
       </div>
+      
+      {/* Dialogue de contribution cadastrale */}
+      {contributionParcelNumber && (
+        <CadastralContributionDialog 
+          open={showContributionDialog}
+          onOpenChange={setShowContributionDialog}
+          parcelNumber={contributionParcelNumber}
+          contributionMode={(location.state as any)?.contributionMode || 'standard'}
+          targetTab={(location.state as any)?.targetTab}
+          missingFields={(location.state as any)?.missingFields || []}
+        />
+      )}
 
       <Card>
         <CardHeader>

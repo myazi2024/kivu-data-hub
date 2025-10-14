@@ -33,12 +33,19 @@ interface CadastralContributionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parcelNumber: string;
+  // Mode contribution de données manquantes
+  contributionMode?: 'standard' | 'missing_data';
+  targetTab?: 'general' | 'location' | 'history' | 'obligations';
+  missingFields?: string[];
 }
 
 const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = ({
   open,
   onOpenChange,
-  parcelNumber
+  parcelNumber,
+  contributionMode = 'standard',
+  targetTab,
+  missingFields = []
 }) => {
   const { submitContribution, loading } = useCadastralContribution();
   const { toast } = useToast();
