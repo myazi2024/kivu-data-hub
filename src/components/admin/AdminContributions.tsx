@@ -18,7 +18,32 @@ interface Contribution {
   parcel_number: string;
   user_id: string;
   current_owner_name?: string;
+  current_owner_legal_status?: string;
   property_title_type?: string;
+  title_reference_number?: string;
+  area_sqm?: number;
+  gps_coordinates?: any;
+  province?: string;
+  ville?: string;
+  commune?: string;
+  quartier?: string;
+  avenue?: string;
+  territoire?: string;
+  collectivite?: string;
+  groupement?: string;
+  village?: string;
+  circonscription_fonciere?: string;
+  construction_type?: string;
+  construction_nature?: string;
+  declared_usage?: string;
+  whatsapp_number?: string;
+  building_permits?: any;
+  ownership_history?: any;
+  boundary_history?: any;
+  tax_history?: any;
+  mortgage_history?: any;
+  owner_document_url?: string;
+  property_title_document_url?: string;
   status: 'pending' | 'approved' | 'rejected';
   is_suspicious: boolean;
   fraud_score: number;
@@ -309,17 +334,18 @@ const AdminContributions: React.FC<AdminContributionsProps> = ({ onRefresh }) =>
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>Détails de la contribution</DialogTitle>
           </DialogHeader>
           
           {selectedContribution && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-6 max-h-[70vh] overflow-y-auto">
+              {/* Statut et actions */}
+              <div className="grid grid-cols-2 gap-4 sticky top-0 bg-background pb-4 border-b">
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">N° Parcelle</div>
-                  <div className="font-mono">{selectedContribution.parcel_number}</div>
+                  <div className="font-mono text-lg">{selectedContribution.parcel_number}</div>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Statut</div>
@@ -327,18 +353,217 @@ const AdminContributions: React.FC<AdminContributionsProps> = ({ onRefresh }) =>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Score de fraude</div>
-                  <div>{selectedContribution.fraud_score}</div>
+                  <Badge variant={selectedContribution.fraud_score > 50 ? "destructive" : "secondary"}>
+                    {selectedContribution.fraud_score}/100
+                  </Badge>
                 </div>
                 <div>
                   <div className="text-sm font-medium text-muted-foreground">Date de soumission</div>
-                  <div>{format(new Date(selectedContribution.created_at), 'dd MMMM yyyy HH:mm', { locale: fr })}</div>
+                  <div className="text-sm">{format(new Date(selectedContribution.created_at), 'dd MMMM yyyy HH:mm', { locale: fr })}</div>
                 </div>
               </div>
 
-              {selectedContribution.status === 'pending' && (
-                <div className="space-y-4 pt-4 border-t">
+              {/* Informations générales */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Informations générales</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Type de titre:</span>
+                    <p className="font-medium">{selectedContribution.property_title_type || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">N° référence titre:</span>
+                    <p className="font-medium">{selectedContribution.title_reference_number || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Propriétaire actuel:</span>
+                    <p className="font-medium">{selectedContribution.current_owner_name || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Statut juridique:</span>
+                    <p className="font-medium">{selectedContribution.current_owner_legal_status || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Superficie:</span>
+                    <p className="font-medium">{selectedContribution.area_sqm ? `${selectedContribution.area_sqm} m²` : '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">WhatsApp:</span>
+                    <p className="font-medium">{selectedContribution.whatsapp_number || '-'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Localisation */}
+              <div className="space-y-3">
+                <h3 className="font-semibold text-lg">Localisation</h3>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Province:</span>
+                    <p className="font-medium">{selectedContribution.province || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Ville:</span>
+                    <p className="font-medium">{selectedContribution.ville || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Commune:</span>
+                    <p className="font-medium">{selectedContribution.commune || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Quartier:</span>
+                    <p className="font-medium">{selectedContribution.quartier || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Avenue:</span>
+                    <p className="font-medium">{selectedContribution.avenue || '-'}</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Circonscription foncière:</span>
+                    <p className="font-medium">{selectedContribution.circonscription_fonciere || '-'}</p>
+                  </div>
+                  {selectedContribution.territoire && (
+                    <div>
+                      <span className="text-muted-foreground">Territoire:</span>
+                      <p className="font-medium">{selectedContribution.territoire}</p>
+                    </div>
+                  )}
+                  {selectedContribution.collectivite && (
+                    <div>
+                      <span className="text-muted-foreground">Collectivité:</span>
+                      <p className="font-medium">{selectedContribution.collectivite}</p>
+                    </div>
+                  )}
+                  {selectedContribution.groupement && (
+                    <div>
+                      <span className="text-muted-foreground">Groupement:</span>
+                      <p className="font-medium">{selectedContribution.groupement}</p>
+                    </div>
+                  )}
+                  {selectedContribution.village && (
+                    <div>
+                      <span className="text-muted-foreground">Village:</span>
+                      <p className="font-medium">{selectedContribution.village}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Construction */}
+              {(selectedContribution.construction_type || selectedContribution.construction_nature || selectedContribution.declared_usage) && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Construction</h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Type:</span>
+                      <p className="font-medium">{selectedContribution.construction_type || '-'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Nature:</span>
+                      <p className="font-medium">{selectedContribution.construction_nature || '-'}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <span className="text-muted-foreground">Usage déclaré:</span>
+                      <p className="font-medium">{selectedContribution.declared_usage || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Coordonnées GPS */}
+              {selectedContribution.gps_coordinates && Array.isArray(selectedContribution.gps_coordinates) && selectedContribution.gps_coordinates.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Coordonnées GPS ({selectedContribution.gps_coordinates.length} bornes)</h3>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    {selectedContribution.gps_coordinates.map((coord: any, idx: number) => (
+                      <div key={idx} className="p-2 bg-muted rounded">
+                        <div className="font-semibold">Borne {coord.borne || idx + 1}</div>
+                        <div className="text-muted-foreground">Lat: {coord.lat}</div>
+                        <div className="text-muted-foreground">Lng: {coord.lng}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Permis de construire */}
+              {selectedContribution.building_permits && Array.isArray(selectedContribution.building_permits) && selectedContribution.building_permits.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Permis de construire</h3>
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Raison du rejet (optionnel)</label>
+                    {selectedContribution.building_permits.map((permit: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-muted rounded text-sm">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div><span className="text-muted-foreground">N° permis:</span> <span className="font-medium">{permit.permit_number}</span></div>
+                          <div><span className="text-muted-foreground">Service émetteur:</span> <span className="font-medium">{permit.issuing_service}</span></div>
+                          <div><span className="text-muted-foreground">Date d'émission:</span> <span className="font-medium">{permit.issue_date}</span></div>
+                          <div><span className="text-muted-foreground">Validité:</span> <span className="font-medium">{permit.validity_months} mois</span></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Historiques */}
+              {selectedContribution.ownership_history && Array.isArray(selectedContribution.ownership_history) && selectedContribution.ownership_history.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Historique de propriété</h3>
+                  <div className="text-sm text-muted-foreground">{selectedContribution.ownership_history.length} enregistrement(s)</div>
+                </div>
+              )}
+
+              {selectedContribution.tax_history && Array.isArray(selectedContribution.tax_history) && selectedContribution.tax_history.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Historique fiscal</h3>
+                  <div className="text-sm text-muted-foreground">{selectedContribution.tax_history.length} enregistrement(s)</div>
+                </div>
+              )}
+
+              {selectedContribution.mortgage_history && Array.isArray(selectedContribution.mortgage_history) && selectedContribution.mortgage_history.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Historique des hypothèques</h3>
+                  <div className="text-sm text-muted-foreground">{selectedContribution.mortgage_history.length} enregistrement(s)</div>
+                </div>
+              )}
+
+              {selectedContribution.boundary_history && Array.isArray(selectedContribution.boundary_history) && selectedContribution.boundary_history.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Historique de bornage</h3>
+                  <div className="text-sm text-muted-foreground">{selectedContribution.boundary_history.length} enregistrement(s)</div>
+                </div>
+              )}
+
+              {/* Documents */}
+              {(selectedContribution.owner_document_url || selectedContribution.property_title_document_url) && (
+                <div className="space-y-3">
+                  <h3 className="font-semibold text-lg">Documents attachés</h3>
+                  <div className="space-y-2 text-sm">
+                    {selectedContribution.owner_document_url && (
+                      <div className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span>Document propriétaire</span>
+                        <Button size="sm" variant="outline" onClick={() => window.open(selectedContribution.owner_document_url, '_blank')}>
+                          Voir
+                        </Button>
+                      </div>
+                    )}
+                    {selectedContribution.property_title_document_url && (
+                      <div className="flex items-center justify-between p-2 bg-muted rounded">
+                        <span>Document titre de propriété</span>
+                        <Button size="sm" variant="outline" onClick={() => window.open(selectedContribution.property_title_document_url, '_blank')}>
+                          Voir
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Actions d'approbation/rejet */}
+              {selectedContribution.status === 'pending' && (
+                <div className="space-y-4 pt-4 border-t sticky bottom-0 bg-background">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Raison du rejet (si applicable)</label>
                     <Textarea
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
@@ -370,7 +595,7 @@ const AdminContributions: React.FC<AdminContributionsProps> = ({ onRefresh }) =>
               {selectedContribution.status === 'rejected' && selectedContribution.rejection_reason && (
                 <div className="pt-4 border-t">
                   <div className="text-sm font-medium text-muted-foreground mb-2">Raison du rejet</div>
-                  <div className="p-3 bg-muted rounded-md">{selectedContribution.rejection_reason}</div>
+                  <div className="p-3 bg-destructive/10 text-destructive rounded-md">{selectedContribution.rejection_reason}</div>
                 </div>
               )}
             </div>
