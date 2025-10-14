@@ -25,6 +25,7 @@ export const useCadastralServices = () => {
         .from('cadastral_services_config')
         .select('*')
         .eq('is_active', true)
+        .is('deleted_at', null)
         .order('service_id', { ascending: true });
 
       if (error) throw error;

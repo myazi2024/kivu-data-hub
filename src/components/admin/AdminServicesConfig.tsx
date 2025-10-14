@@ -326,9 +326,15 @@ const AdminServicesConfig = () => {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              <CardTitle>Configuration des Services Cadastraux</CardTitle>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                <CardTitle>Configuration des Services Cadastraux</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {services.length} service{services.length > 1 ? 's' : ''} configuré{services.length > 1 ? 's' : ''}
+                {searchQuery && ` • ${filteredServices.length} résultat${filteredServices.length > 1 ? 's' : ''}`}
+              </p>
             </div>
             <Button onClick={handleCreate}>
               <Plus className="h-4 w-4 mr-2" />

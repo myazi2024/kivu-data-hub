@@ -1870,6 +1870,16 @@ export type Database = {
         }
         Returns: Json
       }
+      get_service_audit_history: {
+        Args: { service_id_param: string }
+        Returns: {
+          action: string
+          changed_at: string
+          changed_by: string
+          new_values: Json
+          old_values: Json
+        }[]
+      }
       get_user_highest_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
