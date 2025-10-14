@@ -81,29 +81,37 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
       className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
       onClick={handleOverlayClick}
     >
-      <Card className="relative w-full h-[100dvh] md:h-auto overflow-hidden bg-background flex flex-col md:m-4 md:max-w-6xl md:mx-auto md:max-h-[92vh] md:rounded-xl md:shadow-2xl">
-        {/* Header fixe - Mobile optimized */}
-        <div className="sticky top-0 z-40 flex items-center justify-between px-4 py-3 md:px-6 md:py-4 border-b bg-background/95 backdrop-blur shrink-0">
+      <Card className="relative w-full h-full overflow-hidden bg-background flex flex-col md:m-4 md:max-w-6xl md:mx-auto md:max-h-[90vh] md:rounded-lg md:shadow-2xl">
+        <button
+          type="button"
+          aria-label="Fermer"
+          onClick={handleClose}
+          className="absolute inline-flex items-center justify-center h-10 w-10 rounded-md border bg-background text-foreground shadow hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 z-50 top-[calc(env(safe-area-inset-top)+0.5rem)] right-[calc(env(safe-area-inset-right)+0.5rem)]"
+        >
+          <X className="h-4 w-4" />
+        </button>
+        {/* Header fixe avec bouton fermer - Mobile optimized */}
+        <div className="sticky top-0 z-40 flex items-center justify-between px-3 pb-3 md:p-4 border-b bg-background/95 backdrop-blur shrink-0 pt-[calc(env(safe-area-inset-top)+0.25rem)] pr-[calc(env(safe-area-inset-right)+0.25rem)]">
           <div className="flex-1 min-w-0">
-            <h2 className="text-base sm:text-lg md:text-xl font-semibold truncate">
+            <h2 className="text-lg md:text-xl font-semibold truncate">
               Résultats cadastraux
             </h2>
-            <p className="text-[10px] xs:text-xs sm:text-sm text-muted-foreground truncate mt-0.5">
+            <p className="text-xs md:text-sm text-muted-foreground truncate">
               <span className="font-mono">{result.parcel.parcel_number}</span>
             </p>
           </div>
           <Button 
             variant="outline"
             onClick={handleClose}
-            className="shrink-0 ml-2 h-8 w-8 sm:h-9 sm:w-9 p-0 md:w-auto md:px-3 md:gap-2 rounded-xl"
+            className="shrink-0 ml-2 h-9 w-9 p-0 md:w-auto md:px-3 md:gap-2 border-2"
           >
-            <X className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <X className="h-4 w-4" />
             <span className="hidden md:inline">Fermer</span>
           </Button>
         </div>
         
         {/* Contenu scrollable - Mobile optimized */}
-        <div className="flex-1 overflow-auto px-3 py-4 md:p-6">
+        <div className="flex-1 overflow-auto p-3 md:p-4">
           <CadastralResultCard 
             result={result}
             onClose={handleClose}
@@ -115,19 +123,19 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
 
       {/* Dialog de confirmation de fermeture */}
       <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
-        <AlertDialogContent className="rounded-xl max-w-[calc(100vw-2rem)] sm:max-w-md">
+        <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-base sm:text-lg">⚠️ Confirmer la fermeture</AlertDialogTitle>
-            <AlertDialogDescription className="text-xs sm:text-sm">
+            <AlertDialogTitle>⚠️ Confirmer la fermeture</AlertDialogTitle>
+            <AlertDialogDescription>
               Attention ! Pensez à télécharger ou imprimer votre rapport cadastral avant de fermer. 
               Une fois fermé, vous devrez faire une nouvelle requête pour y accéder à nouveau.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
-            <AlertDialogCancel onClick={cancelClose} className="rounded-xl m-0">
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={cancelClose}>
               Annuler
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmClose} className="rounded-xl m-0">
+            <AlertDialogAction onClick={confirmClose}>
               Fermer quand même
             </AlertDialogAction>
           </AlertDialogFooter>
