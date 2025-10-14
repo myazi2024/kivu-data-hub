@@ -19,6 +19,7 @@ import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
 import AdminServicesConfig from '@/components/admin/AdminServicesConfig';
 import AdminContributions from '@/components/admin/AdminContributions';
 import AdminCCCCodes from '@/components/admin/AdminCCCCodes';
+import { AdminBuildingPermitRequests } from '@/components/admin/AdminBuildingPermitRequests';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -161,7 +162,7 @@ const Admin = () => {
 
       {/* Main Content Tabs */}
           <Tabs defaultValue="publications" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-10">
+            <TabsList className="grid w-full grid-cols-5 lg:grid-cols-11">
               <TabsTrigger value="publications">Publications</TabsTrigger>
               <TabsTrigger value="payments">Paiements</TabsTrigger>
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
@@ -171,6 +172,7 @@ const Admin = () => {
               <TabsTrigger value="territorial">Zones</TabsTrigger>
               <TabsTrigger value="services">Services</TabsTrigger>
               <TabsTrigger value="contributions">Contributions</TabsTrigger>
+              <TabsTrigger value="permits">Permis</TabsTrigger>
               <TabsTrigger value="ccc">Codes CCC</TabsTrigger>
             </TabsList>
 
@@ -208,6 +210,10 @@ const Admin = () => {
 
           <TabsContent value="contributions">
             <AdminContributions onRefresh={fetchStats} />
+          </TabsContent>
+
+          <TabsContent value="permits">
+            <AdminBuildingPermitRequests />
           </TabsContent>
 
           <TabsContent value="ccc">
