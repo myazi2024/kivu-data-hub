@@ -53,7 +53,9 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
   // Mapper les service_id de la BDD aux serviceId de complétude (mapping 1:1 direct)
   const getCompletenessForService = (serviceId: string) => {
     // Les IDs sont maintenant cohérents entre la BDD et l'analyse de complétude
-    return servicesCompleteness.find(s => s.serviceId === serviceId);
+    const completeness = servicesCompleteness.find(s => s.serviceId === serviceId);
+    console.log('🔎 Catalogue - Recherche complétude pour service:', serviceId, '-> Trouvé:', completeness ? `${completeness.status} (${completeness.completionPercentage.toFixed(0)}%)` : 'NON TROUVÉ');
+    return completeness;
   };
 
   const handleServiceToggle = (serviceId: string) => {

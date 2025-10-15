@@ -1,6 +1,12 @@
 /**
  * Mapping entre les clés utilisées dans useCadastralDataCompleteness
  * et les clés réelles du formulaire CadastralContributionDialog
+ * 
+ * IMPORTANT : Les onglets (tab) correspondent aux service_id de la BDD:
+ * - general -> service_id: 'information'
+ * - location -> service_id: 'location_history'
+ * - history -> service_id: 'history'
+ * - obligations -> service_id: 'obligations'
  */
 
 export interface FieldMapping {
@@ -11,7 +17,7 @@ export interface FieldMapping {
 }
 
 export const FIELD_MAPPINGS: FieldMapping[] = [
-  // Onglet General (Informations générales)
+  // === Onglet General (Informations générales) - Service BDD: 'information' ===
   { dataKey: 'propertyTitleType', formKey: 'propertyTitleType', tab: 'general', label: 'Type de titre de propriété' },
   { dataKey: 'titleReferenceNumber', formKey: 'titleReferenceNumber', tab: 'general', label: 'Numéro de référence du titre' },
   { dataKey: 'currentOwnerName', formKey: 'currentOwnerName', tab: 'general', label: 'Nom du propriétaire actuel' },
@@ -23,7 +29,7 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   { dataKey: 'declaredUsage', formKey: 'declaredUsage', tab: 'general', label: 'Usage déclaré' },
   { dataKey: 'buildingPermits', formKey: 'buildingPermits', tab: 'general', label: 'Permis de construire' },
 
-  // Onglet Location (Localisation)
+  // === Onglet Location (Localisation) - Service BDD: 'location_history' ===
   { dataKey: 'province', formKey: 'province', tab: 'location', label: 'Province' },
   { dataKey: 'ville', formKey: 'ville', tab: 'location', label: 'Ville' },
   { dataKey: 'commune', formKey: 'commune', tab: 'location', label: 'Commune' },
@@ -36,11 +42,11 @@ export const FIELD_MAPPINGS: FieldMapping[] = [
   { dataKey: 'circonscriptionFonciere', formKey: 'circonscriptionFonciere', tab: 'location', label: 'Circonscription foncière' },
   { dataKey: 'gpsCoordinates', formKey: 'gpsCoordinates', tab: 'location', label: 'Coordonnées GPS' },
 
-  // Onglet History (Historique des propriétaires)
+  // === Onglet History (Historique des propriétaires) - Service BDD: 'history' ===
   { dataKey: 'ownershipHistory', formKey: 'ownershipHistory', tab: 'history', label: 'Historique des propriétaires' },
   { dataKey: 'boundaryHistory', formKey: 'boundaryHistory', tab: 'history', label: 'Historique des bornages' },
 
-  // Onglet Obligations
+  // === Onglet Obligations - Service BDD: 'obligations' ===
   { dataKey: 'taxHistory', formKey: 'taxHistory', tab: 'obligations', label: 'Historique des taxes' },
   { dataKey: 'mortgageHistory', formKey: 'mortgageHistory', tab: 'obligations', label: 'Historique des hypothèques' },
 ];

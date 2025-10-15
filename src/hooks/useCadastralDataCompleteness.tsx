@@ -18,7 +18,12 @@ export interface ServiceCompleteness {
 
 export const useCadastralDataCompleteness = (result: CadastralSearchResult | null) => {
   const analyzeData = useMemo(() => {
-    if (!result) return [];
+    if (!result) {
+      console.log('🔍 Complétude: Aucun résultat fourni');
+      return [];
+    }
+
+    console.log('🔍 Complétude: Analyse des données pour parcelle', result.parcel.parcel_number);
 
     const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
 
@@ -64,31 +69,31 @@ export const useCadastralDataCompleteness = (result: CadastralSearchResult | nul
       { key: 'buildingPermits', label: 'Permis de construire', category: 'general', isAvailable: building_permits.length > 0 },
     ];
 
-    // Analyser chaque service - Les IDs doivent correspondre aux service_id de la BDD
+    // Analyser chaque service - Les IDs doivent correspondre EXACTEMENT aux service_id de la BDD
     const services: ServiceCompleteness[] = [
       {
-        serviceId: 'information_generale', // Correspond au service_id dans cadastral_services_config
+        serviceId: 'information', // ✅ Correspond EXACTEMENT au service_id dans cadastral_services_config
         status: 'empty',
         availableFields: [],
         missingFields: [],
         completionPercentage: 0
       },
       {
-        serviceId: 'localisation', // Correspond au service_id dans cadastral_services_config
+        serviceId: 'location_history', // ✅ Correspond EXACTEMENT au service_id dans cadastral_services_config
         status: 'empty',
         availableFields: [],
         missingFields: [],
         completionPercentage: 0
       },
       {
-        serviceId: 'historique_proprietaires', // Correspond au service_id dans cadastral_services_config
+        serviceId: 'history', // ✅ Correspond EXACTEMENT au service_id dans cadastral_services_config
         status: 'empty',
         availableFields: [],
         missingFields: [],
         completionPercentage: 0
       },
       {
-        serviceId: 'obligations', // Correspond au service_id dans cadastral_services_config
+        serviceId: 'obligations', // ✅ Correspond EXACTEMENT au service_id dans cadastral_services_config
         status: 'empty',
         availableFields: [],
         missingFields: [],
@@ -136,6 +141,14 @@ export const useCadastralDataCompleteness = (result: CadastralSearchResult | nul
     if (availableObligation.length === 0) services[3].status = 'empty';
     else if (missingObligation.length === 0) services[3].status = 'complete';
     else services[3].status = 'partial';
+
+    console.log('✅ Complétude: Analyse terminée', services.map(s => ({
+      serviceId: s.serviceId,
+      status: s.status,
+      completion: `${s.completionPercentage.toFixed(0)}%`,
+      available: s.availableFields.length,
+      missing: s.missingFields.length
+    })));
 
     return services;
   }, [result]);

@@ -22,26 +22,25 @@ const Myazi = () => {
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
     await searchParcel(searchQuery);
-    if (searchResult) {
-      setShowResults(true);
-    }
+    // Note: searchResult sera mis à jour de façon asynchrone par le hook
+    // Pas besoin de setShowResults ici, le catalogue s'affiche automatiquement
   };
 
   const handleContributeClick = (serviceId: string, missingFieldKeys: string[]) => {
-    console.log('🔧 Contribution demandée:', { serviceId, missingFieldKeys });
+    console.log('🔧 Myazi - Contribution demandée:', { serviceId, missingFieldKeys });
     
     setContributionUnlockedFields(missingFieldKeys);
     setContributionParcel(searchQuery);
     
-    // Mapper le serviceId vers l'onglet correspondant
+    // Mapper le serviceId de la BDD vers l'onglet du formulaire CCC
     const tabMapping: Record<string, string> = {
-      'information_generale': 'general',
-      'localisation': 'location',
-      'historique_proprietaires': 'history',
-      'obligations': 'obligations'
+      'information': 'general',           // ✅ Mapping depuis la BDD
+      'location_history': 'location',     // ✅ Mapping depuis la BDD
+      'history': 'history',               // ✅ Mapping depuis la BDD
+      'obligations': 'obligations'        // ✅ Mapping depuis la BDD
     };
     const targetTab = tabMapping[serviceId] || 'general';
-    console.log('🎯 Onglet cible:', targetTab, '| Champs déverrouillés:', missingFieldKeys);
+    console.log('🎯 Myazi - Onglet cible:', targetTab, '| Champs déverrouillés:', missingFieldKeys);
     
     setContributionTargetTab(targetTab);
     setShowContribution(true);
