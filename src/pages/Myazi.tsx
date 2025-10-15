@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Input } from '@/components/ui/input';
@@ -18,6 +18,21 @@ const Myazi = () => {
   const [contributionUnlockedFields, setContributionUnlockedFields] = useState<string[]>([]);
   const [contributionParcel, setContributionParcel] = useState('');
   const [contributionTargetTab, setContributionTargetTab] = useState<string>('general');
+
+  // Tracer les changements de searchResult
+  useEffect(() => {
+    console.log('🔄 Myazi - searchResult a changé:', searchResult ? `✅ TROUVÉ (${searchResult.parcel.parcel_number})` : '❌ NULL');
+    if (searchResult) {
+      console.log('📦 Myazi - Données complètes du résultat:', {
+        parcel: searchResult.parcel.parcel_number,
+        ownership_history: searchResult.ownership_history.length,
+        tax_history: searchResult.tax_history.length,
+        mortgage_history: searchResult.mortgage_history.length,
+        boundary_history: searchResult.boundary_history.length,
+        building_permits: searchResult.building_permits.length
+      });
+    }
+  }, [searchResult]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
