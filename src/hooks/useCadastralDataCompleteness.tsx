@@ -64,31 +64,31 @@ export const useCadastralDataCompleteness = (result: CadastralSearchResult | nul
       { key: 'buildingPermits', label: 'Permis de construire', category: 'general', isAvailable: building_permits.length > 0 },
     ];
 
-    // Analyser chaque service
+    // Analyser chaque service - Les IDs doivent correspondre aux service_id de la BDD
     const services: ServiceCompleteness[] = [
       {
-        serviceId: 'information_generale',
+        serviceId: 'information_generale', // Correspond au service_id dans cadastral_services_config
         status: 'empty',
         availableFields: [],
         missingFields: [],
         completionPercentage: 0
       },
       {
-        serviceId: 'localisation',
+        serviceId: 'localisation', // Correspond au service_id dans cadastral_services_config
         status: 'empty',
         availableFields: [],
         missingFields: [],
         completionPercentage: 0
       },
       {
-        serviceId: 'historique_proprietaires',
+        serviceId: 'historique_proprietaires', // Correspond au service_id dans cadastral_services_config
         status: 'empty',
         availableFields: [],
         missingFields: [],
         completionPercentage: 0
       },
       {
-        serviceId: 'obligations',
+        serviceId: 'obligations', // Correspond au service_id dans cadastral_services_config
         status: 'empty',
         availableFields: [],
         missingFields: [],

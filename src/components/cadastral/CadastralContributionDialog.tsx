@@ -33,12 +33,16 @@ interface CadastralContributionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parcelNumber: string;
+  unlockedFields?: string[]; // Liste des champs à déverrouiller (les autres sont verrouillés)
+  targetTab?: string; // Onglet cible à afficher par défaut
 }
 
 const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = ({
   open,
   onOpenChange,
-  parcelNumber
+  parcelNumber,
+  unlockedFields,
+  targetTab
 }) => {
   const { submitContribution, loading } = useCadastralContribution();
   const { toast } = useToast();

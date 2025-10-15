@@ -39,15 +39,18 @@ import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
 import DocumentAttachment from './DocumentAttachment';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
+import CadastralFieldWithContribution from './CadastralFieldWithContribution';
+import { useCadastralDataCompleteness } from '@/hooks/useCadastralDataCompleteness';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
   onClose: () => void;
   selectedServices?: string[]; // Services sélectionnés depuis le billing panel
   onPaymentSuccess?: (services: string[]) => void;
+  onContribute?: (serviceId: string, fieldKey: string) => void; // Callback pour la contribution
 }
 
-const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess }) => {
+const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess, onContribute }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [obligationsTab, setObligationsTab] = useState('taxes');
   const [showBillingPanel, setShowBillingPanel] = useState(true);
@@ -60,6 +63,14 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
+  const { servicesCompleteness } = useCadastralDataCompleteness(result);
+
+  // Handler pour la contribution d'un champ spécifique
+  const handleFieldContribute = (serviceId: string, fieldKey: string) => {
+    if (onContribute) {
+      onContribute(serviceId, fieldKey);
+    }
+  };
 
   // Logique de scroll pour masquer/afficher l'en-tête
   useEffect(() => {
@@ -142,6 +153,17 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   // Check if user has access to a specific service
   const hasServiceAccess = (serviceType: string) => {
     return paidServices.includes(serviceType);
+  };
+
+  // Mapper le serviceType utilisé dans ce composant vers les serviceIds de la BDD
+  const mapServiceTypeToServiceId = (serviceType: string): string => {
+    const mapping: Record<string, string> = {
+      'information': 'information_generale',
+      'location_history': 'localisation',
+      'history': 'historique_proprietaires',
+      'obligations': 'obligations'
+    };
+    return mapping[serviceType] || serviceType;
   };
 
   // Gérer le téléchargement PDF de la facture

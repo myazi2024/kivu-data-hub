@@ -17,6 +17,7 @@ const Myazi = () => {
   const [showContribution, setShowContribution] = useState(false);
   const [contributionFields, setContributionFields] = useState<string[]>([]);
   const [contributionParcel, setContributionParcel] = useState('');
+  const [contributionTargetTab, setContributionTargetTab] = useState<string>('general');
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -29,6 +30,16 @@ const Myazi = () => {
   const handleContributeClick = (serviceId: string, missingFields: string[]) => {
     setContributionFields(missingFields);
     setContributionParcel(searchQuery);
+    
+    // Mapper le serviceId vers l'onglet correspondant
+    const tabMapping: Record<string, string> = {
+      'information_generale': 'general',
+      'localisation': 'location',
+      'historique_proprietaires': 'history',
+      'obligations': 'obligations'
+    };
+    setContributionTargetTab(tabMapping[serviceId] || 'general');
+    
     setShowContribution(true);
   };
 
@@ -75,14 +86,27 @@ const Myazi = () => {
           result={searchResult}
           isOpen={showResults}
           onClose={() => setShowResults(false)}
+          onContribute={(serviceId, fieldKey) => {
+            // Convertir un seul fieldKey en array pour handleContributeClick
+            handleContributeClick(serviceId, [fieldKey]);
+          }}
         />
       )}
 
       {/* Dialog de contribution */}
       <CadastralContributionDialog
         open={showContribution}
-        onOpenChange={setShowContribution}
+        onOpenChange={(open) => {
+          setShowContribution(open);
+          if (!open) {
+            // Réinitialiser les champs à la fermeture
+            setContributionFields([]);
+            setContributionTargetTab('general');
+          }
+        }}
         parcelNumber={contributionParcel}
+        unlockedFields={contributionFields.length > 0 ? contributionFields : undefined}
+        targetTab={contributionTargetTab}
       />
 
       <Footer />

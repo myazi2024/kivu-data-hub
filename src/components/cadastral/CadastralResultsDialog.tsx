@@ -21,6 +21,7 @@ interface CadastralResultsDialogProps {
   onClose: () => void;
   selectedServices?: string[];
   onPaymentSuccess?: (services: string[]) => void;
+  onContribute?: (serviceId: string, fieldKey: string) => void;
 }
 
 const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({ 
@@ -28,7 +29,8 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
   isOpen, 
   onClose,
   selectedServices = [],
-  onPaymentSuccess
+  onPaymentSuccess,
+  onContribute
 }) => {
   const [paidServices, setPaidServices] = React.useState<string[]>(selectedServices);
   const [showCloseConfirm, setShowCloseConfirm] = React.useState(false);
@@ -117,6 +119,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
             onClose={handleClose}
             selectedServices={paidServices}
             onPaymentSuccess={handlePaymentSuccess}
+            onContribute={onContribute}
           />
         </div>
       </Card>
