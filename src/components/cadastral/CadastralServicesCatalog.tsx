@@ -36,9 +36,17 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
   const navigate = useNavigate();
   const { user } = useAuth();
   
-  console.log('📊 Catalogue - Rendu avec searchResult:', searchResult ? `TROUVÉ (${searchResult.parcel.parcel_number})` : 'NULL/UNDEFINED');
+  // Traçage détaillé de l'état du catalogue
+  console.log('=== CATALOGUE RENDU ===');
+  console.log('searchResult:', searchResult ? 'PRÉSENT' : 'NULL');
+  if (searchResult) {
+    console.log('Numéro parcelle:', searchResult.parcel.parcel_number);
+  }
+  
   const { servicesCompleteness } = useCadastralDataCompleteness(searchResult);
-  console.log('📊 Catalogue - servicesCompleteness reçu:', servicesCompleteness.length, 'services');
+  
+  console.log('servicesCompleteness:', servicesCompleteness);
+  console.log('Nombre de services analysés:', servicesCompleteness.length);
 
   const getServiceIcon = (serviceId: string) => {
     if (serviceId.includes('information') || serviceId.includes('general')) {
@@ -57,7 +65,9 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
   const getCompletenessForService = (serviceId: string) => {
     // Les IDs sont maintenant cohérents entre la BDD et l'analyse de complétude
     const completeness = servicesCompleteness.find(s => s.serviceId === serviceId);
-    console.log('🔎 Catalogue - Recherche complétude pour service:', serviceId, '-> Trouvé:', completeness ? `${completeness.status} (${completeness.completionPercentage.toFixed(0)}%)` : 'NON TROUVÉ');
+    console.log('=== RECHERCHE COMPLETUDE ===');
+    console.log('Service recherché:', serviceId);
+    console.log('Complétude trouvée:', completeness);
     return completeness;
   };
 
@@ -162,14 +172,21 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
       {/* Grille des services */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {services.map((service) => {
-          console.log('🎨 Catalogue - Rendu du service:', service.service_id, '| Complétude:', getCompletenessForService(service.service_id));
           const IconComponent = getServiceIcon(service.service_id);
           const isSelected = selectedServices.includes(service.service_id);
           const completeness = searchResult ? getCompletenessForService(service.service_id) : null;
+          
+          console.log('=== RENDU SERVICE ===');
+          console.log('Service ID:', service.service_id);
+          console.log('searchResult existe?', !!searchResult);
+          console.log('completeness:', completeness);
+          
           const isEmpty = completeness?.status === 'empty';
           const isPartial = completeness?.status === 'partial';
           const isComplete = completeness?.status === 'complete';
           const showWarning = showPartialWarning === service.service_id;
+          
+          console.log('isEmpty:', isEmpty, 'isPartial:', isPartial, 'isComplete:', isComplete);
           
           return (
             <div key={service.id} className="space-y-3">
