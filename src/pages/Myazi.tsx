@@ -21,9 +21,9 @@ const Myazi = () => {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
+    console.log('🔍 Myazi - Recherche lancée pour:', searchQuery);
     await searchParcel(searchQuery);
-    // Note: searchResult sera mis à jour de façon asynchrone par le hook
-    // Pas besoin de setShowResults ici, le catalogue s'affiche automatiquement
+    console.log('✅ Myazi - Recherche terminée, résultat:', searchResult ? 'TROUVÉ' : 'NULL/UNDEFINED');
   };
 
   const handleContributeClick = (serviceId: string, missingFieldKeys: string[]) => {

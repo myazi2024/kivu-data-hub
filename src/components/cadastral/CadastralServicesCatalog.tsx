@@ -35,7 +35,10 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
   const [showPartialWarning, setShowPartialWarning] = useState<string | null>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
+  
+  console.log('📊 Catalogue - Rendu avec searchResult:', searchResult ? `TROUVÉ (${searchResult.parcel.parcel_number})` : 'NULL/UNDEFINED');
   const { servicesCompleteness } = useCadastralDataCompleteness(searchResult);
+  console.log('📊 Catalogue - servicesCompleteness reçu:', servicesCompleteness.length, 'services');
 
   const getServiceIcon = (serviceId: string) => {
     if (serviceId.includes('information') || serviceId.includes('general')) {
@@ -159,6 +162,7 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
       {/* Grille des services */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {services.map((service) => {
+          console.log('🎨 Catalogue - Rendu du service:', service.service_id, '| Complétude:', getCompletenessForService(service.service_id));
           const IconComponent = getServiceIcon(service.service_id);
           const isSelected = selectedServices.includes(service.service_id);
           const completeness = searchResult ? getCompletenessForService(service.service_id) : null;
