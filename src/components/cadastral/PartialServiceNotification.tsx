@@ -86,23 +86,35 @@ const PartialServiceNotification: React.FC<PartialServiceNotificationProps> = ({
         )}
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
+        <div className="flex flex-col gap-2 pt-2">
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
-            onClick={onClose}
-            className="flex-1"
+            onClick={() => onContribute(service.missingFields.map(f => f.key))}
+            className="w-full"
           >
-            <X className="h-4 w-4 mr-2" />
-            Annuler
+            <Plus className="h-4 w-4 mr-2" />
+            Contribuer tous les champs manquants
           </Button>
-          <Button
-            size="sm"
-            onClick={onContinueAnyway}
-            className="flex-1"
-          >
-            Acheter quand même
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onClose}
+              className="flex-1"
+            >
+              <X className="h-4 w-4 mr-2" />
+              Annuler
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={onContinueAnyway}
+              className="flex-1"
+            >
+              Acheter quand même
+            </Button>
+          </div>
         </div>
       </AlertDescription>
     </Alert>

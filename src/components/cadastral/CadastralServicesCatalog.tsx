@@ -91,7 +91,11 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
       return;
     }
     
-    console.log('📋 Catalogue - Contribution:', { serviceId, missingFieldKeys });
+    console.log('📋 Catalogue - Contribution demandée:', { 
+      serviceId, 
+      nombreChamps: missingFieldKeys.length,
+      champs: missingFieldKeys 
+    });
     
     if (onContributeClick) {
       onContributeClick(serviceId, missingFieldKeys);

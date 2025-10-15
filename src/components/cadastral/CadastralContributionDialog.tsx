@@ -113,9 +113,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     );
     
     return !isUnlocked;
-    
-    // Si une configuration existe, seuls les champs dans unlockedFields sont éditables
-    return !unlockedFields.includes(fieldKey);
   };
   
   // Mettre à jour l'onglet actif quand targetTab change
