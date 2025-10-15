@@ -85,14 +85,16 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
     setShowPartialWarning(null);
   };
 
-  const handleContribute = (serviceId: string, missingFields: string[]) => {
+  const handleContribute = (serviceId: string, missingFieldKeys: string[]) => {
     if (!user) {
       navigate('/auth', { state: { from: '/services-cadastraux' } });
       return;
     }
     
+    console.log('📋 Catalogue - Contribution:', { serviceId, missingFieldKeys });
+    
     if (onContributeClick) {
-      onContributeClick(serviceId, missingFields);
+      onContributeClick(serviceId, missingFieldKeys);
     }
     setShowPartialWarning(null);
   };
@@ -256,7 +258,7 @@ const CadastralServicesCatalog: React.FC<CadastralServicesCatalogProps> = ({
                   serviceName={service.name}
                   onClose={() => setShowPartialWarning(null)}
                   onContinueAnyway={() => handleConfirmPartialService(service.service_id)}
-                  onContribute={(missingFields) => handleContribute(service.service_id, missingFields)}
+                  onContribute={(missingFieldKeys) => handleContribute(service.service_id, missingFieldKeys)}
                 />
               )}
             </div>

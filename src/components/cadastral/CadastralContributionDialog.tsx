@@ -29,6 +29,7 @@ import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTy
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
 import LockedFieldWrapper from './LockedFieldWrapper';
+import { getFieldMappingByDataKey, getFieldMappingByFormKey, isFieldInTab } from '@/lib/cadastralFieldMapping';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -73,10 +74,45 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [highlightIncompleteMortgage, setHighlightIncompleteMortgage] = useState(false);
   const [activeTab, setActiveTab] = useState(targetTab || 'general');
   
+  // Mettre à jour l'onglet actif quand targetTab change
+  useEffect(() => {
+    if (targetTab && targetTab !== activeTab) {
+      console.log('🔄 Changement d\'onglet:', targetTab);
+      setActiveTab(targetTab);
+    }
+  }, [targetTab]);
+  
   // Fonction pour vérifier si un champ est verrouillé (non éditable)
   const isFieldLocked = (fieldKey: string): boolean => {
     // Si pas de configuration de verrouillage, tous les champs sont déverrouillés
-    if (!unlockedFields || unlockedFields.length === 0) return false;
+    if (!unlockedFields || unlockedFields.length === 0) {
+      console.log('✅ Aucun verrouillage - champ déverrouillé:', fieldKey);
+      return false;
+    }
+    
+    // Chercher le mapping du champ (par dataKey ou formKey)
+    const mapping = getFieldMappingByDataKey(fieldKey) || getFieldMappingByFormKey(fieldKey);
+    
+    if (!mapping) {
+      // Si pas de mapping trouvé, on cherche directement dans unlockedFields
+      const isLocked = !unlockedFields.includes(fieldKey);
+      console.log(isLocked ? '🔒' : '🔓', 'Champ (sans mapping):', fieldKey, '| Verrouillé:', isLocked);
+      return isLocked;
+    }
+    
+    // Vérifier si le champ est dans la liste des champs déverrouillés (par dataKey ou formKey)
+    const isUnlocked = unlockedFields.includes(mapping.dataKey) || unlockedFields.includes(mapping.formKey);
+    
+    console.log(
+      isUnlocked ? '🔓' : '🔒', 
+      'Champ:', fieldKey, 
+      '| Onglet:', mapping.tab,
+      '| Data key:', mapping.dataKey,
+      '| Verrouillé:', !isUnlocked,
+      '| Champs déverrouillés:', unlockedFields
+    );
+    
+    return !isUnlocked;
     
     // Si une configuration existe, seuls les champs dans unlockedFields sont éditables
     return !unlockedFields.includes(fieldKey);
@@ -1549,7 +1585,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Label htmlFor="titleReference">
                   Numéro de référence du {formData.propertyTitleType.toLowerCase()}
                 </Label>
-                <LockedFieldWrapper isLocked={isFieldLocked('title_reference_number')} fieldKey="title_reference_number">
+                <LockedFieldWrapper isLocked={isFieldLocked('titleReferenceNumber')} fieldKey="titleReferenceNumber">
                   <InputWithPopover
                     id="titleReference"
                     placeholder={PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "Ex: XXX-123456"}

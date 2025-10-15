@@ -15,7 +15,7 @@ const Myazi = () => {
   const { searchParcel, searchResult, loading, error } = useCadastralSearch();
   const [showResults, setShowResults] = useState(false);
   const [showContribution, setShowContribution] = useState(false);
-  const [contributionFields, setContributionFields] = useState<string[]>([]);
+  const [contributionUnlockedFields, setContributionUnlockedFields] = useState<string[]>([]);
   const [contributionParcel, setContributionParcel] = useState('');
   const [contributionTargetTab, setContributionTargetTab] = useState<string>('general');
 
@@ -27,8 +27,10 @@ const Myazi = () => {
     }
   };
 
-  const handleContributeClick = (serviceId: string, missingFields: string[]) => {
-    setContributionFields(missingFields);
+  const handleContributeClick = (serviceId: string, missingFieldKeys: string[]) => {
+    console.log('🔧 Contribution demandée:', { serviceId, missingFieldKeys });
+    
+    setContributionUnlockedFields(missingFieldKeys);
     setContributionParcel(searchQuery);
     
     // Mapper le serviceId vers l'onglet correspondant
@@ -38,8 +40,10 @@ const Myazi = () => {
       'historique_proprietaires': 'history',
       'obligations': 'obligations'
     };
-    setContributionTargetTab(tabMapping[serviceId] || 'general');
+    const targetTab = tabMapping[serviceId] || 'general';
+    console.log('🎯 Onglet cible:', targetTab, '| Champs déverrouillés:', missingFieldKeys);
     
+    setContributionTargetTab(targetTab);
     setShowContribution(true);
   };
 
@@ -100,12 +104,12 @@ const Myazi = () => {
           setShowContribution(open);
           if (!open) {
             // Réinitialiser les champs à la fermeture
-            setContributionFields([]);
+            setContributionUnlockedFields([]);
             setContributionTargetTab('general');
           }
         }}
         parcelNumber={contributionParcel}
-        unlockedFields={contributionFields.length > 0 ? contributionFields : undefined}
+        unlockedFields={contributionUnlockedFields.length > 0 ? contributionUnlockedFields : undefined}
         targetTab={contributionTargetTab}
       />
 
