@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink, UserPlus, LogIn, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink, UserPlus, LogIn, Sparkles, Lock as LockIcon } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,7 @@ import { InputWithPopover } from './InputWithPopover';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
+import LockedFieldWrapper from './LockedFieldWrapper';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -70,6 +71,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [highlightIncompleteTax, setHighlightIncompleteTax] = useState(false);
   const [showMortgageWarning, setShowMortgageWarning] = useState(false);
   const [highlightIncompleteMortgage, setHighlightIncompleteMortgage] = useState(false);
+  const [activeTab, setActiveTab] = useState(targetTab || 'general');
+  
+  // Fonction pour vérifier si un champ est verrouillé (non éditable)
+  const isFieldLocked = (fieldKey: string): boolean => {
+    // Si pas de configuration de verrouillage, tous les champs sont déverrouillés
+    if (!unlockedFields || unlockedFields.length === 0) return false;
+    
+    // Si une configuration existe, seuls les champs dans unlockedFields sont éditables
+    return !unlockedFields.includes(fieldKey);
+  };
+  
+  // Mettre à jour l'onglet actif quand targetTab change
+  React.useEffect(() => {
+    if (targetTab) {
+      setActiveTab(targetTab);
+    }
+  }, [targetTab]);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -1460,8 +1478,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="general" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="sticky top-0 z-20 bg-background px-6 pt-4 pb-3 -mx-6 border-b shadow-sm">
+            {/* Notification mode verrouillé */}
+            {unlockedFields && unlockedFields.length > 0 && (
+              <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg animate-fade-in">
+                <div className="flex items-start gap-2">
+                  <LockIcon className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                      Mode contribution ciblée activé
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                      Seuls les champs spécifiques que vous avez sélectionnés sont éditables. 
+                      Les autres champs sont verrouillés pour préserver les données existantes.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3">
               <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
                 Général
@@ -1513,14 +1549,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <Label htmlFor="titleReference">
                   Numéro de référence du {formData.propertyTitleType.toLowerCase()}
                 </Label>
-                <InputWithPopover
-                  id="titleReference"
-                  placeholder={PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "Ex: XXX-123456"}
-                  value={formData.titleReferenceNumber || ''}
-                  onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
-                  helpTitle="Numéro de référence"
-                  helpText={`Le numéro de référence se trouve généralement en haut de votre document. Format attendu : ${PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "XXX-123456"}`}
-                />
+                <LockedFieldWrapper isLocked={isFieldLocked('title_reference_number')} fieldKey="title_reference_number">
+                  <InputWithPopover
+                    id="titleReference"
+                    placeholder={PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "Ex: XXX-123456"}
+                    value={formData.titleReferenceNumber || ''}
+                    onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
+                    helpTitle="Numéro de référence"
+                    helpText={`Le numéro de référence se trouve généralement en haut de votre document. Format attendu : ${PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "XXX-123456"}`}
+                  />
+                </LockedFieldWrapper>
                 <p className="text-xs text-muted-foreground">
                   {PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.description}
                 </p>
