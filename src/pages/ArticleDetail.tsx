@@ -12,8 +12,6 @@ import { fr } from 'date-fns/locale';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 const ArticleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -94,6 +92,25 @@ const ArticleDetail = () => {
     );
   }
 
+  // Parser le contenu markdown en HTML simple
+  const formatContent = (content: string) => {
+    return content
+      .split('\n')
+      .map(line => {
+        // Titres
+        if (line.startsWith('### ')) return `<h3 class="text-xl font-semibold mt-6 mb-3">${line.slice(4)}</h3>`;
+        if (line.startsWith('## ')) return `<h2 class="text-2xl font-bold mt-8 mb-4">${line.slice(3)}</h2>`;
+        if (line.startsWith('# ')) return `<h1 class="text-3xl font-bold mt-8 mb-4">${line.slice(2)}</h1>`;
+        // Listes
+        if (line.startsWith('- ')) return `<li class="ml-6 mb-2">${line.slice(2)}</li>`;
+        if (/^\d+\./.test(line)) return `<li class="ml-6 mb-2">${line.replace(/^\d+\.\s*/, '')}</li>`;
+        // Gras
+        line = line.replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>');
+        // Paragraphes
+        return line.trim() ? `<p class="mb-4 leading-relaxed">${line}</p>` : '';
+      })
+      .join('');
+  };
 
   return (
     <>
@@ -207,25 +224,10 @@ const ArticleDetail = () => {
             <Separator className="my-8" />
 
             {/* Contenu */}
-            <div className="prose prose-lg max-w-none">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({ node, ...props }) => <h1 className="text-3xl font-bold mt-8 mb-4" {...props} />,
-                  h2: ({ node, ...props }) => <h2 className="text-2xl font-bold mt-8 mb-4" {...props} />,
-                  h3: ({ node, ...props }) => <h3 className="text-xl font-semibold mt-6 mb-3" {...props} />,
-                  p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
-                  ul: ({ node, ...props }) => <ul className="list-disc ml-6 mb-4" {...props} />,
-                  ol: ({ node, ...props }) => <ol className="list-decimal ml-6 mb-4" {...props} />,
-                  li: ({ node, ...props }) => <li className="mb-2" {...props} />,
-                  strong: ({ node, ...props }) => <strong className="font-semibold" {...props} />,
-                  a: ({ node, ...props }) => <a className="text-primary hover:underline" {...props} />,
-                  code: ({ node, ...props }) => <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props} />,
-                }}
-              >
-                {article.content}
-              </ReactMarkdown>
-            </div>
+            <div 
+              className="prose prose-lg max-w-none"
+              dangerouslySetInnerHTML={{ __html: formatContent(article.content) }}
+            />
 
             <Separator className="my-8" />
 

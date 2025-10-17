@@ -116,22 +116,12 @@ const ServicesSection = () => {
         </div>
 
         {/* Call to Action */}
-        <div className="text-center space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Link to="/services">
-              <Button size="lg" variant="outline" className="px-8 py-3">
-                En savoir plus sur nos services
-              </Button>
-            </Link>
-            <Link to="/services-cadastraux">
-              <Button size="lg" className="px-8 py-3">
-                Services Cadastraux (Tarifs)
-              </Button>
-            </Link>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            Consultez notre catalogue de services cadastraux avec tarifs détaillés
-          </p>
+        <div className="text-center">
+          <Link to="/services">
+            <Button size="lg" className="px-8 py-3">
+              Découvrir tous nos services
+            </Button>
+          </Link>
         </div>
       </div>
     </section>

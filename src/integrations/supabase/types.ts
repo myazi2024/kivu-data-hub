@@ -839,7 +839,6 @@ export type Database = {
       cadastral_services_config: {
         Row: {
           created_at: string
-          deleted_at: string | null
           description: string | null
           id: string
           is_active: boolean
@@ -850,7 +849,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -861,7 +859,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          deleted_at?: string | null
           description?: string | null
           id?: string
           is_active?: boolean
@@ -1766,10 +1763,6 @@ export type Database = {
         Args: { coordinates: Json }
         Returns: number
       }
-      check_service_usage: {
-        Args: { service_id_param: string }
-        Returns: Json
-      }
       cleanup_expired_data: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -1813,10 +1806,6 @@ export type Database = {
       }
       generate_reseller_code: {
         Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_service_id: {
-        Args: { service_name: string }
         Returns: string
       }
       get_admin_statistics: {
@@ -1869,16 +1858,6 @@ export type Database = {
           stat_type?: string
         }
         Returns: Json
-      }
-      get_service_audit_history: {
-        Args: { service_id_param: string }
-        Returns: {
-          action: string
-          changed_at: string
-          changed_by: string
-          new_values: Json
-          old_values: Json
-        }[]
       }
       get_user_highest_role: {
         Args: { _user_id: string }

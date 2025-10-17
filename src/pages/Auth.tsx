@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,51 +11,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Building2, ArrowLeft, Smartphone } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { FaFacebook, FaApple } from "react-icons/fa";
-
-// Validation schemas
-const signInSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, "L'email est requis")
-    .email("Format d'email invalide")
-    .max(255, "L'email doit contenir moins de 255 caractères"),
-  password: z
-    .string()
-    .min(1, "Le mot de passe est requis")
-});
-
-const signUpSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, "L'email est requis")
-    .email("Format d'email invalide")
-    .max(255, "L'email doit contenir moins de 255 caractères"),
-  password: z
-    .string()
-    .min(8, "Le mot de passe doit contenir au moins 8 caractères")
-    .max(100, "Le mot de passe doit contenir moins de 100 caractères"),
-  fullName: z
-    .string()
-    .trim()
-    .min(1, "Le nom complet est requis")
-    .max(100, "Le nom doit contenir moins de 100 caractères")
-    .regex(/^[a-zA-ZÀ-ÿ\s'-]+$/, "Le nom ne peut contenir que des lettres, espaces, apostrophes et tirets"),
-  organization: z
-    .string()
-    .trim()
-    .max(200, "Le nom de l'organisation doit contenir moins de 200 caractères")
-    .optional()
-});
-
-const phoneSchema = z.object({
-  phoneNumber: z
-    .string()
-    .trim()
-    .min(1, "Le numéro de téléphone est requis")
-    .regex(/^\+\d{1,4}\s?\d{6,14}$/, "Format de numéro invalide. Utilisez le format international (+243...)")
-});
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -90,26 +44,16 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate inputs with zod
-    const validationResult = signInSchema.safeParse({
-      email: email.trim(),
-      password
-    });
-
-    if (!validationResult.success) {
-      const firstError = validationResult.error.errors[0];
+    if (!email || !password) {
       toast({
-        title: "Erreur de validation",
-        description: firstError.message,
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs",
         variant: "destructive",
       });
       return;
     }
 
-    const validatedData = validationResult.data;
     setIsLoading(true);
-    
     try {
       cleanupAuthState();
       
@@ -120,8 +64,8 @@ const Auth = () => {
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: validatedData.email,
-        password: validatedData.password,
+        email,
+        password,
       });
 
       if (error) throw error;
@@ -146,28 +90,25 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate inputs with zod
-    const validationResult = signUpSchema.safeParse({
-      email: email.trim(),
-      password,
-      fullName: fullName.trim(),
-      organization: organization.trim() || undefined
-    });
-
-    if (!validationResult.success) {
-      const firstError = validationResult.error.errors[0];
+    if (!email || !password || !fullName) {
       toast({
-        title: "Erreur de validation",
-        description: firstError.message,
+        title: "Erreur",
+        description: "Veuillez remplir tous les champs requis",
         variant: "destructive",
       });
       return;
     }
 
-    const validatedData = validationResult.data;
+    if (password.length < 6) {
+      toast({
+        title: "Erreur",
+        description: "Le mot de passe doit contenir au moins 6 caractères",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
-    
     try {
       cleanupAuthState();
       
@@ -180,13 +121,13 @@ const Auth = () => {
       const redirectUrl = `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
-        email: validatedData.email,
-        password: validatedData.password,
+        email,
+        password,
         options: {
           emailRedirectTo: redirectUrl,
           data: {
-            full_name: validatedData.fullName,
-            organization: validatedData.organization || null,
+            full_name: fullName,
+            organization: organization || null,
           }
         }
       });
@@ -238,28 +179,19 @@ const Auth = () => {
 
   const handlePhoneSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate phone number with zod
-    const validationResult = phoneSchema.safeParse({
-      phoneNumber: phoneNumber.trim()
-    });
-
-    if (!validationResult.success) {
-      const firstError = validationResult.error.errors[0];
+    if (!phoneNumber) {
       toast({
-        title: "Erreur de validation",
-        description: firstError.message,
+        title: "Erreur",
+        description: "Veuillez entrer un numéro de téléphone",
         variant: "destructive",
       });
       return;
     }
 
-    const validatedData = validationResult.data;
     setIsLoading(true);
-    
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        phone: validatedData.phoneNumber,
+        phone: phoneNumber,
       });
 
       if (error) throw error;
@@ -541,11 +473,11 @@ const Auth = () => {
                     <Input
                       id="signup-password"
                       type="password"
-                      placeholder="Au moins 8 caractères"
+                      placeholder="Au moins 6 caractères"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
-                      minLength={8}
+                      minLength={6}
                     />
                   </div>
                   

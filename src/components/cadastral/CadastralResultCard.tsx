@@ -39,18 +39,15 @@ import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
 import DocumentAttachment from './DocumentAttachment';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
-import CadastralFieldWithContribution from './CadastralFieldWithContribution';
-import { useCadastralDataCompleteness } from '@/hooks/useCadastralDataCompleteness';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
   onClose: () => void;
   selectedServices?: string[]; // Services sélectionnés depuis le billing panel
   onPaymentSuccess?: (services: string[]) => void;
-  onContribute?: (serviceId: string, fieldKey: string) => void; // Callback pour la contribution
 }
 
-const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess, onContribute }) => {
+const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [obligationsTab, setObligationsTab] = useState('taxes');
   const [showBillingPanel, setShowBillingPanel] = useState(true);
@@ -63,14 +60,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
   const { checkServiceAccess } = useCadastralBilling();
   const { user } = useAuth();
-  const { servicesCompleteness } = useCadastralDataCompleteness(result);
-
-  // Handler pour la contribution d'un champ spécifique
-  const handleFieldContribute = (serviceId: string, fieldKey: string) => {
-    if (onContribute) {
-      onContribute(serviceId, fieldKey);
-    }
-  };
 
   // Logique de scroll pour masquer/afficher l'en-tête
   useEffect(() => {
@@ -153,17 +142,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   // Check if user has access to a specific service
   const hasServiceAccess = (serviceType: string) => {
     return paidServices.includes(serviceType);
-  };
-
-  // Mapper le serviceType utilisé dans ce composant vers les serviceIds de la BDD
-  const mapServiceTypeToServiceId = (serviceType: string): string => {
-    const mapping: Record<string, string> = {
-      'information': 'information_generale',
-      'location_history': 'localisation',
-      'history': 'historique_proprietaires',
-      'obligations': 'obligations'
-    };
-    return mapping[serviceType] || serviceType;
   };
 
   // Gérer le téléchargement PDF de la facture
@@ -799,14 +777,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         </>
                       ) : (
                         <>
-                       {/* Circonscription foncière */}
-                       <Separator className="my-2" />
-                       <div className="flex justify-between items-start gap-2">
-                         <span className="text-[10px] text-muted-foreground flex-shrink-0">Circonscription:</span>
-                         <span className="text-xs font-medium text-right break-words leading-tight">{parcel.province ? `Circonscription Foncière de ${parcel.province.split('-')[0]}` : 'N/A'}</span>
-                       </div>
-                       
-                       {parcel.territoire && (
+                          {parcel.territoire && (
                             <div className="flex justify-between items-center">
                               <span className="text-[10px] text-muted-foreground">Territoire:</span>
                               <span className="text-xs font-medium text-right break-words">{parcel.territoire}</span>
@@ -833,16 +804,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                         </>
                       )}
                       
-                       {/* Circonscription foncière */}
-                       <Separator className="my-2" />
-                       <div className="flex justify-between items-start gap-2">
-                         <span className="text-[10px] text-muted-foreground flex-shrink-0">Circonscription:</span>
-                         <span className="text-xs font-medium text-right break-words leading-tight">
-                           {parcel.province ? `Circonscription Foncière de ${parcel.province.split('-')[0]}` : 'N/A'}
-                         </span>
-                       </div>
-                       
-                       <div className="flex justify-between items-center pt-1 border-t border-muted/30 mt-2">
+                      <div className="flex justify-between items-center pt-1 border-t border-muted/30">
                         <span className="text-[10px] text-muted-foreground">Type:</span>
                         <span className="text-xs font-medium bg-primary/10 px-1.5 py-0.5 rounded">
                           {parcel.parcel_type === 'SU' ? 'Section Urbaine' : 'Section Rurale'}
@@ -852,20 +814,15 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </CardContent>
                 </Card>
 
-                {/* Carte cadastrale avec bornes GPS */}
+                {/* Carte cadastrale */}
                 <Card className="border-0 bg-gradient-to-br from-background to-primary/5">
                   <CardContent className="p-3">
                     <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
                       <Map className="h-3 w-3" />
                       Croquis du terrain
-                      {parcel.gps_coordinates && parcel.gps_coordinates.length > 0 && (
-                        <Badge variant="outline" className="text-xs h-4 ml-1">
-                          {parcel.gps_coordinates.length} borne{parcel.gps_coordinates.length > 1 ? 's' : ''}
-                        </Badge>
-                      )}
                        <Popover>
                          <PopoverTrigger asChild>
-                           <button className="inline-flex items-center ml-auto">
+                           <button className="inline-flex items-center">
                              <Info className="h-3 w-3 text-muted-foreground hover:text-primary cursor-help transition-colors" />
                            </button>
                          </PopoverTrigger>
@@ -878,30 +835,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                          </PopoverContent>
                        </Popover>
                     </h4>
-                    
-                    {/* Liste des coordonnées GPS des bornes */}
-                    {parcel.gps_coordinates && parcel.gps_coordinates.length > 0 && (
-                      <div className="mb-3 space-y-1.5 bg-muted/20 p-2 rounded-lg">
-                        <p className="text-[10px] font-medium text-muted-foreground mb-1">Coordonnées GPS des bornes:</p>
-                        {parcel.gps_coordinates.map((coord, index) => (
-                          <div key={index} className="flex justify-between items-center text-xs">
-                            <span className="font-mono text-[10px]">{coord.borne || `Borne ${index + 1}`}:</span>
-                            <span className="font-mono text-[10px] text-muted-foreground">
-                              {coord.lat.toFixed(6)}, {coord.lng.toFixed(6)}
-                            </span>
-                          </div>
-                        ))}
-                        {parcel.surface_calculee_bornes && (
-                          <div className="mt-2 pt-2 border-t border-muted/30">
-                            <div className="flex justify-between items-center">
-                              <span className="text-[10px] text-muted-foreground">Surface calculée (bornes):</span>
-                              <span className="text-xs font-medium text-primary">{formatArea(parcel.surface_calculee_bornes)}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
                     <div className="relative z-0">
                       <CadastralMap 
                         coordinates={parcel.gps_coordinates}

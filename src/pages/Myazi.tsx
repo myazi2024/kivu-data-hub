@@ -1,132 +1,106 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
-import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Search, Loader2 } from 'lucide-react';
-import { useCadastralSearch } from '@/hooks/useCadastralSearch';
-import CadastralResultsDialog from '@/components/cadastral/CadastralResultsDialog';
-import CadastralServicesCatalog from '@/components/cadastral/CadastralServicesCatalog';
-import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
+import { Smartphone, MapPin, BarChart3, Users, Shield, Download } from 'lucide-react';
 
 const Myazi = () => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const { searchParcel, searchResult, loading, error } = useCadastralSearch();
-  const [showResults, setShowResults] = useState(false);
-  const [showContribution, setShowContribution] = useState(false);
-  const [contributionUnlockedFields, setContributionUnlockedFields] = useState<string[]>([]);
-  const [contributionParcel, setContributionParcel] = useState('');
-  const [contributionTargetTab, setContributionTargetTab] = useState<string>('general');
-
-  // Tracer les changements de searchResult
-  useEffect(() => {
-    console.log('🔄 Myazi - searchResult a changé:', searchResult ? `✅ TROUVÉ (${searchResult.parcel.parcel_number})` : '❌ NULL');
-    if (searchResult) {
-      console.log('📦 Myazi - Données complètes du résultat:', {
-        parcel: searchResult.parcel.parcel_number,
-        ownership_history: searchResult.ownership_history.length,
-        tax_history: searchResult.tax_history.length,
-        mortgage_history: searchResult.mortgage_history.length,
-        boundary_history: searchResult.boundary_history.length,
-        building_permits: searchResult.building_permits.length
-      });
+  const features = [
+    {
+      icon: <MapPin className="h-8 w-8 text-primary" />,
+      title: "Géolocalisation Précise",
+      description: "Cartographie interactive des biens immobiliers avec données GPS précises pour chaque propriété."
+    },
+    {
+      icon: <BarChart3 className="h-8 w-8 text-primary" />,
+      title: "Analyses de Marché",
+      description: "Données en temps réel sur les tendances du marché immobilier local avec analyses prédictives."
+    },
+    {
+      icon: <Users className="h-8 w-8 text-primary" />,
+      title: "Réseau Communautaire",
+      description: "Plateforme collaborative permettant aux utilisateurs de partager et valider les informations immobilières."
+    },
+    {
+      icon: <Shield className="h-8 w-8 text-primary" />,
+      title: "Données Sécurisées",
+      description: "Protection avancée des données avec cryptage et sauvegarde automatique des informations collectées."
     }
-  }, [searchResult]);
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    console.log('🔍 Myazi - Recherche lancée pour:', searchQuery);
-    await searchParcel(searchQuery);
-    console.log('✅ Myazi - Recherche terminée, résultat:', searchResult ? 'TROUVÉ' : 'NULL/UNDEFINED');
-  };
-
-  const handleContributeClick = (serviceId: string, missingFieldKeys: string[]) => {
-    console.log('🔧 Myazi - Contribution demandée:', { serviceId, missingFieldKeys });
-    
-    setContributionUnlockedFields(missingFieldKeys);
-    setContributionParcel(searchQuery);
-    
-    // Mapper le serviceId de la BDD vers l'onglet du formulaire CCC
-    const tabMapping: Record<string, string> = {
-      'information': 'general',           // ✅ Mapping depuis la BDD
-      'location_history': 'location',     // ✅ Mapping depuis la BDD
-      'history': 'history',               // ✅ Mapping depuis la BDD
-      'obligations': 'obligations'        // ✅ Mapping depuis la BDD
-    };
-    const targetTab = tabMapping[serviceId] || 'general';
-    console.log('🎯 Myazi - Onglet cible:', targetTab, '| Champs déverrouillés:', missingFieldKeys);
-    
-    setContributionTargetTab(targetTab);
-    setShowContribution(true);
-  };
+  ];
 
   return (
     <div className="min-h-screen">
       <Navigation />
-      <main className="pt-20 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Section de recherche */}
-          <Card className="p-6 mb-8">
-            <h2 className="text-2xl font-bold mb-4">Recherche Cadastrale</h2>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Entrez le numéro de parcelle (ex: SU/2024/001/TEST)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-              <Button onClick={handleSearch} disabled={loading || !searchQuery.trim()}>
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                Rechercher
+      <main className="pt-16 pb-8">
+        <div className="max-w-4xl mx-auto px-3 sm:px-4">
+          {/* Hero Section */}
+          <div className="text-center mb-8">
+            <Smartphone className="h-10 w-10 text-primary mx-auto mb-3" />
+            <h1 className="text-2xl sm:text-3xl font-bold mb-2">Myazi Immobilier</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mb-6 px-2">
+              Collecte de données immobilières pour analyses BIC
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2 justify-center max-w-sm mx-auto">
+              <Button size="sm" className="flex items-center space-x-1 text-xs">
+                <Download className="h-3 w-3" />
+                <span>Android</span>
+              </Button>
+              <Button variant="outline" size="sm" className="flex items-center space-x-1 text-xs">
+                <Download className="h-3 w-3" />
+                <span>iOS</span>
               </Button>
             </div>
-            {error && (
-              <p className="text-sm text-destructive mt-2">{error}</p>
-            )}
-          </Card>
+          </div>
 
-          {/* Afficher le catalogue avec les résultats si disponibles */}
-          {searchResult ? (
-            <CadastralServicesCatalog 
-              searchResult={searchResult}
-              onContributeClick={handleContributeClick}
-            />
-          ) : (
-            <CadastralServicesCatalog />
-          )}
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+            {features.map((feature, index) => (
+              <Card key={index} className="p-3">
+                <div className="flex items-start space-x-2">
+                  <div className="mt-0.5">
+                    {React.cloneElement(feature.icon, { className: "h-5 w-5 text-primary" })}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold mb-1">{feature.title}</h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          {/* How it Works */}
+          <Card className="bg-secondary/20 p-4">
+            <h2 className="text-lg font-semibold text-center mb-4">Processus</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="text-center">
+                <div className="bg-primary/15 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                  <span className="text-sm font-bold text-primary">1</span>
+                </div>
+                <h3 className="text-sm font-medium mb-1">Téléchargez</h3>
+                <p className="text-xs text-muted-foreground">Installez l'app mobile</p>
+              </div>
+              <div className="text-center">
+                <div className="bg-primary/15 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                  <span className="text-sm font-bold text-primary">2</span>
+                </div>
+                <h3 className="text-sm font-medium mb-1">Collectez</h3>
+                <p className="text-xs text-muted-foreground">Photos & géolocalisation</p>
+              </div>
+              <div className="text-center">
+                <div className="bg-primary/15 rounded-full w-8 h-8 flex items-center justify-center mx-auto mb-2">
+                  <span className="text-sm font-bold text-primary">3</span>
+                </div>
+                <h3 className="text-sm font-medium mb-1">Analysez</h3>
+                <p className="text-xs text-muted-foreground">Rapports BIC détaillés</p>
+              </div>
+            </div>
+          </Card>
         </div>
       </main>
-
-      {/* Dialog des résultats */}
-      {searchResult && (
-        <CadastralResultsDialog
-          result={searchResult}
-          isOpen={showResults}
-          onClose={() => setShowResults(false)}
-          onContribute={(serviceId, fieldKey) => {
-            // Convertir un seul fieldKey en array pour handleContributeClick
-            handleContributeClick(serviceId, [fieldKey]);
-          }}
-        />
-      )}
-
-      {/* Dialog de contribution */}
-      <CadastralContributionDialog
-        open={showContribution}
-        onOpenChange={(open) => {
-          setShowContribution(open);
-          if (!open) {
-            // Réinitialiser les champs à la fermeture
-            setContributionUnlockedFields([]);
-            setContributionTargetTab('general');
-          }
-        }}
-        parcelNumber={contributionParcel}
-        unlockedFields={contributionUnlockedFields.length > 0 ? contributionUnlockedFields : undefined}
-        targetTab={contributionTargetTab}
-      />
-
       <Footer />
     </div>
   );

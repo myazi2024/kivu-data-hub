@@ -26,7 +26,6 @@ import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
 import AboutCCC from "./pages/AboutCCC";
 import AboutDiscountCodes from "./pages/AboutDiscountCodes";
-import CadastralServices from "./pages/CadastralServices";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -51,7 +50,6 @@ const App = () => (
               <Route path="/reseller" element={<ResellerDashboard />} />
               <Route path="/about" element={<About />} />
               <Route path="/services" element={<Services />} />
-              <Route path="/services-cadastraux" element={<CadastralServices />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/partnership" element={<Partnership />} />
               <Route path="/legal" element={<Legal />} />

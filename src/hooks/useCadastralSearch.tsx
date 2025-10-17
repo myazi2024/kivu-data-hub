@@ -30,7 +30,6 @@ export interface CadastralParcel {
   collectivite: string | null;
   groupement: string | null;
   village: string | null;
-  circonscription_fonciere: string | null;
   // Nouveaux champs de bornage
   nombre_bornes: number;
   surface_calculee_bornes: number | null;

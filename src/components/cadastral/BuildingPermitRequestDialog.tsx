@@ -13,8 +13,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Building2, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
-import { useBuildingPermitRequest } from '@/hooks/useBuildingPermitRequest';
-import { usePayment } from '@/hooks/usePayment';
 
 interface BuildingPermitRequestDialogProps {
   open: boolean;
@@ -31,8 +29,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 }) => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
-  const { submitRequest, loading: submitLoading } = useBuildingPermitRequest();
-  const { createPayment } = usePayment();
   const [activeStep, setActiveStep] = useState<'form' | 'payment' | 'success'>('form');
   const [currentTab, setCurrentTab] = useState<'construction' | 'applicant'>('construction');
   const [requestType, setRequestType] = useState<'new' | 'regularization'>(
@@ -100,32 +96,13 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setLoading(true);
     
     try {
-      const success = await submitRequest({
-        parcelNumber,
-        requestType,
-        constructionType: formData.constructionType,
-        constructionNature: formData.constructionNature,
-        declaredUsage: formData.declaredUsage,
-        plannedArea: formData.plannedArea,
-        numberOfFloors: formData.numberOfFloors,
-        estimatedCost: formData.estimatedCost,
-        applicantName: formData.applicantName,
-        applicantPhone: formData.applicantPhone,
-        applicantEmail: formData.applicantEmail,
-        applicantAddress: formData.applicantAddress,
-        projectDescription: formData.projectDescription,
-        startDate: formData.startDate,
-        estimatedDuration: formData.estimatedDuration,
-        constructionDate: formData.constructionDate,
-        currentState: formData.currentState,
-        complianceIssues: formData.complianceIssues
+      toast({
+        title: "Demande enregistrée",
+        description: "Votre demande de permis a été enregistrée avec succès",
       });
-
-      if (success) {
-        setActiveStep('success');
-      }
+      
+      setActiveStep('success');
     } catch (error) {
-      console.error('Erreur soumission:', error);
       toast({
         title: "Erreur",
         description: "Une erreur est survenue lors de l'enregistrement",
@@ -246,7 +223,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       <MobileMoneyPayment
         item={cartItem}
         currency="USD"
-        onPaymentSuccess={() => handlePaymentSuccess()}
+        onPaymentSuccess={handlePaymentSuccess}
       />
 
       <Button
@@ -283,130 +260,128 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   }
 
   const FormContent = () => (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto overscroll-contain px-3 sm:px-4 space-y-3 sm:space-y-4">
-        {/* Type de demande */}
-        <div className="space-y-2 pt-3 sm:pt-4">
-          <Label className="text-xs sm:text-sm font-semibold">Type de demande</Label>
-          <RadioGroup value={requestType} onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} className="space-y-2">
-            <div className="flex items-center space-x-3 p-3 rounded-xl border-2 bg-card hover:bg-muted/50 transition-all duration-200 cursor-pointer">
-              <RadioGroupItem value="new" id="new" />
-              <Label htmlFor="new" className="flex-1 cursor-pointer">
-                <div className="font-medium text-sm">Nouveau permis</div>
-                <div className="text-xs text-muted-foreground">Construction à venir</div>
-              </Label>
-            </div>
-            <div className="flex items-center space-x-3 p-3 rounded-xl border-2 bg-card hover:bg-muted/50 transition-all duration-200 cursor-pointer">
-              <RadioGroupItem value="regularization" id="regularization" />
-              <Label htmlFor="regularization" className="flex-1 cursor-pointer">
-                <div className="font-medium text-sm">Régularisation</div>
-                <div className="text-xs text-muted-foreground">Construction existante</div>
-              </Label>
-            </div>
-          </RadioGroup>
+    <form onSubmit={handleSubmit} className="space-y-4 p-4">
+      {/* Type de demande */}
+      <div className="space-y-3">
+        <Label className="text-sm font-semibold">Type de demande</Label>
+        <RadioGroup value={requestType} onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} className="space-y-2">
+          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+            <RadioGroupItem value="new" id="new" />
+            <Label htmlFor="new" className="flex-1 cursor-pointer">
+              <div className="font-medium text-sm">Nouveau permis</div>
+              <div className="text-xs text-muted-foreground">Construction à venir</div>
+            </Label>
+          </div>
+          <div className="flex items-center space-x-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+            <RadioGroupItem value="regularization" id="regularization" />
+            <Label htmlFor="regularization" className="flex-1 cursor-pointer">
+              <div className="font-medium text-sm">Régularisation</div>
+              <div className="text-xs text-muted-foreground">Construction existante</div>
+            </Label>
+          </div>
+        </RadioGroup>
+        
+        {requestType === 'regularization' && (
+          <div className="p-3 bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-900 rounded-lg flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-orange-700 dark:text-orange-300">
+              Requis pour les constructions sans autorisation préalable.
+            </p>
+          </div>
+        )}
+      </div>
+
+      <Separator />
+
+      {/* Navigation par onglets */}
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant={currentTab === 'construction' ? 'default' : 'outline'}
+          onClick={() => setCurrentTab('construction')}
+          size="sm"
+          className="flex-1"
+        >
+          Construction
+        </Button>
+        <Button
+          type="button"
+          variant={currentTab === 'applicant' ? 'default' : 'outline'}
+          onClick={() => setCurrentTab('applicant')}
+          size="sm"
+          className="flex-1"
+        >
+          Demandeur
+        </Button>
+      </div>
+
+      {/* Onglet Construction */}
+      <div className={currentTab !== 'construction' ? 'hidden' : 'space-y-3'}>
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Type de construction *</Label>
+          <Select value={formData.constructionType} onValueChange={(v) => handleInputChange('constructionType', v)}>
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Sélectionner" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Résidentielle">Résidentielle</SelectItem>
+              <SelectItem value="Commerciale">Commerciale</SelectItem>
+              <SelectItem value="Industrielle">Industrielle</SelectItem>
+              <SelectItem value="Agricole">Agricole</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        <Separator />
-
-        {/* Navigation par onglets */}
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant={currentTab === 'construction' ? 'default' : 'outline'}
-            onClick={() => setCurrentTab('construction')}
-            size="sm"
-            className="flex-1 rounded-full"
-          >
-            Construction
-          </Button>
-          <Button
-            type="button"
-            variant={currentTab === 'applicant' ? 'default' : 'outline'}
-            onClick={() => setCurrentTab('applicant')}
-            size="sm"
-            className="flex-1 rounded-full"
-          >
-            Demandeur
-          </Button>
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Nature de construction *</Label>
+          <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Sélectionner" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Durable">Durable</SelectItem>
+              <SelectItem value="Semi-durable">Semi-durable</SelectItem>
+              <SelectItem value="Précaire">Précaire</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Onglet Construction */}
-        <div className={currentTab !== 'construction' ? 'hidden' : 'space-y-3'}>
-          <div className="space-y-2">
-            <Label className="text-xs font-medium flex items-center gap-1">
-              Type de construction <span className="text-destructive">*</span>
-            </Label>
-            <Select value={formData.constructionType} onValueChange={(v) => handleInputChange('constructionType', v)}>
-              <SelectTrigger className="h-11 rounded-xl">
-                <SelectValue placeholder="Sélectionner" />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="z-[100]">
-                <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-                <SelectItem value="Commerciale">Commerciale</SelectItem>
-                <SelectItem value="Industrielle">Industrielle</SelectItem>
-                <SelectItem value="Agricole">Agricole</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs font-medium flex items-center gap-1">
-              Nature de construction <span className="text-destructive">*</span>
-            </Label>
-            <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
-              <SelectTrigger className="h-11 rounded-xl">
-                <SelectValue placeholder="Sélectionner" />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="z-[100]">
-                <SelectItem value="Durable">Durable</SelectItem>
-                <SelectItem value="Semi-durable">Semi-durable</SelectItem>
-                <SelectItem value="Précaire">Précaire</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label className="text-xs font-medium flex items-center gap-1">
-              Usage déclaré <span className="text-destructive">*</span>
-            </Label>
-            <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
-              <SelectTrigger className="h-11 rounded-xl">
-                <SelectValue placeholder="Sélectionner" />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={4} className="z-[100]">
-                <SelectItem value="Habitation">Habitation</SelectItem>
-                <SelectItem value="Commerce">Commerce</SelectItem>
-                <SelectItem value="Bureau">Bureau</SelectItem>
-                <SelectItem value="Entrepôt">Entrepôt</SelectItem>
-                <SelectItem value="Usage mixte">Usage mixte</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="space-y-2">
+          <Label className="text-xs font-medium">Usage déclaré *</Label>
+          <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Sélectionner" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="Habitation">Habitation</SelectItem>
+              <SelectItem value="Commerce">Commerce</SelectItem>
+              <SelectItem value="Bureau">Bureau</SelectItem>
+              <SelectItem value="Entrepôt">Entrepôt</SelectItem>
+              <SelectItem value="Usage mixte">Usage mixte</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-2">
-            <Label className="text-xs font-medium flex items-center gap-1">
-              Surface (m²) <span className="text-destructive">*</span>
-            </Label>
+            <Label className="text-xs font-medium">Surface (m²) *</Label>
             <Input
               type="number"
               placeholder="150"
               value={formData.plannedArea}
               onChange={(e) => handleInputChange('plannedArea', e.target.value)}
-              className="h-11 rounded-xl"
+              className="h-10"
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs font-medium flex items-center gap-1">
-              Étages <span className="text-destructive">*</span>
-            </Label>
+            <Label className="text-xs font-medium">Étages *</Label>
             <Input
               type="number"
               min="1"
               placeholder="2"
               value={formData.numberOfFloors}
               onChange={(e) => handleInputChange('numberOfFloors', e.target.value)}
-              className="h-11 rounded-xl"
+              className="h-10"
             />
           </div>
         </div>
@@ -418,20 +393,18 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             placeholder="50000"
             value={formData.estimatedCost}
             onChange={(e) => handleInputChange('estimatedCost', e.target.value)}
-            className="h-11 rounded-xl"
+            className="h-10"
           />
         </div>
 
         <div className="space-y-2">
-          <Label className="text-xs font-medium flex items-center gap-1">
-            Description du projet <span className="text-destructive">*</span>
-          </Label>
+          <Label className="text-xs font-medium">Description du projet *</Label>
           <Textarea
             placeholder="Décrivez brièvement votre projet..."
             value={formData.projectDescription}
             onChange={(e) => handleInputChange('projectDescription', e.target.value)}
             rows={3}
-            className="resize-none text-sm rounded-xl"
+            className="resize-none text-sm"
           />
         </div>
 
@@ -476,7 +449,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                 <SelectTrigger className="h-10">
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
-                <SelectContent position="popper" sideOffset={4} className="z-[100]">
+                <SelectContent>
                   <SelectItem value="En cours">En cours</SelectItem>
                   <SelectItem value="Terminée">Terminée</SelectItem>
                   <SelectItem value="Partiellement terminée">Partiellement terminée</SelectItem>
@@ -495,10 +468,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             </div>
           </>
         )}
-        </div>
+      </div>
 
-        {/* Onglet Demandeur */}
-        <div className={currentTab !== 'applicant' ? 'hidden' : 'space-y-3'}>
+      {/* Onglet Demandeur */}
+      <div className={currentTab !== 'applicant' ? 'hidden' : 'space-y-3'}>
         <div className="space-y-2">
           <Label className="text-xs font-medium">Nom complet *</Label>
           <Input
@@ -542,18 +515,16 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             className="resize-none text-sm"
           />
         </div>
-        </div>
-
-        <Separator className="my-4" />
       </div>
 
-      {/* Boutons d'action fixes en bas */}
-      <div className="flex gap-2 sm:gap-3 p-3 sm:p-4 bg-background border-t shadow-lg">
+      <Separator />
+
+      <div className="flex gap-3 pt-2">
         <Button
           type="button"
           variant="outline"
           onClick={handleClose}
-          className="flex-1 rounded-xl"
+          className="flex-1"
           size="sm"
         >
           Annuler
@@ -561,10 +532,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         <Button
           type="submit"
           disabled={!isFormValid()}
-          className="flex-1 rounded-xl"
+          className="flex-1"
           size="sm"
         >
-          Continuer
+          Paiement
         </Button>
       </div>
     </form>
@@ -578,8 +549,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   return (
     <Container open={open} onOpenChange={handleClose}>
-      <Content className={isMobile ? "h-[92vh] flex flex-col" : "sm:max-w-lg h-[85vh] flex flex-col"}>
-        <Header className={isMobile ? "px-4 flex-shrink-0" : "flex-shrink-0"}>
+      <Content className={isMobile ? "max-h-[90vh]" : "sm:max-w-lg max-h-[90vh] overflow-y-auto"}>
+        <Header className={isMobile ? "px-4" : undefined}>
           <Title className="flex items-center gap-2 text-base">
             <Building2 className="h-5 w-5 text-primary" />
             Demande de permis
