@@ -219,6 +219,115 @@ export const validateCadastralSystem = async (): Promise<ValidationResult[]> => 
     });
   }
 
+  // 5. Validation du système de notifications
+  try {
+    // Vérifier l'intégrité des notifications
+    const { data: notificationStats, error: notifError } = await supabase
+      .from('notifications')
+      .select('type, is_read, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (notifError) throw notifError;
+
+    const stats = {
+      total: notificationStats?.length || 0,
+      unread: notificationStats?.filter(n => !n.is_read).length || 0,
+      by_type: {
+        info: notificationStats?.filter(n => n.type === 'info').length || 0,
+        success: notificationStats?.filter(n => n.type === 'success').length || 0,
+        warning: notificationStats?.filter(n => n.type === 'warning').length || 0,
+        error: notificationStats?.filter(n => n.type === 'error').length || 0,
+      }
+    };
+
+    // Vérifier les notifications orphelines (utilisateurs supprimés)
+    const { data: orphanNotifications, error: orphanError } = await supabase
+      .from('notifications')
+      .select(`
+        id,
+        user_id,
+        profiles!notifications_user_id_fkey (
+          user_id
+        )
+      `)
+      .is('profiles.user_id', null)
+      .limit(10);
+
+    if (orphanError) throw orphanError;
+
+    if (orphanNotifications && orphanNotifications.length > 0) {
+      results.push({
+        indicator: 'Notifications système',
+        status: 'warning',
+        message: `${orphanNotifications.length} notification(s) orpheline(s) détectée(s)`,
+        details: { stats, orphanNotifications }
+      });
+    } else {
+      results.push({
+        indicator: 'Notifications système',
+        status: 'success',
+        message: `${stats.total} notifications, ${stats.unread} non lues, système cohérent`,
+        details: { stats }
+      });
+    }
+  } catch (error: any) {
+    results.push({
+      indicator: 'Notifications système',
+      status: 'error',
+      message: `Erreur de validation: ${error.message}`,
+    });
+  }
+
+  // 6. Validation des alerts/toasts cohérence
+  try {
+    // Vérifier la cohérence des notifications système avec les événements cadastraux
+    const { data: recentContributions, error: contribError } = await supabase
+      .from('cadastral_contributions')
+      .select('id, user_id, status, created_at')
+      .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+      .order('created_at', { ascending: false });
+
+    if (contribError) throw contribError;
+
+    const approvedContribs = recentContributions?.filter(c => c.status === 'approved') || [];
+    
+    // Vérifier que chaque contribution approuvée a déclenché une notification
+    let missingNotifications = 0;
+    for (const contrib of approvedContribs) {
+      const { data: notif } = await supabase
+        .from('notifications')
+        .select('id')
+        .eq('user_id', contrib.user_id)
+        .gte('created_at', contrib.created_at)
+        .maybeSingle();
+      
+      if (!notif) missingNotifications++;
+    }
+
+    if (missingNotifications > 0) {
+      results.push({
+        indicator: 'Cohérence Notifications/Événements',
+        status: 'warning',
+        message: `${missingNotifications} événement(s) sans notification associée`,
+        details: { approvedContribs: approvedContribs.length, missingNotifications }
+      });
+    } else {
+      results.push({
+        indicator: 'Cohérence Notifications/Événements',
+        status: 'success',
+        message: 'Toutes les contributions approuvées ont déclenché des notifications',
+        details: { verifiedContributions: approvedContribs.length }
+      });
+    }
+  } catch (error: any) {
+    results.push({
+      indicator: 'Cohérence Notifications/Événements',
+      status: 'error',
+      message: `Erreur de validation: ${error.message}`,
+    });
+  }
+
   return results;
 };
 

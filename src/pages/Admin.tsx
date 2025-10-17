@@ -19,6 +19,7 @@ import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
 import AdminCadastralServices from '@/components/admin/AdminCadastralServices';
 import AdminCCCContributions from '@/components/admin/AdminCCCContributions';
 import AdminValidation from '@/components/admin/AdminValidation';
+import { AdminNotifications } from '@/components/admin/AdminNotifications';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -171,8 +172,9 @@ const Admin = () => {
               <TabsTrigger value="territorial">Zones</TabsTrigger>
               <TabsTrigger value="services">Services</TabsTrigger>
               <TabsTrigger value="contributions">CCC</TabsTrigger>
-              <TabsTrigger value="validation">Validation</TabsTrigger>
-            </TabsList>
+            <TabsTrigger value="validation">Validation</TabsTrigger>
+            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+          </TabsList>
 
           <TabsContent value="publications">
             <AdminPublications onRefresh={fetchStats} />
@@ -212,6 +214,10 @@ const Admin = () => {
 
           <TabsContent value="validation">
             <AdminValidation />
+          </TabsContent>
+
+          <TabsContent value="notifications">
+            <AdminNotifications />
           </TabsContent>
         </Tabs>
       </div>
