@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
+import { useCadastralServices } from '@/hooks/useCadastralServices';
 
 export interface ServiceStats {
   serviceId: string;
@@ -9,6 +9,7 @@ export interface ServiceStats {
 }
 
 export const useCadastralStats = () => {
+  const { services } = useCadastralServices();
   const [stats, setStats] = useState<ServiceStats[]>([]);
   const [totalQueries, setTotalQueries] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -49,8 +50,8 @@ export const useCadastralStats = () => {
         });
       });
 
-      // Créer les statistiques avec les noms des services
-      const statsArray = CADASTRAL_SERVICES.map(service => ({
+      // Créer les statistiques avec les noms des services depuis la DB
+      const statsArray = services.map(service => ({
         serviceId: service.id,
         serviceName: service.name,
         count: serviceCount[service.id] || 0
@@ -61,7 +62,7 @@ export const useCadastralStats = () => {
     } catch (error) {
       console.error('Erreur lors du chargement des statistiques:', error);
       // Initialiser avec des valeurs par défaut en cas d'erreur
-      setStats(CADASTRAL_SERVICES.map(service => ({
+      setStats(services.map(service => ({
         serviceId: service.id,
         serviceName: service.name,
         count: 0
@@ -73,7 +74,9 @@ export const useCadastralStats = () => {
   };
 
   useEffect(() => {
-    fetchStats();
+    if (services.length > 0) {
+      fetchStats();
+    }
 
     // Écouter les événements de paiement pour actualiser les statistiques
     const handlePaymentCompleted = () => {
@@ -105,7 +108,7 @@ export const useCadastralStats = () => {
       window.removeEventListener('cadastralNewPayment', handleNewPayment);
       clearInterval(interval);
     };
-  }, []);
+  }, [services]);
 
   return {
     stats,

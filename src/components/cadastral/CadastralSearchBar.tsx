@@ -7,15 +7,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
+import { useSearchConfig } from '@/hooks/useSearchConfig';
 import CadastralResultsDialog from './CadastralResultsDialog';
 import CadastralContributionDialog from './CadastralContributionDialog';
-
-const ANIMATED_TEXTS = [
-  "SU/2130/KIN",
-  "SU/0456/GOM",
-  "SR/01/0987/BEN",
-  "SR/0321/MAS"
-];
 
 const FIXED_TEXT = "Ex: ";
 
@@ -38,6 +32,17 @@ const CadastralSearchBar = () => {
     validateParcelNumber
   } = useCadastralSearch();
 
+  const { 
+    getAnimatedExamples, 
+    getFormatConfig, 
+    getErrorMessages 
+  } = useSearchConfig();
+
+  const animatedTexts = getAnimatedExamples();
+  const formatUrbain = getFormatConfig('urbain');
+  const formatRural = getFormatConfig('rural');
+  const errorMessages = getErrorMessages();
+
   const [displayedText, setDisplayedText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
@@ -50,7 +55,7 @@ const CadastralSearchBar = () => {
       return;
     }
     
-    const currentText = ANIMATED_TEXTS[currentTextIndex];
+    const currentText = animatedTexts[currentTextIndex];
     let charIndex = 0;
     
     // Phase d'écriture
@@ -76,7 +81,7 @@ const CadastralSearchBar = () => {
                 clearInterval(eraseInterval);
                 // Passer au texte suivant après un court délai
                 setTimeout(() => {
-                  setCurrentTextIndex((prev) => (prev + 1) % ANIMATED_TEXTS.length);
+                  setCurrentTextIndex((prev) => (prev + 1) % animatedTexts.length);
                 }, 1500);
                 return '';
               }
@@ -87,7 +92,7 @@ const CadastralSearchBar = () => {
     }, 120);
 
     return () => clearInterval(typeInterval);
-  }, [currentTextIndex, searchQuery, isFocused]);
+  }, [currentTextIndex, searchQuery, isFocused, animatedTexts]);
 
   // Animation du curseur
   useEffect(() => {
@@ -163,58 +168,63 @@ const CadastralSearchBar = () => {
                   </div>
                   
                   <div className="space-y-3">
-                    {/* Section Urbaine */}
-                    <div className="space-y-2">
-                      <div className="flex items-baseline gap-2">
-                        <code className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">SU</code>
-                        <span className="text-xs text-muted-foreground">Section Urbaine</span>
-                      </div>
-                      <div className="ml-1 space-y-1.5 text-xs">
-                        <div className="font-mono text-foreground/80">
-                          SU/[Section]/[Parcelle]/[Code]
+                    {/* Section Urbaine - Dynamique */}
+                    {formatUrbain && (
+                      <div className="space-y-2">
+                        <div className="flex items-baseline gap-2">
+                          <code className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">
+                            {formatUrbain.code}
+                          </code>
+                          <span className="text-xs text-muted-foreground">{formatUrbain.label}</span>
                         </div>
-                        <div className="space-y-1 text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-primary/40"></span>
-                            <code className="text-xs">SU/2130/KIN</code>
+                        <div className="ml-1 space-y-1.5 text-xs">
+                          <div className="font-mono text-foreground/80">
+                            {formatUrbain.format}
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-primary/40"></span>
-                            <code className="text-xs">SU/0456/GOM</code>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-primary/40"></span>
-                            <code className="text-xs">SU/2130/1/KIN</code>
-                            <span className="text-[10px] opacity-60">(Morcellement)</span>
+                          <div className="space-y-1 text-muted-foreground">
+                            {formatUrbain.examples?.map((ex: any, idx: number) => (
+                              <div key={idx} className="flex items-center gap-1.5">
+                                <span className="w-1 h-1 rounded-full bg-primary/40"></span>
+                                <code className="text-xs">{ex.code}</code>
+                                {ex.note && (
+                                  <span className="text-[10px] opacity-60">({ex.note})</span>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
-                    </div>
+                    )}
 
                     <Separator />
 
-                    {/* Section Rurale */}
-                    <div className="space-y-2">
-                      <div className="flex items-baseline gap-2">
-                        <code className="px-2 py-0.5 bg-accent/50 text-accent-foreground rounded text-xs font-semibold">SR</code>
-                        <span className="text-xs text-muted-foreground">Section Rurale</span>
-                      </div>
-                      <div className="ml-1 space-y-1.5 text-xs">
-                        <div className="font-mono text-foreground/80">
-                          SR/[Section]/[Parcelle]/[Code]
+                    {/* Section Rurale - Dynamique */}
+                    {formatRural && (
+                      <div className="space-y-2">
+                        <div className="flex items-baseline gap-2">
+                          <code className="px-2 py-0.5 bg-accent/50 text-accent-foreground rounded text-xs font-semibold">
+                            {formatRural.code}
+                          </code>
+                          <span className="text-xs text-muted-foreground">{formatRural.label}</span>
                         </div>
-                        <div className="space-y-1 text-muted-foreground">
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-accent/60"></span>
-                            <code className="text-xs">SR/01/0987/BEN</code>
+                        <div className="ml-1 space-y-1.5 text-xs">
+                          <div className="font-mono text-foreground/80">
+                            {formatRural.format}
                           </div>
-                          <div className="flex items-center gap-1.5">
-                            <span className="w-1 h-1 rounded-full bg-accent/60"></span>
-                            <code className="text-xs">SR/0321/MAS</code>
+                          <div className="space-y-1 text-muted-foreground">
+                            {formatRural.examples?.map((ex: any, idx: number) => (
+                              <div key={idx} className="flex items-center gap-1.5">
+                                <span className="w-1 h-1 rounded-full bg-accent/60"></span>
+                                <code className="text-xs">{ex.code}</code>
+                                {ex.note && (
+                                  <span className="text-[10px] opacity-60">({ex.note})</span>
+                                )}
+                              </div>
+                            ))}
                           </div>
                         </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </PopoverContent>
@@ -300,11 +310,11 @@ const CadastralSearchBar = () => {
                 <p className="text-sm text-destructive">{error}</p>
               </div>
               
-              {error.includes('Aucune parcelle trouvée') && (
+              {error.includes(errorMessages.not_found) && (
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 animate-fade-in shadow-sm hover:shadow-md transition-all duration-300">
                   <p className="text-sm text-foreground leading-relaxed">
-                    Il est possible qu'il y ait une erreur de saisie ou que cette parcelle ne soit pas encore enregistrée dans notre base de données ou n'a pas encore été attribué un numéro parcellaire.
-                    <strong className="block mt-2">Vérifiez manuellement dans notre base des données les informations à votre disposition pour s'en assurer.</strong>
+                    {errorMessages.not_found_help}
+                    <strong className="block mt-2">{errorMessages.verification_prompt}</strong>
                   </p>
                   
                   <div className="flex items-start gap-3 py-2">

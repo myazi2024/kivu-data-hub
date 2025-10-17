@@ -162,7 +162,7 @@ const Admin = () => {
 
         {/* Main Content Tabs */}
           <Tabs defaultValue="publications" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-10">
+            <TabsList className="grid w-full grid-cols-11">
               <TabsTrigger value="publications">Publications</TabsTrigger>
               <TabsTrigger value="payments">Paiements</TabsTrigger>
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
@@ -172,8 +172,15 @@ const Admin = () => {
               <TabsTrigger value="territorial">Zones</TabsTrigger>
               <TabsTrigger value="services">Services</TabsTrigger>
               <TabsTrigger value="contributions">CCC</TabsTrigger>
-            <TabsTrigger value="validation">Validation</TabsTrigger>
-            <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <TabsTrigger value="validation" className="flex items-center gap-1">
+                <Shield className="h-4 w-4" />
+                Validation
+              </TabsTrigger>
+              <TabsTrigger value="notifications">Notifications</TabsTrigger>
+              <TabsTrigger value="search-config" className="flex items-center gap-1">
+                <Search className="h-4 w-4" />
+                Recherche
+              </TabsTrigger>
           </TabsList>
 
           <TabsContent value="publications">
@@ -218,6 +225,10 @@ const Admin = () => {
 
           <TabsContent value="notifications">
             <AdminNotifications />
+          </TabsContent>
+
+          <TabsContent value="search-config">
+            <AdminSearchConfig />
           </TabsContent>
         </Tabs>
       </div>
