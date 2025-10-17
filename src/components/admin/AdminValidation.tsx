@@ -6,6 +6,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateCadastralSystem, ValidationResult } from '@/utils/cadastralValidation';
 import { testCatalogReactivity, printCatalogTestResults, CatalogTest } from '@/utils/testCatalogReactivity';
 import { validateSearchBarReactivity } from '@/utils/testSearchBarReactivity';
+import { validateResultsReactivity, printResultsValidation, ResultsValidationResult } from '@/utils/testResultsReactivity';
 import { CheckCircle, XCircle, AlertTriangle, Play, Loader2, Database, Search } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -13,12 +14,15 @@ const AdminValidation: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [catalogTestLoading, setCatalogTestLoading] = useState(false);
   const [searchBarTestLoading, setSearchBarTestLoading] = useState(false);
+  const [resultsTestLoading, setResultsTestLoading] = useState(false);
   const [results, setResults] = useState<ValidationResult[]>([]);
   const [catalogTests, setCatalogTests] = useState<CatalogTest[]>([]);
   const [searchBarTests, setSearchBarTests] = useState<any[]>([]);
+  const [resultsTests, setResultsTests] = useState<ResultsValidationResult[]>([]);
   const [lastRun, setLastRun] = useState<Date | null>(null);
   const [lastCatalogTest, setLastCatalogTest] = useState<Date | null>(null);
   const [lastSearchBarTest, setLastSearchBarTest] = useState<Date | null>(null);
+  const [lastResultsTest, setLastResultsTest] = useState<Date | null>(null);
 
   const runValidation = async () => {
     setLoading(true);
@@ -96,6 +100,32 @@ const AdminValidation: React.FC = () => {
     }
   };
 
+  const runResultsTest = async () => {
+    setResultsTestLoading(true);
+    try {
+      const testResults = await validateResultsReactivity();
+      setResultsTests(testResults);
+      setLastResultsTest(new Date());
+      printResultsValidation(testResults);
+
+      const hasErrors = testResults.some(r => r.status === 'error');
+      const hasWarnings = testResults.some(r => r.status === 'warning');
+
+      if (hasErrors) {
+        toast.error('Tests résultats cadastraux : des erreurs détectées');
+      } else if (hasWarnings) {
+        toast.warning('Tests résultats cadastraux : des avertissements');
+      } else {
+        toast.success('✅ Tests résultats cadastraux : tous les tests passés avec succès');
+      }
+    } catch (error: any) {
+      console.error('Erreur lors des tests résultats:', error);
+      toast.error('Erreur lors des tests résultats');
+    } finally {
+      setResultsTestLoading(false);
+    }
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'success':
@@ -141,6 +171,13 @@ const AdminValidation: React.FC = () => {
     success: searchBarTests.filter(r => r.status === 'success').length,
     warnings: searchBarTests.filter(r => r.status === 'warning').length,
     errors: searchBarTests.filter(r => r.status === 'error').length,
+  };
+
+  const resultsSummary = {
+    total: resultsTests.length,
+    success: resultsTests.filter(r => r.status === 'success').length,
+    warnings: resultsTests.filter(r => r.status === 'warning').length,
+    errors: resultsTests.filter(r => r.status === 'error').length,
   };
 
   return (
@@ -202,6 +239,23 @@ const AdminValidation: React.FC = () => {
                   </>
                 )}
               </Button>
+              <Button 
+                onClick={runResultsTest} 
+                disabled={resultsTestLoading}
+                variant="outline"
+              >
+                {resultsTestLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Test...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                    Test Résultats
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -242,6 +296,20 @@ const AdminValidation: React.FC = () => {
             {searchBarSummary.total > 0 && (
               <span className="ml-2">
                 - {searchBarSummary.success}/{searchBarSummary.total} réussis, {searchBarSummary.warnings} avertissements, {searchBarSummary.errors} erreurs
+              </span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {lastResultsTest && (
+        <Alert>
+          <CheckCircle className="h-4 w-4 mr-2 inline" />
+          <AlertDescription>
+            Dernier test résultats: {lastResultsTest.toLocaleString('fr-FR')}
+            {resultsSummary.total > 0 && (
+              <span className="ml-2">
+                - {resultsSummary.success}/{resultsSummary.total} réussis, {resultsSummary.warnings} avertissements, {resultsSummary.errors} erreurs
               </span>
             )}
           </AlertDescription>
@@ -307,6 +375,46 @@ const AdminValidation: React.FC = () => {
                     <div className="flex items-center gap-2">
                       {getStatusIcon(test.status)}
                       <Badge variant="outline">{test.category}</Badge>
+                    </div>
+                    {getStatusBadge(test.status)}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{test.message}</p>
+                  {test.details && test.status !== 'success' && (
+                    <details className="text-sm">
+                      <summary className="cursor-pointer text-primary hover:underline">
+                        Voir les détails
+                      </summary>
+                      <pre className="mt-2 p-2 bg-secondary rounded text-xs overflow-x-auto">
+                        {JSON.stringify(test.details, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {resultsTests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5" />
+              Tests Configuration Résultats Cadastraux
+            </CardTitle>
+            <CardDescription>
+              Vérification des modules, affichage et cohérence
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {resultsTests.map((test, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(test.status)}
+                      <h4 className="font-semibold">{test.test}</h4>
                     </div>
                     {getStatusBadge(test.status)}
                   </div>

@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Users, FileText, CreditCard, BarChart, Search, Shield } from 'lucide-react';
+import { Plus, Users, FileText, CreditCard, BarChart, Search, Shield, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
 import AdminPublications from '@/components/admin/AdminPublications';
 import AdminPayments from '@/components/admin/AdminPayments';
@@ -19,8 +19,10 @@ import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
 import AdminCadastralServices from '@/components/admin/AdminCadastralServices';
 import AdminCCCContributions from '@/components/admin/AdminCCCContributions';
 import AdminValidation from '@/components/admin/AdminValidation';
-import { AdminNotifications } from '@/components/admin/AdminNotifications';
+import AdminNotifications from '@/components/admin/AdminNotifications';
 import AdminSearchConfig from '@/components/admin/AdminSearchConfig';
+import AdminResultsConfig from '@/components/admin/AdminResultsConfig';
+import AdminResultsConfig from '@/components/admin/AdminResultsConfig';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
