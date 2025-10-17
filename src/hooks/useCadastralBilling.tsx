@@ -3,44 +3,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
+import { CadastralService, useCadastralServices } from '@/hooks/useCadastralServices';
 
-export interface CadastralService {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-}
+// Re-export for backward compatibility
+export type { CadastralService };
 
-// Service prices will be loaded from database
-export let CADASTRAL_SERVICES: CadastralService[] = [
-  {
-    id: 'information',
-    name: 'Informations générales',
-    price: 3,
-    description: 'Identité du propriétaire actuel, superficie exacte, statut juridique de la parcelle, coordonnées géographiques et informations sur la construction (type de bâti, nature du bâti, usage déclaré, permis de construire et leur historique). Idéal pour vérifier la propriété et obtenir les données de base complètes.'
-  },
-  {
-    id: 'location_history',
-    name: 'Croquis du terrain et Historique de bornage',
-    price: 2,
-    description: 'Croquis du terrain, limites cadastrales, historique complet des opérations de bornage et modifications géométriques. Essentiel pour les projets de construction et délimitation de terrain.'
-  },
-  {
-    id: 'history',
-    name: 'Historique complet des propriétaires',
-    price: 3,
-    description: 'Chaîne complète de propriété depuis la création de la parcelle, toutes les transactions, mutations, héritages et transferts. Crucial pour vérifier la légalité des transactions passées.'
-  },
-  {
-    id: 'obligations',
-    name: 'Obligations fiscales et hypothécaires',
-    price: 15,
-    description: 'État détaillé des taxes foncières impayées, hypothèques en cours, servitudes, restrictions d\'usage et tous encumbrements juridiques. Indispensable avant tout achat immobilier.'
-  }
-];
+/**
+ * @deprecated Utilisez useCadastralServices() à la place pour avoir des données réactives
+ * Cette variable globale est maintenue uniquement pour compatibilité ascendante
+ */
+export let CADASTRAL_SERVICES: CadastralService[] = [];
 
-// Load services from database
+/**
+ * @deprecated Utilisez useCadastralServices() à la place
+ */
 export const loadCadastralServices = async () => {
+  console.warn('loadCadastralServices() est déprécié. Utilisez useCadastralServices() à la place.');
   try {
     const { data, error } = await supabase
       .from('cadastral_services_config')
@@ -61,9 +39,6 @@ export const loadCadastralServices = async () => {
     console.error('Error loading cadastral services from database:', error);
   }
 };
-
-// Initialize services on module load
-loadCadastralServices();
 
 export interface CadastralInvoice {
   id: string;
@@ -92,11 +67,16 @@ export const useCadastralBilling = () => {
   const [currentInvoice, setCurrentInvoice] = useState<CadastralInvoice | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Utiliser le hook réactif pour les services
+  const { services: catalogServices } = useCadastralServices();
 
-  // Reload services when component mounts
+  // Synchroniser la variable globale deprecated pour compatibilité
   useEffect(() => {
-    loadCadastralServices();
-  }, []);
+    if (catalogServices.length > 0) {
+      CADASTRAL_SERVICES = catalogServices;
+    }
+  }, [catalogServices]);
 
   const toggleService = (serviceId: string) => {
     setSelectedServices(prev => 
@@ -108,7 +88,7 @@ export const useCadastralBilling = () => {
 
   const getTotalAmount = () => {
     return selectedServices.reduce((total, serviceId) => {
-      const service = CADASTRAL_SERVICES.find(s => s.id === serviceId);
+      const service = catalogServices.find(s => s.id === serviceId);
       return total + (service?.price || 0);
     }, 0);
   };
@@ -319,6 +299,7 @@ export const useCadastralBilling = () => {
     selectedServices,
     invoices,
     currentInvoice,
+    catalogServices, // Services réactifs du catalogue
     toggleService,
     getTotalAmount,
     createInvoice,

@@ -77,19 +77,20 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
             name: formData.name,
             description: formData.description,
             price_usd: formData.price_usd,
-            is_active: formData.is_active
+            is_active: formData.is_active,
+            updated_at: new Date().toISOString()
           })
           .eq('id', editingService.id);
 
         if (error) throw error;
-        toast.success('Service mis à jour avec succès');
+        toast.success('✅ Service mis à jour avec succès');
       } else {
         const { error } = await supabase
           .from('cadastral_services_config')
           .insert([formData]);
 
         if (error) throw error;
-        toast.success('Service créé avec succès');
+        toast.success('✅ Service créé avec succès');
       }
 
       fetchServices();
@@ -147,7 +148,7 @@ const AdminCadastralServices: React.FC<AdminCadastralServicesProps> = ({ onRefre
 
       if (error) throw error;
 
-      toast.success('Service supprimé avec succès');
+      toast.success('✅ Service supprimé avec succès');
       fetchServices();
       if (onRefresh) onRefresh();
     } catch (error: any) {

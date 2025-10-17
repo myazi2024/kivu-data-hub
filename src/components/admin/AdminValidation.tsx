@@ -4,13 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { validateCadastralSystem, ValidationResult } from '@/utils/cadastralValidation';
-import { CheckCircle, XCircle, AlertTriangle, Play, Loader2 } from 'lucide-react';
+import { testCatalogReactivity, printCatalogTestResults, CatalogTest } from '@/utils/testCatalogReactivity';
+import { CheckCircle, XCircle, AlertTriangle, Play, Loader2, Database } from 'lucide-react';
 import { toast } from 'sonner';
 
 const AdminValidation: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [catalogTestLoading, setCatalogTestLoading] = useState(false);
   const [results, setResults] = useState<ValidationResult[]>([]);
+  const [catalogTests, setCatalogTests] = useState<CatalogTest[]>([]);
   const [lastRun, setLastRun] = useState<Date | null>(null);
+  const [lastCatalogTest, setLastCatalogTest] = useState<Date | null>(null);
 
   const runValidation = async () => {
     setLoading(true);
@@ -34,6 +38,32 @@ const AdminValidation: React.FC = () => {
       toast.error('Erreur lors de la validation');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const runCatalogTest = async () => {
+    setCatalogTestLoading(true);
+    try {
+      const testResults = await testCatalogReactivity();
+      setCatalogTests(testResults);
+      setLastCatalogTest(new Date());
+      printCatalogTestResults(testResults);
+
+      const hasErrors = testResults.some(r => r.status === 'error');
+      const hasWarnings = testResults.some(r => r.status === 'warning');
+
+      if (hasErrors) {
+        toast.error('Tests catalogue : des erreurs détectées');
+      } else if (hasWarnings) {
+        toast.warning('Tests catalogue : des avertissements');
+      } else {
+        toast.success('✅ Tests catalogue : tous les tests passés avec succès');
+      }
+    } catch (error: any) {
+      console.error('Erreur lors des tests catalogue:', error);
+      toast.error('Erreur lors des tests catalogue');
+    } finally {
+      setCatalogTestLoading(false);
     }
   };
 
@@ -70,30 +100,56 @@ const AdminValidation: React.FC = () => {
     errors: results.filter(r => r.status === 'error').length,
   };
 
+  const catalogSummary = {
+    total: catalogTests.length,
+    success: catalogTests.filter(r => r.status === 'success').length,
+    warnings: catalogTests.filter(r => r.status === 'warning').length,
+    errors: catalogTests.filter(r => r.status === 'error').length,
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <CardTitle>Validation des Indicateurs Cadastraux</CardTitle>
               <CardDescription>
                 Vérification de la cohérence entre le front-end et le back-end
               </CardDescription>
             </div>
-            <Button onClick={runValidation} disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Validation en cours...
-                </>
-              ) : (
-                <>
-                  <Play className="h-4 w-4 mr-2" />
-                  Lancer la validation
-                </>
-              )}
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={runValidation} disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Validation...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Validation Globale
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={runCatalogTest} 
+                disabled={catalogTestLoading}
+                variant="outline"
+              >
+                {catalogTestLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Test...
+                  </>
+                ) : (
+                  <>
+                    <Database className="h-4 w-4 mr-2" />
+                    Test Catalogue
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -109,6 +165,60 @@ const AdminValidation: React.FC = () => {
             )}
           </AlertDescription>
         </Alert>
+      )}
+
+      {lastCatalogTest && (
+        <Alert>
+          <Database className="h-4 w-4 mr-2 inline" />
+          <AlertDescription>
+            Dernier test catalogue: {lastCatalogTest.toLocaleString('fr-FR')}
+            {catalogSummary.total > 0 && (
+              <span className="ml-2">
+                - {catalogSummary.success}/{catalogSummary.total} réussis, {catalogSummary.warnings} avertissements, {catalogSummary.errors} erreurs
+              </span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {catalogTests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5" />
+              Tests de Réactivité du Catalogue
+            </CardTitle>
+            <CardDescription>
+              Vérification de la synchronisation Admin → Front-end
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {catalogTests.map((test, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(test.status)}
+                      <h4 className="font-semibold">{test.testName}</h4>
+                    </div>
+                    {getStatusBadge(test.status)}
+                  </div>
+                  <p className="text-sm text-muted-foreground mb-2">{test.message}</p>
+                  {test.details && test.status !== 'success' && (
+                    <details className="text-sm">
+                      <summary className="cursor-pointer text-primary hover:underline">
+                        Voir les détails
+                      </summary>
+                      <pre className="mt-2 p-2 bg-secondary rounded text-xs overflow-x-auto">
+                        {JSON.stringify(test.details, null, 2)}
+                      </pre>
+                    </details>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {results.length > 0 && (

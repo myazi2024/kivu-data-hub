@@ -22,7 +22,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useCadastralBilling, CADASTRAL_SERVICES } from '@/hooks/useCadastralBilling';
+import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
@@ -56,6 +56,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     loading,
     selectedServices,
     currentInvoice,
+    catalogServices, // Services réactifs du catalogue
     toggleService,
     getTotalAmount,
     createInvoice,
@@ -158,7 +159,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               flex items-start gap-3 p-3 rounded-lg border transition-all duration-300 cursor-pointer
               hover:scale-[1.01] active:scale-[0.99] active:transition-transform active:duration-75
               ${(() => {
-                const availableServices = CADASTRAL_SERVICES.length;
+                const availableServices = catalogServices.length;
                 if (availableServices === 4) {
                   return 'bg-emerald-100/80 border-emerald-300/60 dark:bg-emerald-900/30 dark:border-emerald-700/50';
                 } else if (availableServices === 3) {
@@ -178,7 +179,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               <CheckCircle className={`
                 h-4 w-4 transition-colors duration-300
                 ${(() => {
-                  const availableServices = CADASTRAL_SERVICES.length;
+                  const availableServices = catalogServices.length;
                   if (availableServices === 4) {
                     return 'text-emerald-700 dark:text-emerald-300';
                   } else if (availableServices === 3) {
@@ -195,7 +196,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               <p className={`
                 text-[10px] md:text-sm leading-relaxed transition-colors duration-300
                 ${(() => {
-                  const availableServices = CADASTRAL_SERVICES.length;
+                  const availableServices = catalogServices.length;
                   if (availableServices === 4) {
                     return 'text-emerald-900 dark:text-emerald-100';
                   } else if (availableServices === 3) {
@@ -221,7 +222,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </h3>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="text-xs">
-                  {CADASTRAL_SERVICES.length} services
+                  {catalogServices.length} services
                 </Badge>
               </div>
             </div>
@@ -230,11 +231,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-dashed">
               <div className="flex items-center gap-2">
                 <Checkbox 
-                  checked={selectedServices.length === CADASTRAL_SERVICES.length}
+                  checked={selectedServices.length === catalogServices.length}
                   onCheckedChange={(checked) => {
                     if (checked) {
                       // Sélectionner tous les services
-                      CADASTRAL_SERVICES.forEach(service => {
+                      catalogServices.forEach(service => {
                         if (!selectedServices.includes(service.id)) {
                           toggleService(service.id);
                         }
@@ -251,13 +252,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <span className="text-sm font-medium">Tout sélectionner</span>
               </div>
               <Badge variant="secondary" className="text-xs">
-                ${CADASTRAL_SERVICES.reduce((sum, service) => sum + service.price, 0).toFixed(2)}
+                ${catalogServices.reduce((sum, service) => sum + service.price, 0).toFixed(2)}
               </Badge>
             </div>
             
             {/* Services simplifiés avec détails masquables */}
             <div className="space-y-3">
-              {CADASTRAL_SERVICES.map((service) => {
+              {catalogServices.map((service) => {
                 const IconComponent = getServiceIcon(service.id);
                 const isSelected = selectedServices.includes(service.id);
                 const isExpanded = expandedServices.has(service.id);
