@@ -16,6 +16,9 @@ import AdminUsers from '@/components/admin/AdminUsers';
 import AdminResellers from '@/components/admin/AdminResellers';
 import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
 import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
+import AdminCadastralServices from '@/components/admin/AdminCadastralServices';
+import AdminCCCContributions from '@/components/admin/AdminCCCContributions';
+import AdminValidation from '@/components/admin/AdminValidation';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -158,7 +161,7 @@ const Admin = () => {
 
         {/* Main Content Tabs */}
           <Tabs defaultValue="publications" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-10">
               <TabsTrigger value="publications">Publications</TabsTrigger>
               <TabsTrigger value="payments">Paiements</TabsTrigger>
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
@@ -166,6 +169,9 @@ const Admin = () => {
               <TabsTrigger value="resellers">Revendeurs</TabsTrigger>
               <TabsTrigger value="analytics">Analytics</TabsTrigger>
               <TabsTrigger value="territorial">Zones</TabsTrigger>
+              <TabsTrigger value="services">Services</TabsTrigger>
+              <TabsTrigger value="contributions">CCC</TabsTrigger>
+              <TabsTrigger value="validation">Validation</TabsTrigger>
             </TabsList>
 
           <TabsContent value="publications">
@@ -194,6 +200,18 @@ const Admin = () => {
 
           <TabsContent value="territorial">
             <AdminTerritorialZones />
+          </TabsContent>
+
+          <TabsContent value="services">
+            <AdminCadastralServices onRefresh={fetchStats} />
+          </TabsContent>
+
+          <TabsContent value="contributions">
+            <AdminCCCContributions />
+          </TabsContent>
+
+          <TabsContent value="validation">
+            <AdminValidation />
           </TabsContent>
         </Tabs>
       </div>
