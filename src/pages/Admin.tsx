@@ -19,9 +19,8 @@ import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
 import AdminCadastralServices from '@/components/admin/AdminCadastralServices';
 import AdminCCCContributions from '@/components/admin/AdminCCCContributions';
 import AdminValidation from '@/components/admin/AdminValidation';
-import AdminNotifications from '@/components/admin/AdminNotifications';
+import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import AdminSearchConfig from '@/components/admin/AdminSearchConfig';
-import AdminResultsConfig from '@/components/admin/AdminResultsConfig';
 import AdminResultsConfig from '@/components/admin/AdminResultsConfig';
 
 const Admin = () => {
