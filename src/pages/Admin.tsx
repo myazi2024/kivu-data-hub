@@ -22,6 +22,7 @@ import AdminValidation from '@/components/admin/AdminValidation';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import AdminSearchConfig from '@/components/admin/AdminSearchConfig';
 import AdminResultsConfig from '@/components/admin/AdminResultsConfig';
+import AdminContributionConfig from '@/components/admin/AdminContributionConfig';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -164,7 +165,7 @@ const Admin = () => {
 
         {/* Main Content Tabs */}
           <Tabs defaultValue="publications" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-11">
+            <TabsList className="grid w-full grid-cols-12">
               <TabsTrigger value="publications">Publications</TabsTrigger>
               <TabsTrigger value="payments">Paiements</TabsTrigger>
               <TabsTrigger value="users">Utilisateurs</TabsTrigger>
@@ -182,6 +183,14 @@ const Admin = () => {
               <TabsTrigger value="search-config" className="flex items-center gap-1">
                 <Search className="h-4 w-4" />
                 Recherche
+              </TabsTrigger>
+              <TabsTrigger value="results-config" className="flex items-center gap-1">
+                <ClipboardList className="h-4 w-4" />
+                Résultats
+              </TabsTrigger>
+              <TabsTrigger value="contribution-config" className="flex items-center gap-1">
+                <FileText className="h-4 w-4" />
+                Formulaire CCC
               </TabsTrigger>
           </TabsList>
 
@@ -231,6 +240,14 @@ const Admin = () => {
 
           <TabsContent value="search-config">
             <AdminSearchConfig />
+          </TabsContent>
+
+          <TabsContent value="results-config">
+            <AdminResultsConfig />
+          </TabsContent>
+
+          <TabsContent value="contribution-config">
+            <AdminContributionConfig />
           </TabsContent>
         </Tabs>
       </div>
