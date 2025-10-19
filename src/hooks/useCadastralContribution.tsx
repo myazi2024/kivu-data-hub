@@ -31,6 +31,7 @@ export interface CadastralContributionData {
   
   // Demande de permis de construire (nouveau)
   permitRequest?: {
+    permitType: 'construction' | 'regularisation';
     hasExistingConstruction: boolean;
     constructionDescription: string;
     plannedUsage: string;

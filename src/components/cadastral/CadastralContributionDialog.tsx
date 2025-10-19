@@ -153,6 +153,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // État pour gérer la demande de permis
   const [permitRequest, setPermitRequest] = useState({
+    permitType: 'construction' as 'construction' | 'regularisation',
     hasExistingConstruction: false,
     constructionDescription: '',
     plannedUsage: '',
@@ -2134,11 +2135,83 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                          Demande de permis de construire
+                          Demande de permis
                         </p>
                         <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                          Votre demande de permis sera traitée après validation de votre contribution cadastrale. Les frais de traitement seront communiqués par nos services.
+                          Votre demande sera traitée après validation de votre contribution cadastrale. Les frais de traitement seront communiqués par nos services.
                         </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Type de permis demandé */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold">Type de permis demandé *</Label>
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="permit-type-construction"
+                            name="permitType"
+                            value="construction"
+                            checked={permitRequest.permitType === 'construction'}
+                            onChange={(e) => setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularisation' })}
+                            className="h-4 w-4 mt-0.5"
+                          />
+                          <label htmlFor="permit-type-construction" className="text-sm font-medium cursor-pointer">
+                            Permis de construire
+                          </label>
+                        </div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80">
+                            <div className="space-y-2">
+                              <h4 className="font-semibold">Permis de construire</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Pour une nouvelle construction ou un projet de construction sur un terrain vierge. 
+                                Ce permis est nécessaire avant de commencer tout travaux de construction.
+                              </p>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      <div className="flex items-start gap-2">
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="radio"
+                            id="permit-type-regularisation"
+                            name="permitType"
+                            value="regularisation"
+                            checked={permitRequest.permitType === 'regularisation'}
+                            onChange={(e) => setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularisation' })}
+                            className="h-4 w-4 mt-0.5"
+                          />
+                          <label htmlFor="permit-type-regularisation" className="text-sm font-medium cursor-pointer">
+                            Permis de régularisation
+                          </label>
+                        </div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                              <Info className="h-4 w-4 text-muted-foreground" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-80">
+                            <div className="space-y-2">
+                              <h4 className="font-semibold">Permis de régularisation</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Pour régulariser une construction existante qui a été réalisée sans permis ou qui ne respecte pas 
+                                les normes initiales. Permet de mettre en conformité un bâtiment déjà construit.
+                              </p>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
                       </div>
                     </div>
                   </div>
