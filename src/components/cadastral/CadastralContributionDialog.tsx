@@ -129,7 +129,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     receiptFile: null
   }]);
   
-  // État pour gérer les permis de construire
+  // État pour le mode de permis de construire
+  const [permitMode, setPermitMode] = useState<'existing' | 'request'>('existing');
+  
+  // État pour gérer les permis de construire existants
   const [buildingPermits, setBuildingPermits] = useState<Array<{
     permitNumber: string;
     issuingService: string;
@@ -147,6 +150,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     issuingServiceContact: '',
     attachmentFile: null
   }]);
+
+  // État pour gérer la demande de permis
+  const [permitRequest, setPermitRequest] = useState({
+    hasExistingConstruction: false,
+    constructionDescription: '',
+    plannedUsage: '',
+    estimatedArea: '',
+    applicantName: '',
+    applicantPhone: '',
+    applicantEmail: '',
+  });
   
   // État pour gérer les coordonnées GPS des bornes
   const [gpsCoordinates, setGpsCoordinates] = useState<Array<{
@@ -218,10 +232,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         ...mortgage,
         receiptFile: null
       })),
+      permitMode,
       buildingPermits: buildingPermits.map(permit => ({
         ...permit,
         attachmentFile: null
       })),
+      permitRequest,
       gpsCoordinates,
       parcelSides,
       obligationType,
@@ -250,7 +266,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (parsed.previousOwners) setPreviousOwners(parsed.previousOwners);
         if (parsed.taxRecords) setTaxRecords(parsed.taxRecords);
         if (parsed.mortgageRecords) setMortgageRecords(parsed.mortgageRecords);
+        if (parsed.permitMode) setPermitMode(parsed.permitMode);
         if (parsed.buildingPermits) setBuildingPermits(parsed.buildingPermits);
+        if (parsed.permitRequest) setPermitRequest(parsed.permitRequest);
         if (parsed.gpsCoordinates) setGpsCoordinates(parsed.gpsCoordinates);
         if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
         if (parsed.obligationType) setObligationType(parsed.obligationType);
@@ -778,30 +796,44 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         })
       );
       
-      // Upload building permit files and transform data
-      const buildingPermitsData = await Promise.all(
-        buildingPermits.map(async (permit) => {
-          let attachmentUrl = null;
-          if (permit.attachmentFile) {
-            attachmentUrl = await uploadFile(permit.attachmentFile, 'building-permits');
-            if (!attachmentUrl) {
-              throw new Error('Erreur lors du téléchargement du permis de construire');
+      // Upload building permit files and transform data (only if existing mode)
+      let buildingPermitsDataFinal = undefined;
+      let permitRequestData = undefined;
+
+      if (permitMode === 'existing') {
+        const buildingPermitsData = await Promise.all(
+          buildingPermits.map(async (permit) => {
+            let attachmentUrl = null;
+            if (permit.attachmentFile) {
+              attachmentUrl = await uploadFile(permit.attachmentFile, 'building-permits');
+              if (!attachmentUrl) {
+                throw new Error('Erreur lors du téléchargement du permis de construire');
+              }
             }
-          }
-          return {
-            permitNumber: permit.permitNumber,
-            issuingService: permit.issuingService,
-            issueDate: permit.issueDate,
-            validityMonths: parseInt(permit.validityMonths),
-            administrativeStatus: permit.administrativeStatus,
-            issuingServiceContact: permit.issuingServiceContact || undefined,
-            attachmentUrl: attachmentUrl || undefined
-          };
-        })
-      );
-      
-      // Transform building permits data
-      const buildingPermitsDataFinal = buildingPermitsData.length > 0 ? buildingPermitsData : undefined;
+            return {
+              permitNumber: permit.permitNumber,
+              issuingService: permit.issuingService,
+              issueDate: permit.issueDate,
+              validityMonths: parseInt(permit.validityMonths),
+              administrativeStatus: permit.administrativeStatus,
+              issuingServiceContact: permit.issuingServiceContact || undefined,
+              attachmentUrl: attachmentUrl || undefined
+            };
+          })
+        );
+        buildingPermitsDataFinal = buildingPermitsData.length > 0 ? buildingPermitsData : undefined;
+      } else if (permitMode === 'request') {
+        // Préparer les données de demande de permis
+        permitRequestData = {
+          hasExistingConstruction: permitRequest.hasExistingConstruction,
+          constructionDescription: permitRequest.constructionDescription,
+          plannedUsage: permitRequest.plannedUsage,
+          estimatedArea: permitRequest.estimatedArea ? parseFloat(permitRequest.estimatedArea) : undefined,
+          applicantName: permitRequest.applicantName,
+          applicantPhone: permitRequest.applicantPhone,
+          applicantEmail: permitRequest.applicantEmail || undefined,
+        };
+      }
       
       // Transform GPS coordinates data
       const gpsCoordinatesData = gpsCoordinates.length > 0 ? gpsCoordinates.map(coord => ({
@@ -819,6 +851,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
+        permitRequest: permitRequestData,
         gpsCoordinates: gpsCoordinatesData,
       };
 
@@ -1895,8 +1928,35 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {buildingPermits.map((permit, index) => (
+              {/* Toggle pour choisir le mode */}
+              <div className="space-y-3 bg-muted/30 p-4 rounded-lg border">
+                <Label className="text-sm">Situation du permis</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={permitMode === 'existing' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPermitMode('existing')}
+                    className="flex-1"
+                  >
+                    J'ai déjà un permis
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={permitMode === 'request' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setPermitMode('request')}
+                    className="flex-1"
+                  >
+                    Je souhaite faire une demande
+                  </Button>
+                </div>
+              </div>
+
+              {/* Mode: J'ai déjà un permis */}
+              {permitMode === 'existing' && (
+                <div className="space-y-4">
+                  {buildingPermits.map((permit, index) => (
                       <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
                         highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issuingService || !permit.issueDate) 
                           ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
@@ -2031,40 +2091,164 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </p>
                       </div>
                     </div>
-                ))}
-              </div>
-                
-                {/* Bouton Ajouter déplacé en dessous des blocs */}
-                <div className="space-y-2">
-                  {/* Notification d'avertissement */}
-                  {showPermitWarning && (
-                    <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
-                      <div className="flex items-start gap-2">
-                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                            Complétez d'abord le permis actuel
-                          </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                            Veuillez renseigner le numéro, le service émetteur et la date d'émission du Permis #{buildingPermits.length} avant d'en ajouter un nouveau.
-                          </p>
+                  ))}
+
+                  {/* Bouton Ajouter déplacé en dessous des blocs */}
+                  <div className="space-y-2">
+                    {/* Notification d'avertissement */}
+                    {showPermitWarning && (
+                      <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
+                        <div className="flex items-start gap-2">
+                          <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                              Complétez d'abord le permis actuel
+                            </p>
+                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                              Veuillez renseigner le numéro, le service émetteur et la date d'émission du Permis #{buildingPermits.length} avant d'en ajouter un nouveau.
+                            </p>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addBuildingPermit}
-                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter un permis
-                  </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addBuildingPermit}
+                      className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                    >
+                      <Plus className="h-4 w-4" />
+                      Ajouter un permis
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Mode: Je souhaite faire une demande */}
+              {permitMode === 'request' && (
+                <div className="space-y-4 animate-fade-in">
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                          Demande de permis de construire
+                        </p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                          Votre demande de permis sera traitée après validation de votre contribution cadastrale. Les frais de traitement seront communiqués par nos services.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Construction existante */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={permitRequest.hasExistingConstruction}
+                        onChange={(e) => setPermitRequest({ ...permitRequest, hasExistingConstruction: e.target.checked })}
+                        className="rounded"
+                      />
+                      <span>Une construction existe déjà sur ce terrain</span>
+                    </Label>
+                  </div>
+
+                  {/* Description de la construction */}
+                  <div className="space-y-2">
+                    <Label>Description de la construction prévue *</Label>
+                    <Textarea
+                      placeholder="Décrivez le type de construction prévu (ex: Maison R+1, Villa, Commerce, etc.)"
+                      value={permitRequest.constructionDescription}
+                      onChange={(e) => setPermitRequest({ ...permitRequest, constructionDescription: e.target.value })}
+                      rows={3}
+                    />
+                  </div>
+
+                  {/* Usage prévu */}
+                  <div className="space-y-2">
+                    <Label>Usage prévu *</Label>
+                    <Select
+                      value={permitRequest.plannedUsage}
+                      onValueChange={(value) => setPermitRequest({ ...permitRequest, plannedUsage: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Sélectionner l'usage prévu" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Résidentiel">Résidentiel</SelectItem>
+                        <SelectItem value="Commercial">Commercial</SelectItem>
+                        <SelectItem value="Industriel">Industriel</SelectItem>
+                        <SelectItem value="Mixte">Mixte</SelectItem>
+                        <SelectItem value="Agricole">Agricole</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Surface estimée */}
+                  <div className="space-y-2">
+                    <Label>Surface de construction estimée (m²) *</Label>
+                    <Input
+                      type="number"
+                      placeholder="ex: 150"
+                      value={permitRequest.estimatedArea}
+                      onChange={(e) => setPermitRequest({ ...permitRequest, estimatedArea: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="border-t pt-4">
+                    <Label className="text-sm font-semibold mb-3 block">Informations du demandeur</Label>
+                    
+                    <div className="space-y-3">
+                      <div className="space-y-2">
+                        <Label>Nom complet *</Label>
+                        <Input
+                          placeholder="Nom et prénom du demandeur"
+                          value={permitRequest.applicantName}
+                          onChange={(e) => setPermitRequest({ ...permitRequest, applicantName: e.target.value })}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Téléphone *</Label>
+                        <Input
+                          type="tel"
+                          placeholder="ex: +243 999 999 999"
+                          value={permitRequest.applicantPhone}
+                          onChange={(e) => setPermitRequest({ ...permitRequest, applicantPhone: e.target.value })}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Pour les tests, utilisez: 97123456 ou 97123TEST
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Email</Label>
+                        <Input
+                          type="email"
+                          placeholder="email@exemple.com"
+                          value={permitRequest.applicantEmail}
+                          onChange={(e) => setPermitRequest({ ...permitRequest, applicantEmail: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+                    <div className="flex items-start gap-2">
+                      <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          Une fois votre contribution validée, vous recevrez les instructions pour finaliser votre demande de permis de construire.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           <TabsContent value="location" className="space-y-6 mt-6 animate-fade-in">

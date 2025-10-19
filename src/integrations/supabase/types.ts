@@ -336,6 +336,7 @@ export type Database = {
           owner_document_url: string | null
           ownership_history: Json | null
           parcel_number: string
+          permit_request_data: Json | null
           property_title_document_url: string | null
           property_title_type: string | null
           province: string | null
@@ -380,6 +381,7 @@ export type Database = {
           owner_document_url?: string | null
           ownership_history?: Json | null
           parcel_number: string
+          permit_request_data?: Json | null
           property_title_document_url?: string | null
           property_title_type?: string | null
           province?: string | null
@@ -424,6 +426,7 @@ export type Database = {
           owner_document_url?: string | null
           ownership_history?: Json | null
           parcel_number?: string
+          permit_request_data?: Json | null
           property_title_document_url?: string | null
           property_title_type?: string | null
           province?: string | null
