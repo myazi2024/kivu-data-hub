@@ -1706,7 +1706,54 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Section Propriétaire(s) actuel(s) */}
             <div className="space-y-4 pt-4 border-t">
               <div>
-                <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 rounded-full hover:bg-primary/10"
+                      >
+                        <Info className="h-4 w-4 text-primary" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="font-semibold text-sm mb-2 text-foreground">
+                            Propriétaire différent du document officiel ?
+                          </h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Vous pouvez indiquer votre nom comme propriétaire actuel même si le document officiel comporte un nom différent.
+                          </p>
+                        </div>
+                        
+                        <div className="border-l-2 border-primary pl-3">
+                          <h5 className="font-semibold text-xs mb-2 text-foreground">
+                            Condition requise
+                          </h5>
+                          <p className="text-xs text-muted-foreground mb-2">
+                            Vous devez détenir un document prouvant que vous êtes le nouveau propriétaire, tel que :
+                          </p>
+                          <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                            <li>Acte de vente</li>
+                            <li>Acte de donation</li>
+                            <li>Acte de succession ou d'héritage</li>
+                            <li>Tout autre document officiel de transfert de propriété</li>
+                          </ul>
+                        </div>
+                        
+                        <div className="bg-muted/50 p-2 rounded-md">
+                          <p className="text-xs text-muted-foreground">
+                            <strong className="text-foreground">💡 Important :</strong> Ces documents pourront vous être demandés lors de la validation de votre contribution CCC.
+                          </p>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Indiquez le(s) propriétaire(s) actuel(s) de la parcelle
                 </p>
