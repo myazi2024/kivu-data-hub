@@ -100,7 +100,7 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ value
             <div className="space-y-2">
               <h4 className="font-semibold text-sm">Types de titres de propriété en RDC</h4>
               <p className="text-xs text-muted-foreground">
-                Le système foncier congolais reconnaît plusieurs types de titres de propriété. 
+                Il s'agit du titre de propriété officiel délivré par les services cadastraux ou le Conservateur des Titres Immobiliers, et non d'un acte sous seing privé (acte de vente, de donation, d'héritage, etc.). 
                 Sélectionnez le type qui correspond à votre document et cliquez sur l'icône ⓘ 
                 à côté de chaque option pour plus de détails.
               </p>
