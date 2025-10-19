@@ -2039,7 +2039,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     variant={permitMode === 'existing' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setPermitMode('existing')}
-                    className="flex-1"
+                    className="flex-1 text-xs sm:text-sm px-2 sm:px-4"
                   >
                     J'ai déjà un permis
                   </Button>
@@ -2048,9 +2048,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     variant={permitMode === 'request' ? 'default' : 'outline'}
                     size="sm"
                     onClick={() => setPermitMode('request')}
-                    className="flex-1"
+                    className="flex-1 text-xs sm:text-sm px-2 sm:px-4"
                   >
-                    Je souhaite faire une demande
+                    Demander un permis
                   </Button>
                 </div>
               </div>
