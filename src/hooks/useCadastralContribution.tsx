@@ -39,6 +39,14 @@ export interface CadastralContributionData {
     applicantName: string;
     applicantPhone: string;
     applicantEmail?: string;
+    // Champs spécifiques permis de construire
+    numberOfFloors?: string;
+    buildingMaterials?: string;
+    architecturalPlanImages?: string[]; // URLs après upload
+    // Champs spécifiques permis de régularisation
+    constructionYear?: string;
+    regularisationReason?: string;
+    constructionPhotos?: string[]; // URLs après upload
   };
   
   // Localisation

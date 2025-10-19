@@ -161,6 +161,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     applicantName: '',
     applicantPhone: '',
     applicantEmail: '',
+    // Champs spécifiques permis de construire
+    numberOfFloors: '',
+    buildingMaterials: '',
+    architecturalPlanImages: [] as File[],
+    // Champs spécifiques permis de régularisation
+    constructionYear: '',
+    regularisationReason: '',
+    constructionPhotos: [] as File[]
   });
   
   // État pour gérer les coordonnées GPS des bornes
@@ -238,7 +246,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         ...permit,
         attachmentFile: null
       })),
-      permitRequest,
+      permitRequest: {
+        ...permitRequest,
+        architecturalPlanImages: [], // Les fichiers ne peuvent pas être sauvegardés dans localStorage
+        constructionPhotos: []
+      },
       gpsCoordinates,
       parcelSides,
       obligationType,
@@ -718,6 +730,60 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
+    // Validation spécifique pour la demande de permis
+    if (permitMode === 'request') {
+      // Champs communs obligatoires
+      if (!permitRequest.constructionDescription || !permitRequest.plannedUsage || !permitRequest.estimatedArea ||
+          !permitRequest.applicantName || !permitRequest.applicantPhone) {
+        toast({
+          title: "Champs requis manquants",
+          description: "Veuillez remplir tous les champs obligatoires de la demande de permis",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Validation spécifique au permis de construire
+      if (permitRequest.permitType === 'construction') {
+        if (!permitRequest.numberOfFloors || !permitRequest.buildingMaterials) {
+          toast({
+            title: "Champs requis manquants",
+            description: "Veuillez remplir le nombre d'étages et les matériaux de construction",
+            variant: "destructive"
+          });
+          return;
+        }
+        if (permitRequest.architecturalPlanImages.length === 0) {
+          toast({
+            title: "Plans architecturaux requis",
+            description: "Veuillez joindre au moins un plan architectural",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+
+      // Validation spécifique au permis de régularisation
+      if (permitRequest.permitType === 'regularisation') {
+        if (!permitRequest.constructionYear || !permitRequest.regularisationReason) {
+          toast({
+            title: "Champs requis manquants",
+            description: "Veuillez remplir l'année de construction et la raison de la régularisation",
+            variant: "destructive"
+          });
+          return;
+        }
+        if (permitRequest.constructionPhotos.length < 4) {
+          toast({
+            title: "Photos de construction requises",
+            description: "Veuillez joindre au moins 4 photos de la construction (tous les angles)",
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+    }
+
     setUploading(true);
     
     try {
@@ -825,7 +891,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         buildingPermitsDataFinal = buildingPermitsData.length > 0 ? buildingPermitsData : undefined;
       } else if (permitMode === 'request') {
         // Préparer les données de demande de permis
+        
+        // Upload architectural plan images (for construction permit) or construction photos (for regularisation permit)
+        let uploadedImages: string[] = [];
+        
+        if (permitRequest.permitType === 'construction' && permitRequest.architecturalPlanImages.length > 0) {
+          // Upload architectural plans
+          for (const file of permitRequest.architecturalPlanImages) {
+            const url = await uploadFile(file, 'permit-request-plans');
+            if (!url) {
+              throw new Error('Erreur lors du téléchargement des plans architecturaux');
+            }
+            uploadedImages.push(url);
+          }
+        } else if (permitRequest.permitType === 'regularisation' && permitRequest.constructionPhotos.length > 0) {
+          // Upload construction photos
+          for (const file of permitRequest.constructionPhotos) {
+            const url = await uploadFile(file, 'permit-request-photos');
+            if (!url) {
+              throw new Error('Erreur lors du téléchargement des photos de construction');
+            }
+            uploadedImages.push(url);
+          }
+        }
+        
         permitRequestData = {
+          permitType: permitRequest.permitType,
           hasExistingConstruction: permitRequest.hasExistingConstruction,
           constructionDescription: permitRequest.constructionDescription,
           plannedUsage: permitRequest.plannedUsage,
@@ -833,6 +924,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           applicantName: permitRequest.applicantName,
           applicantPhone: permitRequest.applicantPhone,
           applicantEmail: permitRequest.applicantEmail || undefined,
+          // Champs conditionnels selon le type de permis
+          ...(permitRequest.permitType === 'construction' ? {
+            numberOfFloors: permitRequest.numberOfFloors || undefined,
+            buildingMaterials: permitRequest.buildingMaterials || undefined,
+            architecturalPlanImages: uploadedImages.length > 0 ? uploadedImages : undefined
+          } : {
+            constructionYear: permitRequest.constructionYear || undefined,
+            regularisationReason: permitRequest.regularisationReason || undefined,
+            constructionPhotos: uploadedImages.length > 0 ? uploadedImages : undefined
+          })
         };
       }
       
@@ -2216,60 +2317,307 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   </div>
 
-                  {/* Construction existante */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
-                      <input
-                        type="checkbox"
-                        checked={permitRequest.hasExistingConstruction}
-                        onChange={(e) => setPermitRequest({ ...permitRequest, hasExistingConstruction: e.target.checked })}
-                        className="rounded"
-                      />
-                      <span>Une construction existe déjà sur ce terrain</span>
-                    </Label>
-                  </div>
+                  {/* Champs conditionnels selon le type de permis */}
+                  {permitRequest.permitType === 'construction' ? (
+                    // === PERMIS DE CONSTRUIRE ===
+                    <>
+                      {/* Description du projet */}
+                      <div className="space-y-2">
+                        <Label>Description du projet de construction *</Label>
+                        <Textarea
+                          placeholder="Décrivez le projet (ex: Construction d'une villa moderne de type R+1 avec 4 chambres)"
+                          value={permitRequest.constructionDescription}
+                          onChange={(e) => setPermitRequest({ ...permitRequest, constructionDescription: e.target.value })}
+                          rows={3}
+                        />
+                      </div>
 
-                  {/* Description de la construction */}
-                  <div className="space-y-2">
-                    <Label>Description de la construction prévue *</Label>
-                    <Textarea
-                      placeholder="Décrivez le type de construction prévu (ex: Maison R+1, Villa, Commerce, etc.)"
-                      value={permitRequest.constructionDescription}
-                      onChange={(e) => setPermitRequest({ ...permitRequest, constructionDescription: e.target.value })}
-                      rows={3}
-                    />
-                  </div>
+                      {/* Usage prévu */}
+                      <div className="space-y-2">
+                        <Label>Usage prévu *</Label>
+                        <Select
+                          value={permitRequest.plannedUsage}
+                          onValueChange={(value) => setPermitRequest({ ...permitRequest, plannedUsage: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner l'usage prévu" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Résidentiel">Résidentiel</SelectItem>
+                            <SelectItem value="Commercial">Commercial</SelectItem>
+                            <SelectItem value="Industriel">Industriel</SelectItem>
+                            <SelectItem value="Mixte">Mixte (Résidentiel + Commercial)</SelectItem>
+                            <SelectItem value="Agricole">Agricole</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  {/* Usage prévu */}
-                  <div className="space-y-2">
-                    <Label>Usage prévu *</Label>
-                    <Select
-                      value={permitRequest.plannedUsage}
-                      onValueChange={(value) => setPermitRequest({ ...permitRequest, plannedUsage: value })}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Sélectionner l'usage prévu" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Résidentiel">Résidentiel</SelectItem>
-                        <SelectItem value="Commercial">Commercial</SelectItem>
-                        <SelectItem value="Industriel">Industriel</SelectItem>
-                        <SelectItem value="Mixte">Mixte</SelectItem>
-                        <SelectItem value="Agricole">Agricole</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Surface estimée */}
+                        <div className="space-y-2">
+                          <Label>Surface de construction estimée (m²) *</Label>
+                          <Input
+                            type="number"
+                            placeholder="ex: 150"
+                            value={permitRequest.estimatedArea}
+                            onChange={(e) => setPermitRequest({ ...permitRequest, estimatedArea: e.target.value })}
+                          />
+                        </div>
 
-                  {/* Surface estimée */}
-                  <div className="space-y-2">
-                    <Label>Surface de construction estimée (m²) *</Label>
-                    <Input
-                      type="number"
-                      placeholder="ex: 150"
-                      value={permitRequest.estimatedArea}
-                      onChange={(e) => setPermitRequest({ ...permitRequest, estimatedArea: e.target.value })}
-                    />
-                  </div>
+                        {/* Nombre d'étages */}
+                        <div className="space-y-2">
+                          <Label>Nombre d'étages *</Label>
+                          <Select
+                            value={permitRequest.numberOfFloors}
+                            onValueChange={(value) => setPermitRequest({ ...permitRequest, numberOfFloors: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="RDC">RDC (Rez-de-chaussée uniquement)</SelectItem>
+                              <SelectItem value="R+1">R+1 (1 étage)</SelectItem>
+                              <SelectItem value="R+2">R+2 (2 étages)</SelectItem>
+                              <SelectItem value="R+3">R+3 (3 étages)</SelectItem>
+                              <SelectItem value="R+4">R+4 (4 étages ou plus)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Matériaux de construction */}
+                      <div className="space-y-2">
+                        <Label>Matériaux de construction principaux *</Label>
+                        <Select
+                          value={permitRequest.buildingMaterials}
+                          onValueChange={(value) => setPermitRequest({ ...permitRequest, buildingMaterials: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner les matériaux" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Béton armé">Béton armé</SelectItem>
+                            <SelectItem value="Briques cuites">Briques cuites</SelectItem>
+                            <SelectItem value="Blocs de ciment">Blocs de ciment</SelectItem>
+                            <SelectItem value="Bois">Bois</SelectItem>
+                            <SelectItem value="Matériaux mixtes">Matériaux mixtes</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Plans architecturaux */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          Plans architecturaux * 
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72">
+                              <p className="text-xs text-muted-foreground">
+                                Veuillez joindre les plans de votre construction (plans de façade, plans d'étage, plans de masse). 
+                                Formats acceptés: JPG, PNG, PDF. Maximum 5 fichiers.
+                              </p>
+                            </PopoverContent>
+                          </Popover>
+                        </Label>
+                        <div className="space-y-2">
+                          <Input
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png,application/pdf"
+                            multiple
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              if (permitRequest.architecturalPlanImages.length + files.length > 5) {
+                                toast({
+                                  title: "Limite atteinte",
+                                  description: "Vous ne pouvez ajouter que 5 plans maximum",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              setPermitRequest({ 
+                                ...permitRequest, 
+                                architecturalPlanImages: [...permitRequest.architecturalPlanImages, ...files] 
+                              });
+                              e.target.value = '';
+                            }}
+                            className="cursor-pointer"
+                          />
+                          {permitRequest.architecturalPlanImages.length > 0 && (
+                            <div className="space-y-1">
+                              {permitRequest.architecturalPlanImages.map((file, idx) => (
+                                <div key={idx} className="flex items-center justify-between text-xs bg-secondary/50 p-2 rounded">
+                                  <span className="truncate">{file.name}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => setPermitRequest({
+                                      ...permitRequest,
+                                      architecturalPlanImages: permitRequest.architecturalPlanImages.filter((_, i) => i !== idx)
+                                    })}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    // === PERMIS DE RÉGULARISATION ===
+                    <>
+                      {/* Description de la construction existante */}
+                      <div className="space-y-2">
+                        <Label>Description de la construction existante *</Label>
+                        <Textarea
+                          placeholder="Décrivez la construction actuelle (ex: Maison en dur de type R+1, construite en 2018)"
+                          value={permitRequest.constructionDescription}
+                          onChange={(e) => setPermitRequest({ ...permitRequest, constructionDescription: e.target.value })}
+                          rows={3}
+                        />
+                      </div>
+
+                      {/* Usage actuel */}
+                      <div className="space-y-2">
+                        <Label>Usage actuel de la construction *</Label>
+                        <Select
+                          value={permitRequest.plannedUsage}
+                          onValueChange={(value) => setPermitRequest({ ...permitRequest, plannedUsage: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner l'usage actuel" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Résidentiel">Résidentiel</SelectItem>
+                            <SelectItem value="Commercial">Commercial</SelectItem>
+                            <SelectItem value="Industriel">Industriel</SelectItem>
+                            <SelectItem value="Mixte">Mixte (Résidentiel + Commercial)</SelectItem>
+                            <SelectItem value="Agricole">Agricole</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Surface de la construction */}
+                        <div className="space-y-2">
+                          <Label>Surface de la construction (m²) *</Label>
+                          <Input
+                            type="number"
+                            placeholder="ex: 120"
+                            value={permitRequest.estimatedArea}
+                            onChange={(e) => setPermitRequest({ ...permitRequest, estimatedArea: e.target.value })}
+                          />
+                        </div>
+
+                        {/* Année de construction */}
+                        <div className="space-y-2">
+                          <Label>Année de construction *</Label>
+                          <Input
+                            type="number"
+                            placeholder="ex: 2018"
+                            min="1950"
+                            max={new Date().getFullYear()}
+                            value={permitRequest.constructionYear}
+                            onChange={(e) => setPermitRequest({ ...permitRequest, constructionYear: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Raison de la régularisation */}
+                      <div className="space-y-2">
+                        <Label>Raison de la régularisation *</Label>
+                        <Select
+                          value={permitRequest.regularisationReason}
+                          onValueChange={(value) => setPermitRequest({ ...permitRequest, regularisationReason: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner la raison" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Construction sans permis">Construction réalisée sans permis initial</SelectItem>
+                            <SelectItem value="Modifications non autorisées">Modifications non autorisées sur construction existante</SelectItem>
+                            <SelectItem value="Non-conformité normes">Non-conformité aux normes d'urbanisme</SelectItem>
+                            <SelectItem value="Extension non déclarée">Extension ou agrandissement non déclaré</SelectItem>
+                            <SelectItem value="Changement d'usage">Changement d'usage sans autorisation</SelectItem>
+                            <SelectItem value="Autre">Autre raison</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Photos de la construction */}
+                      <div className="space-y-2">
+                        <Label className="flex items-center gap-2">
+                          Photos de la construction (tous les angles) * 
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72">
+                              <p className="text-xs text-muted-foreground">
+                                Veuillez fournir des photos de tous les angles de votre construction (façade principale, façades latérales, 
+                                arrière, intérieur si pertinent). Minimum 4 photos, maximum 10 photos. Formats: JPG, PNG.
+                              </p>
+                            </PopoverContent>
+                          </Popover>
+                        </Label>
+                        <div className="space-y-2">
+                          <Input
+                            type="file"
+                            accept="image/jpeg,image/jpg,image/png"
+                            multiple
+                            onChange={(e) => {
+                              const files = Array.from(e.target.files || []);
+                              if (permitRequest.constructionPhotos.length + files.length > 10) {
+                                toast({
+                                  title: "Limite atteinte",
+                                  description: "Vous ne pouvez ajouter que 10 photos maximum",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              setPermitRequest({ 
+                                ...permitRequest, 
+                                constructionPhotos: [...permitRequest.constructionPhotos, ...files] 
+                              });
+                              e.target.value = '';
+                            }}
+                            className="cursor-pointer"
+                          />
+                          {permitRequest.constructionPhotos.length > 0 && (
+                            <div className="space-y-1">
+                              <p className="text-xs text-muted-foreground">
+                                {permitRequest.constructionPhotos.length} photo(s) ajoutée(s) {permitRequest.constructionPhotos.length < 4 && '(minimum 4 requis)'}
+                              </p>
+                              {permitRequest.constructionPhotos.map((file, idx) => (
+                                <div key={idx} className="flex items-center justify-between text-xs bg-secondary/50 p-2 rounded">
+                                  <span className="truncate">{file.name}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-6 w-6 p-0"
+                                    onClick={() => setPermitRequest({
+                                      ...permitRequest,
+                                      constructionPhotos: permitRequest.constructionPhotos.filter((_, i) => i !== idx)
+                                    })}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   <div className="border-t pt-4">
                     <Label className="text-sm font-semibold mb-3 block">Informations du demandeur</Label>
