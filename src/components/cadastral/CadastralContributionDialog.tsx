@@ -1747,7 +1747,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         
                         <div className="bg-muted/50 p-2 rounded-md">
                           <p className="text-xs text-muted-foreground">
-                            <strong className="text-foreground">💡 Important :</strong> Veuillez ajouter l'image du document prouvant que vous êtes le nouveau propriétaire dans la section "Pièces justificatives". Ce document sera utilisé pour valider votre contribution CCC.
+                            <strong className="text-foreground">💡 Important :</strong> Veuillez ajouter l'image du document prouvant que vous êtes le nouveau propriétaire en tant que pièce jointe dans la section "Type de titre de propriété, Document du titre de propriété (optionnel)". Ce document sera utilisé pour valider votre contribution CCC.
                           </p>
                         </div>
                       </div>
