@@ -3032,7 +3032,70 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <div className="space-y-4 pt-4 border-t">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <Label className="text-sm font-semibold">Coordonnées GPS des bornes (optionnel)</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm font-semibold">Coordonnées GPS des bornes (optionnel)</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-5 w-5 p-0 rounded-full hover:bg-primary/10"
+                          >
+                            <Info className="h-4 w-4 text-primary" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80" align="start">
+                          <div className="space-y-3">
+                            <div>
+                              <h4 className="font-semibold text-sm mb-2 text-foreground">
+                                Comment ajouter les coordonnées GPS ?
+                              </h4>
+                              <p className="text-xs text-muted-foreground mb-3">
+                                Deux méthodes sont disponibles pour renseigner les coordonnées GPS de chaque borne de votre terrain :
+                              </p>
+                            </div>
+                            
+                            <div className="space-y-3">
+                              <div className="border-l-2 border-primary pl-3">
+                                <h5 className="font-semibold text-xs mb-1 text-foreground flex items-center gap-1">
+                                  <MapPin className="h-3 w-3" />
+                                  Méthode 1 : Capture automatique
+                                </h5>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  Rendez-vous physiquement à l'emplacement de chaque borne avec votre smartphone ou appareil GPS.
+                                </p>
+                                <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                                  <li>Cliquez sur "Capturer ma position actuelle"</li>
+                                  <li>Autorisez l'accès à votre localisation</li>
+                                  <li>Les coordonnées seront automatiquement renseignées</li>
+                                </ul>
+                              </div>
+                              
+                              <div className="border-l-2 border-secondary pl-3">
+                                <h5 className="font-semibold text-xs mb-1 text-foreground">
+                                  Méthode 2 : Saisie manuelle
+                                </h5>
+                                <p className="text-xs text-muted-foreground mb-2">
+                                  Si vous disposez déjà des coordonnées GPS de vos bornes :
+                                </p>
+                                <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+                                  <li>Saisissez la latitude (position nord-sud)</li>
+                                  <li>Saisissez la longitude (position est-ouest)</li>
+                                  <li>Utilisez au moins 6 décimales pour une précision optimale</li>
+                                </ul>
+                              </div>
+                            </div>
+                            
+                            <div className="bg-muted/50 p-2 rounded-md">
+                              <p className="text-xs text-muted-foreground">
+                                <strong className="text-foreground">💡 Conseil :</strong> Pour une délimitation précise de votre terrain, nous recommandons d'ajouter les coordonnées de toutes les bornes.
+                              </p>
+                            </div>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <p className="text-xs text-muted-foreground">
                       Ajoutez les coordonnées GPS de chaque borne du terrain
                     </p>
