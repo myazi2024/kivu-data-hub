@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSearchConfig } from './useSearchConfig';
 
 export interface CadastralParcel {
   id: string;
@@ -118,6 +119,8 @@ export const useCadastralSearch = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const { getErrorMessages } = useSearchConfig();
+  const errorMessages = getErrorMessages();
 
   // Fonction pour valider le format du numéro de parcelle
   const validateParcelNumber = (query: string): boolean => {
@@ -150,7 +153,7 @@ export const useCadastralSearch = () => {
 
       if (parcelError) {
         if (parcelError.code === 'PGRST116') {
-          setError('Aucune parcelle trouvée avec ce numéro');
+          setError(errorMessages.not_found);
         } else {
           throw parcelError;
         }
