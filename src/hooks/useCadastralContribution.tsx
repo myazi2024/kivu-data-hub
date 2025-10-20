@@ -22,6 +22,7 @@ export interface CadastralContributionData {
   
   // Permis de construire
   buildingPermits?: Array<{
+    permitType: 'construction' | 'regularization';
     permitNumber: string;
     issuingService: string;
     issueDate: string;
