@@ -190,7 +190,28 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
       
       {showLeaseTypeOption && onLeaseTypeChange && (
         <div className="space-y-2 pt-2 border-t">
-          <Label className="text-sm font-medium">Type de bail</Label>
+          <div className="flex items-center gap-2">
+            <Label className="text-sm font-medium">Type de bail</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 sm:w-96" side="top">
+                <div className="space-y-2">
+                  <h4 className="font-semibold text-sm">Où trouver cette information ?</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Cette information est indiquée sur votre {selectedType?.label.toLowerCase()}. 
+                    Vérifiez si le document mentionne qu'il s'agit du bail initial ou d'un renouvellement. 
+                    {selectedType?.value === "Concession ordinaire" && " Pour les concessions ordinaires, la durée initiale est généralement de 25 ans."}
+                    {selectedType?.value === "Bail emphytéotique" && " Pour les baux emphytéotiques, la durée peut aller de 18 à 99 ans."}
+                    {selectedType?.value === "Certificat de location" && " Pour les certificats de location, la durée est mentionnée dans le contrat de bail."}
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
           <RadioGroup 
             value={leaseType} 
             onValueChange={(val) => onLeaseTypeChange(val as 'initial' | 'renewal')}
