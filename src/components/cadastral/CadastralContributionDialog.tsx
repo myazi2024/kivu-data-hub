@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
@@ -134,6 +135,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   
   // État pour gérer les permis de construire existants
   const [buildingPermits, setBuildingPermits] = useState<Array<{
+    permitType: 'construction' | 'regularization';
     permitNumber: string;
     issuingService: string;
     issueDate: string;
@@ -142,6 +144,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     issuingServiceContact: string;
     attachmentFile: File | null;
   }>>([{
+    permitType: 'construction',
     permitNumber: '',
     issuingService: '',
     issueDate: '',
@@ -1255,6 +1258,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setHighlightIncompletePermit(false);
     
     setBuildingPermits([...buildingPermits, {
+      permitType: 'construction',
       permitNumber: '',
       issuingService: '',
       issueDate: '',
@@ -1526,6 +1530,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setAvailableQuartiers([]);
     setAvailableAvenues([]);
     setBuildingPermits([{
+      permitType: 'construction',
       permitNumber: '',
       issuingService: '',
       issueDate: '',
@@ -2161,6 +2166,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
+                      </div>
+
+                      {/* Type de permis */}
+                      <div className="space-y-2">
+                        <Label className="text-xs font-medium">Type de permis</Label>
+                        <RadioGroup 
+                          value={permit.permitType} 
+                          onValueChange={(value: 'construction' | 'regularization') => updateBuildingPermit(index, 'permitType', value)}
+                          className="flex gap-2"
+                        >
+                          <div className="flex items-center space-x-2 flex-1 p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                            <RadioGroupItem value="construction" id={`construction-${index}`} />
+                            <Label htmlFor={`construction-${index}`} className="flex-1 cursor-pointer text-xs">
+                              Permis de construire
+                            </Label>
+                          </div>
+                          <div className="flex items-center space-x-2 flex-1 p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
+                            <RadioGroupItem value="regularization" id={`regularization-${index}`} />
+                            <Label htmlFor={`regularization-${index}`} className="flex-1 cursor-pointer text-xs">
+                              Permis de régularisation
+                            </Label>
+                          </div>
+                        </RadioGroup>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
