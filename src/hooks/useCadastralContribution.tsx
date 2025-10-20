@@ -176,6 +176,7 @@ export const useCadastralContribution = () => {
         user_id: user.id,
         parcel_number: data.parcelNumber,
         property_title_type: data.propertyTitleType,
+        lease_type: data.leaseType,
         title_reference_number: data.titleReferenceNumber,
         current_owner_name: data.currentOwners && data.currentOwners.length > 0 
           ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')

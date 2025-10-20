@@ -332,6 +332,7 @@ export type Database = {
           groupement: string | null
           id: string
           is_suspicious: boolean | null
+          lease_type: string | null
           mortgage_history: Json | null
           owner_document_url: string | null
           ownership_history: Json | null
@@ -377,6 +378,7 @@ export type Database = {
           groupement?: string | null
           id?: string
           is_suspicious?: boolean | null
+          lease_type?: string | null
           mortgage_history?: Json | null
           owner_document_url?: string | null
           ownership_history?: Json | null
@@ -422,6 +424,7 @@ export type Database = {
           groupement?: string | null
           id?: string
           is_suspicious?: boolean | null
+          lease_type?: string | null
           mortgage_history?: Json | null
           owner_document_url?: string | null
           ownership_history?: Json | null
@@ -737,6 +740,7 @@ export type Database = {
           groupement: string | null
           id: string
           latitude: number | null
+          lease_type: string | null
           location: string
           longitude: number | null
           nombre_bornes: number | null
@@ -774,6 +778,7 @@ export type Database = {
           groupement?: string | null
           id?: string
           latitude?: number | null
+          lease_type?: string | null
           location: string
           longitude?: number | null
           nombre_bornes?: number | null
@@ -811,6 +816,7 @@ export type Database = {
           groupement?: string | null
           id?: string
           latitude?: number | null
+          lease_type?: string | null
           location?: string
           longitude?: number | null
           nombre_bornes?: number | null
