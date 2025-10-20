@@ -8,11 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Building2, CheckCircle2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle, ArrowLeft, CalendarIcon } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 interface BuildingPermitRequestDialogProps {
   open: boolean;
@@ -508,13 +512,38 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
             <div className="space-y-2">
               <Label className="text-xs font-medium">Date de construction *</Label>
-              <Input
-                type="date"
-                max={new Date().toISOString().split('T')[0]}
-                value={formData.constructionDate}
-                onChange={(e) => handleInputChange('constructionDate', e.target.value)}
-                className="h-10"
-              />
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full h-10 justify-start text-left font-normal",
+                      !formData.constructionDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {formData.constructionDate ? (
+                      format(new Date(formData.constructionDate), "dd/MM/yyyy")
+                    ) : (
+                      <span>Sélectionner une date</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={formData.constructionDate ? new Date(formData.constructionDate) : undefined}
+                    onSelect={(date) => {
+                      if (date) {
+                        handleInputChange('constructionDate', date.toISOString().split('T')[0]);
+                      }
+                    }}
+                    disabled={(date) => date > new Date()}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="space-y-2">
               <Label className="text-xs font-medium">État actuel *</Label>
