@@ -2691,9 +2691,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 });
                                 return;
                               }
+                              
+                              // Renommer les fichiers avec un nom court
+                              const renamedFiles = files.map((file, idx) => {
+                                const extension = file.name.split('.').pop();
+                                const newName = `photo-${permitRequest.constructionPhotos.length + idx + 1}.${extension}`;
+                                return new File([file], newName, { type: file.type });
+                              });
+                              
                               setPermitRequest({ 
                                 ...permitRequest, 
-                                constructionPhotos: [...permitRequest.constructionPhotos, ...files] 
+                                constructionPhotos: [...permitRequest.constructionPhotos, ...renamedFiles] 
                               });
                               e.target.value = '';
                             }}
