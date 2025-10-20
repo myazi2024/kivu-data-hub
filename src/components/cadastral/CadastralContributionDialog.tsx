@@ -2679,6 +2679,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Input
                             type="file"
                             accept="image/jpeg,image/jpg,image/png"
+                            capture="environment"
                             multiple
                             onChange={(e) => {
                               const files = Array.from(e.target.files || []);
