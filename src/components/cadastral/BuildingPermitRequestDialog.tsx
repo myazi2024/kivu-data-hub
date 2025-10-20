@@ -56,6 +56,22 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   });
 
   const handleInputChange = (field: string, value: string) => {
+    // Validation pour la date de construction en régularisation
+    if (field === 'constructionDate' && value) {
+      const selectedDate = new Date(value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (selectedDate > today) {
+        toast({
+          title: "Date invalide",
+          description: "L'année de construction ne peut pas être dans le futur",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
