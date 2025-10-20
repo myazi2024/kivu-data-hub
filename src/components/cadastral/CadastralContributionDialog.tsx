@@ -899,6 +899,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               }
             }
             return {
+              permitType: permit.permitType,
               permitNumber: permit.permitNumber,
               issuingService: permit.issuingService,
               issueDate: permit.issueDate,
