@@ -260,6 +260,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
+      // Sauvegarder aussi l'URL de retour pour la redirection après authentification
+      localStorage.setItem('auth_redirect_url', window.location.pathname + window.location.search);
       console.log('Données du formulaire sauvegardées');
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données:', error);
@@ -309,12 +311,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   };
 
-  // Charger les données au montage si l'utilisateur est connecté
+  // Charger les données au montage, que l'utilisateur soit connecté ou non
   useEffect(() => {
-    if (open && user) {
+    if (open) {
       loadFormDataFromStorage();
     }
-  }, [open, user]);
+  }, [open]);
+
+  // Sauvegarder automatiquement les données à chaque modification importante
+  useEffect(() => {
+    if (open && formData.parcelNumber) {
+      const timeoutId = setTimeout(() => {
+        saveFormDataToStorage();
+      }, 1000); // Debounce de 1 seconde
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [open, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates]);
 
   // Sauvegarder automatiquement les données toutes les 30 secondes
   useEffect(() => {
@@ -724,8 +737,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   const handleSubmit = async () => {
-    // Vérifier si l'utilisateur est connecté
-    if (!user) {
+    // Vérifier si l'utilisateur est connecté via le user ou la session
+    // On vérifie aussi la session Supabase directement pour plus de fiabilité
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!user && !session) {
+      // Sauvegarder les données avant de demander l'authentification
+      saveFormDataToStorage();
       setShowAuthDialog(true);
       return;
     }

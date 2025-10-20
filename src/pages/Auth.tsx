@@ -75,7 +75,15 @@ const Auth = () => {
           title: "Connexion réussie",
           description: "Bienvenue sur la plateforme BIC",
         });
-        window.location.href = '/';
+        
+        // Vérifier s'il y a une URL de redirection sauvegardée
+        const redirectUrl = localStorage.getItem('auth_redirect_url');
+        if (redirectUrl) {
+          localStorage.removeItem('auth_redirect_url');
+          window.location.href = redirectUrl;
+        } else {
+          window.location.href = '/';
+        }
       }
     } catch (error: any) {
       toast({
@@ -118,13 +126,16 @@ const Auth = () => {
         // Continue even if this fails
       }
 
-      const redirectUrl = `${window.location.origin}/`;
+      const redirectUrl = localStorage.getItem('auth_redirect_url') || '/';
+      const finalRedirectUrl = redirectUrl.startsWith('/') 
+        ? `${window.location.origin}${redirectUrl}`
+        : `${window.location.origin}/`;
       
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl,
+          emailRedirectTo: finalRedirectUrl,
           data: {
             full_name: fullName,
             organization: organization || null,
@@ -142,7 +153,12 @@ const Auth = () => {
         
         // If user is automatically confirmed, redirect
         if (data.session) {
-          window.location.href = '/';
+          if (redirectUrl !== '/') {
+            localStorage.removeItem('auth_redirect_url');
+            window.location.href = redirectUrl;
+          } else {
+            window.location.href = '/';
+          }
         }
       }
     } catch (error: any) {
