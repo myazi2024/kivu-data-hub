@@ -1398,7 +1398,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     let totalFields = 0;
     let filledFields = 0;
 
-    // Onglet Général
+    // Onglet Général (6 champs)
     if (formData.propertyTitleType) filledFields++;
     totalFields++;
     
@@ -1418,7 +1418,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (hasValidOwner) filledFields++;
     totalFields++;
 
-    // Onglet Localisation
+    // Onglet Localisation (3-4 champs)
     if (formData.province) filledFields++;
     totalFields++;
     
@@ -1437,13 +1437,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.areaSqm) filledFields++;
     totalFields++;
 
-    // Onglet Historiques (optionnel mais compté)
-    if (previousOwners.length > 0) filledFields++;
+    // Onglet Historiques - vérifier que les champs sont vraiment remplis
+    const hasValidPreviousOwners = previousOwners.some(o => 
+      o.name && o.startDate && o.endDate
+    );
+    if (hasValidPreviousOwners) filledFields++;
     totalFields++;
 
-    // Onglet Obligations (optionnel mais compté)
-    if (taxRecords.length > 0 || mortgageRecords.length > 0) filledFields++;
+    // Onglet Obligations - vérifier que les champs sont vraiment remplis
+    const hasValidTaxes = taxRecords.some(t => 
+      t.taxAmount && t.taxYear
+    );
+    const hasValidMortgages = mortgageRecords.some(m => 
+      m.mortgageAmount && m.creditorName
+    );
+    if (hasValidTaxes || hasValidMortgages) filledFields++;
     totalFields++;
+
+    // Note: Les permis de construire ne sont PAS comptés dans la progression
 
     return Math.round((filledFields / totalFields) * 100);
   };
