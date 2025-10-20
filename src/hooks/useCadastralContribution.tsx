@@ -8,6 +8,7 @@ export interface CadastralContributionData {
   
   // Informations générales
   propertyTitleType?: string;
+  leaseType?: 'initial' | 'renewal';
   titleReferenceNumber?: string;
   currentOwners?: Array<{
     lastName: string;  // Nom

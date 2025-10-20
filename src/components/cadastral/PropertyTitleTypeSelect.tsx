@@ -3,6 +3,8 @@ import { Info } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 
 interface PropertyTitleType {
   value: string;
@@ -10,6 +12,7 @@ interface PropertyTitleType {
   description: string;
   details: string;
   reference: string;
+  isRenewable?: boolean;
 }
 
 const PROPERTY_TITLE_TYPES: PropertyTitleType[] = [
@@ -39,21 +42,24 @@ const PROPERTY_TITLE_TYPES: PropertyTitleType[] = [
     label: "Concession ordinaire",
     description: "Droit d'usage temporaire accordé par l'État pour une durée déterminée",
     details: "La concession ordinaire est un droit d'usage temporaire accordé par l'État pour une durée généralement de 25 ans renouvelable. Elle peut être transformée en concession perpétuelle après accomplissement des obligations de mise en valeur définies dans le contrat de concession.",
-    reference: "Ex: CO-123456 ou CO/2024/001"
+    reference: "Ex: CO-123456 ou CO/2024/001",
+    isRenewable: true
   },
   {
     value: "Bail emphytéotique",
     label: "Bail emphytéotique",
     description: "Bail de longue durée (18 à 99 ans) conférant des droits étendus",
     details: "Le bail emphytéotique est un contrat de location de longue durée (minimum 18 ans, maximum 99 ans) qui confère à l'emphytéote des droits très étendus d'usage, de jouissance et de transformation du bien. L'emphytéote peut construire, planter et même hypothéquer ses droits.",
-    reference: "Ex: BE-123456 ou BE/2024/001"
+    reference: "Ex: BE-123456 ou BE/2024/001",
+    isRenewable: true
   },
   {
     value: "Certificat de location",
     label: "Certificat de location",
     description: "Document attestant d'un contrat de location régulièrement enregistré",
     details: "Le certificat de location est délivré après enregistrement d'un bail locatif ordinaire auprès des services compétents. Il atteste de l'existence d'un contrat de location régulier entre bailleur et locataire pour une durée déterminée.",
-    reference: "Ex: CL-123456 ou CL/2024/001"
+    reference: "Ex: CL-123456 ou CL/2024/001",
+    isRenewable: true
   },
   {
     value: "Autorisation d'occupation provisoire",
@@ -81,10 +87,20 @@ const PROPERTY_TITLE_TYPES: PropertyTitleType[] = [
 interface PropertyTitleTypeSelectProps {
   value?: string;
   onValueChange: (value: string) => void;
+  leaseType?: 'initial' | 'renewal';
+  onLeaseTypeChange?: (type: 'initial' | 'renewal') => void;
 }
 
-const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ value, onValueChange }) => {
+const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ 
+  value, 
+  onValueChange, 
+  leaseType, 
+  onLeaseTypeChange 
+}) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
+  
+  const selectedType = PROPERTY_TITLE_TYPES.find(t => t.value === value);
+  const showLeaseTypeOption = selectedType?.isRenewable;
 
   return (
     <div className="space-y-2">
@@ -170,6 +186,30 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ value
         <p className="text-xs text-muted-foreground">
           {PROPERTY_TITLE_TYPES.find(t => t.value === value)?.description}
         </p>
+      )}
+      
+      {showLeaseTypeOption && onLeaseTypeChange && (
+        <div className="space-y-2 pt-2 border-t">
+          <Label className="text-sm font-medium">Type de bail</Label>
+          <RadioGroup 
+            value={leaseType} 
+            onValueChange={(val) => onLeaseTypeChange(val as 'initial' | 'renewal')}
+            className="flex gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="initial" id="lease-initial" />
+              <Label htmlFor="lease-initial" className="text-sm font-normal cursor-pointer">
+                Bail initial
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="renewal" id="lease-renewal" />
+              <Label htmlFor="lease-renewal" className="text-sm font-normal cursor-pointer">
+                Renouvellement
+              </Label>
+            </div>
+          </RadioGroup>
+        </div>
       )}
     </div>
   );
