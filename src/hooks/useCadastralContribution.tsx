@@ -28,11 +28,13 @@ export interface CadastralContributionData {
     issueDate: string;
     validityMonths: number;
     administrativeStatus: string;
+    issuingServiceContact?: string;
+    attachmentUrl?: string;
   }>;
   
   // Demande de permis de construire (nouveau)
   permitRequest?: {
-    permitType: 'construction' | 'regularisation';
+    permitType: 'construction' | 'regularization';
     hasExistingConstruction: boolean;
     constructionDescription: string;
     plannedUsage: string;
@@ -47,6 +49,7 @@ export interface CadastralContributionData {
     // Champs spécifiques permis de régularisation
     constructionYear?: string;
     regularisationReason?: string;
+    originalPermitNumber?: string;
     constructionPhotos?: string[]; // URLs après upload
   };
   

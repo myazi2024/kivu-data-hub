@@ -156,7 +156,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // État pour gérer la demande de permis
   const [permitRequest, setPermitRequest] = useState({
-    permitType: 'construction' as 'construction' | 'regularisation',
+    permitType: 'construction' as 'construction' | 'regularization',
     hasExistingConstruction: false,
     constructionDescription: '',
     plannedUsage: '',
@@ -170,7 +170,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     architecturalPlanImages: [] as File[],
     // Champs spécifiques permis de régularisation
     constructionYear: '',
-    regularisationReason: '',
+    regularizationReason: '',
+    originalPermitNumber: '',
     constructionPhotos: [] as File[]
   });
   
@@ -785,8 +786,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
 
       // Validation spécifique au permis de régularisation
-      if (permitRequest.permitType === 'regularisation') {
-        if (!permitRequest.constructionYear || !permitRequest.regularisationReason) {
+      if (permitRequest.permitType === 'regularization') {
+        if (!permitRequest.constructionYear || !permitRequest.regularizationReason) {
           toast({
             title: "Champs requis manquants",
             description: "Veuillez remplir l'année de construction et la raison de la régularisation",
@@ -926,7 +927,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             }
             uploadedImages.push(url);
           }
-        } else if (permitRequest.permitType === 'regularisation' && permitRequest.constructionPhotos.length > 0) {
+        } else if (permitRequest.permitType === 'regularization' && permitRequest.constructionPhotos.length > 0) {
           // Upload construction photos
           for (const file of permitRequest.constructionPhotos) {
             const url = await uploadFile(file, 'permit-request-photos');
@@ -953,7 +954,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             architecturalPlanImages: uploadedImages.length > 0 ? uploadedImages : undefined
           } : {
             constructionYear: permitRequest.constructionYear || undefined,
-            regularisationReason: permitRequest.regularisationReason || undefined,
+            regularizationReason: permitRequest.regularizationReason || undefined,
+            originalPermitNumber: permitRequest.originalPermitNumber || undefined,
             constructionPhotos: uploadedImages.length > 0 ? uploadedImages : undefined
           })
         };
@@ -2362,7 +2364,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             name="permitType"
                             value="construction"
                             checked={permitRequest.permitType === 'construction'}
-                            onChange={(e) => setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularisation' })}
+                            onChange={(e) => setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularization' })}
                             className="h-4 w-4 mt-0.5"
                           />
                           <label htmlFor="permit-type-construction" className="text-sm font-medium cursor-pointer">
@@ -2393,9 +2395,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             type="radio"
                             id="permit-type-regularisation"
                             name="permitType"
-                            value="regularisation"
-                            checked={permitRequest.permitType === 'regularisation'}
-                            onChange={(e) => setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularisation' })}
+                            value="regularization"
+                            checked={permitRequest.permitType === 'regularization'}
+                            onChange={(e) => setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularization' })}
                             className="h-4 w-4 mt-0.5"
                           />
                           <label htmlFor="permit-type-regularisation" className="text-sm font-medium cursor-pointer">
@@ -2638,8 +2640,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <div className="space-y-2">
                         <Label>Raison de la régularisation *</Label>
                         <Select
-                          value={permitRequest.regularisationReason}
-                          onValueChange={(value) => setPermitRequest({ ...permitRequest, regularisationReason: value })}
+                          value={permitRequest.regularizationReason}
+                          onValueChange={(value) => setPermitRequest({ ...permitRequest, regularizationReason: value })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Sélectionner la raison" />
