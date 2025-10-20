@@ -52,7 +52,9 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     estimatedDuration: '',
     constructionDate: '',
     currentState: '',
-    complianceIssues: ''
+    complianceIssues: '',
+    regularizationReason: '',
+    originalPermitNumber: ''
   });
 
   const handleInputChange = (field: string, value: string) => {
@@ -75,6 +77,16 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  // Vérifier si la raison de régularisation nécessite un numéro de permis initial
+  const requiresOriginalPermit = () => {
+    const reasonsRequiringPermit = [
+      'Modification non autorisée',
+      'Extension ou agrandissement',
+      'Changement d\'usage sans autorisation'
+    ];
+    return reasonsRequiringPermit.includes(formData.regularizationReason);
+  };
+
   const isFormValid = () => {
     const baseFields = [
       formData.constructionType,
@@ -87,7 +99,18 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     ];
 
     if (requestType === 'regularization') {
-      return baseFields.every(f => f) && formData.constructionDate && formData.currentState;
+      const regularizationFields = [
+        formData.constructionDate,
+        formData.currentState,
+        formData.regularizationReason
+      ];
+      
+      // Si la raison nécessite un permis initial, vérifier qu'il est renseigné
+      if (requiresOriginalPermit() && !formData.originalPermitNumber) {
+        return false;
+      }
+      
+      return baseFields.every(f => f) && regularizationFields.every(f => f);
     }
 
     return baseFields.every(f => f) && formData.startDate;
@@ -147,7 +170,9 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       estimatedDuration: '',
       constructionDate: '',
       currentState: '',
-      complianceIssues: ''
+      complianceIssues: '',
+      regularizationReason: '',
+      originalPermitNumber: ''
     });
     onOpenChange(false);
   };
@@ -449,6 +474,38 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           </div>
         ) : (
           <>
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Raison de la régularisation *</Label>
+              <Select value={formData.regularizationReason} onValueChange={(v) => handleInputChange('regularizationReason', v)}>
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Sélectionner la raison" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Construction sans permis initial">Construction sans permis initial</SelectItem>
+                  <SelectItem value="Permis périmé">Permis périmé</SelectItem>
+                  <SelectItem value="Modification non autorisée">Modification non autorisée</SelectItem>
+                  <SelectItem value="Extension ou agrandissement">Extension ou agrandissement</SelectItem>
+                  <SelectItem value="Changement d'usage sans autorisation">Changement d'usage sans autorisation</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {requiresOriginalPermit() && (
+              <div className="space-y-2">
+                <Label className="text-xs font-medium">Numéro du permis initial *</Label>
+                <Input
+                  type="text"
+                  placeholder="Ex: PC/2020/001234"
+                  value={formData.originalPermitNumber}
+                  onChange={(e) => handleInputChange('originalPermitNumber', e.target.value)}
+                  className="h-10"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Numéro du permis de la construction existante faisant l'objet de modification
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               <Label className="text-xs font-medium">Date de construction *</Label>
               <Input
