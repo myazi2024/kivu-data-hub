@@ -84,8 +84,8 @@ export const useSearchConfig = () => {
     const config = getConfigByKey('error_messages');
     return config?.config_value || {
       not_found: "Aucune parcelle trouvée pour ce numéro cadastral.",
-      not_found_help: "Il est possible qu'il y ait une erreur de saisie ou que cette parcelle ne soit pas encore enregistrée dans notre base de données.",
-      verification_prompt: "Vérifiez manuellement dans notre base des données."
+      not_found_help: "Cette parcelle n'est pas encore dans notre base ou le numéro est incorrect.",
+      verification_prompt: "Vérifiez vos informations avant de contribuer."
     };
   };
 
