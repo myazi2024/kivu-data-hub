@@ -1548,9 +1548,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Calculer les détails de progression avec points et badges
   const calculateProgressDetails = () => {
-    let totalFields = 0;
-    let filledFields = 0;
-    let points = 0;
+    let totalPoints = 0;
+    let earnedPoints = 0;
     const tabProgress = {
       general: { filled: 0, total: 0 },
       location: { filled: 0, total: 0 },
@@ -1558,72 +1557,178 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       obligations: { filled: 0, total: 0 }
     };
 
-    // Onglet Général (6 champs = 60 points)
-    if (formData.propertyTitleType) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    // ========== ONGLET INFORMATION GÉNÉRALE (30%) ==========
+    const infoWeight = 30;
     
-    if (formData.titleReferenceNumber) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    // Champs de texte (40% du poids de l'onglet = 12%)
+    const infoTextFields = [
+      formData.propertyTitleType,
+      formData.titleReferenceNumber,
+      formData.constructionType,
+      formData.constructionNature,
+      formData.declaredUsage,
+      currentOwners.some(o => o.lastName && o.firstName) // Propriétaire actuel
+      // buildingPermit exclu du calcul selon les spécifications
+    ];
     
-    if (formData.constructionType) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    // Pièces jointes (60% du poids de l'onglet = 18%)
+    const hasPropertyTitleDoc = titleDocFiles && titleDocFiles.length > 0;
+    const hasOwnerDoc = ownerDocFile !== null;
+    const infoAttachments = [hasPropertyTitleDoc, hasOwnerDoc];
     
-    if (formData.constructionNature) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    const infoTextWeight = infoWeight * 0.4;
+    const infoAttachmentWeight = infoWeight * 0.6;
     
-    if (formData.declaredUsage) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    const infoTextFilled = infoTextFields.filter(Boolean).length;
+    const infoTextTotal = infoTextFields.length;
+    const infoAttachmentsFilled = infoAttachments.filter(Boolean).length;
+    const infoAttachmentsTotal = infoAttachments.length;
     
-    const hasValidOwner = currentOwners.some(o => o.lastName && o.firstName);
-    if (hasValidOwner) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    const infoEarned = (infoTextFilled / infoTextTotal) * infoTextWeight + 
+                       (infoAttachmentsFilled / infoAttachmentsTotal) * infoAttachmentWeight;
+    earnedPoints += infoEarned;
+    totalPoints += infoWeight;
+    
+    tabProgress.general.filled = infoTextFilled + infoAttachmentsFilled;
+    tabProgress.general.total = infoTextTotal + infoAttachmentsTotal;
 
-    // Onglet Localisation (3-4 champs = 30-40 points)
-    if (formData.province) { filledFields++; points += 10; tabProgress.location.filled++; }
-    totalFields++; tabProgress.location.total++;
+    // ========== ONGLET LOCALISATION (15%) ==========
+    const locationWeight = 15;
     
-    if (sectionType === 'urbaine') {
-      if (formData.ville) { filledFields++; points += 10; tabProgress.location.filled++; }
-      totalFields++; tabProgress.location.total++;
-      if (formData.commune) { filledFields++; points += 10; tabProgress.location.filled++; }
-      totalFields++; tabProgress.location.total++;
-    } else if (sectionType === 'rurale') {
-      if (formData.territoire) { filledFields++; points += 10; tabProgress.location.filled++; }
-      totalFields++; tabProgress.location.total++;
-      if (formData.collectivite) { filledFields++; points += 10; tabProgress.location.filled++; }
-      totalFields++; tabProgress.location.total++;
-    }
+    // Champs de texte (40% = 6%)
+    const locationTextFields = [
+      formData.province,
+      sectionType === 'urbaine' ? formData.ville : formData.territoire,
+      sectionType === 'urbaine' ? formData.commune : formData.collectivite,
+      formData.areaSqm
+    ].filter(field => field !== undefined);
     
-    if (formData.areaSqm) { filledFields++; points += 10; tabProgress.location.filled++; }
-    totalFields++; tabProgress.location.total++;
+    // Pièces jointes (60% = 9%) - plan de localisation
+    // Vérifier si au moins une coordonnée GPS est remplie
+    const hasGPSCoordinates = gpsCoordinates.some(coord => coord.lat && coord.lng);
+    const locationAttachments = [hasGPSCoordinates];
+    
+    const locationTextWeight = locationWeight * 0.4;
+    const locationAttachmentWeight = locationWeight * 0.6;
+    
+    const locationTextFilled = locationTextFields.filter(Boolean).length;
+    const locationTextTotal = locationTextFields.length;
+    const locationAttachmentsFilled = locationAttachments.filter(Boolean).length;
+    const locationAttachmentsTotal = locationAttachments.length;
+    
+    const locationEarned = (locationTextFilled / locationTextTotal) * locationTextWeight + 
+                           (locationAttachmentsFilled / locationAttachmentsTotal) * locationAttachmentWeight;
+    earnedPoints += locationEarned;
+    totalPoints += locationWeight;
+    
+    tabProgress.location.filled = locationTextFilled + locationAttachmentsFilled;
+    tabProgress.location.total = locationTextTotal + locationAttachmentsTotal;
 
-    // Onglet Historiques (1 champ = 10 points)
-    const hasValidPreviousOwners = previousOwners.some(o => 
+    // ========== ONGLET HISTORIQUE DES PROPRIÉTAIRES (15%) - 3 propriétaires ==========
+    const historyWeight = 15;
+    
+    // Données des propriétaires (40% = 6%)
+    const validPreviousOwners = previousOwners.filter(o => 
       o.name && o.startDate && o.endDate
     );
-    if (hasValidPreviousOwners) { filledFields++; points += 10; tabProgress.history.filled++; }
-    totalFields++; tabProgress.history.total++;
+    const historyTextFilled = Math.min(validPreviousOwners.length, 3);
+    const historyTextTotal = 3;
+    
+    // Pièces jointes (60% = 9%) - actes de cession
+    // Dans ce formulaire on n'a pas de fichiers pour les anciens propriétaires
+    // Donc on va considérer que c'est rempli si au moins un propriétaire complet est renseigné
+    const hasCompleteHistory = validPreviousOwners.length > 0;
+    const historyAttachments = [hasCompleteHistory];
+    
+    const historyTextWeight = historyWeight * 0.4;
+    const historyAttachmentWeight = historyWeight * 0.6;
+    
+    const historyAttachmentsFilled = historyAttachments.filter(Boolean).length;
+    const historyAttachmentsTotal = historyAttachments.length;
+    
+    const historyEarned = (historyTextFilled / historyTextTotal) * historyTextWeight + 
+                          (historyAttachmentsFilled / historyAttachmentsTotal) * historyAttachmentWeight;
+    earnedPoints += historyEarned;
+    totalPoints += historyWeight;
+    
+    tabProgress.history.filled = historyTextFilled + historyAttachmentsFilled;
+    tabProgress.history.total = historyTextTotal + historyAttachmentsTotal;
 
-    // Onglet Obligations (1 champ = 10 points)
-    const hasValidTaxes = taxRecords.some(t => 
-      t.taxAmount && t.taxYear
-    );
-    const hasValidMortgages = mortgageRecords.some(m => 
+    // ========== ONGLET OBLIGATIONS ==========
+    // On va diviser cet onglet en deux parties : Taxes (15%) et Hypothèques (25%)
+    
+    // === TAXES (15%) - 3 taxes ===
+    const taxWeight = 15;
+    
+    // Données des taxes (40% = 6%)
+    const validTaxes = taxRecords.filter(t => t.taxAmount && t.taxYear);
+    const taxTextFilled = Math.min(validTaxes.length, 3);
+    const taxTextTotal = 3;
+    
+    // Pièces jointes (60% = 9%)
+    const hasTaxReceipts = taxRecords.some(t => t.receiptFile !== null);
+    const taxAttachments = [hasTaxReceipts];
+    
+    const taxTextWeight = taxWeight * 0.4;
+    const taxAttachmentWeight = taxWeight * 0.6;
+    
+    const taxAttachmentsFilled = taxAttachments.filter(Boolean).length;
+    const taxAttachmentsTotal = taxAttachments.length;
+    
+    const taxEarned = (taxTextFilled / taxTextTotal) * taxTextWeight + 
+                      (taxAttachmentsFilled / taxAttachmentsTotal) * taxAttachmentWeight;
+    earnedPoints += taxEarned;
+    totalPoints += taxWeight;
+    
+    // === HYPOTHÈQUES (25%) - 2 hypothèques ===
+    const mortgageWeight = 25;
+    
+    // Données des hypothèques (40% = 10%)
+    const validMortgages = mortgageRecords.filter(m => 
       m.mortgageAmount && m.creditorName
     );
-    if (hasValidTaxes || hasValidMortgages) { filledFields++; points += 10; tabProgress.obligations.filled++; }
-    totalFields++; tabProgress.obligations.total++;
+    const mortgageTextFilled = Math.min(validMortgages.length, 2);
+    const mortgageTextTotal = 2;
+    
+    // Pièces jointes (60% = 15%)
+    const hasMortgageContracts = mortgageRecords.some(m => m.receiptFile !== null);
+    const mortgageAttachments = [hasMortgageContracts];
+    
+    const mortgageTextWeight = mortgageWeight * 0.4;
+    const mortgageAttachmentWeight = mortgageWeight * 0.6;
+    
+    const mortgageAttachmentsFilled = mortgageAttachments.filter(Boolean).length;
+    const mortgageAttachmentsTotal = mortgageAttachments.length;
+    
+    const mortgageEarned = (mortgageTextFilled / mortgageTextTotal) * mortgageTextWeight + 
+                           (mortgageAttachmentsFilled / mortgageAttachmentsTotal) * mortgageAttachmentWeight;
+    earnedPoints += mortgageEarned;
+    totalPoints += mortgageWeight;
+    
+    // Combiner taxes et hypothèques pour l'onglet obligations
+    tabProgress.obligations.filled = taxTextFilled + taxAttachmentsFilled + 
+                                     mortgageTextFilled + mortgageAttachmentsFilled;
+    tabProgress.obligations.total = taxTextTotal + taxAttachmentsTotal + 
+                                    mortgageTextTotal + mortgageAttachmentsTotal;
 
-    const percentage = Math.round((filledFields / totalFields) * 100);
-    const totalPoints = totalFields * 10;
+    // ========== CALCUL FINAL ==========
+    const overallPercentage = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
+    const points = Math.round(earnedPoints * 10); // Conversion en points pour affichage
+    const totalPointsDisplay = totalPoints * 10;
+    
+    // Calcul du total des champs pour l'affichage
+    const totalFilledFields = tabProgress.general.filled + tabProgress.location.filled + 
+                              tabProgress.history.filled + tabProgress.obligations.filled;
+    const totalFieldsCount = tabProgress.general.total + tabProgress.location.total + 
+                             tabProgress.history.total + tabProgress.obligations.total;
 
-    return { 
-      percentage, 
-      filledFields, 
-      totalFields, 
-      points, 
-      totalPoints,
-      tabProgress 
+    return {
+      percentage: overallPercentage,
+      filledFields: totalFilledFields,
+      totalFields: totalFieldsCount,
+      points,
+      totalPoints: totalPointsDisplay,
+      tabProgress
     };
   };
 
