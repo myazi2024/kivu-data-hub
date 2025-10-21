@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, UserPlus, LogIn } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, UserPlus, LogIn, Trophy, Zap } from 'lucide-react';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile, MdStar } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,6 +30,7 @@ import { InputWithPopover } from './InputWithPopover';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useIsMobile } from '@/hooks/use-mobile';
+import confetti from 'canvas-confetti';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -67,6 +68,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showMortgageWarning, setShowMortgageWarning] = useState(false);
   const [highlightIncompleteMortgage, setHighlightIncompleteMortgage] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [previousProgress, setPreviousProgress] = useState(0);
+  const [hasShownConfetti, setHasShownConfetti] = useState(false);
+  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -1542,71 +1546,194 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     };
   };
 
-  // Calculer le pourcentage de complétion du formulaire
-  const calculateProgress = () => {
+  // Calculer les détails de progression avec points et badges
+  const calculateProgressDetails = () => {
     let totalFields = 0;
     let filledFields = 0;
+    let points = 0;
+    const tabProgress = {
+      general: { filled: 0, total: 0 },
+      location: { filled: 0, total: 0 },
+      history: { filled: 0, total: 0 },
+      obligations: { filled: 0, total: 0 }
+    };
 
-    // Onglet Général (6 champs)
-    if (formData.propertyTitleType) filledFields++;
-    totalFields++;
+    // Onglet Général (6 champs = 60 points)
+    if (formData.propertyTitleType) { filledFields++; points += 10; tabProgress.general.filled++; }
+    totalFields++; tabProgress.general.total++;
     
-    if (formData.titleReferenceNumber) filledFields++;
-    totalFields++;
+    if (formData.titleReferenceNumber) { filledFields++; points += 10; tabProgress.general.filled++; }
+    totalFields++; tabProgress.general.total++;
     
-    if (formData.constructionType) filledFields++;
-    totalFields++;
+    if (formData.constructionType) { filledFields++; points += 10; tabProgress.general.filled++; }
+    totalFields++; tabProgress.general.total++;
     
-    if (formData.constructionNature) filledFields++;
-    totalFields++;
+    if (formData.constructionNature) { filledFields++; points += 10; tabProgress.general.filled++; }
+    totalFields++; tabProgress.general.total++;
     
-    if (formData.declaredUsage) filledFields++;
-    totalFields++;
+    if (formData.declaredUsage) { filledFields++; points += 10; tabProgress.general.filled++; }
+    totalFields++; tabProgress.general.total++;
     
     const hasValidOwner = currentOwners.some(o => o.lastName && o.firstName);
-    if (hasValidOwner) filledFields++;
-    totalFields++;
+    if (hasValidOwner) { filledFields++; points += 10; tabProgress.general.filled++; }
+    totalFields++; tabProgress.general.total++;
 
-    // Onglet Localisation (3-4 champs)
-    if (formData.province) filledFields++;
-    totalFields++;
+    // Onglet Localisation (3-4 champs = 30-40 points)
+    if (formData.province) { filledFields++; points += 10; tabProgress.location.filled++; }
+    totalFields++; tabProgress.location.total++;
     
     if (sectionType === 'urbaine') {
-      if (formData.ville) filledFields++;
-      totalFields++;
-      if (formData.commune) filledFields++;
-      totalFields++;
+      if (formData.ville) { filledFields++; points += 10; tabProgress.location.filled++; }
+      totalFields++; tabProgress.location.total++;
+      if (formData.commune) { filledFields++; points += 10; tabProgress.location.filled++; }
+      totalFields++; tabProgress.location.total++;
     } else if (sectionType === 'rurale') {
-      if (formData.territoire) filledFields++;
-      totalFields++;
-      if (formData.collectivite) filledFields++;
-      totalFields++;
+      if (formData.territoire) { filledFields++; points += 10; tabProgress.location.filled++; }
+      totalFields++; tabProgress.location.total++;
+      if (formData.collectivite) { filledFields++; points += 10; tabProgress.location.filled++; }
+      totalFields++; tabProgress.location.total++;
     }
     
-    if (formData.areaSqm) filledFields++;
-    totalFields++;
+    if (formData.areaSqm) { filledFields++; points += 10; tabProgress.location.filled++; }
+    totalFields++; tabProgress.location.total++;
 
-    // Onglet Historiques - vérifier que les champs sont vraiment remplis
+    // Onglet Historiques (1 champ = 10 points)
     const hasValidPreviousOwners = previousOwners.some(o => 
       o.name && o.startDate && o.endDate
     );
-    if (hasValidPreviousOwners) filledFields++;
-    totalFields++;
+    if (hasValidPreviousOwners) { filledFields++; points += 10; tabProgress.history.filled++; }
+    totalFields++; tabProgress.history.total++;
 
-    // Onglet Obligations - vérifier que les champs sont vraiment remplis
+    // Onglet Obligations (1 champ = 10 points)
     const hasValidTaxes = taxRecords.some(t => 
       t.taxAmount && t.taxYear
     );
     const hasValidMortgages = mortgageRecords.some(m => 
       m.mortgageAmount && m.creditorName
     );
-    if (hasValidTaxes || hasValidMortgages) filledFields++;
-    totalFields++;
+    if (hasValidTaxes || hasValidMortgages) { filledFields++; points += 10; tabProgress.obligations.filled++; }
+    totalFields++; tabProgress.obligations.total++;
 
-    // Note: Les permis de construire ne sont PAS comptés dans la progression
+    const percentage = Math.round((filledFields / totalFields) * 100);
+    const totalPoints = totalFields * 10;
 
-    return Math.round((filledFields / totalFields) * 100);
+    return { 
+      percentage, 
+      filledFields, 
+      totalFields, 
+      points, 
+      totalPoints,
+      tabProgress 
+    };
   };
+
+  // Calculer le pourcentage de complétion du formulaire
+  const calculateProgress = () => {
+    return calculateProgressDetails().percentage;
+  };
+
+  // Fonction pour obtenir le message motivant
+  const getMotivationalMessage = (progress: number) => {
+    if (progress === 0) return "Commencez votre contribution ! 🚀";
+    if (progress < 25) return "Excellent début ! Continuons ensemble 💪";
+    if (progress < 50) return "Vous progressez bien ! Bientôt à mi-chemin 🎯";
+    if (progress < 75) return "Plus que la moitié ! Vous y êtes presque ⚡";
+    if (progress < 100) return "Dernière ligne droite ! Quelques détails encore ✨";
+    return "Parfait ! Formulaire complété 🎉";
+  };
+
+  // Fonction pour obtenir la couleur de la barre
+  const getProgressColor = (progress: number) => {
+    if (progress < 40) return "bg-red-500";
+    if (progress < 70) return "bg-yellow-500";
+    return "bg-green-500";
+  };
+
+  // Fonction pour déclencher les confettis
+  const triggerConfetti = () => {
+    const duration = 3 * 1000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
+
+    const randomInRange = (min: number, max: number) => {
+      return Math.random() * (max - min) + min;
+    };
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+      
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+      });
+    }, 250);
+  };
+
+  // Fonction pour gérer les badges débloqués
+  const checkAndAwardBadges = (progress: number) => {
+    const newBadges = [...earnedBadges];
+    
+    if (progress >= 25 && !earnedBadges.includes('starter')) {
+      newBadges.push('starter');
+      toast({
+        title: "🏅 Badge débloqué !",
+        description: "Contributeur Débutant - Vous avez commencé votre contribution",
+      });
+    }
+    
+    if (progress >= 50 && !earnedBadges.includes('halfway')) {
+      newBadges.push('halfway');
+      toast({
+        title: "🏅 Badge débloqué !",
+        description: "Expert en Progression - Mi-parcours atteint !",
+      });
+    }
+    
+    if (progress >= 75 && !earnedBadges.includes('almost')) {
+      newBadges.push('almost');
+      toast({
+        title: "🏅 Badge débloqué !",
+        description: "Presque Là - Vous êtes proche du but !",
+      });
+    }
+    
+    if (progress === 100 && !earnedBadges.includes('complete')) {
+      newBadges.push('complete');
+      if (!hasShownConfetti) {
+        triggerConfetti();
+        setHasShownConfetti(true);
+      }
+      toast({
+        title: "🏆 Badge débloqué !",
+        description: "Contributeur Expert - Formulaire 100% complété !",
+      });
+    }
+    
+    if (newBadges.length > earnedBadges.length) {
+      setEarnedBadges(newBadges);
+    }
+  };
+
+  // Surveiller les changements de progression
+  useEffect(() => {
+    const currentProgress = calculateProgress();
+    if (currentProgress > previousProgress) {
+      checkAndAwardBadges(currentProgress);
+      setPreviousProgress(currentProgress);
+    }
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, sectionType]);
 
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber });
@@ -1747,35 +1874,47 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <TabsList className="grid w-full grid-cols-5 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
               <TabsTrigger 
                 value="general" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1 relative"
               >
                 <MdDashboard className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "general") && <span className="hidden sm:inline">Général</span>}
                 {isMobile && activeTab === "general" && <span className="text-xs">Général</span>}
+                {calculateProgressDetails().tabProgress.general.filled === calculateProgressDetails().tabProgress.general.total && (
+                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1" />
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="location" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1 relative"
               >
                 <MdLocationOn className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "location") && <span className="hidden sm:inline">Localisation</span>}
                 {isMobile && activeTab === "location" && <span className="text-xs">Lieu</span>}
+                {calculateProgressDetails().tabProgress.location.filled === calculateProgressDetails().tabProgress.location.total && (
+                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1" />
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1 relative"
               >
                 <MdEventNote className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "history") && <span className="hidden sm:inline">Historiques</span>}
                 {isMobile && activeTab === "history" && <span className="text-xs">Historique</span>}
+                {calculateProgressDetails().tabProgress.history.filled === calculateProgressDetails().tabProgress.history.total && (
+                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1" />
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="obligations" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1 relative"
               >
                 <MdAccountBalance className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline">Obligations</span>}
                 {isMobile && activeTab === "obligations" && <span className="text-xs">Taxes</span>}
+                {calculateProgressDetails().tabProgress.obligations.filled === calculateProgressDetails().tabProgress.obligations.total && (
+                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1" />
+                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="review" 
@@ -1787,25 +1926,71 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </TabsTrigger>
             </TabsList>
             
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs sm:text-sm">
-                <span className="text-muted-foreground font-medium">Progression</span>
-                <span className="text-primary font-semibold">{calculateProgress()}%</span>
+            <div className="space-y-3">
+              {/* Barre de progression avec couleur dynamique */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-xs sm:text-sm">
+                  <span className="text-muted-foreground font-medium flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-amber-500" />
+                    Progression
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-primary font-semibold">{calculateProgressDetails().points}/{calculateProgressDetails().totalPoints} pts</span>
+                    <span className="text-muted-foreground">•</span>
+                    <span className="text-primary font-semibold">{calculateProgress()}%</span>
+                  </div>
+                </div>
+                <div className="relative">
+                  <Progress 
+                    value={calculateProgress()} 
+                    className={`h-3 transition-all duration-500 animate-fade-in ${getProgressColor(calculateProgress())}`}
+                  />
+                  {calculateProgress() === 100 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Trophy className="h-4 w-4 text-white animate-bounce" />
+                    </div>
+                  )}
+                </div>
               </div>
-              <Progress 
-                value={calculateProgress()} 
-                className="h-2 animate-fade-in"
-              />
-              {calculateProgress() < 100 && (
-                <p className="text-xs text-muted-foreground">
-                  Continuez à remplir le formulaire pour soumettre votre contribution
+
+              {/* Compteur de champs */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-muted-foreground">
+                  {calculateProgressDetails().filledFields} champ{calculateProgressDetails().filledFields > 1 ? 's' : ''} complété{calculateProgressDetails().filledFields > 1 ? 's' : ''} sur {calculateProgressDetails().totalFields}
+                </span>
+              </div>
+
+              {/* Message motivant avec animation */}
+              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 rounded-lg border border-primary/20 animate-fade-in">
+                <p className="text-sm font-medium text-foreground">
+                  {getMotivationalMessage(calculateProgress())}
                 </p>
-              )}
-              {calculateProgress() === 100 && (
-                <p className="text-xs text-primary font-medium flex items-center gap-1 animate-fade-in">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Formulaire complété ! Vous pouvez maintenant soumettre.
-                </p>
+              </div>
+
+              {/* Badges débloqués */}
+              {earnedBadges.length > 0 && (
+                <div className="flex flex-wrap gap-2 animate-fade-in">
+                  {earnedBadges.includes('starter') && (
+                    <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
+                      🏅 Débutant
+                    </div>
+                  )}
+                  {earnedBadges.includes('halfway') && (
+                    <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-1 rounded-full text-xs font-medium">
+                      ⭐ Mi-parcours
+                    </div>
+                  )}
+                  {earnedBadges.includes('almost') && (
+                    <div className="flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-1 rounded-full text-xs font-medium">
+                      🔥 Presque là
+                    </div>
+                  )}
+                  {earnedBadges.includes('complete') && (
+                    <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full text-xs font-medium animate-pulse">
+                      🏆 Expert
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </div>
