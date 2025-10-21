@@ -800,7 +800,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         // Validation du numéro de permis précédent pour certaines raisons
         const requiresPreviousPermit = 
           permitRequest.regularizationReason === "Modifications non autorisées" || 
-          permitRequest.regularizationReason === "Extension non déclarée";
+          permitRequest.regularizationReason === "Extension non déclarée" ||
+          permitRequest.regularizationReason === "Changement d'usage";
         
         if (requiresPreviousPermit && !permitRequest.previousPermitNumber) {
           toast({
@@ -2724,7 +2725,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                       {/* Numéro du permis précédent (si applicable) */}
                       {(permitRequest.regularizationReason === "Modifications non autorisées" || 
-                        permitRequest.regularizationReason === "Extension non déclarée") && (
+                        permitRequest.regularizationReason === "Extension non déclarée" ||
+                        permitRequest.regularizationReason === "Changement d'usage") && (
                         <div className="space-y-2 border border-border/50 rounded-lg p-4 bg-muted/30">
                           <Label className="flex items-center gap-2">
                             Numéro du permis de construire précédent *
@@ -2737,7 +2739,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               <PopoverContent className="w-80">
                                 <div className="space-y-2">
                                   <p className="text-xs text-muted-foreground">
-                                    Pour régulariser des modifications ou une extension, vous devez fournir le numéro du permis de construire 
+                                    Pour régulariser des modifications, une extension ou un changement d'usage, vous devez fournir le numéro du permis de construire 
                                     initial de la construction.
                                   </p>
                                   <p className="text-xs font-medium text-primary">
