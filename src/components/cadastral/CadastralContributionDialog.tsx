@@ -28,6 +28,7 @@ import {
 import { InputWithPopover } from './InputWithPopover';
 import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -44,6 +45,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -1744,17 +1746,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
                 Général
               </TabsTrigger>
-              <TabsTrigger value="location" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
-                Localisation
+              <TabsTrigger value="location" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 whitespace-nowrap">
+                {isMobile ? "Lieu" : "Localisation"}
               </TabsTrigger>
-              <TabsTrigger value="history" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
-                Historiques
+              <TabsTrigger value="history" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 whitespace-nowrap">
+                {isMobile ? "Historique" : "Historiques"}
               </TabsTrigger>
-              <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
-                Obligations
+              <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 whitespace-nowrap">
+                {isMobile ? "Taxes" : "Obligations"}
               </TabsTrigger>
-              <TabsTrigger value="review" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 relative">
-                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 inline text-amber-500" />
+              <TabsTrigger value="review" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 relative whitespace-nowrap">
+                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 inline text-amber-500" />
                 Révision
               </TabsTrigger>
             </TabsList>
