@@ -2667,14 +2667,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         {/* Année de construction */}
                         <div className="space-y-2">
                           <Label>Année de construction *</Label>
-                          <Input
-                            type="number"
-                            placeholder="ex: 2018"
-                            min="1950"
-                            max={new Date().getFullYear()}
+                          <Select
                             value={permitRequest.constructionYear}
-                            onChange={(e) => setPermitRequest({ ...permitRequest, constructionYear: e.target.value })}
-                          />
+                            onValueChange={(value) => setPermitRequest({ ...permitRequest, constructionYear: value })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Sélectionner l'année" />
+                            </SelectTrigger>
+                            <SelectContent className="max-h-[200px]">
+                              {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                                <SelectItem key={year} value={year.toString()}>
+                                  {year}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                       </div>
 
