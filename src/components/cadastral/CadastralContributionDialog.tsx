@@ -1749,7 +1749,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="general" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <MdDashboard className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdDashboard className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "general") && <span className="hidden sm:inline">Général</span>}
                 {isMobile && activeTab === "general" && <span className="text-xs">Général</span>}
               </TabsTrigger>
@@ -1757,7 +1757,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="location" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <MdLocationOn className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdLocationOn className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "location") && <span className="hidden sm:inline">Localisation</span>}
                 {isMobile && activeTab === "location" && <span className="text-xs">Lieu</span>}
               </TabsTrigger>
@@ -1765,7 +1765,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="history" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <MdEventNote className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdEventNote className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "history") && <span className="hidden sm:inline">Historiques</span>}
                 {isMobile && activeTab === "history" && <span className="text-xs">Historique</span>}
               </TabsTrigger>
@@ -1773,7 +1773,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="obligations" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <MdAccountBalance className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdAccountBalance className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline">Obligations</span>}
                 {isMobile && activeTab === "obligations" && <span className="text-xs">Taxes</span>}
               </TabsTrigger>
@@ -1781,7 +1781,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="review" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <MdRateReview className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
+                <MdRateReview className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
                 {(!isMobile || activeTab === "review") && <span className="hidden sm:inline">Révision</span>}
                 {isMobile && activeTab === "review" && <span className="text-xs">Révision</span>}
               </TabsTrigger>
