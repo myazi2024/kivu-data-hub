@@ -1436,6 +1436,108 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
 
+  // Calculer la valeur CCC estimée (similaire au backend calculate_ccc_value)
+  const calculateCCCValue = () => {
+    let totalFields = 0;
+    let filledFields = 0;
+    
+    // SECTION 1: Champ obligatoire (1 champ)
+    totalFields += 1; // parcelNumber
+    filledFields += 1; // toujours rempli
+    
+    // SECTION 2: Informations générales (12 champs)
+    totalFields += 12;
+    if (formData.propertyTitleType) filledFields += 1;
+    if (formData.leaseType) filledFields += 1;
+    if (formData.titleReferenceNumber) filledFields += 1;
+    
+    // Propriétaires actuels
+    const hasValidOwners = currentOwners.some(o => o.lastName && o.firstName && o.legalStatus);
+    if (hasValidOwners) filledFields += 3; // lastName, firstName, legalStatus
+    
+    const hasOwnerSince = currentOwners.some(o => o.since);
+    if (hasOwnerSince) filledFields += 1;
+    
+    if (formData.areaSqm) filledFields += 1;
+    if (formData.constructionType) filledFields += 1;
+    if (formData.constructionNature) filledFields += 1;
+    if (formData.declaredUsage) filledFields += 1;
+    
+    // SECTION 3: Permis de construire (3 champs)
+    totalFields += 3;
+    const hasValidPermits = buildingPermits.some(p => p.permitNumber && p.issuingService);
+    if (hasValidPermits) filledFields += 1;
+    
+    const hasPermitAttachments = buildingPermits.some(p => p.attachmentFile);
+    if (hasPermitAttachments) filledFields += 1;
+    
+    if (permitRequest.applicantName && permitRequest.constructionDescription) {
+      filledFields += 1;
+    }
+    
+    // SECTION 4: Localisation (12 champs)
+    totalFields += 12;
+    if (formData.province) filledFields += 1;
+    if (formData.ville) filledFields += 1;
+    if (formData.commune) filledFields += 1;
+    if (formData.quartier) filledFields += 1;
+    if (formData.avenue) filledFields += 1;
+    if (formData.territoire) filledFields += 1;
+    if (formData.collectivite) filledFields += 1;
+    if (formData.groupement) filledFields += 1;
+    if (formData.village) filledFields += 1;
+    if (formData.circonscriptionFonciere) filledFields += 1;
+    
+    const hasValidGPS = gpsCoordinates.filter(g => g.lat && g.lng).length >= 3;
+    if (hasValidGPS) {
+      filledFields += 2; // coordonnées + validation >= 3 bornes
+    } else if (gpsCoordinates.some(g => g.lat && g.lng)) {
+      filledFields += 1; // coordonnées partielles
+    }
+    
+    // SECTION 5: Historiques (3 champs)
+    totalFields += 3;
+    const hasOwnershipHistory = previousOwners.some(o => o.name && o.startDate);
+    if (hasOwnershipHistory) filledFields += 1;
+    
+    if (formData.boundaryHistory && formData.boundaryHistory.length > 0) filledFields += 1;
+    
+    const hasTaxHistory = taxRecords.some(t => t.taxAmount && t.taxYear);
+    if (hasTaxHistory) filledFields += 1;
+    
+    // SECTION 6: Obligations (1 champ)
+    totalFields += 1;
+    const hasMortgageHistory = mortgageRecords.some(m => m.mortgageAmount && m.creditorName);
+    if (hasMortgageHistory) filledFields += 1;
+    
+    // SECTION 7: Pièces jointes (2 champs)
+    totalFields += 2;
+    if (ownerDocFile) filledFields += 1;
+    if (titleDocFiles.length > 0) filledFields += 1;
+    
+    // SECTION 8: Métadonnées (1 champ)
+    totalFields += 1;
+    if (formData.whatsappNumber) filledFields += 1;
+    
+    // Calculer le taux de complétion
+    const completionRate = filledFields / totalFields;
+    
+    // Calculer la valeur du code CCC (max 5$)
+    let cccValue = Math.round(5.0 * completionRate * 100) / 100;
+    
+    // Valeur minimum de 0.50$ si au moins le numéro de parcelle est fourni
+    if (cccValue < 0.50) {
+      cccValue = 0.50;
+    }
+    
+    return {
+      value: cccValue,
+      completionRate: completionRate,
+      filledFields,
+      totalFields
+    };
+  };
+
   // Calculer le pourcentage de complétion du formulaire
   const calculateProgress = () => {
     let totalFields = 0;
@@ -1638,7 +1740,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
         <Tabs defaultValue="general" className="w-full">
           <div className="sticky top-0 z-20 bg-background px-4 sm:px-6 pt-4 pb-3 border-b shadow-sm">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
               <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
                 Général
               </TabsTrigger>
@@ -1650,6 +1752,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </TabsTrigger>
               <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
                 Obligations
+              </TabsTrigger>
+              <TabsTrigger value="review" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 relative">
+                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 inline text-amber-500" />
+                Révision
               </TabsTrigger>
             </TabsList>
             
@@ -4220,12 +4326,243 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     Ajouter une hypothèque
                   </Button>
                 </div>
+              </div>
+            )}
+          </TabsContent>
 
-                {/* Bouton de soumission finale */}
+          {/* Onglet Révision & Soumission */}
+          <TabsContent value="review" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+            <div className="space-y-6 py-6">
+              {/* En-tête avec estimation CCC */}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-6 shadow-lg">
+                <div className="flex items-start gap-4">
+                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                    <Sparkles className="h-8 w-8 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-bold text-amber-900 dark:text-amber-100 mb-2">
+                      Votre contribution CCC
+                    </h3>
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <span className="text-4xl font-bold text-amber-600 dark:text-amber-400">
+                        ${calculateCCCValue().value.toFixed(2)}
+                      </span>
+                      <span className="text-lg text-amber-700 dark:text-amber-300">/ $5.00</span>
+                    </div>
+                    <Progress 
+                      value={(calculateCCCValue().value / 5) * 100} 
+                      className="h-3 mb-3 bg-amber-200 dark:bg-amber-900/50"
+                    />
+                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                      {calculateCCCValue().filledFields} champs sur {calculateCCCValue().totalFields} complétés ({Math.round(calculateCCCValue().completionRate * 100)}%)
+                    </p>
+                    {calculateCCCValue().value < 5 && (
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Ajoutez encore {calculateCCCValue().totalFields - calculateCCCValue().filledFields} champs pour maximiser votre code CCC !
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Récapitulatif des sections */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                  Récapitulatif de votre contribution
+                </h3>
+
+                {/* Section Général */}
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">Informations générales</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const tabs = document.querySelector('[role="tablist"]');
+                        const generalTab = tabs?.querySelector('[value="general"]') as HTMLElement;
+                        generalTab?.click();
+                      }}
+                      className="text-xs h-7"
+                    >
+                      Modifier
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <div className={formData.propertyTitleType ? "text-foreground" : "text-muted-foreground italic"}>
+                      Type de titre : {formData.propertyTitleType || "Non renseigné"}
+                    </div>
+                    <div className={formData.titleReferenceNumber ? "text-foreground" : "text-muted-foreground italic"}>
+                      N° référence : {formData.titleReferenceNumber || "Non renseigné"}
+                    </div>
+                    <div className={currentOwners.some(o => o.lastName && o.firstName) ? "text-foreground" : "text-muted-foreground italic"}>
+                      Propriétaire(s) : {currentOwners.filter(o => o.lastName && o.firstName).length > 0 
+                        ? currentOwners.filter(o => o.lastName && o.firstName).map(o => `${o.lastName} ${o.firstName}`).join(', ')
+                        : "Non renseigné"}
+                    </div>
+                    <div className={formData.constructionType ? "text-foreground" : "text-muted-foreground italic"}>
+                      Type construction : {formData.constructionType || "Non renseigné"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section Localisation */}
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">Localisation</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const tabs = document.querySelector('[role="tablist"]');
+                        const locationTab = tabs?.querySelector('[value="location"]') as HTMLElement;
+                        locationTab?.click();
+                      }}
+                      className="text-xs h-7"
+                    >
+                      Modifier
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <div className={formData.province ? "text-foreground" : "text-muted-foreground italic"}>
+                      Province : {formData.province || "Non renseigné"}
+                    </div>
+                    <div className={formData.ville || formData.territoire ? "text-foreground" : "text-muted-foreground italic"}>
+                      Ville/Territoire : {formData.ville || formData.territoire || "Non renseigné"}
+                    </div>
+                    <div className={formData.commune || formData.collectivite ? "text-foreground" : "text-muted-foreground italic"}>
+                      Commune/Collectivité : {formData.commune || formData.collectivite || "Non renseigné"}
+                    </div>
+                    <div className={formData.areaSqm ? "text-foreground" : "text-muted-foreground italic"}>
+                      Superficie : {formData.areaSqm ? `${formData.areaSqm} m²` : "Non renseigné"}
+                    </div>
+                    <div className={gpsCoordinates.filter(g => g.lat && g.lng).length > 0 ? "text-foreground" : "text-muted-foreground italic"}>
+                      Coordonnées GPS : {gpsCoordinates.filter(g => g.lat && g.lng).length} borne(s)
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section Historiques */}
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">Historiques</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const tabs = document.querySelector('[role="tablist"]');
+                        const historyTab = tabs?.querySelector('[value="history"]') as HTMLElement;
+                        historyTab?.click();
+                      }}
+                      className="text-xs h-7"
+                    >
+                      Modifier
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <div className={previousOwners.some(o => o.name && o.startDate) ? "text-foreground" : "text-muted-foreground italic"}>
+                      Anciens propriétaires : {previousOwners.filter(o => o.name && o.startDate).length || "Aucun"}
+                    </div>
+                    <div className={taxRecords.some(t => t.taxAmount && t.taxYear) ? "text-foreground" : "text-muted-foreground italic"}>
+                      Historique taxes : {taxRecords.filter(t => t.taxAmount && t.taxYear).length || "Aucun"}
+                    </div>
+                    <div className={buildingPermits.some(p => p.permitNumber) ? "text-foreground" : "text-muted-foreground italic"}>
+                      Permis de construire : {buildingPermits.filter(p => p.permitNumber).length || "Aucun"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section Obligations */}
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">Obligations</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const tabs = document.querySelector('[role="tablist"]');
+                        const obligationsTab = tabs?.querySelector('[value="obligations"]') as HTMLElement;
+                        obligationsTab?.click();
+                      }}
+                      className="text-xs h-7"
+                    >
+                      Modifier
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <div className={mortgageRecords.some(m => m.mortgageAmount && m.creditorName) ? "text-foreground" : "text-muted-foreground italic"}>
+                      Hypothèques : {mortgageRecords.filter(m => m.mortgageAmount && m.creditorName).length || "Aucune"}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pièces jointes */}
+                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+                  <h4 className="font-semibold text-sm">Pièces jointes</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <div className={ownerDocFile ? "text-foreground flex items-center gap-1" : "text-muted-foreground italic"}>
+                      {ownerDocFile ? <CheckCircle2 className="h-4 w-4 text-primary" /> : "⭕"}
+                      Pièce d'identité : {ownerDocFile ? ownerDocFile.name : "Non fournie"}
+                    </div>
+                    <div className={titleDocFiles.length > 0 ? "text-foreground flex items-center gap-1" : "text-muted-foreground italic"}>
+                      {titleDocFiles.length > 0 ? <CheckCircle2 className="h-4 w-4 text-primary" /> : "⭕"}
+                      Titre de propriété : {titleDocFiles.length > 0 ? `${titleDocFiles.length} fichier(s)` : "Non fourni"}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Message de motivation */}
+              {calculateCCCValue().value < 5 && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 flex items-start gap-2">
+                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                    <span>
+                      <strong>Conseil :</strong> Pour maximiser votre code CCC (5$), complétez les sections manquantes ci-dessus. 
+                      Plus vous fournissez d'informations précises, plus votre contribution est valorisée !
+                    </span>
+                  </p>
+                </div>
+              )}
+
+              {/* Bouton de soumission */}
+              {user ? (
+                <div className="sticky bottom-0 left-0 right-0 mt-8 -mx-4 sm:-mx-6 -mb-6 bg-background/95 backdrop-blur-sm border-t p-4 sm:p-6 z-10">
+                  <div className="max-w-2xl mx-auto">
+                    <Button
+                      type="button"
+                      size="lg"
+                      onClick={handleSubmit}
+                      disabled={loading || uploading}
+                      className="w-full h-14 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80"
+                    >
+                      {loading || uploading ? (
+                        <>
+                          <Loader2 className="h-5 w-5 animate-spin" />
+                          {uploading ? "Téléchargement..." : "Envoi en cours..."}
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="h-5 w-5" />
+                          Soumettre ma contribution
+                        </>
+                      )}
+                    </Button>
+                    <p className="text-xs text-center text-muted-foreground mt-3">
+                      En soumettant, vous acceptez que vos données soient vérifiées par notre équipe
+                    </p>
+                  </div>
+                </div>
+              ) : (
                 <div className="sticky bottom-0 left-0 right-0 mt-8 -mx-4 sm:-mx-6 -mb-6 bg-background/95 backdrop-blur-sm border-t p-4 sm:p-6 z-10">
                   <div className="max-w-2xl mx-auto">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-                      {/* Info compacte */}
                       <div className="flex-1 text-center sm:text-left">
                         <p className="text-sm font-medium text-foreground mb-1">
                           Formulaire complété
@@ -4234,8 +4571,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           Connectez-vous pour soumettre et obtenir votre code CCC
                         </p>
                       </div>
-                      
-                      {/* Bouton principal */}
                       <Button
                         type="button"
                         size="lg"
@@ -4252,8 +4587,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </TabsContent>
           </div>
         </Tabs>
