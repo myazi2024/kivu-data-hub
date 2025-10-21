@@ -2111,8 +2111,48 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Section Permis de construire */}
             <div className="space-y-4 pt-4 border-t">
               <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-semibold">Permis de construire (optionnel)</Label>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-semibold">Permis de construire</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-transparent">
+                        <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-3">
+                        <h4 className="font-semibold text-sm">Guide du permis de construire</h4>
+                        
+                        <div className="space-y-3 text-sm">
+                          <div className="space-y-2">
+                            <p className="font-medium text-primary">Option 1 : J'ai déjà un permis</p>
+                            <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
+                              <li>Cliquez sur "J'ai déjà un permis"</li>
+                              <li>Renseignez le numéro du permis</li>
+                              <li>Indiquez la date d'émission</li>
+                              <li>Sélectionnez le service émetteur</li>
+                              <li>Joignez une copie du document (optionnel)</li>
+                            </ol>
+                          </div>
+                          
+                          <div className="space-y-2 pt-2 border-t">
+                            <p className="font-medium text-primary">Option 2 : Demander un permis</p>
+                            <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
+                              <li>Cliquez sur "Demander un permis"</li>
+                              <li>Choisissez le type (construction ou régularisation)</li>
+                              <li>Décrivez votre projet de construction</li>
+                              <li>Renseignez vos coordonnées de contact</li>
+                              <li>Joignez les plans architecturaux (si disponibles)</li>
+                            </ol>
+                          </div>
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground italic pt-2 border-t">
+                          💡 Cette section est optionnelle mais fortement recommandée pour régulariser votre parcelle
+                        </p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
