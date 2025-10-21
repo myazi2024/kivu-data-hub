@@ -1548,9 +1548,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Calculer les détails de progression avec points et badges
   const calculateProgressDetails = () => {
-    let totalFields = 0;
-    let filledFields = 0;
-    let points = 0;
+    let earnedPoints = 0;
+    const totalPoints = 1000; // Base de 1000 points pour 100%
+    
     const tabProgress = {
       general: { filled: 0, total: 0 },
       location: { filled: 0, total: 0 },
@@ -1558,70 +1558,169 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       obligations: { filled: 0, total: 0 }
     };
 
-    // Onglet Général (6 champs = 60 points)
-    if (formData.propertyTitleType) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    // ============================================
+    // ONGLET INFORMATIONS GÉNÉRALES - 30% (300 points)
+    // 40% pour données textuelles (120 pts), 60% pour pièces (180 pts)
+    // ============================================
+    const generalTextPoints = 120;
+    const generalDocPoints = 180;
     
-    if (formData.titleReferenceNumber) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    // Données textuelles (120 points répartis sur 6 champs = 20 pts/champ)
+    let generalTextFilled = 0;
+    const generalTextTotal = 6;
     
-    if (formData.constructionType) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
-    
-    if (formData.constructionNature) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
-    
-    if (formData.declaredUsage) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
-    
+    if (formData.propertyTitleType) { earnedPoints += 20; generalTextFilled++; }
+    if (formData.titleReferenceNumber) { earnedPoints += 20; generalTextFilled++; }
+    if (formData.constructionType) { earnedPoints += 20; generalTextFilled++; }
+    if (formData.constructionNature) { earnedPoints += 20; generalTextFilled++; }
+    if (formData.declaredUsage) { earnedPoints += 20; generalTextFilled++; }
     const hasValidOwner = currentOwners.some(o => o.lastName && o.firstName);
-    if (hasValidOwner) { filledFields++; points += 10; tabProgress.general.filled++; }
-    totalFields++; tabProgress.general.total++;
+    if (hasValidOwner) { earnedPoints += 20; generalTextFilled++; }
+    
+    // Pièces justificatives (180 points : 90 pts titre + 90 pts proprio)
+    let generalDocFilled = 0;
+    const generalDocTotal = 2;
+    
+    if (titleDocFiles.length > 0) { earnedPoints += 90; generalDocFilled++; }
+    if (ownerDocFile) { earnedPoints += 90; generalDocFilled++; }
+    
+    tabProgress.general.filled = generalTextFilled + generalDocFilled;
+    tabProgress.general.total = generalTextTotal + generalDocTotal;
 
-    // Onglet Localisation (3-4 champs = 30-40 points)
-    if (formData.province) { filledFields++; points += 10; tabProgress.location.filled++; }
-    totalFields++; tabProgress.location.total++;
+    // ============================================
+    // ONGLET LOCALISATION - 15% (150 points)
+    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
+    // ============================================
+    const locationTextPoints = 60;
+    const locationDocPoints = 90;
+    
+    // Données textuelles (60 points répartis sur 3-4 champs)
+    let locationTextFilled = 0;
+    let locationTextTotal = 0;
+    
+    if (formData.province) { earnedPoints += 15; locationTextFilled++; }
+    locationTextTotal++;
     
     if (sectionType === 'urbaine') {
-      if (formData.ville) { filledFields++; points += 10; tabProgress.location.filled++; }
-      totalFields++; tabProgress.location.total++;
-      if (formData.commune) { filledFields++; points += 10; tabProgress.location.filled++; }
-      totalFields++; tabProgress.location.total++;
+      if (formData.ville) { earnedPoints += 15; locationTextFilled++; }
+      locationTextTotal++;
+      if (formData.commune) { earnedPoints += 15; locationTextFilled++; }
+      locationTextTotal++;
     } else if (sectionType === 'rurale') {
-      if (formData.territoire) { filledFields++; points += 10; tabProgress.location.filled++; }
-      totalFields++; tabProgress.location.total++;
-      if (formData.collectivite) { filledFields++; points += 10; tabProgress.location.filled++; }
-      totalFields++; tabProgress.location.total++;
+      if (formData.territoire) { earnedPoints += 15; locationTextFilled++; }
+      locationTextTotal++;
+      if (formData.collectivite) { earnedPoints += 15; locationTextFilled++; }
+      locationTextTotal++;
     }
     
-    if (formData.areaSqm) { filledFields++; points += 10; tabProgress.location.filled++; }
-    totalFields++; tabProgress.location.total++;
+    if (formData.areaSqm) { earnedPoints += 15; locationTextFilled++; }
+    locationTextTotal++;
+    
+    // Pièces justificatives (90 points pour les coordonnées GPS)
+    let locationDocFilled = 0;
+    const locationDocTotal = 1;
+    
+    const hasValidGPS = gpsCoordinates.some(coord => coord.lat && coord.lng);
+    if (hasValidGPS) { earnedPoints += 90; locationDocFilled++; }
+    
+    tabProgress.location.filled = locationTextFilled + locationDocFilled;
+    tabProgress.location.total = locationTextTotal + locationDocTotal;
 
-    // Onglet Historiques (1 champ = 10 points)
-    const hasValidPreviousOwners = previousOwners.some(o => 
-      o.name && o.startDate && o.endDate
+    // ============================================
+    // HISTORIQUE DES PROPRIÉTAIRES - 15% (150 points)
+    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
+    // ============================================
+    
+    // Données textuelles (60 points pour jusqu'à 3 propriétaires = 20 pts/proprio)
+    let historyTextFilled = 0;
+    const historyTextTotal = 3;
+    
+    const validPreviousOwners = previousOwners.filter(o => 
+      o.name && o.startDate && o.endDate && o.legalStatus && o.mutationType
     );
-    if (hasValidPreviousOwners) { filledFields++; points += 10; tabProgress.history.filled++; }
-    totalFields++; tabProgress.history.total++;
+    
+    const ownerCount = Math.min(validPreviousOwners.length, 3);
+    earnedPoints += ownerCount * 20;
+    historyTextFilled = ownerCount;
+    
+    // Pièces justificatives (90 points si au moins un document)
+    let historyDocFilled = 0;
+    const historyDocTotal = 1;
+    
+    if (validPreviousOwners.length > 0) { 
+      earnedPoints += 90; 
+      historyDocFilled++; 
+    }
+    
+    tabProgress.history.filled = historyTextFilled + historyDocFilled;
+    tabProgress.history.total = historyTextTotal + historyDocTotal;
 
-    // Onglet Obligations (1 champ = 10 points)
-    const hasValidTaxes = taxRecords.some(t => 
-      t.taxAmount && t.taxYear
+    // ============================================
+    // TAXE FONCIÈRE - 15% (150 points)
+    // 40% pour données textuelles (60 pts), 60% pour pièces (90 pts)
+    // ============================================
+    
+    // Données textuelles (60 points pour jusqu'à 3 taxes = 20 pts/taxe)
+    let taxTextFilled = 0;
+    const taxTextTotal = 3;
+    
+    const validTaxes = taxRecords.filter(t => 
+      t.taxAmount && t.taxYear && t.taxType && t.paymentStatus
     );
-    const hasValidMortgages = mortgageRecords.some(m => 
-      m.mortgageAmount && m.creditorName
-    );
-    if (hasValidTaxes || hasValidMortgages) { filledFields++; points += 10; tabProgress.obligations.filled++; }
-    totalFields++; tabProgress.obligations.total++;
+    
+    const taxCount = Math.min(validTaxes.length, 3);
+    earnedPoints += taxCount * 20;
+    taxTextFilled = taxCount;
+    
+    // Pièces justificatives (90 points si au moins un reçu)
+    let taxDocFilled = 0;
+    const taxDocTotal = 1;
+    
+    const hasTaxReceipts = taxRecords.some(t => t.receiptFile !== null);
+    if (hasTaxReceipts) { earnedPoints += 90; taxDocFilled++; }
 
-    const percentage = Math.round((filledFields / totalFields) * 100);
-    const totalPoints = totalFields * 10;
+    // ============================================
+    // HYPOTHÈQUES - 25% (250 points)
+    // 40% pour données textuelles (100 pts), 60% pour pièces (150 pts)
+    // ============================================
+    
+    // Données textuelles (100 points pour jusqu'à 2 hypothèques = 50 pts/hypothèque)
+    let mortgageTextFilled = 0;
+    const mortgageTextTotal = 2;
+    
+    const validMortgages = mortgageRecords.filter(m => 
+      m.mortgageAmount && m.creditorName && m.creditorType && m.contractDate
+    );
+    
+    const mortgageCount = Math.min(validMortgages.length, 2);
+    earnedPoints += mortgageCount * 50;
+    mortgageTextFilled = mortgageCount;
+    
+    // Pièces justificatives (150 points si au moins un document)
+    let mortgageDocFilled = 0;
+    const mortgageDocTotal = 1;
+    
+    const hasMortgageReceipts = mortgageRecords.some(m => m.receiptFile !== null);
+    if (hasMortgageReceipts) { earnedPoints += 150; mortgageDocFilled++; }
+    
+    // Combiner taxes et hypothèques pour l'onglet obligations
+    tabProgress.obligations.filled = taxTextFilled + taxDocFilled + mortgageTextFilled + mortgageDocFilled;
+    tabProgress.obligations.total = taxTextTotal + taxDocTotal + mortgageTextTotal + mortgageDocTotal;
+
+    // Calculer le pourcentage final
+    const percentage = Math.round((earnedPoints / totalPoints) * 100);
+    
+    // Calculer le nombre total de champs pour l'affichage
+    const filledFields = tabProgress.general.filled + tabProgress.location.filled + 
+                         tabProgress.history.filled + tabProgress.obligations.filled;
+    const totalFields = tabProgress.general.total + tabProgress.location.total + 
+                       tabProgress.history.total + tabProgress.obligations.total;
 
     return { 
       percentage, 
       filledFields, 
       totalFields, 
-      points, 
+      points: earnedPoints, 
       totalPoints,
       tabProgress 
     };
