@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import { useSearchConfig } from '@/hooks/useSearchConfig';
 import CadastralResultsDialog from './CadastralResultsDialog';
-import { CadastralContributionDialogNew } from './CadastralContributionDialogNew';
+import CadastralContributionDialog from './CadastralContributionDialog';
 
 const FIXED_TEXT = "Ex: ";
 
@@ -367,7 +367,7 @@ const CadastralSearchBar = () => {
       )}
 
       {/* Dialog de contribution */}
-      <CadastralContributionDialogNew
+      <CadastralContributionDialog
         open={showContributionDialog}
         onOpenChange={setShowContributionDialog}
         parcelNumber={searchQuery}
