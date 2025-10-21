@@ -12,6 +12,7 @@ import { fr } from 'date-fns/locale';
 import { Helmet } from 'react-helmet';
 import { useToast } from '@/hooks/use-toast';
 import { useEffect, useState } from 'react';
+import DOMPurify from 'dompurify';
 
 const ArticleDetail = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -93,8 +94,9 @@ const ArticleDetail = () => {
   }
 
   // Parser le contenu markdown en HTML simple
+  // SECURITY: Sanitize HTML to prevent XSS attacks
   const formatContent = (content: string) => {
-    return content
+    const html = content
       .split('\n')
       .map(line => {
         // Titres
@@ -110,6 +112,13 @@ const ArticleDetail = () => {
         return line.trim() ? `<p class="mb-4 leading-relaxed">${line}</p>` : '';
       })
       .join('');
+
+    // Sanitize HTML to prevent XSS attacks from malicious article content
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['h1', 'h2', 'h3', 'p', 'strong', 'em', 'li', 'ul', 'ol', 'br'],
+      ALLOWED_ATTR: ['class'],
+      KEEP_CONTENT: true
+    });
   };
 
   return (

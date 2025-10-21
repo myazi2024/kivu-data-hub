@@ -17,14 +17,8 @@ export const usePayment = () => {
   const { toast } = useToast();
 
   const createPayment = async (item: CartItem, paymentData: PaymentData) => {
-    // Vérifier si c'est un paiement test AVANT de vérifier l'authentification
-    const isTestPayment = (
-      (paymentData.phoneNumber === '97123456' || paymentData.phoneNumber === '97123TEST') && 
-      paymentData.name === '1234'
-    );
-
-    // Pour les paiements réels, vérifier l'authentification
-    if (!user && !isTestPayment) {
+    // SECURITY: Vérifier l'authentification pour tous les paiements
+    if (!user) {
       toast({
         title: "Erreur d'authentification",
         description: "Vous devez être connecté pour effectuer un paiement",
@@ -36,28 +30,6 @@ export const usePayment = () => {
     try {
       setLoading(true);
       setPaymentStep('processing');
-
-      if (isTestPayment) {
-        // Paiement test - simulation rapide
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        setPaymentStep('success');
-        toast({
-          title: "Paiement test réussi ✓",
-          description: "Transaction de test validée avec succès"
-        });
-
-        // Retourner un objet de paiement test
-        return {
-          id: 'test-payment-' + Date.now(),
-          user_id: user?.id || 'test-user',
-          publication_id: item.id,
-          amount_usd: item.price,
-          status: 'completed',
-          payment_method: 'mobile_money_test',
-          payment_provider: paymentData.provider
-        };
-      }
 
       // Paiement réel - processus normal
       const { data: paymentRecord, error: paymentError } = await supabase
