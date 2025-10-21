@@ -1980,47 +1980,35 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <TabsList className="grid w-full grid-cols-5 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
               <TabsTrigger 
                 value="general" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1 relative"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
                 <MdDashboard className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "general") && <span className="hidden sm:inline">Général</span>}
                 {isMobile && activeTab === "general" && <span className="text-xs">Général</span>}
-                {calculateProgressDetails().tabProgress.general.filled === calculateProgressDetails().tabProgress.general.total && (
-                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1" />
-                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="location" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1 relative"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
                 <MdLocationOn className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "location") && <span className="hidden sm:inline">Localisation</span>}
                 {isMobile && activeTab === "location" && <span className="text-xs">Lieu</span>}
-                {calculateProgressDetails().tabProgress.location.filled === calculateProgressDetails().tabProgress.location.total && (
-                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1" />
-                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1 relative"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
                 <MdEventNote className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "history") && <span className="hidden sm:inline">Historiques</span>}
                 {isMobile && activeTab === "history" && <span className="text-xs">Historique</span>}
-                {calculateProgressDetails().tabProgress.history.filled === calculateProgressDetails().tabProgress.history.total && (
-                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1" />
-                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="obligations" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1 relative"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
                 <MdAccountBalance className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline">Obligations</span>}
                 {isMobile && activeTab === "obligations" && <span className="text-xs">Taxes</span>}
-                {calculateProgressDetails().tabProgress.obligations.filled === calculateProgressDetails().tabProgress.obligations.total && (
-                  <CheckCircle2 className="h-3 w-3 text-green-500 absolute -top-1 -right-1 sm:relative sm:top-0 sm:right-0 sm:ml-1" />
-                )}
               </TabsTrigger>
               <TabsTrigger 
                 value="review" 
