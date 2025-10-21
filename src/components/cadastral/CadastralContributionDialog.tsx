@@ -67,6 +67,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [highlightIncompleteTax, setHighlightIncompleteTax] = useState(false);
   const [showMortgageWarning, setShowMortgageWarning] = useState(false);
   const [highlightIncompleteMortgage, setHighlightIncompleteMortgage] = useState(false);
+  const [showCurrentOwnerRequiredWarning, setShowCurrentOwnerRequiredWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [previousProgress, setPreviousProgress] = useState(0);
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
@@ -1026,6 +1027,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   const addPreviousOwner = () => {
+    // Vérifier d'abord si au moins un propriétaire actuel est renseigné
+    const firstCurrentOwner = currentOwners[0];
+    if (!firstCurrentOwner?.lastName || !firstCurrentOwner?.firstName) {
+      // Afficher la notification demandant d'ajouter d'abord les propriétaires actuels
+      setShowCurrentOwnerRequiredWarning(true);
+      
+      // Masquer la notification après 5 secondes
+      setTimeout(() => {
+        setShowCurrentOwnerRequiredWarning(false);
+      }, 5000);
+      
+      return;
+    }
+    
     const firstOwner = previousOwners[0];
     
     // Vérifier si le premier propriétaire est complété
@@ -4099,6 +4114,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               
               {/* Bouton Ajouter déplacé en dessous des blocs */}
               <div className="space-y-2">
+                {/* Notification pour propriétaire actuel manquant */}
+                {showCurrentOwnerRequiredWarning && (
+                  <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-destructive">
+                          Ajoutez d'abord le(s) propriétaire(s) actuel(s)
+                        </p>
+                        <p className="text-xs text-destructive/80 mt-1">
+                          Pour ajouter un ancien propriétaire, vous devez d'abord renseigner au moins un propriétaire actuel dans l'onglet "Informations Générales" (section Propriétaire).
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
                 {/* Notification d'avertissement */}
                 {showPreviousOwnerWarning && (
                   <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
@@ -4106,7 +4138,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                          Complétez d'abord le propriétaire actuel
+                          Complétez d'abord l'ancien propriétaire précédent
                         </p>
                         <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                           Veuillez renseigner le nom, le statut juridique et le type de mutation de l'ancien propriétaire avant d'en ajouter un nouveau.
