@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink, UserPlus, LogIn, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink, UserPlus, LogIn, Sparkles, History, Receipt } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -65,6 +65,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [highlightIncompleteTax, setHighlightIncompleteTax] = useState(false);
   const [showMortgageWarning, setShowMortgageWarning] = useState(false);
   const [highlightIncompleteMortgage, setHighlightIncompleteMortgage] = useState(false);
+  const [activeTab, setActiveTab] = useState('general');
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -1740,24 +1741,48 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="general" className="w-full">
+        <Tabs defaultValue="general" className="w-full" onValueChange={setActiveTab}>
           <div className="sticky top-0 z-20 bg-background px-4 sm:px-6 pt-4 pb-3 border-b shadow-sm">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
-              <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
-                Général
+            <TabsList className="grid w-full grid-cols-5 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
+              <TabsTrigger 
+                value="general" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+              >
+                <FileText className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                {(!isMobile || activeTab === "general") && <span className="hidden sm:inline">Général</span>}
+                {isMobile && activeTab === "general" && <span className="text-xs">Général</span>}
               </TabsTrigger>
-              <TabsTrigger value="location" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 whitespace-nowrap">
-                {isMobile ? "Lieu" : "Localisation"}
+              <TabsTrigger 
+                value="location" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+              >
+                <MapPin className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                {(!isMobile || activeTab === "location") && <span className="hidden sm:inline">Localisation</span>}
+                {isMobile && activeTab === "location" && <span className="text-xs">Lieu</span>}
               </TabsTrigger>
-              <TabsTrigger value="history" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 whitespace-nowrap">
-                {isMobile ? "Historique" : "Historiques"}
+              <TabsTrigger 
+                value="history" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+              >
+                <History className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                {(!isMobile || activeTab === "history") && <span className="hidden sm:inline">Historiques</span>}
+                {isMobile && activeTab === "history" && <span className="text-xs">Historique</span>}
               </TabsTrigger>
-              <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 whitespace-nowrap">
-                {isMobile ? "Taxes" : "Obligations"}
+              <TabsTrigger 
+                value="obligations" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+              >
+                <Receipt className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline">Obligations</span>}
+                {isMobile && activeTab === "obligations" && <span className="text-xs">Taxes</span>}
               </TabsTrigger>
-              <TabsTrigger value="review" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 relative whitespace-nowrap">
-                <Sparkles className="h-3 w-3 sm:h-4 sm:w-4 mr-1 inline text-amber-500" />
-                Révision
+              <TabsTrigger 
+                value="review" 
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+              >
+                <Sparkles className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
+                {(!isMobile || activeTab === "review") && <span className="hidden sm:inline">Révision</span>}
+                {isMobile && activeTab === "review" && <span className="text-xs">Révision</span>}
               </TabsTrigger>
             </TabsList>
             
