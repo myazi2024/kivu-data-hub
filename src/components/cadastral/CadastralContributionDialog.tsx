@@ -1959,12 +1959,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     <>
       <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0">
-        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
-          <DialogTitle className="text-xl sm:text-2xl font-semibold">Contribuer aux informations cadastrales</DialogTitle>
-          <DialogDescription className="text-sm sm:text-base mt-2">
-            Parcelle : <strong className="text-foreground font-semibold">{parcelNumber}</strong>
-            <br />
-            <span className="text-xs sm:text-sm">Renseignez les informations que vous possédez sur cette parcelle.</span>
+        <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="text-base sm:text-2xl font-semibold leading-tight">
+            <span className="hidden sm:inline">Contribuer aux informations cadastrales</span>
+            <span className="sm:hidden">Contribution cadastrale</span>
+          </DialogTitle>
+          <DialogDescription className="text-xs sm:text-base mt-1 sm:mt-2 space-y-0.5 sm:space-y-0">
+            <div className="flex items-center gap-1 flex-wrap">
+              <span className="text-muted-foreground">Parcelle :</span>
+              <strong className="text-foreground font-semibold">{parcelNumber}</strong>
+            </div>
+            <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight sm:leading-normal">
+              Renseignez les informations que vous possédez
+            </p>
           </DialogDescription>
         </DialogHeader>
 
