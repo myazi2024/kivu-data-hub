@@ -995,6 +995,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         mortgageHistory: mortgageHistoryData.length > 0 ? mortgageHistoryData as any : undefined,
         buildingPermits: buildingPermitsDataFinal,
         permitRequest: permitRequestData,
+        previousPermitNumber: permitRequest.previousPermitNumber || undefined, // ✅ NOUVEAU: Ajout du numéro de permis précédent
         gpsCoordinates: gpsCoordinatesData,
       };
 

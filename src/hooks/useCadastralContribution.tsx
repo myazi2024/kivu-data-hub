@@ -32,6 +32,7 @@ export interface CadastralContributionData {
     issuingServiceContact?: string;
     attachmentUrl?: string;
   }>;
+  previousPermitNumber?: string; // ✅ NOUVEAU: pour régularisation
   
   // Demande de permis de construire (nouveau)
   permitRequest?: {
@@ -178,6 +179,13 @@ export const useCadastralContribution = () => {
         property_title_type: data.propertyTitleType,
         lease_type: data.leaseType,
         title_reference_number: data.titleReferenceNumber,
+        
+        // ✅ NOUVEAU: Stocker les détails complets des propriétaires
+        current_owners_details: data.currentOwners && data.currentOwners.length > 0 
+          ? data.currentOwners 
+          : null,
+        
+        // Conserver les anciens champs pour rétrocompatibilité (trigger les synchronisera automatiquement)
         current_owner_name: data.currentOwners && data.currentOwners.length > 0 
           ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
           : undefined,
@@ -187,11 +195,13 @@ export const useCadastralContribution = () => {
         current_owner_since: data.currentOwners && data.currentOwners.length > 0 
           ? data.currentOwners[0].since 
           : undefined,
+        
         area_sqm: data.areaSqm,
         construction_type: data.constructionType,
         construction_nature: data.constructionNature,
         declared_usage: data.declaredUsage,
         building_permits: data.buildingPermits,
+        previous_permit_number: data.previousPermitNumber, // ✅ NOUVEAU
         province: data.province,
         ville: data.ville,
         commune: data.commune,

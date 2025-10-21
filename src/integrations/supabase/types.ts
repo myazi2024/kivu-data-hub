@@ -325,6 +325,7 @@ export type Database = {
           current_owner_legal_status: string | null
           current_owner_name: string | null
           current_owner_since: string | null
+          current_owners_details: Json | null
           declared_usage: string | null
           fraud_reason: string | null
           fraud_score: number | null
@@ -338,6 +339,7 @@ export type Database = {
           ownership_history: Json | null
           parcel_number: string
           permit_request_data: Json | null
+          previous_permit_number: string | null
           property_title_document_url: string | null
           property_title_type: string | null
           province: string | null
@@ -371,6 +373,7 @@ export type Database = {
           current_owner_legal_status?: string | null
           current_owner_name?: string | null
           current_owner_since?: string | null
+          current_owners_details?: Json | null
           declared_usage?: string | null
           fraud_reason?: string | null
           fraud_score?: number | null
@@ -384,6 +387,7 @@ export type Database = {
           ownership_history?: Json | null
           parcel_number: string
           permit_request_data?: Json | null
+          previous_permit_number?: string | null
           property_title_document_url?: string | null
           property_title_type?: string | null
           province?: string | null
@@ -417,6 +421,7 @@ export type Database = {
           current_owner_legal_status?: string | null
           current_owner_name?: string | null
           current_owner_since?: string | null
+          current_owners_details?: Json | null
           declared_usage?: string | null
           fraud_reason?: string | null
           fraud_score?: number | null
@@ -430,6 +435,7 @@ export type Database = {
           ownership_history?: Json | null
           parcel_number?: string
           permit_request_data?: Json | null
+          previous_permit_number?: string | null
           property_title_document_url?: string | null
           property_title_type?: string | null
           province?: string | null
@@ -1901,6 +1907,10 @@ export type Database = {
       export_user_data: {
         Args: { target_user_id: string }
         Returns: Json
+      }
+      extract_owner_names_from_details: {
+        Args: { owners_details: Json }
+        Returns: string
       }
       generate_ccc_code: {
         Args: Record<PropertyKey, never>
