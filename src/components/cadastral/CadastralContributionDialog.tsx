@@ -3718,11 +3718,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {obligationType === 'taxes' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <Label className="text-sm font-semibold">Historique des taxes (optionnel)</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Ajoutez les taxes que vous connaissez pour cette parcelle
-                    </p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 text-sm">
+                        <h4 className="font-semibold mb-2">Historique des taxes</h4>
+                        <p className="text-muted-foreground mb-3">
+                          Documentez toutes les taxes foncières payées sur cette parcelle. Un historique fiscal complet démontre la conformité du bien.
+                        </p>
+                        <div className="space-y-2 text-xs text-muted-foreground">
+                          <p><strong>Pourquoi c'est important :</strong></p>
+                          <ul className="space-y-1 ml-4">
+                            <li>• Prouve la conformité fiscale du bien</li>
+                            <li>• Valorise la propriété lors d'une vente</li>
+                            <li>• Évite les contentieux fiscaux</li>
+                            <li>• Facilite les démarches administratives</li>
+                          </ul>
+                          <p className="mt-3"><strong>Comment remplir :</strong></p>
+                          <ul className="space-y-1 ml-4">
+                            <li>• Ajoutez autant de taxes que vous avez payées</li>
+                            <li>• Joignez les reçus de paiement si possible</li>
+                            <li>• Indiquez le montant exact et l'année fiscale</li>
+                            <li>• Laissez vide si vous n'avez pas d'informations</li>
+                          </ul>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
@@ -3943,11 +3969,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {obligationType === 'mortgages' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex items-center gap-2">
                     <Label className="text-sm font-semibold">Hypothèque (optionnel)</Label>
-                    <p className="text-xs text-muted-foreground">
-                      Ajoutez les hypothèques que vous connaissez pour cette parcelle
-                    </p>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                          <Info className="h-4 w-4 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-80 text-sm">
+                        <h4 className="font-semibold mb-2">Hypothèques</h4>
+                        <p className="text-muted-foreground mb-3">
+                          Déclarez toutes les hypothèques grevant cette parcelle. Cette information est essentielle pour établir la situation juridique complète du bien.
+                        </p>
+                        <div className="space-y-2 text-xs text-muted-foreground">
+                          <p><strong>Pourquoi c'est important :</strong></p>
+                          <ul className="space-y-1 ml-4">
+                            <li>• Établit les charges financières sur le bien</li>
+                            <li>• Informe les acheteurs potentiels</li>
+                            <li>• Évite les surprises juridiques</li>
+                            <li>• Facilite l'obtention de nouveaux crédits</li>
+                          </ul>
+                          <p className="mt-3"><strong>Comment remplir :</strong></p>
+                          <ul className="space-y-1 ml-4">
+                            <li>• Listez toutes les hypothèques actives</li>
+                            <li>• Indiquez le montant exact et la durée</li>
+                            <li>• Précisez le créancier et le statut</li>
+                            <li>• Laissez vide si aucune hypothèque</li>
+                          </ul>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
