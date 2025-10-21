@@ -4334,32 +4334,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           <TabsContent value="review" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
             <div className="space-y-6 py-6">
               {/* En-tête avec estimation CCC */}
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-6 shadow-lg">
-                <div className="flex items-start gap-4">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Sparkles className="h-8 w-8 text-white" />
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-6 shadow-lg">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                    <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
-                  <div className="flex-1">
-                    <h3 className="text-2xl font-bold text-amber-900 dark:text-amber-100 mb-2">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg sm:text-2xl font-bold text-amber-900 dark:text-amber-100 mb-2">
                       Votre contribution CCC
                     </h3>
                     <div className="flex items-baseline gap-2 mb-3">
-                      <span className="text-4xl font-bold text-amber-600 dark:text-amber-400">
+                      <span className="text-2xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400">
                         ${calculateCCCValue().value.toFixed(2)}
                       </span>
-                      <span className="text-lg text-amber-700 dark:text-amber-300">/ $5.00</span>
+                      <span className="text-sm sm:text-lg text-amber-700 dark:text-amber-300">/ $5.00</span>
                     </div>
                     <Progress 
                       value={(calculateCCCValue().value / 5) * 100} 
-                      className="h-3 mb-3 bg-amber-200 dark:bg-amber-900/50"
+                      className="h-2 sm:h-3 mb-3 bg-amber-200 dark:bg-amber-900/50"
                     />
-                    <p className="text-sm text-amber-800 dark:text-amber-200">
+                    <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200">
                       {calculateCCCValue().filledFields} champs sur {calculateCCCValue().totalFields} complétés ({Math.round(calculateCCCValue().completionRate * 100)}%)
                     </p>
                     {calculateCCCValue().value < 5 && (
-                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 flex items-center gap-1">
-                        <Info className="h-3 w-3" />
-                        Ajoutez encore {calculateCCCValue().totalFields - calculateCCCValue().filledFields} champs pour maximiser votre code CCC !
+                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 flex items-start gap-1">
+                        <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                        <span>Ajoutez encore {calculateCCCValue().totalFields - calculateCCCValue().filledFields} champs pour maximiser votre code CCC !</span>
                       </p>
                     )}
                   </div>
@@ -4367,16 +4367,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
 
               {/* Récapitulatif des sections */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-primary" />
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   Récapitulatif de votre contribution
                 </h3>
 
                 {/* Section Général */}
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">Informations générales</h4>
+                <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-xs sm:text-sm">Informations générales</h4>
                     <Button
                       type="button"
                       variant="ghost"
@@ -4386,12 +4386,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         const generalTab = tabs?.querySelector('[value="general"]') as HTMLElement;
                         generalTab?.click();
                       }}
-                      className="text-xs h-7"
+                      className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
                     <div className={formData.propertyTitleType ? "text-foreground" : "text-muted-foreground italic"}>
                       Type de titre : {formData.propertyTitleType || "Non renseigné"}
                     </div>
@@ -4410,9 +4410,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Section Localisation */}
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">Localisation</h4>
+                <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-xs sm:text-sm">Localisation</h4>
                     <Button
                       type="button"
                       variant="ghost"
@@ -4422,12 +4422,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         const locationTab = tabs?.querySelector('[value="location"]') as HTMLElement;
                         locationTab?.click();
                       }}
-                      className="text-xs h-7"
+                      className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
                     <div className={formData.province ? "text-foreground" : "text-muted-foreground italic"}>
                       Province : {formData.province || "Non renseigné"}
                     </div>
@@ -4447,9 +4447,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Section Historiques */}
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">Historiques</h4>
+                <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-xs sm:text-sm">Historiques</h4>
                     <Button
                       type="button"
                       variant="ghost"
@@ -4459,12 +4459,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         const historyTab = tabs?.querySelector('[value="history"]') as HTMLElement;
                         historyTab?.click();
                       }}
-                      className="text-xs h-7"
+                      className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
                     <div className={previousOwners.some(o => o.name && o.startDate) ? "text-foreground" : "text-muted-foreground italic"}>
                       Anciens propriétaires : {previousOwners.filter(o => o.name && o.startDate).length || "Aucun"}
                     </div>
@@ -4478,9 +4478,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Section Obligations */}
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold text-sm">Obligations</h4>
+                <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-xs sm:text-sm">Obligations</h4>
                     <Button
                       type="button"
                       variant="ghost"
@@ -4490,12 +4490,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         const obligationsTab = tabs?.querySelector('[value="obligations"]') as HTMLElement;
                         obligationsTab?.click();
                       }}
-                      className="text-xs h-7"
+                      className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
                     <div className={mortgageRecords.some(m => m.mortgageAmount && m.creditorName) ? "text-foreground" : "text-muted-foreground italic"}>
                       Hypothèques : {mortgageRecords.filter(m => m.mortgageAmount && m.creditorName).length || "Aucune"}
                     </div>
@@ -4503,16 +4503,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Pièces jointes */}
-                <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
-                  <h4 className="font-semibold text-sm">Pièces jointes</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                    <div className={ownerDocFile ? "text-foreground flex items-center gap-1" : "text-muted-foreground italic"}>
-                      {ownerDocFile ? <CheckCircle2 className="h-4 w-4 text-primary" /> : "⭕"}
-                      Pièce d'identité : {ownerDocFile ? ownerDocFile.name : "Non fournie"}
+                <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                  <h4 className="font-semibold text-xs sm:text-sm">Pièces jointes</h4>
+                  <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
+                    <div className={ownerDocFile ? "text-foreground flex items-start gap-2" : "text-muted-foreground italic flex items-start gap-2"}>
+                      {ownerDocFile ? <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> : <span className="text-base">⭕</span>}
+                      <span className="break-words">Pièce d'identité : {ownerDocFile ? ownerDocFile.name : "Non fournie"}</span>
                     </div>
-                    <div className={titleDocFiles.length > 0 ? "text-foreground flex items-center gap-1" : "text-muted-foreground italic"}>
-                      {titleDocFiles.length > 0 ? <CheckCircle2 className="h-4 w-4 text-primary" /> : "⭕"}
-                      Titre de propriété : {titleDocFiles.length > 0 ? `${titleDocFiles.length} fichier(s)` : "Non fourni"}
+                    <div className={titleDocFiles.length > 0 ? "text-foreground flex items-start gap-2" : "text-muted-foreground italic flex items-start gap-2"}>
+                      {titleDocFiles.length > 0 ? <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> : <span className="text-base">⭕</span>}
+                      <span className="break-words">Titre de propriété : {titleDocFiles.length > 0 ? `${titleDocFiles.length} fichier(s)` : "Non fourni"}</span>
                     </div>
                   </div>
                 </div>
@@ -4520,8 +4520,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
               {/* Message de motivation */}
               {calculateCCCValue().value < 5 && (
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                  <p className="text-sm text-blue-800 dark:text-blue-200 flex items-start gap-2">
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
+                  <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-200 flex items-start gap-2">
                     <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <span>
                       <strong>Conseil :</strong> Pour maximiser votre code CCC (5$), complétez les sections manquantes ci-dessus. 
