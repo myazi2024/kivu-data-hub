@@ -3478,11 +3478,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           <TabsContent value="history" className="space-y-6 mt-6 animate-fade-in">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex items-center gap-2">
                   <Label className="text-sm font-semibold">Historique de propriété (optionnel)</Label>
-                  <p className="text-xs text-muted-foreground">
-                    Ajoutez les anciens propriétaires que vous connaissez
-                  </p>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
+                        <Info className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 text-sm">
+                      <h4 className="font-semibold mb-2">Historique de propriété</h4>
+                      <p className="text-muted-foreground mb-3">
+                        Cette section vous permet de documenter tous les anciens propriétaires de la parcelle dont vous avez connaissance.
+                      </p>
+                      <div className="space-y-2 text-xs text-muted-foreground">
+                        <p><strong>Pourquoi c'est important :</strong></p>
+                        <ul className="space-y-1 ml-4">
+                          <li>• Établit la chaîne de propriété complète</li>
+                          <li>• Facilite la vérification des droits de propriété</li>
+                          <li>• Aide à résoudre d'éventuels conflits</li>
+                          <li>• Enrichit les données cadastrales</li>
+                        </ul>
+                        <p className="mt-3"><strong>Comment remplir :</strong></p>
+                        <ul className="space-y-1 ml-4">
+                          <li>• Ajoutez autant d'anciens propriétaires que vous connaissez</li>
+                          <li>• Les dates doivent être cohérentes et chronologiques</li>
+                          <li>• Indiquez le type de mutation (vente, succession, etc.)</li>
+                          <li>• Laissez vide si vous n'avez pas d'informations</li>
+                        </ul>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
 
