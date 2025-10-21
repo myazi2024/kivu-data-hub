@@ -172,6 +172,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     constructionYear: '',
     regularizationReason: '',
     originalPermitNumber: '',
+    previousPermitNumber: '',
     constructionPhotos: [] as File[]
   });
   
@@ -795,6 +796,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           });
           return;
         }
+        
+        // Validation du numéro de permis précédent pour certaines raisons
+        const requiresPreviousPermit = 
+          permitRequest.regularizationReason === "Modifications non autorisées" || 
+          permitRequest.regularizationReason === "Extension non déclarée";
+        
+        if (requiresPreviousPermit && !permitRequest.previousPermitNumber) {
+          toast({
+            title: "Numéro de permis précédent requis",
+            description: "Pour cette raison de régularisation, vous devez fournir le numéro du permis de construire initial",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         if (permitRequest.constructionPhotos.length < 4) {
           toast({
             title: "Photos de construction requises",
@@ -2690,7 +2706,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         <Label>Raison de la régularisation *</Label>
                         <Select
                           value={permitRequest.regularizationReason}
-                          onValueChange={(value) => setPermitRequest({ ...permitRequest, regularizationReason: value })}
+                          onValueChange={(value) => setPermitRequest({ ...permitRequest, regularizationReason: value, previousPermitNumber: '' })}
                         >
                           <SelectTrigger>
                             <SelectValue placeholder="Sélectionner la raison" />
@@ -2705,6 +2721,44 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Numéro du permis précédent (si applicable) */}
+                      {(permitRequest.regularizationReason === "Modifications non autorisées" || 
+                        permitRequest.regularizationReason === "Extension non déclarée") && (
+                        <div className="space-y-2 border border-border/50 rounded-lg p-4 bg-muted/30">
+                          <Label className="flex items-center gap-2">
+                            Numéro du permis de construire précédent *
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-80">
+                                <div className="space-y-2">
+                                  <p className="text-xs text-muted-foreground">
+                                    Pour régulariser des modifications ou une extension, vous devez fournir le numéro du permis de construire 
+                                    initial de la construction.
+                                  </p>
+                                  <p className="text-xs font-medium text-primary">
+                                    Si vous n'avez jamais obtenu de permis pour la construction originale, veuillez sélectionner 
+                                    "Construction réalisée sans permis initial" dans la liste des raisons de régularisation.
+                                  </p>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
+                          </Label>
+                          <Input
+                            type="text"
+                            placeholder="ex: PC/2018/1234"
+                            value={permitRequest.previousPermitNumber || ''}
+                            onChange={(e) => setPermitRequest({ ...permitRequest, previousPermitNumber: e.target.value })}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Entrez le numéro du permis qui vous avait été délivré pour la construction originale avant les modifications.
+                          </p>
+                        </div>
+                      )}
 
                       {/* Photos de la construction */}
                       <div className="space-y-2">
