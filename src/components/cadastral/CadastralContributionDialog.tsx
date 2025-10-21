@@ -1959,13 +1959,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     <>
       <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0">
-        <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
+        <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent text-center sm:text-left">
           <DialogTitle className="text-base sm:text-2xl font-semibold leading-tight">
             <span className="hidden sm:inline">Contribuer aux informations cadastrales</span>
             <span className="sm:hidden">Contribution cadastrale</span>
           </DialogTitle>
           <DialogDescription className="text-xs sm:text-base mt-1 sm:mt-2 space-y-0.5 sm:space-y-0">
-            <div className="flex items-center gap-1 flex-wrap">
+            <div className="flex items-center gap-1 flex-wrap justify-center sm:justify-start">
               <span className="text-muted-foreground">Parcelle :</span>
               <strong className="text-foreground font-semibold">{parcelNumber}</strong>
             </div>
