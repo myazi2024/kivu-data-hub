@@ -10,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, FileText, Plus, Trash2, MapPin, Info, ExternalLink, UserPlus, LogIn, Sparkles, History, Receipt } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, UserPlus, LogIn } from 'lucide-react';
+import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile, MdStar } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -1748,7 +1749,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="general" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <FileText className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdDashboard className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "general") && <span className="hidden sm:inline">Général</span>}
                 {isMobile && activeTab === "general" && <span className="text-xs">Général</span>}
               </TabsTrigger>
@@ -1756,7 +1757,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="location" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <MapPin className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdLocationOn className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "location") && <span className="hidden sm:inline">Localisation</span>}
                 {isMobile && activeTab === "location" && <span className="text-xs">Lieu</span>}
               </TabsTrigger>
@@ -1764,7 +1765,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="history" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <History className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdEventNote className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "history") && <span className="hidden sm:inline">Historiques</span>}
                 {isMobile && activeTab === "history" && <span className="text-xs">Historique</span>}
               </TabsTrigger>
@@ -1772,7 +1773,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="obligations" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <Receipt className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdAccountBalance className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline">Obligations</span>}
                 {isMobile && activeTab === "obligations" && <span className="text-xs">Taxes</span>}
               </TabsTrigger>
@@ -1780,7 +1781,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 value="review" 
                 className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
               >
-                <Sparkles className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
+                <MdRateReview className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
                 {(!isMobile || activeTab === "review") && <span className="hidden sm:inline">Révision</span>}
                 {isMobile && activeTab === "review" && <span className="text-xs">Révision</span>}
               </TabsTrigger>
@@ -1850,7 +1851,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <div className="space-y-2">
                       {titleDocFiles.map((file, index) => (
                         <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                          <FileText className="h-4 w-4 text-primary" />
+                          <MdInsertDriveFile className="h-4 w-4 text-primary" />
                           <span className="text-sm flex-1 truncate">{file.name}</span>
                           <Button
                             type="button"
@@ -2041,7 +2042,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </Button>
                     ) : (
                       <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                        <FileText className="h-4 w-4 text-primary" />
+                        <MdInsertDriveFile className="h-4 w-4 text-primary" />
                         <span className="text-sm flex-1 truncate">{ownerDocFile.name}</span>
                         <Button
                           type="button"
@@ -2472,7 +2473,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </div>
                         ) : (
                           <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
-                            <FileText className="h-4 w-4 text-primary" />
+                            <MdInsertDriveFile className="h-4 w-4 text-primary" />
                             <span className="text-xs flex-1 truncate">{permit.attachmentFile.name}</span>
                             <span className="text-xs text-muted-foreground">
                               {(permit.attachmentFile.size / 1024).toFixed(1)} KB
@@ -3014,7 +3015,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                   <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                     <div className="flex items-start gap-2">
-                      <Sparkles className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <MdStar className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p className="text-xs text-amber-700 dark:text-amber-300">
                           Une fois votre contribution validée, vous recevrez les instructions pour finaliser votre demande de permis de construire.
@@ -3414,7 +3415,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <div className="space-y-3">
                               <div className="border-l-2 border-primary pl-3">
                                 <h5 className="font-semibold text-xs mb-1 text-foreground flex items-center gap-1">
-                                  <MapPin className="h-3 w-3" />
+                                  <MdLocationOn className="h-3 w-3" />
                                   Méthode 1 : Capture automatique
                                 </h5>
                                 <p className="text-xs text-muted-foreground mb-2">
@@ -3538,7 +3539,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             onClick={() => captureCurrentLocation(index)}
                             className="w-full gap-2 hover:bg-primary/10 transition-all"
                           >
-                            <MapPin className="h-4 w-4" />
+                            <MdLocationOn className="h-4 w-4" />
                             Capturer ma position actuelle
                           </Button>
                         </div>
@@ -4046,7 +4047,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             </div>
                           ) : (
                             <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                              <FileText className="h-4 w-4 text-primary" />
+                              <MdInsertDriveFile className="h-4 w-4 text-primary" />
                               <span className="text-sm flex-1 truncate">{tax.receiptFile.name}</span>
                               <Button
                                 type="button"
@@ -4303,7 +4304,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             </div>
                           ) : (
                             <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                              <FileText className="h-4 w-4 text-primary" />
+                              <MdInsertDriveFile className="h-4 w-4 text-primary" />
                               <span className="text-sm flex-1 truncate">{mortgage.receiptFile.name}</span>
                               <Button
                                 type="button"
@@ -4364,7 +4365,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-6 shadow-lg">
                 <div className="flex items-start gap-3 sm:gap-4">
                   <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Sparkles className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                    <MdStar className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg sm:text-2xl font-bold text-amber-900 dark:text-amber-100 mb-2">
