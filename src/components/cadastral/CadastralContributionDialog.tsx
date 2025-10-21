@@ -4033,11 +4033,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               💡 Cette date devrait correspondre au {new Date(currentOwners[0].since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} (date d'acquisition du propriétaire actuel)
                             </p>
                           )}
-                          {owner.endDate && currentOwners[0]?.since && owner.endDate > currentOwners[0].since && (
+                          {index > 0 && previousOwners[index - 1]?.startDate && (
+                            <p className="text-xs text-muted-foreground">
+                              💡 Cette date devrait correspondre au {new Date(previousOwners[index - 1].startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} (date d'acquisition de l'Ancien.ne propriétaire #{index})
+                            </p>
+                          )}
+                          {index === 0 && owner.endDate && currentOwners[0]?.since && owner.endDate > currentOwners[0].since && (
                             <p className="text-xs text-destructive">❌ La date de fin ne peut pas être après la date d'acquisition du propriétaire actuel ({new Date(currentOwners[0].since).toLocaleDateString('fr-FR')})</p>
+                          )}
+                          {index > 0 && owner.endDate && previousOwners[index - 1]?.startDate && owner.endDate > previousOwners[index - 1].startDate && (
+                            <p className="text-xs text-destructive">❌ La date de fin ne peut pas être après la date d'acquisition de l'Ancien.ne propriétaire #{index} ({new Date(previousOwners[index - 1].startDate).toLocaleDateString('fr-FR')})</p>
                           )}
                           {index === 0 && owner.endDate && currentOwners[0]?.since && owner.endDate !== currentOwners[0].since && (
                             <p className="text-xs text-amber-600">⚠️ La date de fin devrait être exactement le {new Date(currentOwners[0].since).toLocaleDateString('fr-FR')} pour assurer la continuité chronologique</p>
+                          )}
+                          {index > 0 && owner.endDate && previousOwners[index - 1]?.startDate && owner.endDate !== previousOwners[index - 1].startDate && (
+                            <p className="text-xs text-amber-600">⚠️ La date de fin devrait être exactement le {new Date(previousOwners[index - 1].startDate).toLocaleDateString('fr-FR')} pour assurer la continuité chronologique</p>
                           )}
                         </div>
                       </div>
