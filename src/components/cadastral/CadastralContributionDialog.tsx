@@ -3913,6 +3913,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <li>• Aide à résoudre d'éventuels conflits</li>
                           <li>• Enrichit les données cadastrales</li>
                         </ul>
+                        <p className="mt-3"><strong>Logique chronologique :</strong></p>
+                        <ul className="space-y-1 ml-4">
+                          <li>• Le premier ancien propriétaire doit avoir une date de fin correspondant à la date à laquelle le propriétaire actuel a acquis le bien (renseignée dans l'onglet "Informations Générales")</li>
+                          <li>• Les propriétaires suivants doivent être ordonnés chronologiquement du plus récent au plus ancien</li>
+                          <li>• Les dates ne doivent pas se chevaucher</li>
+                        </ul>
                         <p className="mt-3"><strong>Comment remplir :</strong></p>
                         <ul className="space-y-1 ml-4">
                           <li>• Ajoutez autant d'anciens propriétaires que vous connaissez</li>
@@ -3930,7 +3936,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 {previousOwners.map((owner, index) => (
                     <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
                       <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Propriétaire #{index + 1}</h4>
+                        <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Ancien.ne propriétaire #{index + 1}</h4>
                         <Button
                           type="button"
                           variant="ghost"
@@ -4002,7 +4008,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
-                          <Label>Date début</Label>
+                          <Label>Date début (propriétaire depuis)</Label>
                           <Input
                             type="date"
                             max={currentOwners[0]?.since || new Date().toISOString().split('T')[0]}
@@ -4014,7 +4020,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           )}
                         </div>
                         <div className="space-y-2">
-                          <Label>Date fin</Label>
+                          <Label>Date fin (propriétaire jusqu'au)</Label>
                           <Input
                             type="date"
                             min={owner.startDate || undefined}
@@ -4022,8 +4028,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             value={owner.endDate}
                             onChange={(e) => updatePreviousOwner(index, 'endDate', e.target.value)}
                           />
+                          {index === 0 && currentOwners[0]?.since && (
+                            <p className="text-xs text-muted-foreground">
+                              💡 Cette date devrait correspondre au {new Date(currentOwners[0].since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} (date d'acquisition du propriétaire actuel)
+                            </p>
+                          )}
                           {owner.endDate && currentOwners[0]?.since && owner.endDate > currentOwners[0].since && (
-                            <p className="text-xs text-destructive">La date de fin doit être avant la date du propriétaire actuel</p>
+                            <p className="text-xs text-destructive">❌ La date de fin ne peut pas être après la date d'acquisition du propriétaire actuel ({new Date(currentOwners[0].since).toLocaleDateString('fr-FR')})</p>
+                          )}
+                          {index === 0 && owner.endDate && currentOwners[0]?.since && owner.endDate !== currentOwners[0].since && (
+                            <p className="text-xs text-amber-600">⚠️ La date de fin devrait être exactement le {new Date(currentOwners[0].since).toLocaleDateString('fr-FR')} pour assurer la continuité chronologique</p>
                           )}
                         </div>
                       </div>
