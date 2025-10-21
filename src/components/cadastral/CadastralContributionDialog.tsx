@@ -1905,7 +1905,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   if (showSuccess) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md border-0 shadow-2xl">
+        <DialogContent className="sm:max-w-md border-0 shadow-2xl rounded-xl">
           <div className="flex flex-col items-center justify-center py-8 space-y-6 animate-fade-in">
             <div className="relative">
               <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse" />
@@ -1958,7 +1958,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0">
+      <DialogContent className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-xl">
         <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent text-center sm:text-left">
           <DialogTitle className="text-base sm:text-2xl font-semibold leading-tight">
             <span className="hidden sm:inline">Contribuer aux informations cadastrales</span>
