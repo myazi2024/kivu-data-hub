@@ -1608,29 +1608,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
-          <DialogTitle className="text-2xl font-semibold">Contribuer aux informations cadastrales</DialogTitle>
-          <DialogDescription className="text-base mt-2">
+      <DialogContent className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0">
+        <DialogHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent">
+          <DialogTitle className="text-xl sm:text-2xl font-semibold">Contribuer aux informations cadastrales</DialogTitle>
+          <DialogDescription className="text-sm sm:text-base mt-2">
             Parcelle : <strong className="text-foreground font-semibold">{parcelNumber}</strong>
             <br />
-            <span className="text-sm">Renseignez les informations que vous possédez sur cette parcelle.</span>
+            <span className="text-xs sm:text-sm">Renseignez les informations que vous possédez sur cette parcelle.</span>
           </DialogDescription>
         </DialogHeader>
 
         <Tabs defaultValue="general" className="w-full">
-          <div className="sticky top-0 z-20 bg-background px-6 pt-4 pb-3 -mx-6 border-b shadow-sm">
-            <TabsList className="grid w-full grid-cols-4 h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3">
-              <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
+          <div className="sticky top-0 z-20 bg-background px-4 sm:px-6 pt-4 pb-3 border-b shadow-sm">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
+              <TabsTrigger value="general" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
                 Général
               </TabsTrigger>
-              <TabsTrigger value="location" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
+              <TabsTrigger value="location" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
                 Localisation
               </TabsTrigger>
-              <TabsTrigger value="history" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
+              <TabsTrigger value="history" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
                 Historiques
               </TabsTrigger>
-              <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm">
+              <TabsTrigger value="obligations" className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0">
                 Obligations
               </TabsTrigger>
             </TabsList>
@@ -1658,7 +1658,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
           </div>
           
-          <div className="px-6 pb-6">
+          <div className="px-4 sm:px-6 pb-6">
 
           <TabsContent value="general" className="space-y-6 mt-6 animate-fade-in">
             <PropertyTitleTypeSelect 
@@ -1846,7 +1846,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-2">
                       <Label className="text-xs">Statut juridique</Label>
                       <Select 
@@ -2196,7 +2196,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </RadioGroup>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label className="text-xs">Numéro du permis</Label>
                           <InputWithPopover
@@ -2225,7 +2225,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label className="text-xs">Validité (mois)</Label>
                           <Input
@@ -3267,7 +3267,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </div>
 
                           <div className="space-y-3">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                               <div className="space-y-2">
                                 <Label className="text-xs">Latitude</Label>
                                 <InputWithPopover
@@ -3457,7 +3457,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </Select>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-2">
                           <Label>Date début</Label>
                           <Input
@@ -4040,7 +4040,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Bouton de soumission finale */}
-                <div className="sticky bottom-0 left-0 right-0 mt-8 -mx-6 -mb-6 bg-background/95 backdrop-blur-sm border-t p-4 sm:p-6 z-10">
+                <div className="sticky bottom-0 left-0 right-0 mt-8 -mx-4 sm:-mx-6 -mb-6 bg-background/95 backdrop-blur-sm border-t p-4 sm:p-6 z-10">
                   <div className="max-w-2xl mx-auto">
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
                       {/* Info compacte */}
