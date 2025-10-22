@@ -68,6 +68,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showMortgageWarning, setShowMortgageWarning] = useState(false);
   const [highlightIncompleteMortgage, setHighlightIncompleteMortgage] = useState(false);
   const [showCurrentOwnerRequiredWarning, setShowCurrentOwnerRequiredWarning] = useState(false);
+  const [showPermitTypeBlockedWarning, setShowPermitTypeBlockedWarning] = useState(false);
+  const [permitTypeBlockedMessage, setPermitTypeBlockedMessage] = useState('');
   const [activeTab, setActiveTab] = useState('general');
   const [previousProgress, setPreviousProgress] = useState(0);
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
@@ -1333,6 +1335,80 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const updated = [...buildingPermits];
     updated[index] = { ...updated[index], attachmentFile: null };
     setBuildingPermits(updated);
+  };
+
+  // Logiques dépendantes pour les permis de construire
+  const getPermitTypeRestrictions = () => {
+    const restrictions = {
+      blockedInExisting: null as 'construction' | 'regularization' | null,
+      blockedInRequest: null as 'construction' | 'regularization' | null,
+      messageExisting: '',
+      messageRequest: '',
+      dateMinExisting: '',
+      dateMaxExisting: ''
+    };
+
+    const today = new Date();
+    const threeYearsAgo = new Date(today);
+    threeYearsAgo.setFullYear(today.getFullYear() - 3);
+    const oneMonthAgo = new Date(today);
+    oneMonthAgo.setMonth(today.getMonth() - 1);
+
+    // Logique 1: Si type de construction = "terrain nu"
+    if (formData.constructionType === 'Terrain nu') {
+      restrictions.blockedInExisting = 'regularization';
+      restrictions.blockedInRequest = 'regularization';
+      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" que c'est un terrain nu. Un terrain nu n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" que c'est un "terrain nu". Un terrain nu n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
+      restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
+      restrictions.dateMaxExisting = today.toISOString().split('T')[0];
+      return restrictions;
+    }
+
+    // Logique 2: Si nature de construction = "Précaire"
+    if (formData.constructionNature === 'Précaire') {
+      restrictions.blockedInExisting = 'regularization';
+      restrictions.blockedInRequest = 'regularization';
+      restrictions.messageExisting = `Vous avez indiqué dans "Nature de construction" que c'est une construction précaire. Une construction précaire n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Nature de construction" que c'est une construction "Précaire". Une construction précaire n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
+      restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
+      restrictions.dateMaxExisting = today.toISOString().split('T')[0];
+      return restrictions;
+    }
+
+    // Logique 3: Si type de construction ≠ "terrain nu" ET nature ≠ "Précaire"
+    if (formData.constructionType && formData.constructionType !== 'Terrain nu' &&
+        formData.constructionNature && formData.constructionNature !== 'Précaire') {
+      restrictions.blockedInExisting = 'construction';
+      restrictions.blockedInRequest = 'construction';
+      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas, un permis de régularisation est adapté.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas, un permis de régularisation est adapté.`;
+      restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
+      restrictions.dateMaxExisting = oneMonthAgo.toISOString().split('T')[0];
+      return restrictions;
+    }
+
+    // Autres cas: date pour permis de construire standard
+    if (formData.constructionType && formData.constructionType !== 'Terrain nu') {
+      restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
+      restrictions.dateMaxExisting = oneMonthAgo.toISOString().split('T')[0];
+    }
+
+    return restrictions;
+  };
+
+  const handleBlockedPermitTypeClick = (
+    blockedType: 'construction' | 'regularization',
+    message: string,
+    mode: 'existing' | 'request'
+  ) => {
+    setPermitTypeBlockedMessage(message);
+    setShowPermitTypeBlockedWarning(true);
+
+    // Masquer la notification après 8 secondes
+    setTimeout(() => {
+      setShowPermitTypeBlockedWarning(false);
+    }, 8000);
   };
   
   // Fonctions pour gérer les coordonnées GPS
@@ -2664,18 +2740,76 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         <Label className="text-xs font-medium">Type de permis</Label>
                         <RadioGroup 
                           value={permit.permitType} 
-                          onValueChange={(value: 'construction' | 'regularization') => updateBuildingPermit(index, 'permitType', value)}
+                          onValueChange={(value: 'construction' | 'regularization') => {
+                            const restrictions = getPermitTypeRestrictions();
+                            
+                            // Vérifier si le type est bloqué
+                            if (restrictions.blockedInExisting === value) {
+                              handleBlockedPermitTypeClick(value, restrictions.messageExisting, 'existing');
+                              return;
+                            }
+                            
+                            updateBuildingPermit(index, 'permitType', value);
+                          }}
                           className="flex gap-2"
                         >
-                          <div className="flex items-center space-x-2 flex-1 p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                            <RadioGroupItem value="construction" id={`construction-${index}`} />
-                            <Label htmlFor={`construction-${index}`} className="flex-1 cursor-pointer text-xs">
+                          <div 
+                            className={`flex items-center space-x-2 flex-1 p-2 rounded-lg border transition-colors ${
+                              getPermitTypeRestrictions().blockedInExisting === 'construction'
+                                ? 'bg-muted/30 opacity-60 cursor-not-allowed'
+                                : 'bg-card hover:bg-muted/50 cursor-pointer'
+                            }`}
+                            onClick={(e) => {
+                              const restrictions = getPermitTypeRestrictions();
+                              if (restrictions.blockedInExisting === 'construction') {
+                                e.preventDefault();
+                                handleBlockedPermitTypeClick('construction', restrictions.messageExisting, 'existing');
+                              }
+                            }}
+                          >
+                            <RadioGroupItem 
+                              value="construction" 
+                              id={`construction-${index}`}
+                              disabled={getPermitTypeRestrictions().blockedInExisting === 'construction'}
+                            />
+                            <Label 
+                              htmlFor={`construction-${index}`} 
+                              className={`flex-1 text-xs ${
+                                getPermitTypeRestrictions().blockedInExisting === 'construction'
+                                  ? 'cursor-not-allowed'
+                                  : 'cursor-pointer'
+                              }`}
+                            >
                               Permis de construire
                             </Label>
                           </div>
-                          <div className="flex items-center space-x-2 flex-1 p-2 rounded-lg border bg-card hover:bg-muted/50 transition-colors">
-                            <RadioGroupItem value="regularization" id={`regularization-${index}`} />
-                            <Label htmlFor={`regularization-${index}`} className="flex-1 cursor-pointer text-xs">
+                          <div 
+                            className={`flex items-center space-x-2 flex-1 p-2 rounded-lg border transition-colors ${
+                              getPermitTypeRestrictions().blockedInExisting === 'regularization'
+                                ? 'bg-muted/30 opacity-60 cursor-not-allowed'
+                                : 'bg-card hover:bg-muted/50 cursor-pointer'
+                            }`}
+                            onClick={(e) => {
+                              const restrictions = getPermitTypeRestrictions();
+                              if (restrictions.blockedInExisting === 'regularization') {
+                                e.preventDefault();
+                                handleBlockedPermitTypeClick('regularization', restrictions.messageExisting, 'existing');
+                              }
+                            }}
+                          >
+                            <RadioGroupItem 
+                              value="regularization" 
+                              id={`regularization-${index}`}
+                              disabled={getPermitTypeRestrictions().blockedInExisting === 'regularization'}
+                            />
+                            <Label 
+                              htmlFor={`regularization-${index}`} 
+                              className={`flex-1 text-xs ${
+                                getPermitTypeRestrictions().blockedInExisting === 'regularization'
+                                  ? 'cursor-not-allowed'
+                                  : 'cursor-pointer'
+                              }`}
+                            >
                               Permis de régularisation
                             </Label>
                           </div>
@@ -2697,10 +2831,41 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Label className="text-xs">Date d'émission</Label>
                           <Input
                             type="date"
-                            max={new Date().toISOString().split('T')[0]}
+                            min={getPermitTypeRestrictions().dateMinExisting || undefined}
+                            max={getPermitTypeRestrictions().dateMaxExisting || new Date().toISOString().split('T')[0]}
                             value={permit.issueDate}
-                            onChange={(e) => updateBuildingPermit(index, 'issueDate', e.target.value)}
+                            onChange={(e) => {
+                              const restrictions = getPermitTypeRestrictions();
+                              const selectedDate = new Date(e.target.value);
+                              const minDate = restrictions.dateMinExisting ? new Date(restrictions.dateMinExisting) : null;
+                              const maxDate = restrictions.dateMaxExisting ? new Date(restrictions.dateMaxExisting) : new Date();
+
+                              if (minDate && selectedDate < minDate) {
+                                toast({
+                                  title: "Date invalide",
+                                  description: `La date d'émission doit être postérieure au ${minDate.toLocaleDateString('fr-FR')}`,
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+
+                              if (maxDate && selectedDate > maxDate) {
+                                toast({
+                                  title: "Date invalide",
+                                  description: `La date d'émission doit être antérieure au ${maxDate.toLocaleDateString('fr-FR')}`,
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+
+                              updateBuildingPermit(index, 'issueDate', e.target.value);
+                            }}
                           />
+                          {getPermitTypeRestrictions().dateMinExisting && (
+                            <p className="text-xs text-muted-foreground">
+                              Période: {new Date(getPermitTypeRestrictions().dateMinExisting).toLocaleDateString('fr-FR')} - {new Date(getPermitTypeRestrictions().dateMaxExisting || Date.now()).toLocaleDateString('fr-FR')}
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -2792,6 +2957,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                   {/* Bouton Ajouter déplacé en dessous des blocs */}
                   <div className="space-y-2">
+                    {/* Notification type de permis bloqué */}
+                    {showPermitTypeBlockedWarning && (
+                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in">
+                        <div className="flex items-start gap-2">
+                          <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-destructive">
+                              Type de permis non applicable
+                            </p>
+                            <p className="text-xs text-destructive/80 mt-1">
+                              {permitTypeBlockedMessage}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Notification d'avertissement */}
                     {showPermitWarning && (
                       <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
@@ -2843,8 +3025,42 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   {/* Type de permis demandé */}
                   <div className="space-y-3">
                     <Label className="text-sm font-semibold">Type de permis demandé *</Label>
+                    
+                    {/* Notification type de permis bloqué */}
+                    {showPermitTypeBlockedWarning && (
+                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in">
+                        <div className="flex items-start gap-2">
+                          <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <p className="text-sm font-medium text-destructive">
+                              Type de permis non applicable
+                            </p>
+                            <p className="text-xs text-destructive/80 mt-1">
+                              {permitTypeBlockedMessage}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="space-y-3">
-                      <div className="flex items-start gap-2">
+                      <div 
+                        className={`flex items-start gap-2 p-3 rounded-lg border transition-colors ${
+                          getPermitTypeRestrictions().blockedInRequest === 'construction'
+                            ? 'bg-muted/30 opacity-60 cursor-not-allowed'
+                            : permitRequest.permitType === 'construction' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:bg-muted/30 cursor-pointer'
+                        }`}
+                        onClick={() => {
+                          const restrictions = getPermitTypeRestrictions();
+                          if (restrictions.blockedInRequest === 'construction') {
+                            handleBlockedPermitTypeClick('construction', restrictions.messageRequest, 'request');
+                          } else {
+                            setPermitRequest({ ...permitRequest, permitType: 'construction' });
+                          }
+                        }}
+                      >
                         <div className="flex items-center space-x-2">
                           <input
                             type="radio"
@@ -2852,10 +3068,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             name="permitType"
                             value="construction"
                             checked={permitRequest.permitType === 'construction'}
-                            onChange={(e) => setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularization' })}
+                            disabled={getPermitTypeRestrictions().blockedInRequest === 'construction'}
+                            onChange={(e) => {
+                              if (getPermitTypeRestrictions().blockedInRequest !== 'construction') {
+                                setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularization' });
+                              }
+                            }}
                             className="h-4 w-4 mt-0.5"
                           />
-                          <label htmlFor="permit-type-construction" className="text-sm font-medium cursor-pointer">
+                          <label 
+                            htmlFor="permit-type-construction" 
+                            className={`text-sm font-medium ${
+                              getPermitTypeRestrictions().blockedInRequest === 'construction'
+                                ? 'cursor-not-allowed'
+                                : 'cursor-pointer'
+                            }`}
+                          >
                             Permis de construire
                           </label>
                         </div>
@@ -2877,7 +3105,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </Popover>
                       </div>
 
-                      <div className="flex items-start gap-2">
+                      <div 
+                        className={`flex items-start gap-2 p-3 rounded-lg border transition-colors ${
+                          getPermitTypeRestrictions().blockedInRequest === 'regularization'
+                            ? 'bg-muted/30 opacity-60 cursor-not-allowed'
+                            : permitRequest.permitType === 'regularization' 
+                              ? 'border-primary bg-primary/5' 
+                              : 'hover:bg-muted/30 cursor-pointer'
+                        }`}
+                        onClick={() => {
+                          const restrictions = getPermitTypeRestrictions();
+                          if (restrictions.blockedInRequest === 'regularization') {
+                            handleBlockedPermitTypeClick('regularization', restrictions.messageRequest, 'request');
+                          } else {
+                            setPermitRequest({ ...permitRequest, permitType: 'regularization' });
+                          }
+                        }}
+                      >
                         <div className="flex items-center space-x-2">
                           <input
                             type="radio"
@@ -2885,10 +3129,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             name="permitType"
                             value="regularization"
                             checked={permitRequest.permitType === 'regularization'}
-                            onChange={(e) => setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularization' })}
+                            disabled={getPermitTypeRestrictions().blockedInRequest === 'regularization'}
+                            onChange={(e) => {
+                              if (getPermitTypeRestrictions().blockedInRequest !== 'regularization') {
+                                setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularization' });
+                              }
+                            }}
                             className="h-4 w-4 mt-0.5"
                           />
-                          <label htmlFor="permit-type-regularisation" className="text-sm font-medium cursor-pointer">
+                          <label 
+                            htmlFor="permit-type-regularisation" 
+                            className={`text-sm font-medium ${
+                              getPermitTypeRestrictions().blockedInRequest === 'regularization'
+                                ? 'cursor-not-allowed'
+                                : 'cursor-pointer'
+                            }`}
+                          >
                             Permis de régularisation
                           </label>
                         </div>
