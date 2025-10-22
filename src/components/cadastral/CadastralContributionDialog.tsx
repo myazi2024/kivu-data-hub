@@ -70,6 +70,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showCurrentOwnerRequiredWarning, setShowCurrentOwnerRequiredWarning] = useState(false);
   const [showPermitTypeBlockedWarning, setShowPermitTypeBlockedWarning] = useState(false);
   const [permitTypeBlockedMessage, setPermitTypeBlockedMessage] = useState('');
+  const [showAreaMismatchWarning, setShowAreaMismatchWarning] = useState(false);
+  const [areaMismatchMessage, setAreaMismatchMessage] = useState('');
+  const [shouldBlinkSuperficie, setShouldBlinkSuperficie] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [previousProgress, setPreviousProgress] = useState(0);
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
@@ -451,6 +454,43 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
     }
   }, [parcelSides]);
+
+  // Validation: Superficie calculée vs Surface de construction (si demande de permis)
+  useEffect(() => {
+    // Vérifier seulement si on est en mode "Demander un permis"
+    if (permitMode !== 'request') {
+      setShowAreaMismatchWarning(false);
+      setShouldBlinkSuperficie(false);
+      return;
+    }
+
+    const superficieCalculee = formData.areaSqm ? parseFloat(formData.areaSqm.toString()) : 0;
+    const surfaceConstruction = permitRequest.estimatedArea ? parseFloat(permitRequest.estimatedArea) : 0;
+
+    // Si les deux valeurs sont renseignées
+    if (superficieCalculee > 0 && surfaceConstruction > 0) {
+      // La superficie calculée doit être >= surface de construction
+      if (superficieCalculee < surfaceConstruction) {
+        setShouldBlinkSuperficie(true);
+        
+        // Message adapté selon le type de permis
+        const permitTypeText = permitRequest.permitType === 'construction' 
+          ? 'Surface de construction estimée' 
+          : 'Surface de construction';
+        
+        const message = `La superficie totale de la parcelle (${superficieCalculee} m²) ne peut pas être inférieure à la ${permitTypeText.toLowerCase()} (${surfaceConstruction} m²) qui sera bâtie dessus. Si vous estimez que les mesures fournies dans "Dimensions de chaque côté" sont correctes, veuillez revoir la valeur attribuée à la ${permitTypeText} dans l'onglet "Informations Générales".`;
+        
+        setAreaMismatchMessage(message);
+        setShowAreaMismatchWarning(true);
+      } else {
+        setShouldBlinkSuperficie(false);
+        setShowAreaMismatchWarning(false);
+      }
+    } else {
+      setShouldBlinkSuperficie(false);
+      setShowAreaMismatchWarning(false);
+    }
+  }, [formData.areaSqm, permitRequest.estimatedArea, permitRequest.permitType, permitMode]);
 
   // Mise à jour des villes quand la province change
   useEffect(() => {
@@ -3917,17 +3957,38 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </Button>
 
                   {formData.areaSqm && (
-                    <div className="p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 animate-scale-in">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">
-                        Superficie calculée
-                      </p>
-                      <p className="text-3xl font-bold text-primary mb-2">{formData.areaSqm} m²</p>
-                      <p className="text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md inline-block">
-                        {parcelSides.length === 2 && "Calcul rectangulaire simple"}
-                        {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
-                        {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
-                      </p>
-                    </div>
+                    <>
+                      <div className={`p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 animate-scale-in ${
+                        shouldBlinkSuperficie ? 'blink-red' : ''
+                      }`}>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">
+                          Superficie calculée
+                        </p>
+                        <p className="text-3xl font-bold text-primary mb-2">{formData.areaSqm} m²</p>
+                        <p className="text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md inline-block">
+                          {parcelSides.length === 2 && "Calcul rectangulaire simple"}
+                          {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
+                          {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
+                        </p>
+                      </div>
+
+                      {/* Notification d'erreur de validation superficie */}
+                      {showAreaMismatchWarning && (
+                        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 animate-fade-in">
+                          <div className="flex items-start gap-3">
+                            <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-sm font-medium text-destructive mb-1">
+                                Incohérence détectée
+                              </p>
+                              <p className="text-xs text-destructive/90 leading-relaxed">
+                                {areaMismatchMessage}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               </div>

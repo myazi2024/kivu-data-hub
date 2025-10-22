@@ -312,4 +312,20 @@ All colors MUST be HSL.
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+
+  /* Animation pour superficie avec erreur de validation */
+  @keyframes blink-red {
+    0%, 100% {
+      background-color: hsl(0 84% 60% / 0.15);
+      border-color: hsl(0 84% 60% / 0.5);
+    }
+    50% {
+      background-color: hsl(0 84% 60% / 0.3);
+      border-color: hsl(0 84% 60% / 0.8);
+    }
+  }
+
+  .blink-red {
+    animation: blink-red 1.5s ease-in-out infinite;
+  }
 }
