@@ -3439,22 +3439,46 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                       {/* Usage actuel */}
                       <div className="space-y-2">
-                        <Label>Usage actuel de la construction *</Label>
+                        <div className="flex items-center gap-2">
+                          <Label>Usage actuel de la construction *</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                              <p className="text-xs text-muted-foreground">
+                                L'usage actuel est automatiquement défini selon l'usage déclaré dans "Informations Générales". 
+                                Cette valeur ne peut pas être modifiée ici pour garantir la cohérence des données.
+                              </p>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         <Select
-                          value={permitRequest.plannedUsage}
-                          onValueChange={(value) => setPermitRequest({ ...permitRequest, plannedUsage: value })}
+                          value={permitRequest.plannedUsage || formData.declaredUsage}
+                          onValueChange={(value) => {
+                            setShowUsageLockedWarning(true);
+                            setTimeout(() => setShowUsageLockedWarning(false), 5000);
+                          }}
+                          disabled={true}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner l'usage actuel" />
+                          <SelectTrigger className="bg-muted/30">
+                            <SelectValue placeholder="Défini automatiquement selon l'usage déclaré" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Résidentiel">Résidentiel</SelectItem>
-                            <SelectItem value="Commercial">Commercial</SelectItem>
-                            <SelectItem value="Industriel">Industriel</SelectItem>
-                            <SelectItem value="Mixte">Mixte (Résidentiel + Commercial)</SelectItem>
-                            <SelectItem value="Agricole">Agricole</SelectItem>
+                            {availableDeclaredUsages.map(usage => (
+                              <SelectItem key={usage} value={usage}>{usage}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        {showUsageLockedWarning && (
+                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-2 animate-fade-in">
+                            <p className="text-xs text-blue-700 dark:text-blue-300">
+                              L'usage actuel est automatiquement rempli selon votre "Usage déclaré" dans l'onglet Informations Générales et ne peut être modifié ici.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
