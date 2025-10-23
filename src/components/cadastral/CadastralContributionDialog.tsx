@@ -73,6 +73,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showAreaMismatchWarning, setShowAreaMismatchWarning] = useState(false);
   const [areaMismatchMessage, setAreaMismatchMessage] = useState('');
   const [shouldBlinkSuperficie, setShouldBlinkSuperficie] = useState(false);
+  const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [previousProgress, setPreviousProgress] = useState(0);
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
@@ -178,6 +179,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     applicantName: '',
     applicantPhone: '',
     applicantEmail: '',
+    selectedOwnerIndex: -1, // Index du propriétaire sélectionné
     // Champs spécifiques permis de construire
     numberOfFloors: '',
     buildingMaterials: '',
@@ -688,6 +690,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       handleInputChange('declaredUsage', undefined);
     }
   }, [formData.constructionType, formData.constructionNature]);
+
+  // Synchroniser "usage prévu" avec "usage déclaré" quand on passe en mode "Demander un permis"
+  useEffect(() => {
+    if (permitMode === 'request' && formData.declaredUsage && !permitRequest.plannedUsage) {
+      setPermitRequest(prev => ({ ...prev, plannedUsage: formData.declaredUsage || '' }));
+    }
+  }, [permitMode, formData.declaredUsage]);
+
+  // Auto-remplir les informations du demandeur si un seul propriétaire
+  useEffect(() => {
+    if (permitMode === 'request' && currentOwners.length === 1) {
+      const owner = currentOwners[0];
+      if (owner.lastName && owner.firstName && !permitRequest.applicantName) {
+        const fullName = `${owner.lastName} ${owner.middleName ? owner.middleName + ' ' : ''}${owner.firstName}`.trim();
+        setPermitRequest(prev => ({ 
+          ...prev, 
+          applicantName: fullName,
+          selectedOwnerIndex: 0
+        }));
+      }
+    }
+  }, [permitMode, currentOwners]);
 
   const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -1385,7 +1409,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       messageExisting: '',
       messageRequest: '',
       dateMinExisting: '',
-      dateMaxExisting: ''
+      dateMaxExisting: '',
+      dateMinRegularization: '',
+      dateMaxRegularization: ''
     };
 
     const today = new Date();
@@ -1416,22 +1442,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return restrictions;
     }
 
-    // Logique 3: Si type de construction ≠ "terrain nu" ET nature ≠ "Précaire"
-    if (formData.constructionType && formData.constructionType !== 'Terrain nu' &&
-        formData.constructionNature && formData.constructionNature !== 'Précaire') {
-      restrictions.blockedInExisting = 'construction';
-      restrictions.blockedInRequest = 'construction';
-      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas, un permis de régularisation est adapté.`;
-      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas, un permis de régularisation est adapté.`;
-      restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
-      restrictions.dateMaxExisting = oneMonthAgo.toISOString().split('T')[0];
-      return restrictions;
-    }
-
-    // Autres cas: date pour permis de construire standard
+    // Logique 3 modifiée: Si type de construction ≠ "terrain nu"
     if (formData.constructionType && formData.constructionType !== 'Terrain nu') {
+      // Dates pour permis de construire: 3 ans passé - 1 mois avant aujourd'hui
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxExisting = oneMonthAgo.toISOString().split('T')[0];
+      
+      // Dates pour permis de régularisation: 3 ans passé - aujourd'hui
+      restrictions.dateMinRegularization = threeYearsAgo.toISOString().split('T')[0];
+      restrictions.dateMaxRegularization = today.toISOString().split('T')[0];
+      
+      // Si nature ≠ "Précaire", bloquer le permis de construire
+      if (formData.constructionNature && formData.constructionNature !== 'Précaire') {
+        restrictions.blockedInExisting = 'construction';
+        restrictions.blockedInRequest = 'construction';
+        restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas de figure, un permis de régularisation est adapté.`;
+        restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas de figure, un permis de régularisation est adapté.`;
+      }
     }
 
     return restrictions;
@@ -2871,14 +2898,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Label className="text-xs">Date d'émission</Label>
                           <Input
                             type="date"
-                            min={getPermitTypeRestrictions().dateMinExisting || undefined}
-                            max={getPermitTypeRestrictions().dateMaxExisting || new Date().toISOString().split('T')[0]}
+                            min={permit.permitType === 'construction' 
+                              ? getPermitTypeRestrictions().dateMinExisting 
+                              : getPermitTypeRestrictions().dateMinRegularization}
+                            max={permit.permitType === 'construction'
+                              ? getPermitTypeRestrictions().dateMaxExisting 
+                              : getPermitTypeRestrictions().dateMaxRegularization}
                             value={permit.issueDate}
                             onChange={(e) => {
                               const restrictions = getPermitTypeRestrictions();
                               const selectedDate = new Date(e.target.value);
-                              const minDate = restrictions.dateMinExisting ? new Date(restrictions.dateMinExisting) : null;
-                              const maxDate = restrictions.dateMaxExisting ? new Date(restrictions.dateMaxExisting) : new Date();
+                              
+                              const minDate = permit.permitType === 'construction'
+                                ? (restrictions.dateMinExisting ? new Date(restrictions.dateMinExisting) : null)
+                                : (restrictions.dateMinRegularization ? new Date(restrictions.dateMinRegularization) : null);
+                              
+                              const maxDate = permit.permitType === 'construction'
+                                ? (restrictions.dateMaxExisting ? new Date(restrictions.dateMaxExisting) : new Date())
+                                : (restrictions.dateMaxRegularization ? new Date(restrictions.dateMaxRegularization) : new Date());
 
                               if (minDate && selectedDate < minDate) {
                                 toast({
@@ -2901,9 +2938,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               updateBuildingPermit(index, 'issueDate', e.target.value);
                             }}
                           />
-                          {getPermitTypeRestrictions().dateMinExisting && (
+                          {(getPermitTypeRestrictions().dateMinExisting || getPermitTypeRestrictions().dateMinRegularization) && (
                             <p className="text-xs text-muted-foreground">
-                              Période: {new Date(getPermitTypeRestrictions().dateMinExisting).toLocaleDateString('fr-FR')} - {new Date(getPermitTypeRestrictions().dateMaxExisting || Date.now()).toLocaleDateString('fr-FR')}
+                              Période: {permit.permitType === 'construction'
+                                ? `${new Date(getPermitTypeRestrictions().dateMinExisting).toLocaleDateString('fr-FR')} - ${new Date(getPermitTypeRestrictions().dateMaxExisting).toLocaleDateString('fr-FR')}`
+                                : `${new Date(getPermitTypeRestrictions().dateMinRegularization).toLocaleDateString('fr-FR')} - ${new Date(getPermitTypeRestrictions().dateMaxRegularization).toLocaleDateString('fr-FR')}`}
                             </p>
                           )}
                         </div>
@@ -3225,22 +3264,46 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                       {/* Usage prévu */}
                       <div className="space-y-2">
-                        <Label>Usage prévu *</Label>
+                        <div className="flex items-center gap-2">
+                          <Label>Usage prévu *</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80">
+                              <p className="text-xs text-muted-foreground">
+                                L'usage prévu est automatiquement défini selon l'usage déclaré dans "Informations Générales". 
+                                Cette valeur ne peut pas être modifiée ici pour garantir la cohérence des données.
+                              </p>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         <Select
-                          value={permitRequest.plannedUsage}
-                          onValueChange={(value) => setPermitRequest({ ...permitRequest, plannedUsage: value })}
+                          value={permitRequest.plannedUsage || formData.declaredUsage}
+                          onValueChange={(value) => {
+                            setShowUsageLockedWarning(true);
+                            setTimeout(() => setShowUsageLockedWarning(false), 5000);
+                          }}
+                          disabled={true}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner l'usage prévu" />
+                          <SelectTrigger className="bg-muted/30">
+                            <SelectValue placeholder="Défini automatiquement selon l'usage déclaré" />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="Résidentiel">Résidentiel</SelectItem>
-                            <SelectItem value="Commercial">Commercial</SelectItem>
-                            <SelectItem value="Industriel">Industriel</SelectItem>
-                            <SelectItem value="Mixte">Mixte (Résidentiel + Commercial)</SelectItem>
-                            <SelectItem value="Agricole">Agricole</SelectItem>
+                            {availableDeclaredUsages.map(usage => (
+                              <SelectItem key={usage} value={usage}>{usage}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
+                        {showUsageLockedWarning && (
+                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-2 animate-fade-in">
+                            <p className="text-xs text-blue-700 dark:text-blue-300">
+                              L'usage prévu est automatiquement rempli selon votre "Usage déclaré" dans l'onglet Informations Générales et ne peut être modifié ici.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -3566,16 +3629,76 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   )}
 
                   <div className="border-t pt-4">
-                    <Label className="text-sm font-semibold mb-3 block">Informations du demandeur</Label>
+                    <div className="flex items-center gap-2 mb-3">
+                      <Label className="text-sm font-semibold">Informations du demandeur</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <p className="text-xs text-muted-foreground">
+                            Seul(e) le(la) propriétaire ou l'un des propriétaires peut faire une demande de permis de construire ou de régularisation.
+                            Sélectionnez un propriétaire dans la liste ci-dessous.
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     
                     <div className="space-y-3">
+                      {currentOwners.length > 1 && (
+                        <div className="space-y-2">
+                          <Label>Sélectionner le propriétaire demandeur *</Label>
+                          <Select
+                            value={permitRequest.selectedOwnerIndex.toString()}
+                            onValueChange={(value) => {
+                              const idx = parseInt(value);
+                              const owner = currentOwners[idx];
+                              if (owner) {
+                                const fullName = `${owner.lastName} ${owner.middleName ? owner.middleName + ' ' : ''}${owner.firstName}`.trim();
+                                setPermitRequest({ 
+                                  ...permitRequest, 
+                                  applicantName: fullName,
+                                  selectedOwnerIndex: idx
+                                });
+                              }
+                            }}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Choisir un propriétaire" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {currentOwners.map((owner, idx) => {
+                                if (owner.lastName && owner.firstName) {
+                                  const fullName = `${owner.lastName} ${owner.middleName ? owner.middleName + ' ' : ''}${owner.firstName}`.trim();
+                                  return (
+                                    <SelectItem key={idx} value={idx.toString()}>
+                                      {fullName}
+                                    </SelectItem>
+                                  );
+                                }
+                                return null;
+                              })}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                      
                       <div className="space-y-2">
                         <Label>Nom complet *</Label>
                         <Input
                           placeholder="Nom et prénom du demandeur"
                           value={permitRequest.applicantName}
                           onChange={(e) => setPermitRequest({ ...permitRequest, applicantName: e.target.value })}
+                          disabled={currentOwners.length > 0}
+                          className={currentOwners.length > 0 ? 'bg-muted/30' : ''}
                         />
+                        {currentOwners.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Le nom est défini automatiquement selon le propriétaire sélectionné
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
