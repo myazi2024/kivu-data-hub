@@ -1454,18 +1454,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       restrictions.dateMaxRegularization = today.toISOString().split('T')[0];
     }
 
-    // Logique 4: Si nature de construction ≠ "Précaire" et ≠ "Non bâti"
-    // Bloquer le permis de construire
-    if (formData.constructionNature && 
-        formData.constructionNature !== 'Précaire' && 
-        formData.constructionNature !== 'Non bâti' &&
-        formData.constructionType !== 'Terrain nu') {
-      restrictions.blockedInExisting = 'construction';
-      restrictions.blockedInRequest = 'construction';
-      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas de figure, un permis de régularisation est adapté.`;
-      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas de figure, un permis de régularisation est adapté.`;
-    }
-
     return restrictions;
   };
 
@@ -2810,6 +2798,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       {/* Type de permis */}
                       <div className="space-y-2">
                         <Label className="text-xs font-medium">Type de permis</Label>
+                        
+                        {/* Notification type de permis bloqué - affichée au-dessus */}
+                        {showPermitTypeBlockedWarning && (
+                          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in mb-2 shadow-lg">
+                            <div className="flex items-start gap-2">
+                              <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium text-destructive">
+                                  Type de permis non applicable
+                                </p>
+                                <p className="text-xs text-destructive/80 mt-1">
+                                  {permitTypeBlockedMessage}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         <RadioGroup 
                           value={permit.permitType} 
                           onValueChange={(value: 'construction' | 'regularization') => {
@@ -3041,22 +3047,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                   {/* Bouton Ajouter déplacé en dessous des blocs */}
                   <div className="space-y-2">
-                    {/* Notification type de permis bloqué */}
-                    {showPermitTypeBlockedWarning && (
-                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in">
-                        <div className="flex items-start gap-2">
-                          <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-destructive">
-                              Type de permis non applicable
-                            </p>
-                            <p className="text-xs text-destructive/80 mt-1">
-                              {permitTypeBlockedMessage}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Notification d'avertissement */}
                     {showPermitWarning && (
@@ -3110,9 +3100,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <div className="space-y-3">
                     <Label className="text-sm font-semibold">Type de permis demandé *</Label>
                     
-                    {/* Notification type de permis bloqué */}
+                    {/* Notification type de permis bloqué - affichée au-dessus */}
                     {showPermitTypeBlockedWarning && (
-                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in">
+                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in shadow-lg">
                         <div className="flex items-start gap-2">
                           <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
