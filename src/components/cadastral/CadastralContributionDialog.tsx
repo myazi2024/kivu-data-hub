@@ -2797,7 +2797,48 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                       {/* Type de permis */}
                       <div className="space-y-2">
-                        <Label className="text-xs font-medium">Type de permis</Label>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-xs font-medium">Type de permis délivré</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-muted">
+                                <Info className="h-4 w-4 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-80" align="start">
+                              <div className="space-y-3">
+                                <div className="space-y-2">
+                                  <h4 className="font-medium text-sm">Qu'est-ce qu'un permis délivré ?</h4>
+                                  <p className="text-xs text-muted-foreground">
+                                    Il s'agit du permis de construire qui a été officiellement délivré par le service compétent (Commune, Ville, Division Urbaine) pour autoriser votre construction.
+                                  </p>
+                                </div>
+                                
+                                {!permit.permitNumber && (
+                                  <div className="border-t pt-3 space-y-2">
+                                    <h4 className="font-medium text-sm">Vous n'avez pas encore de permis ?</h4>
+                                    <p className="text-xs text-muted-foreground">
+                                      Vous pouvez faire une demande dans la section "Demander un permis" ci-dessous.
+                                      {formData.constructionType !== "Terrain nu" ? (
+                                        <span className="block mt-2 text-primary font-medium">
+                                          → Un permis de régularisation serait le mieux adapté compte tenu de votre situation (Type de construction: {formData.constructionType}).
+                                        </span>
+                                      ) : formData.constructionNature === "Précaire" ? (
+                                        <span className="block mt-2 text-primary font-medium">
+                                          → Un permis de construire est adapté pour une construction précaire.
+                                        </span>
+                                      ) : (
+                                        <span className="block mt-2 text-primary font-medium">
+                                          → Un permis de construire est adapté pour un terrain nu.
+                                        </span>
+                                      )}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
                         
                         {/* Notification type de permis bloqué - affichée au-dessus */}
                         {showPermitTypeBlockedWarning && (
@@ -2966,33 +3007,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         />
                       </div>
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Validité (mois)</Label>
-                          <Input
-                            type="number"
-                            placeholder="36"
-                            value={permit.validityMonths}
-                            onChange={(e) => updateBuildingPermit(index, 'validityMonths', e.target.value)}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Statut administratif</Label>
-                          <Select
-                            value={permit.administrativeStatus}
-                            onValueChange={(value) => updateBuildingPermit(index, 'administrativeStatus', value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="En attente">En attente</SelectItem>
-                              <SelectItem value="Conforme">Conforme</SelectItem>
-                              <SelectItem value="Non autorisé">Non autorisé</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
 
                       {/* Pièce jointe du permis */}
                       <div className="space-y-2">
