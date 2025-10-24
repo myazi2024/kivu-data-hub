@@ -1442,7 +1442,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return restrictions;
     }
 
-    // Logique 3 modifiée: Si type de construction ≠ "terrain nu"
+    // Logique 3: Si type de construction ≠ "terrain nu"
+    // Les deux options (Permis de construire et Permis de régularisation) restent disponibles
     if (formData.constructionType && formData.constructionType !== 'Terrain nu') {
       // Dates pour permis de construire: 3 ans passé - 1 mois avant aujourd'hui
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
@@ -1451,14 +1452,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       // Dates pour permis de régularisation: 3 ans passé - aujourd'hui
       restrictions.dateMinRegularization = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxRegularization = today.toISOString().split('T')[0];
-      
-      // Si nature ≠ "Précaire", bloquer le permis de construire
-      if (formData.constructionNature && formData.constructionNature !== 'Précaire') {
-        restrictions.blockedInExisting = 'construction';
-        restrictions.blockedInRequest = 'construction';
-        restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas de figure, un permis de régularisation est adapté.`;
-        restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas de figure, un permis de régularisation est adapté.`;
-      }
+    }
+
+    // Logique 4: Si nature de construction ≠ "Précaire" et ≠ "Non bâti"
+    // Bloquer le permis de construire
+    if (formData.constructionNature && 
+        formData.constructionNature !== 'Précaire' && 
+        formData.constructionNature !== 'Non bâti' &&
+        formData.constructionType !== 'Terrain nu') {
+      restrictions.blockedInExisting = 'construction';
+      restrictions.blockedInRequest = 'construction';
+      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas de figure, un permis de régularisation est adapté.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" : "${formData.constructionType}" et dans "Nature de construction" : "${formData.constructionNature}". Dans ce cas de figure, un permis de régularisation est adapté.`;
     }
 
     return restrictions;
