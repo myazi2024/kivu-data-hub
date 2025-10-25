@@ -4087,28 +4087,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                   <div className="space-y-2">
                     {parcelSides.map((side, index) => (
-                      <div key={index} className="flex items-center gap-2 animate-fade-in">
+                      <div key={index} className="flex items-center gap-1.5 md:gap-2 animate-fade-in">
                         <Input
                           placeholder="Nom du côté"
                           value={side.name}
                           onChange={(e) => updateParcelSide(index, 'name', e.target.value)}
-                          className="flex-1 transition-all focus:scale-[1.01]"
+                          className="flex-1 transition-all focus:scale-[1.01] h-9 text-sm"
                         />
                         <Input
                           type="number"
                           placeholder="Longueur"
                           value={side.length}
                           onChange={(e) => updateParcelSide(index, 'length', e.target.value)}
-                          className="w-32 transition-all focus:scale-[1.01]"
+                          className="w-20 md:w-32 transition-all focus:scale-[1.01] h-9 text-sm"
                         />
-                        <span className="text-xs text-muted-foreground w-6">m</span>
+                        <span className="text-xs text-muted-foreground w-4 md:w-6">m</span>
                         {parcelSides.length > 2 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => removeParcelSide(index)}
-                            className="hover:bg-destructive/10 transition-all"
+                            className="hover:bg-destructive/10 transition-all hover:scale-105 h-9 w-9 p-0 animate-fade-in"
                           >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -4122,7 +4122,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     variant="outline"
                     size="sm"
                     onClick={addParcelSide}
-                    className="w-full hover:bg-primary/5 transition-all hover:scale-[1.02]"
+                    className="w-full hover:bg-primary/5 transition-all hover:scale-[1.02] animate-fade-in h-9"
                   >
                     <Plus className="h-4 w-4 mr-2" />
                     Ajouter un côté
@@ -4130,18 +4130,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                   {formData.areaSqm && (
                     <>
-                      <div className={`p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-xl border border-primary/20 animate-scale-in ${
+                      <div className={`p-2.5 md:p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-lg md:rounded-xl border border-primary/20 animate-scale-in ${
                         shouldBlinkSuperficie ? 'blink-red' : ''
                       }`}>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">
-                          Superficie calculée
-                        </p>
-                        <p className="text-3xl font-bold text-primary mb-2">{formData.areaSqm} m²</p>
-                        <p className="text-xs text-muted-foreground bg-background/50 px-2 py-1 rounded-md inline-block">
-                          {parcelSides.length === 2 && "Calcul rectangulaire simple"}
-                          {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
-                          {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
-                        </p>
+                        <div className="flex items-center justify-between gap-3 md:block">
+                          <div className="flex-1 md:mb-1">
+                            <p className="text-xs md:text-sm font-medium text-muted-foreground mb-0.5 md:mb-1">
+                              Superficie calculée
+                            </p>
+                            <p className="text-xl md:text-3xl font-bold text-primary">{formData.areaSqm} m²</p>
+                          </div>
+                          <p className="text-[10px] md:text-xs text-muted-foreground bg-background/50 px-1.5 md:px-2 py-0.5 md:py-1 rounded-md whitespace-nowrap md:inline-block md:mt-2">
+                            {parcelSides.length === 2 && "Calcul rectangulaire simple"}
+                            {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
+                            {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
+                          </p>
+                        </div>
                       </div>
 
                       {/* Notification d'erreur de validation superficie */}
