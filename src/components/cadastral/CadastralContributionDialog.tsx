@@ -197,6 +197,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     borne: string;
     lat: string;
     lng: string;
+    mode?: 'auto' | 'manual';
+    detected?: boolean;
+    detecting?: boolean;
   }>>([]);
   
   // Synchroniser initialement les bornes GPS avec les côtés par défaut
@@ -205,7 +208,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       const initialBornes = parcelSides.map((_, index) => ({
         borne: `Borne ${index + 1}`,
         lat: '',
-        lng: ''
+        lng: '',
+        mode: 'manual' as 'auto' | 'manual',
+        detected: false,
+        detecting: false
       }));
       setGpsCoordinates(initialBornes);
     }
@@ -1482,7 +1488,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setGpsCoordinates([...gpsCoordinates, {
       borne: `Borne ${gpsCoordinates.length + 1}`,
       lat: '',
-      lng: ''
+      lng: '',
+      mode: 'manual',
+      detected: false,
+      detecting: false
     }]);
   };
   
@@ -1495,7 +1504,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   };
   
-  const updateGPSCoordinate = (index: number, field: string, value: string) => {
+  const updateGPSCoordinate = (index: number, field: string, value: any) => {
     const updated = [...gpsCoordinates];
     updated[index] = { ...updated[index], [field]: value };
     setGpsCoordinates(updated);
@@ -1511,27 +1520,34 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
     
-    toast({
-      title: "Capture en cours",
-      description: "Récupération de votre position GPS...",
-    });
+    // Marquer comme en cours de détection
+    const updated = [...gpsCoordinates];
+    updated[index] = { ...updated[index], detecting: true };
+    setGpsCoordinates(updated);
     
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const updated = [...gpsCoordinates];
-        updated[index] = {
-          ...updated[index],
+        const finalUpdate = [...gpsCoordinates];
+        finalUpdate[index] = {
+          ...finalUpdate[index],
           lat: position.coords.latitude.toFixed(6),
-          lng: position.coords.longitude.toFixed(6)
+          lng: position.coords.longitude.toFixed(6),
+          detected: true,
+          detecting: false
         };
-        setGpsCoordinates(updated);
+        setGpsCoordinates(finalUpdate);
         
         toast({
-          title: "Position capturée",
-          description: `Lat: ${position.coords.latitude.toFixed(6)}, Lng: ${position.coords.longitude.toFixed(6)}`,
+          title: "Borne détectée",
+          description: `Coordonnées enregistrées avec succès`,
         });
       },
       (error) => {
+        // Réinitialiser l'état de détection en cas d'erreur
+        const errorUpdate = [...gpsCoordinates];
+        errorUpdate[index] = { ...errorUpdate[index], detecting: false };
+        setGpsCoordinates(errorUpdate);
+        
         let errorMessage = "Impossible de récupérer votre position";
         
         switch (error.code) {
@@ -4153,228 +4169,265 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Coordonnées GPS des bornes */}
             {sectionType && (
               <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm font-semibold">Coordonnées GPS des bornes (optionnel)</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
+                <div className="flex items-center gap-2">
+                  <Label className="text-sm font-semibold">Coordonnées GPS des bornes (optionnel)</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 w-5 p-0 rounded-full hover:bg-primary/10"
+                      >
+                        <Info className="h-4 w-4 text-primary" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80" align="start">
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="font-semibold text-sm mb-2 text-foreground">
+                            Comment ajouter les coordonnées GPS ?
+                          </h4>
+                          <p className="text-xs text-muted-foreground mb-3">
+                            Choisissez entre le mode automatique (détection GPS) ou le mode manuel (saisie des coordonnées).
+                          </p>
+                        </div>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Ajoutez les coordonnées GPS de chaque borne du terrain
+                </p>
+                {(() => {
+                  const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+                  const isSuperficieCompleted = filledSides.length >= 3;
+                  
+                  if (!isSuperficieCompleted) {
+                    return (
+                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Complétez d'abord le bloc "Dimensions de chaque côté" (au moins 3 côtés)
+                      </p>
+                    );
+                  }
+                  
+                  return null;
+                })()}
+
+                <div className="space-y-3">
+                  {gpsCoordinates.map((coord, index) => (
+                    <div key={index} className="border rounded-lg p-3 space-y-3 bg-gradient-to-br from-muted/20 to-transparent animate-fade-in">
+                      <div className="flex items-center justify-between gap-2">
+                        <Input
+                          placeholder="Nom de la borne"
+                          value={coord.borne}
+                          onChange={(e) => updateGPSCoordinate(index, 'borne', e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeGPSCoordinate(index)}
+                          className="text-destructive hover:bg-destructive/10 h-8 w-8 p-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+
+                      {/* Boutons de bascule Automatique / Manuel */}
+                      <div className="flex gap-2">
+                        <div className="flex-1 flex gap-2">
                           <Button
                             type="button"
-                            variant="ghost"
+                            variant={coord.mode === 'auto' ? 'default' : 'outline'}
                             size="sm"
-                            className="h-5 w-5 p-0 rounded-full hover:bg-primary/10"
+                            onClick={() => updateGPSCoordinate(index, 'mode', 'auto')}
+                            className="flex-1 gap-1.5 animate-fade-in transition-all"
                           >
-                            <Info className="h-4 w-4 text-primary" />
+                            <MdLocationOn className="h-3.5 w-3.5" />
+                            Automatique
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <span className="ml-1" onClick={(e) => e.stopPropagation()}>
+                                  <Info className="h-3 w-3 text-muted-foreground inline" />
+                                </span>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64" onClick={(e) => e.stopPropagation()}>
+                                <p className="text-xs text-muted-foreground">
+                                  Placez-vous physiquement au-dessus de la borne et cliquez sur "Détecter" pour capturer automatiquement les coordonnées GPS.
+                                </p>
+                              </PopoverContent>
+                            </Popover>
                           </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80" align="start">
-                          <div className="space-y-3">
-                            <div>
-                              <h4 className="font-semibold text-sm mb-2 text-foreground">
-                                Comment ajouter les coordonnées GPS ?
-                              </h4>
-                              <p className="text-xs text-muted-foreground mb-3">
-                                Deux méthodes sont disponibles pour renseigner les coordonnées GPS de chaque borne de votre terrain :
+                          
+                          <Button
+                            type="button"
+                            variant={coord.mode === 'manual' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => updateGPSCoordinate(index, 'mode', 'manual')}
+                            className="flex-1 gap-1.5 animate-fade-in transition-all"
+                          >
+                            Manuel
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <span className="ml-1" onClick={(e) => e.stopPropagation()}>
+                                  <Info className="h-3 w-3 text-muted-foreground inline" />
+                                </span>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64" onClick={(e) => e.stopPropagation()}>
+                                <p className="text-xs text-muted-foreground">
+                                  Saisissez manuellement les coordonnées GPS si vous les avez déjà ou si vous ne pouvez pas vous déplacer sur le terrain.
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* Mode Automatique */}
+                      {coord.mode === 'auto' && (
+                        <div className="space-y-2 animate-fade-in">
+                          {!coord.detected && (
+                            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 animate-fade-in">
+                              <p className="text-xs text-blue-700 dark:text-blue-300 mb-2">
+                                📍 Placez-vous au-dessus de l'emplacement de la borne {coord.borne || `n°${index + 1}`} ou dans le coin de la parcelle, puis cliquez sur le bouton ci-dessous.
                               </p>
                             </div>
-                            
-                            <div className="space-y-3">
-                              <div className="border-l-2 border-primary pl-3">
-                                <h5 className="font-semibold text-xs mb-1 text-foreground flex items-center gap-1">
-                                  <MdLocationOn className="h-3 w-3" />
-                                  Méthode 1 : Capture automatique
-                                </h5>
-                                <p className="text-xs text-muted-foreground mb-2">
-                                  Rendez-vous physiquement à l'emplacement de chaque borne avec votre smartphone ou appareil GPS.
-                                </p>
-                                <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                                  <li>Cliquez sur "Capturer ma position actuelle"</li>
-                                  <li>Autorisez l'accès à votre localisation</li>
-                                  <li>Les coordonnées seront automatiquement renseignées</li>
-                                </ul>
-                              </div>
-                              
-                              <div className="border-l-2 border-secondary pl-3">
-                                <h5 className="font-semibold text-xs mb-1 text-foreground">
-                                  Méthode 2 : Saisie manuelle
-                                </h5>
-                                <p className="text-xs text-muted-foreground mb-2">
-                                  Si vous disposez déjà des coordonnées GPS de vos bornes :
-                                </p>
-                                <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                                  <li>Saisissez la latitude (position nord-sud)</li>
-                                  <li>Saisissez la longitude (position est-ouest)</li>
-                                  <li>Utilisez au moins 6 décimales pour une précision optimale</li>
-                                </ul>
-                              </div>
-                            </div>
-                            
-                            <div className="bg-muted/50 p-2 rounded-md">
-                              <p className="text-xs text-muted-foreground">
-                                <strong className="text-foreground">💡 Conseil :</strong> Pour une délimitation précise de votre terrain, nous recommandons d'ajouter les coordonnées de toutes les bornes.
+                          )}
+                          
+                          <Button
+                            type="button"
+                            variant={coord.detected ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => {
+                              if (!coord.detected) {
+                                captureCurrentLocation(index);
+                              }
+                            }}
+                            disabled={coord.detecting}
+                            className="w-full gap-2 transition-all animate-fade-in"
+                          >
+                            {coord.detecting ? (
+                              <>
+                                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                Détection en cours...
+                              </>
+                            ) : coord.detected ? (
+                              <>
+                                <CheckCircle2 className="h-4 w-4" />
+                                Borne {coord.borne || index + 1} détectée
+                              </>
+                            ) : (
+                              <>
+                                <MdLocationOn className="h-4 w-4" />
+                                Détecter la borne
+                              </>
+                            )}
+                          </Button>
+
+                          {coord.detected && index < gpsCoordinates.length - 1 && (
+                            <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3 animate-fade-in">
+                              <p className="text-xs text-green-700 dark:text-green-300">
+                                ✅ Coordonnées enregistrées ! Passez à la borne suivante : {gpsCoordinates[index + 1]?.borne || `Borne ${index + 2}`}
                               </p>
                             </div>
+                          )}
+
+                          {coord.lat && coord.lng && (
+                            <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                              <div className="flex justify-between">
+                                <span>Lat: {coord.lat}</span>
+                                <span>Lng: {coord.lng}</span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Mode Manuel */}
+                      {coord.mode === 'manual' && (
+                        <div className="grid grid-cols-2 gap-2 animate-fade-in">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Latitude</Label>
+                            <InputWithPopover
+                              type="number"
+                              step="0.000001"
+                              placeholder="ex: -1.674"
+                              value={coord.lat}
+                              onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
+                              helpTitle="Latitude"
+                              helpText="Position nord-sud. Au Congo: entre -13° et 5°. Utilisez au moins 6 décimales."
+                            />
                           </div>
-                        </PopoverContent>
-                      </Popover>
+                          <div className="space-y-1">
+                            <Label className="text-xs">Longitude</Label>
+                            <InputWithPopover
+                              type="number"
+                              step="0.000001"
+                              placeholder="ex: 29.224"
+                              value={coord.lng}
+                              onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
+                              helpTitle="Longitude"
+                              helpText="Position est-ouest. Au Congo: entre 12° et 31°. Utilisez au moins 6 décimales."
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Ajoutez les coordonnées GPS de chaque borne du terrain
-                    </p>
-                    {(() => {
+                  ))}
+                </div>
+                  
+                {/* Bouton Ajouter */}
+                <div className="space-y-2">
+                  {showGPSWarning && (
+                    <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                            Limite de coordonnées GPS atteinte
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Vous avez atteint la limite de {parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length} borne(s). Ajoutez un nouveau côté dans "Dimensions de chaque côté" pour ajouter plus de bornes.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
                       const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
                       const isSuperficieCompleted = filledSides.length >= 3;
                       const canAddMore = gpsCoordinates.length < filledSides.length;
                       
-                      if (!isSuperficieCompleted) {
-                        return (
-                          <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 flex items-center gap-1">
-                            <Info className="h-3 w-3" />
-                            Complétez d'abord le bloc "Dimensions de chaque côté" (au moins 3 côtés)
-                          </p>
-                        );
+                      if (isSuperficieCompleted && !canAddMore) {
+                        setShowGPSWarning(true);
+                        setHighlightSuperficie(true);
+                        setTimeout(() => setShowGPSWarning(false), 5000);
+                        setTimeout(() => setHighlightSuperficie(false), 3000);
+                        return;
                       }
                       
-                      if (!canAddMore && gpsCoordinates.length > 0) {
-                        return (
-                          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                            <Info className="h-3 w-3" />
-                            Limite atteinte : {filledSides.length} borne(s) pour {filledSides.length} côté(s)
-                          </p>
-                        );
-                      }
-                      
-                      return null;
+                      addGPSCoordinate();
+                    }}
+                    disabled={(() => {
+                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
+                      return filledSides.length < 3;
                     })()}
-                  </div>
+                    className="w-full gap-2 hover:bg-primary/5 transition-all"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Ajouter une borne
+                  </Button>
                 </div>
-
-                <div className="space-y-3">
-                  {gpsCoordinates.map((coord, index) => (
-                      <div key={index} className="border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent">
-                        <div className="flex items-center justify-between">
-                          <Input
-                            placeholder="Nom de la borne"
-                            value={coord.borne}
-                            onChange={(e) => updateGPSCoordinate(index, 'borne', e.target.value)}
-                            className="flex-1 mr-2"
-                          />
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeGPSCoordinate(index)}
-                            className="text-destructive hover:bg-destructive/10"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-
-                          <div className="space-y-3">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label className="text-xs">Latitude</Label>
-                                <InputWithPopover
-                                  type="number"
-                                  step="0.000001"
-                                  placeholder="ex: -1.674"
-                                  value={coord.lat}
-                                  onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
-                                  helpTitle="Latitude"
-                                  helpText="La latitude représente la position nord-sud. Au Congo, les valeurs sont généralement négatives (entre -13° et 5°). Vous pouvez utiliser votre smartphone ou un GPS pour obtenir cette coordonnée précise."
-                                />
-                              </div>
-                              <div className="space-y-2">
-                                <Label className="text-xs">Longitude</Label>
-                                <InputWithPopover
-                                  type="number"
-                                  step="0.000001"
-                                  placeholder="ex: 29.224"
-                                  value={coord.lng}
-                                  onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
-                                  helpTitle="Longitude"
-                                  helpText="La longitude représente la position est-ouest. Au Congo, les valeurs sont généralement positives (entre 12° et 31°). Assurez-vous d'utiliser au moins 6 décimales pour une précision optimale."
-                                />
-                              </div>
-                            </div>
-                          
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => captureCurrentLocation(index)}
-                            className="w-full gap-2 hover:bg-primary/10 transition-all"
-                          >
-                            <MdLocationOn className="h-4 w-4" />
-                            Capturer ma position actuelle
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {/* Bouton Ajouter déplacé en dessous des blocs */}
-                  <div className="space-y-2">
-                    {/* Notification d'avertissement pour GPS */}
-                    {showGPSWarning && (
-                      <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
-                        <div className="flex items-start gap-2">
-                          <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                              Limite de coordonnées GPS atteinte
-                            </p>
-                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                              Vous avez atteint la limite de {parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length} borne(s) correspondant aux {parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length} côté(s) de votre parcelle. Pour ajouter plus de coordonnées GPS, vous devez d'abord ajouter un nouveau côté dans le bloc "Dimensions de chaque côté" ci-dessus.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                        const isSuperficieCompleted = filledSides.length >= 3;
-                        const canAddMore = gpsCoordinates.length < filledSides.length;
-                        
-                        // Si la limite est atteinte, afficher la notification et surbrillance
-                        if (isSuperficieCompleted && !canAddMore) {
-                          setShowGPSWarning(true);
-                          setHighlightSuperficie(true);
-                          
-                          // Retirer la notification après 5 secondes
-                          setTimeout(() => {
-                            setShowGPSWarning(false);
-                          }, 5000);
-                          
-                          // Retirer la surbrillance après 3 secondes
-                          setTimeout(() => {
-                            setHighlightSuperficie(false);
-                          }, 3000);
-                          
-                          return;
-                        }
-                        
-                        addGPSCoordinate();
-                      }}
-                      disabled={(() => {
-                        const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                        const isSuperficieCompleted = filledSides.length >= 3;
-                        return !isSuperficieCompleted;
-                      })()}
-                      className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Ajouter une coordonnée GPS
-                    </Button>
-                  </div>
-                </div>
-              )}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="history" className="space-y-6 mt-6 animate-fade-in">
