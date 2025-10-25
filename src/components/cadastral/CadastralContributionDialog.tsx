@@ -209,7 +209,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         borne: `Borne ${index + 1}`,
         lat: '',
         lng: '',
-        mode: 'manual' as 'auto' | 'manual',
+        mode: 'auto' as 'auto' | 'manual',
         detected: false,
         detecting: false
       }));
@@ -1489,7 +1489,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       borne: `Borne ${gpsCoordinates.length + 1}`,
       lat: '',
       lng: '',
-      mode: 'manual',
+      mode: 'auto',
       detected: false,
       detecting: false
     }]);
