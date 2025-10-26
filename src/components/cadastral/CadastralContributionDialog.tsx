@@ -48,6 +48,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const dialogContentRef = React.useRef<HTMLDivElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -76,6 +77,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   const [previousProgress, setPreviousProgress] = useState(0);
+  
+  // Fonction pour changer d'onglet avec scroll vers le haut
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    // Scroll vers le haut du contenu du dialogue
+    if (dialogContentRef.current) {
+      dialogContentRef.current.scrollTop = 0;
+    }
+  };
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
   const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
   
@@ -2142,7 +2152,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-xl">
+      <DialogContent ref={dialogContentRef} className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-xl">
         <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent text-center sm:text-left">
           <DialogTitle className="text-base sm:text-2xl font-semibold leading-tight">
             <span className="hidden sm:inline">Contribuer aux informations cadastrales</span>
@@ -2159,7 +2169,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="general" className="w-full" onValueChange={setActiveTab}>
+        <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
           <div className="sticky top-0 z-20 bg-background px-4 sm:px-6 pt-4 pb-3 border-b shadow-sm">
             <TabsList className="grid w-full grid-cols-5 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
               <TabsTrigger 
@@ -3810,7 +3820,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <div className="flex justify-end pt-6 mt-6 border-t">
               <Button
                 type="button"
-                onClick={() => setActiveTab('location')}
+                onClick={() => handleTabChange('location')}
                 className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
               >
                 Suivant
@@ -4481,7 +4491,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <div className="flex justify-end pt-6 mt-6 border-t">
               <Button
                 type="button"
-                onClick={() => setActiveTab('history')}
+                onClick={() => handleTabChange('history')}
                 className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
               >
                 Suivant
@@ -4751,7 +4761,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <div className="flex justify-end pt-6 mt-6 border-t">
               <Button
                 type="button"
-                onClick={() => setActiveTab('obligations')}
+                onClick={() => handleTabChange('obligations')}
                 className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
               >
                 Suivant
@@ -5295,7 +5305,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <div className="flex justify-end pt-6 mt-6 border-t">
               <Button
                 type="button"
-                onClick={() => setActiveTab('review')}
+                onClick={() => handleTabChange('review')}
                 className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white"
               >
                 Réviser ma contribution
