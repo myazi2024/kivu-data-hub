@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, UserPlus, LogIn, Trophy, Zap } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, UserPlus, LogIn, Trophy, Zap, RotateCcw } from 'lucide-react';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile, MdStar } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
@@ -1574,6 +1574,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         maximumAge: 0
       }
     );
+  };
+
+  const resetGPSCoordinate = (index: number) => {
+    const updated = [...gpsCoordinates];
+    updated[index] = {
+      ...updated[index],
+      lat: '',
+      lng: '',
+      detected: false,
+      detecting: false
+    };
+    setGpsCoordinates(updated);
+    
+    toast({
+      title: "Borne réinitialisée",
+      description: "Vous pouvez à nouveau détecter cette borne",
+    });
   };
 
   // Fonctions pour gérer les côtés de la parcelle
@@ -4340,11 +4357,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           )}
 
                           {coord.lat && coord.lng && (
-                            <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
-                              <div className="flex justify-between">
-                                <span>Lat: {coord.lat}</span>
-                                <span>Lng: {coord.lng}</span>
+                            <div className="space-y-2">
+                              <div className="text-xs text-muted-foreground bg-muted/30 p-2 rounded">
+                                <div className="flex justify-between">
+                                  <span>Lat: {coord.lat}</span>
+                                  <span>Lng: {coord.lng}</span>
+                                </div>
                               </div>
+                              
+                              {coord.detected && (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => resetGPSCoordinate(index)}
+                                  className="w-full gap-2 text-xs h-8 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950 hover:scale-105 transition-all animate-fade-in"
+                                >
+                                  <RotateCcw className="h-3 w-3" />
+                                  Réinitialiser cette borne
+                                </Button>
+                              )}
                             </div>
                           )}
                         </div>
