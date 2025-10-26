@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, UserPlus, LogIn, Trophy, Zap, RotateCcw } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, UserPlus, LogIn, Trophy, Zap, RotateCcw, ChevronRight } from 'lucide-react';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile, MdStar } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
@@ -3805,6 +3805,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               )}
             </div>
+            
+            {/* Bouton Suivant */}
+            <div className="flex justify-end pt-6 mt-6 border-t">
+              <Button
+                type="button"
+                onClick={() => setActiveTab('location')}
+                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
+              >
+                Suivant
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="location" className="space-y-6 mt-6 animate-fade-in">
@@ -4464,6 +4476,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               </div>
             )}
+            
+            {/* Bouton Suivant */}
+            <div className="flex justify-end pt-6 mt-6 border-t">
+              <Button
+                type="button"
+                onClick={() => setActiveTab('history')}
+                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
+              >
+                Suivant
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </TabsContent>
 
           <TabsContent value="history" className="space-y-6 mt-6 animate-fade-in">
@@ -4721,6 +4745,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   Ajouter un ancien propriétaire
                 </Button>
               </div>
+            </div>
+            
+            {/* Bouton Suivant */}
+            <div className="flex justify-end pt-6 mt-6 border-t">
+              <Button
+                type="button"
+                onClick={() => setActiveTab('obligations')}
+                className="gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in"
+              >
+                Suivant
+                <ChevronRight className="h-4 w-4" />
+              </Button>
             </div>
           </TabsContent>
 
@@ -5254,6 +5290,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
               </div>
             )}
+            
+            {/* Bouton Suivant */}
+            <div className="flex justify-end pt-6 mt-6 border-t">
+              <Button
+                type="button"
+                onClick={() => setActiveTab('review')}
+                className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white"
+              >
+                Réviser ma contribution
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </TabsContent>
 
           {/* Onglet Révision & Soumission */}
