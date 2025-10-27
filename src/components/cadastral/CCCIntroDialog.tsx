@@ -15,12 +15,12 @@ interface CCCIntroDialogProps {
 const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-4 sm:p-6">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl sm:text-2xl font-bold text-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+          <DialogTitle className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
             Recherche cadastrale manuelle
           </DialogTitle>
-          <p className="text-xs sm:text-sm text-muted-foreground text-center mt-2 px-2">
+          <p className="text-sm sm:text-base text-muted-foreground text-center mt-2 px-2">
             Contribuez à enrichir notre base de données en partageant les informations de votre parcelle
           </p>
         </DialogHeader>
@@ -33,8 +33,8 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <Clock className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-base sm:text-lg mb-2">Rapide et simple</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Rapide et simple</h3>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                   Remplissez le formulaire en seulement <strong className="text-foreground">3 à 5 minutes</strong> ! 
                   Nous avons conçu cette expérience pour être la plus fluide possible. Vous pourrez renseigner 
                   les informations de votre parcelle étape par étape, sans stress. Si vous avez besoin de faire 
@@ -51,8 +51,8 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <Smartphone className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-base sm:text-lg mb-2">Utilisez votre téléphone</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Utilisez votre téléphone</h3>
+                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
                   Le téléphone est l'appareil idéal pour cette recherche ! Pourquoi ? Parce qu'il vous permet de 
                   <strong className="text-foreground"> photographier directement vos documents</strong> (titre de propriété, 
                   certificat d'enregistrement, etc.) et de les ajouter instantanément au formulaire. C'est beaucoup plus 
@@ -69,12 +69,12 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-accent-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-base sm:text-lg mb-3">Ce que nous allons vous demander</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3 leading-relaxed">
+                <h3 className="font-semibold text-lg sm:text-xl mb-3">Ce que nous allons vous demander</h3>
+                <p className="text-sm sm:text-base text-muted-foreground mb-3 leading-relaxed">
                   Ne vous inquiétez pas, nous allons vous guider à chaque étape. Voici un aperçu des informations 
                   dont nous aurons besoin :
                 </p>
-                <div className="space-y-3 text-xs sm:text-sm text-muted-foreground">
+                <div className="space-y-3 text-sm sm:text-base text-muted-foreground">
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
@@ -119,12 +119,12 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-base sm:text-lg mb-2">Vous n'êtes pas seul(e)</h3>
-                <p className="text-xs sm:text-sm text-muted-foreground mb-3 leading-relaxed">
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Vous n'êtes pas seul(e)</h3>
+                <p className="text-sm sm:text-base text-muted-foreground mb-3 leading-relaxed">
                   Nous comprenons que remplir un formulaire cadastral peut sembler intimidant. C'est pourquoi nous avons 
                   mis en place plusieurs outils pour vous accompagner à chaque étape :
                 </p>
-                <div className="space-y-3 text-xs sm:text-sm text-muted-foreground">
+                <div className="space-y-3 text-sm sm:text-base text-muted-foreground">
                   <div className="flex items-start gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
                     <div>
@@ -160,12 +160,12 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
           <div className="pt-4 sm:pt-6">
             <Button 
               onClick={onContinue}
-              className="w-full h-12 sm:h-14 text-sm sm:text-base font-semibold group bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary transition-all duration-300 hover:scale-[1.02] shadow-lg hover:shadow-xl"
+              className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold group bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary transition-all duration-300 hover:scale-[1.02] shadow-lg hover:shadow-xl"
             >
               <span className="mr-2">Commencer le formulaire</span>
               <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover:translate-x-1" />
             </Button>
-            <p className="text-xs text-muted-foreground text-center mt-3 px-2 leading-relaxed">
+            <p className="text-sm text-muted-foreground text-center mt-3 px-2 leading-relaxed">
               Rassurez-vous : vos informations seront soigneusement vérifiées par notre équipe avant d'être 
               intégrées dans notre base de données. Nous nous engageons à maintenir des données fiables et de qualité.
             </p>
