@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, MapPin, FileText, AlertCircle, Plus, Info } from 'lucide-react';
+import { Search, X, MapPin, FileText, AlertCircle, SearchIcon, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -10,6 +10,7 @@ import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import { useSearchConfig } from '@/hooks/useSearchConfig';
 import CadastralResultsDialog from './CadastralResultsDialog';
 import CadastralContributionDialog from './CadastralContributionDialog';
+import CCCIntroDialog from './CCCIntroDialog';
 
 const FIXED_TEXT = "Ex: ";
 
@@ -17,6 +18,7 @@ const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
+  const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
@@ -313,8 +315,7 @@ const CadastralSearchBar = () => {
               {error.includes(errorMessages.not_found) && (
                 <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 animate-fade-in shadow-sm hover:shadow-md transition-all duration-300">
                   <p className="text-sm text-foreground leading-relaxed">
-                    {errorMessages.not_found_help}
-                    <strong className="block mt-2">{errorMessages.verification_prompt}</strong>
+                    <strong className="block">Vérifiez manuellement notre base de données. Cliquez sur le bouton "Recherche manuelle" pour continuer.</strong>
                   </p>
                   
                   <div className="flex items-start gap-3 py-2">
@@ -342,13 +343,13 @@ const CadastralSearchBar = () => {
                   </div>
                   
                   <Button 
-                    onClick={() => setShowContributionDialog(true)}
-                    className="w-full group transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:hover:scale-100 disabled:hover:shadow-none"
-                    variant="default"
+                    onClick={() => setShowIntroDialog(true)}
+                    className="w-full h-12 group relative overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl disabled:hover:scale-100 disabled:hover:shadow-none disabled:opacity-50 shadow-lg animate-pulse hover:animate-none"
                     disabled={!termsAccepted}
                   >
-                    <Plus className="mr-2 h-4 w-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-90" />
-                    Ajouter une information
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                    <SearchIcon className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
+                    <span className="font-semibold">Recherche manuelle</span>
                   </Button>
                 </div>
               )}
@@ -365,6 +366,17 @@ const CadastralSearchBar = () => {
           onClose={handleCloseResults}
         />
       )}
+
+      {/* Dialog d'introduction CCC */}
+      <CCCIntroDialog
+        open={showIntroDialog}
+        onOpenChange={setShowIntroDialog}
+        onContinue={() => {
+          setShowIntroDialog(false);
+          setShowContributionDialog(true);
+        }}
+        parcelNumber={searchQuery}
+      />
 
       {/* Dialog de contribution */}
       <CadastralContributionDialog
