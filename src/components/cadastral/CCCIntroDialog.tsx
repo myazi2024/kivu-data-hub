@@ -13,19 +13,37 @@ interface CCCIntroDialogProps {
 }
 
 const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps) => {
+  const [hasScrolledToBottom, setHasScrolledToBottom] = React.useState(false);
+  const contentRef = React.useRef<HTMLDivElement>(null);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const element = e.currentTarget;
+    const isAtBottom = Math.abs(element.scrollHeight - element.scrollTop - element.clientHeight) < 50;
+    
+    if (isAtBottom && !hasScrolledToBottom) {
+      setHasScrolledToBottom(true);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-6 sm:p-8 rounded-2xl">
-        <DialogHeader>
-          <DialogTitle className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-            Recherche cadastrale manuelle
-          </DialogTitle>
-          <p className="text-sm sm:text-base text-muted-foreground text-center mt-2 px-2">
-            Contribuez à enrichir notre base de données en partageant les informations de votre parcelle
-          </p>
-        </DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 rounded-2xl">
+        <div className="p-6 sm:p-8 pb-0">
+          <DialogHeader>
+            <DialogTitle className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+              Recherche cadastrale manuelle
+            </DialogTitle>
+            <p className="text-base sm:text-lg text-muted-foreground text-center mt-2 px-2">
+              Avant de commencer, lisez ceci
+            </p>
+          </DialogHeader>
+        </div>
 
-        <div className="space-y-4 sm:space-y-6 py-4">
+        <div 
+          ref={contentRef}
+          onScroll={handleScroll}
+          className="space-y-4 sm:space-y-6 py-4 px-6 sm:px-8 overflow-y-auto max-h-[calc(90vh-200px)]"
+        >
           {/* Temps estimé */}
           <Card className="p-4 sm:p-6 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
             <div className="flex items-start gap-3 sm:gap-4">
@@ -34,7 +52,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg sm:text-xl mb-2">Rapide et simple</h3>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                <p className="text-base leading-relaxed text-foreground/80">
                   Remplissez le formulaire en seulement <strong className="text-foreground">3 à 5 minutes</strong> ! 
                   Nous avons conçu cette expérience pour être la plus fluide possible. Vous pourrez renseigner 
                   les informations de votre parcelle étape par étape, sans stress. Si vous avez besoin de faire 
@@ -51,8 +69,8 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <Smartphone className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg sm:text-xl mb-2">Utilisez votre téléphone</h3>
-                <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Facile avec un téléphone</h3>
+                <p className="text-base leading-relaxed text-foreground/80">
                   Le téléphone est l'appareil idéal pour cette recherche ! Pourquoi ? Parce qu'il vous permet de 
                   <strong className="text-foreground"> photographier directement vos documents</strong> (titre de propriété, 
                   certificat d'enregistrement, etc.) et de les ajouter instantanément au formulaire. C'est beaucoup plus 
@@ -70,11 +88,11 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg sm:text-xl mb-3">Ce que nous allons vous demander</h3>
-                <p className="text-sm sm:text-base text-muted-foreground mb-3 leading-relaxed">
+                <p className="text-base mb-3 leading-relaxed text-foreground/80">
                   Ne vous inquiétez pas, nous allons vous guider à chaque étape. Voici un aperçu des informations 
                   dont nous aurons besoin :
                 </p>
-                <div className="space-y-3 text-sm sm:text-base text-muted-foreground">
+                <div className="space-y-3 text-base text-foreground/80">
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
@@ -120,11 +138,11 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg sm:text-xl mb-2">Vous n'êtes pas seul(e)</h3>
-                <p className="text-sm sm:text-base text-muted-foreground mb-3 leading-relaxed">
+                <p className="text-base mb-3 leading-relaxed text-foreground/80">
                   Nous comprenons que remplir un formulaire cadastral peut sembler intimidant. C'est pourquoi nous avons 
                   mis en place plusieurs outils pour vous accompagner à chaque étape :
                 </p>
-                <div className="space-y-3 text-sm sm:text-base text-muted-foreground">
+                <div className="space-y-3 text-base text-foreground/80">
                   <div className="flex items-start gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
                     <div>
@@ -156,20 +174,35 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
             </div>
           </Card>
 
-          {/* Bouton de continuer */}
-          <div className="pt-4 sm:pt-6">
-            <Button 
-              onClick={onContinue}
-              className="w-full h-12 sm:h-14 text-base sm:text-lg font-semibold group bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary transition-all duration-300 hover:scale-[1.02] shadow-lg hover:shadow-xl"
-            >
-              <span className="mr-2">Commencer le formulaire</span>
-              <ArrowRight className="h-4 w-4 sm:h-5 sm:w-5 transition-transform duration-300 group-hover:translate-x-1" />
-            </Button>
-            <p className="text-sm text-muted-foreground text-center mt-3 px-2 leading-relaxed">
-              Rassurez-vous : vos informations seront soigneusement vérifiées par notre équipe avant d'être 
-              intégrées dans notre base de données. Nous nous engageons à maintenir des données fiables et de qualité.
+        </div>
+
+        {/* Bouton flottant fixé en bas */}
+        <div className="sticky bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-background/80 backdrop-blur-sm border-t border-border/20 p-4 sm:p-6 space-y-3">
+          <Button 
+            onClick={onContinue}
+            disabled={!hasScrolledToBottom}
+            className={`w-full h-12 sm:h-14 text-base sm:text-lg font-semibold group relative overflow-hidden transition-all duration-500 shadow-lg ${
+              hasScrolledToBottom 
+                ? 'bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary hover:scale-[1.02] hover:shadow-xl' 
+                : 'bg-gradient-to-r from-muted via-muted to-muted cursor-not-allowed opacity-60'
+            }`}
+          >
+            {hasScrolledToBottom && (
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+            )}
+            <span className="mr-2 relative z-10">Passer au formulaire</span>
+            <ArrowRight className={`h-4 w-4 sm:h-5 sm:w-5 relative z-10 transition-transform duration-300 ${hasScrolledToBottom ? 'group-hover:translate-x-1' : ''}`} />
+          </Button>
+          
+          {!hasScrolledToBottom && (
+            <p className="text-xs text-center text-muted-foreground animate-pulse">
+              Faites défiler jusqu'en bas pour continuer
             </p>
-          </div>
+          )}
+          
+          <p className="text-sm text-muted-foreground text-center leading-relaxed">
+            Rassurez-vous : vos informations seront soigneusement vérifiées et traitées par notre équipe et nous reviendrons vers vous.
+          </p>
         </div>
       </DialogContent>
     </Dialog>

@@ -344,12 +344,18 @@ const CadastralSearchBar = () => {
                   
                   <Button 
                     onClick={() => setShowIntroDialog(true)}
-                    className="w-full h-12 group relative overflow-hidden bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700 transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl disabled:hover:scale-100 disabled:hover:shadow-none disabled:opacity-50 shadow-lg animate-pulse hover:animate-none"
                     disabled={!termsAccepted}
+                    className={`w-full h-12 group relative overflow-hidden transition-all duration-500 shadow-lg ${
+                      termsAccepted 
+                        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700 hover:scale-[1.03] hover:shadow-2xl animate-pulse hover:animate-none' 
+                        : 'bg-gradient-to-r from-muted via-muted to-muted cursor-not-allowed opacity-50'
+                    }`}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                    <SearchIcon className="mr-2 h-5 w-5 transition-transform duration-300 group-hover:scale-110" />
-                    <span className="font-semibold">Recherche manuelle</span>
+                    {termsAccepted && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                    )}
+                    <SearchIcon className={`mr-2 h-5 w-5 relative z-10 transition-transform duration-300 ${termsAccepted ? 'group-hover:scale-110' : ''}`} />
+                    <span className="font-semibold relative z-10">Recherche manuelle</span>
                   </Button>
                 </div>
               )}
