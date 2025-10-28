@@ -345,10 +345,10 @@ const CadastralSearchBar = () => {
                   <Button 
                     onClick={() => setShowIntroDialog(true)}
                     disabled={!termsAccepted}
-                    className={`w-full h-12 group relative overflow-hidden transition-all duration-500 shadow-lg ${
+                    className={`w-full h-14 text-lg font-semibold group relative overflow-hidden transition-all duration-500 shadow-lg ${
                       termsAccepted 
-                        ? 'bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:via-orange-600 hover:to-amber-700 hover:scale-[1.03] hover:shadow-2xl animate-pulse hover:animate-none' 
-                        : 'bg-gradient-to-r from-muted via-muted to-muted cursor-not-allowed opacity-50'
+                        ? 'bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]' 
+                        : 'bg-gradient-to-r from-muted via-muted to-muted cursor-not-allowed opacity-60'
                     }`}
                   >
                     {termsAccepted && (

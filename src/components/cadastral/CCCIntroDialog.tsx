@@ -181,9 +181,9 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
           <Button 
             onClick={onContinue}
             disabled={!hasScrolledToBottom}
-            className={`w-full h-12 sm:h-14 text-base sm:text-lg font-semibold group relative overflow-hidden transition-all duration-500 shadow-lg ${
+            className={`w-full h-14 text-lg font-semibold group relative overflow-hidden transition-all duration-500 shadow-lg ${
               hasScrolledToBottom 
-                ? 'bg-gradient-to-r from-primary via-primary/90 to-primary/80 hover:from-primary/90 hover:via-primary hover:to-primary hover:scale-[1.02] hover:shadow-xl' 
+                ? 'bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]' 
                 : 'bg-gradient-to-r from-muted via-muted to-muted cursor-not-allowed opacity-60'
             }`}
           >
@@ -191,7 +191,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
             )}
             <span className="mr-2 relative z-10">Passer au formulaire</span>
-            <ArrowRight className={`h-4 w-4 sm:h-5 sm:w-5 relative z-10 transition-transform duration-300 ${hasScrolledToBottom ? 'group-hover:translate-x-1' : ''}`} />
+            <ArrowRight className={`h-5 w-5 relative z-10 transition-transform duration-300 ${hasScrolledToBottom ? 'group-hover:translate-x-1' : ''}`} />
           </Button>
           
           {!hasScrolledToBottom && (
