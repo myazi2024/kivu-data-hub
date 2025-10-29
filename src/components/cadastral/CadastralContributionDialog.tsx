@@ -31,6 +31,7 @@ import { PropertyTitleTypeSelect, PROPERTY_TITLE_TYPES } from './PropertyTitleTy
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import { useIsMobile } from '@/hooks/use-mobile';
 import confetti from 'canvas-confetti';
+import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -5657,6 +5658,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
+
+    {/* Bouton WhatsApp flottant */}
+    {open && <WhatsAppFloatingButton />}
     </>
   );
 };
