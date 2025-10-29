@@ -7,10 +7,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, UserPlus, LogIn, Trophy, Zap, RotateCcw, ChevronRight } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, Trophy, Zap, RotateCcw, ChevronRight } from 'lucide-react';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile, MdStar } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,6 +31,7 @@ import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServi
 import { useIsMobile } from '@/hooks/use-mobile';
 import confetti from 'canvas-confetti';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
+import { QuickAuthDialog } from './QuickAuthDialog';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -51,7 +51,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const isMobile = useIsMobile();
   const dialogContentRef = React.useRef<HTMLDivElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const [showQuickAuth, setShowQuickAuth] = useState(false);
+  const [pendingSubmission, setPendingSubmission] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [ownerDocFile, setOwnerDocFile] = useState<File | null>(null);
   const [titleDocFiles, setTitleDocFiles] = useState<File[]>([]);
@@ -841,7 +842,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (!user && !session) {
       // Sauvegarder les données avant de demander l'authentification
       saveFormDataToStorage();
-      setShowAuthDialog(true);
+      setShowQuickAuth(true);
+      setPendingSubmission(true);
       return;
     }
 
@@ -2044,7 +2046,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
-    setShowAuthDialog(false);
+    setShowQuickAuth(false);
+    setPendingSubmission(false);
     setOwnerDocFile(null);
     setTitleDocFiles([]);
     setSectionType('');
@@ -5573,7 +5576,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         size="lg"
                         onClick={() => {
                           saveFormDataToStorage();
-                          setShowAuthDialog(true);
+                          setShowQuickAuth(true);
+                          setPendingSubmission(true);
                         }}
                         className="w-full sm:w-auto px-6 sm:px-8 h-12 sm:h-14 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
                       >
@@ -5592,84 +5596,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       </DialogContent>
     </Dialog>
 
-    {/* Dialog d'authentification */}
-    <AlertDialog open={showAuthDialog} onOpenChange={setShowAuthDialog}>
-        <AlertDialogContent className="sm:max-w-md border-0 shadow-2xl">
-          <AlertDialogHeader>
-            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <UserPlus className="h-8 w-8 text-primary" />
-            </div>
-            <AlertDialogTitle className="text-2xl text-center">
-              Authentification requise
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-center space-y-4 pt-4">
-              <p className="text-base">
-                Pour soumettre votre contribution et bénéficier de tous nos services, vous devez créer un compte ou vous connecter.
-              </p>
-              <div className="bg-muted/50 p-4 rounded-lg space-y-3 text-left">
-                <p className="font-semibold text-foreground text-sm flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  Avec un compte, vous pouvez :
-                </p>
-                <ul className="space-y-2 text-sm text-muted-foreground">
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Soumettre vos contributions cadastrales</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Suivre l'état de validation de vos données</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Être informé de la valeur accordée à votre contribution</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Contester les décisions de validation si nécessaire</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                    <span>Gérer tous vos codes CCC depuis un tableau de bord</span>
-                  </li>
-                </ul>
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="flex-col sm:flex-col gap-3 mt-2">
-            <Button 
-              onClick={() => {
-                setShowAuthDialog(false);
-                onOpenChange(false);
-                navigate('/auth');
-              }}
-              className="w-full h-12 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
-            >
-              <UserPlus className="h-5 w-5" />
-              Créer un compte
-            </Button>
-            <Button 
-              variant="outline"
-              onClick={() => {
-                setShowAuthDialog(false);
-                onOpenChange(false);
-                navigate('/auth');
-              }}
-              className="w-full h-12 text-base font-semibold gap-2 hover:bg-muted transition-all"
-            >
-              <LogIn className="h-5 w-5" />
-              Se connecter
-            </Button>
-            <Button 
-              variant="ghost"
-              onClick={() => setShowAuthDialog(false)}
-              className="w-full mt-2"
-            >
-              Annuler
-            </Button>
-          </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    {/* Dialog d'authentification rapide */}
+    <QuickAuthDialog
+      open={showQuickAuth}
+      onOpenChange={setShowQuickAuth}
+      onAuthSuccess={async () => {
+        // Après connexion réussie, soumettre automatiquement le formulaire
+        if (pendingSubmission) {
+          // Attendre un court délai pour s'assurer que l'état d'authentification est mis à jour
+          setTimeout(async () => {
+            await handleSubmit();
+            setPendingSubmission(false);
+          }, 1000);
+        }
+      }}
+    />
 
     {/* Bouton WhatsApp flottant */}
     {open && <WhatsAppFloatingButton />}
