@@ -1077,10 +1077,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         lng: parseFloat(coord.lng)
       })) : undefined;
 
+      // Transform previousOwners to ownershipHistory
+      const ownershipHistoryData = previousOwners
+        .filter(owner => owner.name && owner.startDate)
+        .map(owner => ({
+          ownerName: owner.name,
+          legalStatus: owner.legalStatus,
+          startDate: owner.startDate,
+          endDate: owner.endDate || undefined,
+          mutationType: owner.mutationType || undefined
+        }));
+
       // Add document URLs to form data
       const dataToSubmit = {
         ...formData,
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
+        ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
         ownerDocumentUrl: ownerDocUrl || undefined,
         titleDocumentUrl: titleDocUrls.length > 0 ? JSON.stringify(titleDocUrls) : undefined,
         taxHistory: taxHistoryData.length > 0 ? taxHistoryData as any : undefined,

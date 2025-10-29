@@ -50,7 +50,7 @@ export interface CadastralContributionData {
     architecturalPlanImages?: string[]; // URLs après upload
     // Champs spécifiques permis de régularisation
     constructionYear?: string;
-    regularisationReason?: string;
+    regularizationReason?: string; // ✅ Correction orthographe pour matcher le Dialog
     originalPermitNumber?: string;
     constructionPhotos?: string[]; // URLs après upload
   };
@@ -90,6 +90,8 @@ export interface CadastralContributionData {
     amountUsd: number;
     paymentStatus: string;
     paymentDate?: string;
+    receiptUrl?: string; // ✅ Ajouté
+    taxType?: string; // ✅ Ajouté
   }>;
   mortgageHistory?: Array<{
     mortgageAmountUsd: number;
@@ -98,6 +100,7 @@ export interface CadastralContributionData {
     creditorType: string;
     contractDate: string;
     mortgageStatus: string;
+    receiptUrl?: string; // ✅ Ajouté
   }>;
   
   // Pièces jointes
@@ -201,7 +204,7 @@ export const useCadastralContribution = () => {
         construction_nature: data.constructionNature,
         declared_usage: data.declaredUsage,
         building_permits: data.buildingPermits,
-        previous_permit_number: data.previousPermitNumber, // ✅ NOUVEAU
+        previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber, // ✅ Extraction depuis permitRequest si présent
         province: data.province,
         ville: data.ville,
         commune: data.commune,
