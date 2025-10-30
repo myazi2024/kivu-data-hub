@@ -93,7 +93,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
         // Validation du code CCC
         const validation = await validateCCCCode(code.trim().toUpperCase(), invoiceAmount);
         
-        if (validation && validation.is_valid) {
+        if (validation && validation.is_valid && validation.code_id) {
           const discount = {
             code: code.trim().toUpperCase(),
             amount: validation.discount_amount,
@@ -119,7 +119,7 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
         // Validation du code de remise classique
         const validation = await validateDiscountCode(code.trim().toUpperCase(), invoiceAmount);
         
-        if (validation?.is_valid && validation.reseller_id && validation.code_id) {
+        if (validation?.is_valid && validation.code_id) {
           const discount = {
             code: code.trim().toUpperCase(),
             amount: validation.discount_amount,
