@@ -128,7 +128,15 @@ export const useCadastralContribution = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const submitContribution = async (data: CadastralContributionData) => {
+  const submitContribution = async (
+    data: CadastralContributionData,
+    options?: {
+      isUpdate?: boolean;
+      originalParcelId?: string;
+      changedFields?: string[];
+      changeJustification?: string;
+    }
+  ) => {
     if (!user) {
       toast({
         title: "Authentification requise",
@@ -141,6 +149,23 @@ export const useCadastralContribution = () => {
     setLoading(true);
 
     try {
+      // Pour les updates, vérifier les limites d'abus
+      if (options?.isUpdate && options?.originalParcelId) {
+        const { data: abuseCheck, error: abuseError } = await supabase
+          .rpc('check_contribution_abuse', {
+            p_user_id: user.id,
+            p_parcel_id: options.originalParcelId
+          });
+
+        if (!abuseError && abuseCheck && abuseCheck.length > 0 && abuseCheck[0].is_abuse) {
+          toast({
+            title: "Limite atteinte",
+            description: abuseCheck[0].reason,
+            variant: "destructive",
+          });
+          return { success: false };
+        }
+      }
       // Vérifier si l'utilisateur est bloqué
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
@@ -179,6 +204,10 @@ export const useCadastralContribution = () => {
       const contributionPayload: any = {
         user_id: user.id,
         parcel_number: data.parcelNumber,
+        contribution_type: options?.isUpdate ? 'update' : 'new',
+        original_parcel_id: options?.originalParcelId || null,
+        changed_fields: options?.changedFields ? JSON.stringify(options.changedFields) : null,
+        change_justification: options?.changeJustification || null,
         property_title_type: data.propertyTitleType,
         lease_type: data.leaseType,
         title_reference_number: data.titleReferenceNumber,
@@ -255,16 +284,17 @@ export const useCadastralContribution = () => {
           });
       }
 
-      // Message différent selon si la contribution est suspecte ou non
+      // Message différent selon le type et si la contribution est suspecte
+      const contributionType = options?.isUpdate ? 'mise à jour' : 'contribution';
       if (isSuspicious) {
         toast({
-          title: "Contribution enregistrée",
-          description: "Votre contribution a été reçue et sera examinée par notre équipe. Vous recevrez votre code CCC après validation.",
+          title: `${contributionType.charAt(0).toUpperCase() + contributionType.slice(1)} enregistrée`,
+          description: `Votre ${contributionType} a été reçue et sera examinée par notre équipe. Vous recevrez votre code CCC après validation.`,
         });
       } else {
         toast({
-          title: "Contribution enregistrée !",
-          description: "Merci pour votre contribution. Elle sera vérifiée et vous recevrez votre code CCC après validation par notre équipe.",
+          title: `${contributionType.charAt(0).toUpperCase() + contributionType.slice(1)} enregistrée !`,
+          description: `Merci pour votre ${contributionType}. Elle sera vérifiée et vous recevrez votre code CCC après validation par notre équipe.`,
         });
       }
 

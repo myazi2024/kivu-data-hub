@@ -149,7 +149,7 @@ export type Database = {
           action: string
           created_at: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           new_values: Json | null
           old_values: Json | null
           record_id: string | null
@@ -161,7 +161,7 @@ export type Database = {
           action: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -173,7 +173,7 @@ export type Database = {
           action?: string
           created_at?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           new_values?: Json | null
           old_values?: Json | null
           record_id?: string | null
@@ -316,11 +316,14 @@ export type Database = {
           avenue: string | null
           boundary_history: Json | null
           building_permits: Json | null
+          change_justification: string | null
+          changed_fields: Json | null
           circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
           construction_nature: string | null
           construction_type: string | null
+          contribution_type: string
           created_at: string
           current_owner_legal_status: string | null
           current_owner_name: string | null
@@ -335,6 +338,7 @@ export type Database = {
           is_suspicious: boolean | null
           lease_type: string | null
           mortgage_history: Json | null
+          original_parcel_id: string | null
           owner_document_url: string | null
           ownership_history: Json | null
           parcel_number: string
@@ -364,11 +368,14 @@ export type Database = {
           avenue?: string | null
           boundary_history?: Json | null
           building_permits?: Json | null
+          change_justification?: string | null
+          changed_fields?: Json | null
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_nature?: string | null
           construction_type?: string | null
+          contribution_type?: string
           created_at?: string
           current_owner_legal_status?: string | null
           current_owner_name?: string | null
@@ -383,6 +390,7 @@ export type Database = {
           is_suspicious?: boolean | null
           lease_type?: string | null
           mortgage_history?: Json | null
+          original_parcel_id?: string | null
           owner_document_url?: string | null
           ownership_history?: Json | null
           parcel_number: string
@@ -412,11 +420,14 @@ export type Database = {
           avenue?: string | null
           boundary_history?: Json | null
           building_permits?: Json | null
+          change_justification?: string | null
+          changed_fields?: Json | null
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
           construction_nature?: string | null
           construction_type?: string | null
+          contribution_type?: string
           created_at?: string
           current_owner_legal_status?: string | null
           current_owner_name?: string | null
@@ -431,6 +442,7 @@ export type Database = {
           is_suspicious?: boolean | null
           lease_type?: string | null
           mortgage_history?: Json | null
+          original_parcel_id?: string | null
           owner_document_url?: string | null
           ownership_history?: Json | null
           parcel_number?: string
@@ -455,7 +467,15 @@ export type Database = {
           ville?: string | null
           whatsapp_number?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_contributions_original_parcel_id_fkey"
+            columns: ["original_parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       cadastral_contributor_codes: {
         Row: {
@@ -1756,7 +1776,7 @@ export type Database = {
           created_at: string | null
           expires_at: string | null
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           is_active: boolean | null
           last_activity: string | null
           session_token: string
@@ -1767,7 +1787,7 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean | null
           last_activity?: string | null
           session_token: string
@@ -1778,7 +1798,7 @@ export type Database = {
           created_at?: string | null
           expires_at?: string | null
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           is_active?: boolean | null
           last_activity?: string | null
           session_token?: string
@@ -1871,14 +1891,16 @@ export type Database = {
         Args: { coordinates: Json }
         Returns: number
       }
-      check_service_usage: {
-        Args: { service_id_param: string }
-        Returns: Json
+      check_contribution_abuse: {
+        Args: { p_parcel_id?: string; p_user_id: string }
+        Returns: {
+          is_abuse: boolean
+          reason: string
+          recent_count: number
+        }[]
       }
-      cleanup_expired_data: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      check_service_usage: { Args: { service_id_param: string }; Returns: Json }
+      cleanup_expired_data: { Args: never; Returns: undefined }
       create_cadastral_invoice_secure: {
         Args: {
           discount_code_param?: string
@@ -1904,30 +1926,15 @@ export type Database = {
           reasons: string[]
         }[]
       }
-      export_user_data: {
-        Args: { target_user_id: string }
-        Returns: Json
-      }
+      export_user_data: { Args: { target_user_id: string }; Returns: Json }
       extract_owner_names_from_details: {
         Args: { owners_details: Json }
         Returns: string
       }
-      generate_ccc_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_invoice_number: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_reseller_code: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
-      generate_service_id: {
-        Args: { service_name: string }
-        Returns: string
-      }
+      generate_ccc_code: { Args: never; Returns: string }
+      generate_invoice_number: { Args: never; Returns: string }
+      generate_reseller_code: { Args: never; Returns: string }
+      generate_service_id: { Args: { service_name: string }; Returns: string }
       get_admin_statistics: {
         Args: { end_date?: string; start_date?: string; stat_type?: string }
         Returns: Json
@@ -1966,9 +1973,20 @@ export type Database = {
           ville: string
         }[]
       }
-      get_current_user_role: {
-        Args: Record<PropertyKey, never>
-        Returns: string
+      get_current_user_role: { Args: never; Returns: string }
+      get_parcel_contribution_history: {
+        Args: { p_parcel_id: string }
+        Returns: {
+          change_justification: string
+          changed_fields: Json
+          contribution_id: string
+          contribution_type: string
+          contributor_name: string
+          created_at: string
+          reviewed_at: string
+          status: string
+          user_id: string
+        }[]
       }
       get_reseller_statistics: {
         Args: {
