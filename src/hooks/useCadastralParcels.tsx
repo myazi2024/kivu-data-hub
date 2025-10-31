@@ -42,6 +42,8 @@ export const useCadastralParcels = (filters?: ParcelFilters) => {
       setError(null);
 
       try {
+        console.log('🗺️ Fetching cadastral parcels with filters:', filters);
+        
         let query = supabase
           .from('cadastral_parcels')
           .select('*', { count: 'exact' })
@@ -75,7 +77,12 @@ export const useCadastralParcels = (filters?: ParcelFilters) => {
           .order('created_at', { ascending: false })
           .limit(1000); // Limiter à 1000 parcelles pour la performance
 
-        if (fetchError) throw fetchError;
+        if (fetchError) {
+          console.error('❌ Error fetching parcels:', fetchError);
+          throw fetchError;
+        }
+        
+        console.log('✅ Fetched parcels:', data?.length, 'Total:', count);
 
         // Transformer et valider les données
         const validParcels = (data || [])
@@ -112,10 +119,12 @@ export const useCadastralParcels = (filters?: ParcelFilters) => {
             created_at: parcel.created_at,
           }));
 
+        console.log('📊 Valid parcels after filtering:', validParcels.length);
+        
         setParcels(validParcels);
         setTotalCount(count || 0);
       } catch (err) {
-        console.error('Erreur chargement parcelles:', err);
+        console.error('❌ Erreur chargement parcelles:', err);
         setError('Erreur lors du chargement des parcelles');
       } finally {
         setLoading(false);

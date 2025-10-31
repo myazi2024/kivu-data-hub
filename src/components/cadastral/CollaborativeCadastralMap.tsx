@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { MapContainer, TileLayer, Polygon, Popup, useMap } from 'react-leaflet';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,43 +7,28 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCadastralParcels, type ParcelFilters, type CadastralParcelData } from '@/hooks/useCadastralParcels';
-import { MapPin, Layers, Filter, Info, Home, FileText, Ruler, X } from 'lucide-react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import { useCadastralParcels, type ParcelFilters } from '@/hooks/useCadastralParcels';
+import { MapPin, Layers, Filter, Info, X, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
-// Fix Leaflet default marker icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-const MapUpdater = ({ parcels }: { parcels: CadastralParcelData[] }) => {
-  const map = useMap();
-
-  useEffect(() => {
-    if (parcels.length > 0) {
-      const allCoords = parcels.flatMap(p => 
-        p.gps_coordinates.map(c => [c.lat, c.lng] as [number, number])
-      );
-      if (allCoords.length > 0) {
-        const bounds = L.latLngBounds(allCoords);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-      }
-    }
-  }, [parcels, map]);
-
-  return null;
-};
+// Import dynamique de Leaflet pour éviter les erreurs SSR
+const LeafletMap = React.lazy(() => import('./LeafletMapComponent'));
 
 const CollaborativeCadastralMap = () => {
   const [filters, setFilters] = useState<ParcelFilters>({});
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedParcel, setSelectedParcel] = useState<CadastralParcelData | null>(null);
   
   const { parcels, loading, error, totalCount } = useCadastralParcels(filters);
+
+  useEffect(() => {
+    console.log('🎨 CollaborativeCadastralMap state:', {
+      parcelsCount: parcels.length,
+      loading,
+      error,
+      totalCount,
+      filters
+    });
+  }, [parcels, loading, error, totalCount, filters]);
 
   // Extraire les valeurs uniques pour les filtres
   const uniqueProvinces = useMemo(() => 
@@ -71,30 +55,20 @@ const CollaborativeCadastralMap = () => {
     'Bail emphytéotique'
   ];
 
-  const getPolygonColor = (parcel: CadastralParcelData) => {
-    const area = parcel.area_sqm;
-    if (area < 500) return '#22c55e'; // Vert - Petite parcelle
-    if (area < 2000) return '#3b82f6'; // Bleu - Moyenne parcelle
-    if (area < 5000) return '#f59e0b'; // Orange - Grande parcelle
-    return '#ef4444'; // Rouge - Très grande parcelle
-  };
-
   const clearFilters = () => {
     setFilters({});
   };
 
   const hasActiveFilters = Object.keys(filters).length > 0;
 
-  const defaultCenter: [number, number] = [-1.6746, 29.2342]; // Goma, RDC
-  const defaultZoom = 12;
-
   if (error) {
     return (
       <Card className="w-full">
         <CardContent className="pt-6">
-          <div className="text-center text-destructive">
-            <p>{error}</p>
-          </div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         </CardContent>
       </Card>
     );
@@ -321,87 +295,33 @@ const CollaborativeCadastralMap = () => {
             <div className="h-[600px] flex items-center justify-center">
               <div className="text-center space-y-4">
                 <Skeleton className="h-12 w-12 rounded-full mx-auto" />
-                <Skeleton className="h-4 w-48 mx-auto" />
+                <p className="text-sm text-muted-foreground">Chargement des parcelles...</p>
+              </div>
+            </div>
+          ) : parcels.length === 0 ? (
+            <div className="h-[600px] flex items-center justify-center bg-muted/20">
+              <div className="text-center space-y-2">
+                <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
+                <p className="text-muted-foreground font-medium">
+                  Aucune parcelle trouvée
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {hasActiveFilters ? 'Essayez de modifier vos filtres' : 'Aucune parcelle géolocalisée disponible'}
+                </p>
               </div>
             </div>
           ) : (
             <div className="h-[600px] relative">
-              <MapContainer
-                center={defaultCenter}
-                zoom={defaultZoom}
-                scrollWheelZoom={true}
-                className="h-full w-full"
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                
-                <MapUpdater parcels={parcels} />
-
-                {parcels.map((parcel) => {
-                  const coords = parcel.gps_coordinates.map(c => [c.lat, c.lng] as [number, number]);
-                  const color = getPolygonColor(parcel);
-
-                  return (
-                    <Polygon
-                      key={parcel.id}
-                      positions={coords}
-                      pathOptions={{
-                        color: color,
-                        fillColor: color,
-                        fillOpacity: 0.4,
-                        weight: 2,
-                      }}
-                      eventHandlers={{
-                        click: () => setSelectedParcel(parcel),
-                      }}
-                    >
-                      <Popup>
-                        <div className="min-w-[200px] space-y-2">
-                          <div className="font-semibold text-sm border-b pb-1">
-                            {parcel.parcel_number}
-                          </div>
-                          <div className="space-y-1 text-xs">
-                            <div className="flex items-start gap-2">
-                              <Home className="h-3 w-3 mt-0.5 text-muted-foreground" />
-                              <span>{parcel.current_owner_name}</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <FileText className="h-3 w-3 mt-0.5 text-muted-foreground" />
-                              <span>{parcel.property_title_type}</span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <Ruler className="h-3 w-3 mt-0.5 text-muted-foreground" />
-                              <span>
-                                {parcel.area_sqm.toLocaleString('fr-FR')} m²
-                                {parcel.area_hectares && ` (${parcel.area_hectares.toFixed(2)} ha)`}
-                              </span>
-                            </div>
-                            <div className="flex items-start gap-2">
-                              <MapPin className="h-3 w-3 mt-0.5 text-muted-foreground" />
-                              <span className="text-muted-foreground">
-                                {[parcel.quartier, parcel.commune, parcel.ville].filter(Boolean).join(', ')}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </Popup>
-                    </Polygon>
-                  );
-                })}
-              </MapContainer>
-
-              {parcels.length === 0 && !loading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-                  <div className="text-center space-y-2">
-                    <MapPin className="h-12 w-12 mx-auto text-muted-foreground" />
-                    <p className="text-muted-foreground">
-                      Aucune parcelle trouvée avec ces filtres
-                    </p>
+              <React.Suspense fallback={
+                <div className="h-full flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <Skeleton className="h-12 w-12 rounded-full mx-auto" />
+                    <p className="text-sm text-muted-foreground">Chargement de la carte...</p>
                   </div>
                 </div>
-              )}
+              }>
+                <LeafletMap parcels={parcels} />
+              </React.Suspense>
             </div>
           )}
         </CardContent>
