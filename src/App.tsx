@@ -10,6 +10,7 @@ import CookieBanner from "@/components/CookieBanner";
 import { CartButton } from '@/components/cart/CartButton';
 import Index from "./pages/Index";
 import Publications from "./pages/Publications";
+import CollaborativeCadastre from "./pages/CollaborativeCadastre";
 import Auth from "./pages/Auth";
 import Map from "./pages/Map";
 import Admin from "./pages/Admin";
@@ -41,6 +42,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/publications" element={<Publications />} />
+              <Route path="/cadastre-collaboratif" element={<CollaborativeCadastre />} />
               <Route path="/map" element={<Map />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/auth" element={<Auth />} />
