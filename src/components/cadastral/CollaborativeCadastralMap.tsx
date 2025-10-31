@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { MapContainer, TileLayer, Polygon, Popup, useMap } from 'react-leaflet';
-import MarkerClusterGroup from 'react-leaflet-cluster';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -340,59 +339,57 @@ const CollaborativeCadastralMap = () => {
                 
                 <MapUpdater parcels={parcels} />
 
-                <MarkerClusterGroup chunkedLoading>
-                  {parcels.map((parcel) => {
-                    const coords = parcel.gps_coordinates.map(c => [c.lat, c.lng] as [number, number]);
-                    const color = getPolygonColor(parcel);
+                {parcels.map((parcel) => {
+                  const coords = parcel.gps_coordinates.map(c => [c.lat, c.lng] as [number, number]);
+                  const color = getPolygonColor(parcel);
 
-                    return (
-                      <Polygon
-                        key={parcel.id}
-                        positions={coords}
-                        pathOptions={{
-                          color: color,
-                          fillColor: color,
-                          fillOpacity: 0.4,
-                          weight: 2,
-                        }}
-                        eventHandlers={{
-                          click: () => setSelectedParcel(parcel),
-                        }}
-                      >
-                        <Popup>
-                          <div className="min-w-[200px] space-y-2">
-                            <div className="font-semibold text-sm border-b pb-1">
-                              {parcel.parcel_number}
+                  return (
+                    <Polygon
+                      key={parcel.id}
+                      positions={coords}
+                      pathOptions={{
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.4,
+                        weight: 2,
+                      }}
+                      eventHandlers={{
+                        click: () => setSelectedParcel(parcel),
+                      }}
+                    >
+                      <Popup>
+                        <div className="min-w-[200px] space-y-2">
+                          <div className="font-semibold text-sm border-b pb-1">
+                            {parcel.parcel_number}
+                          </div>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex items-start gap-2">
+                              <Home className="h-3 w-3 mt-0.5 text-muted-foreground" />
+                              <span>{parcel.current_owner_name}</span>
                             </div>
-                            <div className="space-y-1 text-xs">
-                              <div className="flex items-start gap-2">
-                                <Home className="h-3 w-3 mt-0.5 text-muted-foreground" />
-                                <span>{parcel.current_owner_name}</span>
-                              </div>
-                              <div className="flex items-start gap-2">
-                                <FileText className="h-3 w-3 mt-0.5 text-muted-foreground" />
-                                <span>{parcel.property_title_type}</span>
-                              </div>
-                              <div className="flex items-start gap-2">
-                                <Ruler className="h-3 w-3 mt-0.5 text-muted-foreground" />
-                                <span>
-                                  {parcel.area_sqm.toLocaleString('fr-FR')} m²
-                                  {parcel.area_hectares && ` (${parcel.area_hectares.toFixed(2)} ha)`}
-                                </span>
-                              </div>
-                              <div className="flex items-start gap-2">
-                                <MapPin className="h-3 w-3 mt-0.5 text-muted-foreground" />
-                                <span className="text-muted-foreground">
-                                  {[parcel.quartier, parcel.commune, parcel.ville].filter(Boolean).join(', ')}
-                                </span>
-                              </div>
+                            <div className="flex items-start gap-2">
+                              <FileText className="h-3 w-3 mt-0.5 text-muted-foreground" />
+                              <span>{parcel.property_title_type}</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <Ruler className="h-3 w-3 mt-0.5 text-muted-foreground" />
+                              <span>
+                                {parcel.area_sqm.toLocaleString('fr-FR')} m²
+                                {parcel.area_hectares && ` (${parcel.area_hectares.toFixed(2)} ha)`}
+                              </span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <MapPin className="h-3 w-3 mt-0.5 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                {[parcel.quartier, parcel.commune, parcel.ville].filter(Boolean).join(', ')}
+                              </span>
                             </div>
                           </div>
-                        </Popup>
-                      </Polygon>
-                    );
-                  })}
-                </MarkerClusterGroup>
+                        </div>
+                      </Popup>
+                    </Polygon>
+                  );
+                })}
               </MapContainer>
 
               {parcels.length === 0 && !loading && (
