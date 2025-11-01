@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { MapContainer, TileLayer, Polygon, Popup } from 'react-leaflet';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,12 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useCadastralParcels, type ParcelFilters } from '@/hooks/useCadastralParcels';
-import { MapPin, Layers, Filter, Info, X, AlertCircle } from 'lucide-react';
+import { useCadastralParcels, type ParcelFilters, type CadastralParcelData } from '@/hooks/useCadastralParcels';
+import { MapPin, Layers, Filter, Info, X, AlertCircle, Home, FileText, Ruler } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-
-// Import dynamique de Leaflet pour éviter les erreurs SSR
-const LeafletMap = React.lazy(() => import('./LeafletMapComponent'));
 
 const CollaborativeCadastralMap = () => {
   const [filters, setFilters] = useState<ParcelFilters>({});
@@ -60,6 +58,35 @@ const CollaborativeCadastralMap = () => {
   };
 
   const hasActiveFilters = Object.keys(filters).length > 0;
+
+  const getPolygonColor = (parcel: CadastralParcelData) => {
+    const area = parcel.area_sqm;
+    if (area < 500) return '#22c55e';
+    if (area < 2000) return '#3b82f6';
+    if (area < 5000) return '#f59e0b';
+    return '#ef4444';
+  };
+
+  const calculateMapCenter = (parcels: CadastralParcelData[]): { center: [number, number]; zoom: number } => {
+    if (parcels.length === 0) {
+      return { center: [-1.6746, 29.2342], zoom: 12 };
+    }
+    
+    const allCoords = parcels.flatMap(p => 
+      p.gps_coordinates.map(c => [c.lat, c.lng] as [number, number])
+    );
+    
+    if (allCoords.length === 0) {
+      return { center: [-1.6746, 29.2342], zoom: 12 };
+    }
+    
+    const avgLat = allCoords.reduce((sum, coord) => sum + coord[0], 0) / allCoords.length;
+    const avgLng = allCoords.reduce((sum, coord) => sum + coord[1], 0) / allCoords.length;
+    
+    return { center: [avgLat, avgLng], zoom: 13 };
+  };
+
+  const mapConfig = useMemo(() => calculateMapCenter(parcels), [parcels]);
 
   if (error) {
     return (
@@ -311,17 +338,68 @@ const CollaborativeCadastralMap = () => {
               </div>
             </div>
           ) : (
-            <div className="h-[600px] relative">
-              <React.Suspense fallback={
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <Skeleton className="h-12 w-12 rounded-full mx-auto" />
-                    <p className="text-sm text-muted-foreground">Chargement de la carte...</p>
-                  </div>
-                </div>
-              }>
-                <LeafletMap parcels={parcels} />
-              </React.Suspense>
+            <div className="h-[600px] w-full">
+              <MapContainer
+                key={`map-${parcels.length}`}
+                center={mapConfig.center}
+                zoom={mapConfig.zoom}
+                scrollWheelZoom={true}
+                style={{ height: '600px', width: '100%' }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+
+                {parcels.map((parcel) => {
+                  const coords = parcel.gps_coordinates.map(c => [c.lat, c.lng] as [number, number]);
+                  const color = getPolygonColor(parcel);
+
+                  return (
+                    <Polygon
+                      key={parcel.id}
+                      positions={coords}
+                      pathOptions={{
+                        color: color,
+                        fillColor: color,
+                        fillOpacity: 0.4,
+                        weight: 2,
+                      }}
+                    >
+                      <Popup>
+                        <div className="min-w-[200px] space-y-2">
+                          <div className="font-semibold text-sm border-b pb-1">
+                            {parcel.parcel_number}
+                          </div>
+                          <div className="space-y-1 text-xs">
+                            <div className="flex items-start gap-2">
+                              <Home className="h-3 w-3 mt-0.5 text-muted-foreground" />
+                              <span>{parcel.current_owner_name}</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <FileText className="h-3 w-3 mt-0.5 text-muted-foreground" />
+                              <span>{parcel.property_title_type}</span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <Ruler className="h-3 w-3 mt-0.5 text-muted-foreground" />
+                              <span>
+                                {parcel.area_sqm.toLocaleString('fr-FR')} m²
+                                {parcel.area_hectares && ` (${parcel.area_hectares.toFixed(2)} ha)`}
+                              </span>
+                            </div>
+                            <div className="flex items-start gap-2">
+                              <MapPin className="h-3 w-3 mt-0.5 text-muted-foreground" />
+                              <span className="text-muted-foreground">
+                                {[parcel.quartier, parcel.commune, parcel.ville].filter(Boolean).join(', ')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </Popup>
+                    </Polygon>
+                  );
+                })}
+              </MapContainer>
             </div>
           )}
         </CardContent>
