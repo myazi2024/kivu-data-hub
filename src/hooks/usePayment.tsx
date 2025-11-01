@@ -31,20 +31,6 @@ export const usePayment = () => {
       setLoading(true);
       setPaymentStep('processing');
 
-      // Validation des credentials (mode test)
-      const isTestMode = paymentData.phoneNumber === '97123456' && paymentData.name === '1234';
-      
-      if (!isTestMode) {
-        toast({
-          title: "Erreur de paiement",
-          description: "Identifiants incorrects. Pour tester, utilisez: 97123456 / 1234",
-          variant: "destructive"
-        });
-        setPaymentStep('form');
-        setLoading(false);
-        return null;
-      }
-
       // Paiement réel - processus normal
       const { data: paymentRecord, error: paymentError } = await supabase
         .from('payments')

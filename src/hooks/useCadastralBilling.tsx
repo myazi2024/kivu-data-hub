@@ -96,7 +96,7 @@ export const useCadastralBilling = () => {
   const createInvoice = async (searchResult: CadastralSearchResult, discountData?: {
     code: string;
     amount: number;
-    reseller_id: string | null;
+    reseller_id: string;
     code_id: string;
   }) => {
     if (selectedServices.length === 0) {

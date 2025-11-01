@@ -45,7 +45,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [appliedDiscount, setAppliedDiscount] = useState<{
     code: string;
     amount: number;
-    reseller_id: string | null;
+    reseller_id: string;
     code_id: string;
   } | null>(null);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
