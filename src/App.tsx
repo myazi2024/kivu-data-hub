@@ -26,6 +26,7 @@ import Articles from "./pages/Articles";
 import ArticleDetail from "./pages/ArticleDetail";
 import AboutCCC from "./pages/AboutCCC";
 import AboutDiscountCodes from "./pages/AboutDiscountCodes";
+import CollaborativeCadastre from "./pages/CollaborativeCadastre";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,6 +58,7 @@ const App = () => (
               <Route path="/articles/:slug" element={<ArticleDetail />} />
               <Route path="/about-ccc" element={<AboutCCC />} />
               <Route path="/about-discount-codes" element={<AboutDiscountCodes />} />
+              <Route path="/cadastre-collaboratif" element={<CollaborativeCadastre />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
