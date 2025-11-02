@@ -181,7 +181,7 @@ const CollaborativeCadastralMap: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="p-4 bg-background border-b space-y-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -211,7 +211,9 @@ const CollaborativeCadastralMap: React.FC = () => {
           </Select>
         </div>
       </div>
-      <div ref={mapRef} className="flex-1 w-full" style={{ minHeight: '500px' }} />
+      <div className="flex-1 relative">
+        <div ref={mapRef} className="absolute inset-0 w-full h-full" />
+      </div>
     </div>
   );
 };
