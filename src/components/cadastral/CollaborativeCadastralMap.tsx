@@ -32,20 +32,20 @@ const CollaborativeCadastralMap: React.FC = () => {
     return filtered;
   }, [parcels, selectedProvince, selectedVille]);
 
-  // Initialize map
+  // Initialize map - exactly like CadastralMap.tsx
   useEffect(() => {
     const initMap = async () => {
       if (!mapRef.current || mapInstanceRef.current) return;
 
       try {
         const L = await import('leaflet');
-        await import('leaflet/dist/leaflet.css');
 
+        // Fix pour les icônes Leaflet
         delete (L as any).Icon.Default.prototype._getIconUrl;
         L.Icon.Default.mergeOptions({
-          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
-          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
-          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
         });
 
         const map = L.map(mapRef.current, {
@@ -56,9 +56,11 @@ const CollaborativeCadastralMap: React.FC = () => {
         });
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
-          maxZoom: 19
+          attribution: '© OpenStreetMap contributors'
         }).addTo(map);
+
+        // Set initial view to DRC center
+        map.setView([-4.0383, 21.7587], 6);
 
         mapInstanceRef.current = map;
 
@@ -67,7 +69,7 @@ const CollaborativeCadastralMap: React.FC = () => {
         });
 
       } catch (error) {
-        console.error('Erreur initialisation carte:', error);
+        console.error('Erreur lors de l\'initialisation de la carte:', error);
       }
     };
 
@@ -81,7 +83,7 @@ const CollaborativeCadastralMap: React.FC = () => {
     };
   }, []);
 
-  // Update parcels
+  // Update parcels on map
   useEffect(() => {
     const updateMapData = async () => {
       if (!mapInstanceRef.current || !filteredParcels.length) return;
@@ -90,6 +92,7 @@ const CollaborativeCadastralMap: React.FC = () => {
         const L = await import('leaflet');
         const map = mapInstanceRef.current;
         
+        // Clear existing markers and polygons
         map.eachLayer((layer: any) => {
           if (layer instanceof L.Marker || layer instanceof L.Polygon) {
             map.removeLayer(layer);
@@ -104,6 +107,7 @@ const CollaborativeCadastralMap: React.FC = () => {
           const coords: [number, number][] = parcel.gps_coordinates.map((c: any) => [c.lat, c.lng]);
           bounds.push(...coords);
 
+          // Calculate side measurements
           const sideMeasurements = parcel.gps_coordinates.map((coord: any, idx: number) => {
             const next = parcel.gps_coordinates[(idx + 1) % parcel.gps_coordinates.length];
             const distance = calculateDistance(coord.lat, coord.lng, next.lat, next.lng);
@@ -136,6 +140,7 @@ const CollaborativeCadastralMap: React.FC = () => {
 
           polygon.bindPopup(popupContent);
 
+          // Add label at centroid
           const centroid = calculateCentroid(coords);
           L.marker(centroid, {
             icon: L.divIcon({
@@ -181,7 +186,7 @@ const CollaborativeCadastralMap: React.FC = () => {
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col">
       <div className="p-4 bg-background border-b space-y-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -211,8 +216,12 @@ const CollaborativeCadastralMap: React.FC = () => {
           </Select>
         </div>
       </div>
-      <div className="flex-1 relative">
-        <div ref={mapRef} className="absolute inset-0 w-full h-full" />
+      <div className="flex-1 p-4">
+        <div 
+          ref={mapRef} 
+          className="w-full rounded-lg border border-border"
+          style={{ height: 'calc(100vh - 200px)' }}
+        />
       </div>
     </div>
   );
