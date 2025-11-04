@@ -45,13 +45,13 @@ const HeroSection = () => {
 
         {/* Call to Action Buttons - Premium Mobile Design */}
         <div className="flex flex-row gap-3 sm:gap-4 justify-center items-center px-4">
-          <Link to="/cadastre-collaboratif" className="flex-1 max-w-[160px] sm:max-w-none sm:flex-none">
+          <Link to="/publications" className="flex-1 max-w-[160px] sm:max-w-none sm:flex-none">
             <Button 
               className="w-full bg-white text-seloger-red hover:bg-white/95 hover:scale-[1.02] font-semibold px-4 sm:px-6 py-3 sm:py-3.5 text-sm sm:text-base group transition-all duration-300 h-12 sm:h-auto rounded-xl sm:rounded-lg shadow-lg hover:shadow-xl"
             >
-              <MapPin className="mr-2 h-4 w-4 sm:mr-2.5 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Cadastre collaboratif</span>
-              <span className="sm:hidden">Cadastre</span>
+              <BarChart3 className="mr-2 h-4 w-4 sm:mr-2.5 sm:h-5 sm:w-5" />
+              <span className="hidden sm:inline">Nos Publications</span>
+              <span className="sm:hidden">Publications</span>
               <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
           </Link>
@@ -61,9 +61,9 @@ const HeroSection = () => {
               variant="outline"
               className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-seloger-red hover:scale-[1.02] font-semibold px-4 sm:px-6 py-3 sm:py-3.5 text-sm sm:text-base transition-all duration-300 h-12 sm:h-auto rounded-xl sm:rounded-lg shadow-lg hover:shadow-xl"
             >
-              <BarChart3 className="mr-2 h-4 w-4 sm:mr-2.5 sm:h-5 sm:w-5" />
+              <MapPin className="mr-2 h-4 w-4 sm:mr-2.5 sm:h-5 sm:w-5" />
               <span className="hidden sm:inline">Données foncières</span>
-              <span className="sm:hidden">Données</span>
+              <span className="sm:hidden">Données foncières</span>
             </Button>
           </Link>
         </div>

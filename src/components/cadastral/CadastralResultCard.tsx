@@ -21,9 +21,7 @@ import {
   Settings,
   FileCheck,
   ExternalLink,
-  Info,
-  Edit,
-  History
+  Info
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,10 +45,9 @@ interface CadastralResultCardProps {
   onClose: () => void;
   selectedServices?: string[]; // Services sélectionnés depuis le billing panel
   onPaymentSuccess?: (services: string[]) => void;
-  onProposeUpdate?: (parcelData: any) => void; // Nouveau callback pour proposer une mise à jour
 }
 
-const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess, onProposeUpdate }) => {
+const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClose, selectedServices = [], onPaymentSuccess }) => {
   const [activeTab, setActiveTab] = useState('general');
   const [obligationsTab, setObligationsTab] = useState('taxes');
   const [showBillingPanel, setShowBillingPanel] = useState(true);
@@ -59,7 +56,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [preselectServiceId, setPreselectServiceId] = useState<string | undefined>(undefined);
   const [invoiceFormat, setInvoiceFormat] = useState<'mini' | 'a4'>('a4');
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
-  const [showContributionHistory, setShowContributionHistory] = useState(false);
   const lastScrollYRef = useRef(0);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
   const { checkServiceAccess } = useCadastralBilling();
@@ -323,51 +319,6 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
           </div>
           {/* Boutons compacts avec icônes seulement */}
           <div className="flex gap-1">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => {
-                    if (onProposeUpdate) {
-                      onProposeUpdate({
-                        parcelId: parcel.id,
-                        parcelNumber: parcel.parcel_number,
-                        existingData: {
-                          parcel,
-                          ownership_history,
-                          tax_history,
-                          mortgage_history,
-                          boundary_history,
-                          building_permits
-                        }
-                      });
-                    }
-                  }}
-                  className="h-8 w-8 hover:bg-amber-500/10 hover:text-amber-600 transition-all duration-200"
-                >
-                  <Edit className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Proposer des modifications</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  onClick={() => setShowContributionHistory(!showContributionHistory)}
-                  className="h-8 w-8 hover:bg-blue-500/10 hover:text-blue-600 transition-all duration-200"
-                >
-                  <History className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Historique des contributions</p>
-              </TooltipContent>
-            </Tooltip>
             <Button 
               variant="ghost" 
               size="icon" 
