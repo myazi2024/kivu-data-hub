@@ -1,22 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { MapPin, Layers, Filter } from 'lucide-react';
 import { useCadastralParcels } from '@/hooks/useCadastralParcels';
 import { Skeleton } from '@/components/ui/skeleton';
-import L from 'leaflet';
-
-// Fix Leaflet icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
 
 const CollaborativeCadastralMap: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
+  const mapInstanceRef = useRef<any>(null);
   const { data: parcels, isLoading } = useCadastralParcels();
   
   const [selectedProvince, setSelectedProvince] = useState<string>('all');
@@ -41,23 +33,44 @@ const CollaborativeCadastralMap: React.FC = () => {
     return filtered;
   }, [parcels, selectedProvince, selectedVille]);
 
-  // Initialize map
+  // Initialisation de la carte - EXACTEMENT comme CadastralMap
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    const initMap = async () => {
+      if (!mapRef.current || mapInstanceRef.current) return;
 
-    const map = L.map(mapRef.current, {
-      zoomControl: true,
-      scrollWheelZoom: true,
-      dragging: true
-    }).setView([-4.0383, 21.7587], 6);
+      try {
+        const L = await import('leaflet');
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+        delete (L as any).Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+          iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+          iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+          shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+        });
 
-    mapInstanceRef.current = map;
+        const map = L.map(mapRef.current, {
+          zoomControl: true,
+          scrollWheelZoom: true,
+          dragging: true
+        });
 
-    setTimeout(() => map.invalidateSize(), 100);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        map.setView([-4.0383, 21.7587], 6);
+        mapInstanceRef.current = map;
+
+        map.whenReady(() => {
+          setTimeout(() => map.invalidateSize(), 0);
+        });
+
+      } catch (error) {
+        console.error('Erreur carte:', error);
+      }
+    };
+
+    initMap();
 
     return () => {
       if (mapInstanceRef.current) {
@@ -67,40 +80,50 @@ const CollaborativeCadastralMap: React.FC = () => {
     };
   }, []);
 
-  // Update parcels
+  // Mise à jour des parcelles
   useEffect(() => {
-    if (!mapInstanceRef.current) return;
-    const map = mapInstanceRef.current;
-    
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Marker || layer instanceof L.Polygon) {
-        map.removeLayer(layer);
+    const updateMapData = async () => {
+      if (!mapInstanceRef.current) return;
+
+      try {
+        const L = await import('leaflet');
+        const map = mapInstanceRef.current;
+        
+        map.eachLayer((layer: any) => {
+          if (layer instanceof L.Marker || layer instanceof L.Polygon) {
+            map.removeLayer(layer);
+          }
+        });
+
+        if (!filteredParcels.length) return;
+
+        const bounds: [number, number][] = [];
+
+        filteredParcels.forEach(parcel => {
+          if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) return;
+
+          const coords: [number, number][] = parcel.gps_coordinates.map((c: any) => [c.lat, c.lng]);
+          bounds.push(...coords);
+
+          const polygon = L.polygon(coords, {
+            color: '#dc2626',
+            fillColor: '#ef4444',
+            fillOpacity: 0.3,
+            weight: 2
+          }).addTo(map);
+
+          polygon.bindPopup(`<strong>${parcel.parcel_number}</strong>`);
+        });
+
+        if (bounds.length > 0) {
+          map.fitBounds(bounds, { padding: [50, 50] });
+        }
+      } catch (error) {
+        console.error('Erreur mise à jour:', error);
       }
-    });
+    };
 
-    if (!filteredParcels.length) return;
-
-    const bounds: [number, number][] = [];
-
-    filteredParcels.forEach(parcel => {
-      if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) return;
-
-      const coords: [number, number][] = parcel.gps_coordinates.map((c: any) => [c.lat, c.lng]);
-      bounds.push(...coords);
-
-      const polygon = L.polygon(coords, {
-        color: '#dc2626',
-        fillColor: '#ef4444',
-        fillOpacity: 0.3,
-        weight: 2
-      }).addTo(map);
-
-      polygon.bindPopup(`<strong>${parcel.parcel_number}</strong>`);
-    });
-
-    if (bounds.length > 0) {
-      map.fitBounds(bounds, { padding: [50, 50] });
-    }
+    updateMapData();
   }, [filteredParcels]);
 
   if (isLoading) {
@@ -146,7 +169,20 @@ const CollaborativeCadastralMap: React.FC = () => {
         </div>
       </div>
       <div className="p-4">
-        <div ref={mapRef} className="w-full h-[600px] rounded-lg border" />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Carte des parcelles cadastrales
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div 
+              ref={mapRef} 
+              className="w-full h-[600px] rounded-lg border border-border"
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
