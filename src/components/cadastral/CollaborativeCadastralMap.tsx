@@ -6,7 +6,7 @@ import { useCadastralParcels } from '@/hooks/useCadastralParcels';
 import { Skeleton } from '@/components/ui/skeleton';
 import L from 'leaflet';
 
-// Fix Leaflet default icon issue
+// Fix Leaflet icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
@@ -41,19 +41,23 @@ const CollaborativeCadastralMap: React.FC = () => {
     return filtered;
   }, [parcels, selectedProvince, selectedVille]);
 
-  // Initialize map - simplified
+  // Initialize map
   useEffect(() => {
     if (!mapRef.current || mapInstanceRef.current) return;
 
-    setTimeout(() => {
-      if (!mapRef.current) return;
-      
-      const map = L.map(mapRef.current).setView([-4.0383, 21.7587], 6);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
-      }).addTo(map);
-      mapInstanceRef.current = map;
-    }, 100);
+    const map = L.map(mapRef.current, {
+      zoomControl: true,
+      scrollWheelZoom: true,
+      dragging: true
+    }).setView([-4.0383, 21.7587], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    mapInstanceRef.current = map;
+
+    setTimeout(() => map.invalidateSize(), 100);
 
     return () => {
       if (mapInstanceRef.current) {
@@ -63,50 +67,26 @@ const CollaborativeCadastralMap: React.FC = () => {
     };
   }, []);
 
-  // Update parcels on map
+  // Update parcels
   useEffect(() => {
-    if (!mapInstanceRef.current || !filteredParcels.length) return;
-
+    if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
     
-    // Clear existing markers and polygons
     map.eachLayer((layer) => {
       if (layer instanceof L.Marker || layer instanceof L.Polygon) {
         map.removeLayer(layer);
       }
     });
 
-    const bounds: L.LatLngExpression[] = [];
+    if (!filteredParcels.length) return;
+
+    const bounds: [number, number][] = [];
 
     filteredParcels.forEach(parcel => {
       if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) return;
 
-      const coords: L.LatLngExpression[] = parcel.gps_coordinates.map((c: any) => [c.lat, c.lng]);
+      const coords: [number, number][] = parcel.gps_coordinates.map((c: any) => [c.lat, c.lng]);
       bounds.push(...coords);
-
-      // Calculate side measurements
-      const sideMeasurements = parcel.gps_coordinates.map((coord: any, idx: number) => {
-        const next = parcel.gps_coordinates[(idx + 1) % parcel.gps_coordinates.length];
-        const distance = calculateDistance(coord.lat, coord.lng, next.lat, next.lng);
-        return `${coord.borne || `B${idx + 1}`} → ${next.borne || `B${((idx + 1) % parcel.gps_coordinates.length) + 1}`}: ${distance.toFixed(2)}m`;
-      }).join('<br>');
-
-      const popupContent = `
-        <div style="min-width: 250px; font-family: system-ui;">
-          <strong style="font-size: 14px;">${parcel.parcel_number}</strong><br><br>
-          <strong>Superficie déclarée:</strong> ${parcel.area_sqm ? parcel.area_sqm.toLocaleString() + ' m²' : 'N/A'}<br>
-          <strong>Superficie calculée:</strong> ${parcel.surface_calculee_bornes ? parcel.surface_calculee_bornes.toLocaleString() + ' m²' : 'N/A'}<br>
-          <strong>Localisation:</strong> ${[parcel.province, parcel.ville, parcel.commune].filter(Boolean).join(', ')}<br>
-          <hr style="margin: 8px 0;">
-          <strong>Coordonnées GPS:</strong><br>
-          ${parcel.gps_coordinates.map((c: any, i: number) => 
-            `${c.borne || `B${i + 1}`}: ${c.lat.toFixed(6)}, ${c.lng.toFixed(6)}`
-          ).join('<br>')}<br>
-          <hr style="margin: 8px 0;">
-          <strong>Mesures des côtés:</strong><br>
-          ${sideMeasurements}
-        </div>
-      `;
 
       const polygon = L.polygon(coords, {
         color: '#dc2626',
@@ -115,53 +95,20 @@ const CollaborativeCadastralMap: React.FC = () => {
         weight: 2
       }).addTo(map);
 
-      polygon.bindPopup(popupContent);
-
-      // Add label at centroid
-      const centroid = calculateCentroid(coords as [number, number][]);
-      L.marker(centroid, {
-        icon: L.divIcon({
-          className: 'parcel-label',
-          html: `<div style="background: white; padding: 4px 8px; border-radius: 4px; border: 2px solid #dc2626; font-weight: bold; font-size: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); white-space: nowrap;">${parcel.parcel_number}</div>`,
-          iconSize: [0, 0]
-        })
-      }).addTo(map);
+      polygon.bindPopup(`<strong>${parcel.parcel_number}</strong>`);
     });
 
     if (bounds.length > 0) {
-      map.fitBounds(bounds as L.LatLngBoundsExpression, { padding: [50, 50] });
+      map.fitBounds(bounds, { padding: [50, 50] });
     }
   }, [filteredParcels]);
 
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371000;
-    const φ1 = (lat1 * Math.PI) / 180;
-    const φ2 = (lat2 * Math.PI) / 180;
-    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
-    const Δλ = ((lng2 - lng1) * Math.PI) / 180;
-    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const calculateCentroid = (coords: [number, number][]): [number, number] => {
-    let latSum = 0, lngSum = 0;
-    coords.forEach(([lat, lng]) => { latSum += lat; lngSum += lng; });
-    return [latSum / coords.length, lngSum / coords.length];
-  };
-
-  console.log('🗺️ CollaborativeCadastralMap render', { isLoading, parcelsCount: parcels?.length, filteredCount: filteredParcels.length });
-
   if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center p-4">
-        <Skeleton className="h-[600px] w-full" />
-      </div>
-    );
+    return <div className="p-4"><Skeleton className="h-[600px] w-full" /></div>;
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col">
       <div className="p-4 border-b space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -199,10 +146,7 @@ const CollaborativeCadastralMap: React.FC = () => {
         </div>
       </div>
       <div className="p-4">
-        <div 
-          ref={mapRef} 
-          style={{ width: '100%', height: '600px', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
-        />
+        <div ref={mapRef} className="w-full h-[600px] rounded-lg border" />
       </div>
     </div>
   );
