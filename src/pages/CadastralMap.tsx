@@ -78,10 +78,11 @@ const CadastralMap = () => {
         });
 
         // Créer la carte centrée sur Goma, RDC
+        const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
         const map = L.map(mapRef.current, {
-          zoomControl: true,
-          scrollWheelZoom: true,
-          doubleClickZoom: true,
+          zoomControl: !isMobile,
+          scrollWheelZoom: !isMobile,
+          doubleClickZoom: !isMobile,
           dragging: true
         }).setView([-1.6794, 29.2273], 12); // Goma coordinates
 
