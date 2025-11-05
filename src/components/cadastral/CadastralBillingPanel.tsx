@@ -96,9 +96,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
       return;
     }
     
+    // Bypass payment - créer la facture et accorder directement l'accès
     const invoice = await createInvoice(searchResult, appliedDiscount);
     if (invoice) {
-      setShowPaymentDialog(true);
+      // Simuler un paiement réussi immédiatement
+      toast({
+        title: "Accès accordé",
+        description: "Services débloqués avec succès (mode développement)",
+        duration: 3000
+      });
+      onPaymentSuccess(selectedServices);
     }
   };
 
@@ -444,7 +451,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           )}
 
-          {/* Bouton de paiement modernisé */}
+          {/* Bouton d'accès direct modernisé */}
           <div className="space-y-4">
             <Button 
               onClick={handleProceedToPayment}
@@ -476,13 +483,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  <CreditCard className="h-5 w-5" />
+                  <CheckCircle className="h-5 w-5" />
                   <span>
                     {selectedServices.length === 0 
                       ? 'Sélectionner des services' 
                       : !acceptedTerms 
                       ? 'Accepter les conditions'
-                      : `Payer ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 1.16).toFixed(2)} USD`
+                      : 'Accéder aux services (Gratuit)'
                     }
                   </span>
                   {selectedServices.length > 0 && acceptedTerms && (
