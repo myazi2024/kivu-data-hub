@@ -3,8 +3,9 @@ import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { MapPin, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ParcelData {
@@ -25,8 +26,11 @@ const CadastralMap = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const [parcels, setParcels] = useState<ParcelData[]>([]);
+  const [filteredParcels, setFilteredParcels] = useState<ParcelData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedParcel, setSelectedParcel] = useState<ParcelData | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
 
   // Charger toutes les parcelles depuis Supabase
   useEffect(() => {
@@ -49,6 +53,7 @@ const CadastralMap = () => {
         }
 
         setParcels(data || []);
+        setFilteredParcels(data || []);
       } catch (error) {
         console.error('Erreur:', error);
         toast.error('Erreur lors du chargement des parcelles');
@@ -59,6 +64,43 @@ const CadastralMap = () => {
 
     loadParcels();
   }, []);
+
+  // Recherche prédictive
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchSuggestions([]);
+      setFilteredParcels(parcels);
+      return;
+    }
+
+    const filtered = parcels.filter(parcel => 
+      parcel.parcel_number.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+    
+    setSearchSuggestions(filtered.slice(0, 5)); // Max 5 suggestions
+    setFilteredParcels(filtered);
+  }, [searchQuery, parcels]);
+
+  const handleSelectParcel = (parcel: ParcelData) => {
+    setSelectedParcel(parcel);
+    setSearchQuery(parcel.parcel_number);
+    setSearchSuggestions([]);
+    
+    // Centrer la carte sur la parcelle sélectionnée
+    if (mapInstanceRef.current && parcel.latitude && parcel.longitude) {
+      const L = (window as any).L;
+      if (L) {
+        mapInstanceRef.current.setView([parcel.latitude, parcel.longitude], 16);
+      }
+    }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchSuggestions([]);
+    setFilteredParcels(parcels);
+    setSelectedParcel(null);
+  };
 
   // Initialiser la carte
   useEffect(() => {
@@ -115,10 +157,10 @@ const CadastralMap = () => {
     };
   }, []);
 
-  // Afficher toutes les parcelles sur la carte
+  // Afficher les parcelles filtrées sur la carte
   useEffect(() => {
     const updateMapWithParcels = async () => {
-      if (!mapInstanceRef.current || parcels.length === 0) return;
+      if (!mapInstanceRef.current || filteredParcels.length === 0) return;
 
       try {
         const L = await import('leaflet');
@@ -133,8 +175,8 @@ const CadastralMap = () => {
 
         const bounds = L.latLngBounds([]);
 
-        // Ajouter chaque parcelle sur la carte
-        parcels.forEach((parcel) => {
+        // Ajouter chaque parcelle filtrée sur la carte
+        filteredParcels.forEach((parcel) => {
           // Créer un polygone si nous avons des coordonnées GPS
           if (parcel.gps_coordinates && parcel.gps_coordinates.length >= 3) {
             const polygonPoints: [number, number][] = parcel.gps_coordinates.map(
@@ -200,145 +242,156 @@ const CadastralMap = () => {
     };
 
     updateMapWithParcels();
-  }, [parcels]);
+  }, [filteredParcels]);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
       
-      <main className="flex-1 bg-background">
-        <div className="container mx-auto px-4 py-8">
-          {/* En-tête */}
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold mb-2 flex items-center gap-3">
-              <MapPin className="h-8 w-8 text-primary" />
-              Carte Cadastrale - Toutes les Parcelles
-            </h1>
-            <p className="text-muted-foreground">
-              Visualisation interactive de toutes les parcelles cadastrales enregistrées
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Carte principale */}
-            <div className="lg:col-span-3">
-              <Card className="h-[calc(100vh-200px)]">
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <MapPin className="h-5 w-5" />
-                        Carte Interactive
-                      </CardTitle>
-                      <CardDescription>
-                        {loading ? (
-                          <span className="flex items-center gap-2">
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                            Chargement des parcelles...
-                          </span>
-                        ) : (
-                          `${parcels.length} parcelle(s) affichée(s)`
-                        )}
-                      </CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="h-[calc(100%-80px)]">
-                  {loading ? (
-                    <div className="h-full flex items-center justify-center bg-muted/50 rounded-lg">
-                      <div className="text-center">
-                        <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-                        <p className="text-muted-foreground">Chargement des parcelles...</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div 
-                      ref={mapRef} 
-                      className="w-full h-full rounded-lg border border-border"
-                    />
-                  )}
-                </CardContent>
-              </Card>
+      <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>
+        {/* Carte en plein écran */}
+        {loading ? (
+          <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
+            <div className="text-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+              <p className="text-muted-foreground">Chargement des parcelles...</p>
             </div>
+          </div>
+        ) : (
+          <div 
+            ref={mapRef} 
+            style={{ width: '100%', height: '100%' }}
+            className="relative"
+          />
+        )}
 
-            {/* Panneau d'information */}
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Informations</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Statistiques */}
-                  <div className="p-4 bg-primary/10 rounded-lg">
-                    <div className="text-center">
-                      <div className="text-3xl font-bold text-primary">
-                        {parcels.length}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Parcelles cadastrales
-                      </div>
-                    </div>
-                  </div>
+        {/* Barre de recherche en overlay */}
+        <div className="absolute top-4 left-4 right-4 md:left-6 md:right-auto md:w-96 z-[1000]">
+          <Card className="shadow-lg">
+            <CardContent className="p-4">
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher une parcelle par numéro..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-10"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                      onClick={handleClearSearch}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
 
-                  {/* Parcelle sélectionnée */}
-                  {selectedParcel && (
-                    <div className="p-4 bg-muted rounded-lg space-y-2">
-                      <h4 className="font-semibold text-sm text-primary">
-                        Parcelle sélectionnée
-                      </h4>
-                      <div className="space-y-1 text-xs">
-                        <p className="font-mono font-bold">{selectedParcel.parcel_number}</p>
-                        <p><strong>Propriétaire:</strong> {selectedParcel.current_owner_name}</p>
-                        <p><strong>Surface:</strong> {selectedParcel.area_sqm?.toLocaleString()} m²</p>
-                        <p>
-                          <strong>Localisation:</strong><br />
-                          {selectedParcel.province} - {selectedParcel.ville}<br />
-                          {selectedParcel.commune} {selectedParcel.quartier}
-                        </p>
-                      </div>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="w-full mt-2"
-                        onClick={() => setSelectedParcel(null)}
+                {/* Suggestions de recherche */}
+                {searchSuggestions.length > 0 && (
+                  <div className="bg-background border rounded-md shadow-sm">
+                    {searchSuggestions.map((parcel) => (
+                      <button
+                        key={parcel.id}
+                        onClick={() => handleSelectParcel(parcel)}
+                        className="w-full text-left px-3 py-2 hover:bg-muted transition-colors border-b last:border-b-0"
                       >
-                        Fermer
-                      </Button>
-                    </div>
+                        <div className="font-mono font-semibold text-sm">{parcel.parcel_number}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {parcel.current_owner_name} • {parcel.ville || parcel.province}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Résumé de recherche */}
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>
+                    {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles au total`}
+                  </span>
+                  {selectedParcel && (
+                    <span className="text-primary font-medium">
+                      Parcelle sélectionnée
+                    </span>
                   )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
 
-                  {/* Légende */}
-                  <div className="space-y-2">
-                    <h4 className="font-semibold text-sm">Légende</h4>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 bg-red-500/20 border-2 border-red-500 rounded"></div>
-                        <span>Parcelle avec bornage</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-blue-500" />
-                        <span>Parcelle sans bornage</span>
-                      </div>
-                    </div>
+        {/* Panneau d'information de la parcelle sélectionnée */}
+        {selectedParcel && (
+          <div className="absolute bottom-4 right-4 z-[1000] w-80 max-w-[calc(100vw-2rem)]">
+            <Card className="shadow-lg">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Parcelle sélectionnée
+                    </CardTitle>
                   </div>
-
-                  {/* Instructions */}
-                  <div className="text-xs text-muted-foreground bg-muted/50 p-3 rounded-lg">
-                    <p className="font-semibold mb-2">💡 Utilisation</p>
-                    <ul className="space-y-1 list-disc list-inside">
-                      <li>Cliquez sur une parcelle pour voir ses détails</li>
-                      <li>Utilisez la molette pour zoomer</li>
-                      <li>Glissez pour déplacer la carte</li>
-                    </ul>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0 -mt-1"
+                    onClick={() => setSelectedParcel(null)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3 text-sm">
+                <div>
+                  <p className="font-mono font-bold text-primary">{selectedParcel.parcel_number}</p>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-muted-foreground">Propriétaire:</span>
+                    <p className="font-medium">{selectedParcel.current_owner_name}</p>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                  <div>
+                    <span className="text-muted-foreground">Surface:</span>
+                    <p className="font-medium">{selectedParcel.area_sqm?.toLocaleString()} m²</p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Localisation:</span>
+                    <p className="font-medium">
+                      {selectedParcel.province} - {selectedParcel.ville}
+                      {selectedParcel.commune && <><br />{selectedParcel.commune}</>}
+                      {selectedParcel.quartier && ` ${selectedParcel.quartier}`}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
+        )}
+
+        {/* Légende */}
+        <div className="absolute top-4 right-4 z-[1000] hidden md:block">
+          <Card className="shadow-lg w-64">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm">Légende</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-red-500/20 border-2 border-red-500 rounded"></div>
+                <span>Parcelle avec bornage</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-blue-500" />
+                <span>Parcelle sans bornage</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </main>
-
-      <Footer />
     </div>
   );
 };
