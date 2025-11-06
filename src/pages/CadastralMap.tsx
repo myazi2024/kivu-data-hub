@@ -40,7 +40,6 @@ const CadastralMap = () => {
         const { data, error } = await supabase
           .from('cadastral_parcels')
           .select('id, parcel_number, gps_coordinates, latitude, longitude, current_owner_name, area_sqm, province, ville, commune, quartier')
-          .not('gps_coordinates', 'is', null)
           .not('latitude', 'is', null)
           .not('longitude', 'is', null)
           .is('deleted_at', null)
