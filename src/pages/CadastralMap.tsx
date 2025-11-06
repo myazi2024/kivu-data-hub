@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
+import 'leaflet/dist/leaflet.css';
 
 interface ParcelData {
   id: string;
@@ -108,7 +109,6 @@ const CadastralMap = () => {
 
       try {
         const L = await import('leaflet');
-        await import('leaflet/dist/leaflet.css');
 
         // Fix pour les icônes Leaflet
         delete (L as any).Icon.Default.prototype._getIconUrl;
@@ -125,7 +125,7 @@ const CadastralMap = () => {
           scrollWheelZoom: !isMobile,
           doubleClickZoom: !isMobile,
           dragging: true
-        }).setView([-1.6794, 29.2273], 12); // Goma coordinates
+        }).setView([-1.6794, 29.2273], 12);
 
         // Ajouter la couche de tuiles OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -135,13 +135,11 @@ const CadastralMap = () => {
 
         mapInstanceRef.current = map;
 
-        // S'assurer que la carte se redessine correctement
-        map.whenReady(() => {
-          setTimeout(() => map.invalidateSize(), 0);
-        });
+        // Redessiner la carte après initialisation
+        setTimeout(() => map.invalidateSize(), 100);
 
       } catch (error) {
-        console.error('Erreur lors de l\'initialisation de la carte:', error);
+        console.error('Erreur initialisation carte:', error);
         toast.error('Erreur lors de l\'initialisation de la carte');
       }
     };
@@ -247,7 +245,7 @@ const CadastralMap = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
       
-      <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>
+      <main className="flex-1" style={{ height: 'calc(100vh - 4rem)' }}>
         {/* Carte en plein écran */}
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
@@ -259,8 +257,7 @@ const CadastralMap = () => {
         ) : (
           <div 
             ref={mapRef} 
-            style={{ width: '100%', height: '100%' }}
-            className="relative"
+            style={{ width: '100%', height: 'calc(100vh - 4rem)' }}
           />
         )}
 
