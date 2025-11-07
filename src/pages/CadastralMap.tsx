@@ -5,11 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, FileText } from 'lucide-react';
+import { MapPin, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
 import 'leaflet/dist/leaflet.css';
-import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
-import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 
 interface ParcelData {
   id: string;
@@ -34,8 +32,6 @@ const CadastralMap = () => {
   const [selectedParcel, setSelectedParcel] = useState<ParcelData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
-  const [showIntroDialog, setShowIntroDialog] = useState(false);
-  const [showContributionDialog, setShowContributionDialog] = useState(false);
 
   // Charger toutes les parcelles depuis Supabase
   useEffect(() => {
@@ -193,6 +189,19 @@ const CadastralMap = () => {
               fillOpacity: 0.2
             }).addTo(map);
 
+            polygon.bindPopup(`
+              <div style="font-family: system-ui; min-width: 200px;">
+                <strong style="font-size: 14px; color: #ef4444;">📍 ${parcel.parcel_number}</strong><br>
+                <div style="margin-top: 8px; font-size: 12px;">
+                  <strong>Propriétaire:</strong> ${parcel.current_owner_name || 'N/A'}<br>
+                  <strong>Surface:</strong> ${parcel.area_sqm?.toLocaleString() || 'N/A'} m²<br>
+                  <strong>Localisation:</strong><br>
+                  ${parcel.province || 'N/A'} - ${parcel.ville || 'N/A'}<br>
+                  ${parcel.commune || ''} ${parcel.quartier || ''}
+                </div>
+              </div>
+            `);
+
             polygon.on('click', () => {
               setSelectedParcel(parcel);
             });
@@ -201,6 +210,18 @@ const CadastralMap = () => {
           } else if (parcel.latitude && parcel.longitude) {
             // Si pas de polygone mais des coordonnées, ajouter un marqueur
             const marker = L.marker([parcel.latitude, parcel.longitude]).addTo(map);
+            marker.bindPopup(`
+              <div style="font-family: system-ui; min-width: 200px;">
+                <strong style="font-size: 14px; color: #ef4444;">📍 ${parcel.parcel_number}</strong><br>
+                <div style="margin-top: 8px; font-size: 12px;">
+                  <strong>Propriétaire:</strong> ${parcel.current_owner_name || 'N/A'}<br>
+                  <strong>Surface:</strong> ${parcel.area_sqm?.toLocaleString() || 'N/A'} m²<br>
+                  <strong>Localisation:</strong><br>
+                  ${parcel.province || 'N/A'} - ${parcel.ville || 'N/A'}<br>
+                  ${parcel.commune || ''} ${parcel.quartier || ''}
+                </div>
+              </div>
+            `);
 
             marker.on('click', () => {
               setSelectedParcel(parcel);
@@ -296,18 +317,6 @@ const CadastralMap = () => {
                     </span>
                   )}
                 </div>
-
-                {/* Bouton Recherche manuelle si aucun résultat */}
-                {searchQuery && filteredParcels.length === 0 && (
-                  <Button
-                    variant="outline"
-                    className="w-full mt-2"
-                    onClick={() => setShowIntroDialog(true)}
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Recherche manuelle
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -380,22 +389,6 @@ const CadastralMap = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Dialogs CCC */}
-        <CCCIntroDialog
-          open={showIntroDialog}
-          onOpenChange={setShowIntroDialog}
-          onContinue={() => {
-            setShowIntroDialog(false);
-            setShowContributionDialog(true);
-          }}
-          parcelNumber={searchQuery}
-        />
-        <CadastralContributionDialog
-          open={showContributionDialog}
-          onOpenChange={setShowContributionDialog}
-          parcelNumber={searchQuery}
-        />
       </main>
     </div>
   );
