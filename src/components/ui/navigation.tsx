@@ -14,10 +14,9 @@ const Navigation = () => {
   const navigation = [
     { name: 'Accueil', href: '/' },
     { name: 'Articles', href: '/articles' },
-    { name: 'Kiosque', href: '/publications' },
+    { name: 'Cadastre collaboratif', href: '/cadastral-map' },
     { name: 'Plateforme Myazi', href: '/myazi' },
     { name: 'Données foncières', href: '/map' },
-    { name: 'Carte Cadastrale', href: '/cadastral-map' },
     { name: 'Rejoignez-nous', href: '/careers' },
   ];
 
