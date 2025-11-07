@@ -102,8 +102,10 @@ const CadastralMap = () => {
     setSelectedParcel(null);
   };
 
-  // Initialiser la carte
+  // Initialiser la carte (uniquement quand loading = false)
   useEffect(() => {
+    if (loading) return; // Attendre que les données soient chargées
+
     const initMap = async () => {
       if (!mapRef.current || mapInstanceRef.current) return;
 
@@ -152,7 +154,7 @@ const CadastralMap = () => {
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [loading]);
 
   // Afficher les parcelles filtrées sur la carte
   useEffect(() => {
