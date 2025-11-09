@@ -511,7 +511,7 @@ const CadastralSearchWithMap = () => {
 
       {/* Carte intégrée */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div className="lg:col-span-2">
+        <div className={`${selectedParcel ? 'lg:col-span-2' : 'col-span-1 lg:col-span-3'}`}>
           <Card className="overflow-hidden shadow-lg">
             <div className={`relative ${mapHeight} transition-all duration-300`}>
               {mapLoading && (
@@ -526,28 +526,18 @@ const CadastralSearchWithMap = () => {
         </div>
 
         {/* Panneau d'informations de la parcelle */}
-        {selectedParcel ? (
+        {selectedParcel && (
           <div className="lg:col-span-1">
             <ParcelInfoPanel 
               parcel={selectedParcel} 
               onClose={() => setSelectedParcel(null)}
             />
           </div>
-        ) : (
-          <div className="lg:hidden">
-            <Card className="p-4 border-dashed border-2 border-primary/20 bg-primary/5">
-              <div className="text-center space-y-2">
-                <MapPin className="h-8 w-8 text-primary mx-auto" />
-                <p className="text-sm text-muted-foreground">
-                  Cliquez sur une parcelle pour afficher ses détails
-                </p>
-              </div>
-            </Card>
-          </div>
         )}
       </div>
 
       {/* Dialogs */}
+
       <CCCIntroDialog
         open={showIntroDialog}
         onOpenChange={setShowIntroDialog}
