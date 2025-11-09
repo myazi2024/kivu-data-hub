@@ -203,15 +203,12 @@ const CadastralSearchWithMap = () => {
     }
   }, [filteredParcels, selectedParcel]);
 
-  // Zoom sur une parcelle trouvée et afficher le ParcelInfoPanel
+  // Zoom sur une parcelle trouvée
   useEffect(() => {
     if (!mapRef.current || !searchResult) return;
 
     const map = mapRef.current;
     const parcel = searchResult.parcel;
-
-    // Définir la parcelle sélectionnée pour afficher le ParcelInfoPanel
-    setSelectedParcel(parcel as ParcelData);
 
     if (Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length >= 3) {
       const coords = parcel.gps_coordinates.map((c: any) => [c.lat, c.lng] as L.LatLngTuple);
@@ -301,9 +298,12 @@ const CadastralSearchWithMap = () => {
 
   const inputStatus = getInputStatus();
 
-  // Note: Le dialogue de résultats n'est plus affiché automatiquement.
-  // L'utilisateur doit cliquer sur "Afficher plus de données" dans le ParcelInfoPanel
-  // pour accéder au catalogue de services.
+  // Afficher le dialog quand des résultats sont trouvés
+  React.useEffect(() => {
+    if (searchResult && !showResultsDialog) {
+      setShowResultsDialog(true);
+    }
+  }, [searchResult, showResultsDialog]);
 
   const mapHeight = searchQuery || selectedParcel ? 'h-[500px] md:h-[600px]' : 'h-[350px] md:h-[400px]';
 
