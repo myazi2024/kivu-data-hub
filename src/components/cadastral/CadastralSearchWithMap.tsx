@@ -298,12 +298,15 @@ const CadastralSearchWithMap = () => {
 
   const inputStatus = getInputStatus();
 
-  // Afficher le dialog quand des résultats sont trouvés
+  // Sélectionner automatiquement la parcelle quand des résultats sont trouvés
   React.useEffect(() => {
-    if (searchResult && !showResultsDialog) {
-      setShowResultsDialog(true);
+    if (searchResult) {
+      const parcel = parcels.find(p => p.parcel_number === searchResult.parcel.parcel_number);
+      if (parcel) {
+        setSelectedParcel(parcel);
+      }
     }
-  }, [searchResult, showResultsDialog]);
+  }, [searchResult, parcels]);
 
   const mapHeight = searchQuery || selectedParcel ? 'h-[500px] md:h-[600px]' : 'h-[350px] md:h-[400px]';
 
@@ -523,17 +526,14 @@ const CadastralSearchWithMap = () => {
         </div>
 
         {/* Panneau d'informations de la parcelle */}
-        {selectedParcel && (
+        {selectedParcel ? (
           <div className="lg:col-span-1">
             <ParcelInfoPanel 
               parcel={selectedParcel} 
               onClose={() => setSelectedParcel(null)}
             />
           </div>
-        )}
-
-        {/* Message si aucune parcelle sélectionnée sur mobile */}
-        {!selectedParcel && (
+        ) : (
           <div className="lg:hidden">
             <Card className="p-4 border-dashed border-2 border-primary/20 bg-primary/5">
               <div className="text-center space-y-2">
@@ -548,14 +548,6 @@ const CadastralSearchWithMap = () => {
       </div>
 
       {/* Dialogs */}
-      {searchResult && (
-        <CadastralResultsDialog
-          result={searchResult}
-          isOpen={showResultsDialog}
-          onClose={handleCloseResults}
-        />
-      )}
-
       <CCCIntroDialog
         open={showIntroDialog}
         onOpenChange={setShowIntroDialog}
