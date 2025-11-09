@@ -20,18 +20,17 @@ import {
   Ruler,
   Scale,
   ShoppingCart,
-  ArrowLeft
+  ArrowLeft,
+  MapPin,
+  History,
+  Shield,
+  Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useCart, CartItem } from '@/hooks/useCart';
-
-type CadastralService = {
-  icon: typeof Home | typeof DollarSign | typeof Landmark | typeof Ruler | typeof Building2 | typeof Scale;
-  title: string;
-  description: string;
-  price: number;
-  variant: string;
-};
+import { useCadastralServices } from '@/hooks/useCadastralServices';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 type GeneralService = {
   icon: typeof Map | typeof BarChart3 | typeof Calculator | typeof TrendingUp | typeof FileText | typeof Building2 | typeof GraduationCap | typeof Users;
@@ -40,14 +39,15 @@ type GeneralService = {
   variant: string;
 };
 
-type Service = CadastralService | GeneralService;
-
 const Services = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { addToCart } = useCart();
   const [parcelNumber, setParcelNumber] = useState<string | null>(null);
+  
+  // Hook réactif pour les services cadastraux
+  const { services: cadastralServices, loading: servicesLoading, error: servicesError } = useCadastralServices();
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -55,7 +55,7 @@ const Services = () => {
     setParcelNumber(parcel);
   }, [location]);
 
-  const handleAddToCart = (serviceName: string, price: number) => {
+  const handleAddToCart = (serviceId: string, serviceName: string, price: number) => {
     if (!parcelNumber) {
       toast({
         title: "Erreur",
@@ -66,7 +66,7 @@ const Services = () => {
     }
 
     const cartItem: CartItem = {
-      id: `${parcelNumber}-${serviceName.toLowerCase().replace(/\s+/g, '-')}`,
+      id: `${parcelNumber}-${serviceId}`,
       title: `${serviceName} - Parcelle ${parcelNumber}`,
       price: price,
       description: `Service cadastral pour la parcelle ${parcelNumber}`
@@ -79,52 +79,6 @@ const Services = () => {
       description: `${serviceName} pour la parcelle ${parcelNumber}`,
     });
   };
-
-  // Services cadastraux spécifiques pour une parcelle
-  const cadastralServices: CadastralService[] = [
-    {
-      icon: Home,
-      title: "Historique de propriété",
-      description: "Accédez à l'historique complet des transferts de propriété et des mutations",
-      price: 5,
-      variant: "primary"
-    },
-    {
-      icon: DollarSign,
-      title: "Obligations fiscales",
-      description: "Consultez l'historique des paiements d'impôts fonciers et les montants dus",
-      price: 3,
-      variant: "secondary"
-    },
-    {
-      icon: Landmark,
-      title: "Hypothèques et charges",
-      description: "Vérifiez les hypothèques, servitudes et autres charges grevant la propriété",
-      price: 8,
-      variant: "accent"
-    },
-    {
-      icon: Ruler,
-      title: "Historique des limites",
-      description: "Suivez l'évolution des délimitations et bornages de la parcelle",
-      price: 4,
-      variant: "primary"
-    },
-    {
-      icon: Building2,
-      title: "Permis de construire",
-      description: "Accédez aux permis de construire délivrés et leur statut",
-      price: 3,
-      variant: "secondary"
-    },
-    {
-      icon: Scale,
-      title: "Statut juridique complet",
-      description: "Rapport complet incluant tous les aspects juridiques et administratifs",
-      price: 15,
-      variant: "accent"
-    }
-  ];
 
   // Services généraux
   const generalServices: GeneralService[] = [
@@ -178,105 +132,179 @@ const Services = () => {
     }
   ];
 
-  const servicesToDisplay: Service[] = parcelNumber ? cadastralServices : generalServices;
   const isCadastralCatalog = Boolean(parcelNumber);
-
-  const isCadastralService = (service: Service): service is CadastralService => {
-    return 'price' in service;
+  
+  // Mapping des icônes pour les services cadastraux
+  const getServiceIcon = (serviceId: string) => {
+    const iconMap: Record<string, any> = {
+      'information': FileText,
+      'location_history': MapPin,
+      'history': History,
+      'obligations': DollarSign,
+      'legal_verification': Shield,
+      'building_permits': Building2,
+      'boundaries': Ruler
+    };
+    return iconMap[serviceId] || FileText;
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-b from-background to-secondary/5">
       <Navigation />
       <main className="pt-16 sm:pt-20 pb-8 sm:pb-16">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 lg:px-8">
           {/* En-tête avec retour si catalogue cadastral */}
           {isCadastralCatalog && (
-            <div className="mb-6">
+            <div className="mb-6 animate-fade-in">
               <Button
                 variant="ghost"
                 onClick={() => navigate(-1)}
-                className="mb-4"
+                className="mb-4 hover:bg-primary/10"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Retour
               </Button>
-              <div className="flex items-center gap-3 mb-4">
-                <Badge variant="default" className="text-sm px-3 py-1">
+              <div className="flex flex-wrap items-center gap-2 mb-4">
+                <Badge variant="default" className="text-xs sm:text-sm px-3 py-1 shadow-sm">
                   Parcelle {parcelNumber}
                 </Badge>
+                {cadastralServices.length > 0 && (
+                  <Badge variant="outline" className="text-xs px-2 py-1">
+                    {cadastralServices.length} services disponibles
+                  </Badge>
+                )}
               </div>
             </div>
           )}
 
-          <div className="text-center mb-8 sm:mb-16">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground mb-4 sm:mb-6">
+          <div className="text-center mb-8 sm:mb-12 animate-fade-in">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent mb-4 sm:mb-6">
               {isCadastralCatalog ? 'Catalogue de Services Cadastraux' : 'Nos Services'}
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-3xl mx-auto px-2">
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-3xl mx-auto px-2 leading-relaxed">
               {isCadastralCatalog 
-                ? 'Sélectionnez les données que vous souhaitez consulter pour cette parcelle. Ajoutez-les au panier pour procéder au paiement.'
-                : 'Nos outils et livrables sont conçus pour répondre aux enjeux urbains concrets. Nous proposons des solutions adaptées aux besoins des territoires congolais.'
+                ? 'Sélectionnez les données cadastrales que vous souhaitez consulter pour cette parcelle.'
+                : 'Nos outils et livrables sont conçus pour répondre aux enjeux urbains concrets.'
               }
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-            {servicesToDisplay.map((service, index) => {
-              const IconComponent = service.icon;
-              const getIconColor = (variant: string) => {
-                switch (variant) {
-                  case 'primary':
-                    return 'text-primary';
-                  case 'secondary':
-                    return 'text-primary/80';
-                  case 'accent':
-                    return 'text-primary/60';
-                  case 'muted':
-                    return 'text-muted-foreground';
-                  default:
-                    return 'text-primary';
-                }
-              };
-              
-              const isPriced = isCadastralService(service);
-              
-              return (
-                <Card key={index} className="group hover:shadow-card transition-all duration-300 border-border hover:border-primary/20 flex flex-col">
-                  <CardHeader className="text-center pb-3 sm:pb-4">
-                    <div className="flex justify-center mb-3 sm:mb-4">
-                      <div className="p-3 sm:p-4 rounded-full bg-secondary group-hover:bg-primary/10 transition-colors duration-300">
-                        <IconComponent className={`h-6 w-6 sm:h-8 sm:w-8 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
+          {/* Affichage des services cadastraux (depuis la base de données) */}
+          {isCadastralCatalog && (
+            <>
+              {servicesLoading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {[1, 2, 3, 4].map((i) => (
+                    <Card key={i} className="p-6">
+                      <div className="flex flex-col items-center space-y-4">
+                        <Skeleton className="h-16 w-16 rounded-full" />
+                        <Skeleton className="h-6 w-3/4" />
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-10 w-full" />
                       </div>
-                    </div>
-                    <CardTitle className="text-base sm:text-lg md:text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
-                      {service.title}
-                    </CardTitle>
-                    {isPriced && (
-                      <div className="mt-2">
-                        <span className="text-xl sm:text-2xl font-bold text-primary">${service.price}</span>
-                      </div>
-                    )}
-                  </CardHeader>
-                  <CardContent className="flex-1 flex flex-col">
-                    <CardDescription className="text-center text-muted-foreground leading-relaxed text-xs sm:text-sm flex-1">
-                      {service.description}
-                    </CardDescription>
-                    {isPriced && (
-                      <Button
-                        onClick={() => handleAddToCart(service.title, service.price)}
-                        className="w-full mt-4 bg-primary hover:bg-primary/90"
-                        size="sm"
+                    </Card>
+                  ))}
+                </div>
+              ) : servicesError ? (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertDescription>
+                    Erreur lors du chargement des services : {servicesError}
+                  </AlertDescription>
+                </Alert>
+              ) : cadastralServices.length === 0 ? (
+                <Alert className="mb-6">
+                  <AlertDescription>
+                    Aucun service cadastral disponible pour le moment.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                  {cadastralServices.map((service) => {
+                    const IconComponent = getServiceIcon(service.id);
+                    
+                    return (
+                      <Card 
+                        key={service.id} 
+                        className="group hover:shadow-lg transition-all duration-300 border-border hover:border-primary/30 flex flex-col overflow-hidden"
                       >
-                        <ShoppingCart className="h-4 w-4 mr-2" />
-                        Ajouter au panier
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                        <CardHeader className="text-center pb-3 sm:pb-4 pt-5 sm:pt-6">
+                          <div className="flex justify-center mb-3 sm:mb-4">
+                            <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 group-hover:from-primary/20 group-hover:to-primary/10 transition-all duration-300 shadow-sm">
+                              <IconComponent className="h-6 w-6 sm:h-8 sm:w-8 text-primary group-hover:scale-110 transition-transform duration-300" />
+                            </div>
+                          </div>
+                          <CardTitle className="text-sm sm:text-base md:text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300 leading-tight mb-2 px-2">
+                            {service.name}
+                          </CardTitle>
+                          <div className="mt-2">
+                            <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                              ${service.price}
+                            </span>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="flex-1 flex flex-col pt-0 pb-5 px-4">
+                          <CardDescription className="text-center text-muted-foreground leading-relaxed text-xs sm:text-sm flex-1 mb-4">
+                            {service.description}
+                          </CardDescription>
+                          <Button
+                            onClick={() => handleAddToCart(service.id, service.name, service.price)}
+                            className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-sm hover:shadow-md transition-all duration-200"
+                            size="sm"
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            <span className="text-xs sm:text-sm">Ajouter au panier</span>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+
+          {/* Affichage des services généraux (hardcodés) */}
+          {!isCadastralCatalog && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+              {generalServices.map((service, index) => {
+                const IconComponent = service.icon;
+                const getIconColor = (variant: string) => {
+                  switch (variant) {
+                    case 'primary':
+                      return 'text-primary';
+                    case 'secondary':
+                      return 'text-primary/80';
+                    case 'accent':
+                      return 'text-primary/60';
+                    case 'muted':
+                      return 'text-muted-foreground';
+                    default:
+                      return 'text-primary';
+                  }
+                };
+                
+                return (
+                  <Card key={index} className="group hover:shadow-card transition-all duration-300 border-border hover:border-primary/20 flex flex-col">
+                    <CardHeader className="text-center pb-3 sm:pb-4">
+                      <div className="flex justify-center mb-3 sm:mb-4">
+                        <div className="p-3 sm:p-4 rounded-full bg-secondary group-hover:bg-primary/10 transition-colors duration-300">
+                          <IconComponent className={`h-6 w-6 sm:h-8 sm:w-8 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
+                        </div>
+                      </div>
+                      <CardTitle className="text-base sm:text-lg md:text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                        {service.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex-1 flex flex-col">
+                      <CardDescription className="text-center text-muted-foreground leading-relaxed text-xs sm:text-sm flex-1">
+                        {service.description}
+                      </CardDescription>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
       </main>
       <Footer />
