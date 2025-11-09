@@ -12,7 +12,7 @@ import Index from "./pages/Index";
 import Publications from "./pages/Publications";
 import Auth from "./pages/Auth";
 import Map from "./pages/Map";
-import CadastralMap from "./pages/CadastralMap";
+import CadastralSearchPage from "./pages/CadastralSearchPage";
 import Admin from "./pages/Admin";
 import Myazi from "./pages/Myazi";
 import JoinUs from "./pages/JoinUs";
@@ -43,7 +43,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/publications" element={<Publications />} />
               <Route path="/map" element={<Map />} />
-              <Route path="/cadastral-map" element={<CadastralMap />} />
+              <Route path="/cadastral-map" element={<CadastralSearchPage />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/myazi" element={<Myazi />} />
