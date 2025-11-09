@@ -4,6 +4,9 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App.tsx";
 import "./index.css";
 
+// Exposer les tests dans la console
+import './utils/testCadastralFlowValidation';
+
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
