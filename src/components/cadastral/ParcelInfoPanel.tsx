@@ -87,8 +87,8 @@ const ParcelInfoPanel: React.FC<ParcelInfoPanelProps> = ({ parcel, onClose }) =>
   }, [parcel.gps_coordinates]);
 
   const handleShowMoreData = () => {
-    // Naviguer vers la page de recherche cadastrale avec le numéro de parcelle
-    navigate(`/myazi?parcel=${parcel.parcel_number}`);
+    // Naviguer vers le catalogue de services avec le numéro de parcelle
+    navigate(`/services?parcel=${parcel.parcel_number}`);
   };
 
   return (

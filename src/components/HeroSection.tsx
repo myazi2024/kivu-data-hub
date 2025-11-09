@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, MapPin, BarChart3 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
-import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
+import CadastralSearchWithMap from '@/components/cadastral/CadastralSearchWithMap';
 import TypewriterAnimation from '@/components/TypewriterAnimation';
 import CadastralStatsCounter from '@/components/CadastralStatsCounter';
 
@@ -33,9 +33,9 @@ const HeroSection = () => {
           <TypewriterAnimation />
         </div>
 
-        {/* Barre de recherche cadastrale */}
-        <div className="w-full max-w-4xl mx-auto mb-4 sm:mb-6">
-          <CadastralSearchBar />
+        {/* Recherche cadastrale avec carte intégrée */}
+        <div className="w-full mx-auto mb-4 sm:mb-6">
+          <CadastralSearchWithMap />
         </div>
 
         {/* Compteur de statistiques cadastrales */}
