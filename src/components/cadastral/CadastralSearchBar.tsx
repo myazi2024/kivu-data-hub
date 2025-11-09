@@ -1,22 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Search, X, MapPin, FileText, AlertCircle, Info } from 'lucide-react';
+import { Search, X, MapPin, FileText, AlertCircle, SearchIcon, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import { useSearchConfig } from '@/hooks/useSearchConfig';
 import CadastralResultsDialog from './CadastralResultsDialog';
+import CadastralContributionDialog from './CadastralContributionDialog';
+import CCCIntroDialog from './CCCIntroDialog';
 
 const FIXED_TEXT = "Ex: ";
 
 const CadastralSearchBar = () => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
+  const [showContributionDialog, setShowContributionDialog] = useState(false);
+  const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   
   const {
     searchQuery,
@@ -298,11 +304,61 @@ const CadastralSearchBar = () => {
           </div>
 
 
-          {/* Message d'erreur */}
+          {/* Message d'erreur avec option de contribution */}
           {error && (
-            <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3 animate-fade-in">
-              <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-destructive">{error}</p>
+            <div className="space-y-3 animate-fade-in">
+              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
+                <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-destructive">{error}</p>
+              </div>
+              
+              {error.includes(errorMessages.not_found) && (
+                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 animate-fade-in shadow-sm hover:shadow-md transition-all duration-300">
+                  <p className="text-sm text-foreground leading-relaxed">
+                    <strong className="block">Vérifiez manuellement notre base de données. Cliquez sur le bouton "Recherche manuelle" pour continuer.</strong>
+                  </p>
+                  
+                  <div className="flex items-start gap-3 py-2">
+                    <Checkbox 
+                      id="terms-acceptance"
+                      checked={termsAccepted}
+                      onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
+                      className="mt-1"
+                    />
+                    <label 
+                      htmlFor="terms-acceptance" 
+                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
+                    >
+                      J'accepte les{' '}
+                      <a 
+                        href="/about-ccc" 
+                        target="_blank"
+                        className="text-primary hover:underline font-medium"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        termes et conditions d'utilisation
+                      </a>
+                      {' '}et je certifie que les informations que je fournirai sont exactes.
+                    </label>
+                  </div>
+                  
+                  <Button 
+                    onClick={() => setShowIntroDialog(true)}
+                    disabled={!termsAccepted}
+                    className={`w-full h-14 text-lg font-semibold group relative overflow-hidden transition-all duration-500 shadow-lg ${
+                      termsAccepted 
+                        ? 'bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]' 
+                        : 'bg-gradient-to-r from-muted via-muted to-muted cursor-not-allowed opacity-60'
+                    }`}
+                  >
+                    {termsAccepted && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                    )}
+                    <SearchIcon className={`mr-2 h-5 w-5 relative z-10 transition-transform duration-300 ${termsAccepted ? 'group-hover:scale-110' : ''}`} />
+                    <span className="font-semibold relative z-10">Recherche manuelle</span>
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -316,6 +372,24 @@ const CadastralSearchBar = () => {
           onClose={handleCloseResults}
         />
       )}
+
+      {/* Dialog d'introduction CCC */}
+      <CCCIntroDialog
+        open={showIntroDialog}
+        onOpenChange={setShowIntroDialog}
+        onContinue={() => {
+          setShowIntroDialog(false);
+          setShowContributionDialog(true);
+        }}
+        parcelNumber={searchQuery}
+      />
+
+      {/* Dialog de contribution */}
+      <CadastralContributionDialog
+        open={showContributionDialog}
+        onOpenChange={setShowContributionDialog}
+        parcelNumber={searchQuery}
+      />
     </div>
   );
 };
