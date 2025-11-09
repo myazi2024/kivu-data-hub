@@ -13,7 +13,6 @@ import Publications from "./pages/Publications";
 import Auth from "./pages/Auth";
 import Map from "./pages/Map";
 import CadastralSearchPage from "./pages/CadastralSearchPage";
-import TestCadastral from "./pages/TestCadastral";
 import Admin from "./pages/Admin";
 import Myazi from "./pages/Myazi";
 import JoinUs from "./pages/JoinUs";
@@ -60,7 +59,6 @@ const App = () => (
               <Route path="/articles/:slug" element={<ArticleDetail />} />
               <Route path="/about-ccc" element={<AboutCCC />} />
               <Route path="/about-discount-codes" element={<AboutDiscountCodes />} />
-              <Route path="/test-cadastral" element={<TestCadastral />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

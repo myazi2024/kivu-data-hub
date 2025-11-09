@@ -298,15 +298,12 @@ const CadastralSearchWithMap = () => {
 
   const inputStatus = getInputStatus();
 
-  // Sélectionner automatiquement la parcelle quand des résultats sont trouvés
+  // Afficher le dialog quand des résultats sont trouvés
   React.useEffect(() => {
-    if (searchResult) {
-      const parcel = parcels.find(p => p.parcel_number === searchResult.parcel.parcel_number);
-      if (parcel) {
-        setSelectedParcel(parcel);
-      }
+    if (searchResult && !showResultsDialog) {
+      setShowResultsDialog(true);
     }
-  }, [searchResult, parcels]);
+  }, [searchResult, showResultsDialog]);
 
   const mapHeight = searchQuery || selectedParcel ? 'h-[500px] md:h-[600px]' : 'h-[350px] md:h-[400px]';
 
@@ -511,7 +508,7 @@ const CadastralSearchWithMap = () => {
 
       {/* Carte intégrée */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-        <div className={`${selectedParcel ? 'lg:col-span-2' : 'col-span-1 lg:col-span-3'}`}>
+        <div className="lg:col-span-2">
           <Card className="overflow-hidden shadow-lg">
             <div className={`relative ${mapHeight} transition-all duration-300`}>
               {mapLoading && (
@@ -534,9 +531,30 @@ const CadastralSearchWithMap = () => {
             />
           </div>
         )}
+
+        {/* Message si aucune parcelle sélectionnée sur mobile */}
+        {!selectedParcel && (
+          <div className="lg:hidden">
+            <Card className="p-4 border-dashed border-2 border-primary/20 bg-primary/5">
+              <div className="text-center space-y-2">
+                <MapPin className="h-8 w-8 text-primary mx-auto" />
+                <p className="text-sm text-muted-foreground">
+                  Cliquez sur une parcelle pour afficher ses détails
+                </p>
+              </div>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Dialogs */}
+      {searchResult && (
+        <CadastralResultsDialog
+          result={searchResult}
+          isOpen={showResultsDialog}
+          onClose={handleCloseResults}
+        />
+      )}
 
       <CCCIntroDialog
         open={showIntroDialog}
