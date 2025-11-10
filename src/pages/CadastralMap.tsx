@@ -104,6 +104,102 @@ const CadastralMap = () => {
     setSelectedParcel(null);
   };
 
+  // Calculer la distance entre deux points GPS (en mètres)
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const R = 6371000; // Rayon de la Terre en mètres
+    const φ1 = lat1 * Math.PI / 180;
+    const φ2 = lat2 * Math.PI / 180;
+    const Δφ = (lat2 - lat1) * Math.PI / 180;
+    const Δλ = (lon2 - lon1) * Math.PI / 180;
+
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
+    return R * c; // Distance en mètres
+  };
+
+  // Composant pour afficher le croquis de la parcelle avec dimensions
+  const ParcelSketch = ({ parcel }: { parcel: ParcelData }) => {
+    if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) {
+      return null;
+    }
+
+    const coords = parcel.gps_coordinates;
+    const distances: number[] = [];
+    
+    // Calculer les distances entre chaque point consécutif
+    for (let i = 0; i < coords.length; i++) {
+      const nextIndex = (i + 1) % coords.length;
+      const dist = calculateDistance(
+        coords[i].lat, coords[i].lng,
+        coords[nextIndex].lat, coords[nextIndex].lng
+      );
+      distances.push(dist);
+    }
+
+    // Normaliser les coordonnées pour le SVG (150x150)
+    const padding = 20;
+    const size = 150;
+    const lats = coords.map((c: any) => c.lat);
+    const lngs = coords.map((c: any) => c.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    
+    const scaleX = (size - 2 * padding) / (maxLng - minLng || 1);
+    const scaleY = (size - 2 * padding) / (maxLat - minLat || 1);
+    const scale = Math.min(scaleX, scaleY);
+
+    const points = coords.map((c: any) => ({
+      x: padding + (c.lng - minLng) * scale,
+      y: size - padding - (c.lat - minLat) * scale
+    }));
+
+    const pathData = points.map((p: any, i: number) => 
+      `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+    ).join(' ') + ' Z';
+
+    return (
+      <div className="space-y-2">
+        <p className="text-xs text-muted-foreground font-medium">Croquis de la parcelle:</p>
+        <svg viewBox={`0 0 ${size} ${size}`} className="w-full h-auto border border-border rounded bg-muted/20">
+          <path
+            d={pathData}
+            fill="hsl(var(--primary) / 0.1)"
+            stroke="hsl(var(--primary))"
+            strokeWidth="2"
+          />
+          {points.map((p: any, i: number) => {
+            const nextIndex = (i + 1) % points.length;
+            const next = points[nextIndex];
+            const midX = (p.x + next.x) / 2;
+            const midY = (p.y + next.y) / 2;
+            const distance = distances[i];
+
+            return (
+              <g key={i}>
+                <circle cx={p.x} cy={p.y} r="3" fill="hsl(var(--primary))" />
+                <text
+                  x={midX}
+                  y={midY}
+                  fontSize="9"
+                  fill="hsl(var(--foreground))"
+                  textAnchor="middle"
+                  className="font-semibold"
+                >
+                  {distance.toFixed(1)}m
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+      </div>
+    );
+  };
+
   // Initialiser la carte (uniquement quand loading = false)
   useEffect(() => {
     if (loading) return; // Attendre que les données soient chargées
@@ -352,10 +448,6 @@ const CadastralMap = () => {
                 </div>
                 <div className="space-y-2">
                   <div>
-                    <span className="text-muted-foreground">Propriétaire:</span>
-                    <p className="font-medium">{selectedParcel.current_owner_name}</p>
-                  </div>
-                  <div>
                     <span className="text-muted-foreground">Surface:</span>
                     <p className="font-medium">{selectedParcel.area_sqm?.toLocaleString()} m²</p>
                   </div>
@@ -368,6 +460,7 @@ const CadastralMap = () => {
                     </p>
                   </div>
                 </div>
+                <ParcelSketch parcel={selectedParcel} />
                 <Button
                   onClick={() => navigate('/services')}
                   className="w-full"
