@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,6 +25,7 @@ interface ParcelData {
 }
 
 const CadastralMap = () => {
+  const navigate = useNavigate();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const [parcels, setParcels] = useState<ParcelData[]>([]);
@@ -366,6 +368,13 @@ const CadastralMap = () => {
                     </p>
                   </div>
                 </div>
+                <Button
+                  onClick={() => navigate('/services')}
+                  className="w-full"
+                  size="sm"
+                >
+                  Afficher plus de données
+                </Button>
               </CardContent>
             </Card>
           </div>
