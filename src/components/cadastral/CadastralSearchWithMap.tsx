@@ -309,18 +309,15 @@ const CadastralSearchWithMap = () => {
   // }, [searchResult, showResultsDialog]);
 
   const mapHeight = searchQuery || selectedParcel ? 'h-[500px] md:h-[600px]' : 'h-[350px] md:h-[400px]';
-  const isSearchActive = searchResult || selectedParcel;
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-2 sm:py-4">
-      {/* Barre de recherche principale - Animation de décalage vers le haut */}
-      <Card className={`p-2 sm:p-4 shadow-lg border-border bg-background/95 backdrop-blur transition-all duration-500 ease-in-out ${
-        isSearchActive ? 'mb-2 sm:mb-3 scale-[0.98] sm:scale-100' : 'mb-3 sm:mb-4'
-      }`}>
-        <div className={`flex flex-col transition-all duration-300 ${isSearchActive ? 'space-y-2' : 'space-y-3'}`}>
-          <div className="flex items-center gap-1.5 sm:gap-2 text-foreground">
-            <FileText className={`transition-all duration-300 ${isSearchActive ? 'h-3.5 w-3.5 sm:h-4 sm:w-4' : 'h-4 w-4 sm:h-5 sm:w-5'} text-primary`} />
-            <h3 className={`font-semibold transition-all duration-300 ${isSearchActive ? 'text-xs sm:text-sm' : 'text-sm sm:text-base'}`}>Recherche cadastrale</h3>
+    <div className="w-full max-w-7xl mx-auto px-2 sm:px-4 py-4 sm:py-6">
+      {/* Barre de recherche principale */}
+      <Card className="p-3 sm:p-4 shadow-lg border-border bg-background/95 backdrop-blur mb-3 sm:mb-4">
+        <div className="flex flex-col space-y-3">
+          <div className="flex items-center gap-2 text-foreground">
+            <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            <h3 className="font-semibold text-sm sm:text-base">Recherche cadastrale</h3>
             
             <Popover>
               <PopoverTrigger asChild>
@@ -432,9 +429,7 @@ const CadastralSearchWithMap = () => {
                 setIsFocused(false);
               }}
               placeholder="Rechercher une parcelle..."
-              className={`pl-10 pr-4 transition-all duration-300 ${
-                isSearchActive ? 'h-9 sm:h-10 text-xs' : 'h-11 sm:h-12 text-xs sm:text-sm'
-              } font-mono tracking-wide ${
+              className={`pl-10 pr-4 h-11 sm:h-12 text-xs sm:text-sm font-mono tracking-wide ${
                 inputStatus === 'error' ? 'border-destructive focus-visible:ring-destructive' :
                 inputStatus === 'success' ? 'border-green-500 focus-visible:ring-green-500' :
                 'border-input'
@@ -475,16 +470,16 @@ const CadastralSearchWithMap = () => {
                     <strong className="block">Vérifiez manuellement notre base de données. Cliquez sur le bouton "Recherche manuelle" pour continuer.</strong>
                   </p>
                   
-                  <div className="flex items-start gap-2 py-1.5">
+                  <div className="flex items-start gap-3 py-2">
                     <Checkbox 
                       id="terms-acceptance"
                       checked={termsAccepted}
                       onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
-                      className="mt-0.5"
+                      className="mt-1"
                     />
                     <label 
                       htmlFor="terms-acceptance" 
-                      className="text-[11px] sm:text-xs text-muted-foreground leading-tight cursor-pointer"
+                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
                     >
                       J'accepte les{' '}
                       <a 
@@ -493,19 +488,18 @@ const CadastralSearchWithMap = () => {
                         className="text-primary hover:underline font-medium"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        termes et conditions
+                        termes et conditions d'utilisation
                       </a>
-                      {' '}et certifie l'exactitude des informations.
+                      {' '}et je certifie que les informations que je fournirai sont exactes.
                     </label>
                   </div>
                   
                   <Button 
                     onClick={() => setShowIntroDialog(true)}
                     disabled={!termsAccepted}
-                    className={`w-full h-9 text-xs sm:text-sm gap-1.5 sm:gap-2 ${termsAccepted ? 'bg-primary hover:bg-primary/90' : 'bg-muted cursor-not-allowed'}`}
-                    size="sm"
+                    className={`w-full ${termsAccepted ? 'bg-primary hover:bg-primary/90' : 'bg-muted cursor-not-allowed'}`}
                   >
-                    <SearchIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                    <SearchIcon className="mr-2 h-4 w-4" />
                     Recherche manuelle
                   </Button>
                 </div>
@@ -515,12 +509,10 @@ const CadastralSearchWithMap = () => {
         </div>
       </Card>
 
-      {/* Carte cadastrale - Animation d'expansion */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
+      {/* Carte intégrée */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
         <div className="lg:col-span-2">
-          <Card className={`overflow-hidden shadow-lg transition-all duration-500 ease-in-out ${
-            isSearchActive ? 'animate-fade-in' : ''
-          }`}>
+          <Card className="overflow-hidden shadow-lg">
             <div className={`relative ${mapHeight} transition-all duration-300`}>
               {mapLoading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/50 backdrop-blur-sm z-10">
