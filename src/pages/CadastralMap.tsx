@@ -158,6 +158,22 @@ const CadastralMap = () => {
     };
   }, [loading]);
 
+  // Fonction pour calculer la distance entre deux points GPS (Haversine)
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371e3; // Rayon de la Terre en mètres
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance en mètres
+  };
+
   // Afficher les parcelles filtrées sur la carte
   useEffect(() => {
     const updateMapWithParcels = async () => {
@@ -190,6 +206,40 @@ const CadastralMap = () => {
               fillColor: '#ef4444',
               fillOpacity: 0.2
             }).addTo(map);
+
+            // Ajouter les dimensions sur chaque côté
+            parcel.gps_coordinates.forEach((coord: any, index: number) => {
+              const nextIndex = (index + 1) % parcel.gps_coordinates.length;
+              const nextCoord = parcel.gps_coordinates[nextIndex];
+              
+              // Calculer la distance
+              const distance = calculateDistance(coord.lat, coord.lng, nextCoord.lat, nextCoord.lng);
+              
+              // Calculer le point médian
+              const midLat = (coord.lat + nextCoord.lat) / 2;
+              const midLng = (coord.lng + nextCoord.lng) / 2;
+              
+              // Créer une icône personnalisée pour afficher la dimension
+              const dimensionIcon = L.divIcon({
+                className: 'dimension-label',
+                html: `<div style="
+                  background: white;
+                  padding: 2px 6px;
+                  border-radius: 4px;
+                  border: 1px solid #ef4444;
+                  font-size: 11px;
+                  font-weight: 600;
+                  color: #ef4444;
+                  white-space: nowrap;
+                  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                ">${distance.toFixed(1)} m</div>`,
+                iconSize: [60, 20],
+                iconAnchor: [30, 10]
+              });
+              
+              // Ajouter le marqueur de dimension
+              L.marker([midLat, midLng], { icon: dimensionIcon }).addTo(map);
+            });
 
             polygon.bindPopup(`
               <div style="font-family: system-ui; min-width: 200px;">
@@ -351,10 +401,6 @@ const CadastralMap = () => {
                   <p className="font-mono font-bold text-primary">{selectedParcel.parcel_number}</p>
                 </div>
                 <div className="space-y-2">
-                  <div>
-                    <span className="text-muted-foreground">Propriétaire:</span>
-                    <p className="font-medium">{selectedParcel.current_owner_name}</p>
-                  </div>
                   <div>
                     <span className="text-muted-foreground">Surface:</span>
                     <p className="font-medium">{selectedParcel.area_sqm?.toLocaleString()} m²</p>
