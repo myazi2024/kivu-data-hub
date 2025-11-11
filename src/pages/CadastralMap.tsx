@@ -241,18 +241,6 @@ const CadastralMap = () => {
               L.marker([midLat, midLng], { icon: dimensionIcon }).addTo(map);
             });
 
-            polygon.bindPopup(`
-              <div style="font-family: system-ui; min-width: 200px;">
-                <strong style="font-size: 14px; color: #ef4444;">📍 ${parcel.parcel_number}</strong><br>
-                <div style="margin-top: 8px; font-size: 12px;">
-                  <strong>Propriétaire:</strong> ${parcel.current_owner_name || 'N/A'}<br>
-                  <strong>Surface:</strong> ${parcel.area_sqm?.toLocaleString() || 'N/A'} m²<br>
-                  <strong>Localisation:</strong><br>
-                  ${parcel.province || 'N/A'} - ${parcel.ville || 'N/A'}<br>
-                  ${parcel.commune || ''} ${parcel.quartier || ''}
-                </div>
-              </div>
-            `);
 
             polygon.on('click', () => {
               setSelectedParcel(parcel);
@@ -262,18 +250,6 @@ const CadastralMap = () => {
           } else if (parcel.latitude && parcel.longitude) {
             // Si pas de polygone mais des coordonnées, ajouter un marqueur
             const marker = L.marker([parcel.latitude, parcel.longitude]).addTo(map);
-            marker.bindPopup(`
-              <div style="font-family: system-ui; min-width: 200px;">
-                <strong style="font-size: 14px; color: #ef4444;">📍 ${parcel.parcel_number}</strong><br>
-                <div style="margin-top: 8px; font-size: 12px;">
-                  <strong>Propriétaire:</strong> ${parcel.current_owner_name || 'N/A'}<br>
-                  <strong>Surface:</strong> ${parcel.area_sqm?.toLocaleString() || 'N/A'} m²<br>
-                  <strong>Localisation:</strong><br>
-                  ${parcel.province || 'N/A'} - ${parcel.ville || 'N/A'}<br>
-                  ${parcel.commune || ''} ${parcel.quartier || ''}
-                </div>
-              </div>
-            `);
 
             marker.on('click', () => {
               setSelectedParcel(parcel);
@@ -351,7 +327,7 @@ const CadastralMap = () => {
                       >
                         <div className="font-mono font-semibold text-sm">{parcel.parcel_number}</div>
                         <div className="text-xs text-muted-foreground">
-                          {parcel.current_owner_name} • {parcel.ville || parcel.province}
+                          {parcel.ville || parcel.province}
                         </div>
                       </button>
                     ))}
