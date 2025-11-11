@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
-import { X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { X, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
@@ -21,6 +22,7 @@ interface CadastralResultsDialogProps {
   onClose: () => void;
   selectedServices?: string[];
   onPaymentSuccess?: (services: string[]) => void;
+  fromMap?: boolean;
 }
 
 const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({ 
@@ -28,8 +30,10 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
   isOpen, 
   onClose,
   selectedServices = [],
-  onPaymentSuccess
+  onPaymentSuccess,
+  fromMap = false
 }) => {
+  const navigate = useNavigate();
   const [paidServices, setPaidServices] = React.useState<string[]>(selectedServices);
   const [showCloseConfirm, setShowCloseConfirm] = React.useState(false);
 
@@ -57,7 +61,15 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
 
   const confirmClose = () => {
     setShowCloseConfirm(false);
-    onClose();
+    if (fromMap) {
+      navigate('/cadastral-map');
+    } else {
+      onClose();
+    }
+  };
+  
+  const handleBackToMap = () => {
+    navigate('/cadastral-map');
   };
 
   const cancelClose = () => {
@@ -100,14 +112,26 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
               <span className="font-mono">{result.parcel.parcel_number}</span>
             </p>
           </div>
-          <Button 
-            variant="outline"
-            onClick={handleClose}
-            className="shrink-0 ml-2 h-9 w-9 p-0 md:w-auto md:px-3 md:gap-2 border-2"
-          >
-            <X className="h-4 w-4" />
-            <span className="hidden md:inline">Fermer</span>
-          </Button>
+          <div className="flex gap-2 shrink-0 ml-2">
+            {fromMap && (
+              <Button 
+                variant="outline"
+                onClick={handleBackToMap}
+                className="h-9 w-9 p-0 md:w-auto md:px-3 md:gap-2 border-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden md:inline">Retour carte</span>
+              </Button>
+            )}
+            <Button 
+              variant="outline"
+              onClick={handleClose}
+              className="h-9 w-9 p-0 md:w-auto md:px-3 md:gap-2 border-2"
+            >
+              <X className="h-4 w-4" />
+              <span className="hidden md:inline">Fermer</span>
+            </Button>
+          </div>
         </div>
         
         {/* Contenu scrollable - Mobile optimized */}

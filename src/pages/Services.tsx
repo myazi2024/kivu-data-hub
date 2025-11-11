@@ -1,6 +1,8 @@
 import React from 'react';
+import { useSearchParams } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
+import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Map, 
@@ -14,6 +16,17 @@ import {
 } from 'lucide-react';
 
 const Services = () => {
+  const [searchParams] = useSearchParams();
+  const [showSearchBar, setShowSearchBar] = React.useState(false);
+  
+  // Détecter si on arrive avec un paramètre de recherche
+  React.useEffect(() => {
+    const hasSearch = searchParams.get('search');
+    if (hasSearch) {
+      setShowSearchBar(true);
+    }
+  }, [searchParams]);
+  
   const services = [
     {
       icon: Map,
@@ -70,13 +83,22 @@ const Services = () => {
       <Navigation />
       <main className="pt-20 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h1 className="text-4xl font-bold text-foreground mb-6">Nos Services</h1>
-            <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-              Nos outils et livrables sont conçus pour répondre aux enjeux urbains concrets. 
-              Nous proposons des solutions adaptées aux besoins des territoires congolais.
-            </p>
-          </div>
+          {/* Afficher la barre de recherche cadastrale si paramètre search présent */}
+          {showSearchBar && (
+            <div className="mb-8">
+              <CadastralSearchBar />
+            </div>
+          )}
+          
+          {!showSearchBar && (
+            <div className="text-center mb-16">
+              <h1 className="text-4xl font-bold text-foreground mb-6">Nos Services</h1>
+              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+                Nos outils et livrables sont conçus pour répondre aux enjeux urbains concrets. 
+                Nous proposons des solutions adaptées aux besoins des territoires congolais.
+              </p>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => {

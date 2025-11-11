@@ -25,6 +25,7 @@ const CadastralSearchBar = () => {
   const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [fromMap, setFromMap] = useState(false);
   
   const {
     searchQuery,
@@ -39,10 +40,12 @@ const CadastralSearchBar = () => {
   // Lire le paramètre de recherche depuis l'URL au montage du composant
   useEffect(() => {
     const urlSearchQuery = searchParams.get('search');
+    const fromParam = searchParams.get('from');
     if (urlSearchQuery) {
       setSearchQuery(urlSearchQuery.toUpperCase());
       setIsExpanded(true);
-      // Nettoyer le paramètre de l'URL après l'avoir lu
+      setFromMap(fromParam === 'map');
+      // Nettoyer les paramètres de l'URL après les avoir lus
       setSearchParams({});
     }
   }, []);
@@ -383,6 +386,7 @@ const CadastralSearchBar = () => {
           result={searchResult}
           isOpen={showResultsDialog}
           onClose={handleCloseResults}
+          fromMap={fromMap}
         />
       )}
 
