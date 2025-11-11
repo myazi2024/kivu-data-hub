@@ -1,7 +1,6 @@
 import React from 'react';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
-import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { 
   Map, 
@@ -71,11 +70,6 @@ const Services = () => {
       <Navigation />
       <main className="pt-20 pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Catalogue de recherche cadastrale */}
-          <div className="mb-12">
-            <CadastralSearchBar />
-          </div>
-
           <div className="text-center mb-16">
             <h1 className="text-4xl font-bold text-foreground mb-6">Nos Services</h1>
             <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
