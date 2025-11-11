@@ -403,7 +403,7 @@ const CadastralMap = () => {
                   </div>
                 </div>
                 <Button
-                  onClick={() => navigate('/services')}
+                  onClick={() => navigate(`/services?parcel=${encodeURIComponent(selectedParcel.parcel_number)}`)}
                   className="w-full"
                   size="sm"
                 >
