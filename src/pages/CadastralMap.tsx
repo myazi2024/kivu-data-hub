@@ -345,6 +345,18 @@ const CadastralMap = () => {
                     </span>
                   )}
                 </div>
+
+                {/* Bouton recherche approfondie si aucun résultat */}
+                {searchQuery && filteredParcels.length === 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => navigate('/services')}
+                    className="w-full text-xs"
+                  >
+                    Recherche approfondie
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
