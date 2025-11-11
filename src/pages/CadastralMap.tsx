@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Loader2, Search, X } from 'lucide-react';
 import { toast } from 'sonner';
+import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
+import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import 'leaflet/dist/leaflet.css';
 
 interface ParcelData {
@@ -34,6 +36,8 @@ const CadastralMap = () => {
   const [selectedParcel, setSelectedParcel] = useState<ParcelData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
+  const [showIntroDialog, setShowIntroDialog] = useState(false);
+  const [showContributionDialog, setShowContributionDialog] = useState(false);
 
   // Charger toutes les parcelles depuis Supabase
   useEffect(() => {
@@ -351,7 +355,7 @@ const CadastralMap = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => navigate('/services')}
+                    onClick={() => setShowIntroDialog(true)}
                     className="w-full text-xs"
                   >
                     Recherche approfondie
@@ -433,6 +437,24 @@ const CadastralMap = () => {
           </Card>
         </div>
       </main>
+
+      {/* Dialog d'introduction CCC */}
+      <CCCIntroDialog
+        open={showIntroDialog}
+        onOpenChange={setShowIntroDialog}
+        onContinue={() => {
+          setShowIntroDialog(false);
+          setShowContributionDialog(true);
+        }}
+        parcelNumber={searchQuery}
+      />
+
+      {/* Dialog de contribution */}
+      <CadastralContributionDialog
+        open={showContributionDialog}
+        onOpenChange={setShowContributionDialog}
+        parcelNumber={searchQuery}
+      />
     </div>
   );
 };
