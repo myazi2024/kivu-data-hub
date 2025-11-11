@@ -512,6 +512,51 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </CardContent>
                 </Card>
 
+                 {/* Propriétaire actuel - Mobile First */}
+                <Card className="border-0 bg-gradient-to-br from-background to-secondary/5">
+                  <CardContent className="p-3">
+                    <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
+                      <User className="h-3 w-3" />
+                      Propriétaire Actuel
+                    </h4>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-start gap-2">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">Nom:</span>
+                        <span className="text-xs font-medium text-right break-words leading-tight">{parcel.current_owner_name}</span>
+                      </div>
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-[10px] text-muted-foreground flex-shrink-0">Statut:</span>
+                        <span className="text-xs font-medium bg-secondary/10 px-1.5 py-0.5 rounded text-right break-words">{parcel.current_owner_legal_status}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[10px] text-muted-foreground">Depuis:</span>
+                        <span className="text-xs font-medium text-primary">{formatDate(parcel.current_owner_since)}</span>
+                      </div>
+                      {parcel.whatsapp_number && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-[10px] text-muted-foreground">WhatsApp:</span>
+                          <Button variant="outline" size="sm" className="h-5 text-xs px-2" asChild>
+                            <a href={`https://wa.me/${parcel.whatsapp_number.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-2 w-2 mr-1" />
+                              {parcel.whatsapp_number}
+                            </a>
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Pièce jointe: Document du propriétaire actuel */}
+                    {parcel.owner_document_url && (
+                      <div className="mt-3 pt-2 border-t border-muted/30">
+                        <DocumentAttachment 
+                          documentUrl={parcel.owner_document_url}
+                          label="Document d'identité"
+                          description="Justificatif du propriétaire actuel"
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* Informations sur la construction - Mobile First */}
                 {(parcel.construction_type || parcel.construction_nature || parcel.declared_usage || building_permits.length > 0) && (
