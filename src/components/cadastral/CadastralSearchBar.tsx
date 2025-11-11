@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, X, MapPin, FileText, AlertCircle, SearchIcon, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import CCCIntroDialog from './CCCIntroDialog';
 const FIXED_TEXT = "Ex: ";
 
 const CadastralSearchBar = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isExpanded, setIsExpanded] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
@@ -33,6 +35,17 @@ const CadastralSearchBar = () => {
     clearSearch,
     validateParcelNumber
   } = useCadastralSearch();
+
+  // Lire le paramètre de recherche depuis l'URL au montage du composant
+  useEffect(() => {
+    const urlSearchQuery = searchParams.get('search');
+    if (urlSearchQuery) {
+      setSearchQuery(urlSearchQuery.toUpperCase());
+      setIsExpanded(true);
+      // Nettoyer le paramètre de l'URL après l'avoir lu
+      setSearchParams({});
+    }
+  }, []);
 
   const { 
     getAnimatedExamples, 
