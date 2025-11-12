@@ -186,6 +186,31 @@ const CadastralMap = () => {
     return R * c; // Distance en mètres
   };
 
+  // Fonction pour calculer la surface d'un polygone à partir des coordonnées GPS (Shoelace formula)
+  const calculateAreaFromCoordinates = (coordinates: Array<{ lat: number; lng: number }>): number => {
+    if (!coordinates || coordinates.length < 3) return 0;
+
+    // Convertir en coordonnées cartésiennes (projection approximative)
+    const toXY = (lat: number, lng: number) => {
+      const R = 6371000; // Rayon de la Terre en mètres
+      const x = R * (lng * Math.PI / 180) * Math.cos(lat * Math.PI / 180);
+      const y = R * (lat * Math.PI / 180);
+      return { x, y };
+    };
+
+    const points = coordinates.map(coord => toXY(coord.lat, coord.lng));
+
+    // Formule de Shoelace pour calculer l'aire
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+      const j = (i + 1) % points.length;
+      area += points[i].x * points[j].y;
+      area -= points[j].x * points[i].y;
+    }
+
+    return Math.abs(area / 2);
+  };
+
   // Afficher les parcelles filtrées sur la carte
   useEffect(() => {
     const updateMapWithParcels = async () => {
@@ -417,7 +442,12 @@ const CadastralMap = () => {
                 <div className="space-y-2">
                   <div>
                     <span className="text-muted-foreground">Surface:</span>
-                    <p className="font-medium">{selectedParcel.area_sqm?.toLocaleString()} m²</p>
+                    <p className="font-medium">
+                      {selectedParcel.gps_coordinates && selectedParcel.gps_coordinates.length >= 3
+                        ? calculateAreaFromCoordinates(selectedParcel.gps_coordinates).toLocaleString(undefined, { maximumFractionDigits: 2 })
+                        : selectedParcel.area_sqm?.toLocaleString()
+                      } m²
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Localisation:</span>
