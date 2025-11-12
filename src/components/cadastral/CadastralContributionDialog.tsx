@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -2115,52 +2117,61 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   if (showSuccess) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="sm:max-w-md border-0 shadow-2xl rounded-xl">
-          <div className="flex flex-col items-center justify-center py-8 space-y-6 animate-fade-in">
-            <div className="relative">
-              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse" />
-              <CheckCircle2 className="h-20 w-20 text-primary relative animate-scale-in" />
-            </div>
-            <DialogTitle className="text-2xl text-center font-semibold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              Merci pour votre contribution !
-            </DialogTitle>
-            <DialogDescription className="text-center text-base">
-              Votre contribution pour la parcelle <strong className="text-foreground">{parcelNumber}</strong> a été enregistrée.
-              Elle sera vérifiée par notre équipe.
-            </DialogDescription>
-            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-6 rounded-xl w-full border border-primary/20 shadow-lg backdrop-blur-sm animate-scale-in">
-              <div className="flex items-center justify-center mb-4">
-                <CheckCircle2 className="h-12 w-12 text-primary" />
+        <DialogPrimitive.Portal>
+          <DialogPrimitive.Overlay 
+            className="fixed inset-0 z-[10000] bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" 
+          />
+          <DialogPrimitive.Content
+            className={cn(
+              "fixed left-[50%] top-[50%] z-[10000] grid w-[calc(100%-2rem)] max-w-md translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl sm:max-w-md"
+            )}
+          >
+            <div className="flex flex-col items-center justify-center py-4 sm:py-8 space-y-4 sm:space-y-6 animate-fade-in">
+              <div className="relative">
+                <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full animate-pulse" />
+                <CheckCircle2 className="h-16 w-16 sm:h-20 sm:w-20 text-primary relative animate-scale-in" />
               </div>
-              <p className="text-lg font-semibold text-center text-foreground mb-2">
-                Contribution en cours de validation
-              </p>
-              <p className="text-sm text-muted-foreground text-center mb-4">
-                Notre équipe examine actuellement vos informations pour garantir leur exactitude.
-              </p>
-              <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span>Votre code CCC sera généré après approbation</span>
+              <DialogPrimitive.Title className="text-xl sm:text-2xl text-center font-semibold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                Merci pour votre contribution !
+              </DialogPrimitive.Title>
+              <DialogPrimitive.Description className="text-center text-sm sm:text-base px-2">
+                Votre contribution pour la parcelle <strong className="text-foreground">{parcelNumber}</strong> a été enregistrée.
+                Elle sera vérifiée par notre équipe.
+              </DialogPrimitive.Description>
+              <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-4 sm:p-6 rounded-xl w-full border border-primary/20 shadow-lg backdrop-blur-sm animate-scale-in">
+                <div className="flex items-center justify-center mb-3 sm:mb-4">
+                  <CheckCircle2 className="h-10 w-10 sm:h-12 sm:w-12 text-primary" />
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span>Délai de validation : 24 à 48 heures</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 text-primary" />
-                  <span>Vous serez notifié par email</span>
+                <p className="text-base sm:text-lg font-semibold text-center text-foreground mb-2">
+                  Contribution en cours de validation
+                </p>
+                <p className="text-xs sm:text-sm text-muted-foreground text-center mb-3 sm:mb-4">
+                  Notre équipe examine actuellement vos informations pour garantir leur exactitude.
+                </p>
+                <div className="flex flex-col gap-2 text-xs sm:text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span>Votre code CCC sera généré après approbation</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span>Délai de validation : 24 à 48 heures</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                    <span>Vous serez notifié par email</span>
+                  </div>
                 </div>
               </div>
+              <p className="text-xs sm:text-sm text-center text-muted-foreground max-w-sm px-2">
+                Consultez l'onglet "Codes CCC" de votre tableau de bord pour suivre l'état de votre contribution.
+              </p>
+              <Button onClick={handleClose} className="w-full shadow-lg hover:shadow-xl transition-all">
+                Fermer
+              </Button>
             </div>
-            <p className="text-sm text-center text-muted-foreground max-w-sm">
-              Consultez l'onglet "Codes CCC" de votre tableau de bord pour suivre l'état de votre contribution.
-            </p>
-            <Button onClick={handleClose} className="w-full shadow-lg hover:shadow-xl transition-all">
-              Fermer
-            </Button>
-          </div>
-        </DialogContent>
+          </DialogPrimitive.Content>
+        </DialogPrimitive.Portal>
       </Dialog>
     );
   }
