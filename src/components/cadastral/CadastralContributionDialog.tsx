@@ -3875,12 +3875,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               />
                               <Button
                                 type="button"
-                                variant="outline"
-                                className="w-full"
+                                variant="seloger"
+                                size={isMobile ? "icon" : "default"}
+                                className={isMobile ? "" : "w-full"}
                                 onClick={() => document.getElementById('photo-camera-input')?.click()}
                               >
-                                <Camera className="h-4 w-4 mr-2" />
-                                Prendre une photo
+                                <Camera className="h-4 w-4" />
+                                {!isMobile && <span className="ml-2">Prendre une photo</span>}
                               </Button>
                             </div>
                             <div className="flex-1">
@@ -3917,12 +3918,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               />
                               <Button
                                 type="button"
-                                variant="outline"
-                                className="w-full"
+                                variant="seloger"
+                                size={isMobile ? "icon" : "default"}
+                                className={isMobile ? "" : "w-full"}
                                 onClick={() => document.getElementById('photo-file-input')?.click()}
                               >
-                                <Upload className="h-4 w-4 mr-2" />
-                                Choisir des fichiers
+                                <Upload className="h-4 w-4" />
+                                {!isMobile && <span className="ml-2">Choisir des fichiers</span>}
                               </Button>
                             </div>
                           </div>
