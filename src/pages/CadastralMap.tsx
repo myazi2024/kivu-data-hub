@@ -436,23 +436,25 @@ const CadastralMap = () => {
             </CardContent>
           </Card>
         </div>
-
-        {/* Dialogs CCC */}
-        <CCCIntroDialog
-          open={showIntroDialog}
-          onOpenChange={setShowIntroDialog}
-          onContinue={() => {
-            setShowIntroDialog(false);
-            setShowContributionDialog(true);
-          }}
-          parcelNumber={searchQuery}
-        />
-        <CadastralContributionDialog
-          open={showContributionDialog}
-          onOpenChange={setShowContributionDialog}
-          parcelNumber={searchQuery}
-        />
       </main>
+
+      {/* Dialog d'introduction CCC */}
+      <CCCIntroDialog
+        open={showIntroDialog}
+        onOpenChange={setShowIntroDialog}
+        onContinue={() => {
+          setShowIntroDialog(false);
+          setShowContributionDialog(true);
+        }}
+        parcelNumber={searchQuery}
+      />
+
+      {/* Dialog de contribution */}
+      <CadastralContributionDialog
+        open={showContributionDialog}
+        onOpenChange={setShowContributionDialog}
+        parcelNumber={searchQuery}
+      />
     </div>
   );
 };
