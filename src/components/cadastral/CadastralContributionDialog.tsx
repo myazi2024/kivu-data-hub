@@ -2168,7 +2168,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent ref={dialogContentRef} className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-xl">
+      <DialogContent ref={dialogContentRef} className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-xl z-[9999]">
         <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent text-center sm:text-left">
           <DialogTitle className="text-base sm:text-2xl font-semibold leading-tight">
             <span className="hidden sm:inline">Contribuer aux informations cadastrales</span>
