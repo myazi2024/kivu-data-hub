@@ -2517,7 +2517,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                   {/* Owner document attachment */}
                   <div className="space-y-2 mt-3 pt-3 border-t">
-                    <Label className="text-xs">Pièce d'identité du propriétaire (optionnel)</Label>
+                    <div className="flex items-center gap-2">
+                      <Label className="text-xs">Pièce d'identité du propriétaire (optionnel)</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <p className="text-xs text-muted-foreground">
+                            La pièce d'identité du propriétaire va aider à valider votre identité en tant que propriétaire de la parcelle. 
+                            Cela renforce la crédibilité de votre contribution cadastrale.
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     {!ownerDocFile ? (
                       <Button
                         type="button"
@@ -2575,7 +2590,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
                 )}
                 
-                <div className="flex justify-center sm:justify-start">
+                <div className="flex justify-center sm:justify-start items-center gap-2">
                   <Button
                     type="button"
                     variant="ghost"
@@ -2586,6 +2601,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <Plus className="h-4 w-4" />
                     Ajouter un propriétaire
                   </Button>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80">
+                      <p className="text-xs text-muted-foreground">
+                        Si vous n'êtes pas l'unique propriétaire de la parcelle, vous pouvez ajouter un autre propriétaire. 
+                        Cela est utile dans le cas de copropriété ou de propriété partagée.
+                      </p>
+                    </PopoverContent>
+                  </Popover>
                 </div>
               </div>
             </div>
@@ -3138,16 +3166,31 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
                     )}
 
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={addBuildingPermit}
-                      className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Ajouter un permis
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={addBuildingPermit}
+                        className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter un permis
+                      </Button>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-80">
+                          <p className="text-xs text-muted-foreground">
+                            Si vous avez d'autres permis de construire ou de régularisation délivrés dans le passé, vous pouvez également les ajouter. 
+                            Veuillez respecter la logique chronologique dépendante du permis précédent (les dates doivent être cohérentes).
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
                 </div>
               )}
