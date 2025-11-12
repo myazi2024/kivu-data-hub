@@ -57,6 +57,7 @@ export interface CadastralContributionData {
   
   // Localisation
   areaSqm?: number;  // Déplacé ici depuis informations générales
+  parcelSides?: Array<{ name: string; length: string }>; // Dimensions exactes des côtés
   province?: string;
   ville?: string;
   commune?: string;
@@ -200,6 +201,7 @@ export const useCadastralContribution = () => {
           : undefined,
         
         area_sqm: data.areaSqm,
+        parcel_sides: data.parcelSides, // Dimensions exactes des côtés
         construction_type: data.constructionType,
         construction_nature: data.constructionNature,
         declared_usage: data.declaredUsage,

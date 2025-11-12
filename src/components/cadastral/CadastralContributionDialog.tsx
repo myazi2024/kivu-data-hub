@@ -1137,6 +1137,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         permitRequest: permitRequestData,
         previousPermitNumber: permitRequest.previousPermitNumber || undefined, // ✅ NOUVEAU: Ajout du numéro de permis précédent
         gpsCoordinates: gpsCoordinatesData,
+        parcelSides: parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length > 0 
+          ? parcelSides.filter(s => s.length && parseFloat(s.length) > 0) 
+          : undefined, // Dimensions exactes des côtés
       };
 
       const result = await submitContribution(dataToSubmit);

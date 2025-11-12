@@ -129,12 +129,16 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
     updateMapData();
   }, [coordinates, center, parcelNumber]); // Dépendances pour mise à jour des données
 
-  // Calculer automatiquement la surface géodésique précise
+  // Calculer la surface à partir des dimensions exactes si disponibles
   useEffect(() => {
     if (coordinates.length < 3) {
       setCalculatedSurface(null);
       return;
     }
+    
+    // Note: Cette méthode utilise toujours les GPS car nous n'avons pas accès
+    // aux dimensions exactes dans ce composant. La surface exacte devrait être
+    // calculée lors de la soumission du formulaire CCC et stockée dans area_sqm.
     
     // Fonction pour convertir degrés en radians
     const toRadians = (degrees: number) => degrees * (Math.PI / 180);

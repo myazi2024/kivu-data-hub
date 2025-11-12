@@ -16,6 +16,7 @@ interface ParcelData {
   id: string;
   parcel_number: string;
   gps_coordinates: any; // Json type from Supabase
+  parcel_sides: any; // Contient les dimensions exactes des côtés (JSONB)
   latitude: number;
   longitude: number;
   current_owner_name: string;
@@ -53,7 +54,7 @@ const CadastralMap = () => {
         setLoading(true);
         const { data, error } = await supabase
           .from('cadastral_parcels')
-          .select('id, parcel_number, gps_coordinates, latitude, longitude, current_owner_name, area_sqm, province, ville, commune, quartier')
+          .select('id, parcel_number, gps_coordinates, parcel_sides, latitude, longitude, current_owner_name, area_sqm, province, ville, commune, quartier')
           .not('latitude', 'is', null)
           .not('longitude', 'is', null)
           .is('deleted_at', null)
@@ -218,13 +219,24 @@ const CadastralMap = () => {
               fillOpacity: 0.2
             }).addTo(map);
 
+            // Extraire les dimensions exactes depuis parcel_sides (formulaire CCC)
+            const parcelSides = parcel.parcel_sides && Array.isArray(parcel.parcel_sides)
+              ? parcel.parcel_sides
+              : null;
+
             // Ajouter les dimensions sur chaque côté
             parcel.gps_coordinates.forEach((coord: any, index: number) => {
               const nextIndex = (index + 1) % parcel.gps_coordinates.length;
               const nextCoord = parcel.gps_coordinates[nextIndex];
               
-              // Calculer la distance
-              const distance = calculateDistance(coord.lat, coord.lng, nextCoord.lat, nextCoord.lng);
+              // Utiliser la dimension exacte du formulaire CCC si disponible
+              let distance: number;
+              if (parcelSides && parcelSides[index] && parcelSides[index].length) {
+                distance = parseFloat(parcelSides[index].length);
+              } else {
+                // Sinon, calculer à partir des GPS (fallback)
+                distance = calculateDistance(coord.lat, coord.lng, nextCoord.lat, nextCoord.lng);
+              }
               
               // Calculer le point médian
               const midLat = (coord.lat + nextCoord.lat) / 2;
