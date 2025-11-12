@@ -5501,22 +5501,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Section Historique des propriétaires */}
-                {previousOwners.some(o => o.name) && (
-                  <div className="border rounded-lg p-3 sm:p-4 space-y-3 bg-muted/30">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-semibold text-sm">📜 Historique des propriétaires</h4>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTabChange('history')}
-                        className="text-xs h-7 px-2 sm:px-3"
-                      >
-                        Modifier
-                      </Button>
-                    </div>
-                    <div className="space-y-3 text-xs sm:text-sm">
-                      {previousOwners.filter(o => o.name).map((owner, idx) => (
+                <div className="border rounded-lg p-3 sm:p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-sm">📜 Historique des propriétaires</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTabChange('history')}
+                      className="text-xs h-7 px-2 sm:px-3"
+                    >
+                      Modifier
+                    </Button>
+                  </div>
+                  <div className="space-y-3 text-xs sm:text-sm">
+                    {previousOwners.some(o => o.name) ? (
+                      previousOwners.filter(o => o.name).map((owner, idx) => (
                         <div key={idx} className="border-l-2 border-primary/30 pl-3">
                           <div className="font-medium">Ancien propriétaire #{idx + 1}</div>
                           <div className="ml-2 space-y-1 text-xs">
@@ -5527,63 +5527,69 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             {owner.mutationType && <div>• Type de mutation: {owner.mutationType}</div>}
                           </div>
                         </div>
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      <div className="text-muted-foreground italic text-xs">Aucun historique de propriétaire renseigné</div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* Section Obligations (Taxes et Hypothèques) */}
-                {(taxRecords.some(t => t.taxAmount) || mortgageRecords.some(m => m.mortgageAmount)) && (
-                  <div className="border rounded-lg p-3 sm:p-4 space-y-3 bg-muted/30">
-                    <div className="flex items-center justify-between gap-2">
-                      <h4 className="font-semibold text-sm">💼 Obligations</h4>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleTabChange('obligations')}
-                        className="text-xs h-7 px-2 sm:px-3"
-                      >
-                        Modifier
-                      </Button>
-                    </div>
-                    <div className="space-y-3 text-xs sm:text-sm">
-                      {taxRecords.some(t => t.taxAmount) && (
-                        <div>
-                          <div className="font-medium mb-2">Taxes foncières:</div>
-                          {taxRecords.filter(t => t.taxAmount).map((tax, idx) => (
-                            <div key={idx} className="border-l-2 border-blue-300 pl-3 mb-2">
-                              <div className="ml-2 space-y-1 text-xs">
-                                <div>• Type: {tax.taxType}</div>
-                                {tax.taxYear && <div>• Année: {tax.taxYear}</div>}
-                                {tax.taxAmount && <div>• Montant: {tax.taxAmount} USD</div>}
-                                {tax.paymentStatus && <div>• Statut: {tax.paymentStatus}</div>}
-                                {tax.paymentDate && <div>• Date de paiement: {new Date(tax.paymentDate).toLocaleDateString('fr-FR')}</div>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {mortgageRecords.some(m => m.mortgageAmount) && (
-                        <div className="pt-2 border-t">
-                          <div className="font-medium mb-2">Hypothèques:</div>
-                          {mortgageRecords.filter(m => m.mortgageAmount).map((mortgage, idx) => (
-                            <div key={idx} className="border-l-2 border-amber-300 pl-3 mb-2">
-                              <div className="ml-2 space-y-1 text-xs">
-                                {mortgage.mortgageAmount && <div>• Montant: {mortgage.mortgageAmount} USD</div>}
-                                {mortgage.duration && <div>• Durée: {mortgage.duration} mois</div>}
-                                {mortgage.creditorName && <div>• Créancier: {mortgage.creditorName}</div>}
-                                {mortgage.creditorType && <div>• Type: {mortgage.creditorType}</div>}
-                                {mortgage.contractDate && <div>• Date du contrat: {new Date(mortgage.contractDate).toLocaleDateString('fr-FR')}</div>}
-                                {mortgage.mortgageStatus && <div>• Statut: {mortgage.mortgageStatus}</div>}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
+                <div className="border rounded-lg p-3 sm:p-4 space-y-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-2">
+                    <h4 className="font-semibold text-sm">💼 Obligations (Taxes et Hypothèques)</h4>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleTabChange('obligations')}
+                      className="text-xs h-7 px-2 sm:px-3"
+                    >
+                      Modifier
+                    </Button>
                   </div>
-                )}
+                  <div className="space-y-3 text-xs sm:text-sm">
+                    {taxRecords.some(t => t.taxAmount) ? (
+                      <div>
+                        <div className="font-medium mb-2">Taxes foncières:</div>
+                        {taxRecords.filter(t => t.taxAmount).map((tax, idx) => (
+                          <div key={idx} className="border-l-2 border-blue-300 pl-3 mb-2">
+                            <div className="ml-2 space-y-1 text-xs">
+                              <div>• Type: {tax.taxType}</div>
+                              {tax.taxYear && <div>• Année: {tax.taxYear}</div>}
+                              {tax.taxAmount && <div>• Montant: {tax.taxAmount} USD</div>}
+                              {tax.paymentStatus && <div>• Statut: {tax.paymentStatus}</div>}
+                              {tax.paymentDate && <div>• Date de paiement: {new Date(tax.paymentDate).toLocaleDateString('fr-FR')}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-muted-foreground italic text-xs">Aucune taxe foncière renseignée</div>
+                    )}
+                    {mortgageRecords.some(m => m.mortgageAmount) ? (
+                      <div className={taxRecords.some(t => t.taxAmount) ? "pt-2 border-t" : ""}>
+                        <div className="font-medium mb-2">Hypothèques:</div>
+                        {mortgageRecords.filter(m => m.mortgageAmount).map((mortgage, idx) => (
+                          <div key={idx} className="border-l-2 border-amber-300 pl-3 mb-2">
+                            <div className="ml-2 space-y-1 text-xs">
+                              {mortgage.mortgageAmount && <div>• Montant: {mortgage.mortgageAmount} USD</div>}
+                              {mortgage.duration && <div>• Durée: {mortgage.duration} mois</div>}
+                              {mortgage.creditorName && <div>• Créancier: {mortgage.creditorName}</div>}
+                              {mortgage.creditorType && <div>• Type: {mortgage.creditorType}</div>}
+                              {mortgage.contractDate && <div>• Date du contrat: {new Date(mortgage.contractDate).toLocaleDateString('fr-FR')}</div>}
+                              {mortgage.mortgageStatus && <div>• Statut: {mortgage.mortgageStatus}</div>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={taxRecords.some(t => t.taxAmount) ? "pt-2 border-t text-muted-foreground italic text-xs" : "text-muted-foreground italic text-xs"}>
+                        Aucune hypothèque renseignée
+                      </div>
+                    )}
+                  </div>
+                </div>
 
                 {/* Pièces jointes */}
                 <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
