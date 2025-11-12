@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, Trophy, Zap, RotateCcw, ChevronRight } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, Trophy, Zap, RotateCcw, ChevronRight, Camera } from 'lucide-react';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile, MdStar } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
@@ -3839,37 +3839,93 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </Popover>
                         </Label>
                         <div className="space-y-2">
-                          <Input
-                            type="file"
-                            accept="image/jpeg,image/jpg,image/png"
-                            capture="environment"
-                            multiple
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files || []);
-                              if (permitRequest.constructionPhotos.length + files.length > 10) {
-                                toast({
-                                  title: "Limite atteinte",
-                                  description: "Vous ne pouvez ajouter que 10 photos maximum",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-                              
-                              // Renommer les fichiers avec un nom court
-                              const renamedFiles = files.map((file, idx) => {
-                                const extension = file.name.split('.').pop();
-                                const newName = `photo-${permitRequest.constructionPhotos.length + idx + 1}.${extension}`;
-                                return new File([file], newName, { type: file.type });
-                              });
-                              
-                              setPermitRequest({ 
-                                ...permitRequest, 
-                                constructionPhotos: [...permitRequest.constructionPhotos, ...renamedFiles] 
-                              });
-                              e.target.value = '';
-                            }}
-                            className="cursor-pointer"
-                          />
+                          <div className="flex gap-2">
+                            <div className="flex-1">
+                              <input
+                                type="file"
+                                id="photo-camera-input"
+                                accept="image/jpeg,image/jpg,image/png"
+                                capture="environment"
+                                multiple
+                                className="hidden"
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  if (permitRequest.constructionPhotos.length + files.length > 10) {
+                                    toast({
+                                      title: "Limite atteinte",
+                                      description: "Vous ne pouvez ajouter que 10 photos maximum",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+                                  
+                                  // Renommer les fichiers avec un nom court
+                                  const renamedFiles = files.map((file, idx) => {
+                                    const extension = file.name.split('.').pop();
+                                    const newName = `photo-${permitRequest.constructionPhotos.length + idx + 1}.${extension}`;
+                                    return new File([file], newName, { type: file.type });
+                                  });
+                                  
+                                  setPermitRequest({ 
+                                    ...permitRequest, 
+                                    constructionPhotos: [...permitRequest.constructionPhotos, ...renamedFiles] 
+                                  });
+                                  e.target.value = '';
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => document.getElementById('photo-camera-input')?.click()}
+                              >
+                                <Camera className="h-4 w-4 mr-2" />
+                                Prendre une photo
+                              </Button>
+                            </div>
+                            <div className="flex-1">
+                              <input
+                                type="file"
+                                id="photo-file-input"
+                                accept="image/jpeg,image/jpg,image/png"
+                                multiple
+                                className="hidden"
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files || []);
+                                  if (permitRequest.constructionPhotos.length + files.length > 10) {
+                                    toast({
+                                      title: "Limite atteinte",
+                                      description: "Vous ne pouvez ajouter que 10 photos maximum",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+                                  
+                                  // Renommer les fichiers avec un nom court
+                                  const renamedFiles = files.map((file, idx) => {
+                                    const extension = file.name.split('.').pop();
+                                    const newName = `photo-${permitRequest.constructionPhotos.length + idx + 1}.${extension}`;
+                                    return new File([file], newName, { type: file.type });
+                                  });
+                                  
+                                  setPermitRequest({ 
+                                    ...permitRequest, 
+                                    constructionPhotos: [...permitRequest.constructionPhotos, ...renamedFiles] 
+                                  });
+                                  e.target.value = '';
+                                }}
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full"
+                                onClick={() => document.getElementById('photo-file-input')?.click()}
+                              >
+                                <Upload className="h-4 w-4 mr-2" />
+                                Choisir des fichiers
+                              </Button>
+                            </div>
+                          </div>
                           {permitRequest.constructionPhotos.length > 0 && (
                             <div className="space-y-1">
                               <p className="text-xs text-muted-foreground">
