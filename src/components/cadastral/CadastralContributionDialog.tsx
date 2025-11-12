@@ -3879,8 +3879,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 className="w-full"
                                 onClick={() => document.getElementById('photo-camera-input')?.click()}
                               >
-                                <Camera className="h-4 w-4" />
-                                {!isMobile && <span className="ml-2">Prendre une photo</span>}
+                                <Camera className="h-4 w-4 mr-2" />
+                                Prendre une photo
                               </Button>
                             </div>
                             <div className="flex-1">
@@ -3921,8 +3921,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 className="w-full"
                                 onClick={() => document.getElementById('photo-file-input')?.click()}
                               >
-                                <Upload className="h-4 w-4" />
-                                {!isMobile && <span className="ml-2">Choisir des fichiers</span>}
+                                <Upload className="h-4 w-4 mr-2" />
+                                Choisir des fichiers
                               </Button>
                             </div>
                           </div>
