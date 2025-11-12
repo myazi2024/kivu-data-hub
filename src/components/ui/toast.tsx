@@ -14,7 +14,7 @@ const ToastViewport = React.forwardRef<
   <ToastPrimitives.Viewport
     ref={ref}
     className={cn(
-      "fixed z-[100] flex max-h-screen w-full flex-col-reverse p-2 md:p-4",
+      "fixed z-[10000] flex max-h-screen w-full flex-col-reverse p-2 md:p-4",
       // Mobile: bottom positioning (toast format)
       "bottom-0 left-0 right-0 top-auto",
       // Desktop: top-right positioning (banner format)
