@@ -86,6 +86,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [activeTab, setActiveTab] = useState('general');
   const [previousProgress, setPreviousProgress] = useState(0);
   
+  // Fonction pour vérifier si le formulaire est valide pour soumission
+  const isFormValidForSubmission = () => {
+    // Vérifier Type de titre de propriété
+    if (!formData.propertyTitleType) return false;
+    
+    // Vérifier qu'au moins un propriétaire actuel a lastName et firstName
+    const hasValidOwner = currentOwners.some(owner => 
+      owner.lastName && owner.lastName.trim() !== '' && 
+      owner.firstName && owner.firstName.trim() !== ''
+    );
+    if (!hasValidOwner) return false;
+    
+    // Vérifier les informations de lieu
+    if (!sectionType) return false;
+    if (!formData.province) return false;
+    
+    if (sectionType === 'urbaine') {
+      // Pour section urbaine : ville, commune, quartier, avenue requis
+      if (!formData.ville || !formData.commune || !formData.quartier || !formData.avenue) {
+        return false;
+      }
+    } else if (sectionType === 'rurale') {
+      // Pour section rurale : territoire et collectivite requis (groupement et village optionnels)
+      if (!formData.territoire || !formData.collectivite) {
+        return false;
+      }
+    }
+    
+    return true;
+  };
+  
   // Fonction pour changer d'onglet avec scroll vers le haut
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
@@ -5864,7 +5895,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       type="button"
                       size="lg"
                       onClick={handleSubmit}
-                      disabled={loading || uploading}
+                      disabled={loading || uploading || !isFormValidForSubmission()}
                       className="w-full h-14 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80"
                     >
                       {loading || uploading ? (
@@ -5879,6 +5910,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </>
                       )}
                     </Button>
+                    {!isFormValidForSubmission() && (
+                      <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
+                        Veuillez compléter les champs obligatoires : Type de titre de propriété, Propriétaire(s) actuel(s), et toutes les informations de localisation
+                      </p>
+                    )}
                     <p className="text-xs text-center text-muted-foreground mt-3">
                       En soumettant, vous acceptez que vos données soient vérifiées par notre équipe
                     </p>
@@ -5904,6 +5940,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           setShowQuickAuth(true);
                           setPendingSubmission(true);
                         }}
+                        disabled={!isFormValidForSubmission()}
                         className="w-full sm:w-auto px-6 sm:px-8 h-12 sm:h-14 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
                       >
                         <CheckCircle2 className="h-5 w-5" />
@@ -5911,6 +5948,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         <span className="sm:hidden">Soumettre</span>
                       </Button>
                     </div>
+                    {!isFormValidForSubmission() && (
+                      <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
+                        Veuillez compléter les champs obligatoires : Type de titre de propriété, Propriétaire(s) actuel(s), et toutes les informations de localisation
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
