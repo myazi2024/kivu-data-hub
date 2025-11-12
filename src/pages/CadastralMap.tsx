@@ -186,6 +186,33 @@ const CadastralMap = () => {
     return R * c; // Distance en mètres
   };
 
+  // Fonction pour calculer la surface d'une parcelle à partir de ses coordonnées GPS
+  const calculateAreaFromCoordinates = (coordinates: any[]): number => {
+    if (!coordinates || coordinates.length < 3) return 0;
+
+    // Convertir les coordonnées géographiques en coordonnées cartésiennes approximatives
+    // en utilisant une projection locale (UTM approximatif)
+    const avgLat = coordinates.reduce((sum, coord) => sum + coord.lat, 0) / coordinates.length;
+    const metersPerDegreeLat = 111320; // mètres par degré de latitude
+    const metersPerDegreeLng = 111320 * Math.cos(avgLat * Math.PI / 180); // ajusté pour la longitude
+
+    // Convertir en coordonnées cartésiennes (mètres)
+    const cartesianCoords = coordinates.map(coord => ({
+      x: coord.lng * metersPerDegreeLng,
+      y: coord.lat * metersPerDegreeLat
+    }));
+
+    // Appliquer la formule de Shoelace pour calculer la surface
+    let area = 0;
+    for (let i = 0; i < cartesianCoords.length; i++) {
+      const j = (i + 1) % cartesianCoords.length;
+      area += cartesianCoords[i].x * cartesianCoords[j].y;
+      area -= cartesianCoords[j].x * cartesianCoords[i].y;
+    }
+
+    return Math.abs(area / 2); // Surface en mètres carrés
+  };
+
   // Afficher les parcelles filtrées sur la carte
   useEffect(() => {
     const updateMapWithParcels = async () => {
@@ -417,7 +444,12 @@ const CadastralMap = () => {
                 <div className="space-y-2">
                   <div>
                     <span className="text-muted-foreground">Surface:</span>
-                    <p className="font-medium">{selectedParcel.area_sqm?.toLocaleString()} m²</p>
+                    <p className="font-medium">
+                      {selectedParcel.gps_coordinates && selectedParcel.gps_coordinates.length >= 3
+                        ? calculateAreaFromCoordinates(selectedParcel.gps_coordinates).toLocaleString(undefined, { maximumFractionDigits: 2 })
+                        : selectedParcel.area_sqm?.toLocaleString()
+                      } m²
+                    </p>
                   </div>
                   <div>
                     <span className="text-muted-foreground">Localisation:</span>
