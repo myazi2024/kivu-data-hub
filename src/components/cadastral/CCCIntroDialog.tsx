@@ -16,6 +16,16 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
   const [hasScrolledToBottom, setHasScrolledToBottom] = React.useState(false);
   const contentRef = React.useRef<HTMLDivElement>(null);
 
+  // Activer le bouton après 2 secondes même sans scroll
+  React.useEffect(() => {
+    if (open) {
+      const timer = setTimeout(() => {
+        setHasScrolledToBottom(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [open]);
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const element = e.currentTarget;
     const isAtBottom = Math.abs(element.scrollHeight - element.scrollTop - element.clientHeight) < 50;
@@ -27,7 +37,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 rounded-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden p-0 rounded-2xl z-[9999]">
         <div className="p-6 sm:p-8 pb-0">
           <DialogHeader>
             <DialogTitle className="text-2xl sm:text-3xl font-bold text-center bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
@@ -196,7 +206,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
           
           {!hasScrolledToBottom && (
             <p className="text-xs text-center text-muted-foreground animate-pulse">
-              Faites défiler jusqu'en bas pour continuer
+              Faites défiler jusqu'en bas pour continuer (ou attendez 2 secondes)
             </p>
           )}
           

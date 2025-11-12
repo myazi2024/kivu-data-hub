@@ -39,6 +39,13 @@ const CadastralMap = () => {
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
 
+  // Reset hasScrolledToBottom when dialog closes
+  useEffect(() => {
+    if (!showIntroDialog) {
+      // Reset any state if needed
+    }
+  }, [showIntroDialog]);
+
   // Charger toutes les parcelles depuis Supabase
   useEffect(() => {
     const loadParcels = async () => {
@@ -355,7 +362,10 @@ const CadastralMap = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setShowIntroDialog(true)}
+                    onClick={() => {
+                      console.log("Bouton Recherche approfondie cliqué");
+                      setShowIntroDialog(true);
+                    }}
                     className="w-full text-xs"
                   >
                     Recherche approfondie
@@ -439,22 +449,37 @@ const CadastralMap = () => {
       </main>
 
       {/* Dialog d'introduction CCC */}
-      <CCCIntroDialog
-        open={showIntroDialog}
-        onOpenChange={setShowIntroDialog}
-        onContinue={() => {
-          setShowIntroDialog(false);
-          setShowContributionDialog(true);
-        }}
-        parcelNumber={searchQuery}
-      />
+      {showIntroDialog && (
+        <CCCIntroDialog
+          open={showIntroDialog}
+          onOpenChange={(open) => {
+            setShowIntroDialog(open);
+            if (!open) {
+              console.log("Dialog d'introduction fermé");
+            }
+          }}
+          onContinue={() => {
+            console.log("Passage au formulaire CCC");
+            setShowIntroDialog(false);
+            setShowContributionDialog(true);
+          }}
+          parcelNumber={searchQuery}
+        />
+      )}
 
       {/* Dialog de contribution */}
-      <CadastralContributionDialog
-        open={showContributionDialog}
-        onOpenChange={setShowContributionDialog}
-        parcelNumber={searchQuery}
-      />
+      {showContributionDialog && (
+        <CadastralContributionDialog
+          open={showContributionDialog}
+          onOpenChange={(open) => {
+            setShowContributionDialog(open);
+            if (!open) {
+              console.log("Dialog de contribution fermé");
+            }
+          }}
+          parcelNumber={searchQuery}
+        />
+      )}
     </div>
   );
 };
