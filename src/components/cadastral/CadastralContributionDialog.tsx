@@ -9,10 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Progress } from '@/components/ui/progress';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, Trophy, Zap, RotateCcw, ChevronRight, Camera } from 'lucide-react';
-import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile, MdStar } from 'react-icons/md';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, Camera } from 'lucide-react';
+import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -84,7 +83,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [shouldBlinkSuperficie, setShouldBlinkSuperficie] = useState(false);
   const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
-  const [previousProgress, setPreviousProgress] = useState(0);
   
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
@@ -126,7 +124,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   };
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
-  const [earnedBadges, setEarnedBadges] = useState<string[]>([]);
   
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
@@ -2034,60 +2031,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }, 250);
   };
 
-  // Fonction pour gérer les badges débloqués
-  const checkAndAwardBadges = (progress: number) => {
-    const newBadges = [...earnedBadges];
-    
-    if (progress >= 25 && !earnedBadges.includes('starter')) {
-      newBadges.push('starter');
-      toast({
-        title: "🏅 Badge débloqué !",
-        description: "Contributeur Débutant - Vous avez commencé votre contribution",
-      });
-    }
-    
-    if (progress >= 50 && !earnedBadges.includes('halfway')) {
-      newBadges.push('halfway');
-      toast({
-        title: "🏅 Badge débloqué !",
-        description: "Expert en Progression - Mi-parcours atteint !",
-      });
-    }
-    
-    if (progress >= 75 && !earnedBadges.includes('almost')) {
-      newBadges.push('almost');
-      toast({
-        title: "🏅 Badge débloqué !",
-        description: "Presque Là - Vous êtes proche du but !",
-      });
-    }
-    
-    if (progress === 100 && !earnedBadges.includes('complete')) {
-      newBadges.push('complete');
-      if (!hasShownConfetti) {
-        triggerConfetti();
-        setHasShownConfetti(true);
-      }
-      toast({
-        title: "🏆 Badge débloqué !",
-        description: "Contributeur Expert - Formulaire 100% complété !",
-      });
-    }
-    
-    if (newBadges.length > earnedBadges.length) {
-      setEarnedBadges(newBadges);
-    }
-  };
-
-  // Surveiller les changements de progression
-  useEffect(() => {
-    const currentProgress = calculateProgress();
-    if (currentProgress > previousProgress) {
-      checkAndAwardBadges(currentProgress);
-      setPreviousProgress(currentProgress);
-    }
-  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, sectionType]);
-
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
@@ -2397,71 +2340,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </TabsList>
             
             <div className="space-y-3">
-              {/* Barre de progression avec couleur dynamique */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs sm:text-sm">
-                  <span className="text-muted-foreground font-medium flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-amber-500" />
-                    Progression
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-primary font-semibold">{calculateProgressDetails().points}/{calculateProgressDetails().totalPoints} pts</span>
-                    <span className="text-muted-foreground">•</span>
-                    <span className="text-primary font-semibold">{calculateProgress()}%</span>
-                  </div>
-                </div>
-                <div className="relative">
-                  <Progress 
-                    value={calculateProgress()} 
-                    className={`h-3 transition-all duration-500 animate-fade-in ${getProgressColor(calculateProgress())}`}
-                  />
-                  {calculateProgress() === 100 && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Trophy className="h-4 w-4 text-white animate-bounce" />
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Compteur de champs */}
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">
-                  {calculateProgressDetails().filledFields} champ{calculateProgressDetails().filledFields > 1 ? 's' : ''} complété{calculateProgressDetails().filledFields > 1 ? 's' : ''} sur {calculateProgressDetails().totalFields}
-                </span>
-              </div>
-
               {/* Message motivant avec animation */}
               <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 rounded-lg border border-primary/20 animate-fade-in">
                 <p className="text-sm font-medium text-foreground">
                   {getMotivationalMessage(calculateProgress())}
                 </p>
               </div>
-
-              {/* Badges débloqués */}
-              {earnedBadges.length > 0 && (
-                <div className="flex flex-wrap gap-2 animate-fade-in">
-                  {earnedBadges.includes('starter') && (
-                    <div className="flex items-center gap-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full text-xs font-medium">
-                      🏅 Débutant
-                    </div>
-                  )}
-                  {earnedBadges.includes('halfway') && (
-                    <div className="flex items-center gap-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-1 rounded-full text-xs font-medium">
-                      ⭐ Mi-parcours
-                    </div>
-                  )}
-                  {earnedBadges.includes('almost') && (
-                    <div className="flex items-center gap-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-1 rounded-full text-xs font-medium">
-                      🔥 Presque là
-                    </div>
-                  )}
-                  {earnedBadges.includes('complete') && (
-                    <div className="flex items-center gap-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded-full text-xs font-medium animate-pulse">
-                      🏆 Expert
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </div>
           
@@ -4087,7 +3971,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                   <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
                     <div className="flex items-start gap-2">
-                      <MdStar className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                      <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                       <div className="flex-1">
                         <p className="text-xs text-amber-700 dark:text-amber-300">
                           Une fois votre contribution validée, vous recevrez les instructions pour finaliser votre demande de permis de construire.
@@ -5604,7 +5488,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-6 shadow-lg">
                 <div className="flex items-start gap-3 sm:gap-4">
                   <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                    <MdStar className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                    <Info className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg sm:text-2xl font-bold text-amber-900 dark:text-amber-100 mb-2">
@@ -5616,17 +5500,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </span>
                       <span className="text-sm sm:text-lg text-amber-700 dark:text-amber-300">/ $5.00</span>
                     </div>
-                    <Progress 
-                      value={(calculateCCCValue().value / 5) * 100} 
-                      className="h-2 sm:h-3 mb-3 bg-amber-200 dark:bg-amber-900/50"
-                    />
-                    <p className="text-xs sm:text-sm text-amber-800 dark:text-amber-200">
-                      {calculateCCCValue().filledFields} champs sur {calculateCCCValue().totalFields} complétés ({Math.round(calculateCCCValue().completionRate * 100)}%)
-                    </p>
                     {calculateCCCValue().value < 5 && (
                       <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 flex items-start gap-1">
                         <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                        <span>Ajoutez encore {calculateCCCValue().totalFields - calculateCCCValue().filledFields} champs pour maximiser votre code CCC !</span>
+                        <span>Complétez davantage de champs pour maximiser votre code CCC !</span>
                       </p>
                     )}
                   </div>
