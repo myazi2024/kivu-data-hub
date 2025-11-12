@@ -4638,7 +4638,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Label>Date début (propriétaire depuis)</Label>
                           <Input
                             type="date"
-                            max={currentOwners[0]?.since || new Date().toISOString().split('T')[0]}
+                            max={owner.endDate || (index === 0 ? currentOwners[0]?.since : previousOwners[index - 1]?.startDate) || new Date().toISOString().split('T')[0]}
                             value={owner.startDate}
                             onChange={(e) => updatePreviousOwner(index, 'startDate', e.target.value)}
                           />
@@ -4651,7 +4651,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Input
                             type="date"
                             min={owner.startDate || undefined}
-                            max={currentOwners[0]?.since || new Date().toISOString().split('T')[0]}
+                            max={index === 0 ? (currentOwners[0]?.since || new Date().toISOString().split('T')[0]) : (previousOwners[index - 1]?.startDate || new Date().toISOString().split('T')[0])}
                             value={owner.endDate}
                             onChange={(e) => updatePreviousOwner(index, 'endDate', e.target.value)}
                           />
@@ -5381,33 +5381,117 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        const tabs = document.querySelector('[role="tablist"]');
-                        const generalTab = tabs?.querySelector('[value="general"]') as HTMLElement;
-                        generalTab?.click();
-                      }}
+                      onClick={() => handleTabChange('general')}
                       className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                  <div className="space-y-2 text-xs sm:text-sm">
                     <div className={formData.propertyTitleType ? "text-foreground" : "text-muted-foreground italic"}>
-                      Type de titre : {formData.propertyTitleType || "Non renseigné"}
+                      <span className="font-medium">Type de titre :</span> {formData.propertyTitleType || "Non renseigné"}
                     </div>
+                    {formData.leaseType && (
+                      <div className="text-foreground">
+                        <span className="font-medium">Type de bail :</span> {formData.leaseType}
+                      </div>
+                    )}
                     <div className={formData.titleReferenceNumber ? "text-foreground" : "text-muted-foreground italic"}>
-                      N° référence : {formData.titleReferenceNumber || "Non renseigné"}
+                      <span className="font-medium">N° référence :</span> {formData.titleReferenceNumber || "Non renseigné"}
                     </div>
-                    <div className={currentOwners.some(o => o.lastName && o.firstName) ? "text-foreground" : "text-muted-foreground italic"}>
-                      Propriétaire(s) : {currentOwners.filter(o => o.lastName && o.firstName).length > 0 
-                        ? currentOwners.filter(o => o.lastName && o.firstName).map(o => `${o.lastName} ${o.firstName}`).join(', ')
-                        : "Non renseigné"}
+                    
+                    {/* Propriétaire(s) actuel(s) */}
+                    <div className="space-y-1 mt-3">
+                      <div className="font-medium">Propriétaire(s) actuel(s) :</div>
+                      {currentOwners.filter(o => o.lastName && o.firstName).length > 0 ? (
+                        currentOwners.filter(o => o.lastName && o.firstName).map((owner, idx) => (
+                          <div key={idx} className="pl-3 border-l-2 border-primary/30 text-foreground">
+                            <div>{owner.lastName} {owner.middleName} {owner.firstName}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {owner.legalStatus} • Depuis {owner.since ? new Date(owner.since).toLocaleDateString('fr-FR') : 'Non renseigné'}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-muted-foreground italic pl-3">Non renseigné</div>
+                      )}
                     </div>
+
+                    <div className={formData.areaSqm ? "text-foreground" : "text-muted-foreground italic"}>
+                      <span className="font-medium">Superficie :</span> {formData.areaSqm ? `${formData.areaSqm} m² (${(formData.areaSqm / 10000).toFixed(4)} ha)` : "Non renseigné"}
+                    </div>
+                    
+                    {parcelSides.some(s => s.length) && (
+                      <div className="space-y-1">
+                        <div className="font-medium">Dimensions des côtés :</div>
+                        <div className="pl-3 grid grid-cols-2 gap-1 text-xs">
+                          {parcelSides.filter(s => s.length).map((side, idx) => (
+                            <div key={idx} className="text-foreground">{side.name}: {side.length}m</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className={formData.constructionType ? "text-foreground" : "text-muted-foreground italic"}>
-                      Type construction : {formData.constructionType || "Non renseigné"}
+                      <span className="font-medium">Type construction :</span> {formData.constructionType || "Non renseigné"}
                     </div>
+                    {formData.constructionNature && (
+                      <div className="text-foreground">
+                        <span className="font-medium">Nature :</span> {formData.constructionNature}
+                      </div>
+                    )}
+                    {formData.declaredUsage && (
+                      <div className="text-foreground">
+                        <span className="font-medium">Usage déclaré :</span> {formData.declaredUsage}
+                      </div>
+                    )}
                   </div>
                 </div>
+
+                {/* Section Permis de construire */}
+                {(buildingPermits.some(p => p.permitNumber) || permitRequest.applicantName) && (
+                  <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-semibold text-xs sm:text-sm">Permis de construire</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTabChange('general')}
+                        className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
+                      >
+                        Modifier
+                      </Button>
+                    </div>
+                    <div className="space-y-2 text-xs sm:text-sm">
+                      {buildingPermits.filter(p => p.permitNumber).map((permit, idx) => (
+                        <div key={idx} className="pl-3 border-l-2 border-blue-500/30 space-y-1">
+                          <div className="text-foreground font-medium">
+                            Permis #{idx + 1} - {permit.permitType === 'construction' ? 'Construction' : 'Régularisation'}
+                          </div>
+                          <div className="text-foreground">N° {permit.permitNumber}</div>
+                          <div className="text-muted-foreground text-xs">
+                            Délivré par {permit.issuingService} • {permit.issueDate ? new Date(permit.issueDate).toLocaleDateString('fr-FR') : 'Date non renseignée'}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            Validité: {permit.validityMonths} mois • Statut: {permit.administrativeStatus}
+                          </div>
+                        </div>
+                      ))}
+                      
+                      {permitRequest.applicantName && (
+                        <div className="pl-3 border-l-2 border-amber-500/30 space-y-1">
+                          <div className="text-foreground font-medium">Demande de permis en cours</div>
+                          <div className="text-foreground">Type: {permitRequest.permitType === 'construction' ? 'Construction' : 'Régularisation'}</div>
+                          <div className="text-muted-foreground text-xs">Demandeur: {permitRequest.applicantName}</div>
+                          {permitRequest.constructionDescription && (
+                            <div className="text-muted-foreground text-xs">Description: {permitRequest.constructionDescription}</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Section Localisation */}
                 <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
@@ -5417,90 +5501,177 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => {
-                        const tabs = document.querySelector('[role="tablist"]');
-                        const locationTab = tabs?.querySelector('[value="location"]') as HTMLElement;
-                        locationTab?.click();
-                      }}
+                      onClick={() => handleTabChange('location')}
                       className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                  <div className="space-y-2 text-xs sm:text-sm">
                     <div className={formData.province ? "text-foreground" : "text-muted-foreground italic"}>
-                      Province : {formData.province || "Non renseigné"}
+                      <span className="font-medium">Province :</span> {formData.province || "Non renseigné"}
                     </div>
-                    <div className={formData.ville || formData.territoire ? "text-foreground" : "text-muted-foreground italic"}>
-                      Ville/Territoire : {formData.ville || formData.territoire || "Non renseigné"}
-                    </div>
-                    <div className={formData.commune || formData.collectivite ? "text-foreground" : "text-muted-foreground italic"}>
-                      Commune/Collectivité : {formData.commune || formData.collectivite || "Non renseigné"}
-                    </div>
-                    <div className={formData.areaSqm ? "text-foreground" : "text-muted-foreground italic"}>
-                      Superficie : {formData.areaSqm ? `${formData.areaSqm} m²` : "Non renseigné"}
-                    </div>
-                    <div className={gpsCoordinates.filter(g => g.lat && g.lng).length > 0 ? "text-foreground" : "text-muted-foreground italic"}>
-                      Coordonnées GPS : {gpsCoordinates.filter(g => g.lat && g.lng).length} borne(s)
-                    </div>
+                    
+                    {sectionType === 'urbaine' ? (
+                      <>
+                        <div className={formData.ville ? "text-foreground" : "text-muted-foreground italic"}>
+                          <span className="font-medium">Ville :</span> {formData.ville || "Non renseigné"}
+                        </div>
+                        <div className={formData.commune ? "text-foreground" : "text-muted-foreground italic"}>
+                          <span className="font-medium">Commune :</span> {formData.commune || "Non renseigné"}
+                        </div>
+                        {formData.quartier && (
+                          <div className="text-foreground">
+                            <span className="font-medium">Quartier :</span> {formData.quartier}
+                          </div>
+                        )}
+                        {formData.avenue && (
+                          <div className="text-foreground">
+                            <span className="font-medium">Avenue :</span> {formData.avenue}
+                          </div>
+                        )}
+                      </>
+                    ) : sectionType === 'rurale' ? (
+                      <>
+                        <div className={formData.territoire ? "text-foreground" : "text-muted-foreground italic"}>
+                          <span className="font-medium">Territoire :</span> {formData.territoire || "Non renseigné"}
+                        </div>
+                        <div className={formData.collectivite ? "text-foreground" : "text-muted-foreground italic"}>
+                          <span className="font-medium">Collectivité :</span> {formData.collectivite || "Non renseigné"}
+                        </div>
+                        {formData.groupement && (
+                          <div className="text-foreground">
+                            <span className="font-medium">Groupement :</span> {formData.groupement}
+                          </div>
+                        )}
+                        {formData.village && (
+                          <div className="text-foreground">
+                            <span className="font-medium">Village :</span> {formData.village}
+                          </div>
+                        )}
+                      </>
+                    ) : null}
+                    
+                    {formData.circonscriptionFonciere && (
+                      <div className="text-foreground">
+                        <span className="font-medium">Circonscription foncière :</span> {formData.circonscriptionFonciere}
+                      </div>
+                    )}
+                    
+                    {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
+                      <div className="space-y-1">
+                        <div className="font-medium">Coordonnées GPS ({gpsCoordinates.filter(g => g.lat && g.lng).length} borne(s)) :</div>
+                        <div className="pl-3 space-y-1">
+                          {gpsCoordinates.filter(g => g.lat && g.lng).map((coord, idx) => (
+                            <div key={idx} className="text-foreground text-xs">
+                              {coord.borne}: {coord.lat}, {coord.lng}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                {/* Section Historiques */}
-                <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-xs sm:text-sm">Historiques</h4>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const tabs = document.querySelector('[role="tablist"]');
-                        const historyTab = tabs?.querySelector('[value="history"]') as HTMLElement;
-                        historyTab?.click();
-                      }}
-                      className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
-                    >
-                      Modifier
-                    </Button>
+                {/* Section Historique des propriétaires */}
+                {previousOwners.some(o => o.name && o.startDate) && (
+                  <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-semibold text-xs sm:text-sm">Historique des propriétaires</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTabChange('history')}
+                        className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
+                      >
+                        Modifier
+                      </Button>
+                    </div>
+                    <div className="space-y-2 text-xs sm:text-sm">
+                      {previousOwners.filter(o => o.name && o.startDate).map((owner, idx) => (
+                        <div key={idx} className="pl-3 border-l-2 border-purple-500/30 space-y-1">
+                          <div className="text-foreground font-medium">Ancien propriétaire #{idx + 1}</div>
+                          <div className="text-foreground">{owner.name}</div>
+                          <div className="text-muted-foreground text-xs">
+                            {owner.legalStatus}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            Du {owner.startDate ? new Date(owner.startDate).toLocaleDateString('fr-FR') : '?'} au {owner.endDate ? new Date(owner.endDate).toLocaleDateString('fr-FR') : '?'}
+                          </div>
+                          <div className="text-muted-foreground text-xs">
+                            Type de mutation: {owner.mutationType}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
-                    <div className={previousOwners.some(o => o.name && o.startDate) ? "text-foreground" : "text-muted-foreground italic"}>
-                      Anciens propriétaires : {previousOwners.filter(o => o.name && o.startDate).length || "Aucun"}
-                    </div>
-                    <div className={taxRecords.some(t => t.taxAmount && t.taxYear) ? "text-foreground" : "text-muted-foreground italic"}>
-                      Historique taxes : {taxRecords.filter(t => t.taxAmount && t.taxYear).length || "Aucun"}
-                    </div>
-                    <div className={buildingPermits.some(p => p.permitNumber) ? "text-foreground" : "text-muted-foreground italic"}>
-                      Permis de construire : {buildingPermits.filter(p => p.permitNumber).length || "Aucun"}
-                    </div>
-                  </div>
-                </div>
+                )}
 
-                {/* Section Obligations */}
-                <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-xs sm:text-sm">Obligations</h4>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const tabs = document.querySelector('[role="tablist"]');
-                        const obligationsTab = tabs?.querySelector('[value="obligations"]') as HTMLElement;
-                        obligationsTab?.click();
-                      }}
-                      className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
-                    >
-                      Modifier
-                    </Button>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
-                    <div className={mortgageRecords.some(m => m.mortgageAmount && m.creditorName) ? "text-foreground" : "text-muted-foreground italic"}>
-                      Hypothèques : {mortgageRecords.filter(m => m.mortgageAmount && m.creditorName).length || "Aucune"}
+                {/* Section Historique des taxes */}
+                {taxRecords.some(t => t.taxAmount && t.taxYear) && (
+                  <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-semibold text-xs sm:text-sm">Historique des taxes</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTabChange('obligations')}
+                        className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
+                      >
+                        Modifier
+                      </Button>
+                    </div>
+                    <div className="space-y-2 text-xs sm:text-sm">
+                      {taxRecords.filter(t => t.taxAmount && t.taxYear).map((tax, idx) => (
+                        <div key={idx} className="pl-3 border-l-2 border-green-500/30 space-y-1">
+                          <div className="text-foreground font-medium">{tax.taxType} - {tax.taxYear}</div>
+                          <div className="text-foreground">Montant: ${tax.taxAmount}</div>
+                          <div className="text-muted-foreground text-xs">
+                            Statut: {tax.paymentStatus}
+                            {tax.paymentDate && ` • Payée le ${new Date(tax.paymentDate).toLocaleDateString('fr-FR')}`}
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                </div>
+                )}
+
+                {/* Section Hypothèques */}
+                {mortgageRecords.some(m => m.mortgageAmount && m.creditorName) && (
+                  <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                    <div className="flex items-center justify-between gap-2">
+                      <h4 className="font-semibold text-xs sm:text-sm">Hypothèques</h4>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleTabChange('obligations')}
+                        className="text-xs h-7 px-2 sm:px-3 min-h-[32px]"
+                      >
+                        Modifier
+                      </Button>
+                    </div>
+                    <div className="space-y-2 text-xs sm:text-sm">
+                      {mortgageRecords.filter(m => m.mortgageAmount && m.creditorName).map((mortgage, idx) => (
+                        <div key={idx} className="pl-3 border-l-2 border-red-500/30 space-y-1">
+                          <div className="text-foreground font-medium">Hypothèque #{idx + 1}</div>
+                          <div className="text-foreground">Montant: ${mortgage.mortgageAmount}</div>
+                          <div className="text-foreground">Créancier: {mortgage.creditorName} ({mortgage.creditorType})</div>
+                          <div className="text-muted-foreground text-xs">
+                            Durée: {mortgage.duration} • Statut: {mortgage.mortgageStatus}
+                          </div>
+                          {mortgage.contractDate && (
+                            <div className="text-muted-foreground text-xs">
+                              Date contrat: {new Date(mortgage.contractDate).toLocaleDateString('fr-FR')}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {/* Pièces jointes */}
                 <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
