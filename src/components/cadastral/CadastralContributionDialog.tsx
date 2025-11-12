@@ -18,7 +18,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { 
   getAllProvinces, 
   getVillesForProvince, 
@@ -54,8 +53,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const isMobile = useIsMobile();
   const dialogContentRef = React.useRef<HTMLDivElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
-  const [showPermitPayment, setShowPermitPayment] = useState(false);
-  const [permitRequestData, setPermitRequestData] = useState<any>(null);
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [pendingSubmission, setPendingSubmission] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -1115,14 +1112,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (result.success) {
         // Effacer les données sauvegardées après une soumission réussie
         clearSavedFormData();
-        
-        // Si une demande de permis est incluse, rediriger vers le paiement
-        if (permitRequestData) {
-          setPermitRequestData(permitRequestData);
-          setShowPermitPayment(true);
-        } else {
-          setShowSuccess(true);
-        }
+        setShowSuccess(true);
       }
     } catch (error) {
       toast({
@@ -2058,8 +2048,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const handleClose = () => {
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
-    setShowPermitPayment(false);
-    setPermitRequestData(null);
     setShowQuickAuth(false);
     setPendingSubmission(false);
     setOwnerDocFile(null);
@@ -2180,118 +2168,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </p>
               <Button onClick={handleClose} className="w-full shadow-lg hover:shadow-xl transition-all">
                 Fermer
-              </Button>
-            </div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
-      </Dialog>
-    );
-  }
-
-  if (showPermitPayment && permitRequestData) {
-    const permitType = permitRequestData.permitType as 'construction' | 'regularization';
-    const servicePrice = permitType === 'construction' ? 150 : 200;
-    const cartItem = {
-      id: 'building-permit-request',
-      title: permitType === 'construction' ? 'Demande de permis de construire' : 'Demande de permis de régularisation',
-      price: servicePrice,
-      description: `Parcelle: ${parcelNumber}`
-    };
-
-    const handlePermitPaymentSuccess = async () => {
-      toast({
-        title: "Paiement réussi",
-        description: "Votre demande de permis a été enregistrée et sera traitée",
-      });
-      setShowPermitPayment(false);
-      setShowSuccess(true);
-    };
-
-    return (
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay 
-            className="fixed inset-0 z-[10000] bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" 
-          />
-          <DialogPrimitive.Content
-            className={cn(
-              "fixed left-[50%] top-[50%] z-[10000] grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl sm:max-w-lg overflow-y-auto max-h-[90vh]"
-            )}
-          >
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                  <Info className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <DialogPrimitive.Title className="text-lg sm:text-xl font-semibold">
-                    Finaliser votre demande de permis
-                  </DialogPrimitive.Title>
-                  <DialogPrimitive.Description className="text-sm text-muted-foreground">
-                    Réglez les frais de traitement pour votre demande
-                  </DialogPrimitive.Description>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <div className="flex items-start gap-2">
-                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-900 dark:text-blue-100">
-                    <p className="font-medium mb-1">Contribution enregistrée !</p>
-                    <p className="text-xs text-blue-700 dark:text-blue-300">
-                      Votre contribution cadastrale a été soumise. Procédez maintenant au paiement de votre demande de permis.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3 p-4 bg-muted/50 rounded-lg border">
-                <div className="flex justify-between items-start text-sm">
-                  <span className="text-muted-foreground">Service</span>
-                  <span className="font-medium text-right max-w-[60%]">{cartItem.title}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Parcelle</span>
-                  <span className="font-medium">{parcelNumber}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">Type</span>
-                  <span className="font-medium">
-                    {permitType === 'construction' ? 'Nouvelle construction' : 'Régularisation'}
-                  </span>
-                </div>
-                <div className="h-px bg-border my-2" />
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold">Total à payer</span>
-                  <span className="text-2xl font-bold text-primary">{servicePrice} USD</span>
-                </div>
-              </div>
-
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                <div className="flex items-start gap-2">
-                  <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-900 dark:text-amber-100">
-                    <strong>Délai de traitement :</strong> 15 à 30 jours ouvrables après validation du paiement.
-                    Vous serez notifié par email et SMS de l'avancement.
-                  </p>
-                </div>
-              </div>
-
-              <MobileMoneyPayment
-                item={cartItem}
-                currency="USD"
-                onPaymentSuccess={handlePermitPaymentSuccess}
-              />
-
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  setShowPermitPayment(false);
-                  setShowSuccess(true);
-                }}
-                className="w-full"
-              >
-                Payer plus tard
               </Button>
             </div>
           </DialogPrimitive.Content>
