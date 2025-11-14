@@ -472,10 +472,10 @@ const CadastralMap = () => {
                   </Button>
                   <Button
                     onClick={() => {
-                      const phoneNumber = '0816996077';
+                      const phoneNumber = '243816996077'; // Format international pour RDC
                       const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
                       const encodedMessage = encodeURIComponent(message);
-                      const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
+                      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
                       window.open(whatsappUrl, '_blank');
                     }}
                     variant="outline"
