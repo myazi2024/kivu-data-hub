@@ -6,7 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
@@ -29,6 +30,7 @@ interface ParcelData {
 
 const CadastralMap = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const [parcels, setParcels] = useState<ParcelData[]>([]);
@@ -460,13 +462,30 @@ const CadastralMap = () => {
                     </p>
                   </div>
                 </div>
-                <Button
-                  onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
-                  className="w-full"
-                  size="sm"
-                >
-                  Afficher plus de données
-                </Button>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
+                    className="w-full"
+                    size="sm"
+                  >
+                    {isMobile ? "Plus de données" : "Afficher plus de données"}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      const phoneNumber = '0816996077';
+                      const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
+                      const encodedMessage = encodeURIComponent(message);
+                      const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
+                      window.open(whatsappUrl, '_blank');
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    Besoin d'aide ?
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
