@@ -262,18 +262,32 @@ const CadastralSearchBar = () => {
       </Card>
 
       {showResultsDialog && searchResult && (
-        <CadastralResultsDialog open={showResultsDialog} onClose={() => setShowResultsDialog(false)} searchResult={searchResult} searchQuery={searchQuery} />
+        <CadastralResultsDialog 
+          result={searchResult} 
+          isOpen={showResultsDialog} 
+          onClose={() => setShowResultsDialog(false)} 
+          fromMap={fromMap}
+        />
       )}
 
       {showIntroDialog && (
-        <CCCIntroDialog open={showIntroDialog} onOpenChange={setShowIntroDialog} onContinue={() => {
-          setShowIntroDialog(false);
-          setShowContributionDialog(true);
-        }} parcelNumber={searchQuery} />
+        <CCCIntroDialog 
+          open={showIntroDialog} 
+          onOpenChange={setShowIntroDialog} 
+          onContinue={() => {
+            setShowIntroDialog(false);
+            setShowContributionDialog(true);
+          }} 
+          parcelNumber={searchQuery} 
+        />
       )}
 
       {showContributionDialog && (
-        <CadastralContributionDialog open={showContributionDialog} onOpenChange={setShowContributionDialog} initialParcelNumber={searchQuery} />
+        <CadastralContributionDialog 
+          open={showContributionDialog} 
+          onOpenChange={setShowContributionDialog} 
+          parcelNumber={searchQuery} 
+        />
       )}
     </>
   );
