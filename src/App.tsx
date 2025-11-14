@@ -17,6 +17,7 @@ import Admin from "./pages/Admin";
 import Myazi from "./pages/Myazi";
 import JoinUs from "./pages/JoinUs";
 import BillingDashboard from "./pages/BillingDashboard";
+import UserDashboard from "./pages/UserDashboard";
 import ResellerDashboard from "./pages/ResellerDashboard";
 import About from "./pages/About";
 import Services from "./pages/Services";
@@ -49,6 +50,7 @@ const App = () => (
               <Route path="/myazi" element={<Myazi />} />
               <Route path="/careers" element={<JoinUs />} />
               <Route path="/billing" element={<BillingDashboard />} />
+              <Route path="/mon-compte" element={<UserDashboard />} />
               <Route path="/reseller" element={<ResellerDashboard />} />
               <Route path="/about" element={<About />} />
               <Route path="/services" element={<Services />} />
