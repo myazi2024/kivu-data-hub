@@ -12,7 +12,8 @@ import UserStatisticsCharts from '@/components/statistics/UserStatisticsCharts';
 import { UserCCCCodes } from '@/components/user/UserCCCCodes';
 import { UserContributions } from '@/components/user/UserContributions';
 import CadastralDashboardTabs from '@/components/cadastral/CadastralDashboardTabs';
-import { User, Gift, FileText, BarChart3, Settings, CreditCard } from 'lucide-react';
+import { UserBuildingPermits } from '@/components/user/UserBuildingPermits';
+import { User, Gift, FileText, BarChart3, Settings, CreditCard, Building } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
@@ -38,7 +39,7 @@ const UserDashboard = () => {
           <UserProfileHeader />
 
           <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="w-full h-auto p-0.5 flex lg:grid lg:grid-cols-6 overflow-x-auto gap-0.5">
+          <TabsList className="w-full h-auto p-0.5 flex lg:grid lg:grid-cols-7 overflow-x-auto gap-0.5">
             <TabsTrigger value="profile" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
               <User className="h-8 w-8 lg:h-8 lg:w-8" />
               <span className="hidden lg:inline text-xs">Profil</span>
@@ -50,6 +51,10 @@ const UserDashboard = () => {
             <TabsTrigger value="ccc-codes" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
               <Gift className="h-8 w-8 lg:h-8 lg:w-8" />
               <span className="hidden lg:inline text-xs">Codes CCC</span>
+            </TabsTrigger>
+            <TabsTrigger value="permits" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
+              <Building className="h-8 w-8 lg:h-8 lg:w-8" />
+              <span className="hidden lg:inline text-xs">Permis</span>
             </TabsTrigger>
             <TabsTrigger value="invoices" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
               <CreditCard className="h-8 w-8 lg:h-8 lg:w-8" />
@@ -95,6 +100,10 @@ const UserDashboard = () => {
 
             <TabsContent value="ccc-codes" className="mt-2 md:mt-6">
               <UserCCCCodes />
+            </TabsContent>
+
+            <TabsContent value="permits" className="mt-2 md:mt-6">
+              <UserBuildingPermits />
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-2 md:mt-6">
