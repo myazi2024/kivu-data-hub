@@ -5,7 +5,6 @@ import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
 import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
 import TypewriterAnimation from '@/components/TypewriterAnimation';
-import CadastralStatsCounter from '@/components/CadastralStatsCounter';
 
 const HeroSection = () => {
   return (
@@ -34,13 +33,8 @@ const HeroSection = () => {
         </div>
 
         {/* Barre de recherche cadastrale */}
-        <div className="w-full max-w-4xl mx-auto mb-4 sm:mb-6">
+        <div className="w-full max-w-4xl mx-auto mb-8 sm:mb-10">
           <CadastralSearchBar />
-        </div>
-
-        {/* Compteur de statistiques cadastrales */}
-        <div className="mb-8 sm:mb-10">
-          <CadastralStatsCounter />
         </div>
 
         {/* Call to Action Buttons - Premium Mobile Design */}
