@@ -4840,6 +4840,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             max={index === 0 ? (currentOwners[0]?.since || new Date().toISOString().split('T')[0]) : (previousOwners[index - 1]?.startDate || new Date().toISOString().split('T')[0])}
                             value={owner.endDate}
                             onChange={(e) => updatePreviousOwner(index, 'endDate', e.target.value)}
+                            disabled={true}
+                            className="cursor-not-allowed opacity-70"
+                            onClick={() => {
+                              toast({
+                                title: "Champ verrouillé",
+                                description: "Cette date est automatiquement remplie à partir de la date de début du propriétaire suivant dans la chronologie. Pour la modifier, changez la date de début du propriétaire suivant.",
+                                variant: "default",
+                              });
+                            }}
                           />
                           {index === 0 && currentOwners[0]?.since && (
                             <p className="text-xs text-muted-foreground">
