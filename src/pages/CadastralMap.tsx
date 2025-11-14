@@ -353,7 +353,7 @@ const CadastralMap = () => {
                   <Input
                     placeholder="Rechercher une parcelle par numéro..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => setSearchQuery(e.target.value.replace(/\D/g, ''))}
                     className="pl-10 pr-10"
                   />
                   {searchQuery && (
