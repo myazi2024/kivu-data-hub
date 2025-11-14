@@ -111,52 +111,52 @@ export const UserContributions: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-3 md:mb-6">
         <Card>
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium">Total</CardTitle>
+          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
+            <CardTitle className="text-[10px] md:text-sm font-medium">Total</CardTitle>
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl md:text-2xl font-bold">{stats.total}</div>
+          <CardContent className="pb-2 md:pb-3">
+            <div className="text-lg md:text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium">En attente</CardTitle>
+          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
+            <CardTitle className="text-[10px] md:text-sm font-medium">En attente</CardTitle>
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl md:text-2xl font-bold text-yellow-600">{stats.pending}</div>
+          <CardContent className="pb-2 md:pb-3">
+            <div className="text-lg md:text-2xl font-bold text-yellow-600">{stats.pending}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium">Approuvées</CardTitle>
+          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
+            <CardTitle className="text-[10px] md:text-sm font-medium">Approuvées</CardTitle>
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl md:text-2xl font-bold text-green-600">{stats.approved}</div>
+          <CardContent className="pb-2 md:pb-3">
+            <div className="text-lg md:text-2xl font-bold text-green-600">{stats.approved}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium">Rejetées</CardTitle>
+          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
+            <CardTitle className="text-[10px] md:text-sm font-medium">Rejetées</CardTitle>
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl md:text-2xl font-bold text-red-600">{stats.rejected}</div>
+          <CardContent className="pb-2 md:pb-3">
+            <div className="text-lg md:text-2xl font-bold text-red-600">{stats.rejected}</div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+            <FileText className="h-4 w-4 md:h-5 md:w-5" />
             Mes contributions CCC
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 md:p-6">
           {contributions.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -208,23 +208,23 @@ export const UserContributions: React.FC = () => {
               </div>
 
               {/* Mobile Cards */}
-              <div className="md:hidden space-y-3">
+              <div className="md:hidden space-y-2">
                 {contributions.map((contribution) => (
-                  <Card key={contribution.id} className="p-4">
-                    <div className="space-y-3">
+                  <Card key={contribution.id} className="p-2">
+                    <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm truncate">{contribution.parcel_number}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="font-medium text-xs truncate">{contribution.parcel_number}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
                             {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
                           </p>
                         </div>
                         {getStatusBadge(contribution.status, contribution.is_suspicious)}
                       </div>
                       
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <span className="text-xs text-muted-foreground">
-                          {new Date(contribution.created_at).toLocaleDateString('fr-FR')}
+                      <div className="flex items-center justify-between pt-1 border-t">
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                         </span>
                         <Button
                           variant="ghost"
@@ -233,10 +233,9 @@ export const UserContributions: React.FC = () => {
                             setSelectedContribution(contribution);
                             setIsDetailsOpen(true);
                           }}
-                          className="h-8"
+                          className="h-7"
                         >
-                          <Eye className="h-4 w-4 mr-1" />
-                          <span className="text-xs">Détails</span>
+                          <Eye className="h-3 w-3" />
                         </Button>
                       </div>
                     </div>

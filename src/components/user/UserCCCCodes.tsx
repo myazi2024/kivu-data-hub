@@ -114,55 +114,55 @@ export const UserCCCCodes: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-3 md:mb-6">
         <Card>
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium">Total codes</CardTitle>
+          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
+            <CardTitle className="text-[10px] md:text-sm font-medium">Total codes</CardTitle>
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl md:text-2xl font-bold">{stats.total}</div>
+          <CardContent className="pb-2 md:pb-3">
+            <div className="text-lg md:text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium">Disponibles</CardTitle>
+          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
+            <CardTitle className="text-[10px] md:text-sm font-medium">Disponibles</CardTitle>
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl md:text-2xl font-bold text-green-600">{stats.available}</div>
+          <CardContent className="pb-2 md:pb-3">
+            <div className="text-lg md:text-2xl font-bold text-green-600">{stats.available}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium">Utilisés</CardTitle>
+          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
+            <CardTitle className="text-[10px] md:text-sm font-medium">Utilisés</CardTitle>
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl md:text-2xl font-bold text-blue-600">{stats.used}</div>
+          <CardContent className="pb-2 md:pb-3">
+            <div className="text-lg md:text-2xl font-bold text-blue-600">{stats.used}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-2 md:pb-3">
-            <CardTitle className="text-xs md:text-sm font-medium">Valeur totale</CardTitle>
+          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
+            <CardTitle className="text-[10px] md:text-sm font-medium">Valeur totale</CardTitle>
           </CardHeader>
-          <CardContent className="pb-3">
-            <div className="text-xl md:text-2xl font-bold flex items-center gap-1">
-              <DollarSign className="h-4 w-4 md:h-5 md:w-5" />
-              <span className="text-base md:text-2xl">{stats.totalValue.toFixed(2)}</span>
+          <CardContent className="pb-2 md:pb-3">
+            <div className="text-lg md:text-2xl font-bold flex items-center gap-0.5">
+              <DollarSign className="h-3 w-3 md:h-5 md:w-5" />
+              <span className="text-sm md:text-2xl">{stats.totalValue.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5" />
+        <CardHeader className="pb-3 md:pb-6">
+          <CardTitle className="flex items-center gap-2 text-sm md:text-base">
+            <Gift className="h-4 w-4 md:h-5 md:w-5" />
             Mes codes CCC
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 md:p-6">
           {codes.length === 0 ? (
             <div className="text-center py-12">
               <Gift className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -222,49 +222,49 @@ export const UserCCCCodes: React.FC = () => {
               </div>
 
               {/* Mobile Cards */}
-              <div className="lg:hidden space-y-3">
+              <div className="lg:hidden space-y-2">
                 {codes.map((code) => (
-                  <Card key={code.id} className="p-4">
-                    <div className="space-y-3">
+                  <Card key={code.id} className="p-2">
+                    <div className="space-y-2">
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="font-mono font-medium text-sm">{code.code}</p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="font-mono font-medium text-xs">{code.code}</p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
                             Parcelle: {code.parcel_number}
                           </p>
                         </div>
                         {getStatusBadge(code)}
                       </div>
 
-                      <div className="flex items-center justify-between py-2 border-y">
+                      <div className="flex items-center justify-between py-1 border-y">
                         <div>
-                          <p className="text-xs text-muted-foreground">Valeur</p>
-                          <p className="font-semibold text-green-600 flex items-center gap-1 mt-1">
-                            <DollarSign className="h-4 w-4" />
+                          <p className="text-[10px] text-muted-foreground">Valeur</p>
+                          <p className="font-semibold text-green-600 flex items-center gap-0.5 mt-0.5 text-xs">
+                            <DollarSign className="h-3 w-3" />
                             {Number(code.value_usd).toFixed(2)}
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-xs text-muted-foreground">Expire le</p>
-                          <p className="text-xs font-medium mt-1">
-                            {new Date(code.expires_at).toLocaleDateString('fr-FR')}
+                          <p className="text-[10px] text-muted-foreground">Expire</p>
+                          <p className="text-[10px] font-medium mt-0.5">
+                            {new Date(code.expires_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                           </p>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          Créé le {new Date(code.created_at).toLocaleDateString('fr-FR')}
+                        <span className="text-[10px] text-muted-foreground">
+                          {new Date(code.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                         </span>
                         <Button
                           variant="default"
                           size="sm"
                           onClick={() => copyToClipboard(code.code)}
                           disabled={!code.is_valid || code.is_used}
-                          className="h-8"
+                          className="h-7 text-[11px]"
                         >
-                          <Copy className="h-3.5 w-3.5 mr-1" />
-                          <span className="text-xs">Copier</span>
+                          <Copy className="h-3 w-3 mr-1" />
+                          Copier
                         </Button>
                       </div>
                     </div>
