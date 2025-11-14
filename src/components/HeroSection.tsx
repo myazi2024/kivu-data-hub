@@ -33,7 +33,7 @@ const HeroSection = () => {
 
         {/* Call to Action Buttons - Premium Mobile Design */}
         <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4 max-w-2xl mx-auto">
-          <Link to="/map" className="w-full sm:flex-1">
+          <Link to="/cadastral-map" className="w-full sm:flex-1">
             <Button 
               size="lg"
               className="w-full bg-white text-seloger-red hover:bg-white/95 hover:scale-[1.02] font-bold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg group transition-all duration-300 rounded-xl shadow-2xl hover:shadow-3xl"
