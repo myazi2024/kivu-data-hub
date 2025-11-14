@@ -449,6 +449,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [parcelNumber]);
 
+  // Synchroniser automatiquement la date de fin du premier propriétaire précédent
+  // avec la date de début du propriétaire actuel
+  useEffect(() => {
+    if (currentOwners.length > 0 && currentOwners[0]?.since && previousOwners.length > 0) {
+      const firstPreviousOwner = previousOwners[0];
+      // Si la date de fin n'est pas encore définie ou est différente de la date du propriétaire actuel
+      if (!firstPreviousOwner.endDate || firstPreviousOwner.endDate !== currentOwners[0].since) {
+        const updated = [...previousOwners];
+        updated[0] = { ...updated[0], endDate: currentOwners[0].since };
+        setPreviousOwners(updated);
+      }
+    }
+  }, [currentOwners]);
+
   // Recalculer automatiquement la superficie quand les dimensions changent
   useEffect(() => {
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
@@ -1208,13 +1222,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setShowPreviousOwnerWarning(false);
     setHighlightIncompletePreviousOwner(false);
     
-    setPreviousOwners([...previousOwners, {
+    const newOwner = {
       name: '',
       legalStatus: 'Personne physique',
       startDate: '',
       endDate: '',
       mutationType: 'Vente'
-    }]);
+    };
+    
+    // Si on ajoute un nouveau propriétaire après un existant, auto-remplir sa date de fin
+    // avec la date de début du propriétaire précédent (moins ancien)
+    if (previousOwners.length > 0) {
+      const lastOwner = previousOwners[previousOwners.length - 1];
+      if (lastOwner.startDate) {
+        newOwner.endDate = lastOwner.startDate;
+      }
+    }
+    
+    setPreviousOwners([...previousOwners, newOwner]);
   };
 
   const removePreviousOwner = (index: number) => {
@@ -1224,6 +1249,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const updatePreviousOwner = (index: number, field: string, value: string) => {
     const updated = [...previousOwners];
     updated[index] = { ...updated[index], [field]: value };
+    
+    // Auto-remplir la date de fin du propriétaire suivant (plus ancien) quand on change la date de début
+    if (field === 'startDate' && value && index < previousOwners.length - 1) {
+      // Mettre à jour la date de fin du propriétaire suivant (index + 1)
+      updated[index + 1] = { ...updated[index + 1], endDate: value };
+    }
+    
     setPreviousOwners(updated);
   };
 
