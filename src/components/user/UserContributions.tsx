@@ -111,40 +111,40 @@ export const UserContributions: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total</CardTitle>
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium">Total</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+          <CardContent className="pb-3">
+            <div className="text-xl md:text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">En attente</CardTitle>
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium">En attente</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
+          <CardContent className="pb-3">
+            <div className="text-xl md:text-2xl font-bold text-yellow-600">{stats.pending}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Approuvées</CardTitle>
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium">Approuvées</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.approved}</div>
+          <CardContent className="pb-3">
+            <div className="text-xl md:text-2xl font-bold text-green-600">{stats.approved}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Rejetées</CardTitle>
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium">Rejetées</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-red-600">{stats.rejected}</div>
+          <CardContent className="pb-3">
+            <div className="text-xl md:text-2xl font-bold text-red-600">{stats.rejected}</div>
           </CardContent>
         </Card>
       </div>
@@ -163,31 +163,69 @@ export const UserContributions: React.FC = () => {
               <p className="text-muted-foreground">Vous n'avez pas encore de contributions</p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Numéro parcelle</TableHead>
-                    <TableHead>Localisation</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {contributions.map((contribution) => (
-                    <TableRow key={contribution.id}>
-                      <TableCell className="font-medium">{contribution.parcel_number}</TableCell>
-                      <TableCell>
-                        {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(contribution.created_at).toLocaleDateString('fr-FR')}
-                      </TableCell>
-                      <TableCell>
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Numéro parcelle</TableHead>
+                      <TableHead>Localisation</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contributions.map((contribution) => (
+                      <TableRow key={contribution.id}>
+                        <TableCell className="font-medium">{contribution.parcel_number}</TableCell>
+                        <TableCell>
+                          {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(contribution.created_at).toLocaleDateString('fr-FR')}
+                        </TableCell>
+                        <TableCell>
+                          {getStatusBadge(contribution.status, contribution.is_suspicious)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedContribution(contribution);
+                              setIsDetailsOpen(true);
+                            }}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-3">
+                {contributions.map((contribution) => (
+                  <Card key={contribution.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{contribution.parcel_number}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
+                          </p>
+                        </div>
                         {getStatusBadge(contribution.status, contribution.is_suspicious)}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </div>
+                      
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(contribution.created_at).toLocaleDateString('fr-FR')}
+                        </span>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -195,15 +233,17 @@ export const UserContributions: React.FC = () => {
                             setSelectedContribution(contribution);
                             setIsDetailsOpen(true);
                           }}
+                          className="h-8"
                         >
-                          <Eye className="h-4 w-4" />
+                          <Eye className="h-4 w-4 mr-1" />
+                          <span className="text-xs">Détails</span>
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
