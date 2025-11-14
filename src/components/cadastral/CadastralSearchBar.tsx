@@ -140,7 +140,9 @@ const CadastralSearchBar = () => {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value.toUpperCase());
+    // N'accepter que les chiffres pour éviter les erreurs de casse
+    const value = e.target.value.replace(/\D/g, '');
+    setSearchQuery(value);
   };
 
   const handleSelectSuggestion = (parcelNumber: string) => {
