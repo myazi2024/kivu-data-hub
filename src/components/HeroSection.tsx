@@ -1,9 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, MapPin, BarChart3 } from 'lucide-react';
+import { ArrowRight, MapPin, BarChart3, Map } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import heroSkyline from '@/assets/hero-skyline.webp';
-import CadastralSearchBar from '@/components/cadastral/CadastralSearchBar';
 import TypewriterAnimation from '@/components/TypewriterAnimation';
 
 const HeroSection = () => {
@@ -24,7 +23,7 @@ const HeroSection = () => {
       {/* Content */}
       <div className="relative z-10 w-full max-w-6xl mx-auto px-4 sm:px-6 text-center text-white">
         {/* Main Heading */}
-        <div className="mb-4 sm:mb-6">
+        <div className="mb-8 sm:mb-10">
           <h1 className="text-xl xs:text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 leading-tight">
             Accédez aux informations de n'importe quelle propriété en RDC, sans quitter votre canapé.
           </h1>
@@ -32,32 +31,38 @@ const HeroSection = () => {
           <TypewriterAnimation />
         </div>
 
-        {/* Barre de recherche cadastrale */}
-        <div className="w-full max-w-4xl mx-auto mb-8 sm:mb-10">
-          <CadastralSearchBar />
-        </div>
-
         {/* Call to Action Buttons - Premium Mobile Design */}
-        <div className="flex flex-row gap-3 sm:gap-4 justify-center items-center px-4">
-          <Link to="/publications" className="flex-1 max-w-[160px] sm:max-w-none sm:flex-none">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center px-4 max-w-2xl mx-auto">
+          <Link to="/map" className="w-full sm:flex-1">
             <Button 
-              className="w-full bg-white text-seloger-red hover:bg-white/95 hover:scale-[1.02] font-semibold px-4 sm:px-6 py-3 sm:py-3.5 text-sm sm:text-base group transition-all duration-300 h-12 sm:h-auto rounded-xl sm:rounded-lg shadow-lg hover:shadow-xl"
+              size="lg"
+              className="w-full bg-white text-seloger-red hover:bg-white/95 hover:scale-[1.02] font-bold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg group transition-all duration-300 rounded-xl shadow-2xl hover:shadow-3xl"
             >
-              <BarChart3 className="mr-2 h-4 w-4 sm:mr-2.5 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Nos Publications</span>
-              <span className="sm:hidden">Publications</span>
-              <ArrowRight className="ml-1 sm:ml-2 h-3 w-3 sm:h-4 sm:w-4 group-hover:translate-x-1 transition-transform duration-300" />
+              <Map className="mr-3 h-6 w-6 sm:h-7 sm:w-7" />
+              <span>Cadastre numérique</span>
+              <ArrowRight className="ml-3 h-5 w-5 sm:h-6 sm:w-6 group-hover:translate-x-1 transition-transform duration-300" />
             </Button>
           </Link>
           
-          <Link to="/map" className="flex-1 max-w-[160px] sm:max-w-none sm:flex-none">
+          <Link to="/publications" className="w-full sm:flex-1">
             <Button 
               variant="outline"
-              className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-seloger-red hover:scale-[1.02] font-semibold px-4 sm:px-6 py-3 sm:py-3.5 text-sm sm:text-base transition-all duration-300 h-12 sm:h-auto rounded-xl sm:rounded-lg shadow-lg hover:shadow-xl"
+              size="lg"
+              className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-seloger-red hover:scale-[1.02] font-semibold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl"
             >
-              <MapPin className="mr-2 h-4 w-4 sm:mr-2.5 sm:h-5 sm:w-5" />
-              <span className="hidden sm:inline">Données foncières</span>
-              <span className="sm:hidden">Données foncières</span>
+              <BarChart3 className="mr-3 h-5 w-5 sm:h-6 sm:w-6" />
+              <span>Nos Publications</span>
+            </Button>
+          </Link>
+          
+          <Link to="/map" className="w-full sm:flex-1">
+            <Button 
+              variant="outline"
+              size="lg"
+              className="w-full bg-white/10 backdrop-blur-sm border-2 border-white/30 text-white hover:bg-white hover:text-seloger-red hover:scale-[1.02] font-semibold px-6 sm:px-8 py-6 sm:py-7 text-base sm:text-lg transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl"
+            >
+              <MapPin className="mr-3 h-5 w-5 sm:h-6 sm:w-6" />
+              <span>Données foncières</span>
             </Button>
           </Link>
         </div>
