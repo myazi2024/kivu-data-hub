@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, X, MapPin, FileText, AlertCircle, SearchIcon, Info } from 'lucide-react';
+import { Search, X, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
+import { supabase } from '@/integrations/supabase/client';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
 import { useSearchConfig } from '@/hooks/useSearchConfig';
 import CadastralResultsDialog from './CadastralResultsDialog';
@@ -15,17 +14,26 @@ import CCCIntroDialog from './CCCIntroDialog';
 
 const FIXED_TEXT = "Ex: ";
 
+interface ParcelSuggestion {
+  id: string;
+  parcel_number: string;
+  current_owner_name: string;
+  ville: string | null;
+  commune: string | null;
+  quartier: string | null;
+}
+
 const CadastralSearchBar = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [isExpanded, setIsExpanded] = useState(false);
   const [showResultsDialog, setShowResultsDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
-  const [isTextVisible, setIsTextVisible] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [fromMap, setFromMap] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<ParcelSuggestion[]>([]);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   
   const {
     searchQuery,
@@ -33,52 +41,69 @@ const CadastralSearchBar = () => {
     searchResult,
     loading,
     error,
-    clearSearch,
-    validateParcelNumber
+    clearSearch
   } = useCadastralSearch();
 
-  // Lire le paramètre de recherche depuis l'URL au montage du composant
   useEffect(() => {
     const urlSearchQuery = searchParams.get('search');
     const fromParam = searchParams.get('from');
     if (urlSearchQuery) {
       setSearchQuery(urlSearchQuery.toUpperCase());
-      setIsExpanded(true);
       setFromMap(fromParam === 'map');
-      // Nettoyer les paramètres de l'URL après les avoir lus
       setSearchParams({});
     }
   }, []);
 
-  const { 
-    getAnimatedExamples, 
-    getFormatConfig, 
-    getErrorMessages 
-  } = useSearchConfig();
-
+  const { getAnimatedExamples } = useSearchConfig();
   const animatedTexts = getAnimatedExamples();
-  const formatUrbain = getFormatConfig('urbain');
-  const formatRural = getFormatConfig('rural');
-  const errorMessages = getErrorMessages();
 
   const [displayedText, setDisplayedText] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const [showCursor, setShowCursor] = useState(true);
 
-  // Animation machine à écrire
+  // Recherche prédictive
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!searchQuery.trim() || searchQuery.length < 2) {
+        setSearchSuggestions([]);
+        return;
+      }
+
+      setLoadingSuggestions(true);
+      try {
+        const { data, error } = await supabase
+          .from('cadastral_parcels')
+          .select('id, parcel_number, current_owner_name, ville, commune, quartier')
+          .ilike('parcel_number', `%${searchQuery}%`)
+          .is('deleted_at', null)
+          .limit(5);
+
+        if (error) {
+          console.error('Erreur recherche suggestions:', error);
+          setSearchSuggestions([]);
+        } else {
+          setSearchSuggestions(data || []);
+        }
+      } catch (err) {
+        console.error('Erreur:', err);
+        setSearchSuggestions([]);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    };
+
+    const debounceTimer = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(debounceTimer);
+  }, [searchQuery]);
+
+  // Animation placeholder
   useEffect(() => {
     if (searchQuery || isFocused) {
       setDisplayedText('');
-      setIsTyping(false);
       return;
     }
     
     const currentText = animatedTexts[currentTextIndex];
     let charIndex = 0;
-    
-    // Phase d'écriture
-    setIsTyping(true);
-    setDisplayedText('');
     
     const typeInterval = setInterval(() => {
       if (charIndex < currentText.length) {
@@ -86,18 +111,13 @@ const CadastralSearchBar = () => {
         charIndex++;
       } else {
         clearInterval(typeInterval);
-        setIsTyping(false);
-        
-        // Pause avant effacement
         setTimeout(() => {
-          // Phase d'effacement
           const eraseInterval = setInterval(() => {
             setDisplayedText(prev => {
               if (prev.length > 0) {
                 return prev.slice(0, -1);
               } else {
                 clearInterval(eraseInterval);
-                // Passer au texte suivant après un court délai
                 setTimeout(() => {
                   setCurrentTextIndex((prev) => (prev + 1) % animatedTexts.length);
                 }, 1500);
@@ -112,302 +132,150 @@ const CadastralSearchBar = () => {
     return () => clearInterval(typeInterval);
   }, [currentTextIndex, searchQuery, isFocused, animatedTexts]);
 
-  // Animation du curseur
   useEffect(() => {
     const cursorInterval = setInterval(() => {
       setShowCursor(prev => !prev);
     }, 530);
-
     return () => clearInterval(cursorInterval);
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.toUpperCase();
-    setSearchQuery(value);
+    setSearchQuery(e.target.value.toUpperCase());
   };
 
-  const handleClear = () => {
+  const handleSelectSuggestion = (parcelNumber: string) => {
+    setSearchQuery(parcelNumber);
+    setSearchSuggestions([]);
+  };
+
+  const handleClearSearch = () => {
     clearSearch();
-    setIsExpanded(false);
+    setSearchSuggestions([]);
     setShowResultsDialog(false);
   };
 
-  const handleCloseResults = () => {
-    setShowResultsDialog(false);
-    clearSearch();
-    setIsExpanded(false);
-  };
+  const inputStatus = loading ? 'loading' : error ? 'error' : searchResult ? 'success' : 'default';
 
-  const getInputStatus = () => {
-    if (!searchQuery) return 'default';
-    if (error) return 'error';
-    if (loading) return 'loading';
-    if (searchResult) return 'success';
-    return 'typing';
-  };
-
-  const inputStatus = getInputStatus();
-
-  // Afficher le dialog quand des résultats sont trouvés
-  React.useEffect(() => {
+  useEffect(() => {
     if (searchResult && !showResultsDialog) {
       setShowResultsDialog(true);
     }
   }, [searchResult, showResultsDialog]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
-      {/* Barre de recherche principale */}
-      <Card className="p-4 shadow-lg border-border bg-background/95 backdrop-blur">
-        <div className="flex flex-col space-y-3">
-          {/* En-tête avec icône et titre */}
-          <div className="flex items-center gap-2 text-foreground">
-            <FileText className="h-5 w-5 text-primary" />
-            <h3 className="font-semibold text-base">Recherche cadastrale</h3>
-            
-            {/* Popover avec informations format */}
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className="h-8 w-8 p-0 text-muted-foreground hover:text-primary transition-colors"
-                >
-                  <Info className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80" align="start">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      Format cadastral RDC
-                    </h4>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    {/* Section Urbaine - Dynamique */}
-                    {formatUrbain && (
-                      <div className="space-y-2">
-                        <div className="flex items-baseline gap-2">
-                          <code className="px-2 py-0.5 bg-primary/10 text-primary rounded text-xs font-semibold">
-                            {formatUrbain.code}
-                          </code>
-                          <span className="text-xs text-muted-foreground">{formatUrbain.label}</span>
-                        </div>
-                        <div className="ml-1 space-y-1.5 text-xs">
-                          <div className="font-mono text-foreground/80">
-                            {formatUrbain.format}
-                          </div>
-                          <div className="space-y-1 text-muted-foreground">
-                            {formatUrbain.examples?.map((ex: any, idx: number) => (
-                              <div key={idx} className="flex items-center gap-1.5">
-                                <span className="w-1 h-1 rounded-full bg-primary/40"></span>
-                                <code className="text-xs">{ex.code}</code>
-                                {ex.note && (
-                                  <span className="text-[10px] opacity-60">({ex.note})</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <Separator />
-
-                    {/* Section Rurale - Dynamique */}
-                    {formatRural && (
-                      <div className="space-y-2">
-                        <div className="flex items-baseline gap-2">
-                          <code className="px-2 py-0.5 bg-accent/50 text-accent-foreground rounded text-xs font-semibold">
-                            {formatRural.code}
-                          </code>
-                          <span className="text-xs text-muted-foreground">{formatRural.label}</span>
-                        </div>
-                        <div className="ml-1 space-y-1.5 text-xs">
-                          <div className="font-mono text-foreground/80">
-                            {formatRural.format}
-                          </div>
-                          <div className="space-y-1 text-muted-foreground">
-                            {formatRural.examples?.map((ex: any, idx: number) => (
-                              <div key={idx} className="flex items-center gap-1.5">
-                                <span className="w-1 h-1 rounded-full bg-accent/60"></span>
-                                <code className="text-xs">{ex.code}</code>
-                                {ex.note && (
-                                  <span className="text-[10px] opacity-60">({ex.note})</span>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-
-            <div className="flex-1" />
-            {searchResult && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                onClick={handleClear}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
-
-          {/* Champ de recherche */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-3 flex items-center">
-              <Search className={`h-4 w-4 ${loading ? 'animate-pulse text-primary' : 'text-muted-foreground'}`} />
+    <>
+      <Card className="relative overflow-visible bg-white/95 backdrop-blur-sm border-white/20 shadow-2xl">
+        <div className="p-4 sm:p-6">
+          <div className="flex items-center gap-2 sm:gap-3 relative">
+            <div className="h-11 w-11 shrink-0 flex items-center justify-center text-seloger-red">
+              <Search className="h-5 w-5" />
             </div>
-            
-            {/* Input principal */}
-            <Input
-              type="text"
-              value={searchQuery}
-              onChange={handleInputChange}
-              onFocus={() => {
-                setIsExpanded(true);
-                setIsFocused(true);
-              }}
-              onBlur={() => {
-                setIsFocused(false);
-              }}
-              className={`pl-10 pr-4 h-12 text-sm font-mono tracking-wide ${
-                inputStatus === 'error' ? 'border-destructive focus-visible:ring-destructive' :
-                inputStatus === 'success' ? 'border-green-500 focus-visible:ring-green-500' :
-                'border-input'
-              }`}
-            />
-            
-            {/* Texte animé machine à écrire */}
-            {!searchQuery && !isFocused && (
-              <div className="absolute inset-0 flex items-center pl-10 pr-4 pointer-events-none">
-                <div 
-                  className="text-sm text-muted-foreground/60 font-light flex flex-wrap"
-                  style={{
-                    maxWidth: 'calc(100% - 2rem)',
-                    fontSize: 'clamp(0.75rem, 2vw, 0.875rem)',
-                    fontFamily: 'system-ui, -apple-system, sans-serif'
-                  }}
-                >
-                  <span className="text-muted-foreground/80">{FIXED_TEXT}</span>
-                  <span>{displayedText}</span>
-                  <span 
-                    className={`inline-block w-0.5 h-4 bg-muted-foreground/60 ml-0.5 transition-opacity duration-100 ${
-                      showCursor ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    style={{ 
-                      animation: isTyping ? 'none' : undefined,
-                      verticalAlign: 'middle'
-                    }}
-                  />
-                </div>
-              </div>
-            )}
-            
-            {loading && (
-              <div className="absolute inset-y-0 right-3 flex items-center">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary border-t-transparent" />
-              </div>
-            )}
-          </div>
 
+            <div className="flex-1 relative">
+              <Input
+                type="text"
+                value={searchQuery}
+                onChange={handleInputChange}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => {
+                  setIsFocused(false);
+                  setTimeout(() => setSearchSuggestions([]), 200);
+                }}
+                placeholder=""
+                className={`h-11 pr-10 text-base font-medium transition-all duration-200
+                  ${inputStatus === 'loading' ? 'border-blue-400 ring-2 ring-blue-100' : ''}
+                  ${inputStatus === 'error' ? 'border-red-400 ring-2 ring-red-100' : ''}
+                  ${inputStatus === 'success' ? 'border-green-400 ring-2 ring-green-100' : ''}
+                  ${!searchQuery && !isFocused ? 'border-gray-200' : ''}`}
+                disabled={loading}
+              />
 
-          {/* Message d'erreur avec option de contribution */}
-          {error && (
-            <div className="space-y-3 animate-fade-in">
-              <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
-                <p className="text-sm text-destructive">{error}</p>
-              </div>
-              
-              {error.includes(errorMessages.not_found) && (
-                <div className="p-4 bg-primary/5 border border-primary/20 rounded-lg space-y-3 animate-fade-in shadow-sm hover:shadow-md transition-all duration-300">
-                  <p className="text-sm text-foreground leading-relaxed">
-                    <strong className="block">Vérifiez manuellement notre base de données. Cliquez sur le bouton "Recherche manuelle" pour continuer.</strong>
-                  </p>
-                  
-                  <div className="flex items-start gap-3 py-2">
-                    <Checkbox 
-                      id="terms-acceptance"
-                      checked={termsAccepted}
-                      onCheckedChange={(checked) => setTermsAccepted(checked as boolean)}
-                      className="mt-1"
-                    />
-                    <label 
-                      htmlFor="terms-acceptance" 
-                      className="text-xs text-muted-foreground leading-relaxed cursor-pointer"
-                    >
-                      J'accepte les{' '}
-                      <a 
-                        href="/about-ccc" 
-                        target="_blank"
-                        className="text-primary hover:underline font-medium"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        termes et conditions d'utilisation
-                      </a>
-                      {' '}et je certifie que les informations que je fournirai sont exactes.
-                    </label>
-                  </div>
-                  
-                  <Button 
-                    onClick={() => setShowIntroDialog(true)}
-                    disabled={!termsAccepted}
-                    className={`w-full h-14 text-lg font-semibold group relative overflow-hidden transition-all duration-500 shadow-lg ${
-                      termsAccepted 
-                        ? 'bg-gradient-to-r from-primary via-primary to-primary/90 hover:from-primary/90 hover:via-primary hover:to-primary hover:scale-[1.02] hover:shadow-xl active:scale-[0.98]' 
-                        : 'bg-gradient-to-r from-muted via-muted to-muted cursor-not-allowed opacity-60'
-                    }`}
-                  >
-                    {termsAccepted && (
-                      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000"></div>
-                    )}
-                    <SearchIcon className={`mr-2 h-5 w-5 relative z-10 transition-transform duration-300 ${termsAccepted ? 'group-hover:scale-110' : ''}`} />
-                    <span className="font-semibold relative z-10">Recherche manuelle</span>
-                  </Button>
+              {!searchQuery && !isFocused && displayedText && (
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none flex items-center text-muted-foreground">
+                  <span className="opacity-60">{FIXED_TEXT}</span>
+                  <span className="font-medium">
+                    {displayedText}
+                    {showCursor && <span className="animate-pulse">|</span>}
+                  </span>
                 </div>
               )}
+
+              {searchSuggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] max-h-64 overflow-y-auto">
+                  {searchSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      onClick={() => handleSelectSuggestion(suggestion.parcel_number)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-semibold text-seloger-red">{suggestion.parcel_number}</p>
+                          <p className="text-sm text-muted-foreground">{suggestion.current_owner_name}</p>
+                          {(suggestion.ville || suggestion.commune || suggestion.quartier) && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {[suggestion.ville, suggestion.commune, suggestion.quartier].filter(Boolean).join(', ')}
+                            </p>
+                          )}
+                        </div>
+                        <Search className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {loading && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <Loader2 className="h-5 w-5 animate-spin text-seloger-red" />
+                </div>
+              )}
+              {!loading && searchQuery && (
+                <button onClick={handleClearSearch} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                  <X className="h-5 w-5" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {error && (
+            <div className="mt-4 p-3 sm:p-4 rounded-lg bg-red-50 border border-red-200">
+              <div className="flex items-start gap-3">
+                <X className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-red-800">{error}</p>
+                  {error.includes('Aucune parcelle trouvée') && (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-xs text-red-700">
+                        Cette parcelle n'existe pas encore dans notre base de données. Vous pouvez contribuer en ajoutant ces informations !
+                      </p>
+                      <Button onClick={() => setShowIntroDialog(true)} variant="outline" size="sm" className="text-seloger-red border-seloger-red hover:bg-seloger-red/10">
+                        Ajouter cette parcelle
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
       </Card>
 
-      {/* Dialog des résultats */}
-      {searchResult && (
-        <CadastralResultsDialog
-          result={searchResult}
-          isOpen={showResultsDialog}
-          onClose={handleCloseResults}
-          fromMap={fromMap}
-        />
+      {showResultsDialog && searchResult && (
+        <CadastralResultsDialog open={showResultsDialog} onClose={() => setShowResultsDialog(false)} searchResult={searchResult} searchQuery={searchQuery} />
       )}
 
-      {/* Dialog d'introduction CCC */}
-      <CCCIntroDialog
-        open={showIntroDialog}
-        onOpenChange={setShowIntroDialog}
-        onContinue={() => {
+      {showIntroDialog && (
+        <CCCIntroDialog open={showIntroDialog} onOpenChange={setShowIntroDialog} onContinue={() => {
           setShowIntroDialog(false);
           setShowContributionDialog(true);
-        }}
-        parcelNumber={searchQuery}
-      />
+        }} parcelNumber={searchQuery} />
+      )}
 
-      {/* Dialog de contribution */}
-      <CadastralContributionDialog
-        open={showContributionDialog}
-        onOpenChange={setShowContributionDialog}
-        parcelNumber={searchQuery}
-      />
-    </div>
+      {showContributionDialog && (
+        <CadastralContributionDialog open={showContributionDialog} onOpenChange={setShowContributionDialog} initialParcelNumber={searchQuery} />
+      )}
+    </>
   );
 };
 
