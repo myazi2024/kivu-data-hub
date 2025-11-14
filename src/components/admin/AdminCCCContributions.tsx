@@ -773,6 +773,56 @@ const AdminCCCContributions: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Test Results Dialog */}
+      <Dialog open={showTestDialog} onOpenChange={setShowTestDialog}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Résultats des Tests d'Intégrité CCC</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            {testResults.map((result, idx) => (
+              <div key={idx} className="p-3 rounded border">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5">
+                    {result.status === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                    {result.status === 'warning' && <AlertTriangle className="h-5 w-5 text-orange-500" />}
+                    {result.status === 'error' && <XCircle className="h-5 w-5 text-red-500" />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium">{result.test}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
+                    {result.details && (
+                      <pre className="text-xs bg-secondary p-2 rounded mt-2 overflow-x-auto">
+                        {JSON.stringify(result.details, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {testResults.length > 0 && (
+              <div className="pt-3 border-t">
+                <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-green-500" />
+                    <span>{testResults.filter(r => r.status === 'success').length} succès</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    <span>{testResults.filter(r => r.status === 'warning').length} avertissements</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <XCircle className="h-4 w-4 text-red-500" />
+                    <span>{testResults.filter(r => r.status === 'error').length} erreurs</span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
