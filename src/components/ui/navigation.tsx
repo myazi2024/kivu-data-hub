@@ -54,9 +54,19 @@ const Navigation = () => {
                 {user ? (
                   <>
                     <div className="hidden sm:flex items-center space-x-2">
-                      <span className="text-xs sm:text-sm text-muted-foreground truncate max-w-24 sm:max-w-32">
-                        {profile?.full_name || user.email}
-                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="text-xs"
+                      >
+                        <Link to="/mon-compte" className="flex items-center space-x-1">
+                          <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="truncate max-w-24 sm:max-w-32">
+                            {profile?.full_name || user.email}
+                          </span>
+                        </Link>
+                      </Button>
                       {profile?.role === 'admin' && (
                         <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded">
                           Admin
@@ -135,28 +145,35 @@ const Navigation = () => {
             <div className="border-t border-border pt-2 mt-2 space-y-1">
               {!loading && (
                 <>
-                  {user ? (
-                    <>
-                      <div className="px-3 py-2">
-                        <p className="text-sm font-medium truncate">{profile?.full_name || user.email}</p>
-                        {profile?.role && (
-                          <p className="text-xs text-muted-foreground capitalize">
-                            {profile.role === 'admin' ? 'Administrateur' : 
-                             profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
-                          </p>
-                        )}
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={signOut}
-                        className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-                      >
-                        <LogOut className="h-4 w-4" />
-                        <span>Déconnexion</span>
-                      </Button>
-                    </>
-                  ) : (
+              {user ? (
+                <>
+                  <div className="px-3 py-2 border-b border-border mb-2">
+                    <Link
+                      to="/mon-compte"
+                      className="flex items-center space-x-3 text-sm font-medium"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <User className="h-4 w-4 text-primary" />
+                      <span className="truncate">{profile?.full_name || user.email}</span>
+                    </Link>
+                    {profile?.role && (
+                      <p className="text-xs text-muted-foreground capitalize mt-1 ml-7">
+                        {profile.role === 'admin' ? 'Administrateur' : 
+                         profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={signOut}
+                    className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Déconnexion</span>
+                  </Button>
+                </>
+              ) : (
                     <Button
                       variant="ghost"
                       size="sm"
