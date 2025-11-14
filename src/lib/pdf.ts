@@ -557,7 +557,6 @@ export async function generateCadastralReport(
   }
 
   // Passer à la page 2
-  addPageFooter();
   addNewPage();
 
 
