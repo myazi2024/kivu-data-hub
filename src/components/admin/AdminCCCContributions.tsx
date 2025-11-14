@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, ExternalLink, Play } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface Contribution {
@@ -22,15 +22,41 @@ interface Contribution {
   fraud_reason: string | null;
   rejection_reason: string | null;
   created_at: string;
-  // Données complètes
+  reviewed_at: string | null;
+  // Données complètes - TOUTES les données du formulaire
   property_title_type: string | null;
+  lease_type: string | null;
+  title_reference_number: string | null;
   current_owner_name: string | null;
+  current_owners_details: any;
+  current_owner_legal_status: string | null;
+  current_owner_since: string | null;
   area_sqm: number | null;
+  parcel_sides: any;
+  construction_type: string | null;
+  construction_nature: string | null;
+  declared_usage: string | null;
   province: string | null;
+  ville: string | null;
+  commune: string | null;
+  quartier: string | null;
+  avenue: string | null;
+  territoire: string | null;
+  collectivite: string | null;
+  groupement: string | null;
+  village: string | null;
+  circonscription_fonciere: string | null;
+  gps_coordinates: any;
   ownership_history: any;
   boundary_history: any;
   tax_history: any;
   mortgage_history: any;
+  building_permits: any;
+  previous_permit_number: string | null;
+  permit_request_data: any;
+  whatsapp_number: string | null;
+  owner_document_url: string | null;
+  property_title_document_url: string | null;
 }
 
 interface ContributionStats {
@@ -55,6 +81,8 @@ const AdminCCCContributions: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
+  const [showTestDialog, setShowTestDialog] = useState(false);
+  const [testResults, setTestResults] = useState<any[]>([]);
 
   useEffect(() => {
     fetchContributions();
@@ -167,6 +195,23 @@ const AdminCCCContributions: React.FC = () => {
     return Math.round((filled / total) * 100);
   };
 
+  const runIntegrityTests = async () => {
+    setShowTestDialog(true);
+    setTestResults([{ test: 'Test en cours...', status: 'success', message: 'Exécution des tests...' }]);
+
+    try {
+      const { testCCCDataIntegrity } = await import('@/utils/testCCCDataIntegrity');
+      const results = await testCCCDataIntegrity();
+      setTestResults(results);
+    } catch (error: any) {
+      setTestResults([{
+        test: 'Erreur',
+        status: 'error',
+        message: `Impossible d'exécuter les tests: ${error.message}`
+      }]);
+    }
+  };
+
   const filteredContributions = contributions.filter(c => {
     if (activeTab === 'all') return true;
     if (activeTab === 'suspicious') return c.is_suspicious;
@@ -262,10 +307,16 @@ const AdminCCCContributions: React.FC = () => {
       {/* Main Table */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Gift className="h-5 w-5" />
-            Gestion des Contributions CCC
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Gift className="h-5 w-5" />
+              Gestion des Contributions CCC
+            </CardTitle>
+            <Button variant="outline" size="sm" onClick={runIntegrityTests}>
+              <Play className="h-4 w-4 mr-2" />
+              Tester l'intégrité
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -371,19 +422,312 @@ const AdminCCCContributions: React.FC = () => {
                 </Alert>
               )}
 
-              <div className="space-y-2">
-                <Label>Informations fournies</Label>
-                <div className="text-sm space-y-1 p-3 bg-secondary rounded">
-                  <p><strong>Type de titre:</strong> {selectedContribution.property_title_type || 'Non renseigné'}</p>
-                  <p><strong>Propriétaire:</strong> {selectedContribution.current_owner_name || 'Non renseigné'}</p>
-                  <p><strong>Superficie:</strong> {selectedContribution.area_sqm ? `${selectedContribution.area_sqm} m²` : 'Non renseigné'}</p>
-                  <p><strong>Province:</strong> {selectedContribution.province || 'Non renseigné'}</p>
-                  <p><strong>Historique propriété:</strong> {selectedContribution.ownership_history ? 'Oui' : 'Non'}</p>
-                  <p><strong>Historique bornage:</strong> {selectedContribution.boundary_history ? 'Oui' : 'Non'}</p>
-                  <p><strong>Historique taxes:</strong> {selectedContribution.tax_history ? 'Oui' : 'Non'}</p>
-                  <p><strong>Historique hypothèques:</strong> {selectedContribution.mortgage_history ? 'Oui' : 'Non'}</p>
-                </div>
-              </div>
+              <Tabs defaultValue="general" className="w-full">
+                <TabsList className="grid w-full grid-cols-6">
+                  <TabsTrigger value="general">Général</TabsTrigger>
+                  <TabsTrigger value="location">Localisation</TabsTrigger>
+                  <TabsTrigger value="permits">Permis</TabsTrigger>
+                  <TabsTrigger value="history">Historiques</TabsTrigger>
+                  <TabsTrigger value="obligations">Obligations</TabsTrigger>
+                  <TabsTrigger value="documents">Documents</TabsTrigger>
+                </TabsList>
+
+                {/* Onglet Général */}
+                <TabsContent value="general" className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Type de titre</Label>
+                      <p className="text-sm">{selectedContribution.property_title_type || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Type de bail</Label>
+                      <p className="text-sm">{selectedContribution.lease_type || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">N° de référence</Label>
+                      <p className="text-sm font-mono">{selectedContribution.title_reference_number || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Circonscription foncière</Label>
+                      <p className="text-sm">{selectedContribution.circonscription_fonciere || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Propriétaire(s) actuel(s)</Label>
+                    {selectedContribution.current_owners_details ? (
+                      <div className="space-y-2 mt-1">
+                        {Array.isArray(selectedContribution.current_owners_details) && 
+                          selectedContribution.current_owners_details.map((owner: any, idx: number) => (
+                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                            <p><strong>Nom:</strong> {owner.lastName} {owner.middleName || ''} {owner.firstName}</p>
+                            <p><strong>Statut:</strong> {owner.legalStatus}</p>
+                            <p><strong>Depuis:</strong> {new Date(owner.since).toLocaleDateString('fr-FR')}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm">{selectedContribution.current_owner_name || 'Non renseigné'}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Superficie</Label>
+                      <p className="text-sm">{selectedContribution.area_sqm ? `${selectedContribution.area_sqm} m²` : 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Type de construction</Label>
+                      <p className="text-sm">{selectedContribution.construction_type || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Nature</Label>
+                      <p className="text-sm">{selectedContribution.construction_nature || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Usage déclaré</Label>
+                      <p className="text-sm">{selectedContribution.declared_usage || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+
+                  {selectedContribution.parcel_sides && Array.isArray(selectedContribution.parcel_sides) && selectedContribution.parcel_sides.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Dimensions des côtés</Label>
+                      <div className="grid grid-cols-2 gap-2 mt-1">
+                        {selectedContribution.parcel_sides.map((side: any, idx: number) => (
+                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                            <p><strong>{side.name}:</strong> {side.length} m</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Onglet Localisation */}
+                <TabsContent value="location" className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Province</Label>
+                      <p className="text-sm">{selectedContribution.province || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Ville</Label>
+                      <p className="text-sm">{selectedContribution.ville || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Commune</Label>
+                      <p className="text-sm">{selectedContribution.commune || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Quartier</Label>
+                      <p className="text-sm">{selectedContribution.quartier || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Avenue</Label>
+                      <p className="text-sm">{selectedContribution.avenue || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Territoire</Label>
+                      <p className="text-sm">{selectedContribution.territoire || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Collectivité</Label>
+                      <p className="text-sm">{selectedContribution.collectivite || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Groupement</Label>
+                      <p className="text-sm">{selectedContribution.groupement || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Village</Label>
+                      <p className="text-sm">{selectedContribution.village || 'Non renseigné'}</p>
+                    </div>
+                  </div>
+
+                  {selectedContribution.gps_coordinates && Array.isArray(selectedContribution.gps_coordinates) && selectedContribution.gps_coordinates.length > 0 && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Coordonnées GPS</Label>
+                      <div className="space-y-1 mt-1">
+                        {selectedContribution.gps_coordinates.map((coord: any, idx: number) => (
+                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                            <p><strong>Borne {coord.borne}:</strong> Lat: {coord.lat}, Lng: {coord.lng}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Onglet Permis */}
+                <TabsContent value="permits" className="space-y-3">
+                  {selectedContribution.building_permits && Array.isArray(selectedContribution.building_permits) && selectedContribution.building_permits.length > 0 ? (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Permis de construire existants</Label>
+                      <div className="space-y-2 mt-1">
+                        {selectedContribution.building_permits.map((permit: any, idx: number) => (
+                          <div key={idx} className="p-3 bg-secondary rounded space-y-1 text-sm">
+                            <p><strong>Type:</strong> {permit.permitType === 'construction' ? 'Construction' : 'Régularisation'}</p>
+                            <p><strong>N° de permis:</strong> {permit.permitNumber}</p>
+                            <p><strong>Service émetteur:</strong> {permit.issuingService}</p>
+                            <p><strong>Date d'émission:</strong> {new Date(permit.issueDate).toLocaleDateString('fr-FR')}</p>
+                            <p><strong>Validité:</strong> {permit.validityMonths} mois</p>
+                            <p><strong>Statut:</strong> {permit.administrativeStatus}</p>
+                            {permit.issuingServiceContact && <p><strong>Contact:</strong> {permit.issuingServiceContact}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Aucun permis enregistré</p>
+                  )}
+
+                  {selectedContribution.previous_permit_number && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">N° permis précédent</Label>
+                      <p className="text-sm font-mono">{selectedContribution.previous_permit_number}</p>
+                    </div>
+                  )}
+
+                  {selectedContribution.permit_request_data && (
+                    <div className="mt-4">
+                      <Label className="text-xs text-muted-foreground">Demande de permis</Label>
+                      <div className="p-3 bg-secondary rounded space-y-1 text-sm mt-1">
+                        <p><strong>Type:</strong> {selectedContribution.permit_request_data.permitType === 'construction' ? 'Construction' : 'Régularisation'}</p>
+                        <p><strong>Construction existante:</strong> {selectedContribution.permit_request_data.hasExistingConstruction ? 'Oui' : 'Non'}</p>
+                        <p><strong>Description:</strong> {selectedContribution.permit_request_data.constructionDescription}</p>
+                        <p><strong>Usage prévu:</strong> {selectedContribution.permit_request_data.plannedUsage}</p>
+                        {selectedContribution.permit_request_data.estimatedArea && (
+                          <p><strong>Surface estimée:</strong> {selectedContribution.permit_request_data.estimatedArea} m²</p>
+                        )}
+                        <p><strong>Demandeur:</strong> {selectedContribution.permit_request_data.applicantName}</p>
+                        <p><strong>Téléphone:</strong> {selectedContribution.permit_request_data.applicantPhone}</p>
+                        {selectedContribution.permit_request_data.applicantEmail && (
+                          <p><strong>Email:</strong> {selectedContribution.permit_request_data.applicantEmail}</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Onglet Historiques */}
+                <TabsContent value="history" className="space-y-3">
+                  {selectedContribution.ownership_history && Array.isArray(selectedContribution.ownership_history) && selectedContribution.ownership_history.length > 0 ? (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Historique de propriété</Label>
+                      <div className="space-y-2 mt-1">
+                        {selectedContribution.ownership_history.map((owner: any, idx: number) => (
+                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                            <p><strong>Propriétaire:</strong> {owner.ownerName}</p>
+                            <p><strong>Statut:</strong> {owner.legalStatus}</p>
+                            <p><strong>Période:</strong> {new Date(owner.startDate).toLocaleDateString('fr-FR')} - {owner.endDate ? new Date(owner.endDate).toLocaleDateString('fr-FR') : 'Actuel'}</p>
+                            {owner.mutationType && <p><strong>Type de mutation:</strong> {owner.mutationType}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Aucun historique de propriété</p>
+                  )}
+
+                  {selectedContribution.boundary_history && Array.isArray(selectedContribution.boundary_history) && selectedContribution.boundary_history.length > 0 && (
+                    <div className="mt-4">
+                      <Label className="text-xs text-muted-foreground">Historique de bornage</Label>
+                      <div className="space-y-2 mt-1">
+                        {selectedContribution.boundary_history.map((boundary: any, idx: number) => (
+                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                            <p><strong>PV N°:</strong> {boundary.pvReferenceNumber}</p>
+                            <p><strong>Objet:</strong> {boundary.boundaryPurpose}</p>
+                            <p><strong>Géomètre:</strong> {boundary.surveyorName}</p>
+                            <p><strong>Date:</strong> {new Date(boundary.surveyDate).toLocaleDateString('fr-FR')}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Onglet Obligations */}
+                <TabsContent value="obligations" className="space-y-3">
+                  {selectedContribution.tax_history && Array.isArray(selectedContribution.tax_history) && selectedContribution.tax_history.length > 0 ? (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Historique fiscal</Label>
+                      <div className="space-y-2 mt-1">
+                        {selectedContribution.tax_history.map((tax: any, idx: number) => (
+                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                            <p><strong>Année:</strong> {tax.taxYear}</p>
+                            <p><strong>Montant:</strong> ${tax.amountUsd}</p>
+                            <p><strong>Statut:</strong> {tax.paymentStatus}</p>
+                            {tax.paymentDate && <p><strong>Date de paiement:</strong> {new Date(tax.paymentDate).toLocaleDateString('fr-FR')}</p>}
+                            {tax.taxType && <p><strong>Type:</strong> {tax.taxType}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Aucun historique fiscal</p>
+                  )}
+
+                  {selectedContribution.mortgage_history && Array.isArray(selectedContribution.mortgage_history) && selectedContribution.mortgage_history.length > 0 && (
+                    <div className="mt-4">
+                      <Label className="text-xs text-muted-foreground">Historique hypothécaire</Label>
+                      <div className="space-y-2 mt-1">
+                        {selectedContribution.mortgage_history.map((mortgage: any, idx: number) => (
+                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                            <p><strong>Montant:</strong> ${mortgage.mortgageAmountUsd}</p>
+                            <p><strong>Durée:</strong> {mortgage.durationMonths} mois</p>
+                            <p><strong>Créancier:</strong> {mortgage.creditorName} ({mortgage.creditorType})</p>
+                            <p><strong>Date:</strong> {new Date(mortgage.contractDate).toLocaleDateString('fr-FR')}</p>
+                            <p><strong>Statut:</strong> {mortgage.mortgageStatus}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Onglet Documents */}
+                <TabsContent value="documents" className="space-y-3">
+                  {selectedContribution.whatsapp_number && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Numéro WhatsApp</Label>
+                      <p className="text-sm font-mono">{selectedContribution.whatsapp_number}</p>
+                    </div>
+                  )}
+                  
+                  {selectedContribution.owner_document_url && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Document d'identité</Label>
+                      <a 
+                        href={selectedContribution.owner_document_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                      >
+                        Voir le document <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+
+                  {selectedContribution.property_title_document_url && (
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Titre de propriété</Label>
+                      <a 
+                        href={selectedContribution.property_title_document_url} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                      >
+                        Voir le document <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
+
+                  {!selectedContribution.owner_document_url && !selectedContribution.property_title_document_url && !selectedContribution.whatsapp_number && (
+                    <p className="text-sm text-muted-foreground">Aucun document attaché</p>
+                  )}
+                </TabsContent>
+              </Tabs>
 
               {selectedContribution.status === 'pending' && (
                 <>
