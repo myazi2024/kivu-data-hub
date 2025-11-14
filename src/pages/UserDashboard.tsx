@@ -38,32 +38,32 @@ const UserDashboard = () => {
           <UserProfileHeader />
 
           <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="w-full h-auto p-0.5 flex lg:grid lg:grid-cols-6 overflow-x-auto gap-0.5">
-              <TabsTrigger value="profile" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-                <User className="h-4 w-4 lg:h-4 lg:w-4" />
-                <span className="hidden lg:inline text-xs">Profil</span>
-              </TabsTrigger>
-              <TabsTrigger value="contributions" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-                <FileText className="h-4 w-4 lg:h-4 lg:w-4" />
-                <span className="hidden lg:inline text-xs">Contributions</span>
-              </TabsTrigger>
-              <TabsTrigger value="ccc-codes" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-                <Gift className="h-4 w-4 lg:h-4 lg:w-4" />
-                <span className="hidden lg:inline text-xs">Codes CCC</span>
-              </TabsTrigger>
-              <TabsTrigger value="invoices" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-                <CreditCard className="h-4 w-4 lg:h-4 lg:w-4" />
-                <span className="hidden lg:inline text-xs">Factures</span>
-              </TabsTrigger>
-              <TabsTrigger value="statistics" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-                <BarChart3 className="h-4 w-4 lg:h-4 lg:w-4" />
-                <span className="hidden lg:inline text-xs">Stats</span>
-              </TabsTrigger>
-              <TabsTrigger value="preferences" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-                <Settings className="h-4 w-4 lg:h-4 lg:w-4" />
-                <span className="hidden lg:inline text-xs">Réglages</span>
-              </TabsTrigger>
-            </TabsList>
+          <TabsList className="w-full h-auto p-0.5 flex lg:grid lg:grid-cols-6 overflow-x-auto gap-0.5">
+            <TabsTrigger value="profile" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
+              <User className="h-8 w-8 lg:h-8 lg:w-8" />
+              <span className="hidden lg:inline text-xs">Profil</span>
+            </TabsTrigger>
+            <TabsTrigger value="contributions" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
+              <FileText className="h-8 w-8 lg:h-8 lg:w-8" />
+              <span className="hidden lg:inline text-xs">Contributions</span>
+            </TabsTrigger>
+            <TabsTrigger value="ccc-codes" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
+              <Gift className="h-8 w-8 lg:h-8 lg:w-8" />
+              <span className="hidden lg:inline text-xs">Codes CCC</span>
+            </TabsTrigger>
+            <TabsTrigger value="invoices" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
+              <CreditCard className="h-8 w-8 lg:h-8 lg:w-8" />
+              <span className="hidden lg:inline text-xs">Factures</span>
+            </TabsTrigger>
+            <TabsTrigger value="statistics" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
+              <BarChart3 className="h-8 w-8 lg:h-8 lg:w-8" />
+              <span className="hidden lg:inline text-xs">Stats</span>
+            </TabsTrigger>
+            <TabsTrigger value="preferences" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
+              <Settings className="h-8 w-8 lg:h-8 lg:w-8" />
+              <span className="hidden lg:inline text-xs">Réglages</span>
+            </TabsTrigger>
+          </TabsList>
 
             <TabsContent value="profile" className="mt-2 md:mt-6">
               <Card>
