@@ -213,7 +213,6 @@ const CadastralSearchBar = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <p className="font-semibold text-seloger-red">{suggestion.parcel_number}</p>
-                          <p className="text-sm text-muted-foreground">{suggestion.current_owner_name}</p>
                           {(suggestion.ville || suggestion.commune || suggestion.quartier) && (
                             <p className="text-xs text-muted-foreground mt-1">
                               {[suggestion.ville, suggestion.commune, suggestion.quartier].filter(Boolean).join(', ')}
