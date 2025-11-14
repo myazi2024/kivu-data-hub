@@ -312,6 +312,10 @@ export type Database = {
       }
       cadastral_contributions: {
         Row: {
+          appeal_data: Json | null
+          appeal_status: string | null
+          appeal_submission_date: string | null
+          appeal_submitted: boolean | null
           area_sqm: number | null
           avenue: string | null
           boundary_history: Json | null
@@ -349,7 +353,10 @@ export type Database = {
           property_title_type: string | null
           province: string | null
           quartier: string | null
+          rejected_by: string | null
+          rejection_date: string | null
           rejection_reason: string | null
+          rejection_reasons: Json | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -365,6 +372,10 @@ export type Database = {
           whatsapp_number: string | null
         }
         Insert: {
+          appeal_data?: Json | null
+          appeal_status?: string | null
+          appeal_submission_date?: string | null
+          appeal_submitted?: boolean | null
           area_sqm?: number | null
           avenue?: string | null
           boundary_history?: Json | null
@@ -402,7 +413,10 @@ export type Database = {
           property_title_type?: string | null
           province?: string | null
           quartier?: string | null
+          rejected_by?: string | null
+          rejection_date?: string | null
           rejection_reason?: string | null
+          rejection_reasons?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -418,6 +432,10 @@ export type Database = {
           whatsapp_number?: string | null
         }
         Update: {
+          appeal_data?: Json | null
+          appeal_status?: string | null
+          appeal_submission_date?: string | null
+          appeal_submitted?: boolean | null
           area_sqm?: number | null
           avenue?: string | null
           boundary_history?: Json | null
@@ -455,7 +473,10 @@ export type Database = {
           property_title_type?: string | null
           province?: string | null
           quartier?: string | null
+          rejected_by?: string | null
+          rejection_date?: string | null
           rejection_reason?: string | null
+          rejection_reasons?: Json | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
