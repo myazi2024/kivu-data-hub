@@ -114,42 +114,42 @@ export const UserCCCCodes: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total codes</CardTitle>
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium">Total codes</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
+          <CardContent className="pb-3">
+            <div className="text-xl md:text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Disponibles</CardTitle>
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium">Disponibles</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">{stats.available}</div>
+          <CardContent className="pb-3">
+            <div className="text-xl md:text-2xl font-bold text-green-600">{stats.available}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Utilisés</CardTitle>
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium">Utilisés</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{stats.used}</div>
+          <CardContent className="pb-3">
+            <div className="text-xl md:text-2xl font-bold text-blue-600">{stats.used}</div>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Valeur totale</CardTitle>
+          <CardHeader className="pb-2 md:pb-3">
+            <CardTitle className="text-xs md:text-sm font-medium">Valeur totale</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold flex items-center gap-1">
-              <DollarSign className="h-5 w-5" />
-              {stats.totalValue.toFixed(2)}
+          <CardContent className="pb-3">
+            <div className="text-xl md:text-2xl font-bold flex items-center gap-1">
+              <DollarSign className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="text-base md:text-2xl">{stats.totalValue.toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>
@@ -172,52 +172,106 @@ export const UserCCCCodes: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Parcelle</TableHead>
-                    <TableHead>Valeur</TableHead>
-                    <TableHead>Date création</TableHead>
-                    <TableHead>Expire le</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {codes.map((code) => (
-                    <TableRow key={code.id}>
-                      <TableCell className="font-mono font-medium">{code.code}</TableCell>
-                      <TableCell>{code.parcel_number}</TableCell>
-                      <TableCell>
-                        <span className="flex items-center gap-1 font-medium text-green-600">
-                          <DollarSign className="h-3 w-3" />
-                          {Number(code.value_usd).toFixed(2)}
+            <>
+              {/* Desktop Table */}
+              <div className="hidden lg:block rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Code</TableHead>
+                      <TableHead>Parcelle</TableHead>
+                      <TableHead>Valeur</TableHead>
+                      <TableHead>Date création</TableHead>
+                      <TableHead>Expire le</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {codes.map((code) => (
+                      <TableRow key={code.id}>
+                        <TableCell className="font-mono font-medium">{code.code}</TableCell>
+                        <TableCell>{code.parcel_number}</TableCell>
+                        <TableCell>
+                          <span className="flex items-center gap-1 font-medium text-green-600">
+                            <DollarSign className="h-3 w-3" />
+                            {Number(code.value_usd).toFixed(2)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(code.created_at).toLocaleDateString('fr-FR')}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(code.expires_at).toLocaleDateString('fr-FR')}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(code)}</TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => copyToClipboard(code.code)}
+                            disabled={!code.is_valid || code.is_used}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="lg:hidden space-y-3">
+                {codes.map((code) => (
+                  <Card key={code.id} className="p-4">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-mono font-medium text-sm">{code.code}</p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Parcelle: {code.parcel_number}
+                          </p>
+                        </div>
+                        {getStatusBadge(code)}
+                      </div>
+
+                      <div className="flex items-center justify-between py-2 border-y">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Valeur</p>
+                          <p className="font-semibold text-green-600 flex items-center gap-1 mt-1">
+                            <DollarSign className="h-4 w-4" />
+                            {Number(code.value_usd).toFixed(2)}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Expire le</p>
+                          <p className="text-xs font-medium mt-1">
+                            {new Date(code.expires_at).toLocaleDateString('fr-FR')}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          Créé le {new Date(code.created_at).toLocaleDateString('fr-FR')}
                         </span>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(code.created_at).toLocaleDateString('fr-FR')}
-                      </TableCell>
-                      <TableCell>
-                        {new Date(code.expires_at).toLocaleDateString('fr-FR')}
-                      </TableCell>
-                      <TableCell>{getStatusBadge(code)}</TableCell>
-                      <TableCell className="text-right">
                         <Button
-                          variant="ghost"
+                          variant="default"
                           size="sm"
                           onClick={() => copyToClipboard(code.code)}
                           disabled={!code.is_valid || code.is_used}
+                          className="h-8"
                         >
-                          <Copy className="h-4 w-4" />
+                          <Copy className="h-3.5 w-3.5 mr-1" />
+                          <span className="text-xs">Copier</span>
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            </>
           )}
 
           {codes.length > 0 && (
