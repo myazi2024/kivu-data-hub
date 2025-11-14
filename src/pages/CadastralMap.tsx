@@ -401,14 +401,13 @@ const CadastralMap = () => {
                 {/* Bouton recherche approfondie si aucun résultat */}
                 {searchQuery && filteredParcels.length === 0 && (
                   <Button
-                    variant="outline"
-                    size="sm"
                     onClick={() => {
                       console.log("Bouton Recherche approfondie cliqué");
                       setShowIntroDialog(true);
                     }}
-                    className="w-full text-xs"
+                    className="w-full bg-seloger-red hover:bg-seloger-red/90 text-white text-xs sm:text-sm px-3 py-2 h-auto rounded-lg shadow-sm hover:shadow-md transition-all duration-300 font-medium"
                   >
+                    <Search className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
                     Recherche approfondie
                   </Button>
                 )}
