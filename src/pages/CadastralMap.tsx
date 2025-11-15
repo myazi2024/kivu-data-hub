@@ -522,21 +522,6 @@ const CadastralMap = () => {
                     >
                       {isMobile ? "Plus de données" : "Afficher plus de données"}
                     </Button>
-                    <Button
-                      onClick={() => {
-                        const phoneNumber = '243816996077';
-                        const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
-                        const encodedMessage = encodeURIComponent(message);
-                        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-                        window.open(whatsappUrl, '_blank');
-                      }}
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-1" />
-                      Besoin d'aide ?
-                    </Button>
                     {hasIncompleteData && !loadingHistory && (
                       <Button
                         onClick={() => setShowContributionDialog(true)}
@@ -548,6 +533,22 @@ const CadastralMap = () => {
                         {isMobile ? "Données" : "Données manquantes"}
                       </Button>
                     )}
+                    <Button
+                      onClick={() => {
+                        const phoneNumber = '243816996077';
+                        const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
+                        const encodedMessage = encodeURIComponent(message);
+                        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                        window.open(whatsappUrl, '_blank');
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full col-start-3"
+                      title="Besoin d'aide ?"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                      {!isMobile && <span className="ml-1">Besoin d'aide ?</span>}
+                    </Button>
                   </div>
                   
                   {hasIncompleteData && (
