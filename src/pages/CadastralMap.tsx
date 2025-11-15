@@ -396,32 +396,32 @@ const CadastralMap = () => {
         )}
 
         {/* Barre de recherche en overlay */}
-        <div className="absolute top-4 left-4 right-4 md:left-6 md:right-auto md:w-96 z-[1000]">
+        <div className={`absolute top-4 left-4 right-4 md:left-6 md:right-auto md:w-96 z-[1000] transition-all duration-300 ${selectedParcel && isMobile ? 'scale-90 origin-top-left' : ''}`}>
           <Card className="shadow-lg">
-            <CardContent className="p-4">
+            <CardContent className={`${selectedParcel && isMobile ? 'p-2' : 'p-4'} transition-all`}>
               <div className="space-y-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground ${selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                   <Input
-                    placeholder="Rechercher une parcelle par numéro..."
+                    placeholder={selectedParcel && isMobile ? "Rechercher..." : "Rechercher une parcelle par numéro..."}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value.replace(/\D/g, ''))}
-                    className="pl-10 pr-10"
+                    className={`pl-10 pr-10 ${selectedParcel && isMobile ? 'h-8 text-xs' : ''}`}
                   />
                   {searchQuery && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                      className={`absolute right-1 top-1/2 -translate-y-1/2 p-0 ${selectedParcel && isMobile ? 'h-6 w-6' : 'h-7 w-7'}`}
                       onClick={handleClearSearch}
                     >
-                      <X className="h-4 w-4" />
+                      <X className={selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
                     </Button>
                   )}
                 </div>
 
-                {/* Suggestions de recherche */}
-                {searchSuggestions.length > 0 && (
+                {/* Suggestions de recherche - cachées sur mobile quand parcelle sélectionnée */}
+                {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && (
                   <div className="bg-background border rounded-md shadow-sm">
                     {searchSuggestions.map((parcel) => (
                       <button
@@ -438,17 +438,19 @@ const CadastralMap = () => {
                   </div>
                 )}
 
-                {/* Résumé de recherche */}
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>
-                    {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles au total`}
-                  </span>
-                  {selectedParcel && (
-                    <span className="text-primary font-medium">
-                      Parcelle sélectionnée
+                {/* Résumé de recherche - caché sur mobile quand parcelle sélectionnée */}
+                {!(selectedParcel && isMobile) && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>
+                      {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles au total`}
                     </span>
-                  )}
-                </div>
+                    {selectedParcel && (
+                      <span className="text-primary font-medium">
+                        Parcelle sélectionnée
+                      </span>
+                    )}
+                  </div>
+                )}
 
                 {/* Bouton recherche approfondie si aucun résultat */}
                 {searchQuery && filteredParcels.length === 0 && (
