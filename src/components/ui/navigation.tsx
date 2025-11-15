@@ -170,152 +170,103 @@ const Navigation = () => {
 
         {/* Mobile Navigation */}
         <div className={cn(
-          "lg:hidden fixed inset-0 z-50 transition-all duration-300",
-          isOpen ? "pointer-events-auto" : "pointer-events-none"
+          "lg:hidden transition-all duration-300 ease-in-out overflow-hidden bg-background/95 backdrop-blur-sm border-t border-border",
+          isOpen ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
         )}>
-          {/* Backdrop */}
-          <div 
-            className={cn(
-              "absolute inset-0 bg-background/80 backdrop-blur-sm transition-opacity duration-300",
-              isOpen ? "opacity-100" : "opacity-0"
-            )}
-            onClick={() => setIsOpen(false)}
-          />
-          
-          {/* Slide-in Menu */}
-          <div className={cn(
-            "absolute top-0 right-0 h-full w-[85vw] max-w-sm bg-background shadow-2xl transform transition-transform duration-300 ease-out",
-            isOpen ? "translate-x-0" : "translate-x-full"
-          )}>
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-border">
-              <span className="text-lg font-bold text-foreground">Menu</span>
+        <div className="pb-3 sm:pb-4 space-y-1 px-2">
+            {navigation.map((item) => (
+              <div key={item.name}>
+                {item.subItems ? (
+                  <div>
+                    <button
+                      onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                    >
+                      {item.name}
+                      <ChevronDown className={cn("h-4 w-4 transition-transform", mediaMenuOpen && "rotate-180")} />
+                    </button>
+                    {mediaMenuOpen && (
+                      <div className="pl-4 space-y-1 mt-1">
+                        {item.subItems.map((subItem) => (
+                          <Link
+                            key={subItem.name}
+                            to={subItem.href}
+                            className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            {subItem.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    to={item.href}
+                    className="block px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                )}
+              </div>
+            ))}
+            <div className="border-t border-border pt-2 mt-2 space-y-1">
+              {!loading && (
+                <>
+              {user ? (
+                <>
+                  <div className="px-3 py-2 border-b border-border mb-2">
+                    <Link
+                      to="/mon-compte"
+                      className="flex items-center space-x-3 text-sm font-medium"
+                      onClick={() => setIsOpen(false)}
+                    >
+                      <User className="h-4 w-4 text-primary" />
+                      <span className="truncate">{profile?.full_name || user.email}</span>
+                    </Link>
+                    {profile?.role && (
+                      <p className="text-xs text-muted-foreground capitalize mt-1 ml-7">
+                        {profile.role === 'admin' ? 'Administrateur' : 
+                         profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={signOut}
+                    className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Déconnexion</span>
+                  </Button>
+                </>
+              ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      asChild
+                      className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
+                    >
+                      <Link to="/auth" onClick={() => setIsOpen(false)}>
+                        <User className="h-4 w-4" />
+                        <span>Connexion</span>
+                      </Link>
+                    </Button>
+                  )}
+                </>
+              )}
+              
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsOpen(false)}
-                className="h-8 w-8 p-0"
+                onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
+                className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
               >
-                <X className="h-5 w-5" />
+                <Globe className="h-4 w-4" />
+                <span className="text-xs font-semibold">{language.toUpperCase()}</span>
               </Button>
-            </div>
-
-            {/* Navigation Items */}
-            <div className="overflow-y-auto h-[calc(100vh-120px)] p-4">
-              <div className="space-y-2">
-                {navigation.map((item, index) => (
-                  <div 
-                    key={item.name}
-                    className={cn(
-                      "animate-fade-in",
-                      isOpen && `animation-delay-${index * 50}`
-                    )}
-                    style={{ animationDelay: isOpen ? `${index * 50}ms` : '0ms' }}
-                  >
-                    {item.subItems ? (
-                      <div className="space-y-1">
-                        <button
-                          onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
-                          className="w-full flex items-center justify-between px-4 py-3 text-base font-medium text-foreground hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200 group"
-                        >
-                          <span>{item.name}</span>
-                          <ChevronDown className={cn(
-                            "h-5 w-5 transition-all duration-300 group-hover:text-primary",
-                            mediaMenuOpen && "rotate-180"
-                          )} />
-                        </button>
-                        <div className={cn(
-                          "overflow-hidden transition-all duration-300 ease-in-out",
-                          mediaMenuOpen ? "max-h-48 opacity-100" : "max-h-0 opacity-0"
-                        )}>
-                          <div className="pl-4 space-y-1 py-2">
-                            {item.subItems.map((subItem) => (
-                              <Link
-                                key={subItem.name}
-                                to={subItem.href}
-                                className="block px-4 py-2.5 text-sm font-medium text-muted-foreground hover:text-primary hover:bg-primary/5 rounded-lg transition-all duration-200 hover:translate-x-1"
-                                onClick={() => {
-                                  setIsOpen(false);
-                                  setMediaMenuOpen(false);
-                                }}
-                              >
-                                {subItem.name}
-                              </Link>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <Link
-                        to={item.href}
-                        className="block px-4 py-3 text-base font-medium text-foreground hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200 hover:translate-x-1"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        {item.name}
-                      </Link>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* User Section */}
-              <div className="border-t border-border pt-4 mt-4">
-                {!loading && (
-                  <>
-                    {user ? (
-                      <>
-                        <div className="space-y-2">
-                          <Link
-                            to="/mon-compte"
-                            className="flex items-center space-x-3 px-4 py-3 text-base font-medium hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200"
-                            onClick={() => setIsOpen(false)}
-                          >
-                            <User className="h-5 w-5" />
-                            <span className="truncate">{profile?.full_name || user.email}</span>
-                          </Link>
-                          {profile?.role && (
-                            <p className="text-xs text-muted-foreground capitalize mt-1 ml-7">
-                              {profile.role === 'admin' ? 'Administrateur' : 
-                               profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
-                            </p>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={signOut}
-                          className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-                        >
-                          <LogOut className="h-4 w-4" />
-                          <span>Déconnexion</span>
-                        </Button>
-                      </>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        asChild
-                        className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-                      >
-                        <Link to="/auth" onClick={() => setIsOpen(false)}>
-                          <User className="h-4 w-4" />
-                          <span>Connexion</span>
-                        </Link>
-                      </Button>
-                    )}
-                  </>
-                )}
-                
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-                  className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm mt-2"
-                >
-                  <Globe className="h-4 w-4" />
-                  <span className="text-xs font-semibold">{language.toUpperCase()}</span>
-                </Button>
-              </div>
             </div>
           </div>
         </div>
