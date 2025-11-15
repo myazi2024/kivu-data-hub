@@ -27,7 +27,7 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
     <Button
       onClick={handleWhatsAppClick}
       className={cn(
-        "fixed bottom-6 right-6 z-[9999] rounded-full shadow-2xl",
+        "fixed bottom-6 right-6 z-[99999] rounded-full shadow-2xl",
         "bg-gradient-to-r from-[#25D366] via-[#25D366] to-[#128C7E]",
         "hover:scale-110 hover:shadow-[0_0_30px_rgba(37,211,102,0.5)]",
         "transition-all duration-300 group overflow-hidden",
