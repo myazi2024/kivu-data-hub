@@ -547,7 +547,7 @@ const CadastralMap = () => {
                     >
                       <AlertTriangle className="h-4 w-4 text-orange-600" />
                       <AlertDescription className="text-orange-800 text-xs">
-                        Cette parcelle a des données incomplètes, cliquez ici pour les compléter.
+                        Cette parcelle a des données incomplètes. Complétez-les pour débloquer tous les services.
                       </AlertDescription>
                     </Alert>
                   )}
