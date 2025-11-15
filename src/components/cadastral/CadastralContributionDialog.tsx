@@ -5801,6 +5801,63 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       {titleDocFiles.length > 0 ? <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> : <span className="text-base">⭕</span>}
                       <span className="break-words">Titre de propriété : {titleDocFiles.length > 0 ? `${titleDocFiles.length} fichier(s)` : "Non fourni"}</span>
                     </div>
+                    
+                    {/* Pièces jointes des permis de construire */}
+                    {buildingPermits.some(p => p.attachmentFile) && (
+                      <div className="text-foreground flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="break-words">
+                          <span className="font-medium">Permis de construire :</span>
+                          <ul className="ml-2 mt-1 space-y-1">
+                            {buildingPermits.map((permit, index) => 
+                              permit.attachmentFile && (
+                                <li key={index} className="text-muted-foreground">
+                                  • {permit.attachmentFile.name}
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Reçus de taxes */}
+                    {taxRecords.some(t => t.receiptFile) && (
+                      <div className="text-foreground flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="break-words">
+                          <span className="font-medium">Reçus de taxes :</span>
+                          <ul className="ml-2 mt-1 space-y-1">
+                            {taxRecords.map((tax, index) => 
+                              tax.receiptFile && (
+                                <li key={index} className="text-muted-foreground">
+                                  • {tax.receiptFile.name}
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Documents d'hypothèques */}
+                    {mortgageRecords.some(m => m.receiptFile) && (
+                      <div className="text-foreground flex items-start gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                        <div className="break-words">
+                          <span className="font-medium">Documents d'hypothèques :</span>
+                          <ul className="ml-2 mt-1 space-y-1">
+                            {mortgageRecords.map((mortgage, index) => 
+                              mortgage.receiptFile && (
+                                <li key={index} className="text-muted-foreground">
+                                  • {mortgage.receiptFile.name}
+                                </li>
+                              )
+                            )}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
