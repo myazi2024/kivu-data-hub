@@ -20,7 +20,9 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
   const isMobile = useIsMobile();
   const [isCapturing, setIsCapturing] = useState(false);
 
-  const handleWhatsAppClick = async () => {
+  const handleWhatsAppClick = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     console.log('🔥 Bouton WhatsApp cliqué !');
     setIsCapturing(true);
     
