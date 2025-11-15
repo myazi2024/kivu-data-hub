@@ -399,23 +399,26 @@ export const quartiersAvenuesData: { [province: string]: VilleCommunes } = {
   "Nord-Kivu": {
     "Goma": {
       "Goma": {
-        "Himbi": ["Avenue de l'Indépendance", "Avenue Mobutu", "Avenue de la Paix", "Avenue Rond-Point", "Avenue Président"],
         "Les Volcans": ["Avenue du Rond-Point", "Avenue de l'Aéroport", "Avenue Mama Yemo", "Avenue BCDC", "Boulevard Kanyamuhanga"],
-        "Katindo": ["Avenue Katindo", "Avenue Munene", "Avenue Mapendo", "Avenue Birere", "Avenue du Lac"],
-        "Ndosho": ["Avenue Ndosho", "Avenue Maman Olive", "Avenue de la Frontière", "Avenue de l'Amitié"],
-        "Kasika": ["Avenue Kasika", "Avenue Keshero", "Avenue Mutiri", "Avenue Mabanga", "Avenue Saké"],
-        "Majengo": ["Avenue Majengo", "Avenue de la Révolution", "Avenue du Travail", "Avenue du Commerce", "Avenue Maman Mobutu"],
-        "Murara": ["Avenue Murara", "Avenue Masisi", "Avenue Rutshuru"],
-        "Mikeno": ["Avenue Mikeno", "Avenue Mugunga", "Avenue Sake"]
+        "Mikeno": ["Avenue Mikeno", "Avenue Mugunga", "Avenue Sake"],
+        "Mapendo": ["Avenue Mapendo", "Avenue Munene", "Avenue Birere", "Avenue du Lac"],
+        "Katindo": ["Avenue Katindo", "Avenue Munene", "Avenue Birere", "Avenue du Lac"],
+        "Himbi": ["Avenue de l'Indépendance", "Avenue Mobutu", "Avenue de la Paix", "Avenue Rond-Point", "Avenue Président"],
+        "Keshero": ["Avenue Keshero", "Avenue Kasika", "Avenue Mutiri", "Avenue Mabanga", "Avenue Saké"],
+        "Lac Vert": ["Avenue Lac Vert", "Avenue Katoyi", "Avenue Mugunga", "Avenue Mabanga Nord"]
       },
       "Karisimbi": {
         "Kahembe": ["Avenue Kahembe", "Avenue Mikeno", "Avenue Nyiragongo", "Avenue Kahuzi", "Avenue Biega"],
         "Katoyi": ["Avenue Katoyi", "Avenue Mugunga", "Avenue Lac Vert", "Avenue Mabanga Nord"],
-        "Mugunga": ["Avenue Mugunga", "Avenue de la Paix", "Avenue Unity", "Avenue Lac Kivu"],
+        "Majengo": ["Avenue Majengo", "Avenue de la Révolution", "Avenue du Travail", "Avenue du Commerce", "Avenue Maman Mobutu"],
+        "Mabanga-Nord": ["Avenue Mabanga Nord", "Avenue Katoyi", "Avenue Lac Vert"],
+        "Mabanga-Sud": ["Avenue Mabanga Sud", "Avenue Bujovu", "Avenue Mugunga"],
+        "Kasika": ["Avenue Kasika", "Avenue Keshero", "Avenue Mutiri", "Avenue Mabanga", "Avenue Saké"],
+        "Murara": ["Avenue Murara", "Avenue Masisi", "Avenue Rutshuru"],
         "Virunga": ["Avenue Virunga", "Avenue Muhabura", "Avenue Karisimbi", "Avenue Sabyinyo"],
-        "Kyeshero": ["Avenue Kyeshero", "Avenue de l'Université", "Avenue UNIGOM", "Avenue ULPGL"],
-        "Bujovu": ["Avenue Bujovu", "Avenue Mabanga Sud", "Avenue Mugunga"],
-        "Majengo": ["Avenue Kanyamuhanga", "Avenue Goma", "Avenue Bulengo"]
+        "Ndosho": ["Avenue Ndosho", "Avenue Maman Olive", "Avenue de la Frontière", "Avenue de l'Amitié"],
+        "Mugunga": ["Avenue Mugunga", "Avenue de la Paix", "Avenue Unity", "Avenue Lac Kivu"],
+        "Bujovu": ["Avenue Bujovu", "Avenue Mabanga Sud", "Avenue Mugunga"]
       }
     },
     "Butembo": {
