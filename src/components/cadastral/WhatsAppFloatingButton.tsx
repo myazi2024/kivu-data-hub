@@ -19,7 +19,6 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
 
   const handleWhatsAppClick = () => {
     console.log('🔥 Bouton WhatsApp cliqué !');
-    alert('Bouton cliqué !'); // Test visuel
     
     const fullMessage = `${message}\n\n📸 Besoin d'aide avec cette page.`;
     const encodedMessage = encodeURIComponent(fullMessage);
