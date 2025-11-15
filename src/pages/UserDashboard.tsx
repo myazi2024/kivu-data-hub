@@ -13,6 +13,11 @@ import { UserCCCCodes } from '@/components/user/UserCCCCodes';
 import { UserContributions } from '@/components/user/UserContributions';
 import CadastralDashboardTabs from '@/components/cadastral/CadastralDashboardTabs';
 import { UserBuildingPermits } from '@/components/user/UserBuildingPermits';
+import { UserProfileEdit } from '@/components/user/UserProfileEdit';
+import { UserAccountSecurity } from '@/components/user/UserAccountSecurity';
+import { UserVerification } from '@/components/user/UserVerification';
+import { UserQuickActions } from '@/components/user/UserQuickActions';
+import { UserQuickStats } from '@/components/user/UserQuickStats';
 import { User, Gift, FileText, BarChart3, Settings, CreditCard, Building } from 'lucide-react';
 
 const UserDashboard = () => {
@@ -70,28 +75,11 @@ const UserDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-            <TabsContent value="profile" className="mt-3 md:mt-6">
-              <Card>
-                <CardHeader className="pb-3 md:pb-6 px-4 md:px-6">
-                  <CardTitle className="text-base md:text-lg">Informations personnelles</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
-                  <div>
-                    <label className="text-xs md:text-sm font-medium text-muted-foreground">Email</label>
-                    <p className="text-sm md:text-base mt-0.5">{user.email}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs md:text-sm font-medium text-muted-foreground">Compte créé le</label>
-                    <p className="text-sm md:text-base mt-0.5">
-                      {new Date(user.created_at).toLocaleDateString('fr-FR', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+            <TabsContent value="profile" className="mt-3 md:mt-6 space-y-4 md:space-y-6">
+              <UserQuickStats />
+              <UserProfileEdit />
+              <UserVerification />
+              <UserQuickActions />
             </TabsContent>
 
             <TabsContent value="contributions" className="mt-2 md:mt-6">
@@ -114,8 +102,9 @@ const UserDashboard = () => {
               <UserStatisticsCharts />
             </TabsContent>
 
-            <TabsContent value="preferences" className="mt-2 md:mt-6">
+            <TabsContent value="preferences" className="mt-2 md:mt-6 space-y-4 md:space-y-6">
               <UserPreferences />
+              <UserAccountSecurity />
             </TabsContent>
           </Tabs>
         </div>
