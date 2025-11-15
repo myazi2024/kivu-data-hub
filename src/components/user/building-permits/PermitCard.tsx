@@ -1,9 +1,14 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, MapPin, Building2, Phone, AlertCircle, CheckCircle2, Clock, Calendar } from "lucide-react";
+import { FileText, MapPin, Building2, Phone, AlertCircle, CheckCircle2, Clock, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { format, differenceInBusinessDays } from "date-fns";
 import { fr } from "date-fns/locale";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { PermitValidationScore } from "./PermitValidationScore";
+import { PermitTimeline } from "./PermitTimeline";
+import { DocumentUploadSection } from "./DocumentUploadSection";
 
 interface PermitCardProps {
   permit: any;
@@ -11,6 +16,8 @@ interface PermitCardProps {
 }
 
 export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
+  const [showDetails, setShowDetails] = useState(false);
+  
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { label: "En attente", variant: "secondary" as const, icon: Clock },
@@ -242,6 +249,57 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
             </p>
           </div>
         </div>
+
+        {/* Bouton de recours si refusé */}
+        {permit.status === "rejected" && (() => {
+          const deadlineInfo = getAppealDeadlineInfo();
+          return deadlineInfo && (
+            <div className="pt-2 border-t">
+              <Button
+                onClick={onAppealClick}
+                variant="outline"
+                size="sm"
+                className="w-full"
+                disabled={!deadlineInfo.canAppeal || permit.appeal_submitted}
+              >
+                <AlertCircle className="h-4 w-4 mr-2" />
+                {permit.appeal_submitted
+                  ? "Recours déjà soumis"
+                  : deadlineInfo.canAppeal
+                  ? `Soumettre un recours (${deadlineInfo.message})`
+                  : deadlineInfo.message}
+              </Button>
+            </div>
+          );
+        })()}
+
+        {/* Section détails extensible */}
+        <Collapsible open={showDetails} onOpenChange={setShowDetails} className="pt-2 border-t">
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="w-full flex items-center justify-between">
+              <span className="text-sm font-medium">Plus de détails</span>
+              {showDetails ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 pt-4">
+            {/* Score de validation */}
+            {permit.status === "pending" && (
+              <PermitValidationScore
+                permitData={permit.permit_request_data}
+                requestType={permit.permit_request_data?.requestType || "construction"}
+              />
+            )}
+
+            {/* Timeline */}
+            <PermitTimeline permit={permit} />
+
+            {/* Documents */}
+            <DocumentUploadSection
+              contributionId={permit.id}
+              existingDocuments={[]}
+            />
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
