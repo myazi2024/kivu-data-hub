@@ -52,7 +52,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
         <div 
           ref={contentRef}
           onScroll={handleScroll}
-          className="space-y-4 sm:space-y-6 py-4 px-6 sm:px-8 overflow-y-auto max-h-[calc(90vh-200px)]"
+          className="space-y-4 sm:space-y-6 py-4 px-6 sm:px-8 pb-32 overflow-y-auto max-h-[calc(90vh-200px)]"
         >
           {/* Temps estimé */}
           <Card className="p-4 sm:p-6 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors">
