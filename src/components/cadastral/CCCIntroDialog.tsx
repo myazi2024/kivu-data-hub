@@ -63,7 +63,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg sm:text-xl mb-2">Rapide et simple</h3>
                 <p className="text-base leading-relaxed text-foreground/80">
-                  Formulaire en <strong className="text-foreground">3 à 5 minutes</strong>. 
+                  <strong className="text-foreground">3 à 5 minutes</strong> suffisent pour remplir ce formulaire. 
                   Remplissez étape par étape et sauvegardez votre progression à tout moment.
                 </p>
               </div>
@@ -77,9 +77,9 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <Smartphone className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg sm:text-xl mb-2">Facile avec un téléphone</h3>
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">C'est pratique avec un téléphone</h3>
                 <p className="text-base leading-relaxed text-foreground/80">
-                  Le téléphone est idéal : <strong className="text-foreground">photographiez directement vos documents</strong> au lieu de les scanner.
+                  Vous allez ajouter directement quelques documents. Le téléphone vous permet de <strong className="text-foreground">les photographier et de les ajouter facilement</strong>.
                 </p>
               </div>
             </div>
@@ -92,7 +92,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-accent-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg sm:text-xl mb-3">Informations nécessaires</h3>
+                <h3 className="font-semibold text-lg sm:text-xl mb-3">Informations demandées</h3>
                 <div className="space-y-2 text-base text-foreground/80">
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
@@ -103,19 +103,19 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <strong className="text-foreground">Localisation :</strong> Coordonnées GPS et limites cadastrales
+                      <strong className="text-foreground">Localisation :</strong> Mesures de chaque côté de la parcelle, coordonnées GPS de chaque coin
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <strong className="text-foreground">Historique :</strong> Propriétaires, taxes, hypothèques
+                      <strong className="text-foreground">Historique :</strong> Propriétaires précédents
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <strong className="text-foreground">Obligations :</strong> Servitudes ou contraintes légales
+                      <strong className="text-foreground">Obligations :</strong> Paiement des taxes foncières, hypothèques éventuelles
                     </div>
                   </div>
                 </div>
