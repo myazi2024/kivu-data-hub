@@ -1,20 +1,34 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Globe, User, LogOut } from 'lucide-react';
+import { Menu, X, Globe, User, LogOut, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+} from '@/components/ui/navigation-menu';
 import bicLogo from '@/assets/bic-logo.png';
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [language, setLanguage] = useState('fr');
+  const [mediaMenuOpen, setMediaMenuOpen] = useState(false);
   const { user, profile, signOut, loading } = useAuth();
 
   const navigation = [
     { name: 'Accueil', href: '/' },
-    { name: 'Articles', href: '/articles' },
-    { name: 'Kiosque', href: '/publications' },
+    { 
+      name: 'Media', 
+      subItems: [
+        { name: 'Articles', href: '/articles' },
+        { name: 'Kiosque', href: '/publications' },
+      ]
+    },
     { name: 'Données foncières', href: '/map' },
     { name: 'Carte Cadastrale', href: '/cadastral-map' },
     { name: 'Rejoignez-nous', href: '/careers' },
@@ -35,15 +49,44 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-1 xl:space-x-2">
-            {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="px-3 xl:px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md whitespace-nowrap"
-              >
-                {item.name}
-              </Link>
-            ))}
+            <NavigationMenu>
+              <NavigationMenuList>
+                {navigation.map((item) => (
+                  <NavigationMenuItem key={item.name}>
+                    {item.subItems ? (
+                      <>
+                        <NavigationMenuTrigger className="px-3 xl:px-4 py-2 text-sm font-medium">
+                          {item.name}
+                        </NavigationMenuTrigger>
+                        <NavigationMenuContent>
+                          <ul className="grid w-48 gap-1 p-2">
+                            {item.subItems.map((subItem) => (
+                              <li key={subItem.name}>
+                                <NavigationMenuLink asChild>
+                                  <Link
+                                    to={subItem.href}
+                                    className="block select-none rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                  >
+                                    <div className="text-sm font-medium">{subItem.name}</div>
+                                  </Link>
+                                </NavigationMenuLink>
+                              </li>
+                            ))}
+                          </ul>
+                        </NavigationMenuContent>
+                      </>
+                    ) : (
+                      <Link
+                        to={item.href}
+                        className="px-3 xl:px-4 py-2 text-sm font-medium text-foreground hover:text-primary transition-colors duration-200 hover:bg-secondary/50 rounded-md whitespace-nowrap inline-block"
+                      >
+                        {item.name}
+                      </Link>
+                    )}
+                  </NavigationMenuItem>
+                ))}
+              </NavigationMenuList>
+            </NavigationMenu>
           </div>
 
           {/* Auth & Language Toggle & Mobile Menu Button */}
@@ -132,14 +175,41 @@ const Navigation = () => {
         )}>
         <div className="pb-3 sm:pb-4 space-y-1 px-2">
             {navigation.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className="block px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
-                onClick={() => setIsOpen(false)}
-              >
-                {item.name}
-              </Link>
+              <div key={item.name}>
+                {item.subItems ? (
+                  <div>
+                    <button
+                      onClick={() => setMediaMenuOpen(!mediaMenuOpen)}
+                      className="w-full flex items-center justify-between px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                    >
+                      {item.name}
+                      <ChevronDown className={cn("h-4 w-4 transition-transform", mediaMenuOpen && "rotate-180")} />
+                    </button>
+                    {mediaMenuOpen && (
+                      <div className="pl-4 space-y-1 mt-1">
+                        {item.subItems.map((subItem) => (
+                          <Link
+                            key={subItem.name}
+                            to={subItem.href}
+                            className="block px-3 py-2 text-sm font-medium text-muted-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            {subItem.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <Link
+                    to={item.href}
+                    className="block px-3 py-2 text-sm font-medium text-foreground hover:text-white hover:bg-seloger-red/90 rounded-md transition-colors duration-200"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {item.name}
+                  </Link>
+                )}
+              </div>
             ))}
             <div className="border-t border-border pt-2 mt-2 space-y-1">
               {!loading && (
