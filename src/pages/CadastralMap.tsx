@@ -513,12 +513,12 @@ const CadastralMap = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button
                       onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
                       className="w-full"
                       size="sm"
-                      disabled={loadingHistory || hasIncompleteData}
+                      disabled={loadingHistory}
                     >
                       {isMobile ? "Plus de données" : "Afficher plus de données"}
                     </Button>
@@ -537,23 +537,22 @@ const CadastralMap = () => {
                       <MessageCircle className="h-4 w-4 mr-1" />
                       Besoin d'aide ?
                     </Button>
+                    {hasIncompleteData && !loadingHistory && (
+                      <Button
+                        onClick={() => setShowContributionDialog(true)}
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
+                      >
+                        <AlertTriangle className="h-4 w-4 mr-1" />
+                        {isMobile ? "Données" : "Données manquantes"}
+                      </Button>
+                    )}
                   </div>
-                  
-                  {hasIncompleteData && !loadingHistory && (
-                    <Button
-                      onClick={() => setShowContributionDialog(true)}
-                      variant="destructive"
-                      size="sm"
-                      className="w-full"
-                    >
-                      <AlertTriangle className="h-4 w-4 mr-2" />
-                      Données manquantes
-                    </Button>
-                  )}
                   
                   {hasIncompleteData && (
                     <p className="text-xs text-muted-foreground text-center">
-                      Cette parcelle a des données incomplètes. Complétez-les pour accéder aux services.
+                      Cette parcelle a des données incomplètes. Complétez-les pour débloquer tous les services.
                     </p>
                   )}
                 </div>
