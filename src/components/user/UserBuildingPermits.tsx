@@ -6,6 +6,8 @@ import { Building2, FileEdit } from "lucide-react";
 import { toast } from "sonner";
 import { PermitSection } from "./building-permits/PermitSection";
 import { AppealDialog } from "./building-permits/AppealDialog";
+import { PermitStatistics } from "./building-permits/PermitStatistics";
+import { PermitRenewalAlert } from "./building-permits/PermitRenewalAlert";
 
 interface BuildingPermitRequest {
   id: string;
@@ -103,6 +105,12 @@ export function UserBuildingPermits() {
 
   return (
     <div className="space-y-4">
+      {/* Alertes de renouvellement */}
+      <PermitRenewalAlert permits={permits} />
+      
+      {/* Statistiques */}
+      <PermitStatistics permits={permits} />
+      
       <Tabs defaultValue="construction" className="w-full">
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="construction" className="gap-2">
