@@ -124,19 +124,14 @@ export const useCadastralSearch = () => {
 
   // Fonction pour valider le format du numéro de parcelle
   const validateParcelNumber = (query: string): boolean => {
-    // Format complet: SU/[Section]/[Parcelle]/[Code] ou SU/[Section]/[Parcelle]/[Subdivision]/[Code]
-    // Format simplifié: SU/[Parcelle]/[Code] (toléré localement)
-    // Exemples: SU/2130/KIN, SU/2130/1/KIN, SU/0123/GOM, SR/01/0987/BEN, SR/0321/MAS, SU/2130/TEST
-    const patternComplete = /^(SU|SR)\/\d+\/\d+(\/\d+)?\/[A-Z]{2,5}$/i;
-    const patternSimplified = /^(SU|SR)\/\d+\/[A-Z]{2,5}$/i;
-    const trimmed = query.trim().toUpperCase();
-    return patternComplete.test(trimmed) || patternSimplified.test(trimmed);
+    // Accepte n'importe quel format non vide
+    return query.trim().length > 0;
   };
 
   // Fonction de recherche
   const searchParcel = async (parcelNumber: string) => {
     if (!validateParcelNumber(parcelNumber)) {
-      setError('Format invalide. Formats acceptés : SU/2130/KIN, SU/0123/GOM, SR/01/0987/BEN, SR/0321/MAS');
+      setError('Veuillez saisir un numéro de parcelle');
       return;
     }
 
