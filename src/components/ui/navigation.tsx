@@ -263,57 +263,59 @@ const Navigation = () => {
                 {!loading && (
                   <>
                     {user ? (
-                      <div className="space-y-2">
-                        <Link
-                          to="/mon-compte"
-                          className="flex items-center space-x-3 px-4 py-3 text-base font-medium hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200"
-                          onClick={() => setIsOpen(false)}
+                      <>
+                        <div className="space-y-2">
+                          <Link
+                            to="/mon-compte"
+                            className="flex items-center space-x-3 px-4 py-3 text-base font-medium hover:bg-primary/10 hover:text-primary rounded-lg transition-all duration-200"
+                            onClick={() => setIsOpen(false)}
+                          >
+                            <User className="h-5 w-5" />
+                            <span className="truncate">{profile?.full_name || user.email}</span>
+                          </Link>
+                          {profile?.role && (
+                            <p className="text-xs text-muted-foreground capitalize mt-1 ml-7">
+                              {profile.role === 'admin' ? 'Administrateur' : 
+                               profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
+                            </p>
+                          )}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={signOut}
+                          className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
                         >
-                          <User className="h-5 w-5" />
-                          <span className="truncate">{profile?.full_name || user.email}</span>
+                          <LogOut className="h-4 w-4" />
+                          <span>Déconnexion</span>
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        asChild
+                        className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
+                      >
+                        <Link to="/auth" onClick={() => setIsOpen(false)}>
+                          <User className="h-4 w-4" />
+                          <span>Connexion</span>
                         </Link>
-                    {profile?.role && (
-                      <p className="text-xs text-muted-foreground capitalize mt-1 ml-7">
-                        {profile.role === 'admin' ? 'Administrateur' : 
-                         profile.role === 'partner' ? 'Partenaire' : 'Utilisateur'}
-                      </p>
+                      </Button>
                     )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={signOut}
-                    className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Déconnexion</span>
-                  </Button>
-                </>
-              ) : (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      asChild
-                      className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-                    >
-                      <Link to="/auth" onClick={() => setIsOpen(false)}>
-                        <User className="h-4 w-4" />
-                        <span>Connexion</span>
-                      </Link>
-                    </Button>
-                  )}
-                </>
-              )}
-              
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
-                className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
-              >
-                <Globe className="h-4 w-4" />
-                <span className="text-xs font-semibold">{language.toUpperCase()}</span>
-              </Button>
+                  </>
+                )}
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')}
+                  className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm mt-2"
+                >
+                  <Globe className="h-4 w-4" />
+                  <span className="text-xs font-semibold">{language.toUpperCase()}</span>
+                </Button>
+              </div>
             </div>
           </div>
         </div>
