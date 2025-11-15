@@ -44,35 +44,7 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
 
       console.log('✅ Capture d\'écran réussie');
 
-      const fullMessage = `${message}\n\n📸 Voir la capture d'écran ci-jointe`;
-      
-      // Vérifier si l'API Web Share est disponible
-      if (navigator.share && navigator.canShare) {
-        const file = new File([blob], 'capture-ecran.jpg', { type: 'image/jpeg' });
-        
-        const shareData = {
-          text: fullMessage,
-          files: [file]
-        };
-
-        if (navigator.canShare(shareData)) {
-          try {
-            await navigator.share(shareData);
-            toast({
-              title: "✅ Partage réussi !",
-              description: "Capture d'écran partagée avec succès",
-            });
-            console.log('✅ Partage via Web Share API réussi');
-            return;
-          } catch (shareError: any) {
-            if (shareError.name !== 'AbortError') {
-              console.error('❌ Erreur lors du partage:', shareError);
-            }
-          }
-        }
-      }
-
-      // Fallback : télécharger l'image et ouvrir WhatsApp
+      // Télécharger l'image
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -88,6 +60,7 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
         duration: 5000,
       });
 
+      const fullMessage = `${message}\n\n📸 Voir la capture d'écran ci-jointe`;
       const encodedMessage = encodeURIComponent(fullMessage);
       const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
       window.open(whatsappUrl, '_blank');
