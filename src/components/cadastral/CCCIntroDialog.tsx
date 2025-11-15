@@ -63,10 +63,8 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg sm:text-xl mb-2">Rapide et simple</h3>
                 <p className="text-base leading-relaxed text-foreground/80">
-                  Remplissez le formulaire en seulement <strong className="text-foreground">3 à 5 minutes</strong> ! 
-                  Nous avons conçu cette expérience pour être la plus fluide possible. Vous pourrez renseigner 
-                  les informations de votre parcelle étape par étape, sans stress. Si vous avez besoin de faire 
-                  une pause, pas de souci : vous pouvez sauvegarder votre progression et revenir plus tard.
+                  Formulaire en <strong className="text-foreground">3 à 5 minutes</strong>. 
+                  Remplissez étape par étape et sauvegardez votre progression à tout moment.
                 </p>
               </div>
             </div>
@@ -81,10 +79,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-lg sm:text-xl mb-2">Facile avec un téléphone</h3>
                 <p className="text-base leading-relaxed text-foreground/80">
-                  Le téléphone est l'appareil idéal pour cette recherche ! Pourquoi ? Parce qu'il vous permet de 
-                  <strong className="text-foreground"> photographier directement vos documents</strong> (titre de propriété, 
-                  certificat d'enregistrement, etc.) et de les ajouter instantanément au formulaire. C'est beaucoup plus 
-                  rapide et pratique que de scanner ou transférer des fichiers depuis un ordinateur.
+                  Le téléphone est idéal : <strong className="text-foreground">photographiez directement vos documents</strong> au lieu de les scanner.
                 </p>
               </div>
             </div>
@@ -97,42 +92,30 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-accent-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg sm:text-xl mb-3">Ce que nous allons vous demander</h3>
-                <p className="text-base mb-3 leading-relaxed text-foreground/80">
-                  Ne vous inquiétez pas, nous allons vous guider à chaque étape. Voici un aperçu des informations 
-                  dont nous aurons besoin :
-                </p>
-                <div className="space-y-3 text-base text-foreground/80">
+                <h3 className="font-semibold text-lg sm:text-xl mb-3">Informations nécessaires</h3>
+                <div className="space-y-2 text-base text-foreground/80">
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <strong className="text-foreground">Informations générales :</strong> Les données de base de votre parcelle 
-                      (numéro cadastral, superficie, type de terrain, etc.). Ce sont les informations que vous connaissez 
-                      probablement déjà ou qui figurent sur vos documents.
+                      <strong className="text-foreground">Données de base :</strong> Numéro cadastral, superficie, type de terrain
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <strong className="text-foreground">Localisation :</strong> Où se trouve exactement votre parcelle ? 
-                      Nous aurons besoin des coordonnées GPS si vous les avez, ainsi que des informations sur les limites 
-                      cadastrales (parcelles voisines, points de repère, etc.).
+                      <strong className="text-foreground">Localisation :</strong> Coordonnées GPS et limites cadastrales
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <strong className="text-foreground">Historique :</strong> L'histoire de la parcelle. Qui en sont les 
-                      propriétaires actuels et passés ? Y a-t-il des taxes foncières payées ? Des hypothèques ou crédits 
-                      associés ? Ces informations nous aident à avoir une vision complète.
+                      <strong className="text-foreground">Historique :</strong> Propriétaires, taxes, hypothèques
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                     <div>
-                      <strong className="text-foreground">Obligations légales :</strong> Existe-t-il des contraintes 
-                      particulières sur cette parcelle ? Des servitudes de passage, des zones protégées, ou d'autres 
-                      obligations légales ? Même si vous n'en avez pas, nous devons le vérifier.
+                      <strong className="text-foreground">Obligations :</strong> Servitudes ou contraintes légales
                     </div>
                   </div>
                 </div>
@@ -147,25 +130,18 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <MessageCircle className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-lg sm:text-xl mb-2">Vous n'êtes pas seul(e)</h3>
-                <p className="text-base mb-3 leading-relaxed text-foreground/80">
-                  Nous comprenons que remplir un formulaire cadastral peut sembler intimidant. C'est pourquoi nous avons 
-                  mis en place plusieurs outils pour vous accompagner à chaque étape :
-                </p>
-                <div className="space-y-3 text-base text-foreground/80">
+                <h3 className="font-semibold text-lg sm:text-xl mb-2">Aide disponible</h3>
+                <div className="space-y-2 text-base text-foreground/80">
                   <div className="flex items-start gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
                     <div>
-                      <strong className="text-foreground">Bulles d'aide contextuelles :</strong> Survolez n'importe quel 
-                      champ et vous verrez apparaître une explication claire de ce qui est attendu. Plus besoin de deviner !
+                      <strong className="text-foreground">Bulles d'aide :</strong> Survolez chaque champ pour voir les explications
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
                     <div className="w-2 h-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
                     <div>
-                      <strong className="text-foreground">Notifications intelligentes :</strong> Au fur et à mesure que vous 
-                      remplissez le formulaire, nous vous enverrons des petits conseils et des rappels pour vous assurer 
-                      que tout est bien complet.
+                      <strong className="text-foreground">Notifications :</strong> Conseils et rappels pendant le remplissage
                     </div>
                   </div>
                   <div className="flex items-start gap-2">
@@ -173,9 +149,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                     <div className="flex items-start gap-1.5">
                       <FaWhatsapp className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
                       <div>
-                        <strong className="text-foreground">Chatbot WhatsApp flottant :</strong> Besoin d'aide immédiate ? 
-                        Cliquez sur le petit bouton WhatsApp qui apparaîtra en bas à droite de votre écran. Un assistant 
-                        virtuel est là pour répondre à toutes vos questions en temps réel, 24h/24.
+                        <strong className="text-foreground">WhatsApp 24/7 :</strong> Cliquez sur le bouton flottant pour une aide immédiate
                       </div>
                     </div>
                   </div>
@@ -211,7 +185,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
           )}
           
           <p className="text-sm text-muted-foreground text-center leading-relaxed">
-            Rassurez-vous : vos informations seront soigneusement vérifiées et traitées par notre équipe et nous reviendrons vers vous.
+            Vos informations seront vérifiées par notre équipe.
           </p>
         </div>
       </DialogContent>
