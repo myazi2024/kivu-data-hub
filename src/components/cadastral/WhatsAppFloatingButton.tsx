@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
+import html2canvas from 'html2canvas';
+import { toast } from '@/hooks/use-toast';
 
 interface WhatsAppFloatingButtonProps {
   phoneNumber?: string;
@@ -16,20 +18,57 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
   className
 }) => {
   const isMobile = useIsMobile();
+  const [isCapturing, setIsCapturing] = useState(false);
 
-  const handleWhatsAppClick = () => {
+  const handleWhatsAppClick = async () => {
     console.log('🔥 Bouton WhatsApp cliqué !');
+    setIsCapturing(true);
     
-    const fullMessage = `${message}\n\n📸 Besoin d'aide avec cette page.`;
-    const encodedMessage = encodeURIComponent(fullMessage);
-    const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
-    
-    console.log('🔗 URL WhatsApp:', whatsappUrl);
-    console.log('📱 Tentative d\'ouverture de WhatsApp...');
-    
-    window.open(whatsappUrl, '_blank');
-    
-    console.log('✅ window.open() exécuté');
+    toast({
+      title: "📸 Capture en cours...",
+      description: "Préparation de votre capture d'écran",
+    });
+
+    try {
+      const canvas = await html2canvas(document.body, {
+        allowTaint: true,
+        useCORS: true,
+        logging: false,
+        scale: 0.5,
+      });
+
+      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      console.log('✅ Capture d\'écran réussie');
+
+      const fullMessage = `${message}\n\n📸 Voir la capture d'écran ci-jointe`;
+      const encodedMessage = encodeURIComponent(fullMessage);
+      const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
+      
+      console.log('🔗 URL WhatsApp:', whatsappUrl);
+      
+      window.open(whatsappUrl, '_blank');
+      
+      toast({
+        title: "✅ Prêt !",
+        description: "WhatsApp s'ouvre avec votre message",
+      });
+
+      console.log('✅ WhatsApp ouvert avec succès');
+    } catch (error) {
+      console.error('❌ Erreur lors de la capture:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible de capturer l'écran. Ouverture de WhatsApp...",
+        variant: "destructive",
+      });
+
+      const fallbackMessage = `${message}\n\nBesoin d'aide avec cette page.`;
+      const encodedMessage = encodeURIComponent(fallbackMessage);
+      const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
 
@@ -44,6 +83,7 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
       
       <Button
         onClick={handleWhatsAppClick}
+        disabled={isCapturing}
         className={cn(
           "relative rounded-full shadow-2xl",
           "bg-gradient-to-br from-[#25D366] via-[#20BA5A] to-[#128C7E]",
@@ -65,7 +105,7 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
           <MessageCircle className="h-6 w-6 text-white group-hover/button:rotate-12 transition-transform duration-300" />
           {!isMobile && (
             <span className="text-white font-semibold tracking-wide">
-              Besoin d'aide?
+              {isCapturing ? 'Capture...' : 'Besoin d\'aide?'}
             </span>
           )}
         </div>
