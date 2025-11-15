@@ -35,6 +35,25 @@ interface CadastralBillingPanelProps {
   onClose?: () => void;
 }
 
+// Mapping des services aux données disponibles dans une parcelle
+const getServiceDataAvailability = (searchResult: CadastralSearchResult) => {
+  const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = searchResult;
+  
+  return {
+    'basic_info': true, // Toujours disponible
+    'location': !!(parcel.province && parcel.ville),
+    'property_title': !!(parcel.property_title_type && parcel.title_reference_number),
+    'ownership_history': ownership_history && ownership_history.length > 0,
+    'tax_history': tax_history && tax_history.length > 0,
+    'mortgage_history': mortgage_history && mortgage_history.length > 0,
+    'boundary_history': boundary_history && boundary_history.length > 0,
+    'building_permits': building_permits && building_permits.length > 0,
+    'gps_coordinates': parcel.gps_coordinates && parcel.gps_coordinates.length > 0,
+    'construction_info': !!(parcel.construction_type || parcel.construction_nature),
+    'surface_calculation': !!(parcel.nombre_bornes && parcel.surface_calculee_bornes)
+  };
+};
+
 const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({ 
   searchResult, 
   onPaymentSuccess,
@@ -62,6 +81,12 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     createInvoice,
     setCurrentInvoice
   } = useCadastralBilling();
+
+  // Vérifier la disponibilité des données pour chaque service
+  const serviceAvailability = React.useMemo(() => 
+    getServiceDataAvailability(searchResult), 
+    [searchResult]
+  );
 
   // Initialiser tous les services comme déroulés par défaut
   React.useEffect(() => {
@@ -246,11 +271,12 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-dashed">
               <div className="flex items-center gap-2">
                 <Checkbox 
-                  checked={selectedServices.length === catalogServices.length}
+                  checked={selectedServices.length === catalogServices.filter(s => serviceAvailability[s.id] ?? true).length && selectedServices.length > 0}
                   onCheckedChange={(checked) => {
+                    const availableServices = catalogServices.filter(s => serviceAvailability[s.id] ?? true);
                     if (checked) {
-                      // Sélectionner tous les services
-                      catalogServices.forEach(service => {
+                      // Sélectionner tous les services disponibles
+                      availableServices.forEach(service => {
                         if (!selectedServices.includes(service.id)) {
                           toggleService(service.id);
                         }
@@ -267,7 +293,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <span className="text-sm font-medium">Tout sélectionner</span>
               </div>
               <Badge variant="secondary" className="text-xs">
-                ${catalogServices.reduce((sum, service) => sum + service.price, 0).toFixed(2)}
+                {catalogServices.filter(s => serviceAvailability[s.id] ?? true).length} disponible(s)
               </Badge>
             </div>
             
@@ -277,6 +303,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 const IconComponent = getServiceIcon(service.id);
                 const isSelected = selectedServices.includes(service.id);
                 const isExpanded = expandedServices.has(service.id);
+                const hasData = serviceAvailability[service.id] ?? true;
+                const isDisabled = !hasData;
                 
                 return (
                   <div 
@@ -287,6 +315,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         ? 'border-primary bg-primary/5' 
                         : 'border-border bg-background hover:border-primary/30'
                       }
+                      ${isDisabled ? 'opacity-60 bg-muted/30' : ''}
                     `}
                   >
                     <div className="flex items-start gap-3 p-4">
@@ -297,16 +326,22 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                           ? 'bg-primary text-primary-foreground' 
                           : 'bg-muted text-muted-foreground'
                         }
+                        ${isDisabled ? 'opacity-50' : ''}
                       `}>
                         <IconComponent className="h-4 w-4" />
                       </div>
 
                       {/* Détails du service alignés à gauche */}
                       <div className="flex-1 min-w-0 text-left">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1 text-left">
                             {service.name}
                           </h4>
+                          {isDisabled && (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 shrink-0">
+                              Données manquantes
+                            </Badge>
+                          )}
                         </div>
                       </div>
 
@@ -334,7 +369,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         </Badge>
                         <Checkbox 
                           checked={isSelected}
-                          onCheckedChange={() => handleServiceToggle(service.id)}
+                          onCheckedChange={() => !isDisabled && handleServiceToggle(service.id)}
+                          disabled={isDisabled}
                           className="h-4 w-4"
                         />
                       </div>
@@ -347,6 +383,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                           <p className="text-xs md:text-sm text-foreground/80 leading-relaxed text-left">
                             {service.description}
                           </p>
+                          {isDisabled && (
+                            <Alert className="mt-3">
+                              <Info className="h-4 w-4" />
+                              <AlertDescription className="text-xs">
+                                Ces données n'ont pas encore été ajoutées pour cette parcelle. 
+                                Vous pouvez les ajouter via le <strong>formulaire de contribution CCC</strong> 
+                                pour enrichir les informations cadastrales.
+                              </AlertDescription>
+                            </Alert>
+                          )}
                         </div>
                       </CollapsibleContent>
                     </Collapsible>
