@@ -63,6 +63,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     setCurrentInvoice
   } = useCadastralBilling();
 
+  // Initialiser tous les services comme déroulés par défaut
+  React.useEffect(() => {
+    if (catalogServices.length > 0 && expandedServices.size === 0) {
+      const allServiceIds = new Set(catalogServices.map(s => s.id));
+      setExpandedServices(allServiceIds);
+    }
+  }, [catalogServices]);
+
   // Pré-sélectionner un service si demandé
   React.useEffect(() => {
     if (preselectServiceId && !selectedServices.includes(preselectServiceId)) {
