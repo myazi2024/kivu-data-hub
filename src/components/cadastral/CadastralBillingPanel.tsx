@@ -33,6 +33,7 @@ interface CadastralBillingPanelProps {
   onPaymentSuccess: (selectedServices: string[]) => void;
   preselectServiceId?: string;
   onClose?: () => void;
+  onRequestContribution?: () => void;
 }
 
 // Icône pour chaque service
@@ -86,7 +87,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   searchResult, 
   onPaymentSuccess,
   preselectServiceId,
-  onClose
+  onClose,
+  onRequestContribution
 }) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [appliedDiscount, setAppliedDiscount] = useState<{
@@ -414,10 +416,21 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                           {isDisabled && (
                             <Alert className="mt-3">
                               <Info className="h-4 w-4" />
-                              <AlertDescription className="text-xs">
-                                Ces données n'ont pas encore été ajoutées pour cette parcelle. 
-                                Vous pouvez les ajouter via le <strong>formulaire de contribution CCC</strong> 
-                                pour enrichir les informations cadastrales.
+                              <AlertDescription className="text-xs space-y-2">
+                                <p>Ces données n'ont pas encore été ajoutées pour cette parcelle.</p>
+                                {onRequestContribution && (
+                                  <Button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onRequestContribution();
+                                    }}
+                                    size="sm"
+                                    variant="outline"
+                                    className="w-full mt-2"
+                                  >
+                                    Compléter les données
+                                  </Button>
+                                )}
                               </AlertDescription>
                             </Alert>
                           )}
