@@ -39,6 +39,7 @@ import CadastralBillingPanel from './CadastralBillingPanel';
 import CadastralInvoice from './CadastralInvoice';
 import DocumentAttachment from './DocumentAttachment';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
+import CadastralContributionDialog from './CadastralContributionDialog';
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -56,6 +57,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
   const [preselectServiceId, setPreselectServiceId] = useState<string | undefined>(undefined);
   const [invoiceFormat, setInvoiceFormat] = useState<'mini' | 'a4'>('a4');
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const [showContributionDialog, setShowContributionDialog] = useState(false);
   const lastScrollYRef = useRef(0);
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = result;
   const { checkServiceAccess } = useCadastralBilling();
@@ -287,12 +289,22 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   // Show billing panel if user requests it or hasn't paid any services initially
   if (showBillingPanel) {
-    return <CadastralBillingPanel 
-      searchResult={result} 
-      onPaymentSuccess={(services) => handlePaymentSuccess(services)} 
-      preselectServiceId={preselectServiceId}
-      onClose={onClose}
-    />;
+    return (
+      <>
+        <CadastralBillingPanel 
+          searchResult={result} 
+          onPaymentSuccess={(services) => handlePaymentSuccess(services)} 
+          preselectServiceId={preselectServiceId}
+          onClose={onClose}
+          onRequestContribution={() => setShowContributionDialog(true)}
+        />
+        <CadastralContributionDialog
+          open={showContributionDialog}
+          onOpenChange={setShowContributionDialog}
+          parcelNumber={result.parcel.parcel_number}
+        />
+      </>
+    );
   }
 
   return (

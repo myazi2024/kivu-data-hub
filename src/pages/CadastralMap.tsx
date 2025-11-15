@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -16,8 +16,8 @@ import 'leaflet/dist/leaflet.css';
 interface ParcelData {
   id: string;
   parcel_number: string;
-  gps_coordinates: any; // Json type from Supabase
-  parcel_sides: any; // Contient les dimensions exactes des côtés (JSONB)
+  gps_coordinates: any;
+  parcel_sides: any;
   latitude: number;
   longitude: number;
   current_owner_name: string;
@@ -26,6 +26,14 @@ interface ParcelData {
   ville: string;
   commune: string;
   quartier: string;
+}
+
+interface ParcelHistoryData {
+  ownership_history: any[];
+  tax_history: any[];
+  mortgage_history: any[];
+  boundary_history: any[];
+  building_permits: any[];
 }
 
 const CadastralMap = () => {
@@ -41,6 +49,9 @@ const CadastralMap = () => {
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelData[]>([]);
   const [showIntroDialog, setShowIntroDialog] = useState(false);
   const [showContributionDialog, setShowContributionDialog] = useState(false);
+  const [selectedParcelHistory, setSelectedParcelHistory] = useState<ParcelHistoryData | null>(null);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [hasIncompleteData, setHasIncompleteData] = useState(false);
 
   // Reset hasScrolledToBottom when dialog closes
   useEffect(() => {
@@ -97,10 +108,50 @@ const CadastralMap = () => {
     setFilteredParcels(filtered);
   }, [searchQuery, parcels]);
 
+  // Charger l'historique complet d'une parcelle
+  const loadParcelHistory = async (parcelId: string) => {
+    setLoadingHistory(true);
+    try {
+      const [ownershipRes, taxRes, mortgageRes, boundaryRes, permitsRes] = await Promise.all([
+        supabase.from('cadastral_ownership_history').select('*').eq('parcel_id', parcelId),
+        supabase.from('cadastral_tax_history').select('*').eq('parcel_id', parcelId),
+        supabase.from('cadastral_mortgages').select('*').eq('parcel_id', parcelId),
+        supabase.from('cadastral_boundary_history').select('*').eq('parcel_id', parcelId),
+        supabase.from('cadastral_building_permits').select('*').eq('parcel_id', parcelId)
+      ]);
+
+      const historyData: ParcelHistoryData = {
+        ownership_history: ownershipRes.data || [],
+        tax_history: taxRes.data || [],
+        mortgage_history: mortgageRes.data || [],
+        boundary_history: boundaryRes.data || [],
+        building_permits: permitsRes.data || []
+      };
+
+      setSelectedParcelHistory(historyData);
+      
+      // Vérifier si les données sont incomplètes
+      const hasLocation = !!(selectedParcel?.province && selectedParcel?.ville);
+      const hasGPS = !!(selectedParcel?.gps_coordinates && Array.isArray(selectedParcel.gps_coordinates) && selectedParcel.gps_coordinates.length > 0);
+      const hasLocationHistory = hasLocation || historyData.boundary_history.length > 0 || hasGPS;
+      const hasHistory = historyData.ownership_history.length > 0;
+      const hasObligations = historyData.tax_history.length > 0 || historyData.mortgage_history.length > 0;
+
+      // Considérer les données incomplètes si au moins 2 catégories sur 3 sont vides
+      const missingCount = [hasLocationHistory, hasHistory, hasObligations].filter(v => !v).length;
+      setHasIncompleteData(missingCount >= 2);
+    } catch (error) {
+      console.error('Erreur chargement historique:', error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
   const handleSelectParcel = (parcel: ParcelData) => {
     setSelectedParcel(parcel);
     setSearchQuery(parcel.parcel_number);
     setSearchSuggestions([]);
+    loadParcelHistory(parcel.id);
     
     // Centrer la carte sur la parcelle sélectionnée
     if (mapInstanceRef.current && parcel.latitude && parcel.longitude) {
@@ -461,29 +512,50 @@ const CadastralMap = () => {
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <Button
-                    onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
-                    className="w-full"
-                    size="sm"
-                  >
-                    {isMobile ? "Plus de données" : "Afficher plus de données"}
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      const phoneNumber = '243816996077'; // Format international pour RDC
-                      const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
-                      const encodedMessage = encodeURIComponent(message);
-                      const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-                      window.open(whatsappUrl, '_blank');
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                  >
-                    <MessageCircle className="h-4 w-4 mr-1" />
-                    Besoin d'aide ?
-                  </Button>
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
+                      className="w-full"
+                      size="sm"
+                      disabled={loadingHistory || hasIncompleteData}
+                    >
+                      {isMobile ? "Plus de données" : "Afficher plus de données"}
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        const phoneNumber = '243816996077';
+                        const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
+                        const encodedMessage = encodeURIComponent(message);
+                        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+                        window.open(whatsappUrl, '_blank');
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Besoin d'aide ?
+                    </Button>
+                  </div>
+                  
+                  {hasIncompleteData && !loadingHistory && (
+                    <Button
+                      onClick={() => setShowContributionDialog(true)}
+                      variant="destructive"
+                      size="sm"
+                      className="w-full"
+                    >
+                      <AlertTriangle className="h-4 w-4 mr-2" />
+                      Données manquantes
+                    </Button>
+                  )}
+                  
+                  {hasIncompleteData && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Cette parcelle a des données incomplètes. Complétez-les pour accéder aux services.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -539,7 +611,7 @@ const CadastralMap = () => {
               console.log("Dialog de contribution fermé");
             }
           }}
-          parcelNumber={searchQuery}
+          parcelNumber={selectedParcel?.parcel_number || searchQuery}
         />
       )}
     </div>
