@@ -9,6 +9,9 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { PermitValidationScore } from "./PermitValidationScore";
 import { PermitTimeline } from "./PermitTimeline";
 import { DocumentUploadSection } from "./DocumentUploadSection";
+import { PermitMessaging } from "./PermitMessaging";
+import { PermitPaymentTracker } from "./PermitPaymentTracker";
+import { PermitLocationMap } from "./PermitLocationMap";
 
 interface PermitCardProps {
   permit: any;
@@ -284,20 +287,36 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
           <CollapsibleContent className="space-y-4 pt-4">
             {/* Score de validation */}
             {permit.status === "pending" && (
-              <PermitValidationScore
-                permitData={permit.permit_request_data}
-                requestType={permit.permit_request_data?.requestType || "construction"}
-              />
+              <div className="grid gap-4 md:grid-cols-2">
+                <PermitValidationScore
+                  permitData={permit.permit_request_data}
+                  requestType={permit.permit_request_data?.requestType || "construction"}
+                />
+                <PermitPaymentTracker
+                  contributionId={permit.id}
+                  permitType={permit.permit_request_data?.requestType || "construction"}
+                  status={permit.status}
+                />
+              </div>
             )}
 
-            {/* Timeline */}
-            <PermitTimeline permit={permit} />
+            {/* Localisation */}
+            <PermitLocationMap permit={permit} />
+
+            {/* Messagerie */}
+            <PermitMessaging
+              contributionId={permit.id}
+              parcelNumber={permit.parcel_number}
+            />
 
             {/* Documents */}
             <DocumentUploadSection
               contributionId={permit.id}
               existingDocuments={[]}
             />
+
+            {/* Timeline */}
+            <PermitTimeline permit={permit} />
           </CollapsibleContent>
         </Collapsible>
       </CardContent>
