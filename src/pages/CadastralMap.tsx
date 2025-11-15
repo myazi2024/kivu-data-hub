@@ -513,14 +513,14 @@ const CadastralMap = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="grid grid-cols-3 gap-1.5">
+                  <div className="grid grid-cols-3 gap-2">
                     <Button
                       onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
-                      className="w-full text-xs px-2 h-9"
+                      className="w-full"
                       size="sm"
                       disabled={loadingHistory}
                     >
-                      {isMobile ? "Données" : "Afficher plus de données"}
+                      {isMobile ? "Plus de données" : "Afficher plus de données"}
                     </Button>
                     <Button
                       onClick={() => {
@@ -532,20 +532,20 @@ const CadastralMap = () => {
                       }}
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs px-2 h-9"
+                      className="w-full"
                     >
-                      <MessageCircle className={isMobile ? "h-3 w-3" : "h-4 w-4 mr-1"} />
-                      {!isMobile && "Besoin d'aide ?"}
+                      <MessageCircle className="h-4 w-4 mr-1" />
+                      Besoin d'aide ?
                     </Button>
                     {hasIncompleteData && !loadingHistory && (
                       <Button
                         onClick={() => setShowContributionDialog(true)}
                         variant="outline"
                         size="sm"
-                        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50 text-xs px-2 h-9"
+                        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
                       >
-                        <AlertTriangle className={isMobile ? "h-3 w-3" : "h-4 w-4 mr-1"} />
-                        {isMobile ? "Ajouter" : "Données manquantes"}
+                        <AlertTriangle className="h-4 w-4 mr-1" />
+                        {isMobile ? "Données" : "Données manquantes"}
                       </Button>
                     )}
                   </div>
