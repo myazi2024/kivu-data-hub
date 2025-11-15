@@ -87,7 +87,7 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
 
 
   return (
-    <div className="fixed bottom-6 right-6 z-[999999] group/button pointer-events-auto">
+    <div data-whatsapp-button="true" className="fixed bottom-6 right-6 z-[999999] group/button pointer-events-auto">
       {/* Pulse animation ring */}
       <div className="absolute inset-0 rounded-full bg-[#25D366] opacity-30 animate-ping" 
            style={{ animationDuration: '2s' }} />
