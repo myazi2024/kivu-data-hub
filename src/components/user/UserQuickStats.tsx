@@ -81,26 +81,25 @@ export const UserQuickStats = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Aperçu rapide</CardTitle>
-        <CardDescription>Vos statistiques en un coup d'œil</CardDescription>
+      <CardHeader className="pb-3 px-4 md:px-6">
+        <CardTitle className="text-base md:text-lg">Aperçu rapide</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4">
+      <CardContent className="px-4 md:px-6">
+        <div className="grid grid-cols-2 gap-2 md:gap-3">
           {statItems.map((item) => {
             const Icon = item.icon;
             return (
               <div
                 key={item.title}
-                className="p-4 border rounded-lg hover:bg-accent/5 transition-colors"
+                className="p-3 md:p-4 border rounded-lg hover:bg-accent/5 transition-colors"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" />
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 md:p-2 rounded-lg bg-primary/10">
+                    <Icon className="h-3 w-3 md:h-4 md:w-4 text-primary" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">{item.value}</p>
-                    <p className="text-xs text-muted-foreground">{item.title}</p>
+                    <p className="text-xl md:text-2xl font-bold">{item.value}</p>
+                    <p className="text-[10px] md:text-xs text-muted-foreground">{item.title}</p>
                   </div>
                 </div>
               </div>

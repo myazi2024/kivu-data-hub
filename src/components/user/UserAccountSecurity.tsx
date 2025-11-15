@@ -64,19 +64,19 @@ export const UserAccountSecurity = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lock className="h-5 w-5" />
+        <CardHeader className="pb-3 px-4 md:px-6">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Lock className="h-4 w-4 md:h-5 md:w-5" />
             Changer le mot de passe
           </CardTitle>
-          <CardDescription>Mettez à jour votre mot de passe</CardDescription>
+          <CardDescription className="text-xs md:text-sm">Mettez à jour votre mot de passe</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handlePasswordChange} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+        <CardContent className="px-4 md:px-6">
+          <form onSubmit={handlePasswordChange} className="space-y-3 md:space-y-4">
+            <div className="space-y-1.5 md:space-y-2">
+              <Label htmlFor="newPassword" className="text-xs md:text-sm">Nouveau mot de passe</Label>
               <Input
                 id="newPassword"
                 type="password"
@@ -84,11 +84,12 @@ export const UserAccountSecurity = () => {
                 onChange={(e) => setNewPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
+                className="text-sm"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+            <div className="space-y-1.5 md:space-y-2">
+              <Label htmlFor="confirmPassword" className="text-xs md:text-sm">Confirmer</Label>
               <Input
                 id="confirmPassword"
                 type="password"
@@ -96,30 +97,31 @@ export const UserAccountSecurity = () => {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
+                className="text-sm"
               />
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Changer le mot de passe
+            <Button type="submit" disabled={loading} size="sm" className="w-full sm:w-auto">
+              {loading && <Loader2 className="mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />}
+              <span className="text-xs md:text-sm">Changer</span>
             </Button>
           </form>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Authentification à deux facteurs
+        <CardHeader className="pb-3 px-4 md:px-6">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Shield className="h-4 w-4 md:h-5 md:w-5" />
+            Authentification 2FA
           </CardTitle>
-          <CardDescription>Sécurisez votre compte avec la 2FA</CardDescription>
+          <CardDescription className="text-xs md:text-sm">Sécurisez votre compte</CardDescription>
         </CardHeader>
-        <CardContent>
-          <Alert>
-            <Smartphone className="h-4 w-4" />
-            <AlertDescription>
-              La configuration de l'authentification à deux facteurs sera bientôt disponible.
+        <CardContent className="px-4 md:px-6">
+          <Alert className="py-2 px-3">
+            <Smartphone className="h-3 w-3 md:h-4 md:w-4" />
+            <AlertDescription className="text-xs md:text-sm">
+              Configuration bientôt disponible
             </AlertDescription>
           </Alert>
         </CardContent>

@@ -21,37 +21,37 @@ export const UserQuickActions = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Actions rapides</CardTitle>
-        <CardDescription>Accès rapide aux fonctionnalités importantes</CardDescription>
+      <CardHeader className="pb-3 px-4 md:px-6">
+        <CardTitle className="text-base md:text-lg">Actions rapides</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <div className="p-4 border rounded-lg space-y-3">
+      <CardContent className="space-y-2 md:space-y-3 px-4 md:px-6">
+        <div className="p-3 md:p-4 border rounded-lg space-y-2 md:space-y-3">
           <div className="flex items-center gap-2">
-            <Share2 className="h-5 w-5 text-primary" />
+            <Share2 className="h-4 w-4 md:h-5 md:w-5 text-primary flex-shrink-0" />
             <div>
-              <p className="font-medium">Lien de parrainage</p>
-              <p className="text-sm text-muted-foreground">Partagez et gagnez des récompenses</p>
+              <p className="text-xs md:text-sm font-medium">Lien de parrainage</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Partagez et gagnez</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <code className="flex-1 text-xs bg-muted p-2 rounded overflow-x-auto">
+            <code className="flex-1 text-[10px] md:text-xs bg-muted p-2 rounded overflow-x-auto">
               {referralLink}
             </code>
             <Button
               size="sm"
               variant="outline"
               onClick={handleCopyReferralLink}
+              className="flex-shrink-0"
             >
-              <Copy className="h-4 w-4" />
+              <Copy className="h-3 w-3 md:h-4 md:w-4" />
             </Button>
           </div>
         </div>
 
         <Link to="/contact">
-          <Button variant="outline" className="w-full justify-start gap-2">
-            <HelpCircle className="h-4 w-4" />
-            Contacter le support
+          <Button variant="outline" size="sm" className="w-full justify-start gap-2">
+            <HelpCircle className="h-3 w-3 md:h-4 md:w-4" />
+            <span className="text-xs md:text-sm">Contacter le support</span>
           </Button>
         </Link>
       </CardContent>
