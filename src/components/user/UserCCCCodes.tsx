@@ -6,7 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Gift, Copy, CheckCircle, XCircle, Clock, DollarSign } from 'lucide-react';
+import { Gift, Copy, CheckCircle, XCircle, Clock, DollarSign, Eye, AlertCircle } from 'lucide-react';
+import { UserCCCCodeDetailsDialog } from './UserCCCCodeDetailsDialog';
 
 interface CCCCode {
   id: string;
@@ -19,12 +20,15 @@ interface CCCCode {
   expires_at: string;
   created_at: string;
   invalidation_reason: string | null;
+  contribution_id: string;
 }
 
 export const UserCCCCodes: React.FC = () => {
   const { user } = useAuth();
   const [codes, setCodes] = useState<CCCCode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCode, setSelectedCode] = useState<CCCCode | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -182,7 +186,6 @@ export const UserCCCCodes: React.FC = () => {
                       <TableHead>Parcelle</TableHead>
                       <TableHead>Valeur</TableHead>
                       <TableHead>Date création</TableHead>
-                      <TableHead>Expire le</TableHead>
                       <TableHead>Statut</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -201,19 +204,30 @@ export const UserCCCCodes: React.FC = () => {
                         <TableCell>
                           {new Date(code.created_at).toLocaleDateString('fr-FR')}
                         </TableCell>
-                        <TableCell>
-                          {new Date(code.expires_at).toLocaleDateString('fr-FR')}
-                        </TableCell>
                         <TableCell>{getStatusBadge(code)}</TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => copyToClipboard(code.code)}
-                            disabled={!code.is_valid || code.is_used}
-                          >
-                            <Copy className="h-4 w-4" />
-                          </Button>
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => copyToClipboard(code.code)}
+                              disabled={!code.is_valid || code.is_used}
+                              title="Copier le code"
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedCode(code);
+                                setIsDetailsOpen(true);
+                              }}
+                              title="Voir les détails"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -256,16 +270,30 @@ export const UserCCCCodes: React.FC = () => {
                         <span className="text-[10px] text-muted-foreground">
                           {new Date(code.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                         </span>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          onClick={() => copyToClipboard(code.code)}
-                          disabled={!code.is_valid || code.is_used}
-                          className="h-7 text-[11px]"
-                        >
-                          <Copy className="h-3 w-3 mr-1" />
-                          Copier
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSelectedCode(code);
+                              setIsDetailsOpen(true);
+                            }}
+                            className="h-7 text-[11px]"
+                          >
+                            <Eye className="h-3 w-3 mr-1" />
+                            Voir
+                          </Button>
+                          <Button
+                            variant="default"
+                            size="sm"
+                            onClick={() => copyToClipboard(code.code)}
+                            disabled={!code.is_valid || code.is_used}
+                            className="h-7 text-[11px]"
+                          >
+                            <Copy className="h-3 w-3 mr-1" />
+                            Copier
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -283,6 +311,12 @@ export const UserCCCCodes: React.FC = () => {
           )}
         </CardContent>
       </Card>
+      
+      <UserCCCCodeDetailsDialog 
+        open={isDetailsOpen} 
+        onOpenChange={setIsDetailsOpen} 
+        code={selectedCode} 
+      />
     </>
   );
 };

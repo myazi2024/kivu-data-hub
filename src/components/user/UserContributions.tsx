@@ -14,16 +14,25 @@ interface Contribution {
   id: string;
   parcel_number: string;
   status: string;
+  contribution_type: string;
   is_suspicious: boolean;
   fraud_score: number;
+  fraud_reason: string | null;
   rejection_reason: string | null;
+  rejection_reasons: any;
+  rejection_date: string | null;
+  appeal_submitted: boolean | null;
+  appeal_status: string | null;
+  appeal_submission_date: string | null;
   created_at: string;
   reviewed_at: string | null;
+  reviewed_by: string | null;
   property_title_type: string | null;
   current_owner_name: string | null;
   area_sqm: number | null;
   province: string | null;
   ville: string | null;
+  changed_fields: any;
 }
 
 export const UserContributions: React.FC = () => {
@@ -32,6 +41,7 @@ export const UserContributions: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [cccCode, setCccCode] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -247,7 +257,20 @@ export const UserContributions: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+      <Dialog open={isDetailsOpen} onOpenChange={async (open) => {
+        setIsDetailsOpen(open);
+        if (!open) {
+          setCccCode(null);
+        } else if (selectedContribution && selectedContribution.status === 'approved') {
+          // Fetch CCC code for approved contribution
+          const { data } = await supabase
+            .from('cadastral_contributor_codes')
+            .select('code')
+            .eq('contribution_id', selectedContribution.id)
+            .single();
+          if (data) setCccCode(data.code);
+        }
+      }}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Détails de la contribution</DialogTitle>
@@ -265,12 +288,111 @@ export const UserContributions: React.FC = () => {
                     {getStatusBadge(selectedContribution.status, selectedContribution.is_suspicious)}
                   </div>
                 </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Type de contribution</label>
+                  <p className="text-base">
+                    {selectedContribution.contribution_type === 'new' ? 'Nouvelle parcelle' : 'Mise à jour'}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Date de soumission</label>
+                  <p className="text-base">
+                    {new Date(selectedContribution.created_at).toLocaleString('fr-FR')}
+                  </p>
+                </div>
               </div>
 
-              {selectedContribution.rejection_reason && (
+              {/* Fraud warning */}
+              {selectedContribution.is_suspicious && (
                 <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-                  <p className="text-sm font-medium text-destructive mb-2">Raison du rejet :</p>
-                  <p className="text-sm">{selectedContribution.rejection_reason}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-destructive" />
+                    <p className="text-sm font-medium text-destructive">Contribution suspecte</p>
+                  </div>
+                  <p className="text-sm">Score de fraude: {selectedContribution.fraud_score}/100</p>
+                  {selectedContribution.fraud_reason && (
+                    <p className="text-sm mt-2">{selectedContribution.fraud_reason}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Rejection reasons */}
+              {selectedContribution.status === 'rejected' && (
+                <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <XCircle className="h-4 w-4 text-destructive" />
+                    <p className="text-sm font-medium text-destructive">Raisons du rejet</p>
+                  </div>
+                  {selectedContribution.rejection_reasons && Array.isArray(selectedContribution.rejection_reasons) && selectedContribution.rejection_reasons.length > 0 ? (
+                    <ul className="text-sm space-y-1">
+                      {selectedContribution.rejection_reasons.map((reason: string, idx: number) => (
+                        <li key={idx} className="flex items-start gap-2">
+                          <span className="text-destructive">•</span>
+                          <span>{reason}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : selectedContribution.rejection_reason ? (
+                    <p className="text-sm">{selectedContribution.rejection_reason}</p>
+                  ) : (
+                    <p className="text-sm">Aucune raison spécifiée</p>
+                  )}
+                  {selectedContribution.rejection_date && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Rejetée le {new Date(selectedContribution.rejection_date).toLocaleDateString('fr-FR')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Appeal status */}
+              {selectedContribution.appeal_submitted && (
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                    <p className="text-sm font-medium text-blue-600 dark:text-blue-400">Recours soumis</p>
+                  </div>
+                  <p className="text-sm">
+                    Statut: <Badge variant={selectedContribution.appeal_status === 'approved' ? 'default' : 'secondary'}>
+                      {selectedContribution.appeal_status === 'approved' ? 'Approuvé' :
+                       selectedContribution.appeal_status === 'rejected' ? 'Rejeté' : 'En attente'}
+                    </Badge>
+                  </p>
+                  {selectedContribution.appeal_submission_date && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Soumis le {new Date(selectedContribution.appeal_submission_date).toLocaleDateString('fr-FR')}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* CCC Code for approved contributions */}
+              {selectedContribution.status === 'approved' && cccCode && (
+                <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <p className="text-sm font-medium text-green-600 dark:text-green-400">Code CCC généré</p>
+                  </div>
+                  <p className="text-sm font-mono font-bold">{cccCode}</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Consultez l'onglet "Codes" pour plus de détails
+                  </p>
+                </div>
+              )}
+
+              {/* Changed fields for updates */}
+              {selectedContribution.contribution_type === 'update' && selectedContribution.changed_fields && 
+               Array.isArray(selectedContribution.changed_fields) && selectedContribution.changed_fields.length > 0 && (
+                <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">Champs modifiés:</p>
+                  <ul className="text-sm space-y-1">
+                    {selectedContribution.changed_fields.map((field: string, idx: number) => (
+                      <li key={idx} className="flex items-start gap-2">
+                        <span className="text-blue-600 dark:text-blue-400">•</span>
+                        <span>{field}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
@@ -287,12 +409,14 @@ export const UserContributions: React.FC = () => {
                   <label className="text-sm font-medium text-muted-foreground">Surface (m²)</label>
                   <p className="text-base">{selectedContribution.area_sqm ? `${selectedContribution.area_sqm} m²` : 'Non spécifié'}</p>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-muted-foreground">Date de soumission</label>
-                  <p className="text-base">
-                    {new Date(selectedContribution.created_at).toLocaleString('fr-FR')}
-                  </p>
-                </div>
+                {selectedContribution.reviewed_at && (
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground">Révisée le</label>
+                    <p className="text-base">
+                      {new Date(selectedContribution.reviewed_at).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           )}
