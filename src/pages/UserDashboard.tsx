@@ -34,48 +34,48 @@ const UserDashboard = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
       
-      <main className="flex-grow container-padding py-2 md:py-6">
-        <div className="max-w-7xl mx-auto space-y-2 md:space-y-6">
+      <main className="flex-grow container-padding py-3 md:py-6">
+        <div className="max-w-7xl mx-auto space-y-3 md:space-y-6">
           <UserProfileHeader />
 
           <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="w-full h-auto p-0.5 flex lg:grid lg:grid-cols-7 overflow-x-auto gap-0.5">
-            <TabsTrigger value="profile" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-              <User className="h-8 w-8 lg:h-8 lg:w-8" />
-              <span className="hidden lg:inline text-xs">Profil</span>
+          <TabsList className="w-full h-auto p-1 grid grid-cols-4 md:flex md:justify-start lg:grid lg:grid-cols-7 gap-1">
+            <TabsTrigger value="profile" className="flex flex-col md:flex-row items-center gap-1 px-2 py-2 md:px-3">
+              <User className="h-4 w-4 md:h-4 md:w-4" />
+              <span className="text-[10px] md:text-xs">Profil</span>
             </TabsTrigger>
-            <TabsTrigger value="contributions" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-              <FileText className="h-8 w-8 lg:h-8 lg:w-8" />
-              <span className="hidden lg:inline text-xs">Contributions</span>
+            <TabsTrigger value="contributions" className="flex flex-col md:flex-row items-center gap-1 px-2 py-2 md:px-3">
+              <FileText className="h-4 w-4 md:h-4 md:w-4" />
+              <span className="text-[10px] md:text-xs">Contrib.</span>
             </TabsTrigger>
-            <TabsTrigger value="ccc-codes" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-              <Gift className="h-8 w-8 lg:h-8 lg:w-8" />
-              <span className="hidden lg:inline text-xs">Codes CCC</span>
+            <TabsTrigger value="ccc-codes" className="flex flex-col md:flex-row items-center gap-1 px-2 py-2 md:px-3">
+              <Gift className="h-4 w-4 md:h-4 md:w-4" />
+              <span className="text-[10px] md:text-xs">Codes</span>
             </TabsTrigger>
-            <TabsTrigger value="permits" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-              <Building className="h-8 w-8 lg:h-8 lg:w-8" />
-              <span className="hidden lg:inline text-xs">Permis</span>
+            <TabsTrigger value="permits" className="flex flex-col md:flex-row items-center gap-1 px-2 py-2 md:px-3">
+              <Building className="h-4 w-4 md:h-4 md:w-4" />
+              <span className="text-[10px] md:text-xs">Permis</span>
             </TabsTrigger>
-            <TabsTrigger value="invoices" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-              <CreditCard className="h-8 w-8 lg:h-8 lg:w-8" />
-              <span className="hidden lg:inline text-xs">Factures</span>
+            <TabsTrigger value="invoices" className="flex flex-col md:flex-row items-center gap-1 px-2 py-2 md:px-3">
+              <CreditCard className="h-4 w-4 md:h-4 md:w-4" />
+              <span className="text-[10px] md:text-xs">Factures</span>
             </TabsTrigger>
-            <TabsTrigger value="statistics" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-              <BarChart3 className="h-8 w-8 lg:h-8 lg:w-8" />
-              <span className="hidden lg:inline text-xs">Stats</span>
+            <TabsTrigger value="statistics" className="flex flex-col md:flex-row items-center gap-1 px-2 py-2 md:px-3">
+              <BarChart3 className="h-4 w-4 md:h-4 md:w-4" />
+              <span className="text-[10px] md:text-xs">Stats</span>
             </TabsTrigger>
-            <TabsTrigger value="preferences" className="flex items-center gap-1 px-2 py-1.5 lg:px-3 lg:py-2">
-              <Settings className="h-8 w-8 lg:h-8 lg:w-8" />
-              <span className="hidden lg:inline text-xs">Réglages</span>
+            <TabsTrigger value="preferences" className="flex flex-col md:flex-row items-center gap-1 px-2 py-2 md:px-3">
+              <Settings className="h-4 w-4 md:h-4 md:w-4" />
+              <span className="text-[10px] md:text-xs">Réglages</span>
             </TabsTrigger>
           </TabsList>
 
-            <TabsContent value="profile" className="mt-2 md:mt-6">
+            <TabsContent value="profile" className="mt-3 md:mt-6">
               <Card>
-                <CardHeader className="pb-3 md:pb-6">
-                  <CardTitle className="text-sm md:text-base">Informations personnelles</CardTitle>
+                <CardHeader className="pb-3 md:pb-6 px-4 md:px-6">
+                  <CardTitle className="text-base md:text-lg">Informations personnelles</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3 md:space-y-4">
+                <CardContent className="space-y-3 md:space-y-4 px-4 md:px-6">
                   <div>
                     <label className="text-xs md:text-sm font-medium text-muted-foreground">Email</label>
                     <p className="text-sm md:text-base mt-0.5">{user.email}</p>

@@ -104,7 +104,7 @@ export function UserBuildingPermits() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       {/* Alertes de renouvellement */}
       <PermitRenewalAlert permits={permits} />
       
@@ -112,20 +112,20 @@ export function UserBuildingPermits() {
       <PermitStatistics permits={permits} />
       
       <Tabs defaultValue="construction" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="construction" className="gap-2">
-            <Building2 className="h-4 w-4" />
-            <span>Permis de construire</span>
-            <span className="text-xs">({constructionPermits.length})</span>
+        <TabsList className="grid w-full grid-cols-2 h-auto p-1">
+          <TabsTrigger value="construction" className="gap-1.5 md:gap-2 py-2.5 md:py-2">
+            <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            <span className="text-xs md:text-sm font-medium">Construire</span>
+            <span className="text-[10px] md:text-xs bg-muted px-1.5 py-0.5 rounded-full">({constructionPermits.length})</span>
           </TabsTrigger>
-          <TabsTrigger value="regularization" className="gap-2">
-            <FileEdit className="h-4 w-4" />
-            <span>Permis de régularisation</span>
-            <span className="text-xs">({regularizationPermits.length})</span>
+          <TabsTrigger value="regularization" className="gap-1.5 md:gap-2 py-2.5 md:py-2">
+            <FileEdit className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            <span className="text-xs md:text-sm font-medium">Régulariser</span>
+            <span className="text-[10px] md:text-xs bg-muted px-1.5 py-0.5 rounded-full">({regularizationPermits.length})</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="construction" className="space-y-6 mt-4">
+        <TabsContent value="construction" className="space-y-3 md:space-y-6 mt-3 md:mt-4">
           <PermitSection
             title="En attente"
             permits={constructionByStatus.pending}
@@ -144,7 +144,7 @@ export function UserBuildingPermits() {
           />
         </TabsContent>
 
-        <TabsContent value="regularization" className="space-y-6 mt-4">
+        <TabsContent value="regularization" className="space-y-3 md:space-y-6 mt-3 md:mt-4">
           <PermitSection
             title="En attente"
             permits={regularizationByStatus.pending}
