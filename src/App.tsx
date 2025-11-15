@@ -14,7 +14,6 @@ import Auth from "./pages/Auth";
 import Map from "./pages/Map";
 import CadastralMap from "./pages/CadastralMap";
 import Admin from "./pages/Admin";
-import Myazi from "./pages/Myazi";
 import JoinUs from "./pages/JoinUs";
 import BillingDashboard from "./pages/BillingDashboard";
 import UserDashboard from "./pages/UserDashboard";
@@ -47,7 +46,6 @@ const App = () => (
               <Route path="/cadastral-map" element={<CadastralMap />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/myazi" element={<Myazi />} />
               <Route path="/careers" element={<JoinUs />} />
               <Route path="/billing" element={<BillingDashboard />} />
               <Route path="/mon-compte" element={<UserDashboard />} />
