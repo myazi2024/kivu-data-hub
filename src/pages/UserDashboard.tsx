@@ -75,7 +75,7 @@ const UserDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-            <TabsContent value="profile" className="mt-3 md:mt-6 space-y-4 md:space-y-6">
+            <TabsContent value="profile" className="mt-2 md:mt-4 space-y-3 md:space-y-4">
               <UserQuickStats />
               <UserProfileEdit />
               <UserVerification />
@@ -102,7 +102,7 @@ const UserDashboard = () => {
               <UserStatisticsCharts />
             </TabsContent>
 
-            <TabsContent value="preferences" className="mt-2 md:mt-6 space-y-4 md:space-y-6">
+            <TabsContent value="preferences" className="mt-2 md:mt-4 space-y-3 md:space-y-4">
               <UserPreferences />
               <UserAccountSecurity />
             </TabsContent>

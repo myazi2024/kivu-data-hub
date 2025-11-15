@@ -105,23 +105,23 @@ export const UserProfileEdit = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Modifier le profil</CardTitle>
-        <CardDescription>Mettez à jour vos informations personnelles</CardDescription>
+      <CardHeader className="pb-3 px-4 md:px-6">
+        <CardTitle className="text-base md:text-lg">Modifier le profil</CardTitle>
+        <CardDescription className="text-xs md:text-sm">Mettez à jour vos informations</CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
-            <Avatar className="h-24 w-24">
+      <CardContent className="px-4 md:px-6">
+        <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-16 w-16 md:h-20 md:w-20">
               <AvatarImage src={avatarUrl} alt={fullName} />
-              <AvatarFallback className="bg-primary/10 text-primary text-lg">
+              <AvatarFallback className="bg-primary/10 text-primary text-sm md:text-base">
                 {getInitials(fullName)}
               </AvatarFallback>
             </Avatar>
-            <div className="flex-1 space-y-2 w-full">
+            <div className="flex-1">
               <Label htmlFor="avatar" className="cursor-pointer">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  <Upload className="h-4 w-4" />
+                <div className="flex items-center gap-2 text-xs md:text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Upload className="h-3 w-3 md:h-4 md:w-4" />
                   <span>Changer la photo</span>
                 </div>
               </Label>
@@ -168,9 +168,9 @@ export const UserProfileEdit = () => {
             />
           </div>
 
-          <Button type="submit" disabled={loading} className="w-full sm:w-auto">
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Enregistrer les modifications
+          <Button type="submit" disabled={loading} size="sm" className="w-full sm:w-auto">
+            {loading && <Loader2 className="mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />}
+            <span className="text-xs md:text-sm">Enregistrer</span>
           </Button>
         </form>
       </CardContent>

@@ -44,39 +44,41 @@ export const UserVerification = () => {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Vérifications</CardTitle>
-        <CardDescription>Statut de vérification de votre compte</CardDescription>
+      <CardHeader className="pb-3 px-4 md:px-6">
+        <CardTitle className="text-base md:text-lg">Vérifications</CardTitle>
+        <CardDescription className="text-xs md:text-sm">Statut de vérification</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="flex items-center justify-between p-4 border rounded-lg">
-          <div className="flex items-center gap-3">
-            <Mail className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <p className="font-medium">Email</p>
-              <p className="text-sm text-muted-foreground">{user?.email}</p>
+      <CardContent className="space-y-3 px-4 md:px-6">
+        <div className="flex items-center justify-between p-3 md:p-4 border rounded-lg">
+          <div className="flex items-center gap-2 md:gap-3 flex-1 min-w-0">
+            <Mail className="h-4 w-4 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs md:text-sm font-medium">Email</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground truncate">{user?.email}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex-shrink-0">
             {isEmailConfirmed ? (
-              <Badge variant="default" className="bg-green-500 hover:bg-green-600">
-                <CheckCircle2 className="h-3 w-3 mr-1" />
-                Vérifié
+              <Badge variant="default" className="bg-green-500 hover:bg-green-600 text-[10px] md:text-xs px-2 py-0.5">
+                <CheckCircle2 className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
+                <span className="hidden sm:inline">Vérifié</span>
+                <span className="sm:hidden">OK</span>
               </Badge>
             ) : (
-              <Badge variant="secondary">
-                <XCircle className="h-3 w-3 mr-1" />
-                Non vérifié
+              <Badge variant="secondary" className="text-[10px] md:text-xs px-2 py-0.5">
+                <XCircle className="h-2.5 w-2.5 md:h-3 md:w-3 mr-1" />
+                <span className="hidden sm:inline">Non vérifié</span>
+                <span className="sm:hidden">Non</span>
               </Badge>
             )}
           </div>
         </div>
 
         {!isEmailConfirmed && (
-          <Alert>
-            <Mail className="h-4 w-4" />
-            <AlertDescription>
-              Votre adresse email n'est pas encore vérifiée. Vérifiez votre boîte de réception.
+          <Alert className="py-2 px-3">
+            <Mail className="h-3 w-3 md:h-4 md:w-4" />
+            <AlertDescription className="text-xs md:text-sm">
+              Email non vérifié. Vérifiez votre boîte de réception.
             </AlertDescription>
           </Alert>
         )}
@@ -86,10 +88,11 @@ export const UserVerification = () => {
             onClick={handleResendVerification}
             disabled={loading}
             variant="outline"
+            size="sm"
             className="w-full sm:w-auto"
           >
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Renvoyer l'email de vérification
+            {loading && <Loader2 className="mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />}
+            <span className="text-xs md:text-sm">Renvoyer l'email</span>
           </Button>
         )}
       </CardContent>
