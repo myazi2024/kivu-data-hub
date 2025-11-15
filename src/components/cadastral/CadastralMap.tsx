@@ -93,10 +93,10 @@ const CadastralMap: React.FC<CadastralMapProps> = ({ coordinates, center, parcel
         coordinates.forEach((coord) => {
           const marker = L.marker([coord.lat, coord.lng]).addTo(map);
           marker.bindPopup(`
-            <div style="font-family: system-ui;">
-              <strong>Borne ${coord.borne}</strong><br>
-              Parcelle: ${parcelNumber}<br>
-              Coordonnées: ${coord.lat.toFixed(6)}, ${coord.lng.toFixed(6)}
+            <div style="font-family: system-ui; font-size: 12px; line-height: 1.3; padding: 2px;">
+              <strong style="font-size: 13px;">Borne ${coord.borne}</strong><br>
+              <span style="font-size: 11px;">Parcelle: ${parcelNumber}</span><br>
+              <span style="font-size: 10px; color: #666;">${coord.lat.toFixed(6)}, ${coord.lng.toFixed(6)}</span>
             </div>
           `);
         });
