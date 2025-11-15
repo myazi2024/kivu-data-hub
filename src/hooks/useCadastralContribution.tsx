@@ -303,68 +303,67 @@ export const useCadastralContribution = () => {
           if (data.ownershipHistory && data.ownershipHistory.length > 0) {
             const ownershipRecords = data.ownershipHistory.map(oh => ({
               parcel_id: parcelId,
-                owner_name: oh.ownerName,
-                legal_status: oh.legalStatus,
-                ownership_start_date: oh.startDate,
-                ownership_end_date: oh.endDate,
-                mutation_type: oh.mutationType
-              }));
-              await supabase.from('cadastral_ownership_history').insert(ownershipRecords);
-            }
+              owner_name: oh.ownerName,
+              legal_status: oh.legalStatus,
+              ownership_start_date: oh.startDate,
+              ownership_end_date: oh.endDate,
+              mutation_type: oh.mutationType
+            }));
+            await supabase.from('cadastral_ownership_history').insert(ownershipRecords);
+          }
 
-            // Historique de taxes
-            if (data.taxHistory && data.taxHistory.length > 0) {
-              const taxRecords = data.taxHistory.map(th => ({
-                parcel_id: parcelId,
-                tax_year: th.taxYear,
-                amount_usd: th.amountUsd,
-                payment_status: th.paymentStatus,
-                payment_date: th.paymentDate,
-                receipt_document_url: th.receiptUrl
-              }));
-              await supabase.from('cadastral_tax_history').insert(taxRecords);
-            }
+          // Historique de taxes
+          if (data.taxHistory && data.taxHistory.length > 0) {
+            const taxRecords = data.taxHistory.map(th => ({
+              parcel_id: parcelId,
+              tax_year: th.taxYear,
+              amount_usd: th.amountUsd,
+              payment_status: th.paymentStatus,
+              payment_date: th.paymentDate,
+              receipt_document_url: th.receiptUrl
+            }));
+            await supabase.from('cadastral_tax_history').insert(taxRecords);
+          }
 
-            // Historique d'hypothèques
-            if (data.mortgageHistory && data.mortgageHistory.length > 0) {
-              const mortgageRecords = data.mortgageHistory.map(mh => ({
-                parcel_id: parcelId,
-                mortgage_amount_usd: mh.mortgageAmountUsd,
-                duration_months: mh.durationMonths,
-                creditor_name: mh.creditorName,
-                creditor_type: mh.creditorType,
-                contract_date: mh.contractDate,
-                mortgage_status: mh.mortgageStatus
-              }));
-              await supabase.from('cadastral_mortgages').insert(mortgageRecords);
-            }
+          // Historique d'hypothèques
+          if (data.mortgageHistory && data.mortgageHistory.length > 0) {
+            const mortgageRecords = data.mortgageHistory.map(mh => ({
+              parcel_id: parcelId,
+              mortgage_amount_usd: mh.mortgageAmountUsd,
+              duration_months: mh.durationMonths,
+              creditor_name: mh.creditorName,
+              creditor_type: mh.creditorType,
+              contract_date: mh.contractDate,
+              mortgage_status: mh.mortgageStatus
+            }));
+            await supabase.from('cadastral_mortgages').insert(mortgageRecords);
+          }
 
-            // Historique de bornage
-            if (data.boundaryHistory && data.boundaryHistory.length > 0) {
-              const boundaryRecords = data.boundaryHistory.map(bh => ({
-                parcel_id: parcelId,
-                pv_reference_number: bh.pvReferenceNumber,
-                boundary_purpose: bh.boundaryPurpose,
-                surveyor_name: bh.surveyorName,
-                survey_date: bh.surveyDate
-              }));
-              await supabase.from('cadastral_boundary_history').insert(boundaryRecords);
-            }
+          // Historique de bornage
+          if (data.boundaryHistory && data.boundaryHistory.length > 0) {
+            const boundaryRecords = data.boundaryHistory.map(bh => ({
+              parcel_id: parcelId,
+              pv_reference_number: bh.pvReferenceNumber,
+              boundary_purpose: bh.boundaryPurpose,
+              surveyor_name: bh.surveyorName,
+              survey_date: bh.surveyDate
+            }));
+            await supabase.from('cadastral_boundary_history').insert(boundaryRecords);
+          }
 
-            // Permis de construire
-            if (data.buildingPermits && data.buildingPermits.length > 0) {
-              const permitRecords = data.buildingPermits.map(bp => ({
-                parcel_id: parcelId,
-                permit_number: bp.permitNumber,
-                issue_date: bp.issueDate,
-                validity_period_months: bp.validityMonths,
-                issuing_service: bp.issuingService,
-                administrative_status: bp.administrativeStatus,
-                issuing_service_contact: bp.issuingServiceContact,
-                permit_document_url: bp.attachmentUrl
-              }));
-              await supabase.from('cadastral_building_permits').insert(permitRecords);
-            }
+          // Permis de construire
+          if (data.buildingPermits && data.buildingPermits.length > 0) {
+            const permitRecords = data.buildingPermits.map(bp => ({
+              parcel_id: parcelId,
+              permit_number: bp.permitNumber,
+              issue_date: bp.issueDate,
+              validity_period_months: bp.validityMonths,
+              issuing_service: bp.issuingService,
+              administrative_status: bp.administrativeStatus,
+              issuing_service_contact: bp.issuingServiceContact,
+              permit_document_url: bp.attachmentUrl
+            }));
+            await supabase.from('cadastral_building_permits').insert(permitRecords);
           }
         }
       }
