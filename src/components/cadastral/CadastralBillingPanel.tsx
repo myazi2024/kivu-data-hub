@@ -70,6 +70,13 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
   }, [preselectServiceId]);
 
+  // Dérouler tous les services par défaut
+  React.useEffect(() => {
+    if (catalogServices.length > 0 && expandedServices.size === 0) {
+      setExpandedServices(new Set(catalogServices.map(service => service.id)));
+    }
+  }, [catalogServices]);
+
   const handleServiceToggle = (serviceId: string) => {
     toggleService(serviceId);
   };
