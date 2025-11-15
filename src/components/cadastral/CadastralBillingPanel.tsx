@@ -35,22 +35,50 @@ interface CadastralBillingPanelProps {
   onClose?: () => void;
 }
 
+// Icône pour chaque service
+const getServiceIcon = (serviceId: string) => {
+  switch (serviceId) {
+    case 'information':
+      return Info;
+    case 'location_history':
+      return MapPin;
+    case 'history':
+      return History;
+    case 'obligations':
+      return Receipt;
+    default:
+      return FileText;
+  }
+};
+
 // Mapping des services aux données disponibles dans une parcelle
 const getServiceDataAvailability = (searchResult: CadastralSearchResult) => {
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = searchResult;
   
+  // Service "information" - Informations générales (toujours disponible)
+  const hasInformation = true;
+  
+  // Service "location_history" - Localisation et Historique de bornage
+  const hasLocationHistory = !!(
+    (parcel.province && parcel.ville) || 
+    (boundary_history && boundary_history.length > 0) ||
+    (parcel.gps_coordinates && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0)
+  );
+  
+  // Service "history" - Historique complet des propriétaires
+  const hasHistory = !!(ownership_history && ownership_history.length > 0);
+  
+  // Service "obligations" - Obligations fiscales et hypothécaires
+  const hasObligations = !!(
+    (tax_history && tax_history.length > 0) ||
+    (mortgage_history && mortgage_history.length > 0)
+  );
+  
   return {
-    'basic_info': true, // Toujours disponible
-    'location': !!(parcel.province && parcel.ville),
-    'property_title': !!(parcel.property_title_type && parcel.title_reference_number),
-    'ownership_history': ownership_history && ownership_history.length > 0,
-    'tax_history': tax_history && tax_history.length > 0,
-    'mortgage_history': mortgage_history && mortgage_history.length > 0,
-    'boundary_history': boundary_history && boundary_history.length > 0,
-    'building_permits': building_permits && building_permits.length > 0,
-    'gps_coordinates': parcel.gps_coordinates && parcel.gps_coordinates.length > 0,
-    'construction_info': !!(parcel.construction_type || parcel.construction_nature),
-    'surface_calculation': !!(parcel.nombre_bornes && parcel.surface_calculee_bornes)
+    'information': hasInformation,
+    'location_history': hasLocationHistory,
+    'history': hasHistory,
+    'obligations': hasObligations
   };
 };
 
