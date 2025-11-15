@@ -37,23 +37,62 @@ const WhatsAppFloatingButton: React.FC<WhatsAppFloatingButtonProps> = ({
         scale: 0.5,
       });
 
-      const imageDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+      // Convertir le canvas en Blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.7);
+      });
+
       console.log('✅ Capture d\'écran réussie');
 
       const fullMessage = `${message}\n\n📸 Voir la capture d'écran ci-jointe`;
-      const encodedMessage = encodeURIComponent(fullMessage);
-      const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
       
-      console.log('🔗 URL WhatsApp:', whatsappUrl);
-      
-      window.open(whatsappUrl, '_blank');
-      
+      // Vérifier si l'API Web Share est disponible
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], 'capture-ecran.jpg', { type: 'image/jpeg' });
+        
+        const shareData = {
+          text: fullMessage,
+          files: [file]
+        };
+
+        if (navigator.canShare(shareData)) {
+          try {
+            await navigator.share(shareData);
+            toast({
+              title: "✅ Partage réussi !",
+              description: "Capture d'écran partagée avec succès",
+            });
+            console.log('✅ Partage via Web Share API réussi');
+            return;
+          } catch (shareError: any) {
+            if (shareError.name !== 'AbortError') {
+              console.error('❌ Erreur lors du partage:', shareError);
+            }
+          }
+        }
+      }
+
+      // Fallback : télécharger l'image et ouvrir WhatsApp
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'capture-ecran.jpg';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
       toast({
-        title: "✅ Prêt !",
-        description: "WhatsApp s'ouvre avec votre message",
+        title: "📥 Image téléchargée",
+        description: "Ouvrez WhatsApp et joignez l'image téléchargée",
+        duration: 5000,
       });
 
-      console.log('✅ WhatsApp ouvert avec succès');
+      const encodedMessage = encodeURIComponent(fullMessage);
+      const whatsappUrl = `https://wa.me/${phoneNumber.replace(/[^0-9]/g, '')}?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
+
+      console.log('✅ Image téléchargée et WhatsApp ouvert');
     } catch (error) {
       console.error('❌ Erreur lors de la capture:', error);
       toast({
