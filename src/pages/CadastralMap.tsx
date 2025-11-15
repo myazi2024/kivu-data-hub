@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -513,7 +514,7 @@ const CadastralMap = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     <Button
                       onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
                       className="w-full"
@@ -537,23 +538,18 @@ const CadastralMap = () => {
                       <MessageCircle className="h-4 w-4 mr-1" />
                       Besoin d'aide ?
                     </Button>
-                    {hasIncompleteData && !loadingHistory && (
-                      <Button
-                        onClick={() => setShowContributionDialog(true)}
-                        variant="outline"
-                        size="sm"
-                        className="w-full border-orange-500 text-orange-600 hover:bg-orange-50"
-                      >
-                        <AlertTriangle className="h-4 w-4 mr-1" />
-                        {isMobile ? "Données" : "Données manquantes"}
-                      </Button>
-                    )}
                   </div>
                   
                   {hasIncompleteData && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      Cette parcelle a des données incomplètes. Complétez-les pour débloquer tous les services.
-                    </p>
+                    <Alert 
+                      className="bg-orange-50 border-orange-200 cursor-pointer hover:bg-orange-100 transition-colors"
+                      onClick={() => setShowContributionDialog(true)}
+                    >
+                      <AlertTriangle className="h-4 w-4 text-orange-600" />
+                      <AlertDescription className="text-orange-800 text-xs">
+                        Cette parcelle a des données incomplètes. Complétez-les pour débloquer tous les services.
+                      </AlertDescription>
+                    </Alert>
                   )}
                 </div>
               </CardContent>
