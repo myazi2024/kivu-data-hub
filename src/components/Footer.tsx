@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Mail, Globe } from 'lucide-react';
 import bicLogo from '@/assets/bic-logo.png';
-import footerPictogram from '@/assets/footer-pictogram.webp';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
@@ -17,7 +16,6 @@ const Footer = () => {
   ];
 
   const resources = [
-    { name: 'Plateforme Myazi', href: '/myazi' },
     { name: 'Partenariat', href: '/partnership' },
     { name: 'Rejoignez-nous', href: '/careers' },
     { name: 'Mentions légales', href: '/legal' },
@@ -25,39 +23,37 @@ const Footer = () => {
 
   return (
     <footer className="bg-gray-900 text-white">
-      <div className="max-w-7xl mx-auto container-padding">
-        {/* Main Footer Content */}
-        <div className="py-3 sm:py-4 responsive-grid-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Main Content - Compact Grid */}
+        <div className="py-4 sm:py-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {/* Company Info */}
-          <div className="lg:col-span-2 space-y-2 sm:space-y-3">
-            <div className="flex flex-col sm:flex-row items-start space-y-1.5 sm:space-y-0 sm:space-x-2 mb-2 sm:mb-3">
-              <img src={bicLogo} alt="BIC Logo" className="h-7 w-7 sm:h-9 sm:w-9 brightness-0 invert flex-shrink-0" />
-              <div className="flex-1">
-                <h3 className="text-sm sm:text-base font-bold text-white mb-0.5">Bureau de l'Immobilier du Congo</h3>
-                <p className="text-seloger-red font-semibold text-xs">BIC</p>
+          <div className="lg:col-span-2">
+            <div className="flex items-center space-x-2 mb-2">
+              <img src={bicLogo} alt="BIC" className="h-6 w-6 brightness-0 invert" />
+              <div>
+                <h3 className="text-sm font-bold leading-tight">Bureau de l'Immobilier du Congo</h3>
+                <p className="text-seloger-red text-xs font-semibold">BIC</p>
               </div>
-              <img src={footerPictogram} alt="Pictogramme immobilier et territorial" className="h-5 w-auto sm:h-7 opacity-90 hidden lg:block flex-shrink-0" />
             </div>
             
-            <p className="text-gray-300 mb-2 sm:mb-3 leading-snug text-xs max-w-lg">
-              Cabinet indépendant spécialisé dans la production et la diffusion de données 
-              immobilières et territoriales pour la République Démocratique du Congo.
+            <p className="text-gray-400 text-xs leading-relaxed mb-3 max-w-md">
+              Production et diffusion de données immobilières et territoriales pour la RDC.
             </p>
             
-            <div className="space-y-1.5">
-              <div className="flex items-start space-x-1.5">
-                <MapPin className="h-3 w-3 text-seloger-red flex-shrink-0 mt-0.5" />
-                <span className="text-gray-300 text-xs leading-snug">07, Rue Touristique, Goma, Nord-Kivu, RDC</span>
+            <div className="space-y-1 text-xs">
+              <div className="flex items-center space-x-1.5 text-gray-400">
+                <MapPin className="h-3 w-3 text-seloger-red flex-shrink-0" />
+                <span>Goma, Nord-Kivu</span>
               </div>
-              <div className="flex items-center space-x-1.5">
+              <div className="flex items-center space-x-1.5 text-gray-400">
                 <Phone className="h-3 w-3 text-seloger-red flex-shrink-0" />
-                <a href="tel:+243816996077" className="text-gray-300 text-xs hover:text-white transition-colors duration-200">
+                <a href="tel:+243816996077" className="hover:text-white transition-colors">
                   +243 816996077
                 </a>
               </div>
-              <div className="flex items-center space-x-1.5">
+              <div className="flex items-center space-x-1.5 text-gray-400">
                 <Mail className="h-3 w-3 text-seloger-red flex-shrink-0" />
-                <a href="mailto:contact@bic.myazi.net.org" className="text-gray-300 text-xs hover:text-white transition-colors duration-200 break-all sm:break-normal">
+                <a href="mailto:contact@bic.myazi.net.org" className="hover:text-white transition-colors break-all">
                   contact@bic.myazi.net.org
                 </a>
               </div>
@@ -65,14 +61,14 @@ const Footer = () => {
           </div>
 
           {/* Quick Links */}
-          <div className="space-y-1.5 sm:space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-white border-b border-seloger-red pb-0.5">Liens rapides</h4>
-            <ul className="space-y-0.5">
+          <div>
+            <h4 className="text-xs font-bold mb-2 border-b border-seloger-red/30 pb-1">Navigation</h4>
+            <ul className="space-y-1">
               {quickLinks.map((link) => (
                 <li key={link.name}>
                   <Link 
                     to={link.href} 
-                    className="text-gray-300 hover:text-seloger-red text-xs font-medium transition-colors duration-200 block py-0.5"
+                    className="text-gray-400 hover:text-seloger-red text-xs transition-colors block"
                   >
                     {link.name}
                   </Link>
@@ -82,14 +78,14 @@ const Footer = () => {
           </div>
 
           {/* Resources */}
-          <div className="space-y-1.5 sm:space-y-2">
-            <h4 className="text-xs sm:text-sm font-bold text-white border-b border-seloger-red pb-0.5">Ressources</h4>
-            <ul className="space-y-0.5">
+          <div>
+            <h4 className="text-xs font-bold mb-2 border-b border-seloger-red/30 pb-1">Ressources</h4>
+            <ul className="space-y-1">
               {resources.map((resource) => (
                 <li key={resource.name}>
                   <Link 
                     to={resource.href} 
-                    className="text-gray-300 hover:text-seloger-red text-xs font-medium transition-colors duration-200 block py-0.5"
+                    className="text-gray-400 hover:text-seloger-red text-xs transition-colors block"
                   >
                     {resource.name}
                   </Link>
@@ -99,37 +95,22 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Newsletter Section */}
-        <div className="border-t border-gray-700 py-2 sm:py-3">
-          <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between space-y-2 lg:space-y-0 lg:space-x-4">
-            <div className="flex-1 max-w-lg">
-              <h4 className="text-xs sm:text-sm font-bold text-white mb-0.5">Restez informé</h4>
-              <p className="text-gray-300 text-xs leading-snug">
-                Recevez nos dernières publications et analyses du marché immobilier congolais.
-              </p>
+        {/* Bottom Bar */}
+        <div className="border-t border-gray-800 py-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs">
+            <div className="text-gray-500 text-center sm:text-left">
+              © {currentYear} BIC - Tous droits réservés
             </div>
-            <div className="flex-shrink-0 w-full lg:w-auto">
+            <div className="flex items-center gap-2">
               <Button 
                 size="sm"
-                className="w-full lg:w-auto bg-seloger-red text-white hover:bg-seloger-red-dark font-semibold px-3 sm:px-5 py-1.5 text-xs shadow-glow transition-all duration-300"
+                className="bg-seloger-red hover:bg-seloger-red-dark text-white text-xs px-3 py-1 h-7"
               >
-                S'abonner aux publications
+                S'abonner
               </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Footer */}
-        <div className="border-t border-gray-700 py-2 sm:py-3">
-          <div className="flex flex-col md:flex-row items-center justify-between space-y-1.5 md:space-y-0">
-            <div className="text-gray-400 text-xs text-center md:text-left">
-              © {currentYear} Bureau de l'Immobilier du Congo (BIC). Tous droits réservés.
-            </div>
-            <div className="flex flex-col sm:flex-row items-center space-y-1 sm:space-y-0 sm:space-x-2">
-              <span className="text-gray-500 text-xs font-medium">Couverture :</span>
-              <div className="flex items-center space-x-1 bg-gray-800 px-2 py-0.5 rounded">
+              <div className="flex items-center gap-1 bg-gray-800 px-2 py-1 rounded">
                 <Globe className="h-3 w-3 text-seloger-red" />
-                <span className="text-white text-xs font-semibold">26 provinces RDC</span>
+                <span className="text-white text-xs font-medium">26 provinces</span>
               </div>
             </div>
           </div>
