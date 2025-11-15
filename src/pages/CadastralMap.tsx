@@ -418,32 +418,34 @@ const CadastralMap = () => {
 
         {/* Panneau d'information de la parcelle sélectionnée */}
         {selectedParcel && (
-          <div className="absolute bottom-2 md:bottom-4 right-2 md:right-4 z-[1000] w-64 md:w-72 max-w-[calc(100vw-1rem)]">
+          <div className="absolute bottom-4 right-4 z-[1000] w-80 max-w-[calc(100vw-2rem)]">
             <Card className="shadow-lg">
-              <CardHeader className="pb-1.5 p-2.5 md:p-3">
-                <div className="flex items-start justify-between gap-1.5">
-                  <CardTitle className="text-xs md:text-sm flex items-center gap-1.5">
-                    <MapPin className="h-3 w-3 md:h-3.5 md:w-3.5 text-primary flex-shrink-0" />
-                    <span className="truncate">Parcelle sélectionnée</span>
-                  </CardTitle>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-primary" />
+                      Parcelle sélectionnée
+                    </CardTitle>
+                  </div>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 w-5 md:h-6 md:w-6 p-0 flex-shrink-0"
+                    className="h-6 w-6 p-0 -mt-1"
                     onClick={() => setSelectedParcel(null)}
                   >
-                    <X className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                    <X className="h-4 w-4" />
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-1.5 md:space-y-2 text-xs md:text-sm p-2.5 md:p-3 pt-0">
+              <CardContent className="space-y-3 text-sm">
                 <div>
-                  <p className="font-mono font-bold text-primary text-xs md:text-sm">{selectedParcel.parcel_number}</p>
+                  <p className="font-mono font-bold text-primary">{selectedParcel.parcel_number}</p>
                 </div>
-                <div className="space-y-1 md:space-y-1.5">
+                <div className="space-y-2">
                   <div>
-                    <span className="text-muted-foreground text-[10px] md:text-xs">Surface:</span>
-                    <p className="font-medium text-xs md:text-sm">
+                    <span className="text-muted-foreground">Surface:</span>
+                    <p className="font-medium">
                       {selectedParcel.gps_coordinates && selectedParcel.gps_coordinates.length >= 3
                         ? calculateAreaFromCoordinates(selectedParcel.gps_coordinates).toLocaleString(undefined, { maximumFractionDigits: 2 })
                         : selectedParcel.area_sqm?.toLocaleString()
@@ -451,35 +453,36 @@ const CadastralMap = () => {
                     </p>
                   </div>
                   <div>
-                    <span className="text-muted-foreground text-[10px] md:text-xs">Localisation:</span>
-                    <p className="font-medium text-xs md:text-sm leading-tight">
+                    <span className="text-muted-foreground">Localisation:</span>
+                    <p className="font-medium">
                       {selectedParcel.province} - {selectedParcel.ville}
                       {selectedParcel.commune && <><br />{selectedParcel.commune}</>}
                       {selectedParcel.quartier && ` ${selectedParcel.quartier}`}
                     </p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-1.5 md:gap-2 pt-1">
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
-                    className="w-full text-[10px] md:text-xs h-7 md:h-8"
+                    className="w-full"
                     size="sm"
                   >
-                    {isMobile ? "Détails" : "Plus de données"}
+                    {isMobile ? "Plus de données" : "Afficher plus de données"}
                   </Button>
                   <Button
                     onClick={() => {
-                      const phoneNumber = '243816996077';
+                      const phoneNumber = '243816996077'; // Format international pour RDC
                       const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
                       const encodedMessage = encodeURIComponent(message);
                       const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
                       window.open(whatsappUrl, '_blank');
                     }}
                     variant="outline"
-                    className="w-full text-[10px] md:text-xs h-7 md:h-8"
+                    size="sm"
+                    className="w-full"
                   >
-                    <MessageCircle className="h-3 w-3 md:h-3.5 md:w-3.5 mr-1" />
-                    {isMobile ? "Aide" : "Besoin d'aide ?"}
+                    <MessageCircle className="h-4 w-4 mr-1" />
+                    Besoin d'aide ?
                   </Button>
                 </div>
               </CardContent>
