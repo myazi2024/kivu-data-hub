@@ -12,12 +12,12 @@ interface PermitSectionProps {
 export function PermitSection({ title, permits, emptyMessage, onAppealClick }: PermitSectionProps) {
   if (permits.length === 0) {
     return (
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-muted-foreground">{title}</h3>
+      <div className="space-y-2 md:space-y-3">
+        <h3 className="text-xs md:text-sm font-semibold text-muted-foreground px-1">{title}</h3>
         <Card>
-          <CardContent className="py-8 text-center">
-            <Building2 className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
-            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
+          <CardContent className="py-6 md:py-8 text-center px-4">
+            <Building2 className="h-8 w-8 md:h-10 md:w-10 mx-auto text-muted-foreground/50 mb-2 md:mb-3" />
+            <p className="text-xs md:text-sm text-muted-foreground">{emptyMessage}</p>
           </CardContent>
         </Card>
       </div>
@@ -25,12 +25,12 @@ export function PermitSection({ title, permits, emptyMessage, onAppealClick }: P
   }
 
   return (
-    <div className="space-y-3">
-      <h3 className="text-sm font-semibold flex items-center gap-2">
+    <div className="space-y-2 md:space-y-3">
+      <h3 className="text-xs md:text-sm font-semibold flex items-center gap-2 px-1">
         {title}
-        <span className="text-xs font-normal text-muted-foreground">({permits.length})</span>
+        <span className="text-[10px] md:text-xs font-normal text-muted-foreground">({permits.length})</span>
       </h3>
-      <div className="space-y-3">
+      <div className="space-y-2 md:space-y-3">
         {permits.map((permit) => (
           <PermitCard 
             key={permit.id} 
