@@ -513,7 +513,7 @@ const CadastralMap = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                     <Button
                       onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
                       className="w-full"
