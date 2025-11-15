@@ -5801,6 +5801,48 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       {titleDocFiles.length > 0 ? <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> : <span className="text-base">⭕</span>}
                       <span className="break-words">Titre de propriété : {titleDocFiles.length > 0 ? `${titleDocFiles.length} fichier(s)` : "Non fourni"}</span>
                     </div>
+                    {buildingPermits.some(p => p.attachmentFile) && (
+                      <div className="pt-2 border-t">
+                        <div className="font-medium mb-1">Permis de construire :</div>
+                        {buildingPermits.filter(p => p.attachmentFile).map((permit, idx) => (
+                          <div key={idx} className="text-foreground flex items-start gap-2 ml-3">
+                            <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <span className="break-words">
+                              {permit.attachmentFile?.name} 
+                              {permit.permitNumber && ` (N° ${permit.permitNumber})`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {taxRecords.some(t => t.receiptFile) && (
+                      <div className="pt-2 border-t">
+                        <div className="font-medium mb-1">Reçus de taxes :</div>
+                        {taxRecords.filter(t => t.receiptFile).map((tax, idx) => (
+                          <div key={idx} className="text-foreground flex items-start gap-2 ml-3">
+                            <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <span className="break-words">
+                              {tax.receiptFile?.name}
+                              {tax.taxYear && ` (${tax.taxYear})`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {mortgageRecords.some(m => m.receiptFile) && (
+                      <div className="pt-2 border-t">
+                        <div className="font-medium mb-1">Documents d'hypothèques :</div>
+                        {mortgageRecords.filter(m => m.receiptFile).map((mortgage, idx) => (
+                          <div key={idx} className="text-foreground flex items-start gap-2 ml-3">
+                            <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                            <span className="break-words">
+                              {mortgage.receiptFile?.name}
+                              {mortgage.creditorName && ` (${mortgage.creditorName})`}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
