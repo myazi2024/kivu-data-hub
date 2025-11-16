@@ -2078,10 +2078,6 @@ export type Database = {
         }
         Returns: string
       }
-      migrate_approved_contribution: {
-        Args: { contribution_id: string }
-        Returns: string
-      }
       validate_and_apply_ccc: {
         Args: { code_input: string; invoice_amount: number }
         Returns: {
