@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import 'leaflet/dist/leaflet.css';
@@ -61,6 +62,7 @@ const CadastralMap = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [hasIncompleteData, setHasIncompleteData] = useState(false);
   const [tooltipConfig, setTooltipConfig] = useState<TooltipFieldConfig[]>([]);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   // Reset hasScrolledToBottom when dialog closes
   useEffect(() => {
@@ -499,14 +501,22 @@ const CadastralMap = () => {
 
             // Créer le contenu du popup basé sur la configuration
             const popupContent = createTooltipContent(parcel);
-            polygon.bindPopup(popupContent, {
-              maxWidth: 300,
-              className: 'cadastral-popup'
-            });
+            // Sur mobile, ouvrir le drawer au lieu du popup
+            if (isMobile) {
+              polygon.on('click', () => {
+                setSelectedParcel(parcel);
+                setMobileSheetOpen(true);
+              });
+            } else {
+              polygon.bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'cadastral-popup'
+              });
 
-            polygon.on('click', () => {
-              setSelectedParcel(parcel);
-            });
+              polygon.on('click', () => {
+                setSelectedParcel(parcel);
+              });
+            }
 
             bounds.extend(polygon.getBounds());
           } else if (parcel.latitude && parcel.longitude) {
@@ -515,14 +525,22 @@ const CadastralMap = () => {
 
             // Créer le contenu du popup basé sur la configuration
             const popupContent = createTooltipContent(parcel);
-            marker.bindPopup(popupContent, {
-              maxWidth: 300,
-              className: 'cadastral-popup'
-            });
+            // Sur mobile, ouvrir le drawer au lieu du popup
+            if (isMobile) {
+              marker.on('click', () => {
+                setSelectedParcel(parcel);
+                setMobileSheetOpen(true);
+              });
+            } else {
+              marker.bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'cadastral-popup'
+              });
 
-            marker.on('click', () => {
-              setSelectedParcel(parcel);
-            });
+              marker.on('click', () => {
+                setSelectedParcel(parcel);
+              });
+            }
 
             bounds.extend([parcel.latitude, parcel.longitude]);
           }
@@ -775,6 +793,92 @@ const CadastralMap = () => {
           }}
           parcelNumber={selectedParcel?.parcel_number || searchQuery}
         />
+      )}
+
+      {/* Sheet mobile pour l'infobulle */}
+      {isMobile && selectedParcel && (
+        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
+          <SheetContent side="bottom" className="h-auto max-h-[70vh] overflow-y-auto rounded-t-xl">
+            <SheetHeader className="mb-4">
+              <SheetTitle className="text-lg font-semibold">
+                {selectedParcel.parcel_number}
+              </SheetTitle>
+            </SheetHeader>
+            
+            <div className="space-y-3">
+              {tooltipConfig
+                .filter(f => f.enabled)
+                .sort((a, b) => a.order - b.order)
+                .map((field) => {
+                  let value = '';
+                  let label = field.label;
+
+                  switch (field.field) {
+                    case 'parcelNumber':
+                      return null; // Déjà affiché dans le titre
+                    case 'ownerName':
+                      if (selectedParcel.current_owner_name) {
+                        value = selectedParcel.current_owner_name;
+                      }
+                      break;
+                    case 'area':
+                      if (selectedParcel.area_sqm) {
+                        value = `${new Intl.NumberFormat('fr-FR', {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 2,
+                        }).format(selectedParcel.area_sqm)} m²`;
+                      }
+                      break;
+                    case 'province':
+                      if (selectedParcel.province) {
+                        value = selectedParcel.province;
+                      }
+                      break;
+                    case 'ville':
+                      if (selectedParcel.ville) {
+                        value = selectedParcel.ville;
+                      }
+                      break;
+                    case 'commune':
+                      if (selectedParcel.commune) {
+                        value = selectedParcel.commune;
+                      }
+                      break;
+                    case 'quartier':
+                      if (selectedParcel.quartier) {
+                        value = selectedParcel.quartier;
+                      }
+                      break;
+                    case 'gpsCoordinates':
+                      if (selectedParcel.latitude && selectedParcel.longitude) {
+                        label = 'Coordonnées GPS';
+                        value = `${selectedParcel.latitude.toFixed(5)}, ${selectedParcel.longitude.toFixed(5)}`;
+                      }
+                      break;
+                  }
+
+                  if (!value) return null;
+
+                  return (
+                    <div key={field.field} className="flex justify-between items-center py-2 border-b border-border last:border-0">
+                      <span className="text-sm text-muted-foreground">{label}:</span>
+                      <span className="text-sm font-medium text-right">{value}</span>
+                    </div>
+                  );
+                })}
+            </div>
+
+            <div className="mt-6">
+              <Button 
+                onClick={() => setMobileSheetOpen(false)} 
+                className="w-full"
+                variant="outline"
+              >
+                Fermer
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
       )}
     </div>
   );
