@@ -267,7 +267,7 @@ export const UserContributions: React.FC = () => {
             .from('cadastral_contributor_codes')
             .select('code')
             .eq('contribution_id', selectedContribution.id)
-            .single();
+            .maybeSingle();
           if (data) setCccCode(data.code);
         }
       }}>

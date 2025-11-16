@@ -118,11 +118,11 @@ export const useArticleBySlug = (slug: string) => {
           .from('articles')
           .select(`
             *,
-            article_themes(*)
-          `)
-          .eq('slug', slug)
-          .eq('is_published', true)
-          .single();
+          article_themes(*)
+        `)
+        .eq('slug', slug)
+        .eq('is_published', true)
+        .maybeSingle();
 
         if (error) throw error;
         

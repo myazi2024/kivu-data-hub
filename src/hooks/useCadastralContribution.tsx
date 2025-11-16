@@ -147,7 +147,7 @@ export const useCadastralContribution = () => {
         .from('profiles')
         .select('is_blocked, blocked_reason, fraud_strikes')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) throw profileError;
 
@@ -225,7 +225,7 @@ export const useCadastralContribution = () => {
         whatsapp_number: data.whatsappNumber,
         owner_document_url: data.ownerDocumentUrl,
         property_title_document_url: data.titleDocumentUrl,
-        status: 'approved', // Auto-validation pour les tests
+        status: 'pending',
         is_suspicious: isSuspicious,
         fraud_score: fraudScore,
         fraud_reason: fraudReasons.length > 0 ? fraudReasons.join('; ') : null
@@ -240,7 +240,7 @@ export const useCadastralContribution = () => {
         .from('cadastral_contributions')
         .insert(contributionPayload)
         .select()
-        .single();
+        .maybeSingle();
 
       if (contributionError) throw contributionError;
 

@@ -144,7 +144,7 @@ export const useCadastralSearch = () => {
         .from('cadastral_parcels')
         .select('*')
         .ilike('parcel_number', parcelNumber.trim())
-        .single();
+        .maybeSingle();
 
       if (parcelError) {
         if (parcelError.code === 'PGRST116') {

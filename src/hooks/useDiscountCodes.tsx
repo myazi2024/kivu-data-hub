@@ -128,7 +128,7 @@ export const useDiscountCodes = () => {
           usage_count: 0
         }])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -160,7 +160,7 @@ export const useDiscountCodes = () => {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -191,7 +191,7 @@ export const useDiscountCodes = () => {
         .from('discount_codes')
         .select('usage_count')
         .eq('id', codeId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
 

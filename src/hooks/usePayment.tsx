@@ -44,7 +44,7 @@ export const usePayment = () => {
           status: 'pending'
         }])
         .select()
-        .single();
+        .maybeSingle();
 
       if (paymentError) throw paymentError;
 
