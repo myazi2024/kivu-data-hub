@@ -26,29 +26,79 @@ serve(async (req) => {
   }
 
   try {
-    const { items, email }: PaymentRequest = await req.json();
-    
-    if (!items || items.length === 0) {
-      throw new Error("Cart is empty");
-    }
-
     // Create Supabase client
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_ANON_KEY") ?? ""
     );
 
-    // Get authenticated user (optional for guest purchases)
-    let user = null;
+    // Get authenticated user (REQUIRED now)
     const authHeader = req.headers.get("Authorization");
-    if (authHeader) {
-      const token = authHeader.replace("Bearer ", "");
-      const { data } = await supabaseClient.auth.getUser(token);
-      user = data.user;
+    if (!authHeader) {
+      throw new Error("Authentication required");
     }
 
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      throw new Error("Invalid authentication token");
+    }
+
+    // Parse request - only get item IDs, not prices
+    const { items: itemIds }: { items: string[] } = await req.json();
+    
+    if (!itemIds || itemIds.length === 0) {
+      throw new Error("Cart is empty");
+    }
+
+    // SECURITY: Fetch real prices from database, not from client
+    const { data: publications, error: pubError } = await supabaseClient
+      .from("publications")
+      .select("id, title, price_usd, cover_image_url, status")
+      .in("id", itemIds)
+      .eq("status", "published");
+
+    if (pubError || !publications || publications.length === 0) {
+      throw new Error("Invalid items in cart");
+    }
+
+    // Rate limiting: Check recent payment attempts
+    const supabaseService = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      { auth: { persistSession: false } }
+    );
+
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+    const { count: recentAttempts } = await supabaseService
+      .from("rate_limit_attempts")
+      .select("*", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("endpoint", "create-payment")
+      .gte("created_at", oneHourAgo);
+
+    if (recentAttempts && recentAttempts >= 10) {
+      throw new Error("Rate limit exceeded. Please try again later.");
+    }
+
+    // Log this attempt
+    await supabaseService.from("rate_limit_attempts").insert({
+      user_id: user.id,
+      endpoint: "create-payment",
+      ip_address: req.headers.get("x-forwarded-for") || null,
+    });
+
+    // Build items with server-side prices
+    const items: CartItem[] = publications.map(pub => ({
+      id: pub.id,
+      title: pub.title,
+      price: pub.price_usd,
+      cover_image_url: pub.cover_image_url || undefined,
+    }));
+
     // Determine email for the order
-    const orderEmail = user?.email || email || "guest@bic-goma.com";
+    const orderEmail = user.email || "guest@bic-goma.com";
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -94,13 +144,7 @@ serve(async (req) => {
       },
     });
 
-    // Store order in database using service role
-    const supabaseService = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
-
+    // Store order in database (supabaseService already created above)
     const { error: orderError } = await supabaseService.from("orders").insert({
       user_id: user?.id || null,
       email: orderEmail,

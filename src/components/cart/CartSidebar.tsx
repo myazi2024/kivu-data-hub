@@ -39,10 +39,12 @@ export const CartSidebar = ({ onClose }: CartSidebarProps) => {
     setIsProcessing(true);
 
     try {
+      // SECURITY: Send only item IDs, prices will be fetched from database
+      const itemIds = cartItems.map(item => item.id);
+      
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
-          items: cartItems,
-          email: !user ? email : undefined,
+          items: itemIds,
         },
       });
 
