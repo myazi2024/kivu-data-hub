@@ -60,29 +60,49 @@ const AdminCadastralMap = () => {
     try {
       setLoading(true);
       
-      // Compter le total
+      // Compter le total des contributions validées
       const { count } = await supabase
-        .from('cadastral_parcels')
+        .from('cadastral_contributions')
         .select('*', { count: 'exact', head: true })
-        .is('deleted_at', null);
+        .eq('status', 'approved');
       
       setTotalCount(count || 0);
 
-      // Récupérer les parcelles avec pagination
+      // Récupérer les contributions validées avec pagination
       const { data, error } = await supabase
-        .from('cadastral_parcels')
-        .select('id, parcel_number, current_owner_name, area_sqm, property_title_type, province, ville, commune, quartier, latitude, longitude, gps_coordinates, created_at, deleted_at')
-        .is('deleted_at', null)
-        .order('created_at', { ascending: false })
+        .from('cadastral_contributions')
+        .select('id, parcel_number, current_owner_name, area_sqm, property_title_type, province, ville, commune, quartier, gps_coordinates, created_at, verified_at')
+        .eq('status', 'approved')
+        .order('verified_at', { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
 
       if (error) throw error;
 
-      setParcels(data || []);
-      setFilteredParcels(data || []);
+      // Transformer les données pour correspondre à l'interface CadastralParcel
+      const transformedData = (data || []).map(contribution => {
+        let latitude = null;
+        let longitude = null;
+        
+        // Extraire latitude/longitude depuis gps_coordinates
+        if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) {
+          const firstCoord = contribution.gps_coordinates[0] as any;
+          latitude = firstCoord.lat || firstCoord.latitude;
+          longitude = firstCoord.lng || firstCoord.longitude;
+        }
+
+        return {
+          ...contribution,
+          latitude,
+          longitude,
+          deleted_at: null
+        };
+      });
+
+      setParcels(transformedData);
+      setFilteredParcels(transformedData);
       
       // Calculer les statistiques
-      calculateStats(data || []);
+      calculateStats(transformedData);
     } catch (error) {
       console.error('Erreur lors du chargement des parcelles:', error);
       toast.error('Erreur lors du chargement des parcelles');
@@ -93,28 +113,18 @@ const AdminCadastralMap = () => {
 
   const calculateStats = async (parcelsData: CadastralParcel[]) => {
     try {
-      // Compter toutes les parcelles
+      // Compter toutes les contributions validées
       const { count: totalCount } = await supabase
-        .from('cadastral_parcels')
+        .from('cadastral_contributions')
         .select('*', { count: 'exact', head: true })
-        .is('deleted_at', null);
+        .eq('status', 'approved');
 
-      // Compter les parcelles avec GPS
-      const { count: withGPSCount } = await supabase
-        .from('cadastral_parcels')
-        .select('*', { count: 'exact', head: true })
-        .not('latitude', 'is', null)
-        .not('longitude', 'is', null)
-        .is('deleted_at', null);
+      // Compter les contributions validées avec GPS
+      const withGPSCount = parcelsData.filter(p => p.latitude && p.longitude).length;
 
       // Compter par province
-      const { data: provinceData } = await supabase
-        .from('cadastral_parcels')
-        .select('province')
-        .is('deleted_at', null);
-
       const byProvince: Record<string, number> = {};
-      provinceData?.forEach(item => {
+      parcelsData.forEach(item => {
         if (item.province) {
           byProvince[item.province] = (byProvince[item.province] || 0) + 1;
         }
@@ -122,8 +132,8 @@ const AdminCadastralMap = () => {
 
       setStats({
         total: totalCount || 0,
-        withGPS: withGPSCount || 0,
-        withoutGPS: (totalCount || 0) - (withGPSCount || 0),
+        withGPS: withGPSCount,
+        withoutGPS: (totalCount || 0) - withGPSCount,
         byProvince
       });
     } catch (error) {
@@ -220,17 +230,22 @@ const AdminCadastralMap = () => {
   };
 
   const handleDelete = async (parcelId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer cette parcelle ?')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette contribution validée ?')) return;
 
     try {
+      // Rejeter la contribution au lieu de la supprimer
       const { error } = await supabase
-        .from('cadastral_parcels')
-        .update({ deleted_at: new Date().toISOString() })
+        .from('cadastral_contributions')
+        .update({ 
+          status: 'rejected',
+          rejection_reason: 'Supprimée par l\'administrateur',
+          rejection_date: new Date().toISOString()
+        })
         .eq('id', parcelId);
 
       if (error) throw error;
 
-      toast.success('Parcelle supprimée avec succès');
+      toast.success('Contribution retirée avec succès');
       fetchParcels();
     } catch (error) {
       console.error('Erreur suppression:', error);
