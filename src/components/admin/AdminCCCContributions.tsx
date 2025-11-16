@@ -15,6 +15,13 @@ import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
 import { DocumentsGalleryDialog } from './documents/DocumentsGalleryDialog';
 
+interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+  completeness_score: number;
+}
+
 interface Contribution {
   id: string;
   user_id: string;
@@ -98,6 +105,8 @@ const AdminCCCContributions: React.FC = () => {
   const [showTestDialog, setShowTestDialog] = useState(false);
   const [testResults, setTestResults] = useState<any[]>([]);
   const [showAppealDialog, setShowAppealDialog] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [isValidating, setIsValidating] = useState(false);
   const [showPermitDialog, setShowPermitDialog] = useState(false);
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
 
@@ -134,7 +143,39 @@ const AdminCCCContributions: React.FC = () => {
     }
   };
 
+  const validateContribution = async (contributionId: string) => {
+    setIsValidating(true);
+    try {
+      const { data, error } = await supabase.rpc('validate_contribution_completeness', {
+        contribution_id: contributionId
+      });
+
+      if (error) throw error;
+
+      const result = data as unknown as ValidationResult;
+      setValidationResult(result);
+      
+      if (result.valid) {
+        toast.success(`✓ Validation réussie (Score: ${result.completeness_score}%)`);
+      } else {
+        toast.warning(`⚠ ${result.errors.length} erreur(s) trouvée(s)`);
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de la validation:', error);
+      toast.error('Erreur lors de la validation');
+      setValidationResult(null);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+
   const handleApprove = async (contributionId: string) => {
+    // Vérifier la validation avant d'approuver
+    if (!validationResult || !validationResult.valid) {
+      toast.error('Veuillez d\'abord valider la contribution et corriger les erreurs');
+      return;
+    }
+
     try {
       const contribution = contributions.find(c => c.id === contributionId);
       if (!contribution) return;
@@ -152,18 +193,15 @@ const AdminCCCContributions: React.FC = () => {
 
       if (error) throw error;
 
-      // Créer notification pour l'utilisateur
-      await supabase.from('notifications').insert({
-        user_id: contribution.user_id,
-        type: 'success',
-        title: 'Contribution approuvée',
-        message: `Votre contribution pour la parcelle ${contribution.parcel_number} a été approuvée. Un code CCC a été généré automatiquement.`,
-        action_url: '/user-dashboard?tab=ccc-codes'
-      });
+      // Le trigger auto_generate_ccc_code() va automatiquement :
+      // 1. Générer un code CCC unique
+      // 2. Calculer la valeur du code
+      // 3. Créer une notification pour l'utilisateur
 
-      toast.success('Contribution approuvée ! Le code CCC sera généré automatiquement.');
+      toast.success('Contribution approuvée ! Le code CCC a été généré automatiquement.');
       fetchContributions();
       setIsDetailsOpen(false);
+      setValidationResult(null);
     } catch (error: any) {
       console.error('Erreur lors de l\'approbation:', error);
       toast.error('Erreur lors de l\'approbation');
@@ -425,6 +463,7 @@ const AdminCCCContributions: React.FC = () => {
                             onClick={() => {
                               setSelectedContribution(contribution);
                               setIsDetailsOpen(true);
+                              setValidationResult(null); // Réinitialiser la validation
                             }}
                           >
                             <Eye className="h-4 w-4" />
