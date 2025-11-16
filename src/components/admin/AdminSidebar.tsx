@@ -67,6 +67,7 @@ const menuItems = [
     category: 'Cadastre & Services',
     items: [
       { icon: MapIcon, label: 'Carte Cadastrale', value: 'cadastral-map', badge: null },
+      { icon: MapPin, label: 'Infobulle Cadastrale', value: 'parcel-tooltip-config', badge: null },
       { icon: Database, label: 'Services Cadastraux', value: 'services', badge: null },
       { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null },
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
