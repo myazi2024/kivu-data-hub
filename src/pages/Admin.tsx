@@ -124,9 +124,9 @@ const Admin = () => {
   return (
     <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-64 flex-col border-r bg-card">
-        <div className="p-6 border-b">
-          <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+      <aside className="hidden md:flex w-56 lg:w-64 flex-col border-r bg-card">
+        <div className="p-4 lg:p-6 border-b">
+          <h2 className="text-base lg:text-lg font-semibold">Admin Dashboard</h2>
           <p className="text-xs text-muted-foreground mt-1">Gestion complète</p>
         </div>
         <AdminSidebar pendingCount={pendingCount} />
@@ -134,10 +134,10 @@ const Admin = () => {
 
       {/* Mobile Sidebar */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-64 p-0">
-          <div className="p-6 border-b">
-            <h2 className="text-lg font-semibold">Admin Dashboard</h2>
-            <p className="text-xs text-muted-foreground mt-1">Gestion complète</p>
+        <SheetContent side="left" className="w-[280px] p-0">
+          <div className="p-4 border-b">
+            <h2 className="text-base font-semibold">Admin Dashboard</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Gestion complète</p>
           </div>
           <AdminSidebar 
             pendingCount={pendingCount} 
@@ -153,7 +153,7 @@ const Admin = () => {
           notificationCount={pendingCount}
         />
         
-        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+        <main className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-6">
           {renderContent()}
         </main>
       </div>

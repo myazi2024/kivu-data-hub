@@ -102,24 +102,24 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+      <CardHeader className="p-4 md:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Users className="w-4 h-4 md:w-5 md:h-5" />
             Gestion des Utilisateurs
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
+              <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher un utilisateur..."
+                placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 w-64"
+                className="pl-8 w-full sm:w-48 md:w-64 h-9 text-sm"
               />
             </div>
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-full sm:w-36 md:w-48 h-9 text-sm">
                 <SelectValue placeholder="Filtrer par rôle" />
               </SelectTrigger>
               <SelectContent>
@@ -131,47 +131,48 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 md:p-6">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Utilisateur</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Organisation</TableHead>
-              <TableHead>Rôle</TableHead>
-              <TableHead>Date d'inscription</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead className="text-xs md:text-sm">Utilisateur</TableHead>
+              <TableHead className="hidden md:table-cell text-xs md:text-sm">Email</TableHead>
+              <TableHead className="hidden lg:table-cell text-xs md:text-sm">Organisation</TableHead>
+              <TableHead className="text-xs md:text-sm">Rôle</TableHead>
+              <TableHead className="hidden sm:table-cell text-xs md:text-sm">Inscription</TableHead>
+              <TableHead className="text-xs md:text-sm">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredUsers.map((user) => (
               <TableRow key={user.id}>
-                <TableCell>
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
-                      <User className="w-4 h-4" />
+                <TableCell className="py-2 md:py-3">
+                  <div className="flex items-center space-x-2 md:space-x-3">
+                    <div className="w-7 h-7 md:w-8 md:h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                      <User className="w-3 h-3 md:w-4 md:h-4" />
                     </div>
-                    <div>
-                      <div className="font-medium">{user.full_name || 'Nom non défini'}</div>
-                      <div className="text-sm text-muted-foreground">ID: {user.user_id.slice(0, 8)}...</div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-xs md:text-sm truncate">{user.full_name || 'Nom non défini'}</div>
+                      <div className="text-[10px] md:text-xs text-muted-foreground truncate md:hidden">{user.email}</div>
+                      <div className="text-[10px] md:text-xs text-muted-foreground">ID: {user.user_id.slice(0, 8)}...</div>
                     </div>
                   </div>
                 </TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{user.organization || 'Non spécifiée'}</TableCell>
-                <TableCell>{getRoleBadge(user.role)}</TableCell>
-                <TableCell>{new Date(user.created_at).toLocaleDateString()}</TableCell>
-                <TableCell>
+                <TableCell className="hidden md:table-cell text-xs md:text-sm">{user.email}</TableCell>
+                <TableCell className="hidden lg:table-cell text-xs md:text-sm">{user.organization || 'Non spécifiée'}</TableCell>
+                <TableCell className="py-2 md:py-3">{getRoleBadge(user.role)}</TableCell>
+                <TableCell className="hidden sm:table-cell text-xs md:text-sm">{new Date(user.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</TableCell>
+                <TableCell className="py-2 md:py-3">
                   <Select
                     value={user.role}
                     onValueChange={(newRole: 'admin' | 'user') => updateUserRole(user.user_id, newRole)}
                   >
-                    <SelectTrigger className="w-32">
+                    <SelectTrigger className="w-24 md:w-32 h-8 md:h-9 text-xs md:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="user">Utilisateur</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="user" className="text-xs md:text-sm">Utilisateur</SelectItem>
+                      <SelectItem value="admin" className="text-xs md:text-sm">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </TableCell>
@@ -181,7 +182,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
         </Table>
         
         {filteredUsers.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-6 md:py-8 text-xs md:text-sm text-muted-foreground">
             {searchQuery || roleFilter !== 'all' 
               ? 'Aucun utilisateur trouvé avec ces critères'
               : 'Aucun utilisateur trouvé'
@@ -189,7 +190,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
           </div>
         )}
         
-        <div className="mt-4 text-sm text-muted-foreground">
+        <div className="mt-3 md:mt-4 text-xs md:text-sm text-muted-foreground">
           Total: {filteredUsers.length} utilisateur(s)
         </div>
       </CardContent>

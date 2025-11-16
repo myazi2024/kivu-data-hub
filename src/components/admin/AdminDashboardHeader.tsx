@@ -36,14 +36,14 @@ export function AdminDashboardHeader({ onMenuClick, notificationCount = 0 }: Adm
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="flex h-14 items-center gap-4 px-4">
+      <div className="flex h-12 md:h-14 items-center gap-2 md:gap-4 px-2 md:px-4">
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="md:hidden h-8 w-8"
           onClick={onMenuClick}
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4" />
         </Button>
 
         <div className="flex-1">
@@ -57,13 +57,13 @@ export function AdminDashboardHeader({ onMenuClick, notificationCount = 0 }: Adm
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
+        <div className="flex items-center gap-1 md:gap-2">
+          <Button variant="ghost" size="icon" className="relative h-8 w-8 md:h-10 md:w-10">
+            <Bell className="h-4 w-4 md:h-5 md:w-5" />
             {notificationCount > 0 && (
               <Badge
                 variant="destructive"
-                className="absolute -top-1 -right-1 h-5 min-w-5 px-1 text-xs"
+                className="absolute -top-0.5 -right-0.5 md:-top-1 md:-right-1 h-4 min-w-4 md:h-5 md:min-w-5 px-0.5 md:px-1 text-[10px] md:text-xs"
               >
                 {notificationCount > 9 ? '9+' : notificationCount}
               </Badge>
@@ -72,8 +72,8 @@ export function AdminDashboardHeader({ onMenuClick, notificationCount = 0 }: Adm
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <User className="h-5 w-5" />
+              <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10">
+                <User className="h-4 w-4 md:h-5 md:w-5" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
