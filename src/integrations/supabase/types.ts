@@ -2096,6 +2096,10 @@ export type Database = {
           reseller_id: string
         }[]
       }
+      validate_contribution_completeness: {
+        Args: { contribution_id: string }
+        Returns: Json
+      }
       validate_file_upload: {
         Args: { allowed_types: string[]; file_name: string; file_size: number }
         Returns: Json
