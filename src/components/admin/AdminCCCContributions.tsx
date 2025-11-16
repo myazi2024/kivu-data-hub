@@ -9,8 +9,11 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, ExternalLink, Play } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, ExternalLink, Play, FileText, Building2, MessageSquare } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AppealManagementDialog } from './appeals/AppealManagementDialog';
+import { PermitRequestDialog } from './permits/PermitRequestDialog';
+import { DocumentsGalleryDialog } from './documents/DocumentsGalleryDialog';
 
 interface Contribution {
   id: string;
@@ -21,6 +24,7 @@ interface Contribution {
   fraud_score: number;
   fraud_reason: string | null;
   rejection_reason: string | null;
+  rejection_reasons: any;
   created_at: string;
   reviewed_at: string | null;
   // Données complètes - TOUTES les données du formulaire
@@ -57,6 +61,16 @@ interface Contribution {
   whatsapp_number: string | null;
   owner_document_url: string | null;
   property_title_document_url: string | null;
+  // Appels
+  appeal_submitted: boolean | null;
+  appeal_status: string | null;
+  appeal_data: any;
+  appeal_submission_date: string | null;
+  // Changements
+  contribution_type: string;
+  original_parcel_id: string | null;
+  changed_fields: any;
+  change_justification: string | null;
 }
 
 interface ContributionStats {
@@ -83,6 +97,9 @@ const AdminCCCContributions: React.FC = () => {
   const [activeTab, setActiveTab] = useState('pending');
   const [showTestDialog, setShowTestDialog] = useState(false);
   const [testResults, setTestResults] = useState<any[]>([]);
+  const [showAppealDialog, setShowAppealDialog] = useState(false);
+  const [showPermitDialog, setShowPermitDialog] = useState(false);
+  const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
 
   useEffect(() => {
     fetchContributions();
@@ -119,15 +136,30 @@ const AdminCCCContributions: React.FC = () => {
 
   const handleApprove = async (contributionId: string) => {
     try {
+      const contribution = contributions.find(c => c.id === contributionId);
+      if (!contribution) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { error } = await supabase
         .from('cadastral_contributions')
         .update({ 
           status: 'approved',
+          reviewed_by: user?.id,
           reviewed_at: new Date().toISOString()
         })
         .eq('id', contributionId);
 
       if (error) throw error;
+
+      // Créer notification pour l'utilisateur
+      await supabase.from('notifications').insert({
+        user_id: contribution.user_id,
+        type: 'success',
+        title: 'Contribution approuvée',
+        message: `Votre contribution pour la parcelle ${contribution.parcel_number} a été approuvée. Un code CCC a été généré automatiquement.`,
+        action_url: '/user-dashboard?tab=ccc-codes'
+      });
 
       toast.success('Contribution approuvée ! Le code CCC sera généré automatiquement.');
       fetchContributions();
@@ -145,16 +177,32 @@ const AdminCCCContributions: React.FC = () => {
     }
 
     try {
+      const contribution = contributions.find(c => c.id === contributionId);
+      if (!contribution) return;
+
+      const { data: { user } } = await supabase.auth.getUser();
+
       const { error } = await supabase
         .from('cadastral_contributions')
         .update({ 
           status: 'rejected',
           rejection_reason: rejectionReason,
+          rejected_by: user?.id,
+          reviewed_by: user?.id,
           reviewed_at: new Date().toISOString()
         })
         .eq('id', contributionId);
 
       if (error) throw error;
+
+      // Créer notification pour l'utilisateur
+      await supabase.from('notifications').insert({
+        user_id: contribution.user_id,
+        type: 'error',
+        title: 'Contribution rejetée',
+        message: `Votre contribution pour la parcelle ${contribution.parcel_number} a été rejetée. Motif: ${rejectionReason}. Vous pouvez faire appel de cette décision.`,
+        action_url: '/user-dashboard?tab=contributions'
+      });
 
       toast.success('Contribution rejetée');
       fetchContributions();
@@ -421,6 +469,52 @@ const AdminCCCContributions: React.FC = () => {
                   </AlertDescription>
                 </Alert>
               )}
+
+              {/* Actions rapides */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {/* Appel */}
+                {selectedContribution.appeal_submitted && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAppealDialog(true)}
+                    className="gap-2 w-full"
+                  >
+                    <MessageSquare className="h-4 w-4" />
+                    Voir l'appel
+                    {selectedContribution.appeal_status === 'pending' && (
+                      <Badge variant="outline" className="ml-auto">En attente</Badge>
+                    )}
+                  </Button>
+                )}
+
+                {/* Demande de permis */}
+                {selectedContribution.permit_request_data && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPermitDialog(true)}
+                    className="gap-2 w-full"
+                  >
+                    <Building2 className="h-4 w-4" />
+                    Demande de permis
+                    {selectedContribution.permit_request_data.status === 'pending' && (
+                      <Badge variant="outline" className="ml-auto">En attente</Badge>
+                    )}
+                  </Button>
+                )}
+
+                {/* Documents */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowDocumentsDialog(true)}
+                  className="gap-2 w-full"
+                >
+                  <FileText className="h-4 w-4" />
+                  Documents
+                </Button>
+              </div>
 
               <Tabs defaultValue="general" className="w-full">
                 <TabsList className="grid w-full grid-cols-6">
@@ -823,6 +917,53 @@ const AdminCCCContributions: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialogs pour les fonctionnalités avancées */}
+      {selectedContribution && (
+        <>
+          {/* Dialog appel */}
+          {selectedContribution.appeal_submitted && (
+            <AppealManagementDialog
+              open={showAppealDialog}
+              onOpenChange={setShowAppealDialog}
+              contributionId={selectedContribution.id}
+              appealData={selectedContribution.appeal_data}
+              appealStatus={selectedContribution.appeal_status || 'pending'}
+              appealSubmissionDate={selectedContribution.appeal_submission_date || ''}
+              parcelNumber={selectedContribution.parcel_number}
+              rejectionReasons={selectedContribution.rejection_reasons}
+              onAppealProcessed={fetchContributions}
+            />
+          )}
+
+          {/* Dialog demande de permis */}
+          {selectedContribution.permit_request_data && (
+            <PermitRequestDialog
+              open={showPermitDialog}
+              onOpenChange={setShowPermitDialog}
+              contributionId={selectedContribution.id}
+              permitRequestData={selectedContribution.permit_request_data}
+              parcelNumber={selectedContribution.parcel_number}
+              userId={selectedContribution.user_id}
+              onProcessed={fetchContributions}
+            />
+          )}
+
+          {/* Dialog documents */}
+          <DocumentsGalleryDialog
+            open={showDocumentsDialog}
+            onOpenChange={setShowDocumentsDialog}
+            parcelNumber={selectedContribution.parcel_number}
+            ownerDocumentUrl={selectedContribution.owner_document_url}
+            propertyTitleDocumentUrl={selectedContribution.property_title_document_url}
+            buildingPermits={selectedContribution.building_permits}
+            taxHistory={selectedContribution.tax_history}
+            mortgageHistory={selectedContribution.mortgage_history}
+            ownershipHistory={selectedContribution.ownership_history}
+            boundaryHistory={selectedContribution.boundary_history}
+          />
+        </>
+      )}
     </div>
   );
 };
