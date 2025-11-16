@@ -19,7 +19,8 @@ import {
   AlertTriangle,
   Database,
   Globe,
-  Gift
+  Gift,
+  Map as MapIcon
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -65,6 +66,7 @@ const menuItems = [
   {
     category: 'Cadastre & Services',
     items: [
+      { icon: MapIcon, label: 'Carte Cadastrale', value: 'cadastral-map', badge: null },
       { icon: Database, label: 'Services Cadastraux', value: 'services', badge: null },
       { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null },
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },

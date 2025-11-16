@@ -15,6 +15,7 @@ import AdminResellers from '@/components/admin/AdminResellers';
 import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
 import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
 import AdminCadastralServices from '@/components/admin/AdminCadastralServices';
+import AdminCadastralMap from '@/components/admin/AdminCadastralMap';
 import AdminCCCContributions from '@/components/admin/AdminCCCContributions';
 import AdminValidation from '@/components/admin/AdminValidation';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
@@ -96,6 +97,8 @@ const Admin = () => {
         return <AdminResellers />;
       case 'services':
         return <AdminCadastralServices />;
+      case 'cadastral-map':
+        return <AdminCadastralMap />;
       case 'search-config':
         return <AdminSearchConfig />;
       case 'results-config':
