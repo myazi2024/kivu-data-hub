@@ -61,17 +61,15 @@ const CadastralMap = () => {
     }
   }, [showIntroDialog]);
 
-  // Charger toutes les parcelles depuis Supabase
+  // Charger uniquement les parcelles des contributions validées
   useEffect(() => {
     const loadParcels = async () => {
       try {
         setLoading(true);
         const { data, error } = await supabase
-          .from('cadastral_parcels')
-          .select('id, parcel_number, gps_coordinates, parcel_sides, latitude, longitude, current_owner_name, area_sqm, province, ville, commune, quartier')
-          .not('latitude', 'is', null)
-          .not('longitude', 'is', null)
-          .is('deleted_at', null)
+          .from('cadastral_contributions')
+          .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier')
+          .eq('status', 'approved')
           .limit(500); // Limiter à 500 parcelles pour performance
 
         if (error) {
@@ -80,8 +78,26 @@ const CadastralMap = () => {
           return;
         }
 
-        setParcels(data || []);
-        setFilteredParcels(data || []);
+        // Transformer les données pour extraire latitude/longitude
+        const transformedData = (data || []).map(contribution => {
+          let latitude = null;
+          let longitude = null;
+          
+          if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) {
+            const firstCoord = contribution.gps_coordinates[0] as any;
+            latitude = firstCoord.lat || firstCoord.latitude;
+            longitude = firstCoord.lng || firstCoord.longitude;
+          }
+
+          return {
+            ...contribution,
+            latitude: latitude || 0,
+            longitude: longitude || 0
+          };
+        }).filter(p => p.latitude !== 0 && p.longitude !== 0);
+
+        setParcels(transformedData);
+        setFilteredParcels(transformedData);
       } catch (error) {
         console.error('Erreur:', error);
         toast.error('Erreur lors du chargement des parcelles');
