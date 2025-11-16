@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, Globe, User, LogOut, ChevronDown } from 'lucide-react';
+import { Menu, X, Globe, User, LogOut, ChevronDown, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import {
@@ -87,6 +87,16 @@ const Navigation = () => {
                 ))}
               </NavigationMenuList>
             </NavigationMenu>
+            
+            {/* Admin Link - Desktop only */}
+            {profile?.role === 'admin' && (
+              <Link to="/admin">
+                <Button variant="ghost" size="sm" className="gap-2 text-sm font-medium">
+                  <Shield className="h-4 w-4" />
+                  Admin
+                </Button>
+              </Link>
+            )}
           </div>
 
           {/* Auth & Language Toggle & Mobile Menu Button */}
@@ -232,6 +242,21 @@ const Navigation = () => {
                       </p>
                     )}
                   </div>
+                  
+                  {/* Admin Link - Mobile */}
+                  {profile?.role === 'admin' && (
+                    <Link to="/admin" onClick={() => setIsOpen(false)}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex items-center space-x-1 px-3 py-2 w-full justify-start text-sm"
+                      >
+                        <Shield className="h-4 w-4" />
+                        <span>Admin</span>
+                      </Button>
+                    </Link>
+                  )}
+                  
                   <Button
                     variant="ghost"
                     size="sm"
