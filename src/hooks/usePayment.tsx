@@ -100,8 +100,11 @@ export const usePayment = () => {
     try {
       setLoading(true);
       
+      // SECURITY: Send only item IDs, prices will be fetched from database
+      const itemIds = items.map(item => item.id);
+      
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { items },
+        body: { items: itemIds },
       });
 
       if (error) throw error;

@@ -109,9 +109,10 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
 
     // Direct purchase without adding to cart
     try {
+      // SECURITY: Send only item ID, price will be fetched from database
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
-          items: [cartItem],
+          items: [publication.id],
         },
       });
 
