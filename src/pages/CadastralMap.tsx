@@ -10,17 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import 'leaflet/dist/leaflet.css';
-
-interface TooltipFieldConfig {
-  field: string;
-  label: string;
-  enabled: boolean;
-  order: number;
-}
 
 interface ParcelData {
   id: string;
@@ -61,8 +53,6 @@ const CadastralMap = () => {
   const [selectedParcelHistory, setSelectedParcelHistory] = useState<ParcelHistoryData | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [hasIncompleteData, setHasIncompleteData] = useState(false);
-  const [tooltipConfig, setTooltipConfig] = useState<TooltipFieldConfig[]>([]);
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
 
   // Reset hasScrolledToBottom when dialog closes
   useEffect(() => {
@@ -70,44 +60,6 @@ const CadastralMap = () => {
       // Reset any state if needed
     }
   }, [showIntroDialog]);
-
-  // Charger la configuration de l'infobulle
-  useEffect(() => {
-    const loadTooltipConfig = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('cadastral_results_config')
-          .select('*')
-          .eq('config_key', 'parcel_tooltip_fields')
-          .eq('is_active', true)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          throw error;
-        }
-
-        if (data?.config_value && Array.isArray(data.config_value)) {
-          setTooltipConfig(data.config_value as unknown as TooltipFieldConfig[]);
-        } else {
-          // Configuration par défaut
-          setTooltipConfig([
-            { field: 'parcelNumber', label: 'Numéro de parcelle', enabled: true, order: 1 },
-            { field: 'ownerName', label: 'Propriétaire', enabled: true, order: 2 },
-            { field: 'area', label: 'Surface', enabled: true, order: 3 },
-            { field: 'province', label: 'Province', enabled: true, order: 4 },
-            { field: 'ville', label: 'Ville', enabled: true, order: 5 },
-            { field: 'commune', label: 'Commune', enabled: true, order: 6 },
-            { field: 'quartier', label: 'Quartier', enabled: false, order: 7 },
-            { field: 'gpsCoordinates', label: 'Coordonnées GPS', enabled: true, order: 8 },
-          ]);
-        }
-      } catch (error) {
-        console.error('Erreur chargement config infobulle:', error);
-      }
-    };
-
-    loadTooltipConfig();
-  }, []);
 
   // Charger uniquement les parcelles des contributions validées
   useEffect(() => {
@@ -119,8 +71,6 @@ const CadastralMap = () => {
           .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier')
           .eq('status', 'approved')
           .limit(500); // Limiter à 500 parcelles pour performance
-
-        console.log('Données brutes reçues:', data);
 
         if (error) {
           console.error('Erreur chargement parcelles:', error);
@@ -145,8 +95,6 @@ const CadastralMap = () => {
             longitude: longitude || 0
           };
         }).filter(p => p.latitude !== 0 && p.longitude !== 0);
-
-        console.log('Parcelles transformées et filtrées:', transformedData.length, transformedData);
 
         setParcels(transformedData);
         setFilteredParcels(transformedData);
@@ -236,91 +184,6 @@ const CadastralMap = () => {
     setSearchSuggestions([]);
     setFilteredParcels(parcels);
     setSelectedParcel(null);
-  };
-
-  // Créer le contenu HTML de l'infobulle basé sur la configuration admin
-  const createTooltipContent = (parcel: ParcelData): string => {
-    const formatArea = (sqm: number) => {
-      return new Intl.NumberFormat('fr-FR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2,
-      }).format(sqm);
-    };
-
-    const enabledFields = tooltipConfig
-      .filter(f => f.enabled)
-      .sort((a, b) => a.order - b.order);
-
-    let content = `
-      <div class="p-3 space-y-2" style="min-width: 250px;">
-        <h3 class="font-semibold text-base border-b pb-1.5 mb-2">
-          ${parcel.parcel_number}
-        </h3>
-        <div class="grid grid-cols-1 gap-1.5 text-xs">
-    `;
-
-    enabledFields.forEach(field => {
-      let value = '';
-      let label = field.label;
-
-      switch (field.field) {
-        case 'parcelNumber':
-          // Déjà affiché dans le titre
-          return;
-        case 'ownerName':
-          if (parcel.current_owner_name) {
-            value = parcel.current_owner_name;
-          }
-          break;
-        case 'area':
-          if (parcel.area_sqm) {
-            value = `${formatArea(parcel.area_sqm)} m²`;
-          }
-          break;
-        case 'province':
-          if (parcel.province) {
-            value = parcel.province;
-          }
-          break;
-        case 'ville':
-          if (parcel.ville) {
-            value = parcel.ville;
-          }
-          break;
-        case 'commune':
-          if (parcel.commune) {
-            value = parcel.commune;
-          }
-          break;
-        case 'quartier':
-          if (parcel.quartier) {
-            value = parcel.quartier;
-          }
-          break;
-        case 'gpsCoordinates':
-          if (parcel.latitude && parcel.longitude) {
-            label = 'Coordonnées GPS';
-            value = `${parcel.latitude.toFixed(5)}, ${parcel.longitude.toFixed(5)}`;
-          }
-          break;
-      }
-
-      if (value) {
-        content += `
-          <div class="flex justify-between items-center" style="gap: 8px;">
-            <span style="color: hsl(var(--muted-foreground));">${label}:</span>
-            <span class="font-medium text-right">${value}</span>
-          </div>
-        `;
-      }
-    });
-
-    content += `
-        </div>
-      </div>
-    `;
-
-    return content;
   };
 
   // Initialiser la carte (uniquement quand loading = false)
@@ -499,48 +362,18 @@ const CadastralMap = () => {
             });
 
 
-            // Créer le contenu du popup basé sur la configuration
-            const popupContent = createTooltipContent(parcel);
-            // Sur mobile, ouvrir le drawer au lieu du popup
-            if (isMobile) {
-              polygon.on('click', () => {
-                setSelectedParcel(parcel);
-                setMobileSheetOpen(true);
-              });
-            } else {
-              polygon.bindPopup(popupContent, {
-                maxWidth: 300,
-                className: 'cadastral-popup'
-              });
-
-              polygon.on('click', () => {
-                setSelectedParcel(parcel);
-              });
-            }
+            polygon.on('click', () => {
+              setSelectedParcel(parcel);
+            });
 
             bounds.extend(polygon.getBounds());
           } else if (parcel.latitude && parcel.longitude) {
             // Si pas de polygone mais des coordonnées, ajouter un marqueur
             const marker = L.marker([parcel.latitude, parcel.longitude]).addTo(map);
 
-            // Créer le contenu du popup basé sur la configuration
-            const popupContent = createTooltipContent(parcel);
-            // Sur mobile, ouvrir le drawer au lieu du popup
-            if (isMobile) {
-              marker.on('click', () => {
-                setSelectedParcel(parcel);
-                setMobileSheetOpen(true);
-              });
-            } else {
-              marker.bindPopup(popupContent, {
-                maxWidth: 300,
-                className: 'cadastral-popup'
-              });
-
-              marker.on('click', () => {
-                setSelectedParcel(parcel);
-              });
-            }
+            marker.on('click', () => {
+              setSelectedParcel(parcel);
+            });
 
             bounds.extend([parcel.latitude, parcel.longitude]);
           }
@@ -793,92 +626,6 @@ const CadastralMap = () => {
           }}
           parcelNumber={selectedParcel?.parcel_number || searchQuery}
         />
-      )}
-
-      {/* Sheet mobile pour l'infobulle */}
-      {isMobile && selectedParcel && (
-        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
-          <SheetContent side="bottom" className="h-auto max-h-[70vh] overflow-y-auto rounded-t-xl">
-            <SheetHeader className="mb-4">
-              <SheetTitle className="text-lg font-semibold">
-                {selectedParcel.parcel_number}
-              </SheetTitle>
-            </SheetHeader>
-            
-            <div className="space-y-3">
-              {tooltipConfig
-                .filter(f => f.enabled)
-                .sort((a, b) => a.order - b.order)
-                .map((field) => {
-                  let value = '';
-                  let label = field.label;
-
-                  switch (field.field) {
-                    case 'parcelNumber':
-                      return null; // Déjà affiché dans le titre
-                    case 'ownerName':
-                      if (selectedParcel.current_owner_name) {
-                        value = selectedParcel.current_owner_name;
-                      }
-                      break;
-                    case 'area':
-                      if (selectedParcel.area_sqm) {
-                        value = `${new Intl.NumberFormat('fr-FR', {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 2,
-                        }).format(selectedParcel.area_sqm)} m²`;
-                      }
-                      break;
-                    case 'province':
-                      if (selectedParcel.province) {
-                        value = selectedParcel.province;
-                      }
-                      break;
-                    case 'ville':
-                      if (selectedParcel.ville) {
-                        value = selectedParcel.ville;
-                      }
-                      break;
-                    case 'commune':
-                      if (selectedParcel.commune) {
-                        value = selectedParcel.commune;
-                      }
-                      break;
-                    case 'quartier':
-                      if (selectedParcel.quartier) {
-                        value = selectedParcel.quartier;
-                      }
-                      break;
-                    case 'gpsCoordinates':
-                      if (selectedParcel.latitude && selectedParcel.longitude) {
-                        label = 'Coordonnées GPS';
-                        value = `${selectedParcel.latitude.toFixed(5)}, ${selectedParcel.longitude.toFixed(5)}`;
-                      }
-                      break;
-                  }
-
-                  if (!value) return null;
-
-                  return (
-                    <div key={field.field} className="flex justify-between items-center py-2 border-b border-border last:border-0">
-                      <span className="text-sm text-muted-foreground">{label}:</span>
-                      <span className="text-sm font-medium text-right">{value}</span>
-                    </div>
-                  );
-                })}
-            </div>
-
-            <div className="mt-6">
-              <Button 
-                onClick={() => setMobileSheetOpen(false)} 
-                className="w-full"
-                variant="outline"
-              >
-                Fermer
-              </Button>
-            </div>
-          </SheetContent>
-        </Sheet>
       )}
     </div>
   );
