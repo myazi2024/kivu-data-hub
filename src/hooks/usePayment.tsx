@@ -48,7 +48,9 @@ export const usePayment = () => {
 
       if (paymentError) throw paymentError;
 
-      // Simuler le processus de paiement mobile money
+      // TODO PRODUCTION: Remplacer par une vraie intégration Mobile Money API
+      // Actuellement simulation pour tests - délai de 3 secondes
+      console.warn('⚠️ SIMULATION DE PAIEMENT - À remplacer par une vraie API en production');
       await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Mise à jour du statut du paiement
