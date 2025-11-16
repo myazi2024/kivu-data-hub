@@ -60,45 +60,18 @@ const AdminCadastralMap = () => {
     try {
       setLoading(true);
       
-      // Récupérer les IDs de parcelles validées (avec contribution approuvée)
-      const { data: validatedParcels, error: validationError } = await supabase
-        .from('cadastral_contributions')
-        .select('original_parcel_id')
-        .eq('status', 'approved')
-        .not('original_parcel_id', 'is', null);
-
-      if (validationError) throw validationError;
-
-      const validatedParcelIds = validatedParcels?.map(c => c.original_parcel_id).filter(Boolean) || [];
-
-      if (validatedParcelIds.length === 0) {
-        setParcels([]);
-        setFilteredParcels([]);
-        setTotalCount(0);
-        setStats({
-          total: 0,
-          withGPS: 0,
-          withoutGPS: 0,
-          byProvince: {}
-        });
-        setLoading(false);
-        return;
-      }
-
-      // Compter le total des parcelles validées
+      // Compter le total
       const { count } = await supabase
         .from('cadastral_parcels')
         .select('*', { count: 'exact', head: true })
-        .in('id', validatedParcelIds)
         .is('deleted_at', null);
       
       setTotalCount(count || 0);
 
-      // Récupérer les parcelles validées avec pagination
+      // Récupérer les parcelles avec pagination
       const { data, error } = await supabase
         .from('cadastral_parcels')
         .select('id, parcel_number, current_owner_name, area_sqm, property_title_type, province, ville, commune, quartier, latitude, longitude, gps_coordinates, created_at, deleted_at')
-        .in('id', validatedParcelIds)
         .is('deleted_at', null)
         .order('created_at', { ascending: false })
         .range((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE - 1);
@@ -109,7 +82,7 @@ const AdminCadastralMap = () => {
       setFilteredParcels(data || []);
       
       // Calculer les statistiques
-      calculateStats(validatedParcelIds);
+      calculateStats(data || []);
     } catch (error) {
       console.error('Erreur lors du chargement des parcelles:', error);
       toast.error('Erreur lors du chargement des parcelles');
@@ -118,29 +91,26 @@ const AdminCadastralMap = () => {
     }
   };
 
-  const calculateStats = async (validatedParcelIds: string[]) => {
+  const calculateStats = async (parcelsData: CadastralParcel[]) => {
     try {
-      // Compter toutes les parcelles validées
+      // Compter toutes les parcelles
       const { count: totalCount } = await supabase
         .from('cadastral_parcels')
         .select('*', { count: 'exact', head: true })
-        .in('id', validatedParcelIds)
         .is('deleted_at', null);
 
-      // Compter les parcelles validées avec GPS
+      // Compter les parcelles avec GPS
       const { count: withGPSCount } = await supabase
         .from('cadastral_parcels')
         .select('*', { count: 'exact', head: true })
-        .in('id', validatedParcelIds)
         .not('latitude', 'is', null)
         .not('longitude', 'is', null)
         .is('deleted_at', null);
 
-      // Compter par province pour les parcelles validées
+      // Compter par province
       const { data: provinceData } = await supabase
         .from('cadastral_parcels')
         .select('province')
-        .in('id', validatedParcelIds)
         .is('deleted_at', null);
 
       const byProvince: Record<string, number> = {};
