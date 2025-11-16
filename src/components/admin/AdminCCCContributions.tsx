@@ -170,9 +170,32 @@ const AdminCCCContributions: React.FC = () => {
   };
 
   const handleApprove = async (contributionId: string) => {
-    // Vérifier la validation avant d'approuver
-    if (!validationResult || !validationResult.valid) {
-      toast.error('Veuillez d\'abord valider la contribution et corriger les erreurs');
+    // Valider automatiquement si pas encore fait
+    let validation = validationResult;
+    
+    if (!validation) {
+      setIsValidating(true);
+      try {
+        const { data, error } = await supabase.rpc('validate_contribution_completeness', {
+          contribution_id: contributionId
+        });
+
+        if (error) throw error;
+        validation = data as unknown as ValidationResult;
+        setValidationResult(validation);
+      } catch (error: any) {
+        console.error('Erreur lors de la validation:', error);
+        toast.error('Erreur lors de la validation automatique');
+        setIsValidating(false);
+        return;
+      } finally {
+        setIsValidating(false);
+      }
+    }
+
+    // Vérifier s'il y a des erreurs critiques
+    if (!validation?.valid) {
+      toast.error('La contribution contient des erreurs critiques. Veuillez les corriger avant d\'approuver.');
       return;
     }
 
