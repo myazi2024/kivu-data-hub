@@ -139,10 +139,57 @@ export const useCadastralContribution = () => {
       return { success: false };
     }
 
+    // 🔒 VALIDATION: Format numéro parcelle (chiffres uniquement)
+    if (!/^\d+$/.test(data.parcelNumber)) {
+      toast({
+        title: "Format invalide",
+        description: "Le numéro de parcelle doit contenir uniquement des chiffres",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
+    // 🔒 VALIDATION: Coordonnées GPS valides
+    if (data.gpsCoordinates && data.gpsCoordinates.length > 0) {
+      const invalidCoord = data.gpsCoordinates.find(coord => {
+        const lat = Number(coord.lat); // Utiliser 'lat' au lieu de 'latitude'
+        const lng = Number(coord.lng); // Utiliser 'lng' au lieu de 'longitude'
+        return isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180;
+      });
+      
+      if (invalidCoord) {
+        toast({
+          title: "Coordonnées GPS invalides",
+          description: "Les coordonnées doivent être dans les plages valides (lat: -90 à 90, lng: -180 à 180)",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+
+      if (data.gpsCoordinates.length < 3) {
+        toast({
+          title: "Coordonnées insuffisantes",
+          description: "Veuillez fournir au moins 3 points GPS pour définir la parcelle",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+    }
+
+    // 🔒 VALIDATION: Superficie positive
+    if (data.areaSqm && Number(data.areaSqm) <= 0) {
+      toast({
+        title: "Superficie invalide",
+        description: "La superficie doit être supérieure à 0",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
     setLoading(true);
 
     try {
-      // Vérifier si l'utilisateur est bloqué
+      // 🔒 Vérifier si l'utilisateur est bloqué AVANT détection fraude
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_blocked, blocked_reason, fraud_strikes')
@@ -160,7 +207,7 @@ export const useCadastralContribution = () => {
         return { success: false };
       }
 
-      // Détecter les contributions suspectes
+      // 🔒 Détection de fraude - Utiliser l'ancienne fonction en attendant migration types
       const { data: fraudCheck, error: fraudError } = await supabase
         .rpc('detect_suspicious_contribution', {
           p_user_id: user.id,
@@ -168,13 +215,32 @@ export const useCadastralContribution = () => {
         });
 
       if (fraudError) {
-        console.error('Erreur lors de la vérification anti-fraude:', fraudError);
+        console.error('Erreur détection fraude:', fraudError);
       }
 
-      const suspicionData = fraudCheck && fraudCheck.length > 0 ? fraudCheck[0] : null;
+      const suspicionData = Array.isArray(fraudCheck) && fraudCheck.length > 0 ? fraudCheck[0] : null;
       const isSuspicious = suspicionData?.is_suspicious || false;
       const fraudScore = suspicionData?.fraud_score || 0;
       const fraudReasons = suspicionData?.reasons || [];
+
+      // Si détection fraude positive critique, bloquer immédiatement
+      if (isSuspicious && fraudScore >= 80) {
+        toast({
+          title: "Contribution suspecte",
+          description: "Cette contribution a été signalée pour vérification. Un administrateur vous contactera.",
+          variant: "destructive",
+        });
+        
+        // Enregistrer la tentative de fraude
+        await supabase.from('fraud_attempts').insert({
+          user_id: user.id,
+          fraud_type: 'suspicious_contribution',
+          severity: 'high',
+          description: Array.isArray(fraudReasons) ? fraudReasons.join(', ') : 'Score de fraude élevé'
+        });
+        
+        return { success: false };
+      }
 
       // Soumettre la contribution
       const contributionPayload: any = {
@@ -270,7 +336,20 @@ export const useCadastralContribution = () => {
         });
       }
 
+      toast({
+        title: "Contribution soumise",
+        description: "Votre contribution a été soumise avec succès et sera examinée par nos équipes.",
+      });
+
+      // Recharger les codes CCC
       await fetchUserCodes();
+
+      // ✅ Nettoyer le localStorage SEULEMENT après confirmation complète
+      try {
+        localStorage.removeItem('ccc_form_draft');
+      } catch (storageError) {
+        console.warn('Impossible de nettoyer le localStorage:', storageError);
+      }
 
       return { success: true };
     } catch (err) {
