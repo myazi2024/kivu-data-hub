@@ -83,7 +83,7 @@ export const useResellers = () => {
         .from('resellers')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (error && error.code !== 'PGRST116') throw error;
       setCurrentReseller(data || null);
@@ -113,7 +113,7 @@ export const useResellers = () => {
           ...resellerData
         }])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -145,7 +145,7 @@ export const useResellers = () => {
         .update(updates)
         .eq('id', id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 

@@ -116,7 +116,7 @@ export const useResellerSales = () => {
           commission_earned_usd: commission_earned
         }])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
       return data;
