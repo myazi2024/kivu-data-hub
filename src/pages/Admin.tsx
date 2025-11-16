@@ -16,6 +16,7 @@ import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
 import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
 import AdminCadastralServices from '@/components/admin/AdminCadastralServices';
 import AdminCadastralMap from '@/components/admin/AdminCadastralMap';
+import AdminParcelTooltipConfig from '@/components/admin/AdminParcelTooltipConfig';
 import AdminCCCContributions from '@/components/admin/AdminCCCContributions';
 import AdminValidation from '@/components/admin/AdminValidation';
 import { AdminNotifications } from '@/components/admin/AdminNotifications';
@@ -99,6 +100,8 @@ const Admin = () => {
         return <AdminCadastralServices />;
       case 'cadastral-map':
         return <AdminCadastralMap />;
+      case 'parcel-tooltip-config':
+        return <AdminParcelTooltipConfig />;
       case 'search-config':
         return <AdminSearchConfig />;
       case 'results-config':
