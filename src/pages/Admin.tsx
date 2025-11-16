@@ -21,6 +21,10 @@ import { AdminNotifications } from '@/components/admin/AdminNotifications';
 import AdminSearchConfig from '@/components/admin/AdminSearchConfig';
 import AdminResultsConfig from '@/components/admin/AdminResultsConfig';
 import AdminContributionConfig from '@/components/admin/AdminContributionConfig';
+import AdminCCCCodes from '@/components/admin/AdminCCCCodes';
+import AdminAuditLogs from '@/components/admin/AdminAuditLogs';
+import AdminArticles from '@/components/admin/AdminArticles';
+import AdminFraudDetection from '@/components/admin/AdminFraudDetection';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -71,15 +75,13 @@ const Admin = () => {
       case 'roles':
         return <AdminUserRoles />;
       case 'fraud':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Détection Fraude - Coming soon</p>
-          </div>
-        );
+        return <AdminFraudDetection />;
       case 'ccc':
         return <AdminCCCContributions />;
       case 'validation':
         return <AdminValidation />;
+      case 'ccc-codes':
+        return <AdminCCCCodes />;
       case 'contribution-config':
         return <AdminContributionConfig />;
       case 'payments':
@@ -108,8 +110,12 @@ const Admin = () => {
         );
       case 'publications':
         return <AdminPublications onRefresh={fetchPendingCount} />;
+      case 'articles':
+        return <AdminArticles />;
       case 'notifications':
         return <AdminNotifications />;
+      case 'audit-logs':
+        return <AdminAuditLogs />;
       default:
         return <AdminDashboardOverview />;
     }
