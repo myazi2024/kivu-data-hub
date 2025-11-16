@@ -1,17 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Plus, Users, FileText, CreditCard, BarChart, Search, Shield, ClipboardList } from 'lucide-react';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { AdminSidebar } from '@/components/admin/AdminSidebar';
+import { AdminDashboardHeader } from '@/components/admin/AdminDashboardHeader';
+import { AdminDashboardOverview } from '@/components/admin/AdminDashboardOverview';
 import { toast } from 'sonner';
 import AdminPublications from '@/components/admin/AdminPublications';
 import AdminPayments from '@/components/admin/AdminPayments';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
-import AdminStatisticsCharts from '@/components/statistics/AdminStatisticsCharts';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminResellers from '@/components/admin/AdminResellers';
 import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
@@ -26,79 +24,34 @@ import AdminContributionConfig from '@/components/admin/AdminContributionConfig'
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalPublications: 0,
-    totalRevenue: 0,
-    pendingPayments: 0
-  });
+  const [searchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'dashboard';
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
 
   useEffect(() => {
     if (profile?.role === 'admin') {
-      fetchStats();
+      fetchPendingCount();
     }
   }, [profile]);
 
-  const fetchStats = async () => {
+  const fetchPendingCount = async () => {
     try {
-      // Fetch users count
-      const { count: usersCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch publications count
-      const { count: publicationsCount } = await supabase
-        .from('publications')
-        .select('*', { count: 'exact', head: true });
-
-      // Fetch total revenue from publications
-      const { data: publicationPayments } = await supabase
-        .from('payments')
-        .select('amount_usd')
-        .eq('status', 'completed');
-
-      const publicationRevenue = publicationPayments?.reduce((sum, payment) => sum + (payment.amount_usd || 0), 0) || 0;
-
-      // Fetch total revenue from cadastral services
-      const { data: cadastralInvoices } = await supabase
-        .from('cadastral_invoices')
-        .select('total_amount_usd')
-        .eq('status', 'paid');
-
-      const cadastralRevenue = cadastralInvoices?.reduce((sum, invoice) => sum + (Number(invoice.total_amount_usd) || 0), 0) || 0;
-
-      // Total revenue from both systems
-      const totalRevenue = publicationRevenue + cadastralRevenue;
-
-      // Fetch pending payments count from both systems
-      const { count: pendingPublicationPayments } = await supabase
-        .from('payments')
+      const { count } = await supabase
+        .from('cadastral_contributions')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-
-      const { count: pendingCadastralInvoices } = await supabase
-        .from('cadastral_invoices')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
-
-      const totalPending = (pendingPublicationPayments || 0) + (pendingCadastralInvoices || 0);
-
-      setStats({
-        totalUsers: usersCount || 0,
-        totalPublications: publicationsCount || 0,
-        totalRevenue,
-        pendingPayments: totalPending
-      });
+        .in('status', ['pending', 'under_review']);
+      
+      setPendingCount(count || 0);
     } catch (error) {
-      console.error('Erreur lors du chargement des statistiques:', error);
-      toast.error('Erreur lors du chargement des statistiques');
+      console.error('Erreur lors du chargement des contributions en attente:', error);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
   }
@@ -107,149 +60,96 @@ const Admin = () => {
     return <Navigate to="/auth" replace />;
   }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <AdminDashboardOverview />;
+      case 'analytics':
+        return <AnalyticsDashboard />;
+      case 'users':
+        return <AdminUsers onRefresh={fetchPendingCount} />;
+      case 'roles':
+        return <AdminUserRoles />;
+      case 'fraud':
+        return (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Détection Fraude - Coming soon</p>
+          </div>
+        );
+      case 'ccc':
+        return <AdminCCCContributions />;
+      case 'validation':
+        return <AdminValidation />;
+      case 'contribution-config':
+        return <AdminContributionConfig />;
+      case 'payments':
+        return <AdminPayments onRefresh={fetchPendingCount} />;
+      case 'invoices':
+        return (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Gestion Factures - Coming soon</p>
+          </div>
+        );
+      case 'resellers':
+        return <AdminResellers />;
+      case 'services':
+        return <AdminCadastralServices />;
+      case 'search-config':
+        return <AdminSearchConfig />;
+      case 'results-config':
+        return <AdminResultsConfig />;
+      case 'zones':
+        return <AdminTerritorialZones />;
+      case 'permits':
+        return (
+          <div className="flex items-center justify-center h-64">
+            <p className="text-muted-foreground">Permis de Construire - Coming soon</p>
+          </div>
+        );
+      case 'publications':
+        return <AdminPublications onRefresh={fetchPendingCount} />;
+      case 'notifications':
+        return <AdminNotifications />;
+      default:
+        return <AdminDashboardOverview />;
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Administration BIC</h1>
-          <p className="text-muted-foreground">Gestion des publications, utilisateurs et paiements</p>
+    <div className="flex h-screen overflow-hidden">
+      {/* Desktop Sidebar */}
+      <aside className="hidden md:flex w-64 flex-col border-r bg-card">
+        <div className="p-6 border-b">
+          <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+          <p className="text-xs text-muted-foreground mt-1">Gestion complète</p>
         </div>
+        <AdminSidebar pendingCount={pendingCount} />
+      </aside>
 
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Utilisateurs Total</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
+      {/* Mobile Sidebar */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent side="left" className="w-64 p-0">
+          <div className="p-6 border-b">
+            <h2 className="text-lg font-semibold">Admin Dashboard</h2>
+            <p className="text-xs text-muted-foreground mt-1">Gestion complète</p>
+          </div>
+          <AdminSidebar 
+            pendingCount={pendingCount} 
+            onNavigate={() => setMobileMenuOpen(false)}
+          />
+        </SheetContent>
+      </Sheet>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Publications</CardTitle>
-              <FileText className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.totalPublications}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Revenus Total</CardTitle>
-              <CreditCard className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">${stats.totalRevenue.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Paiements en Attente</CardTitle>
-              <BarChart className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {stats.pendingPayments}
-                {stats.pendingPayments > 0 && (
-                  <Badge variant="destructive" className="ml-2">Nouveau</Badge>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Main Content Tabs */}
-          <Tabs defaultValue="publications" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-12">
-              <TabsTrigger value="publications">Publications</TabsTrigger>
-              <TabsTrigger value="payments">Paiements</TabsTrigger>
-              <TabsTrigger value="users">Utilisateurs</TabsTrigger>
-              <TabsTrigger value="roles">Rôles</TabsTrigger>
-              <TabsTrigger value="resellers">Revendeurs</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-              <TabsTrigger value="territorial">Zones</TabsTrigger>
-              <TabsTrigger value="services">Services</TabsTrigger>
-              <TabsTrigger value="contributions">CCC</TabsTrigger>
-              <TabsTrigger value="validation" className="flex items-center gap-1">
-                <Shield className="h-4 w-4" />
-                Validation
-              </TabsTrigger>
-              <TabsTrigger value="notifications">Notifications</TabsTrigger>
-              <TabsTrigger value="search-config" className="flex items-center gap-1">
-                <Search className="h-4 w-4" />
-                Recherche
-              </TabsTrigger>
-              <TabsTrigger value="results-config" className="flex items-center gap-1">
-                <ClipboardList className="h-4 w-4" />
-                Résultats
-              </TabsTrigger>
-              <TabsTrigger value="contribution-config" className="flex items-center gap-1">
-                <FileText className="h-4 w-4" />
-                Formulaire CCC
-              </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="publications">
-            <AdminPublications onRefresh={fetchStats} />
-          </TabsContent>
-
-          <TabsContent value="payments">
-            <AdminPayments onRefresh={fetchStats} />
-          </TabsContent>
-
-            <TabsContent value="users">
-              <AdminUsers onRefresh={fetchStats} />
-            </TabsContent>
-
-            <TabsContent value="roles">
-              <AdminUserRoles />
-            </TabsContent>
-
-            <TabsContent value="resellers">
-            <AdminResellers onRefresh={fetchStats} />
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <AdminStatisticsCharts onExport={() => console.log('Export statistiques')} />
-          </TabsContent>
-
-          <TabsContent value="territorial">
-            <AdminTerritorialZones />
-          </TabsContent>
-
-          <TabsContent value="services">
-            <AdminCadastralServices onRefresh={fetchStats} />
-          </TabsContent>
-
-          <TabsContent value="contributions">
-            <AdminCCCContributions />
-          </TabsContent>
-
-          <TabsContent value="validation">
-            <AdminValidation />
-          </TabsContent>
-
-          <TabsContent value="notifications">
-            <AdminNotifications />
-          </TabsContent>
-
-          <TabsContent value="search-config">
-            <AdminSearchConfig />
-          </TabsContent>
-
-          <TabsContent value="results-config">
-            <AdminResultsConfig />
-          </TabsContent>
-
-          <TabsContent value="contribution-config">
-            <AdminContributionConfig />
-          </TabsContent>
-        </Tabs>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AdminDashboardHeader
+          onMenuClick={() => setMobileMenuOpen(true)}
+          notificationCount={pendingCount}
+        />
+        
+        <main className="flex-1 overflow-y-auto p-4 md:p-6">
+          {renderContent()}
+        </main>
       </div>
     </div>
   );
