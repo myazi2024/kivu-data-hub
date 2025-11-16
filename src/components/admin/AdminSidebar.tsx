@@ -18,7 +18,8 @@ import {
   FileCheck,
   AlertTriangle,
   Database,
-  Globe
+  Globe,
+  Gift
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -41,7 +42,7 @@ const menuItems = [
     items: [
       { icon: Users, label: 'Utilisateurs', value: 'users', badge: null },
       { icon: Shield, label: 'Rôles & Permissions', value: 'roles', badge: null },
-      { icon: AlertTriangle, label: 'Détection Fraude', value: 'fraud', badge: 'new' },
+      { icon: AlertTriangle, label: 'Détection Fraude', value: 'fraud', badge: null },
     ]
   },
   {
@@ -49,6 +50,7 @@ const menuItems = [
     items: [
       { icon: ClipboardList, label: 'Contributions CCC', value: 'ccc', badge: null },
       { icon: FileCheck, label: 'File de validation', value: 'validation', badge: 'pending' },
+      { icon: Gift, label: 'Codes CCC', value: 'ccc-codes', badge: null },
       { icon: Settings, label: 'Config Contributions', value: 'contribution-config', badge: null },
     ]
   },
@@ -56,7 +58,7 @@ const menuItems = [
     category: 'Finances',
     items: [
       { icon: CreditCard, label: 'Paiements', value: 'payments', badge: null },
-      { icon: DollarSign, label: 'Factures', value: 'invoices', badge: 'new' },
+      { icon: DollarSign, label: 'Factures', value: 'invoices', badge: null },
       { icon: ShoppingCart, label: 'Revendeurs', value: 'resellers', badge: null },
     ]
   },
@@ -67,14 +69,21 @@ const menuItems = [
       { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null },
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
       { icon: MapPin, label: 'Zones Territoriales', value: 'zones', badge: null },
-      { icon: Globe, label: 'Permis de Construire', value: 'permits', badge: 'new' },
+      { icon: Globe, label: 'Permis de Construire', value: 'permits', badge: null },
     ]
   },
   {
     category: 'Contenu',
     items: [
       { icon: FileText, label: 'Publications', value: 'publications', badge: null },
+      { icon: FileText, label: 'Articles', value: 'articles', badge: null },
       { icon: Bell, label: 'Notifications', value: 'notifications', badge: null },
+    ]
+  },
+  {
+    category: 'Système',
+    items: [
+      { icon: Shield, label: 'Logs d\'Audit', value: 'audit-logs', badge: null },
     ]
   },
 ];
