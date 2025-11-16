@@ -97,14 +97,14 @@ export function AdminSidebar({ pendingCount, onNavigate }: AdminSidebarProps) {
   };
 
   return (
-    <ScrollArea className="h-full py-4">
-      <div className="space-y-6 px-3">
+    <ScrollArea className="h-full py-2 md:py-4">
+      <div className="space-y-4 md:space-y-6 px-2 md:px-3">
         {menuItems.map((section) => (
           <div key={section.category}>
-            <h3 className="mb-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            <h3 className="mb-1.5 md:mb-2 px-2 md:px-3 text-[10px] md:text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {section.category}
             </h3>
-            <div className="space-y-1">
+            <div className="space-y-0.5 md:space-y-1">
               {section.items.map((item) => {
                 const isActive = currentTab === item.value;
                 const Icon = item.icon;
@@ -116,19 +116,21 @@ export function AdminSidebar({ pendingCount, onNavigate }: AdminSidebarProps) {
                     to={`/admin?tab=${item.value}`}
                     onClick={handleClick}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent',
-                      isActive ? 'bg-accent text-accent-foreground font-medium' : 'text-muted-foreground'
+                      'flex items-center gap-2 md:gap-3 rounded-lg px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm transition-all hover:bg-accent',
+                      isActive
+                        ? 'bg-accent text-accent-foreground font-medium'
+                        : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="flex-1">{item.label}</span>
+                    <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 shrink-0" />
+                    <span className="flex-1 truncate">{item.label}</span>
                     {showPendingBadge && (
-                      <Badge variant="destructive" className="h-5 min-w-5 px-1 text-xs">
+                      <Badge variant="destructive" className="ml-auto text-[10px] md:text-xs px-1 md:px-1.5 py-0 md:py-0.5 h-4 md:h-5">
                         {pendingCount}
                       </Badge>
                     )}
                     {item.badge === 'new' && (
-                      <Badge variant="secondary" className="h-5 px-2 text-xs">
+                      <Badge variant="secondary" className="text-[10px] md:text-xs px-1 md:px-2 py-0 md:py-0.5 h-4 md:h-5">
                         New
                       </Badge>
                     )}

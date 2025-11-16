@@ -62,30 +62,30 @@ export function AdminDashboardOverview() {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-3 md:space-y-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} className="overflow-hidden">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
+              <CardHeader className="flex flex-row items-center justify-between p-3 md:p-4 pb-2">
+                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground truncate pr-1">
                   {stat.title}
                 </CardTitle>
-                <Icon className="h-4 w-4 text-muted-foreground" />
+                <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              <CardContent className="p-3 md:p-4 pt-0">
+                <div className="text-lg md:text-2xl font-bold truncate">{stat.value}</div>
+                <div className="flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs text-muted-foreground mt-1">
                   {stat.positive ? (
-                    <TrendingUp className="h-3 w-3 text-success" />
+                    <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 text-success shrink-0" />
                   ) : (
-                    <TrendingDown className="h-3 w-3 text-destructive" />
+                    <TrendingDown className="h-2.5 w-2.5 md:h-3 md:w-3 text-destructive shrink-0" />
                   )}
                   <span className={stat.positive ? 'text-success' : 'text-destructive'}>
                     {stat.change}
                   </span>
-                  <span>{stat.description}</span>
+                  <span className="truncate">{stat.description}</span>
                 </div>
               </CardContent>
             </Card>
@@ -95,14 +95,14 @@ export function AdminDashboardOverview() {
 
       {/* Revenue Chart */}
       <Card>
-        <CardHeader>
-          <CardTitle>Évolution des revenus (30 derniers jours)</CardTitle>
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="text-sm md:text-base">Évolution des revenus (30 derniers jours)</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 md:p-6 pt-0">
           {revenueLoading ? (
-            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-48 md:h-64 w-full" />
           ) : (
-            <ResponsiveContainer width="100%" height={250}>
+            <ResponsiveContainer width="100%" height={200} className="md:!h-[250px]">
               <LineChart data={revenueData.revenue_by_day || []}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis
@@ -129,19 +129,19 @@ export function AdminDashboardOverview() {
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-3">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Contributions à valider</CardTitle>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-xs md:text-sm">Contributions à valider</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 md:p-6 pt-0">
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs md:text-sm">
                 <span>En attente</span>
                 <span className="font-bold">{statistics.contributions_status?.pending || 0}</span>
               </div>
-              <Progress value={((statistics.contributions_status?.approved || 0) / (statistics.total_contributions || 1)) * 100} />
-              <p className="text-xs text-muted-foreground">
+              <Progress value={((statistics.contributions_status?.approved || 0) / (statistics.total_contributions || 1)) * 100} className="h-1.5 md:h-2" />
+              <p className="text-[10px] md:text-xs text-muted-foreground">
                 {statistics.contributions_status?.approved || 0} approuvées sur {statistics.total_contributions || 0}
               </p>
             </div>
@@ -149,24 +149,24 @@ export function AdminDashboardOverview() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Codes CCC générés</CardTitle>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-xs md:text-sm">Codes CCC générés</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{statistics.total_ccc_codes || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+          <CardContent className="p-4 md:p-6 pt-0">
+            <div className="text-2xl md:text-3xl font-bold">{statistics.total_ccc_codes || 0}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
               Codes contributeurs actifs
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle className="text-sm">Revendeurs actifs</CardTitle>
+          <CardHeader className="p-4 md:p-6">
+            <CardTitle className="text-xs md:text-sm">Revendeurs actifs</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{statistics.total_resellers || 0}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+          <CardContent className="p-4 md:p-6 pt-0">
+            <div className="text-2xl md:text-3xl font-bold">{statistics.total_resellers || 0}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
               Partenaires commerciaux
             </p>
           </CardContent>
