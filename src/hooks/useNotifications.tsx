@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -25,14 +25,7 @@ export const useNotifications = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      subscribeToNotifications();
-    }
-  }, [user]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -58,9 +51,9 @@ export const useNotifications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const subscribeToNotifications = () => {
+  const subscribeToNotifications = useCallback(() => {
     if (!user) return;
 
     const channel = supabase
@@ -91,7 +84,15 @@ export const useNotifications = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  };
+  }, [user, toast]);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+      const cleanup = subscribeToNotifications();
+      return cleanup;
+    }
+  }, [user, fetchNotifications, subscribeToNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     if (!user) return;
