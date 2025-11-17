@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { 
@@ -12,6 +12,15 @@ import {
   TrendingUp, TrendingDown, DollarSign, Download, Users, 
   FileText, Calendar, MapPin, Activity
 } from 'lucide-react';
+import { useAdvancedAnalytics } from '@/hooks/useAdvancedAnalytics';
+import { PaymentAnalytics } from './PaymentAnalytics';
+import { CadastralAnalytics } from './CadastralAnalytics';
+import { BusinessKPIs } from './BusinessKPIs';
+import { TerritorialPerformance } from './TerritorialPerformance';
+import { ComparativeAnalytics } from './ComparativeAnalytics';
+import { CohortAnalysis } from './CohortAnalysis';
+import { ConversionFunnel } from './ConversionFunnel';
+import { PredictiveAnalytics } from './PredictiveAnalytics';
 
 interface AnalyticsData {
   totalRevenue: number;
@@ -31,6 +40,12 @@ const AnalyticsDashboard = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
+  
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - parseInt(timeRange));
+  
+  const advancedAnalytics = useAdvancedAnalytics(startDate, endDate);
 
   useEffect(() => {
     fetchAnalytics();
@@ -223,6 +238,20 @@ const AnalyticsDashboard = () => {
 
   return (
     <div className="space-y-6">
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 lg:grid-cols-9 gap-1">
+          <TabsTrigger value="overview" className="text-xs">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="payments" className="text-xs">Paiements</TabsTrigger>
+          <TabsTrigger value="cadastral" className="text-xs">Cadastral</TabsTrigger>
+          <TabsTrigger value="business" className="text-xs">KPIs Business</TabsTrigger>
+          <TabsTrigger value="territorial" className="text-xs">Territorial</TabsTrigger>
+          <TabsTrigger value="comparative" className="text-xs">Comparatif</TabsTrigger>
+          <TabsTrigger value="cohorts" className="text-xs">Cohortes</TabsTrigger>
+          <TabsTrigger value="funnel" className="text-xs">Funnel</TabsTrigger>
+          <TabsTrigger value="predictive" className="text-xs">Prédictif</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6 mt-6">
       {/* Header avec sélecteur de période */}
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Dashboard Analytics</h2>
@@ -412,6 +441,40 @@ const AnalyticsDashboard = () => {
           </CardContent>
         </Card>
       </div>
+        </TabsContent>
+
+        <TabsContent value="payments" className="mt-6">
+          <PaymentAnalytics data={advancedAnalytics.paymentAnalytics} loading={advancedAnalytics.loading} />
+        </TabsContent>
+
+        <TabsContent value="cadastral" className="mt-6">
+          <CadastralAnalytics data={advancedAnalytics.cadastralAnalytics} loading={advancedAnalytics.loading} />
+        </TabsContent>
+
+        <TabsContent value="business" className="mt-6">
+          <BusinessKPIs data={advancedAnalytics.businessKPIs} loading={advancedAnalytics.loading} />
+        </TabsContent>
+
+        <TabsContent value="territorial" className="mt-6">
+          <TerritorialPerformance data={advancedAnalytics.territorialPerformance} loading={advancedAnalytics.loading} />
+        </TabsContent>
+
+        <TabsContent value="comparative" className="mt-6">
+          <ComparativeAnalytics data={advancedAnalytics.comparativeData} loading={advancedAnalytics.loading} />
+        </TabsContent>
+
+        <TabsContent value="cohorts" className="mt-6">
+          <CohortAnalysis data={advancedAnalytics.cohortData} loading={advancedAnalytics.loading} />
+        </TabsContent>
+
+        <TabsContent value="funnel" className="mt-6">
+          <ConversionFunnel data={advancedAnalytics.funnelData} loading={advancedAnalytics.loading} />
+        </TabsContent>
+
+        <TabsContent value="predictive" className="mt-6">
+          <PredictiveAnalytics data={advancedAnalytics.predictiveData} loading={advancedAnalytics.loading} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
