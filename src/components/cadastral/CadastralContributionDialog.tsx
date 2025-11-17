@@ -36,6 +36,7 @@ import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { QuickAuthDialog } from './QuickAuthDialog';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { CartItem } from '@/hooks/useCart';
+import { ParcelMapPreview } from './ParcelMapPreview';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -4591,6 +4592,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   ))}
                 </div>
                   
+                {/* Aperçu de la parcelle sur la carte */}
+                {gpsCoordinates.length > 0 && (
+                  <div className="pt-4 animate-fade-in">
+                    <ParcelMapPreview 
+                      coordinates={gpsCoordinates}
+                      onCoordinatesUpdate={(updatedCoords) => {
+                        setGpsCoordinates(updatedCoords);
+                      }}
+                    />
+                  </div>
+                )}
+
                 {/* Bouton Ajouter */}
                 <div className="space-y-2">
                   {showGPSWarning && (
