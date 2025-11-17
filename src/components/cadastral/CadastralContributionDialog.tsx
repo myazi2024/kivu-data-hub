@@ -4473,21 +4473,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 <div className="grid grid-cols-2 md:grid-cols-1 gap-1.5 md:gap-3">
                   {gpsCoordinates.map((coord, index) => (
                     <div key={index} className="border rounded-md md:rounded-lg p-1.5 md:p-3 space-y-1.5 md:space-y-3 bg-gradient-to-br from-muted/20 to-transparent animate-fade-in">
-                      {/* Header compact avec nom et suppression */}
-                      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-1.5">
+                      {/* Header compact */}
+                      <div className="flex items-center justify-between gap-1.5">
                         <span className="text-[10px] md:text-xs font-medium text-muted-foreground">Borne {index + 1}</span>
-                        <Input
-                          placeholder="Nom"
-                          value={coord.borne}
-                          onChange={(e) => updateGPSCoordinate(index, 'borne', e.target.value)}
-                          className="w-full h-7 md:h-9 text-[10px] md:text-sm px-1.5 md:px-2"
-                        />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeGPSCoordinate(index)}
-                          className="text-destructive hover:bg-destructive/10 h-7 w-full md:w-9 p-0 flex-shrink-0"
+                          className="text-destructive hover:bg-destructive/10 h-6 w-6 md:h-8 md:w-8 p-0 flex-shrink-0"
                         >
                           <Trash2 className="h-3 md:h-4 w-3 md:w-4" />
                         </Button>
