@@ -22,11 +22,27 @@ interface MapConfig {
   showMarkers?: boolean;
   autoCalculateSurface?: boolean;
   minMarkers?: number;
+  maxMarkers?: number;
   markerColor?: string;
   showSideDimensions?: boolean;
   dimensionUnit?: string;
+  dimensionTextColor?: string;
+  dimensionFontSize?: number;
+  dimensionFormat?: string;
   allowDimensionEditing?: boolean;
   showSideLabels?: boolean;
+  lineColor?: string;
+  lineWidth?: number;
+  lineStyle?: 'solid' | 'dashed';
+  fillColor?: string;
+  fillOpacity?: number;
+  minSurfaceSqm?: number;
+  maxSurfaceSqm?: number;
+  enableEditing?: boolean;
+  enableDragging?: boolean;
+  enableConflictDetection?: boolean;
+  enableRoadBorderingFeature?: boolean;
+  roadTypes?: Array<{ value: string; label: string }>;
 }
 
 interface ConflictingParcel {
@@ -77,11 +93,26 @@ export const ParcelMapPreview = ({
     showMarkers: true,
     autoCalculateSurface: true,
     minMarkers: 3,
+    maxMarkers: 50,
     markerColor: 'hsl(var(--primary))',
     showSideDimensions: true,
     dimensionUnit: 'meters',
+    dimensionTextColor: '#000000',
+    dimensionFontSize: 11,
+    dimensionFormat: '{value}m',
     allowDimensionEditing: true,
-    showSideLabels: true
+    showSideLabels: true,
+    lineColor: '#3b82f6',
+    lineWidth: 3,
+    lineStyle: 'solid',
+    fillColor: '#3b82f6',
+    fillOpacity: 0.2,
+    minSurfaceSqm: 0,
+    maxSurfaceSqm: 100000,
+    enableEditing: true,
+    enableDragging: true,
+    enableConflictDetection: true,
+    enableRoadBorderingFeature: true,
   };
   
   const mapConfig = { ...defaultConfig, ...config };
@@ -253,7 +284,7 @@ export const ParcelMapPreview = ({
 
         if (mapConfig.showMarkers) {
           const marker = L.marker([lat, lng], {
-            draggable: true,
+            draggable: mapConfig.enableDragging !== false,
             icon: L.divIcon({
               className: 'custom-marker',
             html: `<div style="
@@ -320,30 +351,32 @@ export const ParcelMapPreview = ({
             }
           ).addTo(map);
           
-          // Ajouter le click handler
-          segment.on('click', () => {
-            if (onRoadSidesChange) {
-              const updatedSides = [...roadSides];
-              const sideIndex = updatedSides.findIndex(s => s.sideIndex === index);
-              
-              if (sideIndex !== -1) {
-                updatedSides[sideIndex] = {
-                  ...updatedSides[sideIndex],
-                  bordersRoad: !updatedSides[sideIndex].bordersRoad,
-                };
+          // Ajouter le click handler seulement si la fonctionnalité est activée
+          if (mapConfig.enableRoadBorderingFeature !== false) {
+            segment.on('click', () => {
+              if (onRoadSidesChange) {
+                const updatedSides = [...roadSides];
+                const sideIndex = updatedSides.findIndex(s => s.sideIndex === index);
+                
+                if (sideIndex !== -1) {
+                  updatedSides[sideIndex] = {
+                    ...updatedSides[sideIndex],
+                    bordersRoad: !updatedSides[sideIndex].bordersRoad,
+                  };
+                }
+                
+                onRoadSidesChange(updatedSides);
               }
-              
-              onRoadSidesChange(updatedSides);
-            }
-          });
-          
-          segment.on('mouseover', () => {
-            segment.setStyle({ weight: isRoadBordering ? 7 : 5, opacity: 1 });
-          });
-          
-          segment.on('mouseout', () => {
-            segment.setStyle({ weight: isRoadBordering ? 5 : 3, opacity: 0.9 });
-          });
+            });
+            
+            segment.on('mouseover', () => {
+              segment.setStyle({ weight: isRoadBordering ? 7 : 5, opacity: 1 });
+            });
+            
+            segment.on('mouseout', () => {
+              segment.setStyle({ weight: isRoadBordering ? 5 : 3, opacity: 0.9 });
+            });
+          }
           
           segmentLayersRef.current.push(segment);
         });
@@ -375,7 +408,7 @@ export const ParcelMapPreview = ({
         map.fitBounds(polygon.getBounds(), { padding: [50, 50] });
 
         // Détecter les conflits avec d'autres parcelles si activé
-        if (enableConflictDetection && currentParcelNumber) {
+        if (mapConfig.enableConflictDetection !== false && currentParcelNumber) {
           detectBoundaryConflicts(latLngs);
         }
       } else if (latLngs.length > 0) {
@@ -646,6 +679,39 @@ export const ParcelMapPreview = ({
         </Alert>
       )}
 
+      {/* Validation du nombre maximum de marqueurs */}
+      {mapConfig.maxMarkers && validCoords.length > mapConfig.maxMarkers && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            Vous avez dépassé le nombre maximum de bornes ({mapConfig.maxMarkers}). 
+            Veuillez supprimer {validCoords.length - mapConfig.maxMarkers} borne(s).
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Validation de la surface */}
+      {surfaceArea > 0 && (
+        <>
+          {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                La surface calculée ({surfaceArea.toLocaleString()} m²) est inférieure à la surface minimale requise ({mapConfig.minSurfaceSqm.toLocaleString()} m²).
+              </AlertDescription>
+            </Alert>
+          )}
+          {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                La surface calculée ({surfaceArea.toLocaleString()} m²) dépasse la surface maximale autorisée ({mapConfig.maxSurfaceSqm.toLocaleString()} m²).
+              </AlertDescription>
+            </Alert>
+          )}
+        </>
+      )}
+
       {loadingConflicts && (
         <Alert>
           <Info className="h-4 w-4" />
@@ -668,13 +734,17 @@ export const ParcelMapPreview = ({
       
       <div className="text-xs text-muted-foreground flex items-center gap-1">
         <Info className="h-3 w-3" />
-        <span>Glissez les marqueurs pour ajuster les positions GPS. Cliquez sur un segment pour indiquer qu'il borde une route.</span>
+        <span>
+          Glissez les marqueurs pour ajuster les positions GPS.
+          {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer qu\'il borde une route.'}
+        </span>
       </div>
 
-      {validCoords.length >= 3 && onRoadSidesChange && (
+      {validCoords.length >= 3 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
         <RoadBorderingSidesPanel
           sides={roadSides}
           onSideUpdate={handleRoadSideUpdate}
+          roadTypes={mapConfig.roadTypes}
         />
       )}
 
