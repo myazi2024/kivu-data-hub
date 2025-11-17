@@ -319,9 +319,10 @@ export function AdminDashboardOverview() {
       {/* Additional Charts */}
       <AdditionalCharts
         loading={pmLoading || servicesLoading || ugLoading}
-        paymentMethodsData={paymentMethodsData.payment_methods}
-        servicesData={servicesData.services_usage}
-        userGrowthData={userGrowthData.user_growth}
+        paymentMethodsData={paymentMethodsData?.payment_methods || []}
+        servicesData={servicesData?.services_usage || []}
+        userGrowthData={userGrowthData?.user_growth || []}
+        contributionApprovalData={[]}
       />
 
       {/* Top Performers and Quick Stats */}

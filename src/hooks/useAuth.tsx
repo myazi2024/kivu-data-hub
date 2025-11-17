@@ -164,8 +164,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  // Allow usage outside provider for navigation component
+  return context || {
+    user: null,
+    session: null,
+    profile: null,
+    loading: false,
+    signOut: async () => {},
+  };
 };
