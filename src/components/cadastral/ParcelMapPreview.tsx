@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { AlertCircle, MapPin } from 'lucide-react';
@@ -22,14 +22,17 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
 
-  // Filtrer les coordonnées valides
-  const validCoords = coordinates.filter(
-    coord => coord.lat && coord.lng && !isNaN(parseFloat(coord.lat)) && !isNaN(parseFloat(coord.lng))
+  // Mémoriser les coordonnées valides pour éviter les re-renders inutiles
+  const validCoords = useMemo(() => 
+    coordinates.filter(
+      coord => coord.lat && coord.lng && !isNaN(parseFloat(coord.lat)) && !isNaN(parseFloat(coord.lng))
+    ),
+    [coordinates]
   );
 
-  // Initialiser la carte
+  // Initialiser la carte une seule fois
   useEffect(() => {
-    if (!mapRef.current || validCoords.length === 0) return;
+    if (!mapRef.current || mapInstanceRef.current) return;
 
     const initMap = async () => {
       const L = await import('leaflet');
@@ -43,19 +46,21 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
         shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
       });
 
-      if (!mapInstanceRef.current) {
-        const map = L.map(mapRef.current, {
-          zoomControl: true,
-          attributionControl: false,
-        });
+      const map = L.map(mapRef.current, {
+        zoomControl: true,
+        attributionControl: false,
+        center: [0, 0],
+        zoom: 2,
+      });
 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          maxZoom: 19,
-        }).addTo(map);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+      }).addTo(map);
 
-        mapInstanceRef.current = map;
-        setIsMapReady(true);
-      }
+      mapInstanceRef.current = map;
+      setIsMapReady(true);
+      
+      console.log('Carte Leaflet initialisée');
     };
 
     initMap();
@@ -69,13 +74,15 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
     };
   }, []);
 
-  // Mettre à jour les marqueurs et le polygone
+  // Mettre à jour les marqueurs et le polygone quand les coordonnées changent
   useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current || validCoords.length === 0) return;
+    if (!isMapReady || !mapInstanceRef.current) return;
 
     const updateMap = async () => {
       const L = await import('leaflet');
       const map = mapInstanceRef.current;
+      
+      console.log('Mise à jour de la carte avec', validCoords.length, 'coordonnées valides');
 
       // Supprimer les anciens marqueurs et polygone
       markersRef.current.forEach(marker => marker.remove());
@@ -83,6 +90,13 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
       if (polygonRef.current) {
         polygonRef.current.remove();
         polygonRef.current = null;
+      }
+
+      // Si pas de coordonnées valides, centrer par défaut
+      if (validCoords.length === 0) {
+        map.setView([0, 0], 2);
+        setSurfaceArea(0);
+        return;
       }
 
       // Créer des marqueurs draggables
@@ -119,13 +133,17 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
 
         marker.on('dragend', () => {
           const newPos = marker.getLatLng();
-          const updatedCoords = [...coordinates];
-          updatedCoords[index] = {
-            ...updatedCoords[index],
-            lat: newPos.lat.toFixed(6),
-            lng: newPos.lng.toFixed(6),
-          };
-          onCoordinatesUpdate(updatedCoords);
+          // Trouver l'index original dans le tableau complet
+          const originalIndex = coordinates.findIndex(c => c.borne === coord.borne);
+          if (originalIndex !== -1) {
+            const updatedCoords = [...coordinates];
+            updatedCoords[originalIndex] = {
+              ...updatedCoords[originalIndex],
+              lat: newPos.lat.toFixed(6),
+              lng: newPos.lng.toFixed(6),
+            };
+            onCoordinatesUpdate(updatedCoords);
+          }
         });
 
         markersRef.current.push(marker);
@@ -133,6 +151,7 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
 
       // Dessiner le polygone si au moins 3 points
       if (latLngs.length >= 3) {
+        console.log('Dessin du polygone avec', latLngs.length, 'points');
         const polygon = L.polygon(latLngs, {
           color: 'hsl(var(--primary))',
           fillColor: 'hsl(var(--primary))',
@@ -145,17 +164,19 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
         // Calculer la surface en m²
         const area = calculatePolygonArea(latLngs);
         setSurfaceArea(area);
+        console.log('Surface calculée:', area, 'm²');
 
         // Ajuster la vue pour inclure tous les points
         map.fitBounds(polygon.getBounds(), { padding: [50, 50] });
       } else if (latLngs.length > 0) {
         // Centrer sur le premier point
         map.setView(latLngs[0], 15);
+        setSurfaceArea(0);
       }
     };
 
     updateMap();
-  }, [isMapReady, validCoords, coordinates, onCoordinatesUpdate]);
+  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate]);
 
   // Calculer la surface d'un polygone en m² (formule de Shoelace + rayon terrestre)
   const calculatePolygonArea = (coords: [number, number][]): number => {
