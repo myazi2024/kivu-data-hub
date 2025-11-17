@@ -312,6 +312,8 @@ export const ParcelMapPreview = ({
               justify-content: center;
               border: 2px solid white;
               box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              position: relative;
+              z-index: 1000;
             ">
               <span style="transform: rotate(45deg); font-weight: bold; font-size: 12px;">${index + 1}</span>
             </div>`,
