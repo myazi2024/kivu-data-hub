@@ -4470,86 +4470,79 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   return null;
                 })()}
 
-                <div className="space-y-2 md:space-y-3">
+                <div className="space-y-1.5 md:space-y-3">
                   {gpsCoordinates.map((coord, index) => (
-                    <div key={index} className="border rounded-lg p-2 md:p-3 space-y-2 md:space-y-3 bg-gradient-to-br from-muted/20 to-transparent animate-fade-in">
-                      <div className="flex items-center gap-2">
+                    <div key={index} className="border rounded-md md:rounded-lg p-1.5 md:p-3 space-y-1.5 md:space-y-3 bg-gradient-to-br from-muted/20 to-transparent animate-fade-in">
+                      {/* Header compact avec nom et suppression */}
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] md:text-xs font-medium text-muted-foreground min-w-fit">Borne {index + 1}</span>
                         <Input
-                          placeholder="Nom de la borne"
+                          placeholder="Nom"
                           value={coord.borne}
                           onChange={(e) => updateGPSCoordinate(index, 'borne', e.target.value)}
-                          className="flex-1 h-9 text-sm"
+                          className="flex-1 h-7 md:h-9 text-[11px] md:text-sm px-2"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeGPSCoordinate(index)}
-                          className="text-destructive hover:bg-destructive/10 h-9 w-9 p-0 flex-shrink-0"
+                          className="text-destructive hover:bg-destructive/10 h-7 w-7 md:h-9 md:w-9 p-0 flex-shrink-0"
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className="h-3 md:h-4 w-3 md:w-4" />
                         </Button>
                       </div>
 
-                      {/* Boutons de bascule Automatique / Manuel */}
-                      <div className="flex gap-1.5 md:gap-2">
+                      {/* Boutons mode compact */}
+                      <div className="flex gap-1">
                         <Button
                           type="button"
                           variant={coord.mode === 'auto' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => updateGPSCoordinate(index, 'mode', 'auto')}
-                          className="flex-1 h-8 md:h-9 gap-1 animate-fade-in transition-all text-xs md:text-sm px-2"
+                          className="flex-1 h-7 md:h-9 gap-0.5 md:gap-1 px-1.5 md:px-3 text-[10px] md:text-sm"
                         >
-                          <MdLocationOn className="h-3.5 w-3.5 flex-shrink-0" />
-                          <span className="hidden sm:inline">Auto</span>
-                          <span className="sm:hidden">A</span>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <span className="ml-0.5" onClick={(e) => e.stopPropagation()}>
-                                <Info className="h-3 w-3 text-muted-foreground inline flex-shrink-0" />
-                              </span>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-64" onClick={(e) => e.stopPropagation()}>
-                              <p className="text-xs text-muted-foreground">
-                                Placez-vous physiquement au-dessus de la borne et cliquez sur "Détecter" pour capturer automatiquement les coordonnées GPS.
-                              </p>
-                            </PopoverContent>
-                          </Popover>
+                          <MdLocationOn className="h-3 w-3 md:h-3.5 md:w-3.5" />
+                          <span className="hidden xs:inline">Auto</span>
                         </Button>
-                        
                         <Button
                           type="button"
                           variant={coord.mode === 'manual' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => updateGPSCoordinate(index, 'mode', 'manual')}
-                          className="flex-1 h-8 md:h-9 gap-1 animate-fade-in transition-all text-xs md:text-sm px-2"
+                          className="flex-1 h-7 md:h-9 px-1.5 md:px-3 text-[10px] md:text-sm"
                         >
-                          <span className="hidden sm:inline">Manuel</span>
-                          <span className="sm:hidden">M</span>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <span className="ml-0.5" onClick={(e) => e.stopPropagation()}>
-                                <Info className="h-3 w-3 text-muted-foreground inline flex-shrink-0" />
-                              </span>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-64" onClick={(e) => e.stopPropagation()}>
-                              <p className="text-xs text-muted-foreground">
-                                Saisissez manuellement les coordonnées GPS si vous les avez déjà ou si vous ne pouvez pas vous déplacer sur le terrain.
-                              </p>
-                            </PopoverContent>
-                          </Popover>
+                          <span className="hidden xs:inline">Manuel</span>
+                          <span className="xs:hidden">M</span>
                         </Button>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 md:h-9 md:w-9 p-0 flex-shrink-0"
+                            >
+                              <Info className="h-3 md:h-3.5 w-3 md:w-3.5 text-muted-foreground" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 text-xs">
+                            {coord.mode === 'auto' ? (
+                              <p>Placez-vous au-dessus de la borne et cliquez "Détecter" pour capturer automatiquement les coordonnées GPS.</p>
+                            ) : (
+                              <p>Saisissez manuellement les coordonnées GPS si vous les avez déjà.</p>
+                            )}
+                          </PopoverContent>
+                        </Popover>
                       </div>
 
                       {/* Mode Automatique */}
                       {coord.mode === 'auto' && (
-                        <div className="space-y-1.5 md:space-y-2 animate-fade-in">
+                        <div className="space-y-1 md:space-y-2 animate-fade-in">
                           {!coord.detected && (
-                            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-2 md:p-3 animate-fade-in">
-                              <p className="text-xs text-blue-700 dark:text-blue-300">
-                                📍 Placez-vous au-dessus de la borne {coord.borne || `n°${index + 1}`} puis cliquez ci-dessous.
-                              </p>
-                            </div>
+                            <p className="text-[10px] md:text-xs text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/50 px-2 py-1 md:p-2 rounded">
+                              📍 Placez-vous au-dessus puis détectez
+                            </p>
                           )}
                           
                           <Button
@@ -4562,7 +4555,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               }
                             }}
                             disabled={coord.detecting}
-                            className="w-full gap-1.5 md:gap-2 h-9 text-xs md:text-sm transition-all animate-fade-in"
+                            className="w-full gap-1 md:gap-2 h-8 md:h-9 text-[11px] md:text-sm"
                           >
                             {coord.detecting ? (
                               <>
@@ -4591,12 +4584,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           )}
 
                           {coord.lat && coord.lng && (
-                            <div className="space-y-1.5">
-                              <div className="text-xs text-muted-foreground bg-muted/30 p-1.5 md:p-2 rounded">
-                                <div className="flex justify-between gap-2 flex-wrap">
-                                  <span className="truncate">Lat: {coord.lat}</span>
-                                  <span className="truncate">Lng: {coord.lng}</span>
-                                </div>
+                            <div className="space-y-1">
+                              <div className="text-[10px] md:text-xs text-muted-foreground bg-muted/30 p-1 md:p-1.5 rounded flex justify-between gap-1">
+                                <span className="truncate">Lat: {parseFloat(coord.lat).toFixed(6)}</span>
+                                <span className="truncate">Lng: {parseFloat(coord.lng).toFixed(6)}</span>
                               </div>
                               
                               {coord.detected && (
@@ -4605,11 +4596,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                   variant="outline"
                                   size="sm"
                                   onClick={() => resetGPSCoordinate(index)}
-                                  className="w-full gap-1.5 text-xs h-8 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950 hover:scale-105 transition-all animate-fade-in"
+                                  className="w-full gap-1 text-[10px] md:text-xs h-7 md:h-8 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400"
                                 >
                                   <RotateCcw className="h-3 w-3" />
-                                  <span className="hidden sm:inline">Réinitialiser cette borne</span>
-                                  <span className="sm:hidden">Réinitialiser</span>
+                                  Réinitialiser
                                 </Button>
                               )}
                             </div>
@@ -4619,29 +4609,27 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                       {/* Mode Manuel */}
                       {coord.mode === 'manual' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 animate-fade-in">
-                          <div className="space-y-1">
-                            <Label className="text-xs">Latitude</Label>
-                            <InputWithPopover
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2 animate-fade-in">
+                          <div className="space-y-0.5">
+                            <Label className="text-[10px] md:text-xs">Latitude</Label>
+                            <Input
                               type="number"
                               step="0.000001"
-                              placeholder="ex: -1.674"
+                              placeholder="-1.674"
                               value={coord.lat}
                               onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
-                              helpTitle="Latitude"
-                              helpText="Position nord-sud. Au Congo: entre -13° et 5°. Utilisez au moins 6 décimales."
+                              className="h-7 md:h-9 text-[11px] md:text-sm"
                             />
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-xs">Longitude</Label>
-                            <InputWithPopover
+                          <div className="space-y-0.5">
+                            <Label className="text-[10px] md:text-xs">Longitude</Label>
+                            <Input
                               type="number"
                               step="0.000001"
-                              placeholder="ex: 29.224"
+                              placeholder="29.224"
                               value={coord.lng}
                               onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
-                              helpTitle="Longitude"
-                              helpText="Position est-ouest. Au Congo: entre 12° et 31°. Utilisez au moins 6 décimales."
+                              className="h-7 md:h-9 text-[11px] md:text-sm"
                             />
                           </div>
                         </div>
