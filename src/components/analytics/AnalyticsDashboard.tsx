@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,24 +41,26 @@ const AnalyticsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState('30');
   
-  const endDate = new Date();
-  const startDate = new Date();
-  startDate.setDate(endDate.getDate() - parseInt(timeRange));
+  // Utiliser useMemo pour éviter la recréation des dates à chaque render
+  const dateRange = useMemo(() => {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(endDate.getDate() - parseInt(timeRange));
+    return { startDate, endDate };
+  }, [timeRange]);
   
-  const advancedAnalytics = useAdvancedAnalytics(startDate, endDate);
+  const advancedAnalytics = useAdvancedAnalytics(dateRange.startDate, dateRange.endDate);
 
   useEffect(() => {
     fetchAnalytics();
-  }, [timeRange]);
+  }, [timeRange, dateRange]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
       
-      // Calcul des dates selon la période sélectionnée
-      const endDate = new Date();
-      const startDate = new Date();
-      startDate.setDate(endDate.getDate() - parseInt(timeRange));
+      // Utiliser les dates du memo
+      const { startDate, endDate } = dateRange;
 
       // Requêtes parallèles pour optimiser les performances
       const [
