@@ -98,7 +98,7 @@ export const NotificationBell: React.FC = () => {
                           {notification.message}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {new Date(notification.created_at).toLocaleDateString('fr-FR', {
+                          {new Date(notification.created_at || new Date()).toLocaleDateString('fr-FR', {
                             day: 'numeric',
                             month: 'short',
                             hour: '2-digit',

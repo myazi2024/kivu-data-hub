@@ -46,6 +46,7 @@ export const UserQuickStats = () => {
         });
       } catch (error) {
         console.error("Error fetching stats:", error);
+        // Garder les stats à 0 en cas d'erreur
       }
     };
 
