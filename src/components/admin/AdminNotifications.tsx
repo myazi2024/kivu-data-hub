@@ -71,20 +71,33 @@ export const AdminNotifications: React.FC = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch notifications
+      const { data: notifData, error: notifError } = await supabase
         .from('notifications')
-        .select(`
-          *,
-          profiles!notifications_user_id_fkey (
-            email,
-            full_name
-          )
-        `)
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(100);
 
-      if (error) throw error;
-      setNotifications(data as any || []);
+      if (notifError) throw notifError;
+
+      // Fetch profiles separately to get user details
+      const userIds = [...new Set(notifData?.map(n => n.user_id) || [])];
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('user_id, email, full_name')
+        .in('user_id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Combine data
+      const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
+      const enrichedNotifications = notifData?.map(notif => ({
+        ...notif,
+        profiles: profilesMap.get(notif.user_id)
+      })) || [];
+
+      setNotifications(enrichedNotifications as any);
     } catch (error: any) {
       console.error('Erreur lors de la récupération des notifications:', error);
       toast({
@@ -228,10 +241,10 @@ export const AdminNotifications: React.FC = () => {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'success': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'warning': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300';
-      case 'error': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-      default: return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
+      case 'success': return 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20';
+      case 'warning': return 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20';
+      case 'error': return 'bg-destructive/10 text-destructive dark:text-red-400 border-destructive/20';
+      default: return 'bg-primary/10 text-primary dark:text-blue-400 border-primary/20';
     }
   };
 
