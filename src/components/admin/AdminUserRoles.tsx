@@ -55,16 +55,48 @@ const roleConfig = {
 };
 
 export const AdminUserRoles: React.FC = () => {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const { toast } = useToast();
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<AppRole>('user');
+  const [hasAdminAccess, setHasAdminAccess] = useState<boolean | null>(null);
 
   useEffect(() => {
-    fetchUserRoles();
-  }, []);
+    const verifyAccess = async () => {
+      if (!user) {
+        setHasAdminAccess(false);
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .in('role', ['admin', 'super_admin']);
+
+        if (error) throw error;
+
+        const hasAccess = data && data.length > 0;
+        setHasAdminAccess(hasAccess);
+
+        if (hasAccess) {
+          fetchUserRoles();
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error verifying access:', error);
+        setHasAdminAccess(false);
+        setLoading(false);
+      }
+    };
+
+    verifyAccess();
+  }, [user]);
 
   const fetchUserRoles = async () => {
     try {
@@ -174,14 +206,13 @@ export const AdminUserRoles: React.FC = () => {
     return <div className="text-center py-8">Chargement...</div>;
   }
 
-  // Only super_admin can manage roles
-  if (profile?.role !== 'admin') {
+  if (!hasAdminAccess) {
     return (
       <Card>
         <CardContent className="p-8 text-center">
           <Shield className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
           <p className="text-muted-foreground">
-            Seuls les super administrateurs peuvent gérer les rôles
+            Seuls les administrateurs peuvent gérer les rôles
           </p>
         </CardContent>
       </Card>
