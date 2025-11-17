@@ -232,10 +232,11 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
         )}
       </div>
       
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden relative z-10">
         <div 
           ref={mapRef} 
-          className="w-full h-[300px] md:h-[400px] bg-muted/20"
+          className="w-full h-[300px] md:h-[400px] bg-muted/20 relative z-10"
+          style={{ minHeight: '300px' }}
         />
       </Card>
 
