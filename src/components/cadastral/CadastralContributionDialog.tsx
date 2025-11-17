@@ -129,6 +129,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
   const [hasShownConfetti, setHasShownConfetti] = useState(false);
   
+  // État pour gérer les côtés bordant une route
+  const [roadSides, setRoadSides] = useState<any[]>([]);
+  
   // État pour gérer plusieurs anciens propriétaires
   const [previousOwners, setPreviousOwners] = useState<Array<{
     name: string;
@@ -4611,6 +4614,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       config={getConfig('map_preview_settings') || {}}
                       currentParcelNumber={parcelNumber}
                       enableConflictDetection={true}
+                      roadSides={roadSides}
+                      onRoadSidesChange={setRoadSides}
                     />
                   </div>
                 )}
