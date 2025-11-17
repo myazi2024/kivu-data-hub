@@ -48,19 +48,26 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
 
       const map = L.map(mapRef.current, {
         zoomControl: true,
-        attributionControl: false,
+        attributionControl: true,
         center: [0, 0],
         zoom: 2,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
         maxZoom: 19,
       }).addTo(map);
 
       mapInstanceRef.current = map;
-      setIsMapReady(true);
       
-      console.log('Carte Leaflet initialisée');
+      // S'assurer que la carte se redessine correctement
+      map.whenReady(() => {
+        setTimeout(() => {
+          map.invalidateSize();
+          setIsMapReady(true);
+          console.log('Carte Leaflet initialisée et prête');
+        }, 100);
+      });
     };
 
     initMap();
