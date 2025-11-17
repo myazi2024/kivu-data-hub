@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
 import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, Camera } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
@@ -4487,26 +4488,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </Button>
                       </div>
 
-                      {/* Boutons mode compact */}
-                      <div className="flex gap-1">
-                        <Button
-                          type="button"
-                          variant={coord.mode === 'auto' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => updateGPSCoordinate(index, 'mode', 'auto')}
-                          className="flex-1 h-7 md:h-9 text-[10px] md:text-xs px-1.5 md:px-3"
-                        >
-                          Automatique
-                        </Button>
-                        <Button
-                          type="button"
-                          variant={coord.mode === 'manual' ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => updateGPSCoordinate(index, 'mode', 'manual')}
-                          className="flex-1 h-7 md:h-9 text-[10px] md:text-xs px-1.5 md:px-3"
-                        >
-                          Manuel
-                        </Button>
+                      {/* Switch mode moderne */}
+                      <div className="flex items-center justify-between gap-2 bg-muted/30 rounded-lg p-2">
+                        <span className="text-[10px] md:text-xs font-medium text-muted-foreground">
+                          {coord.mode === 'auto' ? 'Automatique' : 'Manuel'}
+                        </span>
+                        <Switch
+                          checked={coord.mode === 'auto'}
+                          onCheckedChange={(checked) => updateGPSCoordinate(index, 'mode', checked ? 'auto' : 'manual')}
+                          className="data-[state=checked]:bg-primary"
+                        />
                       </div>
 
                       {/* Mode automatique */}
