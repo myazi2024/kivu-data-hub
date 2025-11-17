@@ -38,7 +38,11 @@ const AdminContributionConfig = () => {
     showMarkers: true,
     autoCalculateSurface: true,
     minMarkers: 3,
-    markerColor: 'hsl(var(--primary))'
+    markerColor: 'hsl(var(--primary))',
+    showSideDimensions: true,
+    dimensionUnit: 'meters',
+    allowDimensionEditing: true,
+    showSideLabels: true
   });
 
   // Charger les données initiales
@@ -556,6 +560,60 @@ const AdminContributionConfig = () => {
                       setMapPreviewSettings({
                         ...mapPreviewSettings,
                         autoCalculateSurface: checked
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Afficher les dimensions des côtés</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Afficher les dimensions en mètres de chaque côté de la parcelle sur la carte
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.showSideDimensions}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        showSideDimensions: checked
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Permettre l'édition des dimensions</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permettre aux utilisateurs d'ajuster manuellement les dimensions depuis la carte
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.allowDimensionEditing}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        allowDimensionEditing: checked
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Afficher les étiquettes des côtés</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Afficher "Côté 1", "Côté 2", etc. sur chaque segment
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.showSideLabels}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        showSideLabels: checked
                       });
                     }}
                   />
