@@ -4609,6 +4609,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         setGpsCoordinates(updatedCoords);
                       }}
                       config={getConfig('map_preview_settings') || {}}
+                      currentParcelNumber={parcelNumber}
+                      enableConflictDetection={true}
                     />
                   </div>
                 )}

@@ -1,7 +1,12 @@
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { AlertCircle, MapPin } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircle, MapPin, AlertTriangle, Info } from 'lucide-react';
+import { BoundaryConflictDialog } from './BoundaryConflictDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Coordinate {
   borne: string;
@@ -23,20 +28,40 @@ interface MapConfig {
   showSideLabels?: boolean;
 }
 
+interface ConflictingParcel {
+  parcelNumber: string;
+  ownerName: string;
+  location: string;
+  coordinates: [number, number][];
+  overlapArea?: number;
+}
+
 interface ParcelMapPreviewProps {
   coordinates: Coordinate[];
   onCoordinatesUpdate: (coordinates: Coordinate[]) => void;
   config?: MapConfig;
+  currentParcelNumber?: string;
+  enableConflictDetection?: boolean;
 }
 
-export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate, config }: ParcelMapPreviewProps) => {
+export const ParcelMapPreview = ({ 
+  coordinates, 
+  onCoordinatesUpdate, 
+  config,
+  currentParcelNumber,
+  enableConflictDetection = true 
+}: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const polygonRef = useRef<any>(null);
   const dimensionLayersRef = useRef<any[]>([]);
+  const conflictLayersRef = useRef<any[]>([]);
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
+  const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
+  const [showConflictDialog, setShowConflictDialog] = useState(false);
+  const [loadingConflicts, setLoadingConflicts] = useState(false);
   
   // Configuration par défaut
   const defaultConfig: MapConfig = {
@@ -124,7 +149,7 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate, config }: P
       
       console.log('Mise à jour de la carte avec', validCoords.length, 'coordonnées valides');
 
-      // Supprimer les anciens marqueurs, polygone et dimensions
+      // Supprimer les anciens marqueurs, polygone, dimensions et conflits
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
       if (polygonRef.current) {
@@ -133,6 +158,8 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate, config }: P
       }
       dimensionLayersRef.current.forEach(layer => layer.remove());
       dimensionLayersRef.current = [];
+      conflictLayersRef.current.forEach(layer => layer.remove());
+      conflictLayersRef.current = [];
 
       // Si pas de coordonnées valides, centrer par défaut
       if (validCoords.length === 0) {
@@ -220,6 +247,11 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate, config }: P
 
         // Ajuster la vue pour inclure tous les points
         map.fitBounds(polygon.getBounds(), { padding: [50, 50] });
+
+        // Détecter les conflits avec d'autres parcelles si activé
+        if (enableConflictDetection && currentParcelNumber) {
+          detectBoundaryConflicts(latLngs);
+        }
       } else if (latLngs.length > 0) {
         // Centrer sur le premier point
         map.setView(latLngs[0], mapConfig.defaultZoom || 15);
@@ -229,6 +261,138 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate, config }: P
 
     updateMap();
   }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig]);
+
+  // Détection des conflits avec des parcelles voisines
+  const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
+    if (!currentParcelNumber || currentCoords.length < 3) return;
+
+    setLoadingConflicts(true);
+    try {
+      // Récupérer les parcelles voisines dans un rayon proche
+      const bounds = calculateBounds(currentCoords);
+      const { data: nearbyParcels, error } = await supabase
+        .from('cadastral_parcels')
+        .select('*')
+        .neq('parcel_number', currentParcelNumber)
+        .gte('latitude', bounds.minLat)
+        .lte('latitude', bounds.maxLat)
+        .gte('longitude', bounds.minLng)
+        .lte('longitude', bounds.maxLng)
+        .not('gps_coordinates', 'is', null);
+
+      if (error) throw error;
+
+      const conflicts: ConflictingParcel[] = [];
+      const L = await import('leaflet');
+      const map = mapInstanceRef.current;
+
+      nearbyParcels?.forEach((parcel: any) => {
+        try {
+          const parcelCoords = parcel.gps_coordinates as any[];
+          if (!parcelCoords || parcelCoords.length < 3) return;
+
+          const neighborLatLngs: [number, number][] = parcelCoords
+            .filter(c => c.lat && c.lng)
+            .map(c => [parseFloat(c.lat), parseFloat(c.lng)]);
+
+          if (neighborLatLngs.length < 3) return;
+
+          // Vérifier le chevauchement
+          const overlap = checkPolygonOverlap(currentCoords, neighborLatLngs);
+          if (overlap.hasOverlap) {
+            conflicts.push({
+              parcelNumber: parcel.parcel_number,
+              ownerName: parcel.current_owner_name || 'Propriétaire inconnu',
+              location: parcel.location || `${parcel.quartier}, ${parcel.ville}`,
+              coordinates: neighborLatLngs,
+              overlapArea: overlap.area
+            });
+
+            // Afficher la parcelle en conflit sur la carte
+            const conflictPolygon = L.polygon(neighborLatLngs, {
+              color: '#ef4444',
+              fillColor: '#ef4444',
+              fillOpacity: 0.3,
+              weight: 2,
+              dashArray: '5, 5'
+            }).addTo(map);
+
+            conflictPolygon.bindPopup(`
+              <div style="font-size: 12px;">
+                <strong style="color: #ef4444;">⚠️ Conflit détecté</strong><br/>
+                <strong>Parcelle:</strong> ${parcel.parcel_number}<br/>
+                <strong>Propriétaire:</strong> ${parcel.current_owner_name}<br/>
+                <strong>Chevauchement:</strong> ${overlap.area?.toFixed(2)} m²
+              </div>
+            `);
+
+            conflictLayersRef.current.push(conflictPolygon);
+          }
+        } catch (err) {
+          console.error('Error processing parcel:', err);
+        }
+      });
+
+      setConflictingParcels(conflicts);
+    } catch (error) {
+      console.error('Error detecting conflicts:', error);
+    } finally {
+      setLoadingConflicts(false);
+    }
+  };
+
+  // Calculer les limites géographiques d'un polygone
+  const calculateBounds = (coords: [number, number][]) => {
+    const lats = coords.map(c => c[0]);
+    const lngs = coords.map(c => c[1]);
+    return {
+      minLat: Math.min(...lats) - 0.01,
+      maxLat: Math.max(...lats) + 0.01,
+      minLng: Math.min(...lngs) + 0.01,
+      maxLng: Math.max(...lngs) + 0.01
+    };
+  };
+
+  // Vérifier si deux polygones se chevauchent
+  const checkPolygonOverlap = (
+    poly1: [number, number][], 
+    poly2: [number, number][]
+  ): { hasOverlap: boolean; area?: number } => {
+    // Vérifier si des points d'un polygone sont à l'intérieur de l'autre
+    const hasPointInside = poly1.some(point => isPointInPolygon(point, poly2)) ||
+                           poly2.some(point => isPointInPolygon(point, poly1));
+
+    if (!hasPointInside) {
+      return { hasOverlap: false };
+    }
+
+    // Estimer la zone de chevauchement (approximation simple)
+    const overlapPoints = poly1.filter(point => isPointInPolygon(point, poly2));
+    if (overlapPoints.length > 2) {
+      const area = calculatePolygonArea(overlapPoints);
+      return { hasOverlap: true, area };
+    }
+
+    return { hasOverlap: true };
+  };
+
+  // Algorithme Ray Casting pour vérifier si un point est dans un polygone
+  const isPointInPolygon = (point: [number, number], polygon: [number, number][]): boolean => {
+    const [x, y] = point;
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+
+      const intersect = ((yi > y) !== (yj > y)) &&
+        (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      
+      if (intersect) inside = !inside;
+    }
+
+    return inside;
+  };
 
   // Calculer la distance entre deux points GPS en mètres (formule de Haversine)
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -339,28 +503,64 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate, config }: P
           <MapPin className="h-4 w-4 text-primary" />
           Aperçu de la parcelle
         </Label>
-        {mapConfig.autoCalculateSurface && validCoords.length >= (mapConfig.minMarkers || 3) && surfaceArea > 0 && (
-          <div className="text-xs text-muted-foreground">
-            Surface: <span className="font-semibold text-foreground">{surfaceArea.toLocaleString()} m²</span>
-            {surfaceArea >= 10000 && (
-              <span className="ml-1">({(surfaceArea / 10000).toFixed(2)} ha)</span>
-            )}
-          </div>
+        {surfaceArea > 0 && (
+          <Badge variant="secondary" className="font-mono">
+            {surfaceArea.toLocaleString()} m²
+          </Badge>
         )}
       </div>
-      
-      <Card className="overflow-hidden relative z-10">
+
+      {conflictingParcels.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex items-center justify-between">
+            <span>
+              {conflictingParcels.length} conflit(s) de limites détecté(s)
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConflictDialog(true)}
+              className="ml-2"
+            >
+              Signaler
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {loadingConflicts && (
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Vérification des parcelles voisines...
+          </AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="overflow-hidden border-2 border-primary/20">
         <div 
           ref={mapRef} 
-          className="w-full h-[300px] md:h-[400px] bg-muted/20 relative z-10"
-          style={{ minHeight: '300px' }}
+          style={{ 
+            height: '400px', 
+            width: '100%',
+            borderRadius: '8px'
+          }} 
         />
       </Card>
+      
+      <div className="text-xs text-muted-foreground flex items-center gap-1">
+        <Info className="h-3 w-3" />
+        <span>Glissez les marqueurs pour ajuster les positions GPS</span>
+      </div>
 
-      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-        <AlertCircle className="h-3 w-3 flex-shrink-0" />
-        Glissez-déposez les marqueurs numérotés pour ajuster la position des bornes
-      </p>
+      <BoundaryConflictDialog
+        open={showConflictDialog}
+        onOpenChange={setShowConflictDialog}
+        currentParcelNumber={currentParcelNumber || ''}
+        conflictingParcels={conflictingParcels}
+        coordinates={validCoords}
+      />
     </div>
   );
 };
