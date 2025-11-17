@@ -36,13 +36,45 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (profilesError) throw profilesError;
+
+      // Fetch roles for all users
+      const userIds = profilesData?.map(p => p.user_id) || [];
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', userIds);
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+      }
+
+      // Combine profiles with their highest role
+      const roleHierarchy = ['super_admin', 'admin', 'partner', 'user'];
+      const usersWithRoles = profilesData?.map(profile => {
+        const userRoles = rolesData?.filter(r => r.user_id === profile.user_id).map(r => r.role) || [];
+        let highestRole = 'user';
+        
+        for (const hierarchyRole of roleHierarchy) {
+          if (userRoles.includes(hierarchyRole as any)) {
+            highestRole = hierarchyRole;
+            break;
+          }
+        }
+
+        return {
+          ...profile,
+          role: highestRole
+        };
+      });
+
+      setUsers(usersWithRoles || []);
     } catch (error) {
       console.error('Erreur lors du chargement des utilisateurs:', error);
       toast.error('Erreur lors du chargement des utilisateurs');
@@ -51,27 +83,11 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
     }
   };
 
-  const updateUserRole = async (userId: string, newRole: 'admin' | 'user') => {
-    try {
-      const { error } = await supabase
-        .from('profiles')
-        .update({ role: newRole })
-        .eq('user_id', userId);
-
-      if (error) throw error;
-      
-      toast.success('Rôle utilisateur mis à jour');
-      fetchUsers();
-      onRefresh();
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour:', error);
-      toast.error('Erreur lors de la mise à jour');
-    }
-  };
-
   const getRoleBadge = (role: string) => {
     const config = {
+      super_admin: { variant: 'destructive' as const, icon: Shield, label: 'Super Admin' },
       admin: { variant: 'destructive' as const, icon: Shield, label: 'Admin' },
+      partner: { variant: 'default' as const, icon: Users, label: 'Partenaire' },
       user: { variant: 'secondary' as const, icon: User, label: 'Utilisateur' }
     };
     
@@ -124,7 +140,9 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les rôles</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
                 <SelectItem value="admin">Administrateurs</SelectItem>
+                <SelectItem value="partner">Partenaires</SelectItem>
                 <SelectItem value="user">Utilisateurs</SelectItem>
               </SelectContent>
             </Select>
@@ -163,18 +181,14 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
                 <TableCell className="py-2 md:py-3">{getRoleBadge(user.role)}</TableCell>
                 <TableCell className="hidden sm:table-cell text-xs md:text-sm">{new Date(user.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</TableCell>
                 <TableCell className="py-2 md:py-3">
-                  <Select
-                    value={user.role}
-                    onValueChange={(newRole: 'admin' | 'user') => updateUserRole(user.user_id, newRole)}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.location.href = '/admin?tab=roles'}
+                    className="h-8 text-xs"
                   >
-                    <SelectTrigger className="w-24 md:w-32 h-8 md:h-9 text-xs md:text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user" className="text-xs md:text-sm">Utilisateur</SelectItem>
-                      <SelectItem value="admin" className="text-xs md:text-sm">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    Gérer les rôles
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

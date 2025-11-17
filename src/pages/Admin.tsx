@@ -34,19 +34,56 @@ const Admin = () => {
   const activeTab = searchParams.get('tab') || 'dashboard';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
+
+  // Verify admin role from user_roles table
+  useEffect(() => {
+    const verifyAdminRole = async () => {
+      if (!user) {
+        setHasAdminRole(false);
+        return;
+      }
+
+      try {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .in('role', ['admin', 'super_admin']);
+
+        if (error) {
+          console.error('Error verifying admin role:', error);
+          setHasAdminRole(false);
+          return;
+        }
+
+        setHasAdminRole(data && data.length > 0);
+      } catch (error) {
+        console.error('Error verifying admin role:', error);
+        setHasAdminRole(false);
+      }
+    };
+
+    verifyAdminRole();
+  }, [user]);
 
   useEffect(() => {
-    if (profile?.role === 'admin') {
+    if (hasAdminRole) {
       fetchPendingCount();
     }
-  }, [profile]);
+  }, [hasAdminRole]);
 
   const fetchPendingCount = async () => {
     try {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('cadastral_contributions')
         .select('*', { count: 'exact', head: true })
         .in('status', ['pending', 'under_review']);
+      
+      if (error) {
+        console.error('Erreur lors du chargement des contributions:', error);
+        return;
+      }
       
       setPendingCount(count || 0);
     } catch (error) {
@@ -54,7 +91,7 @@ const Admin = () => {
     }
   };
 
-  if (loading) {
+  if (loading || hasAdminRole === null) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -62,7 +99,8 @@ const Admin = () => {
     );
   }
 
-  if (!user || profile?.role !== 'admin') {
+  if (!user || !hasAdminRole) {
+    toast.error('Accès refusé. Vous devez avoir un rôle administrateur.');
     return <Navigate to="/auth" replace />;
   }
 

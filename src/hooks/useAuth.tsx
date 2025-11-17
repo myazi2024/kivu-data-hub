@@ -49,20 +49,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         return;
       }
 
-      // Fetch highest role from user_roles
-      const { data: roleData } = await supabase
+      // Fetch all roles from user_roles
+      const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
-        .order('role', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+        .eq('user_id', userId);
+
+      if (rolesError) {
+        console.error('Error fetching roles:', rolesError);
+      }
+
+      // Determine highest role based on hierarchy
+      const roleHierarchy = ['super_admin', 'admin', 'partner', 'user'];
+      let highestRole: 'super_admin' | 'admin' | 'partner' | 'user' = 'user';
+      
+      if (rolesData && rolesData.length > 0) {
+        const roles = rolesData.map(r => r.role);
+        for (const hierarchyRole of roleHierarchy) {
+          if (roles.includes(hierarchyRole as any)) {
+            highestRole = hierarchyRole as typeof highestRole;
+            break;
+          }
+        }
+      }
 
       // Combine profile with role
       if (profileData) {
         setProfile({
           ...profileData,
-          role: (roleData?.role as 'super_admin' | 'admin' | 'partner' | 'user') || 'user'
+          role: highestRole
         });
       } else {
         setProfile(null);
