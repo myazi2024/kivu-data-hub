@@ -194,9 +194,8 @@ const Admin = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminDashboardHeader
+        <AdminDashboardHeader 
           onMenuClick={() => setMobileMenuOpen(true)}
-          notificationCount={pendingCount}
         />
         
         <main className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-6">
