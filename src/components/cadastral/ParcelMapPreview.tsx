@@ -756,10 +756,10 @@ export const ParcelMapPreview = ({
         </Alert>
       )}
 
-      <Card className="overflow-hidden border-2 border-primary/20">
+      <Card className="overflow-hidden border-2 border-primary/20 relative z-0">
         <div 
           ref={mapRef} 
-          className="h-[250px] md:h-[350px] lg:h-[400px] w-full rounded-lg"
+          className="h-[250px] md:h-[350px] lg:h-[400px] w-full rounded-lg relative z-0"
         />
       </Card>
       
