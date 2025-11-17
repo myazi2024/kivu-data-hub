@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Building2, FileEdit } from "lucide-react";
@@ -32,19 +33,23 @@ interface BuildingPermitRequest {
 }
 
 export function UserBuildingPermits() {
+  const { user } = useAuth();
   const [permits, setPermits] = useState<BuildingPermitRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [appealDialogOpen, setAppealDialogOpen] = useState(false);
   const [selectedPermit, setSelectedPermit] = useState<BuildingPermitRequest | null>(null);
 
   useEffect(() => {
-    fetchBuildingPermits();
-  }, []);
+    if (user) {
+      fetchBuildingPermits();
+    }
+  }, [user]);
 
   const fetchBuildingPermits = async () => {
+    if (!user) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      setLoading(true);
 
       const { data, error } = await supabase
         .from('cadastral_contributions')

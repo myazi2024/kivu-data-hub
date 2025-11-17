@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,15 @@ export const UserProfileEdit = () => {
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [organization, setOrganization] = useState(profile?.organization || "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
+
+  // Synchroniser les états locaux avec les props du profil
+  useEffect(() => {
+    if (profile) {
+      setFullName(profile.full_name || "");
+      setOrganization(profile.organization || "");
+      setAvatarUrl(profile.avatar_url || "");
+    }
+  }, [profile]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,6 +47,9 @@ export const UserProfileEdit = () => {
         title: "Profil mis à jour",
         description: "Vos informations ont été enregistrées avec succès.",
       });
+      
+      // Rafraîchir les données du profil
+      window.location.reload();
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -82,6 +94,9 @@ export const UserProfileEdit = () => {
         title: "Avatar mis à jour",
         description: "Votre photo de profil a été modifiée.",
       });
+      
+      // Rafraîchir pour voir le nouvel avatar
+      window.location.reload();
     } catch (error: any) {
       toast({
         variant: "destructive",

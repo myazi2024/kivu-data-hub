@@ -49,6 +49,15 @@ export const UserContributions: React.FC = () => {
     }
   }, [user]);
 
+  // Récupérer le code CCC quand le dialog s'ouvre
+  useEffect(() => {
+    if (isDetailsOpen && selectedContribution?.status === 'approved') {
+      fetchCCCCode(selectedContribution.id);
+    } else {
+      setCccCode(null);
+    }
+  }, [isDetailsOpen, selectedContribution]);
+
   const fetchContributions = async () => {
     try {
       setLoading(true);
@@ -65,6 +74,22 @@ export const UserContributions: React.FC = () => {
       console.error('Error fetching contributions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCCCCode = async (contributionId: string) => {
+    try {
+      const { data } = await supabase
+        .from('cadastral_contributor_codes')
+        .select('code')
+        .eq('contribution_id', contributionId)
+        .maybeSingle();
+      
+      if (data) {
+        setCccCode(data.code);
+      }
+    } catch (error) {
+      console.error('Error fetching CCC code:', error);
     }
   };
 
@@ -257,18 +282,10 @@ export const UserContributions: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={isDetailsOpen} onOpenChange={async (open) => {
+      <Dialog open={isDetailsOpen} onOpenChange={(open) => {
         setIsDetailsOpen(open);
         if (!open) {
           setCccCode(null);
-        } else if (selectedContribution && selectedContribution.status === 'approved') {
-          // Fetch CCC code for approved contribution
-          const { data } = await supabase
-            .from('cadastral_contributor_codes')
-            .select('code')
-            .eq('contribution_id', selectedContribution.id)
-            .maybeSingle();
-          if (data) setCccCode(data.code);
         }
       }}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
