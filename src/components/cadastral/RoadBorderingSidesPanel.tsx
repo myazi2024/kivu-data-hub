@@ -22,9 +22,10 @@ interface RoadBorderingSidesPanelProps {
   sides: RoadSideInfo[];
   onSideUpdate: (sideIndex: number, updates: Partial<RoadSideInfo>) => void;
   className?: string;
+  roadTypes?: Array<{ value: string; label: string }>;
 }
 
-const roadTypes = [
+const defaultRoadTypes = [
   { value: 'nationale', label: 'Route Nationale' },
   { value: 'provinciale', label: 'Route Provinciale' },
   { value: 'urbaine', label: 'Route Urbaine' },
@@ -49,6 +50,7 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
   sides,
   onSideUpdate,
   className = '',
+  roadTypes = defaultRoadTypes,
 }) => {
   const roadBorderingSidesCount = sides.filter(s => s.bordersRoad).length;
 

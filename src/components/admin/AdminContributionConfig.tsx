@@ -38,11 +38,36 @@ const AdminContributionConfig = () => {
     showMarkers: true,
     autoCalculateSurface: true,
     minMarkers: 3,
+    maxMarkers: 50,
     markerColor: 'hsl(var(--primary))',
     showSideDimensions: true,
     dimensionUnit: 'meters',
+    dimensionTextColor: '#000000',
+    dimensionFontSize: 11,
+    dimensionFormat: '{value}m',
     allowDimensionEditing: true,
-    showSideLabels: true
+    showSideLabels: true,
+    lineColor: '#3b82f6',
+    lineWidth: 3,
+    lineStyle: 'solid',
+    fillColor: '#3b82f6',
+    fillOpacity: 0.2,
+    minSurfaceSqm: 0,
+    maxSurfaceSqm: 100000,
+    enableEditing: true,
+    enableDragging: true,
+    enableConflictDetection: true,
+    enableRoadBorderingFeature: true,
+    roadTypes: [
+      { value: 'nationale', label: 'Route Nationale' },
+      { value: 'provinciale', label: 'Route Provinciale' },
+      { value: 'urbaine', label: 'Route Urbaine' },
+      { value: 'avenue', label: 'Avenue' },
+      { value: 'rue', label: 'Rue' },
+      { value: 'ruelle', label: 'Ruelle' },
+      { value: 'chemin', label: 'Chemin' },
+      { value: 'piste', label: 'Piste' },
+    ]
   });
 
   // Charger les données initiales
@@ -53,7 +78,13 @@ const AdminContributionConfig = () => {
     if (helpTextsConfig) setHelpTexts(helpTextsConfig.config_value);
     if (validationRulesConfig) setValidationRules(validationRulesConfig.config_value);
     if (cccCalculationConfig) setCccCalculation(cccCalculationConfig.config_value);
-    if (mapPreviewConfig) setMapPreviewSettings(mapPreviewConfig.config_value);
+    if (mapPreviewConfig) {
+      // Fusionner avec les valeurs par défaut pour éviter les clés manquantes
+      setMapPreviewSettings({
+        ...mapPreviewSettings,
+        ...mapPreviewConfig.config_value
+      });
+    }
   }, [configs]);
 
   const handleSaveFormSections = async () => {
@@ -698,6 +729,212 @@ const AdminContributionConfig = () => {
                     <p className="text-xs text-muted-foreground">
                       Kinshasa: 21.7587
                     </p>
+                  </div>
+                </div>
+
+                {/* Détection de conflits de limites */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Détection de conflits de limites</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Vérifier automatiquement les chevauchements avec les parcelles voisines
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.enableConflictDetection}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        enableConflictDetection: checked
+                      });
+                    }}
+                  />
+                </div>
+
+                {/* Gestion des côtés bordant une route */}
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Gérer les côtés bordant une route</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Permettre aux utilisateurs d'indiquer quels côtés de la parcelle bordent une route
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.enableRoadBorderingFeature}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        enableRoadBorderingFeature: checked
+                      });
+                    }}
+                  />
+                </div>
+
+                {/* Style avancé */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm">Style et Apparence</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Couleur des lignes</Label>
+                      <Input
+                        type="color"
+                        value={mapPreviewSettings.lineColor}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            lineColor: e.target.value
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Épaisseur des lignes</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="10"
+                        value={mapPreviewSettings.lineWidth}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            lineWidth: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Couleur de remplissage</Label>
+                      <Input
+                        type="color"
+                        value={mapPreviewSettings.fillColor}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            fillColor: e.target.value
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Opacité de remplissage</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="1"
+                        value={mapPreviewSettings.fillOpacity}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            fillOpacity: parseFloat(e.target.value)
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Validations */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm">Validations</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Surface minimale (m²)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={mapPreviewSettings.minSurfaceSqm}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            minSurfaceSqm: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        0 = pas de limite minimale
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Surface maximale (m²)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={mapPreviewSettings.maxSurfaceSqm}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            maxSurfaceSqm: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        0 = pas de limite maximale
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Maximum de bornes</Label>
+                      <Input
+                        type="number"
+                        min="3"
+                        max="100"
+                        value={mapPreviewSettings.maxMarkers}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            maxMarkers: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Interaction */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm">Options d'interaction</h4>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Permettre le déplacement des marqueurs</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Les utilisateurs peuvent glisser-déposer les bornes GPS
+                      </p>
+                    </div>
+                    <Switch
+                      checked={mapPreviewSettings.enableDragging}
+                      onCheckedChange={(checked) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          enableDragging: checked
+                        });
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <Label>Permettre l'édition</Label>
+                      <p className="text-sm text-muted-foreground">
+                        Permettre toutes les modifications sur la carte
+                      </p>
+                    </div>
+                    <Switch
+                      checked={mapPreviewSettings.enableEditing}
+                      onCheckedChange={(checked) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          enableEditing: checked
+                        });
+                      }}
+                    />
                   </div>
                 </div>
               </div>
