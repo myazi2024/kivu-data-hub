@@ -22,6 +22,7 @@ const AdminContributionConfig = () => {
   const helpTextsConfig = configs.find(c => c.config_key === 'help_texts');
   const validationRulesConfig = configs.find(c => c.config_key === 'validation_rules');
   const cccCalculationConfig = configs.find(c => c.config_key === 'ccc_calculation');
+  const mapPreviewConfig = configs.find(c => c.config_key === 'map_preview_settings');
 
   // États locaux pour les modifications
   const [formSections, setFormSections] = useState<any>({});
@@ -30,6 +31,15 @@ const AdminContributionConfig = () => {
   const [helpTexts, setHelpTexts] = useState<any>({});
   const [validationRules, setValidationRules] = useState<any>({});
   const [cccCalculation, setCccCalculation] = useState<any>({});
+  const [mapPreviewSettings, setMapPreviewSettings] = useState<any>({
+    enabled: true,
+    defaultZoom: 15,
+    defaultCenter: { lat: -4.0383, lng: 21.7587 }, // Kinshasa par défaut
+    showMarkers: true,
+    autoCalculateSurface: true,
+    minMarkers: 3,
+    markerColor: 'hsl(var(--primary))'
+  });
 
   // Charger les données initiales
   React.useEffect(() => {
@@ -39,6 +49,7 @@ const AdminContributionConfig = () => {
     if (helpTextsConfig) setHelpTexts(helpTextsConfig.config_value);
     if (validationRulesConfig) setValidationRules(validationRulesConfig.config_value);
     if (cccCalculationConfig) setCccCalculation(cccCalculationConfig.config_value);
+    if (mapPreviewConfig) setMapPreviewSettings(mapPreviewConfig.config_value);
   }, [configs]);
 
   const handleSaveFormSections = async () => {
@@ -95,6 +106,15 @@ const AdminContributionConfig = () => {
     setSaving(null);
   };
 
+  const handleSaveMapPreviewSettings = async () => {
+    if (!mapPreviewConfig) return;
+    setSaving('map_preview_settings');
+    await updateConfig(mapPreviewConfig.id, {
+      config_value: mapPreviewSettings
+    });
+    setSaving(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -114,13 +134,14 @@ const AdminContributionConfig = () => {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="sections">
-            <TabsList className="grid w-full grid-cols-6">
+            <TabsList className="grid w-full grid-cols-7">
               <TabsTrigger value="sections">Sections</TabsTrigger>
               <TabsTrigger value="required">Champs obligatoires</TabsTrigger>
               <TabsTrigger value="labels">Labels</TabsTrigger>
               <TabsTrigger value="help">Aide</TabsTrigger>
               <TabsTrigger value="validation">Validation</TabsTrigger>
               <TabsTrigger value="ccc">Calcul CCC</TabsTrigger>
+              <TabsTrigger value="map">Aperçu Parcelle</TabsTrigger>
             </TabsList>
 
             {/* Sections du formulaire */}
@@ -463,6 +484,168 @@ const AdminContributionConfig = () => {
 
               <Button onClick={handleSaveCccCalculation} disabled={saving === 'ccc_calculation'}>
                 {saving === 'ccc_calculation' ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" />
+                    Enregistrer
+                  </>
+                )}
+              </Button>
+            </TabsContent>
+
+            {/* Aperçu de la Parcelle */}
+            <TabsContent value="map" className="space-y-4">
+              <Alert>
+                <MapPin className="h-4 w-4" />
+                <AlertDescription>
+                  Configurez les paramètres d'affichage de l'aperçu de la carte de la parcelle
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Activer l'aperçu de la carte</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Afficher la carte interactive avec les bornes GPS
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.enabled}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        enabled: checked
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Afficher les marqueurs numérotés</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Afficher les numéros sur les marqueurs des bornes
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.showMarkers}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        showMarkers: checked
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between p-4 border rounded-lg">
+                  <div className="space-y-1">
+                    <Label>Calcul automatique de la surface</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Calculer et afficher automatiquement la surface de la parcelle
+                    </p>
+                  </div>
+                  <Switch
+                    checked={mapPreviewSettings.autoCalculateSurface}
+                    onCheckedChange={(checked) => {
+                      setMapPreviewSettings({
+                        ...mapPreviewSettings,
+                        autoCalculateSurface: checked
+                      });
+                    }}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Zoom par défaut</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="19"
+                      value={mapPreviewSettings.defaultZoom}
+                      onChange={(e) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          defaultZoom: parseInt(e.target.value)
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Niveau de zoom initial (1-19)
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Nombre minimum de bornes</Label>
+                    <Input
+                      type="number"
+                      min="3"
+                      max="100"
+                      value={mapPreviewSettings.minMarkers}
+                      onChange={(e) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          minMarkers: parseInt(e.target.value)
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Minimum requis pour tracer un polygone
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Latitude du centre par défaut</Label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      value={mapPreviewSettings.defaultCenter?.lat || -4.0383}
+                      onChange={(e) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          defaultCenter: {
+                            ...mapPreviewSettings.defaultCenter,
+                            lat: parseFloat(e.target.value)
+                          }
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Kinshasa: -4.0383
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Longitude du centre par défaut</Label>
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      value={mapPreviewSettings.defaultCenter?.lng || 21.7587}
+                      onChange={(e) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          defaultCenter: {
+                            ...mapPreviewSettings.defaultCenter,
+                            lng: parseFloat(e.target.value)
+                          }
+                        });
+                      }}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Kinshasa: 21.7587
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={handleSaveMapPreviewSettings} disabled={saving === 'map_preview_settings'}>
+                {saving === 'map_preview_settings' ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Enregistrement...
