@@ -9,18 +9,51 @@ interface Coordinate {
   lng: string;
 }
 
+interface MapConfig {
+  enabled?: boolean;
+  defaultZoom?: number;
+  defaultCenter?: [number, number];
+  showMarkers?: boolean;
+  autoCalculateSurface?: boolean;
+  minMarkers?: number;
+  markerColor?: string;
+  showSideDimensions?: boolean;
+  dimensionUnit?: string;
+  allowDimensionEditing?: boolean;
+  showSideLabels?: boolean;
+}
+
 interface ParcelMapPreviewProps {
   coordinates: Coordinate[];
   onCoordinatesUpdate: (coordinates: Coordinate[]) => void;
+  config?: MapConfig;
 }
 
-export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMapPreviewProps) => {
+export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate, config }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
   const polygonRef = useRef<any>(null);
+  const dimensionLayersRef = useRef<any[]>([]);
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
+  
+  // Configuration par défaut
+  const defaultConfig: MapConfig = {
+    enabled: true,
+    defaultZoom: 15,
+    defaultCenter: [0, 0],
+    showMarkers: true,
+    autoCalculateSurface: true,
+    minMarkers: 3,
+    markerColor: 'hsl(var(--primary))',
+    showSideDimensions: true,
+    dimensionUnit: 'meters',
+    allowDimensionEditing: true,
+    showSideLabels: true
+  };
+  
+  const mapConfig = { ...defaultConfig, ...config };
 
   // Mémoriser les coordonnées valides pour éviter les re-renders inutiles
   const validCoords = useMemo(() => 
@@ -49,8 +82,8 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
       const map = L.map(mapRef.current, {
         zoomControl: true,
         attributionControl: true,
-        center: [0, 0],
-        zoom: 2,
+        center: mapConfig.defaultCenter || [0, 0],
+        zoom: mapConfig.defaultZoom || 2,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -79,7 +112,7 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
         setIsMapReady(false);
       }
     };
-  }, []);
+  }, [mapConfig.defaultCenter, mapConfig.defaultZoom]);
 
   // Mettre à jour les marqueurs et le polygone quand les coordonnées changent
   useEffect(() => {
@@ -91,13 +124,15 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
       
       console.log('Mise à jour de la carte avec', validCoords.length, 'coordonnées valides');
 
-      // Supprimer les anciens marqueurs et polygone
+      // Supprimer les anciens marqueurs, polygone et dimensions
       markersRef.current.forEach(marker => marker.remove());
       markersRef.current = [];
       if (polygonRef.current) {
         polygonRef.current.remove();
         polygonRef.current = null;
       }
+      dimensionLayersRef.current.forEach(layer => layer.remove());
+      dimensionLayersRef.current = [];
 
       // Si pas de coordonnées valides, centrer par défaut
       if (validCoords.length === 0) {
@@ -106,7 +141,7 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
         return;
       }
 
-      // Créer des marqueurs draggables
+      // Créer des marqueurs draggables si activé
       const latLngs: [number, number][] = [];
       
       validCoords.forEach((coord, index) => {
@@ -114,12 +149,13 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
         const lng = parseFloat(coord.lng);
         latLngs.push([lat, lng]);
 
-        const marker = L.marker([lat, lng], {
-          draggable: true,
-          icon: L.divIcon({
-            className: 'custom-marker',
+        if (mapConfig.showMarkers) {
+          const marker = L.marker([lat, lng], {
+            draggable: true,
+            icon: L.divIcon({
+              className: 'custom-marker',
             html: `<div style="
-              background: hsl(var(--primary));
+              background-color: ${mapConfig.markerColor || 'hsl(var(--primary))'};
               color: white;
               width: 30px;
               height: 30px;
@@ -138,52 +174,121 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
           }),
         }).addTo(map);
 
-        marker.on('dragend', () => {
-          const newPos = marker.getLatLng();
-          // Trouver l'index original dans le tableau complet
-          const originalIndex = coordinates.findIndex(c => c.borne === coord.borne);
-          if (originalIndex !== -1) {
-            const updatedCoords = [...coordinates];
-            updatedCoords[originalIndex] = {
-              ...updatedCoords[originalIndex],
-              lat: newPos.lat.toFixed(6),
-              lng: newPos.lng.toFixed(6),
-            };
-            onCoordinatesUpdate(updatedCoords);
-          }
-        });
+          marker.on('dragend', () => {
+            const newPos = marker.getLatLng();
+            // Trouver l'index original dans le tableau complet
+            const originalIndex = coordinates.findIndex(c => c.borne === coord.borne);
+            if (originalIndex !== -1) {
+              const updatedCoords = [...coordinates];
+              updatedCoords[originalIndex] = {
+                ...updatedCoords[originalIndex],
+                lat: newPos.lat.toFixed(6),
+                lng: newPos.lng.toFixed(6),
+              };
+              onCoordinatesUpdate(updatedCoords);
+            }
+          });
 
-        markersRef.current.push(marker);
+          markersRef.current.push(marker);
+        }
       });
 
-      // Dessiner le polygone si au moins 3 points
-      if (latLngs.length >= 3) {
+      // Dessiner le polygone si au moins minMarkers points
+      const minMarkers = mapConfig.minMarkers || 3;
+      if (latLngs.length >= minMarkers) {
         console.log('Dessin du polygone avec', latLngs.length, 'points');
         const polygon = L.polygon(latLngs, {
-          color: 'hsl(var(--primary))',
-          fillColor: 'hsl(var(--primary))',
+          color: mapConfig.markerColor || 'hsl(var(--primary))',
+          fillColor: mapConfig.markerColor || 'hsl(var(--primary))',
           fillOpacity: 0.2,
           weight: 2,
         }).addTo(map);
 
         polygonRef.current = polygon;
 
-        // Calculer la surface en m²
-        const area = calculatePolygonArea(latLngs);
-        setSurfaceArea(area);
-        console.log('Surface calculée:', area, 'm²');
+        // Calculer la surface en m² si activé
+        if (mapConfig.autoCalculateSurface) {
+          const area = calculatePolygonArea(latLngs);
+          setSurfaceArea(area);
+          console.log('Surface calculée:', area, 'm²');
+        }
+        
+        // Afficher les dimensions des côtés si activé
+        if (mapConfig.showSideDimensions) {
+          displaySideDimensions(L, map, latLngs);
+        }
 
         // Ajuster la vue pour inclure tous les points
         map.fitBounds(polygon.getBounds(), { padding: [50, 50] });
       } else if (latLngs.length > 0) {
         // Centrer sur le premier point
-        map.setView(latLngs[0], 15);
+        map.setView(latLngs[0], mapConfig.defaultZoom || 15);
         setSurfaceArea(0);
       }
     };
 
     updateMap();
-  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate]);
+  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig]);
+
+  // Calculer la distance entre deux points GPS en mètres (formule de Haversine)
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371000; // Rayon de la Terre en mètres
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    
+    return Math.round(distance * 100) / 100; // Arrondir à 2 décimales
+  };
+
+  // Afficher les dimensions des côtés
+  const displaySideDimensions = (L: any, map: any, latLngs: [number, number][]) => {
+    for (let i = 0; i < latLngs.length; i++) {
+      const j = (i + 1) % latLngs.length;
+      const start = latLngs[i];
+      const end = latLngs[j];
+      
+      // Calculer la distance
+      const distance = calculateDistance(start[0], start[1], end[0], end[1]);
+      
+      // Point milieu
+      const midLat = (start[0] + end[0]) / 2;
+      const midLng = (start[1] + end[1]) / 2;
+      
+      // Créer le label
+      const labelText = mapConfig.showSideLabels 
+        ? `Côté ${i + 1}: ${distance.toFixed(2)} m`
+        : `${distance.toFixed(2)} m`;
+      
+      const dimensionMarker = L.marker([midLat, midLng], {
+        icon: L.divIcon({
+          className: 'dimension-label',
+          html: `<div style="
+            background-color: rgba(255, 255, 255, 0.95);
+            color: hsl(var(--foreground));
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid ${mapConfig.markerColor || 'hsl(var(--primary))'};
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            white-space: nowrap;
+          ">${labelText}</div>`,
+          iconSize: [0, 0],
+        })
+      }).addTo(map);
+      
+      dimensionLayersRef.current.push(dimensionMarker);
+    }
+  };
 
   // Calculer la surface d'un polygone en m² (formule de Shoelace + rayon terrestre)
   const calculatePolygonArea = (coords: [number, number][]): number => {
@@ -209,13 +314,18 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
     return Math.round(area * 100) / 100; // Arrondir à 2 décimales
   };
 
+  // Ne pas afficher si désactivé dans la config
+  if (!mapConfig.enabled) {
+    return null;
+  }
+
   if (validCoords.length === 0) {
     return (
       <Card className="p-4 bg-muted/30">
         <div className="flex items-center gap-2 text-muted-foreground">
           <AlertCircle className="h-4 w-4" />
           <p className="text-sm">
-            Ajoutez au moins une borne GPS pour voir l'aperçu sur la carte
+            Ajoutez au moins {mapConfig.minMarkers || 3} bornes GPS pour voir l'aperçu sur la carte
           </p>
         </div>
       </Card>
@@ -229,7 +339,7 @@ export const ParcelMapPreview = ({ coordinates, onCoordinatesUpdate }: ParcelMap
           <MapPin className="h-4 w-4 text-primary" />
           Aperçu de la parcelle
         </Label>
-        {validCoords.length >= 3 && surfaceArea > 0 && (
+        {mapConfig.autoCalculateSurface && validCoords.length >= (mapConfig.minMarkers || 3) && surfaceArea > 0 && (
           <div className="text-xs text-muted-foreground">
             Surface: <span className="font-semibold text-foreground">{surfaceArea.toLocaleString()} m²</span>
             {surfaceArea >= 10000 && (
