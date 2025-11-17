@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { AlertCircle, MapPin, AlertTriangle, Info } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
 
 interface Coordinate {
   borne: string;
@@ -42,6 +43,8 @@ interface ParcelMapPreviewProps {
   config?: MapConfig;
   currentParcelNumber?: string;
   enableConflictDetection?: boolean;
+  roadSides?: RoadSideInfo[];
+  onRoadSidesChange?: (roadSides: RoadSideInfo[]) => void;
 }
 
 export const ParcelMapPreview = ({ 
@@ -49,7 +52,9 @@ export const ParcelMapPreview = ({
   onCoordinatesUpdate, 
   config,
   currentParcelNumber,
-  enableConflictDetection = true 
+  enableConflictDetection = true,
+  roadSides = [],
+  onRoadSidesChange
 }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -57,6 +62,7 @@ export const ParcelMapPreview = ({
   const polygonRef = useRef<any>(null);
   const dimensionLayersRef = useRef<any[]>([]);
   const conflictLayersRef = useRef<any[]>([]);
+  const segmentLayersRef = useRef<any[]>([]);
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
@@ -87,6 +93,75 @@ export const ParcelMapPreview = ({
     ),
     [coordinates]
   );
+
+  // Calculer l'orientation d'un côté basé sur le bearing
+  const calculateOrientation = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
+    const bearing = Math.atan2(lng2 - lng1, lat2 - lat1) * (180 / Math.PI);
+    const normalized = (bearing + 360) % 360;
+    
+    if (normalized >= 315 || normalized < 45) return 'Nord';
+    if (normalized >= 45 && normalized < 135) return 'Est';
+    if (normalized >= 135 && normalized < 225) return 'Sud';
+    return 'Ouest';
+  };
+
+  // Initialiser/mettre à jour les roadSides quand les coordonnées changent
+  useEffect(() => {
+    if (validCoords.length >= 3 && onRoadSidesChange) {
+      const newSides: RoadSideInfo[] = validCoords.map((coord, index) => {
+        const nextIndex = (index + 1) % validCoords.length;
+        const nextCoord = validCoords[nextIndex];
+        
+        const existingSide = roadSides.find(s => s.sideIndex === index);
+        const length = calculateDistance(
+          parseFloat(coord.lat), 
+          parseFloat(coord.lng),
+          parseFloat(nextCoord.lat),
+          parseFloat(nextCoord.lng)
+        );
+        const orientation = calculateOrientation(
+          parseFloat(coord.lat), 
+          parseFloat(coord.lng),
+          parseFloat(nextCoord.lat),
+          parseFloat(nextCoord.lng)
+        );
+        
+        return {
+          sideIndex: index,
+          bordersRoad: existingSide?.bordersRoad || false,
+          roadType: existingSide?.roadType,
+          roadName: existingSide?.roadName,
+          roadWidth: existingSide?.roadWidth,
+          orientation,
+          length,
+        };
+      });
+      
+      // Ne mettre à jour que si la structure a changé (nombre de côtés différent)
+      if (roadSides.length !== newSides.length) {
+        onRoadSidesChange(newSides);
+      }
+    }
+  }, [validCoords.length]);
+
+  // Calculer la distance entre 2 points GPS
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371000; // Rayon de la Terre en mètres
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    
+    return Math.round(distance * 100) / 100;
+  };
 
   // Initialiser la carte une seule fois
   useEffect(() => {
@@ -224,11 +299,62 @@ export const ParcelMapPreview = ({
       const minMarkers = mapConfig.minMarkers || 3;
       if (latLngs.length >= minMarkers) {
         console.log('Dessin du polygone avec', latLngs.length, 'points');
+        
+        // Dessiner les segments individuels avec interaction
+        validCoords.forEach((coord, index) => {
+          const nextIndex = (index + 1) % validCoords.length;
+          const nextCoord = validCoords[nextIndex];
+          
+          const roadSide = roadSides.find(s => s.sideIndex === index);
+          const isRoadBordering = roadSide?.bordersRoad || false;
+          
+          const segment = L.polyline(
+            [
+              [parseFloat(coord.lat), parseFloat(coord.lng)],
+              [parseFloat(nextCoord.lat), parseFloat(nextCoord.lng)]
+            ],
+            {
+              color: isRoadBordering ? '#f59e0b' : (mapConfig.markerColor || 'hsl(var(--primary))'),
+              weight: isRoadBordering ? 5 : 3,
+              opacity: 0.9,
+            }
+          ).addTo(map);
+          
+          // Ajouter le click handler
+          segment.on('click', () => {
+            if (onRoadSidesChange) {
+              const updatedSides = [...roadSides];
+              const sideIndex = updatedSides.findIndex(s => s.sideIndex === index);
+              
+              if (sideIndex !== -1) {
+                updatedSides[sideIndex] = {
+                  ...updatedSides[sideIndex],
+                  bordersRoad: !updatedSides[sideIndex].bordersRoad,
+                };
+              }
+              
+              onRoadSidesChange(updatedSides);
+            }
+          });
+          
+          segment.on('mouseover', () => {
+            segment.setStyle({ weight: isRoadBordering ? 7 : 5, opacity: 1 });
+          });
+          
+          segment.on('mouseout', () => {
+            segment.setStyle({ weight: isRoadBordering ? 5 : 3, opacity: 0.9 });
+          });
+          
+          segmentLayersRef.current.push(segment);
+        });
+        
+        // Dessiner le polygone rempli (non-interactif, derrière les segments)
         const polygon = L.polygon(latLngs, {
-          color: mapConfig.markerColor || 'hsl(var(--primary))',
+          color: 'transparent',
           fillColor: mapConfig.markerColor || 'hsl(var(--primary))',
-          fillOpacity: 0.2,
-          weight: 2,
+          fillOpacity: 0.1,
+          weight: 0,
+          interactive: false,
         }).addTo(map);
 
         polygonRef.current = polygon;
@@ -260,7 +386,7 @@ export const ParcelMapPreview = ({
     };
 
     updateMap();
-  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig]);
+  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange]);
 
   // Détection des conflits avec des parcelles voisines
   const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
@@ -394,25 +520,6 @@ export const ParcelMapPreview = ({
     return inside;
   };
 
-  // Calculer la distance entre deux points GPS en mètres (formule de Haversine)
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371000; // Rayon de la Terre en mètres
-    const toRad = (deg: number) => (deg * Math.PI) / 180;
-    
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    
-    const a = 
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c;
-    
-    return Math.round(distance * 100) / 100; // Arrondir à 2 décimales
-  };
-
   // Afficher les dimensions des côtés
   const displaySideDimensions = (L: any, map: any, latLngs: [number, number][]) => {
     for (let i = 0; i < latLngs.length; i++) {
@@ -483,6 +590,16 @@ export const ParcelMapPreview = ({
     return null;
   }
 
+  // Handler pour mettre à jour un côté
+  const handleRoadSideUpdate = (sideIndex: number, updates: Partial<RoadSideInfo>) => {
+    if (onRoadSidesChange) {
+      const updatedSides = roadSides.map(side =>
+        side.sideIndex === sideIndex ? { ...side, ...updates } : side
+      );
+      onRoadSidesChange(updatedSides);
+    }
+  };
+
   if (validCoords.length === 0) {
     return (
       <Card className="p-4 bg-muted/30">
@@ -551,8 +668,15 @@ export const ParcelMapPreview = ({
       
       <div className="text-xs text-muted-foreground flex items-center gap-1">
         <Info className="h-3 w-3" />
-        <span>Glissez les marqueurs pour ajuster les positions GPS</span>
+        <span>Glissez les marqueurs pour ajuster les positions GPS. Cliquez sur un segment pour indiquer qu'il borde une route.</span>
       </div>
+
+      {validCoords.length >= 3 && onRoadSidesChange && (
+        <RoadBorderingSidesPanel
+          sides={roadSides}
+          onSideUpdate={handleRoadSideUpdate}
+        />
+      )}
 
       <BoundaryConflictDialog
         open={showConflictDialog}
