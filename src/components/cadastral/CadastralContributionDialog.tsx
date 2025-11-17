@@ -4603,22 +4603,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   ))}
                 </div>
                   
-                {/* Aperçu de la parcelle sur la carte */}
-                {gpsCoordinates.length > 0 && (
-                  <div className="pt-4 animate-fade-in">
-                    <ParcelMapPreview 
-                      coordinates={gpsCoordinates}
-                      onCoordinatesUpdate={(updatedCoords) => {
-                        setGpsCoordinates(updatedCoords);
-                      }}
-                      config={getConfig('map_preview_settings') || {}}
-                      currentParcelNumber={parcelNumber}
-                      enableConflictDetection={true}
-                      roadSides={roadSides}
-                      onRoadSidesChange={setRoadSides}
+                {/* Aperçu de la parcelle sur la carte - Toujours afficher */}
+                <div className="pt-4 animate-fade-in">
+                  <ParcelMapPreview 
+                    coordinates={gpsCoordinates}
+                    onCoordinatesUpdate={(updatedCoords) => {
+                      setGpsCoordinates(updatedCoords);
+                    }}
+                    config={getConfig('map_preview_settings') || {}}
+                    currentParcelNumber={parcelNumber}
+                    enableConflictDetection={true}
+                    roadSides={roadSides}
+                    onRoadSidesChange={setRoadSides}
                     />
-                  </div>
-                )}
+                </div>
 
                 {/* Bouton Ajouter */}
                 <div className="space-y-2">
