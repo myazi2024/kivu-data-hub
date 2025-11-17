@@ -253,10 +253,10 @@ const AnalyticsDashboard = () => {
 
         <TabsContent value="overview" className="space-y-6 mt-6">
       {/* Header avec sélecteur de période */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3 mb-3 sm:mb-4">
-        <h2 className="text-base sm:text-xl font-bold">Dashboard Analytics</h2>
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold">Dashboard Analytics</h2>
         <Select value={timeRange} onValueChange={setTimeRange}>
-          <SelectTrigger className="w-full sm:w-40 h-8 text-xs sm:text-sm">
+          <SelectTrigger className="w-48">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -269,82 +269,82 @@ const AnalyticsDashboard = () => {
       </div>
 
       {/* Métriques principales */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Revenus</p>
-                <p className="text-base sm:text-xl font-bold truncate">${analytics.totalRevenue.toFixed(2)}</p>
-                <div className="flex items-center mt-0.5">
+              <div>
+                <p className="text-sm text-muted-foreground">Revenus</p>
+                <p className="text-2xl font-bold">${analytics.totalRevenue.toFixed(2)}</p>
+                <div className="flex items-center mt-1">
                   {analytics.revenueGrowth >= 0 ? (
-                    <TrendingUp className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary mr-0.5" />
+                    <TrendingUp className="w-4 h-4 text-primary mr-1" />
                   ) : (
-                    <TrendingDown className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-destructive mr-0.5" />
+                    <TrendingDown className="w-4 h-4 text-destructive mr-1" />
                   )}
-                  <span className={`text-[10px] sm:text-xs ${analytics.revenueGrowth >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                  <span className={`text-sm ${analytics.revenueGrowth >= 0 ? 'text-primary' : 'text-destructive'}`}>
                     {Math.abs(analytics.revenueGrowth).toFixed(1)}%
                   </span>
                 </div>
               </div>
-              <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
+              <DollarSign className="w-8 h-8 text-primary" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Télécharge.</p>
-                <p className="text-base sm:text-xl font-bold truncate">{analytics.totalDownloads}</p>
-                <Badge variant="secondary" className="mt-0.5 text-[8px] sm:text-[10px] px-1 py-0">
-                  Période
+              <div>
+                <p className="text-sm text-muted-foreground">Téléchargements</p>
+                <p className="text-2xl font-bold">{analytics.totalDownloads}</p>
+                <Badge variant="secondary" className="mt-1">
+                  Période actuelle
                 </Badge>
               </div>
-              <Download className="w-5 h-5 sm:w-6 sm:h-6 text-primary/80 shrink-0" />
+              <Download className="w-8 h-8 text-primary/80" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Utilisateurs</p>
-                <p className="text-base sm:text-xl font-bold truncate">{analytics.totalUsers}</p>
-                <Badge variant="secondary" className="mt-0.5 text-[8px] sm:text-[10px] px-1 py-0">
-                  Nouveaux
+              <div>
+                <p className="text-sm text-muted-foreground">Nouveaux Utilisateurs</p>
+                <p className="text-2xl font-bold">{analytics.totalUsers}</p>
+                <Badge variant="secondary" className="mt-1">
+                  Période actuelle
                 </Badge>
               </div>
-              <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary/60 shrink-0" />
+              <Users className="w-8 h-8 text-primary/60" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-2 sm:p-3">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] sm:text-xs text-muted-foreground">Publications</p>
-                <p className="text-base sm:text-xl font-bold truncate">{analytics.totalPublications}</p>
-                <Badge variant="secondary" className="mt-0.5 text-[8px] sm:text-[10px] px-1 py-0">
-                  Actives
+              <div>
+                <p className="text-sm text-muted-foreground">Publications</p>
+                <p className="text-2xl font-bold">{analytics.totalPublications}</p>
+                <Badge variant="secondary" className="mt-1">
+                  Total actif
                 </Badge>
               </div>
-              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-muted-foreground shrink-0" />
+              <FileText className="w-8 h-8 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Graphiques */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Évolution des revenus */}
         <Card>
-          <CardHeader className="p-2 sm:p-3 pb-1">
-            <CardTitle className="flex items-center gap-1.5 text-xs sm:text-sm">
-              <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
               Évolution des Revenus
             </CardTitle>
           </CardHeader>
