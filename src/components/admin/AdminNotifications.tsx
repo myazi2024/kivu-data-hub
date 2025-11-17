@@ -38,6 +38,11 @@ interface Notification {
   action_url?: string;
   created_at: string;
   read_at?: string;
+  profiles?: {
+    user_id: string;
+    email: string;
+    full_name?: string;
+  };
 }
 
 interface User {
@@ -92,12 +97,13 @@ export const AdminNotifications: React.FC = () => {
 
       // Combine data
       const profilesMap = new Map(profilesData?.map(p => [p.user_id, p]) || []);
-      const enrichedNotifications = notifData?.map(notif => ({
+      const enrichedNotifications: Notification[] = (notifData?.map(notif => ({
         ...notif,
+        type: notif.type as 'info' | 'success' | 'warning' | 'error',
         profiles: profilesMap.get(notif.user_id)
-      })) || [];
+      })) || []);
 
-      setNotifications(enrichedNotifications as any);
+      setNotifications(enrichedNotifications);
     } catch (error: any) {
       console.error('Erreur lors de la récupération des notifications:', error);
       toast({
@@ -425,7 +431,7 @@ export const AdminNotifications: React.FC = () => {
                         })}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {(notification as any).profiles?.full_name || (notification as any).profiles?.email || 'N/A'}
+                        {notification.profiles?.full_name || notification.profiles?.email || 'N/A'}
                       </TableCell>
                       <TableCell>
                         <Badge className={`${getTypeColor(notification.type)} flex items-center gap-1 w-fit`}>
