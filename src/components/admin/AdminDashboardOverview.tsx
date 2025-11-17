@@ -13,6 +13,17 @@ import { RecentActivity } from './dashboard/RecentActivity';
 import { AlertsPanel } from './dashboard/AlertsPanel';
 import { TopPerformers } from './dashboard/TopPerformers';
 import { AdditionalCharts } from './dashboard/AdditionalCharts';
+import { PredictionsPanel } from './dashboard/PredictionsPanel';
+import { ComparativeAnalysis } from './dashboard/ComparativeAnalysis';
+import { BusinessMetrics } from './dashboard/BusinessMetrics';
+import { GeographicalAnalysis } from './dashboard/GeographicalAnalysis';
+import { ContributionPerformance } from './dashboard/ContributionPerformance';
+import { SmartAlerts } from './dashboard/SmartAlerts';
+import { ResellerAnalysis } from './dashboard/ResellerAnalysis';
+import { CohortAnalysis } from './dashboard/CohortAnalysis';
+import { AutomatedReports } from './dashboard/AutomatedReports';
+import { useEnhancedAnalytics } from '@/hooks/useEnhancedAnalytics';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { exportToCSV, exportToJSON } from '@/utils/exportDashboardData';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
@@ -66,6 +77,11 @@ export function AdminDashboardOverview() {
   );
 
   const { loading: dashboardLoading, data: dashboardData } = useDashboardData(
+    periodRange.startDate,
+    periodRange.endDate
+  );
+
+  const { data: enhancedData, loading: enhancedLoading } = useEnhancedAnalytics(
     periodRange.startDate,
     periodRange.endDate
   );
@@ -316,14 +332,42 @@ export function AdminDashboardOverview() {
         />
       </div>
 
-      {/* Additional Charts */}
-      <AdditionalCharts
-        loading={pmLoading || servicesLoading || ugLoading}
-        paymentMethodsData={paymentMethodsData?.payment_methods || []}
-        servicesData={servicesData?.services_usage || []}
-        userGrowthData={userGrowthData?.user_growth || []}
-        contributionApprovalData={[]}
-      />
+      {/* Enhanced Analytics Tabs */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-3 h-auto gap-1">
+          <TabsTrigger value="overview" className="text-xs md:text-sm">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="predictions" className="text-xs md:text-sm">Prédictions IA</TabsTrigger>
+          <TabsTrigger value="business" className="text-xs md:text-sm">Métriques Business</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4">
+          <AdditionalCharts
+            loading={pmLoading || servicesLoading || ugLoading}
+            paymentMethodsData={paymentMethodsData?.payment_methods || []}
+            servicesData={servicesData?.services_usage || []}
+            userGrowthData={userGrowthData?.user_growth || []}
+            contributionApprovalData={[]}
+          />
+          <div className="grid gap-4 md:grid-cols-2">
+            <GeographicalAnalysis loading={enhancedLoading} zonesData={enhancedData?.zonesData} />
+            <ResellerAnalysis loading={enhancedLoading} resellers={enhancedData?.resellersAnalysis} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="predictions">
+          <PredictionsPanel loading={enhancedLoading} historicalData={enhancedData?.historicalRevenue} />
+          <div className="mt-4">
+            <SmartAlerts alerts={enhancedData?.alerts} />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="business">
+          <BusinessMetrics loading={enhancedLoading} metrics={enhancedData?.businessMetrics} />
+          <div className="mt-4">
+            <ContributionPerformance loading={enhancedLoading} data={enhancedData?.contributionPerf} />
+          </div>
+        </TabsContent>
+      </Tabs>
 
       {/* Top Performers and Quick Stats */}
       <div className="grid gap-4 lg:grid-cols-2">
