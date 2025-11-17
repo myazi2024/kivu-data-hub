@@ -1629,6 +1629,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     updated[index] = { ...updated[index], detecting: true };
     setGpsCoordinates(updated);
     
+    // Afficher un toast informatif
+    toast({
+      title: "Détection en cours...",
+      description: "Veuillez patienter pendant que nous obtenons votre position GPS",
+    });
+    
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const finalUpdate = [...gpsCoordinates];
@@ -1643,7 +1649,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         
         toast({
           title: "Borne détectée",
-          description: `Coordonnées enregistrées avec succès`,
+          description: `Coordonnées enregistrées avec succès (précision: ±${Math.round(position.coords.accuracy)}m)`,
         });
       },
       (error) => {
@@ -1656,13 +1662,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = "Veuillez autoriser l'accès à votre position";
+            errorMessage = "Veuillez autoriser l'accès à votre position dans les paramètres de votre navigateur";
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = "Position indisponible";
+            errorMessage = "Position indisponible. Assurez-vous que le GPS est activé et que vous êtes à l'extérieur ou près d'une fenêtre";
             break;
           case error.TIMEOUT:
-            errorMessage = "La demande de position a expiré";
+            errorMessage = "La détection a pris trop de temps. Assurez-vous que le GPS est activé et réessayez";
             break;
         }
         
@@ -1674,8 +1680,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 0
+        timeout: 30000, // 30 secondes pour permettre au GPS de se stabiliser
+        maximumAge: 5000 // Accepter une position récente (5 secondes) pour améliorer la performance
       }
     );
   };
