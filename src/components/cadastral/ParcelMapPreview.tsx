@@ -117,6 +117,19 @@ export const ParcelMapPreview = ({
   
   const mapConfig = { ...defaultConfig, ...config };
 
+  // Calculer le centre de la carte basé sur la borne 1
+  const mapCenter = useMemo(() => {
+    const borne1 = coordinates.find(coord => coord.borne === '1' || coord.borne === 'Borne 1');
+    if (borne1 && borne1.lat && borne1.lng) {
+      const lat = parseFloat(borne1.lat);
+      const lng = parseFloat(borne1.lng);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return [lat, lng] as [number, number];
+      }
+    }
+    return mapConfig.defaultCenter || [0, 0] as [number, number];
+  }, [coordinates, mapConfig.defaultCenter]);
+
   // Mémoriser les coordonnées valides pour éviter les re-renders inutiles
   const validCoords = useMemo(() => 
     coordinates.filter(
@@ -225,8 +238,8 @@ export const ParcelMapPreview = ({
       const map = L.map(mapRef.current, {
         zoomControl: true,
         attributionControl: true,
-        center: mapConfig.defaultCenter || [0, 0],
-        zoom: mapConfig.defaultZoom || 2,
+        center: mapCenter,
+        zoom: mapConfig.defaultZoom || 15,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -255,7 +268,7 @@ export const ParcelMapPreview = ({
         setIsMapReady(false);
       }
     };
-  }, [mapConfig.defaultCenter, mapConfig.defaultZoom]);
+  }, [mapCenter, mapConfig.defaultZoom]);
 
   // Mettre à jour les marqueurs et le polygone quand les coordonnées changent
   useEffect(() => {
