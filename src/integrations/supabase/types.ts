@@ -183,6 +183,60 @@ export type Database = {
         }
         Relationships: []
       }
+      cadastral_boundary_conflicts: {
+        Row: {
+          conflict_coordinates: Json | null
+          conflict_type: string
+          conflicting_parcel_number: string
+          created_at: string
+          description: string
+          evidence_urls: string[] | null
+          id: string
+          proposed_solution: string | null
+          reported_by: string | null
+          reporting_parcel_number: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          conflict_coordinates?: Json | null
+          conflict_type: string
+          conflicting_parcel_number: string
+          created_at?: string
+          description: string
+          evidence_urls?: string[] | null
+          id?: string
+          proposed_solution?: string | null
+          reported_by?: string | null
+          reporting_parcel_number: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          conflict_coordinates?: Json | null
+          conflict_type?: string
+          conflicting_parcel_number?: string
+          created_at?: string
+          description?: string
+          evidence_urls?: string[] | null
+          id?: string
+          proposed_solution?: string | null
+          reported_by?: string | null
+          reporting_parcel_number?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cadastral_boundary_history: {
         Row: {
           boundary_document_url: string | null
