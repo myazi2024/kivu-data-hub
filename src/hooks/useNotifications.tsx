@@ -72,10 +72,14 @@ export const useNotifications = () => {
           setUnreadCount(prev => prev + 1);
 
           // Afficher un toast pour la nouvelle notification
+          const toastVariant = newNotif.type === 'error' || newNotif.type === 'warning' 
+            ? 'destructive' 
+            : 'default';
+          
           toast({
             title: newNotif.title,
             description: newNotif.message,
-            variant: newNotif.type === 'error' ? 'destructive' : 'default',
+            variant: toastVariant,
           });
         }
       )

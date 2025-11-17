@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Bell } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bell, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Popover,
@@ -7,119 +7,37 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Badge } from '@/components/ui/badge';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useToast } from '@/hooks/use-toast';
-
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  is_read: boolean;
-  action_url?: string;
-  created_at: string;
-}
+import { useNotifications } from '@/hooks/useNotifications';
+import { useNavigate } from 'react-router-dom';
 
 export const NotificationBell: React.FC = () => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const navigate = useNavigate();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-      
-      // Subscribe to realtime notifications
-      const channel = supabase
-        .channel('notifications')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'notifications',
-            filter: `user_id=eq.${user.id}`
-          },
-          (payload) => {
-            setNotifications(prev => [payload.new as Notification, ...prev]);
-            setUnreadCount(prev => prev + 1);
-            
-            // Show toast for new notification
-            toast({
-              title: (payload.new as Notification).title,
-              description: (payload.new as Notification).message,
-            });
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
-
-  const fetchNotifications = async () => {
-    if (!user) return;
-
-    const { data, error } = await supabase
-      .from('notifications')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(20);
-
-    if (error) {
-      console.error('Error fetching notifications:', error);
-      return;
-    }
-
-    const typedData = (data || []).map(n => ({
-      ...n,
-      type: n.type as 'info' | 'success' | 'warning' | 'error'
-    }));
-    setNotifications(typedData);
-    setUnreadCount(typedData.filter(n => !n.is_read).length);
-  };
-
-  const markAsRead = async (notificationId: string) => {
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq('id', notificationId);
-
-    if (!error) {
-      setNotifications(prev =>
-        prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+  const handleNotificationClick = async (notification: typeof notifications[0]) => {
+    await markAsRead(notification.id);
+    
+    if (notification.action_url) {
+      setOpen(false);
+      navigate(notification.action_url);
     }
   };
 
-  const markAllAsRead = async () => {
-    if (!user) return;
-
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true, read_at: new Date().toISOString() })
-      .eq('user_id', user.id)
-      .eq('is_read', false);
-
-    if (!error) {
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
-      setUnreadCount(0);
-    }
+  const handleDelete = async (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation();
+    await deleteNotification(notificationId);
   };
 
   const getNotificationColor = (type: string) => {
     switch (type) {
-      case 'success': return 'text-green-600';
-      case 'warning': return 'text-yellow-600';
-      case 'error': return 'text-red-600';
-      default: return 'text-blue-600';
+      case 'success': return 'bg-green-500';
+      case 'warning': return 'bg-yellow-500';
+      case 'error': return 'bg-destructive';
+      default: return 'bg-primary';
     }
   };
 
@@ -164,36 +82,45 @@ export const NotificationBell: React.FC = () => {
               {notifications.map((notification) => (
                 <div
                   key={notification.id}
-                  className={`p-4 hover:bg-muted/50 cursor-pointer transition-colors ${
-                    !notification.is_read ? 'bg-primary/5' : ''
+                  className={`p-3 border-b hover:bg-accent transition-colors group relative ${
+                    !notification.is_read ? 'bg-accent/50' : ''
                   }`}
-                  onClick={() => {
-                    if (!notification.is_read) {
-                      markAsRead(notification.id);
-                    }
-                    if (notification.action_url) {
-                      window.location.href = notification.action_url;
-                    }
-                  }}
                 >
-                  <div className="flex items-start gap-3">
-                    <Bell className={`h-4 w-4 mt-1 ${getNotificationColor(notification.type)}`} />
-                    <div className="flex-1 space-y-1">
-                      <p className="font-medium text-sm">{notification.title}</p>
-                      <p className="text-sm text-muted-foreground">{notification.message}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(notification.created_at).toLocaleDateString('fr-FR', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </p>
+                  <div
+                    className="cursor-pointer"
+                    onClick={() => handleNotificationClick(notification)}
+                  >
+                    <div className="flex items-start gap-2 pr-8">
+                      <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${getNotificationColor(notification.type)}`} />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm">{notification.title}</p>
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(notification.created_at).toLocaleDateString('fr-FR', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </p>
+                      </div>
+                      {!notification.is_read && (
+                        <Badge variant="secondary" className="text-xs absolute top-3 right-10">
+                          Nouveau
+                        </Badge>
+                      )}
                     </div>
-                    {!notification.is_read && (
-                      <div className="h-2 w-2 rounded-full bg-primary" />
-                    )}
                   </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="absolute top-2 right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={(e) => handleDelete(e, notification.id)}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
                 </div>
               ))}
             </div>
