@@ -197,20 +197,20 @@ export function AdminDashboardOverview() {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4">
       {/* Header with filters and export */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-3">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-sm text-muted-foreground">Vue d'ensemble de la plateforme</p>
+          <h2 className="text-lg sm:text-2xl font-bold tracking-tight">Dashboard</h2>
+          <p className="text-[10px] sm:text-sm text-muted-foreground">Vue d'ensemble</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
+        <div className="flex gap-1.5 sm:gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-7 sm:h-9 text-xs">
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             CSV
           </Button>
-          <Button variant="outline" size="sm" onClick={handleExportJSON}>
-            <Download className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={handleExportJSON} className="h-7 sm:h-9 text-xs">
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
             JSON
           </Button>
         </div>
@@ -227,24 +227,24 @@ export function AdminDashboardOverview() {
       />
 
       {/* Main Stats */}
-      <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-2 sm:gap-3 grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
             <Card key={index} className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow">
-              <CardHeader className="flex flex-row items-center justify-between p-3 md:p-4 pb-2">
-                <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground truncate pr-1">
+              <CardHeader className="flex flex-row items-center justify-between p-2 sm:p-3 pb-1 sm:pb-2">
+                <CardTitle className="text-[10px] sm:text-xs font-medium text-muted-foreground truncate pr-1">
                   {stat.title}
                 </CardTitle>
-                <Icon className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground shrink-0" />
+                <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-muted-foreground shrink-0" />
               </CardHeader>
-              <CardContent className="p-3 md:p-4 pt-0">
-                <div className="text-lg md:text-2xl font-bold truncate">{stat.value}</div>
-                <div className="flex items-center gap-0.5 md:gap-1 text-[10px] md:text-xs text-muted-foreground mt-1">
+              <CardContent className="p-2 sm:p-3 pt-0">
+                <div className="text-sm sm:text-lg md:text-xl font-bold truncate">{stat.value}</div>
+                <div className="flex items-center gap-0.5 text-[9px] sm:text-[10px] text-muted-foreground mt-0.5 sm:mt-1">
                   {stat.positive ? (
-                    <TrendingUp className="h-2.5 w-2.5 md:h-3 md:w-3 text-success shrink-0" />
+                    <TrendingUp className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-success shrink-0" />
                   ) : (
-                    <TrendingDown className="h-2.5 w-2.5 md:h-3 md:w-3 text-destructive shrink-0" />
+                    <TrendingDown className="h-2.5 w-2.5 sm:h-3 sm:w-3 text-destructive shrink-0" />
                   )}
                   <span className={stat.positive ? 'text-success' : 'text-destructive'}>
                     {stat.change}
