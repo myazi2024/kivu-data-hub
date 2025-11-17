@@ -4092,13 +4092,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             {/* Province - toujours visible */}
             {sectionType && (
-              <div className="space-y-2">
-                <Label htmlFor="province">Province *</Label>
+              <div className="space-y-1 md:space-y-2">
+                <Label htmlFor="province" className="text-xs md:text-sm">Province *</Label>
                 <Select 
                   value={formData.province} 
                   onValueChange={(value) => handleInputChange('province', value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 md:h-11 text-sm">
                     <SelectValue placeholder="Sélectionner la province" />
                   </SelectTrigger>
                   <SelectContent>
@@ -4112,74 +4112,76 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             {/* Section Urbaine (SU) - visible uniquement si type urbain sélectionné */}
             {sectionType === 'urbaine' && (
-              <div className="space-y-3 pt-4 border-t">
-                <h4 className="text-sm font-semibold text-muted-foreground">Section Urbaine (SU)</h4>
-                <p className="text-xs text-muted-foreground">
+              <div className="space-y-2 md:space-y-3 pt-3 md:pt-4 border-t">
+                <h4 className="text-xs md:text-sm font-semibold text-muted-foreground">Section Urbaine (SU)</h4>
+                <p className="text-[10px] leading-tight md:text-xs text-muted-foreground">
                   Remplissez ces champs pour les zones urbaines (numéro SU).
                 </p>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="ville">Ville</Label>
-                  <Select 
-                    value={formData.ville}
-                    onValueChange={(value) => handleInputChange('ville', value)}
-                    disabled={!formData.province || availableVilles.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        !formData.province 
-                        ? "Sélectionner d'abord une province" 
-                        : availableVilles.length === 0 
-                        ? "Aucune ville disponible"
-                        : "Sélectionner la ville"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableVilles.map(ville => (
-                        <SelectItem key={ville} value={ville}>{ville}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
+                  <div className="space-y-1 md:space-y-2">
+                    <Label htmlFor="ville" className="text-xs md:text-sm">Ville</Label>
+                    <Select 
+                      value={formData.ville}
+                      onValueChange={(value) => handleInputChange('ville', value)}
+                      disabled={!formData.province || availableVilles.length === 0}
+                    >
+                      <SelectTrigger className="h-9 md:h-11 text-xs md:text-sm">
+                        <SelectValue placeholder={
+                          !formData.province 
+                          ? "Province d'abord" 
+                          : availableVilles.length === 0 
+                          ? "Aucune ville"
+                          : "Sélectionner"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableVilles.map(ville => (
+                          <SelectItem key={ville} value={ville}>{ville}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1 md:space-y-2">
+                    <Label htmlFor="commune" className="text-xs md:text-sm">Commune</Label>
+                    <Select 
+                      value={formData.commune}
+                      onValueChange={(value) => handleInputChange('commune', value)}
+                      disabled={!formData.ville || availableCommunes.length === 0}
+                    >
+                      <SelectTrigger className="h-9 md:h-11 text-xs md:text-sm">
+                        <SelectValue placeholder={
+                          !formData.ville 
+                          ? "Ville d'abord" 
+                          : availableCommunes.length === 0 
+                          ? "Aucune commune"
+                          : "Sélectionner"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCommunes.map(commune => (
+                          <SelectItem key={commune} value={commune}>{commune}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="commune">Commune</Label>
-                  <Select 
-                    value={formData.commune}
-                    onValueChange={(value) => handleInputChange('commune', value)}
-                    disabled={!formData.ville || availableCommunes.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        !formData.ville 
-                        ? "Sélectionner d'abord une ville" 
-                        : availableCommunes.length === 0 
-                        ? "Aucune commune disponible"
-                        : "Sélectionner la commune"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCommunes.map(commune => (
-                        <SelectItem key={commune} value={commune}>{commune}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="quartier">Quartier</Label>
+                <div className="space-y-1 md:space-y-2">
+                  <Label htmlFor="quartier" className="text-xs md:text-sm">Quartier</Label>
                   <Select 
                     value={formData.quartier}
                     onValueChange={(value) => handleInputChange('quartier', value)}
                     disabled={!formData.commune || availableQuartiers.length === 0}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9 md:h-11 text-xs md:text-sm">
                       <SelectValue placeholder={
                         !formData.commune 
-                        ? "Sélectionner d'abord une commune" 
+                        ? "Commune d'abord" 
                         : availableQuartiers.length === 0 
-                        ? "Aucun quartier disponible - saisie manuelle possible"
-                        : "Sélectionner le quartier"
+                        ? "Saisie manuelle"
+                        : "Sélectionner"
                       } />
                     </SelectTrigger>
                     <SelectContent>
@@ -4189,28 +4191,30 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </SelectContent>
                   </Select>
                   {availableQuartiers.length === 0 && formData.commune && (
-                    <div className="space-y-2 mt-2">
+                    <div className="space-y-1 mt-1.5">
                       <Input
+                        className="h-9 md:h-11 text-xs md:text-sm"
                         placeholder="Saisir le nom du quartier"
                         value={formData.quartier || ''}
                         onChange={(e) => handleInputChange('quartier', e.target.value)}
                       />
-                      <p className="text-xs text-muted-foreground">Aucun quartier prédéfini - saisie manuelle</p>
+                      <p className="text-[10px] leading-tight md:text-xs text-muted-foreground">Aucun quartier prédéfini - saisie manuelle</p>
                     </div>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="avenue">Avenue</Label>
+                <div className="space-y-1 md:space-y-2">
+                  <Label htmlFor="avenue" className="text-xs md:text-sm">Avenue</Label>
                   <Input
                     id="avenue"
+                    className="h-9 md:h-11 text-xs md:text-sm"
                     placeholder="Saisir le nom de l'avenue"
                     value={formData.avenue || ''}
                     onChange={(e) => handleInputChange('avenue', e.target.value)}
                     disabled={!formData.quartier}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    {!formData.quartier ? "Sélectionner d'abord un quartier" : "Saisie manuelle"}
+                  <p className="text-[10px] leading-tight md:text-xs text-muted-foreground">
+                    {!formData.quartier ? "Quartier d'abord" : "Saisie manuelle"}
                   </p>
                 </div>
               </div>
@@ -4218,86 +4222,92 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             {/* Section Rurale (SR) - visible uniquement si type rural sélectionné */}
             {sectionType === 'rurale' && (
-              <div className="space-y-3 pt-4 border-t">
-                <h4 className="text-sm font-semibold text-muted-foreground">Section rurale (SR)</h4>
-                <p className="text-xs text-muted-foreground">
+              <div className="space-y-2 md:space-y-3 pt-3 md:pt-4 border-t">
+                <h4 className="text-xs md:text-sm font-semibold text-muted-foreground">Section rurale (SR)</h4>
+                <p className="text-[10px] leading-tight md:text-xs text-muted-foreground">
                   Remplissez ces champs pour les zones rurales (numéro SR).
                 </p>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="territoire">Territoire</Label>
-                  <Select 
-                    value={formData.territoire}
-                    onValueChange={(value) => handleInputChange('territoire', value)}
-                    disabled={!formData.province || availableTerritoires.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        !formData.province 
-                        ? "Sélectionner d'abord une province" 
-                        : availableTerritoires.length === 0 
-                        ? "Aucun territoire disponible"
-                        : "Sélectionner le territoire"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableTerritoires.map(territoire => (
-                        <SelectItem key={territoire} value={territoire}>{territoire}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
+                  <div className="space-y-1 md:space-y-2">
+                    <Label htmlFor="territoire" className="text-xs md:text-sm">Territoire</Label>
+                    <Select 
+                      value={formData.territoire}
+                      onValueChange={(value) => handleInputChange('territoire', value)}
+                      disabled={!formData.province || availableTerritoires.length === 0}
+                    >
+                      <SelectTrigger className="h-9 md:h-11 text-xs md:text-sm">
+                        <SelectValue placeholder={
+                          !formData.province 
+                          ? "Province d'abord" 
+                          : availableTerritoires.length === 0 
+                          ? "Aucun territoire"
+                          : "Sélectionner"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableTerritoires.map(territoire => (
+                          <SelectItem key={territoire} value={territoire}>{territoire}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-1 md:space-y-2">
+                    <Label htmlFor="collectivite" className="text-xs md:text-sm">Collectivité</Label>
+                    <Select 
+                      value={formData.collectivite}
+                      onValueChange={(value) => handleInputChange('collectivite', value)}
+                      disabled={!formData.territoire || availableCollectivites.length === 0}
+                    >
+                      <SelectTrigger className="h-9 md:h-11 text-xs md:text-sm">
+                        <SelectValue placeholder={
+                          !formData.territoire 
+                          ? "Territoire d'abord" 
+                          : availableCollectivites.length === 0 
+                          ? "Aucune collectivité"
+                          : "Sélectionner"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableCollectivites.map(collectivite => (
+                          <SelectItem key={collectivite} value={collectivite}>{collectivite}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="collectivite">Collectivité</Label>
-                  <Select 
-                    value={formData.collectivite}
-                    onValueChange={(value) => handleInputChange('collectivite', value)}
-                    disabled={!formData.territoire || availableCollectivites.length === 0}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder={
-                        !formData.territoire 
-                        ? "Sélectionner d'abord un territoire" 
-                        : availableCollectivites.length === 0 
-                        ? "Aucune collectivité disponible"
-                        : "Sélectionner la collectivité"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableCollectivites.map(collectivite => (
-                        <SelectItem key={collectivite} value={collectivite}>{collectivite}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
+                  <div className="space-y-1 md:space-y-2">
+                    <Label htmlFor="groupement" className="text-xs md:text-sm">Groupement</Label>
+                    <Input
+                      id="groupement"
+                      className="h-9 md:h-11 text-xs md:text-sm"
+                      placeholder="ex: Katoyi"
+                      value={formData.groupement || ''}
+                      onChange={(e) => handleInputChange('groupement', e.target.value)}
+                      disabled={!formData.collectivite}
+                    />
+                    <p className="text-[10px] leading-tight md:text-xs text-muted-foreground">
+                      {!formData.collectivite ? "Collectivité d'abord" : "Optionnel"}
+                    </p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="groupement">Groupement</Label>
-                  <Input
-                    id="groupement"
-                    placeholder="ex: Katoyi"
-                    value={formData.groupement || ''}
-                    onChange={(e) => handleInputChange('groupement', e.target.value)}
-                    disabled={!formData.collectivite}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {!formData.collectivite ? "Sélectionner d'abord une collectivité" : "Saisie manuelle - optionnel"}
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="village">Village</Label>
-                  <Input
-                    id="village"
-                    placeholder="ex: Mushaki"
-                    value={formData.village || ''}
-                    onChange={(e) => handleInputChange('village', e.target.value)}
-                    disabled={!formData.collectivite}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    {!formData.collectivite ? "Sélectionner d'abord une collectivité" : "Saisie manuelle - optionnel"}
-                  </p>
+                  <div className="space-y-1 md:space-y-2">
+                    <Label htmlFor="village" className="text-xs md:text-sm">Village</Label>
+                    <Input
+                      id="village"
+                      className="h-9 md:h-11 text-xs md:text-sm"
+                      placeholder="ex: Mushaki"
+                      value={formData.village || ''}
+                      onChange={(e) => handleInputChange('village', e.target.value)}
+                      disabled={!formData.collectivite}
+                    />
+                    <p className="text-[10px] leading-tight md:text-xs text-muted-foreground">
+                      {!formData.collectivite ? "Collectivité d'abord" : "Optionnel"}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
