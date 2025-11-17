@@ -674,21 +674,22 @@ export const ParcelMapPreview = ({
   }
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label className="text-sm font-medium flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-primary" />
+    <div className="space-y-2 md:space-y-3">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
+          <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
           Aperçu de la parcelle
         </Label>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
           {coordinates.length > 0 && (
-            <Badge variant="outline" className="gap-1 text-xs">
+            <Badge variant="outline" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
               <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
-              <span>bornes</span>
+              <span className="hidden sm:inline">bornes</span>
+              <span className="sm:hidden">b.</span>
             </Badge>
           )}
           {surfaceArea > 0 && (
-            <Badge variant="secondary" className="font-mono">
+            <Badge variant="secondary" className="font-mono text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
               {surfaceArea.toLocaleString()} m²
             </Badge>
           )}
@@ -696,17 +697,17 @@ export const ParcelMapPreview = ({
       </div>
 
       {conflictingParcels.length > 0 && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="flex items-center justify-between">
+        <Alert variant="destructive" className="py-2 md:py-3">
+          <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs md:text-sm">
             <span>
-              {conflictingParcels.length} conflit(s) de limites détecté(s)
+              {conflictingParcels.length} conflit(s) détecté(s)
             </span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowConflictDialog(true)}
-              className="ml-2"
+              className="h-7 text-xs w-full sm:w-auto"
             >
               Signaler
             </Button>
@@ -716,11 +717,10 @@ export const ParcelMapPreview = ({
 
       {/* Validation du nombre maximum de marqueurs */}
       {mapConfig.maxMarkers && validCoords.length > mapConfig.maxMarkers && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            Vous avez dépassé le nombre maximum de bornes ({mapConfig.maxMarkers}). 
-            Veuillez supprimer {validCoords.length - mapConfig.maxMarkers} borne(s).
+        <Alert variant="destructive" className="py-2 md:py-3">
+          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <AlertDescription className="text-xs md:text-sm">
+            Dépassement: {validCoords.length - mapConfig.maxMarkers} borne(s) en trop (max: {mapConfig.maxMarkers}).
           </AlertDescription>
         </Alert>
       )}
@@ -729,18 +729,18 @@ export const ParcelMapPreview = ({
       {surfaceArea > 0 && (
         <>
           {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                La surface calculée ({surfaceArea.toLocaleString()} m²) est inférieure à la surface minimale requise ({mapConfig.minSurfaceSqm.toLocaleString()} m²).
+            <Alert variant="destructive" className="py-2 md:py-3">
+              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <AlertDescription className="text-xs md:text-sm">
+                Surface trop petite: {surfaceArea.toLocaleString()} m² (min: {mapConfig.minSurfaceSqm.toLocaleString()} m²).
               </AlertDescription>
             </Alert>
           )}
           {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                La surface calculée ({surfaceArea.toLocaleString()} m²) dépasse la surface maximale autorisée ({mapConfig.maxSurfaceSqm.toLocaleString()} m²).
+            <Alert variant="destructive" className="py-2 md:py-3">
+              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <AlertDescription className="text-xs md:text-sm">
+                Surface trop grande: {surfaceArea.toLocaleString()} m² (max: {mapConfig.maxSurfaceSqm.toLocaleString()} m²).
               </AlertDescription>
             </Alert>
           )}
@@ -748,9 +748,9 @@ export const ParcelMapPreview = ({
       )}
 
       {loadingConflicts && (
-        <Alert>
-          <Info className="h-4 w-4" />
-          <AlertDescription>
+        <Alert className="py-2 md:py-3">
+          <Info className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <AlertDescription className="text-xs md:text-sm">
             Vérification des parcelles voisines...
           </AlertDescription>
         </Alert>
@@ -759,19 +759,15 @@ export const ParcelMapPreview = ({
       <Card className="overflow-hidden border-2 border-primary/20">
         <div 
           ref={mapRef} 
-          style={{ 
-            height: '400px', 
-            width: '100%',
-            borderRadius: '8px'
-          }} 
+          className="h-[250px] md:h-[350px] lg:h-[400px] w-full rounded-lg"
         />
       </Card>
       
-      <div className="text-xs text-muted-foreground flex items-center gap-1">
-        <Info className="h-3 w-3" />
+      <div className="text-[10px] md:text-xs text-muted-foreground flex items-start gap-1 md:gap-1.5">
+        <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
         <span>
-          Glissez les marqueurs pour ajuster les positions GPS.
-          {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer qu\'il borde une route.'}
+          Glissez les marqueurs pour ajuster.
+          {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
         </span>
       </div>
 
