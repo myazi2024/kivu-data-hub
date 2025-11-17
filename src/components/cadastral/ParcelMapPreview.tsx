@@ -239,7 +239,7 @@ export const ParcelMapPreview = ({
         zoomControl: true,
         attributionControl: true,
         center: mapCenter,
-        zoom: mapConfig.defaultZoom || 18,
+        zoom: 19,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
