@@ -124,6 +124,18 @@ export const ParcelMapPreview = ({
     ),
     [coordinates]
   );
+  
+  // Coordonnées avec valeurs par défaut pour affichage visuel des bornes non remplies
+  const displayCoords = useMemo(() => 
+    coordinates.map((coord, index) => {
+      if (coord.lat && coord.lng && !isNaN(parseFloat(coord.lat)) && !isNaN(parseFloat(coord.lng))) {
+        return coord;
+      }
+      // Pour les bornes sans coordonnées, on retourne null pour ne pas les afficher
+      return null;
+    }).filter(Boolean) as typeof coordinates,
+    [coordinates]
+  );
 
   // Calculer l'orientation d'un côté basé sur le bearing
   const calculateOrientation = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
@@ -253,7 +265,7 @@ export const ParcelMapPreview = ({
       const L = await import('leaflet');
       const map = mapInstanceRef.current;
       
-      console.log('Mise à jour de la carte avec', validCoords.length, 'coordonnées valides');
+      console.log('Mise à jour de la carte avec', validCoords.length, 'coordonnées valides sur', coordinates.length, 'bornes totales');
 
       // Supprimer les anciens marqueurs, polygone, dimensions et conflits
       markersRef.current.forEach(marker => marker.remove());
@@ -267,10 +279,11 @@ export const ParcelMapPreview = ({
       conflictLayersRef.current.forEach(layer => layer.remove());
       conflictLayersRef.current = [];
 
-      // Si pas de coordonnées valides, centrer par défaut
+      // Si pas de coordonnées valides, afficher message mais garder la carte visible
       if (validCoords.length === 0) {
-        map.setView([0, 0], 2);
+        map.setView(mapConfig.defaultCenter || [0, 0], mapConfig.defaultZoom || 2);
         setSurfaceArea(0);
+        console.log('Aucune coordonnée GPS valide - Carte centrée par défaut');
         return;
       }
 
@@ -633,13 +646,27 @@ export const ParcelMapPreview = ({
     }
   };
 
-  if (validCoords.length === 0) {
+  if (coordinates.length === 0) {
     return (
       <Card className="p-4 bg-muted/30">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <AlertCircle className="h-4 w-4" />
+          <Info className="h-4 w-4" />
           <p className="text-sm">
-            Ajoutez au moins {mapConfig.minMarkers || 3} bornes GPS pour voir l'aperçu sur la carte
+            Ajoutez des coordonnées GPS pour voir l'aperçu de la parcelle sur la carte.
+          </p>
+        </div>
+      </Card>
+    );
+  }
+
+  if (validCoords.length === 0) {
+    return (
+      <Card className="p-4 bg-warning/10 border-warning/30">
+        <div className="flex items-center gap-2 text-warning">
+          <AlertTriangle className="h-4 w-4" />
+          <p className="text-sm">
+            {coordinates.length} {coordinates.length > 1 ? 'bornes ont été ajoutées' : 'borne a été ajoutée'} mais {coordinates.length > 1 ? 'leurs' : 'sa'} coordonnées GPS ne sont pas encore renseignées. 
+            Remplissez les latitude et longitude pour voir la parcelle sur la carte.
           </p>
         </div>
       </Card>
@@ -653,11 +680,19 @@ export const ParcelMapPreview = ({
           <MapPin className="h-4 w-4 text-primary" />
           Aperçu de la parcelle
         </Label>
-        {surfaceArea > 0 && (
-          <Badge variant="secondary" className="font-mono">
-            {surfaceArea.toLocaleString()} m²
-          </Badge>
-        )}
+        <div className="flex items-center gap-2">
+          {coordinates.length > 0 && (
+            <Badge variant="outline" className="gap-1 text-xs">
+              <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
+              <span>bornes</span>
+            </Badge>
+          )}
+          {surfaceArea > 0 && (
+            <Badge variant="secondary" className="font-mono">
+              {surfaceArea.toLocaleString()} m²
+            </Badge>
+          )}
+        </div>
       </div>
 
       {conflictingParcels.length > 0 && (
