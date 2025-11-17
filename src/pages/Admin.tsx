@@ -82,12 +82,14 @@ const Admin = () => {
       
       if (error) {
         console.error('Erreur lors du chargement des contributions:', error);
+        toast.error('Erreur lors du chargement des contributions en attente');
         return;
       }
       
       setPendingCount(count || 0);
     } catch (error) {
       console.error('Erreur lors du chargement des contributions en attente:', error);
+      toast.error('Erreur lors du chargement des statistiques');
     }
   };
 

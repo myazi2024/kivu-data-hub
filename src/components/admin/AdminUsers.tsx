@@ -36,13 +36,18 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       // Fetch profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        toast.error('Erreur lors du chargement des profils utilisateurs');
+        throw profilesError;
+      }
 
       // Fetch roles for all users
       const userIds = profilesData?.map(p => p.user_id) || [];

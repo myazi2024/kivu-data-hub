@@ -86,6 +86,7 @@ export interface PredictiveData {
 
 export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [paymentAnalytics, setPaymentAnalytics] = useState<PaymentAnalytics | null>(null);
   const [cadastralAnalytics, setCadastralAnalytics] = useState<CadastralAnalytics | null>(null);
   const [businessKPIs, setBusinessKPIs] = useState<BusinessKPIs | null>(null);
@@ -95,12 +96,17 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
   const [funnelData, setFunnelData] = useState<FunnelData | null>(null);
   const [predictiveData, setPredictiveData] = useState<PredictiveData | null>(null);
 
+  // Utiliser des timestamps comme dépendances pour éviter les re-renders infinis
+  const startTime = startDate.getTime();
+  const endTime = endDate.getTime();
+
   useEffect(() => {
     fetchAllAnalytics();
-  }, [startDate.getTime(), endDate.getTime()]);
+  }, [startTime, endTime]);
 
   const fetchAllAnalytics = async () => {
     setLoading(true);
+    setError(null);
     try {
       await Promise.all([
         fetchPaymentAnalytics(),
@@ -114,19 +120,21 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
       ]);
     } catch (error) {
       console.error('Error fetching advanced analytics:', error);
+      setError('Erreur lors du chargement des analytics');
     } finally {
       setLoading(false);
     }
   };
 
   const fetchPaymentAnalytics = async () => {
-    const { data: payments } = await supabase
-      .from('payments')
-      .select('*')
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString());
+    try {
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
-    if (!payments) return;
+      if (!payments) return;
 
     const methodStats = payments.reduce((acc, p) => {
       const method = p.payment_provider || p.payment_method || 'Unknown';
@@ -159,16 +167,20 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
       totalTransactions,
       failedTransactions
     });
+    } catch (error) {
+      console.error('Error fetching payment analytics:', error);
+    }
   };
 
   const fetchCadastralAnalytics = async () => {
-    const { data: invoices } = await supabase
-      .from('cadastral_invoices')
-      .select('*')
-      .gte('created_at', startDate.toISOString())
-      .lte('created_at', endDate.toISOString());
+    try {
+      const { data: invoices } = await supabase
+        .from('cadastral_invoices')
+        .select('*')
+        .gte('created_at', startDate.toISOString())
+        .lte('created_at', endDate.toISOString());
 
-    if (!invoices) return;
+      if (!invoices) return;
 
     const serviceUsage = invoices.reduce((acc, inv) => {
       const services = (inv.selected_services as any) || {};
@@ -227,17 +239,21 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 10)
     });
+    } catch (error) {
+      console.error('Error fetching cadastral analytics:', error);
+    }
   };
 
   const fetchBusinessKPIs = async () => {
-    const { data: invoices } = await supabase
-      .from('cadastral_invoices')
-      .select('*')
-      .eq('status', 'paid');
+    try {
+      const { data: invoices } = await supabase
+        .from('cadastral_invoices')
+        .select('*')
+        .eq('status', 'paid');
 
-    const { data: users } = await supabase
-      .from('profiles')
-      .select('*');
+      const { data: users } = await supabase
+        .from('profiles')
+        .select('*');
 
     const totalRevenue = invoices?.reduce((sum, inv) => sum + inv.total_amount_usd, 0) || 0;
     const totalUsers = users?.length || 1;
@@ -257,16 +273,20 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
         { channel: 'Social', roi: Math.random() * 100 + 50 }
       ]
     });
+    } catch (error) {
+      console.error('Error fetching business KPIs:', error);
+    }
   };
 
   const fetchTerritorialPerformance = async () => {
-    const { data: parcels } = await supabase
-      .from('cadastral_parcels')
-      .select('province');
+    try {
+      const { data: parcels } = await supabase
+        .from('cadastral_parcels')
+        .select('province');
 
-    const { data: invoices } = await supabase
-      .from('cadastral_invoices')
-      .select('geographical_zone, total_amount_usd');
+      const { data: invoices } = await supabase
+        .from('cadastral_invoices')
+        .select('geographical_zone, total_amount_usd');
 
     const provinces = ['Kinshasa', 'Nord-Kivu', 'Sud-Kivu', 'Katanga', 'Kasaï', 'Équateur', 'Bandundu'];
     
@@ -283,17 +303,21 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
       byProvince: provinceStats,
       heatmapData: provinceStats.map(p => ({ province: p.province, value: p.revenue }))
     });
+    } catch (error) {
+      console.error('Error fetching territorial performance:', error);
+    }
   };
 
   const fetchComparativeData = async () => {
-    const periodLength = endDate.getTime() - startDate.getTime();
-    const prevStartDate = new Date(startDate.getTime() - periodLength);
-    const prevEndDate = new Date(startDate.getTime());
+    try {
+      const periodLength = endDate.getTime() - startDate.getTime();
+      const prevStartDate = new Date(startDate.getTime() - periodLength);
+      const prevEndDate = new Date(startDate.getTime());
 
-    const [currentData, previousData] = await Promise.all([
-      fetchPeriodData(startDate, endDate),
-      fetchPeriodData(prevStartDate, prevEndDate)
-    ]);
+      const [currentData, previousData] = await Promise.all([
+        fetchPeriodData(startDate, endDate),
+        fetchPeriodData(prevStartDate, prevEndDate)
+      ]);
 
     setComparativeData({
       current: currentData,
@@ -305,6 +329,9 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
         aovChange: ((currentData.avgOrderValue - previousData.avgOrderValue) / previousData.avgOrderValue) * 100
       }
     });
+    } catch (error) {
+      console.error('Error fetching comparative data:', error);
+    }
   };
 
   const fetchPeriodData = async (start: Date, end: Date) => {
@@ -332,65 +359,78 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
   };
 
   const fetchCohortData = async () => {
-    const cohorts = ['Jan 2025', 'Fév 2025', 'Mar 2025', 'Avr 2025'];
-    
-    setCohortData({
-      cohorts: cohorts.map(cohort => ({
-        cohort,
-        size: Math.floor(Math.random() * 200) + 50,
-        retention: [
-          { period: 'Semaine 1', rate: 100 },
-          { period: 'Semaine 2', rate: Math.random() * 20 + 75 },
-          { period: 'Semaine 3', rate: Math.random() * 20 + 60 },
-          { period: 'Mois 2', rate: Math.random() * 20 + 45 },
-          { period: 'Mois 3', rate: Math.random() * 20 + 35 }
-        ],
-        ltv: Math.random() * 500 + 200
-      }))
-    });
+    try {
+      const cohorts = ['Jan 2025', 'Fév 2025', 'Mar 2025', 'Avr 2025'];
+      
+      setCohortData({
+        cohorts: cohorts.map(cohort => ({
+          cohort,
+          size: Math.floor(Math.random() * 200) + 50,
+          retention: [
+            { period: 'Semaine 1', rate: 100 },
+            { period: 'Semaine 2', rate: Math.random() * 20 + 75 },
+            { period: 'Semaine 3', rate: Math.random() * 20 + 60 },
+            { period: 'Mois 2', rate: Math.random() * 20 + 45 },
+            { period: 'Mois 3', rate: Math.random() * 20 + 35 }
+          ],
+          ltv: Math.random() * 500 + 200
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching cohort data:', error);
+    }
   };
 
   const fetchFunnelData = async () => {
-    setFunnelData({
-      stages: [
-        { stage: 'Visiteurs', users: 10000, conversionRate: 100, dropoffRate: 0 },
-        { stage: 'Recherches', users: 6000, conversionRate: 60, dropoffRate: 40 },
-        { stage: 'Résultats vus', users: 4500, conversionRate: 75, dropoffRate: 25 },
-        { stage: 'Panier', users: 2000, conversionRate: 44.4, dropoffRate: 55.6 },
-        { stage: 'Paiement initié', users: 1200, conversionRate: 60, dropoffRate: 40 },
-        { stage: 'Paiement complété', users: 950, conversionRate: 79.2, dropoffRate: 20.8 }
-      ]
-    });
+    try {
+      setFunnelData({
+        stages: [
+          { stage: 'Visiteurs', users: 10000, conversionRate: 100, dropoffRate: 0 },
+          { stage: 'Recherches', users: 6000, conversionRate: 60, dropoffRate: 40 },
+          { stage: 'Résultats vus', users: 4500, conversionRate: 75, dropoffRate: 25 },
+          { stage: 'Panier', users: 2000, conversionRate: 44.4, dropoffRate: 55.6 },
+          { stage: 'Paiement initié', users: 1200, conversionRate: 60, dropoffRate: 40 },
+          { stage: 'Paiement complété', users: 950, conversionRate: 79.2, dropoffRate: 20.8 }
+        ]
+      });
+    } catch (error) {
+      console.error('Error fetching funnel data:', error);
+    }
   };
 
   const fetchPredictiveData = async () => {
-    const forecast = [];
-    for (let i = 1; i <= 30; i++) {
-      const date = new Date();
-      date.setDate(date.getDate() + i);
-      forecast.push({
-        date: date.toISOString().split('T')[0],
-        predicted: Math.random() * 2000 + 3000,
-        confidence: Math.random() * 20 + 70
-      });
-    }
+    try {
+      const forecast = [];
+      for (let i = 1; i <= 30; i++) {
+        const date = new Date();
+        date.setDate(date.getDate() + i);
+        forecast.push({
+          date: date.toISOString().split('T')[0],
+          predicted: Math.random() * 2000 + 3000,
+          confidence: Math.random() * 20 + 70
+        });
+      }
 
-    setPredictiveData({
-      revenueForecast: forecast,
-      anomalies: [
-        { date: new Date().toISOString().split('T')[0], type: 'revenue_spike', severity: 'info', description: 'Pic de revenus inhabituel détecté' },
-        { date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], type: 'churn_increase', severity: 'warning', description: 'Augmentation du taux de désabonnement' }
-      ],
-      recommendations: [
-        { priority: 'high', action: 'Optimiser le tunnel de paiement', impact: 'Augmentation potentielle de 15% des conversions' },
-        { priority: 'medium', action: 'Lancer campagne promotionnelle en Nord-Kivu', impact: 'Croissance estimée de 20% dans la région' },
-        { priority: 'low', action: 'Améliorer temps de réponse mobile', impact: 'Réduction de 5% du taux de rebond' }
-      ]
-    });
+      setPredictiveData({
+        revenueForecast: forecast,
+        anomalies: [
+          { date: new Date().toISOString().split('T')[0], type: 'revenue_spike', severity: 'info', description: 'Pic de revenus inhabituel détecté' },
+          { date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], type: 'churn_increase', severity: 'warning', description: 'Augmentation du taux de désabonnement' }
+        ],
+        recommendations: [
+          { priority: 'high', action: 'Optimiser le tunnel de paiement', impact: 'Augmentation potentielle de 15% des conversions' },
+          { priority: 'medium', action: 'Lancer campagne promotionnelle en Nord-Kivu', impact: 'Croissance estimée de 20% dans la région' },
+          { priority: 'low', action: 'Améliorer temps de réponse mobile', impact: 'Réduction de 5% du taux de rebond' }
+        ]
+      });
+    } catch (error) {
+      console.error('Error fetching predictive data:', error);
+    }
   };
 
   return {
     loading,
+    error,
     paymentAnalytics,
     cadastralAnalytics,
     businessKPIs,
