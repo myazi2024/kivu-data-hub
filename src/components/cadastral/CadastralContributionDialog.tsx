@@ -4494,26 +4494,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
 
                       {/* Boutons mode compact */}
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 flex-wrap">
                         <Button
                           type="button"
                           variant={coord.mode === 'auto' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => updateGPSCoordinate(index, 'mode', 'auto')}
-                          className="flex-1 h-7 md:h-9 gap-0.5 md:gap-1 px-1.5 md:px-3 text-[10px] md:text-sm"
+                          className="h-7 md:h-9 gap-0.5 md:gap-1 px-2 md:px-3 text-[10px] md:text-sm"
                         >
-                          <MdLocationOn className="h-3 w-3 md:h-3.5 md:w-3.5" />
-                          <span className="hidden xs:inline">Auto</span>
+                          <MdLocationOn className="h-3 w-3 md:h-3.5 md:w-3.5 flex-shrink-0" />
+                          <span>Auto</span>
                         </Button>
                         <Button
                           type="button"
                           variant={coord.mode === 'manual' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => updateGPSCoordinate(index, 'mode', 'manual')}
-                          className="flex-1 h-7 md:h-9 px-1.5 md:px-3 text-[10px] md:text-sm"
+                          className="h-7 md:h-9 px-2 md:px-3 text-[10px] md:text-sm"
                         >
-                          <span className="hidden xs:inline">Manuel</span>
-                          <span className="xs:hidden">M</span>
+                          Manuel
                         </Button>
                         <Popover>
                           <PopoverTrigger asChild>
@@ -4555,7 +4554,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               }
                             }}
                             disabled={coord.detecting}
-                            className="w-full gap-1 md:gap-2 h-8 md:h-9 text-[11px] md:text-sm"
+                            className="gap-1 md:gap-2 h-8 md:h-9 text-[11px] md:text-sm px-3"
                           >
                             {coord.detecting ? (
                               <>
@@ -4596,9 +4595,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                   variant="outline"
                                   size="sm"
                                   onClick={() => resetGPSCoordinate(index)}
-                                  className="w-full gap-1 text-[10px] md:text-xs h-7 md:h-8 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400"
+                                  className="gap-1 text-[10px] md:text-xs h-7 md:h-8 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 px-2"
                                 >
-                                  <RotateCcw className="h-3 w-3" />
+                                  <RotateCcw className="h-3 w-3 flex-shrink-0" />
                                   Réinitialiser
                                 </Button>
                               )}
