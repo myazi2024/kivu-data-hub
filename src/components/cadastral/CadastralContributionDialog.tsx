@@ -36,6 +36,7 @@ import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { QuickAuthDialog } from './QuickAuthDialog';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { CartItem } from '@/hooks/useCart';
+import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { ParcelMapPreview } from './ParcelMapPreview';
 
 interface CadastralContributionDialogProps {
@@ -50,6 +51,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   parcelNumber
 }) => {
   const { submitContribution, loading } = useCadastralContribution();
+  const { getConfig } = useContributionConfig();
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -4606,6 +4608,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       onCoordinatesUpdate={(updatedCoords) => {
                         setGpsCoordinates(updatedCoords);
                       }}
+                      config={getConfig('map_preview_settings') || {}}
                     />
                   </div>
                 )}
