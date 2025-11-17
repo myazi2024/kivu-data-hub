@@ -97,7 +97,7 @@ export const useAdvancedAnalytics = (startDate: Date, endDate: Date) => {
 
   useEffect(() => {
     fetchAllAnalytics();
-  }, [startDate, endDate]);
+  }, [startDate.getTime(), endDate.getTime()]);
 
   const fetchAllAnalytics = async () => {
     setLoading(true);
