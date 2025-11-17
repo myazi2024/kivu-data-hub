@@ -29,7 +29,15 @@ export const ConversionFunnel: React.FC<Props> = ({ data, loading }) => {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground text-center">Aucune donnée de funnel disponible pour la période sélectionnée.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const totalUsers = data.stages[0]?.users || 1;
   const convertedUsers = data.stages[data.stages.length - 1]?.users || 0;

@@ -27,7 +27,15 @@ export const BusinessKPIs: React.FC<Props> = ({ data, loading }) => {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground text-center">Aucune donnée KPI disponible pour la période sélectionnée.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const ltvCacRatio = data.ltv / data.cac;
   const healthScore = Math.min(100, (ltvCacRatio / 3) * 100);

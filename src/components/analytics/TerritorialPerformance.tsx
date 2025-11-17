@@ -26,7 +26,15 @@ export const TerritorialPerformance: React.FC<Props> = ({ data, loading }) => {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground text-center">Aucune donnée territoriale disponible pour la période sélectionnée.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const sortedByRevenue = [...data.byProvince].sort((a, b) => b.revenue - a.revenue);
   const topProvinces = sortedByRevenue.slice(0, 5);

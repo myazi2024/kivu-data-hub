@@ -27,7 +27,15 @@ export const PredictiveAnalytics: React.FC<Props> = ({ data, loading }) => {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground text-center">Aucune donnée prédictive disponible pour la période sélectionnée.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const avgConfidence = data.revenueForecast.reduce((sum, d) => sum + d.confidence, 0) / data.revenueForecast.length;
   const totalPredicted = data.revenueForecast.reduce((sum, d) => sum + d.predicted, 0);
