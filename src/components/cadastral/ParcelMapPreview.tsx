@@ -247,6 +247,43 @@ export const ParcelMapPreview = ({
         maxZoom: 19,
       }).addTo(map);
 
+      // Ajouter le contrôle d'échelle
+      L.control.scale({
+        position: 'bottomleft',
+        metric: true,
+        imperial: false,
+        maxWidth: 200,
+      }).addTo(map);
+
+      // Ajouter une boussole (indicateur du nord)
+      const CompassControl = L.Control.extend({
+        options: {
+          position: 'topright'
+        },
+        onAdd: function() {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-compass');
+          container.style.backgroundColor = 'white';
+          container.style.width = '40px';
+          container.style.height = '40px';
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.justifyContent = 'center';
+          container.style.cursor = 'default';
+          container.style.borderRadius = '4px';
+          container.style.boxShadow = '0 1px 5px rgba(0,0,0,0.4)';
+          container.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L15 10H9L12 2Z" fill="#dc2626"/>
+              <path d="M12 22L9 14H15L12 22Z" fill="#6b7280"/>
+              <circle cx="12" cy="12" r="2" fill="#374151"/>
+            </svg>
+          `;
+          container.title = 'Nord';
+          return container;
+        }
+      });
+      new CompassControl().addTo(map);
+
       mapInstanceRef.current = map;
       
       // S'assurer que la carte se redessine correctement
