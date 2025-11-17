@@ -4470,165 +4470,124 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   return null;
                 })()}
 
-                <div className="space-y-1.5 md:space-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-1 gap-1.5 md:gap-3">
                   {gpsCoordinates.map((coord, index) => (
                     <div key={index} className="border rounded-md md:rounded-lg p-1.5 md:p-3 space-y-1.5 md:space-y-3 bg-gradient-to-br from-muted/20 to-transparent animate-fade-in">
                       {/* Header compact avec nom et suppression */}
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-[10px] md:text-xs font-medium text-muted-foreground min-w-fit">Borne {index + 1}</span>
+                      <div className="flex flex-col md:flex-row items-stretch md:items-center gap-1.5">
+                        <span className="text-[10px] md:text-xs font-medium text-muted-foreground">Borne {index + 1}</span>
                         <Input
                           placeholder="Nom"
                           value={coord.borne}
                           onChange={(e) => updateGPSCoordinate(index, 'borne', e.target.value)}
-                          className="flex-1 h-7 md:h-9 text-[11px] md:text-sm px-2"
+                          className="w-full h-7 md:h-9 text-[10px] md:text-sm px-1.5 md:px-2"
                         />
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeGPSCoordinate(index)}
-                          className="text-destructive hover:bg-destructive/10 h-7 w-7 md:h-9 md:w-9 p-0 flex-shrink-0"
+                          className="text-destructive hover:bg-destructive/10 h-7 w-full md:w-9 p-0 flex-shrink-0"
                         >
                           <Trash2 className="h-3 md:h-4 w-3 md:w-4" />
                         </Button>
                       </div>
 
                       {/* Boutons mode compact */}
-                      <div className="flex gap-1 flex-wrap">
+                      <div className="flex gap-1">
                         <Button
                           type="button"
                           variant={coord.mode === 'auto' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => updateGPSCoordinate(index, 'mode', 'auto')}
-                          className="h-7 md:h-9 gap-0.5 md:gap-1 px-2 md:px-3 text-[10px] md:text-sm"
+                          className="flex-1 h-7 md:h-9 text-[10px] md:text-xs px-1.5 md:px-3"
                         >
-                          <MdLocationOn className="h-3 w-3 md:h-3.5 md:w-3.5 flex-shrink-0" />
-                          <span>Auto</span>
+                          Automatique
                         </Button>
                         <Button
                           type="button"
                           variant={coord.mode === 'manual' ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => updateGPSCoordinate(index, 'mode', 'manual')}
-                          className="h-7 md:h-9 px-2 md:px-3 text-[10px] md:text-sm"
+                          className="flex-1 h-7 md:h-9 text-[10px] md:text-xs px-1.5 md:px-3"
                         >
                           Manuel
                         </Button>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 w-7 md:h-9 md:w-9 p-0 flex-shrink-0"
-                            >
-                              <Info className="h-3 md:h-3.5 w-3 md:w-3.5 text-muted-foreground" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-64 text-xs">
-                            {coord.mode === 'auto' ? (
-                              <p>Placez-vous au-dessus de la borne et cliquez "Détecter" pour capturer automatiquement les coordonnées GPS.</p>
-                            ) : (
-                              <p>Saisissez manuellement les coordonnées GPS si vous les avez déjà.</p>
-                            )}
-                          </PopoverContent>
-                        </Popover>
                       </div>
 
-                      {/* Mode Automatique */}
+                      {/* Mode automatique */}
                       {coord.mode === 'auto' && (
-                        <div className="space-y-1 md:space-y-2 animate-fade-in">
-                          {!coord.detected && (
-                            <p className="text-[10px] md:text-xs text-blue-600 dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/50 px-2 py-1 md:p-2 rounded">
-                              📍 Placez-vous au-dessus puis détectez
-                            </p>
-                          )}
-                          
+                        <div className="space-y-1.5">
                           <Button
                             type="button"
-                            variant={coord.detected ? 'default' : 'outline'}
+                            variant="outline"
                             size="sm"
-                            onClick={() => {
-                              if (!coord.detected) {
-                                captureCurrentLocation(index);
-                              }
-                            }}
+                            onClick={() => captureCurrentLocation(index)}
                             disabled={coord.detecting}
-                            className="gap-1 md:gap-2 h-8 md:h-9 text-[11px] md:text-sm px-3"
+                            className="w-full h-7 md:h-9 text-[10px] md:text-xs"
                           >
-                            {coord.detecting ? (
-                              <>
-                                <div className="h-4 w-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                Détection en cours...
-                              </>
-                            ) : coord.detected ? (
-                              <>
-                                <CheckCircle2 className="h-4 w-4" />
-                                Borne {coord.borne || index + 1} détectée
-                              </>
-                            ) : (
-                              <>
-                                <MdLocationOn className="h-4 w-4" />
-                                Détecter la borne
-                              </>
-                            )}
+                            <MdLocationOn className="h-3 md:h-4 w-3 md:w-4 mr-1 flex-shrink-0" />
+                            {coord.detecting ? 'Détection...' : 'Détecter'}
                           </Button>
-
-                          {coord.detected && index < gpsCoordinates.length - 1 && (
-                            <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg p-3 animate-fade-in">
-                              <p className="text-xs text-green-700 dark:text-green-300">
-                                ✅ Coordonnées enregistrées ! Passez à la borne suivante : {gpsCoordinates[index + 1]?.borne || `Borne ${index + 2}`}
-                              </p>
-                            </div>
-                          )}
-
-                          {coord.lat && coord.lng && (
-                            <div className="space-y-1">
-                              <div className="text-[10px] md:text-xs text-muted-foreground bg-muted/30 p-1 md:p-1.5 rounded flex justify-between gap-1">
-                                <span className="truncate">Lat: {parseFloat(coord.lat).toFixed(6)}</span>
-                                <span className="truncate">Lng: {parseFloat(coord.lng).toFixed(6)}</span>
+                          
+                          {coord.detected && coord.lat && coord.lng && (
+                            <div className="text-[10px] md:text-xs p-1.5 md:p-2 bg-muted/50 rounded space-y-0.5">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className="font-medium">Lat:</span>
+                                <span className="truncate">{parseFloat(coord.lat).toFixed(6)}</span>
                               </div>
-                              
-                              {coord.detected && (
-                                <Button
-                                  type="button"
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => resetGPSCoordinate(index)}
-                                  className="gap-1 text-[10px] md:text-xs h-7 md:h-8 border-orange-300 dark:border-orange-700 text-orange-600 dark:text-orange-400 px-2"
-                                >
-                                  <RotateCcw className="h-3 w-3 flex-shrink-0" />
-                                  Réinitialiser
-                                </Button>
-                              )}
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className="font-medium">Lng:</span>
+                                <span className="truncate">{parseFloat(coord.lng).toFixed(6)}</span>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  updateGPSCoordinate(index, 'lat', '');
+                                  updateGPSCoordinate(index, 'lng', '');
+                                  updateGPSCoordinate(index, 'detected', false);
+                                }}
+                                className="w-full mt-1 h-6 md:h-7 text-[9px] md:text-xs"
+                              >
+                                <RotateCcw className="h-3 w-3 mr-1" />
+                                Réinit.
+                              </Button>
                             </div>
                           )}
                         </div>
                       )}
 
-                      {/* Mode Manuel */}
+                      {/* Mode manuel */}
                       {coord.mode === 'manual' && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2 animate-fade-in">
-                          <div className="space-y-0.5">
-                            <Label className="text-[10px] md:text-xs">Latitude</Label>
+                        <div className="space-y-1.5">
+                          <div className="space-y-1.5">
+                            <Label htmlFor={`lat-${index}`} className="text-[10px] md:text-xs">
+                              Latitude
+                            </Label>
                             <Input
+                              id={`lat-${index}`}
                               type="number"
                               step="0.000001"
-                              placeholder="-1.674"
+                              placeholder="Ex: -1.234567"
                               value={coord.lat}
                               onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
-                              className="h-7 md:h-9 text-[11px] md:text-sm"
+                              className="h-7 md:h-9 text-[10px] md:text-sm px-1.5 md:px-2"
                             />
                           </div>
-                          <div className="space-y-0.5">
-                            <Label className="text-[10px] md:text-xs">Longitude</Label>
+                          <div className="space-y-1.5">
+                            <Label htmlFor={`lng-${index}`} className="text-[10px] md:text-xs">
+                              Longitude
+                            </Label>
                             <Input
+                              id={`lng-${index}`}
                               type="number"
                               step="0.000001"
-                              placeholder="29.224"
+                              placeholder="Ex: 29.123456"
                               value={coord.lng}
                               onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
-                              className="h-7 md:h-9 text-[11px] md:text-sm"
+                              className="h-7 md:h-9 text-[10px] md:text-sm px-1.5 md:px-2"
                             />
                           </div>
                         </div>
