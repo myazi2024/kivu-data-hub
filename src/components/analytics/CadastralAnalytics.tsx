@@ -27,7 +27,15 @@ export const CadastralAnalytics: React.FC<Props> = ({ data, loading }) => {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground text-center">Aucune donnée cadastrale disponible pour la période sélectionnée.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">

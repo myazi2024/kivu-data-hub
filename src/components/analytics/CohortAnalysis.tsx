@@ -26,7 +26,15 @@ export const CohortAnalysis: React.FC<Props> = ({ data, loading }) => {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <p className="text-muted-foreground text-center">Aucune donnée de cohorte disponible pour la période sélectionnée.</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Préparer les données de rétention pour le graphique
   const retentionData = data.cohorts[0]?.retention.map((r, idx) => {
