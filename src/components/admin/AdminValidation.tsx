@@ -8,6 +8,7 @@ import { testCatalogReactivity, printCatalogTestResults, CatalogTest } from '@/u
 import { validateSearchBarReactivity } from '@/utils/testSearchBarReactivity';
 import { validateResultsReactivity, printResultsValidation, ResultsValidationResult } from '@/utils/testResultsReactivity';
 import { testContributionReactivity, printContributionTestResults } from '@/utils/testContributionReactivity';
+import { testParcelNumberFormats, printTestResults, ParcelFormatTest } from '@/utils/testParcelNumberFormat';
 import { CheckCircle, XCircle, AlertTriangle, Play, Loader2, Database, Search, FileEdit } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -17,16 +18,19 @@ const AdminValidation: React.FC = () => {
   const [searchBarTestLoading, setSearchBarTestLoading] = useState(false);
   const [resultsTestLoading, setResultsTestLoading] = useState(false);
   const [contributionTestLoading, setContributionTestLoading] = useState(false);
+  const [parcelFormatTestLoading, setParcelFormatTestLoading] = useState(false);
   const [results, setResults] = useState<ValidationResult[]>([]);
   const [catalogTests, setCatalogTests] = useState<CatalogTest[]>([]);
   const [searchBarTests, setSearchBarTests] = useState<any[]>([]);
   const [resultsTests, setResultsTests] = useState<ResultsValidationResult[]>([]);
   const [contributionTests, setContributionTests] = useState<ValidationResult[]>([]);
+  const [parcelFormatTests, setParcelFormatTests] = useState<ParcelFormatTest[]>([]);
   const [lastRun, setLastRun] = useState<Date | null>(null);
   const [lastCatalogTest, setLastCatalogTest] = useState<Date | null>(null);
   const [lastSearchBarTest, setLastSearchBarTest] = useState<Date | null>(null);
   const [lastResultsTest, setLastResultsTest] = useState<Date | null>(null);
   const [lastContributionTest, setLastContributionTest] = useState<Date | null>(null);
+  const [lastParcelFormatTest, setLastParcelFormatTest] = useState<Date | null>(null);
 
   const runValidation = async () => {
     setLoading(true);

@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export interface CadastralContributionData {
   parcelNumber: string;
+  sectionType?: 'urbaine' | 'rurale'; // Type de section cadastrale
   
   // Informations générales
   propertyTitleType?: string;
@@ -246,6 +247,7 @@ export const useCadastralContribution = () => {
       const contributionPayload: any = {
         user_id: user.id,
         parcel_number: data.parcelNumber,
+        parcel_type: data.sectionType === 'urbaine' ? 'SU' : data.sectionType === 'rurale' ? 'SR' : 'SU', // Convertir en SU/SR
         property_title_type: data.propertyTitleType,
         lease_type: data.leaseType,
         title_reference_number: data.titleReferenceNumber,
