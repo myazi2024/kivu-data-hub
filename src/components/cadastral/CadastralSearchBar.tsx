@@ -21,22 +21,7 @@ interface ParcelSuggestion {
   ville: string | null;
   commune: string | null;
   quartier: string | null;
-  parcel_type: string;
 }
-
-const getParcelSectionType = (parcelNumber: string): 'SU' | 'SR' => {
-  // Format urbain typique: VILLE/COMMUNE/QUARTIER/N° ou similaire avec slashes
-  // Format rural typique: PROVINCE/TERRITOIRE/COLLECTIVITE/... avec plus de niveaux
-  const parts = parcelNumber.split('/');
-  
-  // Si le format contient "Avenue" ou moins de 5 segments, c'est probablement urbain
-  if (parcelNumber.includes('Avenue') || parcelNumber.includes('Av.') || parts.length <= 4) {
-    return 'SU';
-  }
-  
-  // Si plus de segments (Village, Groupement, etc.), c'est rural
-  return 'SR';
-};
 
 const CadastralSearchBar = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -87,7 +72,7 @@ const CadastralSearchBar = () => {
       try {
         const { data, error } = await supabase
           .from('cadastral_parcels')
-          .select('id, parcel_number, current_owner_name, ville, commune, quartier, parcel_type')
+          .select('id, parcel_number, current_owner_name, ville, commune, quartier')
           .ilike('parcel_number', `%${searchQuery}%`)
           .is('deleted_at', null)
           .limit(5);
@@ -219,33 +204,25 @@ const CadastralSearchBar = () => {
 
               {searchSuggestions.length > 0 && (
                 <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-[100] max-h-64 overflow-y-auto">
-              {searchSuggestions.map((suggestion) => {
-                    const sectionType = getParcelSectionType(suggestion.parcel_number);
-                    return (
-                      <button
-                        key={suggestion.id}
-                        onClick={() => handleSelectSuggestion(suggestion.parcel_number)}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-seloger-red/10 text-seloger-red">
-                                {sectionType}
-                              </span>
-                              <p className="font-semibold text-seloger-red">{suggestion.parcel_number}</p>
-                            </div>
-                            {(suggestion.ville || suggestion.commune || suggestion.quartier) && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                {[suggestion.ville, suggestion.commune, suggestion.quartier].filter(Boolean).join(', ')}
-                              </p>
-                            )}
-                          </div>
-                          <Search className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                  {searchSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      onClick={() => handleSelectSuggestion(suggestion.parcel_number)}
+                      className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="font-semibold text-seloger-red">{suggestion.parcel_number}</p>
+                          {(suggestion.ville || suggestion.commune || suggestion.quartier) && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {[suggestion.ville, suggestion.commune, suggestion.quartier].filter(Boolean).join(', ')}
+                            </p>
+                          )}
                         </div>
-                      </button>
-                    );
-                  })}
+                        <Search className="h-4 w-4 text-muted-foreground shrink-0 ml-2" />
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
 
