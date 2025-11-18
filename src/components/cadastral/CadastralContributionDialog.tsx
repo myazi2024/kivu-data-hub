@@ -1148,7 +1148,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       // Add document URLs to form data
       const dataToSubmit = {
         ...formData,
-        ...(sectionType && { sectionType }), // Type de section (urbaine/rurale) pour déterminer SU/SR
         currentOwners: currentOwners.filter(o => o.lastName && o.firstName), // Ne garder que les propriétaires avec nom et prénom
         ownershipHistory: ownershipHistoryData.length > 0 ? ownershipHistoryData as any : undefined,
         ownerDocumentUrl: ownerDocUrl || undefined,
