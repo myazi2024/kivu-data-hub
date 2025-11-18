@@ -21,20 +21,7 @@ interface ParcelSuggestion {
   ville: string | null;
   commune: string | null;
   quartier: string | null;
-  village: string | null;
-  territoire: string | null;
-  collectivite: string | null;
 }
-
-// Fonction pour déterminer le type de section (Urbaine ou Rurale)
-const getSectionType = (parcel: ParcelSuggestion): 'SU' | 'SR' => {
-  // Une parcelle est considérée urbaine si elle a ville, commune ou quartier
-  if (parcel.ville || parcel.commune || parcel.quartier) {
-    return 'SU';
-  }
-  // Sinon, elle est rurale (village, territoire, collectivité)
-  return 'SR';
-};
 
 const CadastralSearchBar = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -85,7 +72,7 @@ const CadastralSearchBar = () => {
       try {
         const { data, error } = await supabase
           .from('cadastral_parcels')
-          .select('id, parcel_number, current_owner_name, ville, commune, quartier, village, territoire, collectivite')
+          .select('id, parcel_number, current_owner_name, ville, commune, quartier')
           .ilike('parcel_number', `%${searchQuery}%`)
           .is('deleted_at', null)
           .limit(5);
@@ -225,22 +212,10 @@ const CadastralSearchBar = () => {
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <p className="font-semibold text-seloger-red">
-                            <span className="text-xs font-normal text-muted-foreground mr-1">
-                              {getSectionType(suggestion)}
-                            </span>
-                            {suggestion.parcel_number}
-                          </p>
-                          {(suggestion.ville || suggestion.commune || suggestion.quartier || suggestion.village || suggestion.territoire) && (
+                          <p className="font-semibold text-seloger-red">{suggestion.parcel_number}</p>
+                          {(suggestion.ville || suggestion.commune || suggestion.quartier) && (
                             <p className="text-xs text-muted-foreground mt-1">
-                              {[
-                                suggestion.ville, 
-                                suggestion.commune, 
-                                suggestion.quartier,
-                                suggestion.village,
-                                suggestion.territoire,
-                                suggestion.collectivite
-                              ].filter(Boolean).join(', ')}
+                              {[suggestion.ville, suggestion.commune, suggestion.quartier].filter(Boolean).join(', ')}
                             </p>
                           )}
                         </div>
