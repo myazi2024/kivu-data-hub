@@ -201,20 +201,50 @@ const AdminCCCContributions: React.FC = () => {
 
     try {
       const contribution = contributions.find(c => c.id === contributionId);
-      if (!contribution) return;
+      if (!contribution) {
+        toast.error('Contribution non trouvée');
+        return;
+      }
 
       const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        toast.error('Vous devez être connecté pour approuver une contribution');
+        return;
+      }
 
-      const { error } = await supabase
+      console.log('Approbation de la contribution:', contributionId);
+
+      const { data, error } = await supabase
         .from('cadastral_contributions')
         .update({ 
           status: 'approved',
-          reviewed_by: user?.id,
+          reviewed_by: user.id,
           reviewed_at: new Date().toISOString()
         })
-        .eq('id', contributionId);
+        .eq('id', contributionId)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Erreur Supabase lors de l\'approbation:', error);
+        
+        // Messages d'erreur plus explicites
+        let errorMessage = 'Erreur lors de l\'approbation';
+        if (error.message) {
+          errorMessage += ': ' + error.message;
+        }
+        if (error.details) {
+          errorMessage += ' - ' + error.details;
+        }
+        if (error.hint) {
+          errorMessage += ' (Conseil: ' + error.hint + ')';
+        }
+        
+        toast.error(errorMessage);
+        return;
+      }
+
+      console.log('Contribution approuvée avec succès:', data);
 
       // Le trigger auto_generate_ccc_code() va automatiquement :
       // 1. Générer un code CCC unique
@@ -222,12 +252,15 @@ const AdminCCCContributions: React.FC = () => {
       // 3. Créer une notification pour l'utilisateur
 
       toast.success('Contribution approuvée ! Le code CCC a été généré automatiquement.');
-      fetchContributions();
+      await fetchContributions();
       setIsDetailsOpen(false);
       setValidationResult(null);
     } catch (error: any) {
-      console.error('Erreur lors de l\'approbation:', error);
-      toast.error('Erreur lors de l\'approbation');
+      console.error('Erreur inattendue lors de l\'approbation:', error);
+      const errorMessage = error?.message 
+        ? `Erreur lors de l'approbation: ${error.message}` 
+        : 'Erreur inattendue lors de l\'approbation';
+      toast.error(errorMessage);
     }
   };
 
@@ -239,25 +272,39 @@ const AdminCCCContributions: React.FC = () => {
 
     try {
       const contribution = contributions.find(c => c.id === contributionId);
-      if (!contribution) return;
+      if (!contribution) {
+        toast.error('Contribution non trouvée');
+        return;
+      }
 
       const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        toast.error('Vous devez être connecté pour rejeter une contribution');
+        return;
+      }
 
-      const { error } = await supabase
+      console.log('Rejet de la contribution:', contributionId);
+
+      const { error: updateError } = await supabase
         .from('cadastral_contributions')
         .update({ 
           status: 'rejected',
           rejection_reason: rejectionReason,
-          rejected_by: user?.id,
-          reviewed_by: user?.id,
+          rejected_by: user.id,
+          reviewed_by: user.id,
           reviewed_at: new Date().toISOString()
         })
         .eq('id', contributionId);
 
-      if (error) throw error;
+      if (updateError) {
+        console.error('Erreur lors de la mise à jour:', updateError);
+        toast.error(`Erreur lors du rejet: ${updateError.message}`);
+        return;
+      }
 
       // Créer notification pour l'utilisateur
-      await supabase.from('notifications').insert({
+      const { error: notifError } = await supabase.from('notifications').insert({
         user_id: contribution.user_id,
         type: 'error',
         title: 'Contribution rejetée',
@@ -265,13 +312,21 @@ const AdminCCCContributions: React.FC = () => {
         action_url: '/user-dashboard?tab=contributions'
       });
 
+      if (notifError) {
+        console.error('Erreur lors de la création de la notification:', notifError);
+        // Ne pas bloquer le rejet si la notification échoue
+      }
+
       toast.success('Contribution rejetée');
-      fetchContributions();
+      await fetchContributions();
       setIsDetailsOpen(false);
       setRejectionReason('');
     } catch (error: any) {
-      console.error('Erreur lors du rejet:', error);
-      toast.error('Erreur lors du rejet');
+      console.error('Erreur inattendue lors du rejet:', error);
+      const errorMessage = error?.message 
+        ? `Erreur lors du rejet: ${error.message}` 
+        : 'Erreur inattendue lors du rejet';
+      toast.error(errorMessage);
     }
   };
 
