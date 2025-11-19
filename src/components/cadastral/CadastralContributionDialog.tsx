@@ -1165,7 +1165,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
       const result = await submitContribution(dataToSubmit);
       
-      if (result.success) {
+      if (result?.success) {
         // Effacer les données sauvegardées après une soumission réussie
         clearSavedFormData();
         
@@ -1177,6 +1177,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         } else {
           setShowSuccess(true);
         }
+      } else if (result && !result.success) {
+        // La gestion d'erreur est déjà faite dans le hook useCadastralContribution
+        // On ne fait rien ici pour éviter les doublons de messages
+        console.error('Échec de la soumission de la contribution');
       }
     } catch (error) {
       toast({

@@ -130,10 +130,23 @@ export const useCadastralContribution = () => {
   const { user } = useAuth();
 
   const submitContribution = async (data: CadastralContributionData) => {
-    if (!user) {
+    // Vérifier l'authentification via session Supabase pour plus de fiabilité
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!user && !session) {
       toast({
         title: "Authentification requise",
         description: "Vous devez être connecté pour soumettre une contribution",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
+    const authenticatedUserId = user?.id || session?.user?.id;
+    if (!authenticatedUserId) {
+      toast({
+        title: "Erreur d'authentification",
+        description: "Impossible de récupérer votre identifiant utilisateur",
         variant: "destructive",
       });
       return { success: false };
@@ -193,10 +206,18 @@ export const useCadastralContribution = () => {
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('is_blocked, blocked_reason, fraud_strikes')
-        .eq('user_id', user.id)
+        .eq('user_id', authenticatedUserId)
         .maybeSingle();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        console.error('Erreur lors de la vérification du profil:', profileError);
+        toast({
+          title: "Erreur de vérification",
+          description: "Impossible de vérifier votre profil. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
 
       if (profile?.is_blocked) {
         toast({
@@ -210,12 +231,13 @@ export const useCadastralContribution = () => {
       // 🔒 Détection de fraude - Utiliser l'ancienne fonction en attendant migration types
       const { data: fraudCheck, error: fraudError } = await supabase
         .rpc('detect_suspicious_contribution', {
-          p_user_id: user.id,
+          p_user_id: authenticatedUserId,
           p_parcel_number: data.parcelNumber
         });
 
       if (fraudError) {
         console.error('Erreur détection fraude:', fraudError);
+        // Ne pas bloquer la soumission si la détection de fraude échoue
       }
 
       const suspicionData = Array.isArray(fraudCheck) && fraudCheck.length > 0 ? fraudCheck[0] : null;
@@ -233,7 +255,7 @@ export const useCadastralContribution = () => {
         
         // Enregistrer la tentative de fraude
         await supabase.from('fraud_attempts').insert({
-          user_id: user.id,
+          user_id: authenticatedUserId,
           fraud_type: 'suspicious_contribution',
           severity: 'high',
           description: Array.isArray(fraudReasons) ? fraudReasons.join(', ') : 'Score de fraude élevé'
@@ -244,7 +266,7 @@ export const useCadastralContribution = () => {
 
       // Soumettre la contribution
       const contributionPayload: any = {
-        user_id: user.id,
+        user_id: authenticatedUserId,
         parcel_number: data.parcelNumber,
         property_title_type: data.propertyTitleType,
         lease_type: data.leaseType,
@@ -308,14 +330,31 @@ export const useCadastralContribution = () => {
         .select()
         .maybeSingle();
 
-      if (contributionError) throw contributionError;
+      if (contributionError) {
+        console.error('Erreur lors de l\'insertion:', contributionError);
+        toast({
+          title: "Erreur de soumission",
+          description: contributionError.message || "Impossible d'enregistrer votre contribution. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+
+      if (!contributionData) {
+        toast({
+          title: "Erreur de soumission",
+          description: "La contribution n'a pas pu être enregistrée. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
 
       // Enregistrer une tentative de fraude si détectée
       if (isSuspicious) {
         await supabase
           .from('fraud_attempts')
           .insert({
-            user_id: user.id,
+            user_id: authenticatedUserId,
             contribution_id: contributionData.id,
             fraud_type: 'suspicious_contribution',
             description: fraudReasons.join('; '),
@@ -336,11 +375,6 @@ export const useCadastralContribution = () => {
         });
       }
 
-      toast({
-        title: "Contribution soumise",
-        description: "Votre contribution a été soumise avec succès et sera examinée par nos équipes.",
-      });
-
       // Recharger les codes CCC
       await fetchUserCodes();
 
@@ -354,9 +388,10 @@ export const useCadastralContribution = () => {
       return { success: true };
     } catch (err) {
       console.error('Erreur lors de la soumission:', err);
+      const errorMessage = err instanceof Error ? err.message : "Une erreur inattendue est survenue";
       toast({
         title: "Erreur",
-        description: "Impossible de soumettre votre contribution",
+        description: `Impossible de soumettre votre contribution: ${errorMessage}`,
         variant: "destructive",
       });
       return { success: false };
@@ -366,13 +401,16 @@ export const useCadastralContribution = () => {
   };
 
   const fetchUserCodes = async () => {
-    if (!user) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    const authenticatedUserId = user?.id || session?.user?.id;
+    
+    if (!authenticatedUserId) return;
 
     try {
       const { data, error } = await supabase
         .from('cadastral_contributor_codes')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', authenticatedUserId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
