@@ -270,16 +270,19 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
 
   // Calculer la surface à partir des bornes (formule de Shoelace)
   const calculateSurfaceFromBounds = () => {
-    if (!parcel.gps_coordinates || parcel.gps_coordinates.length < 3) return null;
+    // Type guard pour vérifier que gps_coordinates est bien un tableau
+    const coords = parcel.gps_coordinates;
+    if (!coords || !Array.isArray(coords) || coords.length < 3) return null;
     
     let area = 0;
-    const coords = parcel.gps_coordinates;
     const n = coords.length;
     
     for (let i = 0; i < n; i++) {
       const j = (i + 1) % n;
-      area += coords[i].lat * coords[j].lng;
-      area -= coords[j].lat * coords[i].lng;
+      const coord_i = coords[i] as { lat: number; lng: number };
+      const coord_j = coords[j] as { lat: number; lng: number };
+      area += coord_i.lat * coord_j.lng;
+      area -= coord_j.lat * coord_i.lng;
     }
     
     return Math.abs(area) / 2 * 111319.5 * 111319.5; // Conversion approximative en m²
@@ -847,13 +850,13 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                          </PopoverContent>
                        </Popover>
                     </h4>
-                    <div className="relative z-0">
-                      <CadastralMap 
-                        coordinates={parcel.gps_coordinates}
-                        center={{ lat: parcel.latitude, lng: parcel.longitude }}
-                        parcelNumber={parcel.parcel_number}
-                      />
-                    </div>
+                     <div className="relative z-0">
+                       <CadastralMap 
+                         coordinates={Array.isArray(parcel.gps_coordinates) ? parcel.gps_coordinates as Array<{ lat: number; lng: number; borne: string }> : []}
+                         center={{ lat: parcel.latitude, lng: parcel.longitude }}
+                         parcelNumber={parcel.parcel_number}
+                       />
+                     </div>
                   </CardContent>
                 </Card>
 
