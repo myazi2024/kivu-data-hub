@@ -2,46 +2,10 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchConfig } from './useSearchConfig';
+import { CadastralParcel } from '@/types/cadastral';
 
-export interface CadastralParcel {
-  id: string;
-  parcel_number: string;
-  parcel_type: 'SU' | 'SR';
-  location: string;
-  property_title_type: string;
-  title_reference_number: string | null;
-  area_sqm: number;
-  area_hectares: number;
-  gps_coordinates: Array<{ lat: number; lng: number; borne: string }>;
-  latitude: number;
-  longitude: number;
-  current_owner_name: string;
-  current_owner_legal_status: string;
-  current_owner_since: string;
-  whatsapp_number: string | null;
-  created_at: string;
-  updated_at: string;
-  // Nouveaux champs de localisation
-  province: string;
-  ville: string | null;
-  commune: string | null;
-  quartier: string | null;
-  avenue: string | null;
-  territoire: string | null;
-  collectivite: string | null;
-  groupement: string | null;
-  village: string | null;
-  // Nouveaux champs de bornage
-  nombre_bornes: number;
-  surface_calculee_bornes: number | null;
-  // Nouveaux champs de construction
-  construction_type: string | null;
-  construction_nature: 'Durable' | 'Semi-durable' | 'Précaire' | null;
-  declared_usage: 'Résidentiel' | 'Commercial' | 'Mixte' | 'Institutionnel' | 'Industriel' | 'Agricole' | null;
-  // Pièces jointes
-  owner_document_url: string | null;
-  property_title_document_url: string | null;
-}
+// Ré-exporter CadastralParcel pour rétrocompatibilité
+export type { CadastralParcel };
 
 export interface BuildingPermit {
   id: string;

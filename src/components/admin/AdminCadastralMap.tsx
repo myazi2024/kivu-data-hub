@@ -16,6 +16,7 @@ import { geographicData } from '@/lib/geographicData';
 // Extraire les provinces
 const provinces = Object.keys(geographicData);
 
+// Interface locale pour les parcelles affichées sur la carte (sous-ensemble du type complet)
 interface CadastralParcel {
   id: string;
   parcel_number: string;
