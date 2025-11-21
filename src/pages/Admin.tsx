@@ -27,6 +27,10 @@ import AdminCCCCodes from '@/components/admin/AdminCCCCodes';
 import AdminAuditLogs from '@/components/admin/AdminAuditLogs';
 import AdminArticles from '@/components/admin/AdminArticles';
 import AdminFraudDetection from '@/components/admin/AdminFraudDetection';
+import AdminInvoices from '@/components/admin/AdminInvoices';
+import AdminFinancialDashboard from '@/components/admin/AdminFinancialDashboard';
+import AdminTransactions from '@/components/admin/AdminTransactions';
+import AdminCommissions from '@/components/admin/AdminCommissions';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -129,11 +133,13 @@ const Admin = () => {
       case 'payments':
         return <AdminPayments onRefresh={fetchPendingCount} />;
       case 'invoices':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Gestion Factures - Coming soon</p>
-          </div>
-        );
+        return <AdminInvoices />;
+      case 'financial':
+        return <AdminFinancialDashboard />;
+      case 'transactions':
+        return <AdminTransactions />;
+      case 'commissions':
+        return <AdminCommissions />;
       case 'resellers':
         return <AdminResellers />;
       case 'services':
