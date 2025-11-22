@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { LogIn } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ResellerDiscountCodes } from '@/components/reseller/ResellerDiscountCodes';
 import ResellerDashboard from '@/components/reseller/ResellerDashboard';
 import ResellerStatisticsCharts from '@/components/statistics/ResellerStatisticsCharts';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,11 +45,16 @@ const ResellerDashboardPage: React.FC = () => {
       <Tabs defaultValue="overview" className="space-y-6">
         <TabsList>
           <TabsTrigger value="overview">Vue d'ensemble</TabsTrigger>
+          <TabsTrigger value="codes">Codes de Remise</TabsTrigger>
           <TabsTrigger value="statistics">Statistiques détaillées</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview">
           <ResellerDashboard />
+        </TabsContent>
+
+        <TabsContent value="codes">
+          <ResellerDiscountCodes />
         </TabsContent>
 
         <TabsContent value="statistics">
