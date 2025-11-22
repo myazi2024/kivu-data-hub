@@ -31,6 +31,8 @@ import AdminInvoices from '@/components/admin/AdminInvoices';
 import AdminFinancialDashboard from '@/components/admin/AdminFinancialDashboard';
 import AdminTransactions from '@/components/admin/AdminTransactions';
 import AdminCommissions from '@/components/admin/AdminCommissions';
+import AdminDiscountCodes from '@/components/admin/AdminDiscountCodes';
+import AdminBuildingPermits from '@/components/admin/AdminBuildingPermits';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -142,6 +144,8 @@ const Admin = () => {
         return <AdminCommissions />;
       case 'resellers':
         return <AdminResellers />;
+      case 'discount-codes':
+        return <AdminDiscountCodes />;
       case 'services':
         return <AdminCadastralServices />;
       case 'cadastral-map':
@@ -155,11 +159,7 @@ const Admin = () => {
       case 'zones':
         return <AdminTerritorialZones />;
       case 'permits':
-        return (
-          <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Permis de Construire - Coming soon</p>
-          </div>
-        );
+        return <AdminBuildingPermits />;
       case 'publications':
         return <AdminPublications onRefresh={fetchPendingCount} />;
       case 'articles':

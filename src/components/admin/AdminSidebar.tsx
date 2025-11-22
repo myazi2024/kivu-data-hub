@@ -20,7 +20,9 @@ import {
   Database,
   Globe,
   Gift,
-  Map as MapIcon
+  Map as MapIcon,
+  Tag,
+  Building2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,6 +66,7 @@ const menuItems = [
       { icon: FileText, label: 'Transactions', value: 'transactions', badge: null },
       { icon: Users, label: 'Commissions', value: 'commissions', badge: null },
       { icon: ShoppingCart, label: 'Revendeurs', value: 'resellers', badge: null },
+      { icon: Tag, label: 'Codes de Remise', value: 'discount-codes', badge: null },
     ]
   },
   {
@@ -75,7 +78,7 @@ const menuItems = [
       { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null },
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
       { icon: MapPin, label: 'Zones Territoriales', value: 'zones', badge: null },
-      { icon: Globe, label: 'Permis de Construire', value: 'permits', badge: null },
+      { icon: Building2, label: 'Permis de Construire', value: 'permits', badge: null },
     ]
   },
   {
