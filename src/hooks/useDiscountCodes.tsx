@@ -23,22 +23,48 @@ export const useDiscountCodes = () => {
 
     try {
       setLoading(true);
+      
+      // Fetch the reseller profile for current user
+      const { data: resellerData } = await supabase
+        .from('resellers')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (!resellerData) {
+        setCodes([]);
+        setLoading(false);
+        return;
+      }
+
+      // Fetch discount codes for this reseller
       const { data, error } = await supabase
         .from('discount_codes')
-        .select(`
-          *,
-          resellers!inner(user_id)
-        `)
-        .eq('resellers.user_id', user.id)
+        .select('*')
+        .eq('reseller_id', resellerData.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setCodes(data || []);
+
+      // Fetch reseller details separately
+      const { data: resellers } = await supabase
+        .from('resellers')
+        .select('id, business_name, reseller_code')
+        .eq('id', resellerData.id)
+        .maybeSingle();
+
+      // Merge data
+      const mergedData = (data || []).map(code => ({
+        ...code,
+        resellers: resellers || null
+      }));
+
+      setCodes(mergedData as any);
     } catch (error) {
       console.error('Error fetching discount codes:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les codes de remise",
+        description: "Impossible de charger vos codes de remise",
         variant: "destructive"
       });
     } finally {
@@ -50,21 +76,44 @@ export const useDiscountCodes = () => {
   const fetchAllCodes = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
+      
+      // First fetch discount codes
+      const { data: codesData, error: codesError } = await supabase
         .from('discount_codes')
-        .select(`
-          *,
-          resellers(business_name, reseller_code)
-        `)
+        .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setCodes(data || []);
+      if (codesError) throw codesError;
+
+      // Then fetch resellers separately
+      const { data: resellersData, error: resellersError } = await supabase
+        .from('resellers')
+        .select('id, business_name, reseller_code');
+
+      if (resellersError) {
+        console.error('Error fetching resellers:', resellersError);
+        // Continue with codes only
+        setCodes(codesData || []);
+        return;
+      }
+
+      // Create a map for quick lookup
+      const resellersMap = new Map(
+        (resellersData || []).map(r => [r.id, r])
+      );
+
+      // Merge the data
+      const mergedData = (codesData || []).map(code => ({
+        ...code,
+        resellers: resellersMap.get(code.reseller_id) || null
+      }));
+
+      setCodes(mergedData as any);
     } catch (error) {
       console.error('Error fetching all discount codes:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de charger les codes de remise",
+        description: "Impossible de charger les codes de remise. Vérifiez que des revendeurs existent.",
         variant: "destructive"
       });
     } finally {
