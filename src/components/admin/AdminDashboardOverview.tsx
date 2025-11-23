@@ -349,8 +349,8 @@ export function AdminDashboardOverview() {
             contributionApprovalData={[]}
           />
           <div className="grid gap-4 md:grid-cols-2">
-            <GeographicalAnalysis loading={enhancedLoading} zonesData={enhancedData?.zonesData} />
-            <ResellerAnalysis loading={enhancedLoading} resellers={enhancedData?.resellersAnalysis} />
+            <GeographicalAnalysis loading={enhancedLoading} zonesData={enhancedData?.zonesData ?? []} />
+            <ResellerAnalysis loading={enhancedLoading} resellers={enhancedData?.resellersAnalysis ?? []} />
           </div>
         </TabsContent>
 
