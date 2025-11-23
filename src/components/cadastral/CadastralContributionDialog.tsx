@@ -38,6 +38,7 @@ import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { CartItem } from '@/hooks/useCart';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { ParcelMapPreview } from './ParcelMapPreview';
+import { PermitPaymentDialog } from './PermitPaymentDialog';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -59,6 +60,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const dialogContentRef = React.useRef<HTMLDivElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showPermitPayment, setShowPermitPayment] = useState(false);
+  const [savedContributionId, setSavedContributionId] = useState<string | null>(null);
   const [savedPermitRequestData, setSavedPermitRequestData] = useState<any>(null);
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [pendingSubmission, setPendingSubmission] = useState(false);
@@ -1171,7 +1173,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         
         // Vérifier si l'utilisateur a demandé un permis
         if (permitMode === 'request' && permitRequestData) {
-          // Sauvegarder les données du permis pour le paiement
+          // Sauvegarder l'ID de la contribution et les données du permis pour le paiement
+          setSavedContributionId(result.contributionId);
           setSavedPermitRequestData(permitRequestData);
           setShowPermitPayment(true);
         } else {
@@ -5942,6 +5945,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
     {/* Bouton WhatsApp flottant */}
     {open && <WhatsAppFloatingButton />}
+    
+    {/* Dialog de paiement du permis */}
+    {showPermitPayment && savedContributionId && savedPermitRequestData && (
+      <PermitPaymentDialog
+        open={showPermitPayment}
+        onOpenChange={setShowPermitPayment}
+        contributionId={savedContributionId}
+        permitType={savedPermitRequestData.permitType}
+        onPaymentSuccess={() => {
+          setShowPermitPayment(false);
+          setShowSuccess(true);
+        }}
+      />
+    )}
     </>
   );
 };

@@ -385,7 +385,7 @@ export const useCadastralContribution = () => {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }
 
-      return { success: true };
+      return { success: true, contributionId: contributionData.id };
     } catch (err) {
       console.error('Erreur lors de la soumission:', err);
       const errorMessage = err instanceof Error ? err.message : "Une erreur inattendue est survenue";
