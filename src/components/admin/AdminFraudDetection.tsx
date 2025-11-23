@@ -17,7 +17,14 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ResponsiveTable } from '@/components/ui/responsive-table';
+import { 
+  ResponsiveTable,
+  ResponsiveTableHeader,
+  ResponsiveTableBody,
+  ResponsiveTableRow,
+  ResponsiveTableCell,
+  ResponsiveTableHead
+} from '@/components/ui/responsive-table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface FraudAttempt {
@@ -186,130 +193,139 @@ export default function AdminFraudDetection() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4" />
+          <CardHeader className="pb-2 p-3 md:p-4">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
               Tentatives totales
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalAttempts}</div>
-            <p className="text-xs text-muted-foreground mt-1">
+          <CardContent className="p-3 md:p-4 pt-0">
+            <div className="text-xl md:text-2xl font-bold">{stats.totalAttempts}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
               {stats.highSeverity} haute gravité
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-4 w-4" />
+          <CardHeader className="pb-2 p-3 md:p-4">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Users className="h-3 w-3 md:h-4 md:w-4" />
               Utilisateurs suspects
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.usersWithStrikes}</div>
-            <p className="text-xs text-muted-foreground mt-1">Avec avertissements</p>
+          <CardContent className="p-3 md:p-4 pt-0">
+            <div className="text-xl md:text-2xl font-bold">{stats.usersWithStrikes}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Avec avertissements</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Ban className="h-4 w-4" />
+          <CardHeader className="pb-2 p-3 md:p-4">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Ban className="h-3 w-3 md:h-4 md:w-4" />
               Utilisateurs bloqués
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-destructive">{stats.blockedUsers}</div>
-            <p className="text-xs text-muted-foreground mt-1">Actuellement</p>
+          <CardContent className="p-3 md:p-4 pt-0">
+            <div className="text-xl md:text-2xl font-bold text-destructive">{stats.blockedUsers}</div>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Actuellement</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Shield className="h-4 w-4" />
+          <CardHeader className="pb-2 p-3 md:p-4">
+            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
+              <Shield className="h-3 w-3 md:h-4 md:w-4" />
               Taux de détection
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-success">
+          <CardContent className="p-3 md:p-4 pt-0">
+            <div className="text-xl md:text-2xl font-bold text-success">
               {stats.totalAttempts > 0 
                 ? ((stats.usersWithStrikes / stats.totalAttempts) * 100).toFixed(0)
                 : 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Actions prises</p>
+            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Actions prises</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Suspicious Users */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <Users className="w-4 h-4 md:w-5 md:h-5" />
             Utilisateurs Suspects
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ResponsiveTable>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Utilisateur</TableHead>
-                  <TableHead className="hidden md:table-cell">Email</TableHead>
-                  <TableHead>Avert.</TableHead>
-                  <TableHead className="hidden lg:table-cell">Contributions</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+        <CardContent className="p-0 md:p-6">
+          <div className="overflow-x-auto">
+            <ResponsiveTable className="border-none">
+              <ResponsiveTableHeader>
+                <ResponsiveTableRow>
+                  <ResponsiveTableHead priority="high">Utilisateur</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="low">Email</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="medium">Avert.</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="low">Contributions</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="medium">Statut</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="high">Actions</ResponsiveTableHead>
+                </ResponsiveTableRow>
+              </ResponsiveTableHeader>
+              <ResponsiveTableBody>
                 {suspiciousUsers.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                      Aucun utilisateur suspect
-                    </TableCell>
-                  </TableRow>
+                  <ResponsiveTableRow>
+                    <ResponsiveTableCell priority="high" label="">
+                      <div className="text-center py-8 text-muted-foreground col-span-full">
+                        Aucun utilisateur suspect
+                      </div>
+                    </ResponsiveTableCell>
+                  </ResponsiveTableRow>
                 ) : (
                   suspiciousUsers.map((user) => (
-                    <TableRow key={user.user_id}>
-                      <TableCell className="font-medium">
-                        {user.full_name || 'Sans nom'}
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                        {user.email}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={user.fraud_strikes >= 3 ? 'destructive' : 'secondary'}>
+                    <ResponsiveTableRow key={user.user_id}>
+                      <ResponsiveTableCell priority="high" label="Utilisateur">
+                        <div className="font-medium text-sm">
+                          {user.full_name || 'Sans nom'}
+                        </div>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="low" label="Email">
+                        <div className="text-xs md:text-sm text-muted-foreground break-all">
+                          {user.email}
+                        </div>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="medium" label="Avertissements">
+                        <Badge variant={user.fraud_strikes >= 3 ? 'destructive' : 'secondary'} className="text-xs">
                           {user.fraud_strikes}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm">
-                        {user.suspicious_contributions}/{user.total_contributions}
-                      </TableCell>
-                      <TableCell>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="low" label="Contributions">
+                        <div className="text-xs md:text-sm">
+                          {user.suspicious_contributions}/{user.total_contributions}
+                        </div>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="medium" label="Statut">
                         {user.is_blocked ? (
-                          <Badge variant="destructive" className="gap-1">
+                          <Badge variant="destructive" className="gap-1 text-xs">
                             <Ban className="h-3 w-3" />
                             Bloqué
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="gap-1">
+                          <Badge variant="secondary" className="gap-1 text-xs">
                             <CheckCircle className="h-3 w-3" />
                             Actif
                           </Badge>
                         )}
-                      </TableCell>
-                      <TableCell>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="high" label="Actions">
                         {user.is_blocked ? (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleUnblockUser(user.user_id)}
+                            className="text-xs"
                           >
                             Débloquer
                           </Button>
@@ -318,106 +334,115 @@ export default function AdminFraudDetection() {
                             variant="destructive"
                             size="sm"
                             onClick={() => handleBlockUser(user.user_id)}
+                            className="text-xs"
                           >
                             Bloquer
                           </Button>
                         )}
-                      </TableCell>
-                    </TableRow>
+                      </ResponsiveTableCell>
+                    </ResponsiveTableRow>
                   ))
                 )}
-              </TableBody>
-            </Table>
-          </ResponsiveTable>
+              </ResponsiveTableBody>
+            </ResponsiveTable>
+          </div>
         </CardContent>
       </Card>
 
       {/* Fraud Attempts */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <AlertTriangle className="w-5 h-5" />
+        <CardHeader className="p-4 md:p-6">
+          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+            <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
             Tentatives de Fraude Récentes
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <ResponsiveTable>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="hidden lg:table-cell">Date</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead className="hidden md:table-cell">Gravité</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Détails</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+        <CardContent className="p-0 md:p-6">
+          <div className="overflow-x-auto">
+            <ResponsiveTable className="border-none">
+              <ResponsiveTableHeader>
+                <ResponsiveTableRow>
+                  <ResponsiveTableHead priority="low">Date</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="high">Type</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="medium">Gravité</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="medium">Description</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="high">Détails</ResponsiveTableHead>
+                </ResponsiveTableRow>
+              </ResponsiveTableHeader>
+              <ResponsiveTableBody>
                 {fraudAttempts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
-                      Aucune tentative de fraude
-                    </TableCell>
-                  </TableRow>
+                  <ResponsiveTableRow>
+                    <ResponsiveTableCell priority="high" label="">
+                      <div className="text-center py-8 text-muted-foreground col-span-full">
+                        Aucune tentative de fraude
+                      </div>
+                    </ResponsiveTableCell>
+                  </ResponsiveTableRow>
                 ) : (
                   fraudAttempts.map((attempt) => (
-                    <TableRow key={attempt.id}>
-                      <TableCell className="hidden lg:table-cell text-sm">
-                        {format(new Date(attempt.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
-                      </TableCell>
-                      <TableCell className="font-medium">{attempt.fraud_type}</TableCell>
-                      <TableCell className="hidden md:table-cell">
+                    <ResponsiveTableRow key={attempt.id}>
+                      <ResponsiveTableCell priority="low" label="Date">
+                        <span className="text-xs md:text-sm">
+                          {format(new Date(attempt.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
+                        </span>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="high" label="Type">
+                        <span className="font-medium text-sm">{attempt.fraud_type}</span>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="medium" label="Gravité">
                         {getSeverityBadge(attempt.severity)}
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-sm">
-                        {attempt.description || '-'}
-                      </TableCell>
-                      <TableCell>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="medium" label="Description">
+                        <span className="text-xs md:text-sm line-clamp-2">
+                          {attempt.description || '-'}
+                        </span>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="high" label="Détails">
                         <Dialog>
                           <DialogTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <Eye className="h-4 w-4" />
+                            <Button variant="ghost" size="sm" className="h-8">
+                              <Eye className="h-3 w-3 md:h-4 md:w-4" />
                             </Button>
                           </DialogTrigger>
-                          <DialogContent>
+                          <DialogContent className="max-w-[95vw] sm:max-w-md">
                             <DialogHeader>
-                              <DialogTitle>Détails de la tentative</DialogTitle>
+                              <DialogTitle className="text-base md:text-lg">Détails de la tentative</DialogTitle>
                             </DialogHeader>
                             <div className="space-y-3">
                               <div>
-                                <p className="text-sm text-muted-foreground">Type</p>
-                                <p className="font-medium">{attempt.fraud_type}</p>
+                                <p className="text-xs md:text-sm text-muted-foreground">Type</p>
+                                <p className="font-medium text-sm md:text-base">{attempt.fraud_type}</p>
                               </div>
                               <div>
-                                <p className="text-sm text-muted-foreground">Gravité</p>
-                                {getSeverityBadge(attempt.severity)}
+                                <p className="text-xs md:text-sm text-muted-foreground">Gravité</p>
+                                <div className="mt-1">{getSeverityBadge(attempt.severity)}</div>
                               </div>
                               <div>
-                                <p className="text-sm text-muted-foreground">Date</p>
-                                <p className="font-medium">
+                                <p className="text-xs md:text-sm text-muted-foreground">Date</p>
+                                <p className="font-medium text-sm md:text-base">
                                   {format(new Date(attempt.created_at), 'PPP à HH:mm', { locale: fr })}
                                 </p>
                               </div>
                               {attempt.description && (
                                 <div>
-                                  <p className="text-sm text-muted-foreground">Description</p>
-                                  <p className="font-medium">{attempt.description}</p>
+                                  <p className="text-xs md:text-sm text-muted-foreground">Description</p>
+                                  <p className="font-medium text-sm md:text-base">{attempt.description}</p>
                                 </div>
                               )}
                               <div>
-                                <p className="text-sm text-muted-foreground">ID Utilisateur</p>
-                                <code className="text-xs">{attempt.user_id}</code>
+                                <p className="text-xs md:text-sm text-muted-foreground">ID Utilisateur</p>
+                                <code className="text-[10px] md:text-xs break-all">{attempt.user_id}</code>
                               </div>
                             </div>
                           </DialogContent>
                         </Dialog>
-                      </TableCell>
-                    </TableRow>
+                      </ResponsiveTableCell>
+                    </ResponsiveTableRow>
                   ))
                 )}
-              </TableBody>
-            </Table>
-          </ResponsiveTable>
+              </ResponsiveTableBody>
+            </ResponsiveTable>
+          </div>
         </CardContent>
       </Card>
     </div>
