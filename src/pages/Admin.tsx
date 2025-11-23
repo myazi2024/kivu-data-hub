@@ -34,6 +34,7 @@ import AdminCommissions from '@/components/admin/AdminCommissions';
 import AdminDiscountCodes from '@/components/admin/AdminDiscountCodes';
 import AdminBuildingPermits from '@/components/admin/AdminBuildingPermits';
 import AdminPermitFeesConfig from '@/components/admin/AdminPermitFeesConfig';
+import AdminPaymentMethods from '@/components/admin/AdminPaymentMethods';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -135,6 +136,8 @@ const Admin = () => {
         return <AdminContributionConfig />;
       case 'payments':
         return <AdminPayments onRefresh={fetchPendingCount} />;
+      case 'payment-methods':
+        return <AdminPaymentMethods />;
       case 'invoices':
         return <AdminInvoices />;
       case 'financial':
