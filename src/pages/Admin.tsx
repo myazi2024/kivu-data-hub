@@ -35,6 +35,7 @@ import AdminDiscountCodes from '@/components/admin/AdminDiscountCodes';
 import AdminBuildingPermits from '@/components/admin/AdminBuildingPermits';
 import AdminPermitFeesConfig from '@/components/admin/AdminPermitFeesConfig';
 import AdminPaymentMethods from '@/components/admin/AdminPaymentMethods';
+import AdminPaymentMode from '@/components/admin/AdminPaymentMode';
 import AdminBillingConfig from '@/components/admin/AdminBillingConfig';
 
 const Admin = () => {
@@ -139,6 +140,8 @@ const Admin = () => {
         return <AdminPayments onRefresh={fetchPendingCount} />;
       case 'payment-methods':
         return <AdminPaymentMethods />;
+      case 'payment-mode':
+        return <AdminPaymentMode />;
       case 'billing-config':
         return <AdminBillingConfig />;
       case 'invoices':

@@ -25,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
 import DiscountCodeInput from './DiscountCodeInput';
 
@@ -159,16 +160,40 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
       return;
     }
     
-    // Bypass payment - créer la facture et accorder directement l'accès
-    const invoice = await createInvoice(searchResult, appliedDiscount);
-    if (invoice) {
-      // Simuler un paiement réussi immédiatement
+    // Vérifier la configuration du mode de paiement
+    const { data: paymentConfig } = await supabase
+      .from('cadastral_search_config')
+      .select('config_value')
+      .eq('config_key', 'payment_mode')
+      .eq('is_active', true)
+      .maybeSingle();
+
+    const config = paymentConfig?.config_value as { enabled: boolean; bypass_payment: boolean; test_mode: boolean } | null;
+    
+    // Mode développement - bypass du paiement
+    if (config?.bypass_payment) {
+      const invoice = await createInvoice(searchResult, appliedDiscount);
+      if (invoice) {
+        toast({
+          title: "Accès accordé",
+          description: "Services débloqués avec succès (mode développement)",
+          duration: 3000
+        });
+        onPaymentSuccess(selectedServices);
+      }
+      return;
+    }
+    
+    // Mode paiement activé
+    if (config?.enabled) {
+      setShowPaymentDialog(true);
+    } else {
+      // Par défaut, si aucune configuration, on affiche un message d'erreur
       toast({
-        title: "Accès accordé",
-        description: "Services débloqués avec succès (mode développement)",
-        duration: 3000
+        title: "Paiement non configuré",
+        description: "Le système de paiement n'est pas encore configuré. Contactez l'administrateur.",
+        variant: "destructive"
       });
-      onPaymentSuccess(selectedServices);
     }
   };
 
