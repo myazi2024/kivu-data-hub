@@ -10,9 +10,19 @@ import { Badge } from '@/components/ui/badge';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { Loader2, Save, Plus, Trash2, FileText, MapPin, Users, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import { ConfigPreview } from './config/ConfigPreview';
+import { ConfigTemplates } from './config/ConfigTemplates';
+import { ConfigHistory } from './config/ConfigHistory';
+import { ConfigTest } from './config/ConfigTest';
+import { useConfigHistory } from '@/hooks/useConfigHistory';
+import { useConfigValidation } from '@/hooks/useConfigValidation';
 
 const AdminContributionConfig = () => {
   const { configs, loading, updateConfig } = useContributionConfig();
+  const { toast } = useToast();
+  const { saveToHistory } = useConfigHistory();
+  const { validateMapPreviewSettings, validateValidationRules, validateCccCalculation } = useConfigValidation();
   const [saving, setSaving] = useState<string | null>(null);
 
   // Trouver les configurations spécifiques
@@ -80,29 +90,61 @@ const AdminContributionConfig = () => {
     if (cccCalculationConfig) setCccCalculation(cccCalculationConfig.config_value);
     if (mapPreviewConfig) {
       // Fusionner avec les valeurs par défaut pour éviter les clés manquantes
-      setMapPreviewSettings({
-        ...mapPreviewSettings,
+      setMapPreviewSettings((prev: any) => ({
+        ...prev,
         ...mapPreviewConfig.config_value
-      });
+      }));
     }
-  }, [configs]);
+  }, [
+    formSectionsConfig,
+    requiredFieldsConfig,
+    fieldLabelsConfig,
+    helpTextsConfig,
+    validationRulesConfig,
+    cccCalculationConfig,
+    mapPreviewConfig
+  ]);
 
   const handleSaveFormSections = async () => {
     if (!formSectionsConfig) return;
     setSaving('form_sections');
-    await updateConfig(formSectionsConfig.id, {
-      config_value: formSections
-    });
-    setSaving(null);
+    try {
+      const success = await updateConfig(formSectionsConfig.id, {
+        config_value: formSections
+      });
+      if (success) {
+        await saveToHistory('form_sections', formSections, 'Modification des sections du formulaire');
+        toast({
+          title: "Sections sauvegardées",
+          description: "Les sections du formulaire ont été mises à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
   };
 
   const handleSaveRequiredFields = async () => {
     if (!requiredFieldsConfig) return;
     setSaving('required_fields');
-    await updateConfig(requiredFieldsConfig.id, {
-      config_value: requiredFields
-    });
-    setSaving(null);
+    try {
+      const success = await updateConfig(requiredFieldsConfig.id, {
+        config_value: requiredFields
+      });
+      if (success) {
+        await saveToHistory('required_fields', requiredFields, 'Modification des champs obligatoires');
+        toast({
+          title: "Champs requis sauvegardés",
+          description: "Les champs obligatoires ont été mis à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
   };
 
   const handleSaveFieldLabels = async () => {
@@ -125,29 +167,136 @@ const AdminContributionConfig = () => {
 
   const handleSaveValidationRules = async () => {
     if (!validationRulesConfig) return;
+    
+    // Validation avant sauvegarde
+    const errors = validateValidationRules(validationRules);
+    if (errors.length > 0) {
+      toast({
+        title: "Erreur de validation",
+        description: errors[0].message,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSaving('validation_rules');
-    await updateConfig(validationRulesConfig.id, {
-      config_value: validationRules
-    });
-    setSaving(null);
+    try {
+      const success = await updateConfig(validationRulesConfig.id, {
+        config_value: validationRules
+      });
+      if (success) {
+        await saveToHistory('validation_rules', validationRules, 'Modification des règles de validation');
+        toast({
+          title: "Règles sauvegardées",
+          description: "Les règles de validation ont été mises à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
   };
 
   const handleSaveCccCalculation = async () => {
     if (!cccCalculationConfig) return;
+    
+    // Validation avant sauvegarde
+    const errors = validateCccCalculation(cccCalculation);
+    if (errors.length > 0) {
+      toast({
+        title: "Erreur de validation",
+        description: errors[0].message,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSaving('ccc_calculation');
-    await updateConfig(cccCalculationConfig.id, {
-      config_value: cccCalculation
-    });
-    setSaving(null);
+    try {
+      const success = await updateConfig(cccCalculationConfig.id, {
+        config_value: cccCalculation
+      });
+      if (success) {
+        await saveToHistory('ccc_calculation', cccCalculation, 'Modification du calcul CCC');
+        toast({
+          title: "Calcul CCC sauvegardé",
+          description: "Les paramètres de calcul CCC ont été mis à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
   };
 
   const handleSaveMapPreviewSettings = async () => {
     if (!mapPreviewConfig) return;
+    
+    // Validation avant sauvegarde
+    const errors = validateMapPreviewSettings(mapPreviewSettings);
+    if (errors.length > 0) {
+      toast({
+        title: "Erreur de validation",
+        description: errors[0].message,
+        variant: "destructive"
+      });
+      return;
+    }
+
     setSaving('map_preview_settings');
-    await updateConfig(mapPreviewConfig.id, {
-      config_value: mapPreviewSettings
+    try {
+      const success = await updateConfig(mapPreviewConfig.id, {
+        config_value: mapPreviewSettings
+      });
+      if (success) {
+        await saveToHistory('map_preview_settings', mapPreviewSettings, 'Modification des paramètres de carte');
+        toast({
+          title: "Paramètres de carte sauvegardés",
+          description: "Les paramètres de la carte ont été mis à jour avec succès"
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la sauvegarde:', error);
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const handleApplyTemplate = (template: any) => {
+    if (template.form_sections) setFormSections(template.form_sections);
+    if (template.required_fields) setRequiredFields(template.required_fields);
+  };
+
+  const handleRestoreFromHistory = (configKey: string, configValue: any) => {
+    switch (configKey) {
+      case 'form_sections':
+        setFormSections(configValue);
+        break;
+      case 'required_fields':
+        setRequiredFields(configValue);
+        break;
+      case 'field_labels':
+        setFieldLabels(configValue);
+        break;
+      case 'help_texts':
+        setHelpTexts(configValue);
+        break;
+      case 'validation_rules':
+        setValidationRules(configValue);
+        break;
+      case 'ccc_calculation':
+        setCccCalculation(configValue);
+        break;
+      case 'map_preview_settings':
+        setMapPreviewSettings(configValue);
+        break;
+    }
+    toast({
+      title: "Configuration restaurée",
+      description: `La configuration ${configKey} a été restaurée depuis l'historique`
     });
-    setSaving(null);
   };
 
   if (loading) {
@@ -160,24 +309,26 @@ const AdminContributionConfig = () => {
 
   return (
     <div className="space-y-3 sm:space-y-6">
-      <Card>
-        <CardHeader className="p-3 sm:p-6">
-          <CardTitle className="text-base sm:text-lg">Configuration du formulaire CCC</CardTitle>
-          <CardDescription className="text-xs sm:text-sm">
-            Configurez les sections, champs et règles du formulaire
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-3 sm:p-6">
-          <Tabs defaultValue="sections">
-            <TabsList className="grid w-full grid-cols-7 h-8 sm:h-10 text-[10px] sm:text-xs p-0.5 sm:p-1">
-              <TabsTrigger value="sections" className="text-[10px] sm:text-xs px-1 sm:px-3">Sections</TabsTrigger>
-              <TabsTrigger value="required" className="text-[10px] sm:text-xs px-1 sm:px-3">Requis</TabsTrigger>
-              <TabsTrigger value="labels" className="text-[10px] sm:text-xs px-1 sm:px-3">Labels</TabsTrigger>
-              <TabsTrigger value="help" className="text-[10px] sm:text-xs px-1 sm:px-3">Aide</TabsTrigger>
-              <TabsTrigger value="validation" className="text-[10px] sm:text-xs px-1 sm:px-3">Valid.</TabsTrigger>
-              <TabsTrigger value="ccc" className="text-[10px] sm:text-xs px-1 sm:px-3">CCC</TabsTrigger>
-              <TabsTrigger value="map" className="text-[10px] sm:text-xs px-1 sm:px-3">Carte</TabsTrigger>
-            </TabsList>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader className="p-3 sm:p-6">
+              <CardTitle className="text-base sm:text-lg">Configuration du formulaire CCC</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Configurez les sections, champs et règles du formulaire
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-3 sm:p-6">
+              <Tabs defaultValue="sections">
+                <TabsList className="grid w-full grid-cols-7 h-8 sm:h-10 text-[10px] sm:text-xs p-0.5 sm:p-1">
+                  <TabsTrigger value="sections" className="text-[10px] sm:text-xs px-1 sm:px-3">Sections</TabsTrigger>
+                  <TabsTrigger value="required" className="text-[10px] sm:text-xs px-1 sm:px-3">Requis</TabsTrigger>
+                  <TabsTrigger value="labels" className="text-[10px] sm:text-xs px-1 sm:px-3">Labels</TabsTrigger>
+                  <TabsTrigger value="help" className="text-[10px] sm:text-xs px-1 sm:px-3">Aide</TabsTrigger>
+                  <TabsTrigger value="validation" className="text-[10px] sm:text-xs px-1 sm:px-3">Valid.</TabsTrigger>
+                  <TabsTrigger value="ccc" className="text-[10px] sm:text-xs px-1 sm:px-3">CCC</TabsTrigger>
+                  <TabsTrigger value="map" className="text-[10px] sm:text-xs px-1 sm:px-3">Carte</TabsTrigger>
+                </TabsList>
 
             {/* Sections du formulaire */}
             <TabsContent value="sections" className="space-y-2 sm:space-y-4 mt-2 sm:mt-4">
@@ -341,12 +492,16 @@ const AdminContributionConfig = () => {
 
             {/* Règles de validation */}
             <TabsContent value="validation" className="space-y-4">
-              <Alert>
-                <FileText className="h-4 w-4" />
-                <AlertDescription>
-                  Configurez les règles de validation du formulaire
-                </AlertDescription>
-              </Alert>
+              <div className="grid grid-cols-1 gap-4">
+                <Alert>
+                  <FileText className="h-4 w-4" />
+                  <AlertDescription>
+                    Configurez les règles de validation du formulaire
+                  </AlertDescription>
+                </Alert>
+
+                <ConfigTest config={validationRules} configType="validation" />
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -957,6 +1112,14 @@ const AdminContributionConfig = () => {
         </CardContent>
       </Card>
     </div>
+
+    <div className="space-y-4">
+      <ConfigTemplates onApplyTemplate={handleApplyTemplate} />
+      <ConfigPreview config={formSections} type="sections" />
+      <ConfigHistory onRestore={handleRestoreFromHistory} />
+    </div>
+  </div>
+</div>
   );
 };
 
