@@ -77,18 +77,42 @@ const AdminAnalytics: React.FC = () => {
         }))
         .sort((a, b) => a.date.localeCompare(b.date));
 
-      // Fetch top publications
-      const { data: topPubs } = await supabase
-        .from('publications')
-        .select('title, download_count')
-        .order('download_count', { ascending: false })
-        .limit(5);
+      // Fetch top publications with real revenue calculation
+      const { data: pubPayments } = await supabase
+        .from('payments')
+        .select('publication_id, amount_usd')
+        .eq('status', 'completed')
+        .not('publication_id', 'is', null);
 
-      const topPublications = topPubs?.map(pub => ({
-        title: pub.title.substring(0, 30) + (pub.title.length > 30 ? '...' : ''),
-        downloads: pub.download_count,
-        revenue: pub.download_count * 10 // Estimation
-      })) || [];
+      // Group by publication and calculate real revenue
+      const pubRevenue: { [key: string]: { downloads: number; revenue: number } } = {};
+      pubPayments?.forEach(payment => {
+        const pubId = payment.publication_id!;
+        if (!pubRevenue[pubId]) {
+          pubRevenue[pubId] = { downloads: 0, revenue: 0 };
+        }
+        pubRevenue[pubId].downloads += 1;
+        pubRevenue[pubId].revenue += Number(payment.amount_usd || 0);
+      });
+
+      // Fetch publication titles
+      const pubIds = Object.keys(pubRevenue);
+      const { data: pubs } = await supabase
+        .from('publications')
+        .select('id, title')
+        .in('id', pubIds);
+
+      const topPublications = Object.entries(pubRevenue)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .slice(0, 5)
+        .map(([pubId, stats]) => {
+          const pub = pubs?.find(p => p.id === pubId);
+          return {
+            title: pub?.title.substring(0, 30) + (pub && pub.title.length > 30 ? '...' : '') || 'Publication inconnue',
+            downloads: stats.downloads,
+            revenue: stats.revenue
+          };
+        });
 
       // Fetch payment methods
       const { data: paymentData } = await supabase
