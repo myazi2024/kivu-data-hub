@@ -24,10 +24,10 @@ export const useEnhancedAnalytics = (startDate?: Date, endDate?: Date) => {
       // Fetch geographical data
       const { data: geoData } = await supabase
         .from('cadastral_invoices')
-        .select('geographical_zone, total_amount_usd')
+        .select('geographical_zone, total_amount_usd, created_at')
         .eq('status', 'paid');
 
-      const zonesData = groupByZone(geoData || []);
+      const zonesData = await groupByZone(geoData || []);
 
       // Fetch contribution performance
       const { data: contributionsData } = await supabase
@@ -84,23 +84,56 @@ function groupByDate(data: any[], dateField: string, valueField: string) {
   return Object.entries(grouped).map(([date, revenue]) => ({ date, revenue }));
 }
 
-function groupByZone(data: any[]) {
-  const grouped: { [key: string]: { revenue: number; transactions: number } } = {};
+async function groupByZone(data: any[]) {
+  const grouped: { [key: string]: { revenue: number; transactions: number; previousRevenue: number } } = {};
+  
+  // Get data from 60 days ago for growth calculation
+  const sixtyDaysAgo = new Date();
+  sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  // Current period data
   data.forEach(item => {
     const zone = item.geographical_zone || 'Non spécifié';
     if (!grouped[zone]) {
-      grouped[zone] = { revenue: 0, transactions: 0 };
+      grouped[zone] = { revenue: 0, transactions: 0, previousRevenue: 0 };
     }
     grouped[zone].revenue += parseFloat(item.total_amount_usd || 0);
     grouped[zone].transactions += 1;
   });
 
-  return Object.entries(grouped).map(([zone, stats]) => ({
-    zone,
-    revenue: stats.revenue,
-    transactions: stats.transactions,
-    growth: Math.random() * 20 - 5 // Simulated growth
-  }));
+  // Fetch previous period data for growth calculation
+  try {
+    const { data: previousData } = await supabase
+      .from('cadastral_invoices')
+      .select('geographical_zone, total_amount_usd')
+      .eq('status', 'paid')
+      .gte('created_at', sixtyDaysAgo.toISOString())
+      .lt('created_at', thirtyDaysAgo.toISOString());
+
+    previousData?.forEach(item => {
+      const zone = item.geographical_zone || 'Non spécifié';
+      if (grouped[zone]) {
+        grouped[zone].previousRevenue += parseFloat(String(item.total_amount_usd || 0));
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching previous period data:', error);
+  }
+
+  return Object.entries(grouped).map(([zone, stats]) => {
+    const growth = stats.previousRevenue > 0 
+      ? ((stats.revenue - stats.previousRevenue) / stats.previousRevenue) * 100 
+      : 0;
+    
+    return {
+      zone,
+      revenue: stats.revenue,
+      transactions: stats.transactions,
+      growth: parseFloat(growth.toFixed(1))
+    };
+  });
 }
 
 function calculateContributionPerformance(data: any[]) {
@@ -138,9 +171,27 @@ function generateTrendData(data: any[]) {
     return date.toISOString().split('T')[0];
   });
 
+  // Calculate actual average validation times per day
+  const dailyData: { [key: string]: { total: number; count: number } } = {};
+  
+  data.forEach(contrib => {
+    const reviewedDate = new Date(contrib.reviewed_at).toISOString().split('T')[0];
+    if (last7Days.includes(reviewedDate)) {
+      const created = new Date(contrib.created_at).getTime();
+      const reviewed = new Date(contrib.reviewed_at).getTime();
+      const hours = (reviewed - created) / (1000 * 60 * 60);
+      
+      if (!dailyData[reviewedDate]) {
+        dailyData[reviewedDate] = { total: 0, count: 0 };
+      }
+      dailyData[reviewedDate].total += hours;
+      dailyData[reviewedDate].count += 1;
+    }
+  });
+
   return last7Days.map(date => ({
     date,
-    avgTime: Math.random() * 48 + 12 // Simulated data
+    avgTime: dailyData[date] ? dailyData[date].total / dailyData[date].count : 0
   }));
 }
 
@@ -151,26 +202,52 @@ async function calculateBusinessMetrics() {
     .eq('status', 'paid');
 
   const totalRevenue = invoices?.reduce((sum, inv) => sum + parseFloat(String(inv.total_amount_usd || '0')), 0) || 0;
-  const uniqueUsers = new Set(invoices?.map(inv => inv.user_id)).size;
+  const uniqueUsers = new Set(invoices?.map(inv => inv.user_id).filter(Boolean)).size;
 
+  // Calculate real LTV
   const ltv = uniqueUsers > 0 ? totalRevenue / uniqueUsers : 0;
-  const cac = ltv * 0.3; // Assuming CAC is 30% of LTV (placeholder)
-  const retentionRate = 75 + Math.random() * 15; // Simulated
+
+  // Calculate real retention rate
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+  const twoMonthsAgo = new Date();
+  twoMonthsAgo.setMonth(twoMonthsAgo.getMonth() - 2);
+
+  const { data: oldUsers } = await supabase
+    .from('cadastral_invoices')
+    .select('user_id')
+    .eq('status', 'paid')
+    .lt('created_at', twoMonthsAgo.toISOString());
+
+  const { data: recentUsers } = await supabase
+    .from('cadastral_invoices')
+    .select('user_id')
+    .eq('status', 'paid')
+    .gte('created_at', oneMonthAgo.toISOString());
+
+  const oldUserIds = new Set(oldUsers?.map(u => u.user_id).filter(Boolean));
+  const returnedUsers = recentUsers?.filter(u => oldUserIds.has(u.user_id)).length || 0;
+  const retentionRate = oldUserIds.size > 0 ? (returnedUsers / oldUserIds.size) * 100 : 0;
   const churnRate = 100 - retentionRate;
-  const arpu = ltv / 12; // Assuming annual LTV
-  const paybackPeriod = cac / (arpu || 1);
+
+  // Calculate ARPU (Average Revenue Per User)
+  const arpu = uniqueUsers > 0 ? totalRevenue / uniqueUsers : 0;
+
+  // Estimate CAC based on industry benchmarks (20-30% of LTV)
+  const cac = ltv * 0.25;
+  const paybackPeriod = arpu > 0 ? cac / arpu : 0;
 
   return {
-    ltv,
-    cac,
-    retentionRate,
-    churnRate,
-    arpu,
-    paybackPeriod
+    ltv: parseFloat(ltv.toFixed(2)),
+    cac: parseFloat(cac.toFixed(2)),
+    retentionRate: parseFloat(retentionRate.toFixed(1)),
+    churnRate: parseFloat(churnRate.toFixed(1)),
+    arpu: parseFloat(arpu.toFixed(2)),
+    paybackPeriod: parseFloat(paybackPeriod.toFixed(1))
   };
 }
 
-function groupResellerData(data: any[]) {
+async function groupResellerData(data: any[]) {
   const grouped: { [key: string]: any } = {};
   
   data.forEach(sale => {
@@ -182,7 +259,7 @@ function groupResellerData(data: any[]) {
         totalSales: 0,
         salesCount: 0,
         commissionEarned: 0,
-        conversionRate: 0,
+        totalCodeUsage: 0,
         activeCodesCount: 0
       };
     }
@@ -191,27 +268,109 @@ function groupResellerData(data: any[]) {
     grouped[resellerId].commissionEarned += parseFloat(sale.commission_earned_usd || 0);
   });
 
-  return Object.values(grouped).map((r: any) => ({
-    ...r,
-    conversionRate: Math.random() * 30 + 10, // Simulated
-    activeCodesCount: Math.floor(Math.random() * 10) + 1 // Simulated
-  }));
+  // Fetch real discount codes data for each reseller
+  try {
+    const { data: codesData } = await supabase
+      .from('discount_codes')
+      .select('reseller_id, is_active, usage_count, max_usage');
+
+    codesData?.forEach(code => {
+      if (grouped[code.reseller_id]) {
+        if (code.is_active) {
+          grouped[code.reseller_id].activeCodesCount += 1;
+        }
+        grouped[code.reseller_id].totalCodeUsage += code.usage_count;
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching codes data:', error);
+  }
+
+  return Object.values(grouped).map((r: any) => {
+    const conversionRate = r.activeCodesCount > 0 && r.totalCodeUsage > 0
+      ? (r.salesCount / r.totalCodeUsage) * 100
+      : 0;
+    
+    return {
+      ...r,
+      conversionRate: parseFloat(conversionRate.toFixed(1)),
+      activeCodesCount: r.activeCodesCount
+    };
+  });
 }
 
 async function generateCohortData() {
-  const cohorts = ['Jan 2025', 'Fév 2025', 'Mar 2025', 'Avr 2025'];
-  
-  return cohorts.map((cohort, idx) => ({
-    cohort,
-    users: Math.floor(Math.random() * 100) + 50,
-    retention: [
-      { period: 'Semaine 1', rate: 100 },
-      { period: 'Semaine 2', rate: 85 - idx * 5 },
-      { period: 'Semaine 3', rate: 70 - idx * 7 },
-      { period: 'Semaine 4', rate: 60 - idx * 8 },
-      { period: 'Mois 2', rate: 50 - idx * 10 }
-    ]
-  }));
+  try {
+    // Get users grouped by their first purchase month
+    const { data: invoices } = await supabase
+      .from('cadastral_invoices')
+      .select('user_id, created_at')
+      .eq('status', 'paid')
+      .order('created_at');
+
+    if (!invoices) return [];
+
+    // Group users by cohort (month of first purchase)
+    const userCohorts: { [userId: string]: string } = {};
+    invoices.forEach(inv => {
+      if (inv.user_id && !userCohorts[inv.user_id]) {
+        const date = new Date(inv.created_at);
+        userCohorts[inv.user_id] = date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+      }
+    });
+
+    // Get unique cohorts from last 4 months
+    const cohortSet = new Set(Object.values(userCohorts));
+    const cohorts = Array.from(cohortSet).slice(-4);
+
+    // Calculate retention for each cohort
+    const cohortData = await Promise.all(cohorts.map(async (cohort) => {
+      const cohortUsers = Object.entries(userCohorts)
+        .filter(([_, c]) => c === cohort)
+        .map(([userId]) => userId);
+
+      const cohortStartDate = new Date(cohort);
+      
+      // Calculate retention for different periods
+      const retention = await Promise.all([
+        { period: 'Semaine 1', days: 7 },
+        { period: 'Semaine 2', days: 14 },
+        { period: 'Semaine 3', days: 21 },
+        { period: 'Semaine 4', days: 28 },
+        { period: 'Mois 2', days: 60 }
+      ].map(async ({ period, days }) => {
+        const endDate = new Date(cohortStartDate);
+        endDate.setDate(endDate.getDate() + days);
+
+        const { data: activeUsers } = await supabase
+          .from('cadastral_invoices')
+          .select('user_id')
+          .eq('status', 'paid')
+          .in('user_id', cohortUsers)
+          .gte('created_at', cohortStartDate.toISOString())
+          .lte('created_at', endDate.toISOString());
+
+        const uniqueActive = new Set(activeUsers?.map(u => u.user_id)).size;
+        const rate = cohortUsers.length > 0 ? (uniqueActive / cohortUsers.length) * 100 : 0;
+
+        return {
+          period,
+          rate: parseFloat(rate.toFixed(1))
+        };
+      }));
+
+      return {
+        cohort,
+        users: cohortUsers.length,
+        retention
+      };
+    }));
+
+    return cohortData;
+  } catch (error) {
+    console.error('Error generating cohort data:', error);
+    return [];
+  }
 }
 
 function generateSmartAlerts(contributionPerf: any, zonesData: any[], historicalRevenue: any[]) {

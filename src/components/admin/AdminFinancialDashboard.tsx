@@ -6,6 +6,7 @@ import { usePeriodFilter } from '@/hooks/usePeriodFilter';
 import { PeriodFilter } from '@/components/admin/dashboard/PeriodFilter';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { DollarSign, TrendingUp, TrendingDown, CreditCard, Users, FileText, Percent } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
 
@@ -17,6 +18,10 @@ const AdminFinancialDashboard = () => {
     'overview'
   );
 
+  const [revenueByService, setRevenueByService] = useState<any[]>([]);
+  const [monthlyTrend, setMonthlyTrend] = useState<any[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+
   // Revenue metrics
   const totalRevenue = statistics?.total_revenue || 0;
   const totalInvoices = statistics?.total_invoices || 0;
@@ -26,37 +31,98 @@ const AdminFinancialDashboard = () => {
     ? ((totalInvoices - pendingPayments) / totalInvoices) * 100 
     : 0;
 
-  // Revenue by service data
-  const revenueByService = [
-    { name: 'Services Cadastraux', value: totalRevenue * 0.65 },
-    { name: 'Publications', value: totalRevenue * 0.20 },
-    { name: 'Codes CCC', value: totalRevenue * 0.10 },
-    { name: 'Autres', value: totalRevenue * 0.05 }
-  ];
+  useEffect(() => {
+    fetchRealFinancialData();
+  }, [periodRange]);
 
-  // Monthly trend (mock data - should come from backend)
-  const monthlyTrend = [
-    { month: 'Jan', revenue: totalRevenue * 0.08, transactions: Math.floor(totalInvoices * 0.08) },
-    { month: 'Fév', revenue: totalRevenue * 0.09, transactions: Math.floor(totalInvoices * 0.09) },
-    { month: 'Mar', revenue: totalRevenue * 0.11, transactions: Math.floor(totalInvoices * 0.11) },
-    { month: 'Avr', revenue: totalRevenue * 0.10, transactions: Math.floor(totalInvoices * 0.10) },
-    { month: 'Mai', revenue: totalRevenue * 0.12, transactions: Math.floor(totalInvoices * 0.12) },
-    { month: 'Juin', revenue: totalRevenue * 0.13, transactions: Math.floor(totalInvoices * 0.13) },
-    { month: 'Juil', revenue: totalRevenue * 0.11, transactions: Math.floor(totalInvoices * 0.11) },
-    { month: 'Août', revenue: totalRevenue * 0.09, transactions: Math.floor(totalInvoices * 0.09) },
-    { month: 'Sep', revenue: totalRevenue * 0.08, transactions: Math.floor(totalInvoices * 0.08) },
-    { month: 'Oct', revenue: totalRevenue * 0.05, transactions: Math.floor(totalInvoices * 0.05) },
-    { month: 'Nov', revenue: totalRevenue * 0.02, transactions: Math.floor(totalInvoices * 0.02) },
-    { month: 'Déc', revenue: totalRevenue * 0.02, transactions: Math.floor(totalInvoices * 0.02) }
-  ];
+  const fetchRealFinancialData = async () => {
+    try {
+      // Fetch real revenue by service type from invoices
+      const { data: invoicesData } = await supabase
+        .from('cadastral_invoices')
+        .select('selected_services, total_amount_usd')
+        .eq('status', 'paid')
+        .gte('created_at', periodRange.startDate)
+        .lte('created_at', periodRange.endDate);
 
-  // Payment methods distribution
-  const paymentMethods = [
-    { name: 'Mobile Money', value: 70, amount: totalRevenue * 0.70 },
-    { name: 'Carte Bancaire', value: 20, amount: totalRevenue * 0.20 },
-    { name: 'Virement', value: 8, amount: totalRevenue * 0.08 },
-    { name: 'Espèces', value: 2, amount: totalRevenue * 0.02 }
-  ];
+      // Calculate real revenue by service
+      const serviceRevenue: { [key: string]: number } = {};
+      invoicesData?.forEach(invoice => {
+        const services = invoice.selected_services as any;
+        if (services && Array.isArray(services)) {
+          services.forEach((service: any) => {
+            const serviceName = service.name || 'Autres';
+            serviceRevenue[serviceName] = (serviceRevenue[serviceName] || 0) + (service.price || 0);
+          });
+        }
+      });
+
+      setRevenueByService(
+        Object.entries(serviceRevenue).map(([name, value]) => ({ name, value }))
+      );
+
+      // Fetch real monthly trend
+      const { data: monthlyData } = await supabase
+        .from('cadastral_invoices')
+        .select('created_at, total_amount_usd, status')
+        .gte('created_at', periodRange.startDate)
+        .lte('created_at', periodRange.endDate)
+        .order('created_at');
+
+      const monthlyMap: { [key: string]: { revenue: number; transactions: number } } = {};
+      monthlyData?.forEach(invoice => {
+        const date = new Date(invoice.created_at);
+        const monthKey = date.toLocaleDateString('fr-FR', { month: 'short', year: 'numeric' });
+        
+        if (!monthlyMap[monthKey]) {
+          monthlyMap[monthKey] = { revenue: 0, transactions: 0 };
+        }
+        
+        if (invoice.status === 'paid') {
+          monthlyMap[monthKey].revenue += Number(invoice.total_amount_usd || 0);
+          monthlyMap[monthKey].transactions += 1;
+        }
+      });
+
+      setMonthlyTrend(
+        Object.entries(monthlyMap).map(([month, data]) => ({
+          month,
+          revenue: data.revenue,
+          transactions: data.transactions
+        }))
+      );
+
+      // Fetch real payment methods distribution
+      const { data: paymentsData } = await supabase
+        .from('cadastral_invoices')
+        .select('payment_method, total_amount_usd')
+        .eq('status', 'paid')
+        .gte('created_at', periodRange.startDate)
+        .lte('created_at', periodRange.endDate);
+
+      const paymentMethodMap: { [key: string]: { count: number; amount: number } } = {};
+      paymentsData?.forEach(payment => {
+        const method = payment.payment_method || 'Mobile Money';
+        if (!paymentMethodMap[method]) {
+          paymentMethodMap[method] = { count: 0, amount: 0 };
+        }
+        paymentMethodMap[method].count += 1;
+        paymentMethodMap[method].amount += Number(payment.total_amount_usd || 0);
+      });
+
+      const totalPayments = paymentsData?.length || 1;
+      setPaymentMethods(
+        Object.entries(paymentMethodMap).map(([name, data]) => ({
+          name,
+          value: (data.count / totalPayments) * 100,
+          amount: data.amount
+        }))
+      );
+
+    } catch (error) {
+      console.error('Error fetching financial data:', error);
+    }
+  };
 
   if (loading) {
     return (
