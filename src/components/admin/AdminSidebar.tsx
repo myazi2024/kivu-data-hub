@@ -64,6 +64,7 @@ const menuItems = [
       { icon: BarChart, label: 'Tableau de Bord', value: 'financial', badge: null },
       { icon: CreditCard, label: 'Paiements', value: 'payments', badge: null },
       { icon: Settings, label: 'Moyens de Paiement', value: 'payment-methods', badge: null },
+      { icon: CreditCard, label: 'Mode de Paiement', value: 'payment-mode', badge: null },
       { icon: Receipt, label: 'Config Facturation', value: 'billing-config', badge: null },
       { icon: DollarSign, label: 'Factures', value: 'invoices', badge: null },
       { icon: FileText, label: 'Transactions', value: 'transactions', badge: null },
