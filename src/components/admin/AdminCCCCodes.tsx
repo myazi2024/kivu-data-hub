@@ -164,15 +164,15 @@ export default function AdminCCCCodes() {
     const isExpired = new Date(code.expires_at) <= now;
 
     if (!code.is_valid) {
-      return <Badge variant="destructive" className="gap-1"><Ban className="h-3 w-3" />Invalidé</Badge>;
+      return <Badge variant="destructive" className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0"><Ban className="h-2 w-2 sm:h-3 sm:w-3" /><span className="hidden sm:inline">Invalidé</span><span className="sm:hidden">Inv.</span></Badge>;
     }
     if (code.is_used) {
-      return <Badge variant="secondary" className="gap-1"><CheckCircle className="h-3 w-3" />Utilisé</Badge>;
+      return <Badge variant="secondary" className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0"><CheckCircle className="h-2 w-2 sm:h-3 sm:w-3" /><span className="hidden sm:inline">Utilisé</span><span className="sm:hidden">Util.</span></Badge>;
     }
     if (isExpired) {
-      return <Badge variant="outline" className="gap-1"><XCircle className="h-3 w-3" />Expiré</Badge>;
+      return <Badge variant="outline" className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0"><XCircle className="h-2 w-2 sm:h-3 sm:w-3" /><span className="hidden sm:inline">Expiré</span><span className="sm:hidden">Exp.</span></Badge>;
     }
-    return <Badge variant="default" className="gap-1"><Gift className="h-3 w-3" />Valide</Badge>;
+    return <Badge variant="default" className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0"><Gift className="h-2 w-2 sm:h-3 sm:w-3" />Valide</Badge>;
   };
 
   const filteredCodes = codes.filter(code =>
@@ -187,65 +187,69 @@ export default function AdminCCCCodes() {
   return (
     <div className="space-y-4">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Gift className="h-4 w-4" />
-              Total Codes
+          <CardHeader className="p-3 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <Gift className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Total Codes</span>
+              <span className="sm:hidden">Total</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.valid} valides disponibles
+          <CardContent className="p-3">
+            <div className="text-lg sm:text-2xl font-bold">{stats.total}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+              {stats.valid} valides
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <DollarSign className="h-4 w-4" />
-              Valeur Totale
+          <CardHeader className="p-3 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Valeur Totale</span>
+              <span className="sm:hidden">Valeur</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${stats.total_value.toFixed(2)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              ${stats.used_value.toFixed(2)} utilisés
+          <CardContent className="p-3">
+            <div className="text-lg sm:text-2xl font-bold">${stats.total_value.toFixed(0)}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+              ${stats.used_value.toFixed(0)} utilisés
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <TrendingUp className="h-4 w-4" />
-              Taux d'utilisation
+          <CardHeader className="p-3 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Taux d'utilisation</span>
+              <span className="sm:hidden">Taux</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
+          <CardContent className="p-3">
+            <div className="text-lg sm:text-2xl font-bold">
               {stats.total > 0 ? ((stats.used / stats.total) * 100).toFixed(1) : 0}%
             </div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.used}/{stats.total} codes
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1 truncate">
+              {stats.used}/{stats.total}
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Codes expirés
+          <CardHeader className="p-3 sm:pb-2">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground flex items-center gap-1">
+              <AlertCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Codes expirés</span>
+              <span className="sm:hidden">Expirés</span>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.expired}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {stats.invalidated} invalidés
+          <CardContent className="p-3">
+            <div className="text-lg sm:text-2xl font-bold">{stats.expired}</div>
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+              {stats.invalidated} inv.
             </p>
           </CardContent>
         </Card>
@@ -253,108 +257,108 @@ export default function AdminCCCCodes() {
 
       {/* Main Table Card */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="w-5 h-5" />
-              Gestion des Codes CCC
+        <CardHeader className="p-3 sm:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Gift className="w-4 h-4 sm:w-5 sm:h-5" />
+              Codes CCC
             </CardTitle>
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
               <div className="relative flex-1 sm:flex-initial">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-2 top-2 h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
                 <Input
                   placeholder="Rechercher..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-8 w-full sm:w-64"
+                  className="pl-7 sm:pl-8 h-8 sm:h-9 text-xs sm:text-sm w-full sm:w-48"
                 />
               </div>
-              <Button onClick={exportCodes} variant="outline" size="sm" className="gap-2">
-                <Download className="h-4 w-4" />
+              <Button onClick={exportCodes} variant="outline" size="sm" className="gap-1 h-8 text-xs">
+                <Download className="h-3 w-3" />
                 <span className="hidden sm:inline">Exporter</span>
               </Button>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <ResponsiveTable>
+        <CardContent className="p-0 sm:p-6">
+          <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Code</TableHead>
-                  <TableHead className="hidden md:table-cell">Parcelle</TableHead>
-                  <TableHead>Valeur</TableHead>
-                  <TableHead className="hidden lg:table-cell">Créé le</TableHead>
-                  <TableHead className="hidden lg:table-cell">Expire le</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
+                <TableRow className="text-xs">
+                  <TableHead className="w-[100px] p-2">Code</TableHead>
+                  <TableHead className="hidden sm:table-cell p-2">Parcelle</TableHead>
+                  <TableHead className="p-2">Valeur</TableHead>
+                  <TableHead className="hidden md:table-cell p-2">Créé</TableHead>
+                  <TableHead className="hidden lg:table-cell p-2">Expire</TableHead>
+                  <TableHead className="p-2">Statut</TableHead>
+                  <TableHead className="p-2 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredCodes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center py-6 text-xs text-muted-foreground">
                       Aucun code trouvé
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredCodes.map((code) => (
-                    <TableRow key={code.id}>
-                      <TableCell className="font-mono font-semibold">{code.code}</TableCell>
-                      <TableCell className="hidden md:table-cell">{code.parcel_number}</TableCell>
-                      <TableCell className="font-semibold">${code.value_usd.toFixed(2)}</TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        {format(new Date(code.created_at), 'dd/MM/yyyy', { locale: fr })}
+                    <TableRow key={code.id} className="text-xs">
+                      <TableCell className="font-mono font-semibold p-2">{code.code}</TableCell>
+                      <TableCell className="hidden sm:table-cell p-2 text-xs">{code.parcel_number}</TableCell>
+                      <TableCell className="font-semibold p-2">${code.value_usd.toFixed(0)}</TableCell>
+                      <TableCell className="hidden md:table-cell p-2 text-xs text-muted-foreground">
+                        {format(new Date(code.created_at), 'dd/MM', { locale: fr })}
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell text-sm text-muted-foreground">
-                        {format(new Date(code.expires_at), 'dd/MM/yyyy', { locale: fr })}
+                      <TableCell className="hidden lg:table-cell p-2 text-xs text-muted-foreground">
+                        {format(new Date(code.expires_at), 'dd/MM', { locale: fr })}
                       </TableCell>
-                      <TableCell>{getStatusBadge(code)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
+                      <TableCell className="p-2">{getStatusBadge(code)}</TableCell>
+                      <TableCell className="p-2">
+                        <div className="flex items-center justify-end gap-1">
                           <Dialog>
                             <DialogTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <Eye className="h-4 w-4" />
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                <Eye className="h-3 w-3" />
                               </Button>
                             </DialogTrigger>
-                            <DialogContent>
+                            <DialogContent className="max-w-[95vw] sm:max-w-md">
                               <DialogHeader>
-                                <DialogTitle>Détails du code {code.code}</DialogTitle>
+                                <DialogTitle className="text-sm sm:text-base">Détails {code.code}</DialogTitle>
                               </DialogHeader>
-                              <div className="space-y-3">
+                              <div className="space-y-2 sm:space-y-3">
                                 <div>
-                                  <Label className="text-muted-foreground">Parcelle</Label>
-                                  <p className="font-medium">{code.parcel_number}</p>
+                                  <Label className="text-xs text-muted-foreground">Parcelle</Label>
+                                  <p className="text-sm font-medium">{code.parcel_number}</p>
                                 </div>
                                 <div>
-                                  <Label className="text-muted-foreground">Valeur</Label>
-                                  <p className="font-medium">${code.value_usd.toFixed(2)}</p>
+                                  <Label className="text-xs text-muted-foreground">Valeur</Label>
+                                  <p className="text-sm font-medium">${code.value_usd.toFixed(2)}</p>
                                 </div>
                                 <div>
-                                  <Label className="text-muted-foreground">Date de création</Label>
-                                  <p className="font-medium">
-                                    {format(new Date(code.created_at), 'PPP à HH:mm', { locale: fr })}
+                                  <Label className="text-xs text-muted-foreground">Date de création</Label>
+                                  <p className="text-sm font-medium">
+                                    {format(new Date(code.created_at), 'dd/MM/yyyy', { locale: fr })}
                                   </p>
                                 </div>
                                 <div>
-                                  <Label className="text-muted-foreground">Date d'expiration</Label>
-                                  <p className="font-medium">
-                                    {format(new Date(code.expires_at), 'PPP à HH:mm', { locale: fr })}
+                                  <Label className="text-xs text-muted-foreground">Date d'expiration</Label>
+                                  <p className="text-sm font-medium">
+                                    {format(new Date(code.expires_at), 'dd/MM/yyyy', { locale: fr })}
                                   </p>
                                 </div>
                                 {code.is_used && (
                                   <div>
-                                    <Label className="text-muted-foreground">Utilisé le</Label>
-                                    <p className="font-medium">
-                                      {code.used_at && format(new Date(code.used_at), 'PPP à HH:mm', { locale: fr })}
+                                    <Label className="text-xs text-muted-foreground">Utilisé le</Label>
+                                    <p className="text-sm font-medium">
+                                      {code.used_at && format(new Date(code.used_at), 'dd/MM/yyyy', { locale: fr })}
                                     </p>
                                   </div>
                                 )}
                                 {!code.is_valid && code.invalidation_reason && (
                                   <div>
-                                    <Label className="text-muted-foreground">Raison d'invalidation</Label>
-                                    <p className="font-medium text-destructive">{code.invalidation_reason}</p>
+                                    <Label className="text-xs text-muted-foreground">Raison d'invalidation</Label>
+                                    <p className="text-sm font-medium text-destructive">{code.invalidation_reason}</p>
                                   </div>
                                 )}
                               </div>
@@ -365,12 +369,13 @@ export default function AdminCCCCodes() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              className="h-7 w-7 p-0"
                               onClick={() => {
                                 setSelectedCode(code);
                                 setShowInvalidateDialog(true);
                               }}
                             >
-                              <Ban className="h-4 w-4 text-destructive" />
+                              <Ban className="h-3 w-3 text-destructive" />
                             </Button>
                           )}
                         </div>
@@ -380,7 +385,7 @@ export default function AdminCCCCodes() {
                 )}
               </TableBody>
             </Table>
-          </ResponsiveTable>
+          </div>
         </CardContent>
       </Card>
 

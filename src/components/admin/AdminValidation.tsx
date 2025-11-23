@@ -218,27 +218,28 @@ const AdminValidation: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between flex-wrap gap-4">
+        <CardHeader className="p-3 sm:p-6">
+          <div className="flex items-center justify-between flex-wrap gap-2 sm:gap-4">
             <div>
-              <CardTitle>Validation des Indicateurs Cadastraux</CardTitle>
-              <CardDescription>
-                Vérification de la cohérence entre le front-end et le back-end
+              <CardTitle className="text-base sm:text-lg">Validation des Indicateurs</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">
+                Vérification de la cohérence
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={runValidation} disabled={loading}>
+            <div className="flex flex-wrap gap-1 sm:gap-2">
+              <Button onClick={runValidation} disabled={loading} size="sm" className="text-xs">
                 {loading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Validation...
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 animate-spin" />
+                    <span className="hidden sm:inline">Validation...</span>
                   </>
                 ) : (
                   <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Validation Globale
+                    <Play className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="hidden sm:inline">Validation</span>
+                    <span className="sm:hidden">Valid.</span>
                   </>
                 )}
               </Button>
@@ -246,16 +247,19 @@ const AdminValidation: React.FC = () => {
                 onClick={runCatalogTest} 
                 disabled={catalogTestLoading}
                 variant="outline"
+                size="sm"
+                className="text-xs"
               >
                 {catalogTestLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Test...
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 animate-spin" />
+                    <span className="hidden sm:inline">Test...</span>
                   </>
                 ) : (
                   <>
-                    <Database className="h-4 w-4 mr-2" />
-                    Test Catalogue
+                    <Database className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="hidden sm:inline">Catalogue</span>
+                    <span className="sm:hidden">Cat.</span>
                   </>
                 )}
               </Button>
