@@ -215,15 +215,19 @@ const AdminCCCContributions: React.FC = () => {
 
       console.log('Approbation de la contribution:', contributionId);
 
-      const { data, error } = await supabase
+      // 1. Mettre à jour le statut de la contribution
+      const { data: updatedContribution, error } = await supabase
         .from('cadastral_contributions')
         .update({ 
           status: 'approved',
           reviewed_by: user.id,
-          reviewed_at: new Date().toISOString()
+          reviewed_at: new Date().toISOString(),
+          verified_by: user.id,
+          verified_at: new Date().toISOString()
         })
         .eq('id', contributionId)
-        .select();
+        .select()
+        .single();
 
       if (error) {
         console.error('Erreur Supabase lors de l\'approbation:', error);
@@ -244,14 +248,154 @@ const AdminCCCContributions: React.FC = () => {
         return;
       }
 
-      console.log('Contribution approuvée avec succès:', data);
+      console.log('Contribution approuvée avec succès:', updatedContribution);
+
+      // 2. Créer la parcelle dans cadastral_parcels
+      let latitude = null;
+      let longitude = null;
+      if (updatedContribution.gps_coordinates && Array.isArray(updatedContribution.gps_coordinates) && updatedContribution.gps_coordinates.length > 0) {
+        const firstCoord = updatedContribution.gps_coordinates[0] as any;
+        latitude = firstCoord.lat || firstCoord.latitude || null;
+        longitude = firstCoord.lng || firstCoord.longitude || null;
+      }
+
+      const { data: createdParcel, error: parcelError } = await supabase
+        .from('cadastral_parcels')
+        .insert({
+          parcel_number: updatedContribution.parcel_number,
+          current_owner_name: updatedContribution.current_owner_name,
+          current_owner_legal_status: updatedContribution.current_owner_legal_status,
+          current_owner_since: updatedContribution.current_owner_since,
+          area_sqm: updatedContribution.area_sqm,
+          area_hectares: updatedContribution.area_sqm ? updatedContribution.area_sqm / 10000 : null,
+          parcel_type: updatedContribution.parcel_type || 'Propriété privée',
+          property_title_type: updatedContribution.property_title_type,
+          title_reference_number: updatedContribution.title_reference_number,
+          lease_type: updatedContribution.lease_type,
+          construction_type: updatedContribution.construction_type,
+          construction_nature: updatedContribution.construction_nature,
+          declared_usage: updatedContribution.declared_usage,
+          province: updatedContribution.province,
+          ville: updatedContribution.ville,
+          commune: updatedContribution.commune,
+          quartier: updatedContribution.quartier,
+          avenue: updatedContribution.avenue,
+          territoire: updatedContribution.territoire,
+          collectivite: updatedContribution.collectivite,
+          groupement: updatedContribution.groupement,
+          village: updatedContribution.village,
+          circonscription_fonciere: updatedContribution.circonscription_fonciere,
+          location: [
+            updatedContribution.province,
+            updatedContribution.ville,
+            updatedContribution.commune,
+            updatedContribution.quartier
+          ].filter(Boolean).join(', ') || 'Non renseigné',
+          gps_coordinates: updatedContribution.gps_coordinates,
+          parcel_sides: updatedContribution.parcel_sides,
+          latitude,
+          longitude,
+          whatsapp_number: updatedContribution.whatsapp_number,
+          owner_document_url: updatedContribution.owner_document_url,
+          property_title_document_url: updatedContribution.property_title_document_url
+        })
+        .select()
+        .single();
+
+      if (parcelError) {
+        console.error('Erreur lors de la création de la parcelle:', parcelError);
+        toast.error('Contribution approuvée mais erreur lors de la création de la parcelle');
+        await fetchContributions();
+        return;
+      }
+
+      // 3. Créer les historiques associés si présents
+      if (updatedContribution.ownership_history && Array.isArray(updatedContribution.ownership_history)) {
+        for (const history of updatedContribution.ownership_history) {
+          if (typeof history === 'object' && history !== null) {
+            await supabase.from('cadastral_ownership_history').insert({
+              parcel_id: createdParcel.id,
+              owner_name: (history as any).owner_name,
+              legal_status: (history as any).legal_status,
+              ownership_start_date: (history as any).ownership_start_date,
+              ownership_end_date: (history as any).ownership_end_date,
+              mutation_type: (history as any).mutation_type,
+              ownership_document_url: (history as any).ownership_document_url
+            });
+          }
+        }
+      }
+
+      if (updatedContribution.boundary_history && Array.isArray(updatedContribution.boundary_history)) {
+        for (const history of updatedContribution.boundary_history) {
+          if (typeof history === 'object' && history !== null) {
+            await supabase.from('cadastral_boundary_history').insert({
+              parcel_id: createdParcel.id,
+              pv_reference_number: (history as any).pv_reference_number,
+              boundary_purpose: (history as any).boundary_purpose,
+              surveyor_name: (history as any).surveyor_name,
+              survey_date: (history as any).survey_date,
+              boundary_document_url: (history as any).boundary_document_url
+            });
+          }
+        }
+      }
+
+      if (updatedContribution.tax_history && Array.isArray(updatedContribution.tax_history)) {
+        for (const history of updatedContribution.tax_history) {
+          if (typeof history === 'object' && history !== null) {
+            await supabase.from('cadastral_tax_history').insert({
+              parcel_id: createdParcel.id,
+              tax_year: (history as any).tax_year,
+              amount_usd: (history as any).amount_usd,
+              payment_status: (history as any).payment_status,
+              payment_date: (history as any).payment_date,
+              receipt_document_url: (history as any).receipt_document_url
+            });
+          }
+        }
+      }
+
+      if (updatedContribution.mortgage_history && Array.isArray(updatedContribution.mortgage_history)) {
+        for (const history of updatedContribution.mortgage_history) {
+          if (typeof history === 'object' && history !== null) {
+            await supabase.from('cadastral_mortgages').insert({
+              parcel_id: createdParcel.id,
+              mortgage_amount_usd: (history as any).mortgage_amount_usd,
+              duration_months: (history as any).duration_months,
+              creditor_name: (history as any).creditor_name,
+              creditor_type: (history as any).creditor_type,
+              contract_date: (history as any).contract_date,
+              mortgage_status: (history as any).mortgage_status
+            });
+          }
+        }
+      }
+
+      if (updatedContribution.building_permits && Array.isArray(updatedContribution.building_permits)) {
+        for (const permit of updatedContribution.building_permits) {
+          if (typeof permit === 'object' && permit !== null) {
+            await supabase.from('cadastral_building_permits').insert({
+              parcel_id: createdParcel.id,
+              permit_number: (permit as any).permit_number,
+              issuing_service: (permit as any).issuing_service,
+              issue_date: (permit as any).issue_date,
+              validity_period_months: (permit as any).validity_period_months,
+              administrative_status: (permit as any).administrative_status,
+              is_current: (permit as any).is_current,
+              issuing_service_contact: (permit as any).issuing_service_contact,
+              permit_document_url: (permit as any).permit_document_url
+            });
+          }
+        }
+      }
 
       // Le trigger auto_generate_ccc_code() va automatiquement :
       // 1. Générer un code CCC unique
       // 2. Calculer la valeur du code
       // 3. Créer une notification pour l'utilisateur
 
-      toast.success('Contribution approuvée ! Le code CCC a été généré automatiquement.');
+      toast.success('Contribution approuvée et parcelle créée ! Le code CCC a été généré.');
       await fetchContributions();
       setIsDetailsOpen(false);
       setValidationResult(null);

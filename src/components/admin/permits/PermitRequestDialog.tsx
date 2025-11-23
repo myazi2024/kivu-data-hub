@@ -62,12 +62,27 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
 
       // Si approuvé, générer un numéro de permis et créer l'enregistrement
       if (action === 'approve') {
-        // Récupérer les infos de la contribution
+        // Récupérer les infos de la contribution et trouver la parcelle associée
         const { data: contribution } = await supabase
           .from('cadastral_contributions')
-          .select('province')
+          .select('province, parcel_number')
           .eq('id', contributionId)
           .single();
+
+        if (!contribution) {
+          throw new Error('Contribution non trouvée');
+        }
+
+        // Trouver la parcelle correspondante
+        const { data: parcel } = await supabase
+          .from('cadastral_parcels')
+          .select('id')
+          .eq('parcel_number', contribution.parcel_number)
+          .single();
+
+        if (!parcel) {
+          throw new Error('Parcelle non trouvée. Assurez-vous que la contribution a été approuvée.');
+        }
 
         // Générer numéro de permis
         const { data: permitNumber } = await supabase.rpc('generate_permit_number', {
@@ -79,7 +94,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
         const { error: permitError } = await supabase
           .from('cadastral_building_permits')
           .insert({
-            parcel_id: contributionId,
+            parcel_id: parcel.id,
             permit_number: permitNumber,
             issuing_service: permitRequestData.issuingService || 'Service de l\'Urbanisme',
             issue_date: new Date().toISOString().split('T')[0],
@@ -90,10 +105,12 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
 
         if (permitError) {
           console.error('Error creating permit:', permitError);
+          throw permitError;
         }
 
         // Mettre à jour building_permits dans la contribution
         updatedPermitData.permitNumber = permitNumber;
+        updatedPermitData.parcelId = parcel.id;
       }
 
       const { error } = await supabase

@@ -61,15 +61,15 @@ const CadastralMap = () => {
     }
   }, [showIntroDialog]);
 
-  // Charger uniquement les parcelles des contributions validées
+  // Charger les parcelles depuis cadastral_parcels (accès public)
   useEffect(() => {
     const loadParcels = async () => {
       try {
         setLoading(true);
         const { data, error } = await supabase
-          .from('cadastral_contributions')
-          .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier')
-          .eq('status', 'approved')
+          .from('cadastral_parcels')
+          .select('id, parcel_number, gps_coordinates, parcel_sides, current_owner_name, area_sqm, province, ville, commune, quartier, latitude, longitude')
+          .is('deleted_at', null)
           .limit(500); // Limiter à 500 parcelles pour performance
 
         if (error) {
@@ -79,18 +79,19 @@ const CadastralMap = () => {
         }
 
         // Transformer les données pour extraire latitude/longitude
-        const transformedData = (data || []).map(contribution => {
-          let latitude = null;
-          let longitude = null;
+        const transformedData = (data || []).map(parcel => {
+          let latitude = parcel.latitude;
+          let longitude = parcel.longitude;
           
-          if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) {
-            const firstCoord = contribution.gps_coordinates[0] as any;
+          // Si pas de lat/lng direct, extraire des gps_coordinates
+          if (!latitude && !longitude && parcel.gps_coordinates && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0) {
+            const firstCoord = parcel.gps_coordinates[0] as any;
             latitude = firstCoord.lat || firstCoord.latitude;
             longitude = firstCoord.lng || firstCoord.longitude;
           }
 
           return {
-            ...contribution,
+            ...parcel,
             latitude: latitude || 0,
             longitude: longitude || 0
           };
@@ -129,6 +130,7 @@ const CadastralMap = () => {
   const loadParcelHistory = async (parcelId: string) => {
     setLoadingHistory(true);
     try {
+      // Récupérer l'historique - ces tables sont publiques
       const [ownershipRes, taxRes, mortgageRes, boundaryRes, permitsRes] = await Promise.all([
         supabase.from('cadastral_ownership_history').select('*').eq('parcel_id', parcelId),
         supabase.from('cadastral_tax_history').select('*').eq('parcel_id', parcelId),
