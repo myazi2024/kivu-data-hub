@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ResponsiveTable, ResponsiveTableBody, ResponsiveTableCell, ResponsiveTableHead, ResponsiveTableHeader, ResponsiveTableRow } from '@/components/ui/responsive-table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -537,65 +537,65 @@ const AdminCCCContributions: React.FC = () => {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-3 pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Total</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
+                <p className="text-xs font-medium text-muted-foreground">Total</p>
+                <p className="text-lg font-bold">{stats.total}</p>
               </div>
-              <Users className="h-8 w-8 text-blue-500" />
+              <Users className="h-5 w-5 text-blue-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-3 pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">En attente</p>
-                <p className="text-2xl font-bold">{stats.pending}</p>
+                <p className="text-xs font-medium text-muted-foreground">Attente</p>
+                <p className="text-lg font-bold">{stats.pending}</p>
               </div>
-              <Badge variant="secondary">{stats.pending}</Badge>
+              <Badge variant="secondary" className="text-xs">{stats.pending}</Badge>
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-3 pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Approuvés</p>
-                <p className="text-2xl font-bold">{stats.approved}</p>
+                <p className="text-xs font-medium text-muted-foreground">Approuvés</p>
+                <p className="text-lg font-bold">{stats.approved}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-green-500" />
+              <CheckCircle className="h-5 w-5 text-green-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-3 pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Rejetés</p>
-                <p className="text-2xl font-bold">{stats.rejected}</p>
+                <p className="text-xs font-medium text-muted-foreground">Rejetés</p>
+                <p className="text-lg font-bold">{stats.rejected}</p>
               </div>
-              <XCircle className="h-8 w-8 text-red-500" />
+              <XCircle className="h-5 w-5 text-red-500" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="pt-3 pb-3">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Suspects</p>
-                <p className="text-2xl font-bold">{stats.suspicious}</p>
+                <p className="text-xs font-medium text-muted-foreground">Suspects</p>
+                <p className="text-lg font-bold">{stats.suspicious}</p>
               </div>
-              <AlertTriangle className="h-8 w-8 text-orange-500" />
+              <AlertTriangle className="h-5 w-5 text-orange-500" />
             </div>
           </CardContent>
         </Card>
@@ -603,10 +603,10 @@ const AdminCCCContributions: React.FC = () => {
 
       {/* Alert */}
       {stats.pending > 0 && (
-        <Alert>
-          <Gift className="h-4 w-4" />
-          <AlertDescription>
-            {stats.pending} contribution(s) en attente de validation. 
+        <Alert className="py-2">
+          <Gift className="h-3 w-3 md:h-4 md:w-4" />
+          <AlertDescription className="text-xs md:text-sm">
+            <strong>{stats.pending}</strong> contribution(s) en attente. 
             Un code CCC sera automatiquement généré pour chaque contribution approuvée.
           </AlertDescription>
         </Alert>
@@ -614,88 +614,100 @@ const AdminCCCContributions: React.FC = () => {
 
       {/* Main Table */}
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Gift className="h-5 w-5" />
-              Gestion des Contributions CCC
+        <CardHeader className="p-3 md:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
+              <Gift className="h-4 w-4 md:h-5 md:w-5" />
+              <span className="truncate">Contributions CCC</span>
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={runIntegrityTests}>
-              <Play className="h-4 w-4 mr-2" />
-              Tester l'intégrité
+            <Button variant="outline" size="sm" onClick={runIntegrityTests} className="w-full sm:w-auto">
+              <Play className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+              Tester
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-2 md:p-6">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-5">
-              <TabsTrigger value="pending">En attente</TabsTrigger>
-              <TabsTrigger value="approved">Approuvés</TabsTrigger>
-              <TabsTrigger value="rejected">Rejetés</TabsTrigger>
-              <TabsTrigger value="suspicious">Suspects</TabsTrigger>
-              <TabsTrigger value="all">Tous</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-5 h-8 md:h-10">
+              <TabsTrigger value="pending" className="text-xs md:text-sm px-1 md:px-3">Attente</TabsTrigger>
+              <TabsTrigger value="approved" className="text-xs md:text-sm px-1 md:px-3">Approuvés</TabsTrigger>
+              <TabsTrigger value="rejected" className="text-xs md:text-sm px-1 md:px-3">Rejetés</TabsTrigger>
+              <TabsTrigger value="suspicious" className="text-xs md:text-sm px-1 md:px-3">Suspects</TabsTrigger>
+              <TabsTrigger value="all" className="text-xs md:text-sm px-1 md:px-3">Tous</TabsTrigger>
             </TabsList>
 
-            <TabsContent value={activeTab} className="mt-4">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Parcelle</TableHead>
-                    <TableHead>Contributeur</TableHead>
-                    <TableHead>Complétion</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Score Fraude</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            <TabsContent value={activeTab} className="mt-2">
+              <div className="overflow-x-auto">
+                <ResponsiveTable>
+                  <ResponsiveTableHeader>
+                    <ResponsiveTableRow>
+                      <ResponsiveTableHead priority="high">Parcelle</ResponsiveTableHead>
+                      <ResponsiveTableHead priority="low">Contributeur</ResponsiveTableHead>
+                      <ResponsiveTableHead priority="medium">Complétion</ResponsiveTableHead>
+                      <ResponsiveTableHead priority="high">Statut</ResponsiveTableHead>
+                      <ResponsiveTableHead priority="low">Score</ResponsiveTableHead>
+                      <ResponsiveTableHead priority="medium">Date</ResponsiveTableHead>
+                      <ResponsiveTableHead priority="high">Actions</ResponsiveTableHead>
+                    </ResponsiveTableRow>
+                  </ResponsiveTableHeader>
+                  <ResponsiveTableBody>
                   {filteredContributions.map((contribution) => {
                     const completeness = calculateCompleteness(contribution);
                     return (
-                      <TableRow key={contribution.id}>
-                        <TableCell className="font-mono">{contribution.parcel_number}</TableCell>
-                        <TableCell className="text-sm">{contribution.user_id.substring(0, 8)}...</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="w-16 bg-secondary rounded-full h-2">
+                      <ResponsiveTableRow key={contribution.id}>
+                        <ResponsiveTableCell priority="high" label="Parcelle" className="font-mono text-xs md:text-sm">
+                          {contribution.parcel_number}
+                        </ResponsiveTableCell>
+                        <ResponsiveTableCell priority="low" label="Contributeur" className="text-xs md:text-sm">
+                          {contribution.user_id.substring(0, 8)}...
+                        </ResponsiveTableCell>
+                        <ResponsiveTableCell priority="medium" label="Complétion">
+                          <div className="flex items-center gap-1 md:gap-2">
+                            <div className="w-12 md:w-16 bg-secondary rounded-full h-1.5 md:h-2">
                               <div 
-                                className="bg-primary h-2 rounded-full" 
+                                className="bg-primary h-1.5 md:h-2 rounded-full" 
                                 style={{ width: `${completeness}%` }}
                               />
                             </div>
-                            <span className="text-sm">{completeness}%</span>
+                            <span className="text-xs md:text-sm">{completeness}%</span>
                           </div>
-                        </TableCell>
-                        <TableCell>{getStatusBadge(contribution.status)}</TableCell>
-                        <TableCell>
+                        </ResponsiveTableCell>
+                        <ResponsiveTableCell priority="high" label="Statut">
+                          {getStatusBadge(contribution.status)}
+                        </ResponsiveTableCell>
+                        <ResponsiveTableCell priority="low" label="Score">
                           {contribution.is_suspicious ? (
-                            <Badge variant="destructive">{contribution.fraud_score}</Badge>
+                            <Badge variant="destructive" className="text-xs">{contribution.fraud_score}</Badge>
                           ) : (
-                            <span className="text-muted-foreground">-</span>
+                            <span className="text-muted-foreground text-xs">-</span>
                           )}
-                        </TableCell>
-                        <TableCell className="text-sm">
-                          {new Date(contribution.created_at).toLocaleDateString('fr-FR')}
-                        </TableCell>
-                        <TableCell>
+                        </ResponsiveTableCell>
+                        <ResponsiveTableCell priority="medium" label="Date" className="text-xs md:text-sm">
+                          {new Date(contribution.created_at).toLocaleDateString('fr-FR', { 
+                            day: '2-digit', 
+                            month: '2-digit' 
+                          })}
+                        </ResponsiveTableCell>
+                        <ResponsiveTableCell priority="high" label="Actions">
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => {
                               setSelectedContribution(contribution);
                               setIsDetailsOpen(true);
-                              setValidationResult(null); // Réinitialiser la validation
+                              setValidationResult(null);
                             }}
+                            className="h-7 w-7 md:h-8 md:w-8 p-0"
                           >
-                            <Eye className="h-4 w-4" />
+                            <Eye className="h-3 w-3 md:h-4 md:w-4" />
                           </Button>
-                        </TableCell>
-                      </TableRow>
+                        </ResponsiveTableCell>
+                      </ResponsiveTableRow>
                     );
                   })}
-                </TableBody>
-              </Table>
+                  </ResponsiveTableBody>
+                </ResponsiveTable>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
@@ -703,48 +715,48 @@ const AdminCCCContributions: React.FC = () => {
 
       {/* Details Dialog */}
       <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Détails de la Contribution</DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto p-3 md:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-base md:text-lg">Détails Contribution</DialogTitle>
           </DialogHeader>
           {selectedContribution && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2 md:space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-4">
                 <div>
-                  <Label>Numéro de parcelle</Label>
-                  <p className="font-mono">{selectedContribution.parcel_number}</p>
+                  <Label className="text-xs md:text-sm">Numéro de parcelle</Label>
+                  <p className="font-mono text-xs md:text-sm">{selectedContribution.parcel_number}</p>
                 </div>
                 <div>
-                  <Label>Statut</Label>
+                  <Label className="text-xs md:text-sm">Statut</Label>
                   <div className="mt-1">{getStatusBadge(selectedContribution.status)}</div>
                 </div>
               </div>
 
               {selectedContribution.is_suspicious && (
-                <Alert variant="destructive">
-                  <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription>
-                    <strong>Contribution suspecte (Score: {selectedContribution.fraud_score})</strong>
+                <Alert variant="destructive" className="py-2">
+                  <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+                  <AlertDescription className="text-xs md:text-sm">
+                    <strong>Suspecte (Score: {selectedContribution.fraud_score})</strong>
                     <br />
-                    {selectedContribution.fraud_reason}
+                    <span className="text-xs">{selectedContribution.fraud_reason}</span>
                   </AlertDescription>
                 </Alert>
               )}
 
               {/* Actions rapides */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-1 md:gap-2">
                 {/* Appel */}
                 {selectedContribution.appeal_submitted && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setShowAppealDialog(true)}
-                    className="gap-2 w-full"
+                    className="gap-1 md:gap-2 w-full h-8 md:h-9 text-xs md:text-sm px-2 md:px-4"
                   >
-                    <MessageSquare className="h-4 w-4" />
-                    Voir l'appel
+                    <MessageSquare className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="truncate">Appel</span>
                     {selectedContribution.appeal_status === 'pending' && (
-                      <Badge variant="outline" className="ml-auto">En attente</Badge>
+                      <Badge variant="outline" className="ml-auto text-[10px] md:text-xs px-1 py-0">Attente</Badge>
                     )}
                   </Button>
                 )}
@@ -755,12 +767,12 @@ const AdminCCCContributions: React.FC = () => {
                     variant="outline"
                     size="sm"
                     onClick={() => setShowPermitDialog(true)}
-                    className="gap-2 w-full"
+                    className="gap-1 md:gap-2 w-full h-8 md:h-9 text-xs md:text-sm px-2 md:px-4"
                   >
-                    <Building2 className="h-4 w-4" />
-                    Demande de permis
+                    <Building2 className="h-3 w-3 md:h-4 md:w-4" />
+                    <span className="truncate">Permis</span>
                     {selectedContribution.permit_request_data.status === 'pending' && (
-                      <Badge variant="outline" className="ml-auto">En attente</Badge>
+                      <Badge variant="outline" className="ml-auto text-[10px] md:text-xs px-1 py-0">Attente</Badge>
                     )}
                   </Button>
                 )}
@@ -770,26 +782,26 @@ const AdminCCCContributions: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowDocumentsDialog(true)}
-                  className="gap-2 w-full"
+                  className="gap-1 md:gap-2 w-full h-8 md:h-9 text-xs md:text-sm px-2 md:px-4"
                 >
-                  <FileText className="h-4 w-4" />
-                  Documents
+                  <FileText className="h-3 w-3 md:h-4 md:w-4" />
+                  <span className="truncate">Documents</span>
                 </Button>
               </div>
 
               <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-6">
-                  <TabsTrigger value="general">Général</TabsTrigger>
-                  <TabsTrigger value="location">Localisation</TabsTrigger>
-                  <TabsTrigger value="permits">Permis</TabsTrigger>
-                  <TabsTrigger value="history">Historiques</TabsTrigger>
-                  <TabsTrigger value="obligations">Obligations</TabsTrigger>
-                  <TabsTrigger value="documents">Documents</TabsTrigger>
+                <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 h-8 md:h-10">
+                  <TabsTrigger value="general" className="text-xs md:text-sm px-1 md:px-3">Général</TabsTrigger>
+                  <TabsTrigger value="location" className="text-xs md:text-sm px-1 md:px-3">Localisation</TabsTrigger>
+                  <TabsTrigger value="permits" className="text-xs md:text-sm px-1 md:px-3">Permis</TabsTrigger>
+                  <TabsTrigger value="history" className="text-xs md:text-sm px-1 md:px-3">Historiques</TabsTrigger>
+                  <TabsTrigger value="obligations" className="text-xs md:text-sm px-1 md:px-3">Obligations</TabsTrigger>
+                  <TabsTrigger value="documents" className="text-xs md:text-sm px-1 md:px-3">Documents</TabsTrigger>
                 </TabsList>
 
                 {/* Onglet Général */}
-                <TabsContent value="general" className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                <TabsContent value="general" className="space-y-2 md:space-y-3 mt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                     <div>
                       <Label className="text-xs text-muted-foreground">Type de titre</Label>
                       <p className="text-sm">{selectedContribution.property_title_type || 'Non renseigné'}</p>
@@ -811,22 +823,22 @@ const AdminCCCContributions: React.FC = () => {
                   <div>
                     <Label className="text-xs text-muted-foreground">Propriétaire(s) actuel(s)</Label>
                     {selectedContribution.current_owners_details ? (
-                      <div className="space-y-2 mt-1">
+                      <div className="space-y-1 mt-1">
                         {Array.isArray(selectedContribution.current_owners_details) && 
                           selectedContribution.current_owners_details.map((owner: any, idx: number) => (
-                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
-                            <p><strong>Nom:</strong> {owner.lastName} {owner.middleName || ''} {owner.firstName}</p>
-                            <p><strong>Statut:</strong> {owner.legalStatus}</p>
-                            <p><strong>Depuis:</strong> {new Date(owner.since).toLocaleDateString('fr-FR')}</p>
+                          <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
+                            <p className="text-xs md:text-sm"><strong>Nom:</strong> {owner.lastName} {owner.middleName || ''} {owner.firstName}</p>
+                            <p className="text-xs md:text-sm"><strong>Statut:</strong> {owner.legalStatus}</p>
+                            <p className="text-xs md:text-sm"><strong>Depuis:</strong> {new Date(owner.since).toLocaleDateString('fr-FR')}</p>
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm">{selectedContribution.current_owner_name || 'Non renseigné'}</p>
+                      <p className="text-xs md:text-sm">{selectedContribution.current_owner_name || 'Non renseigné'}</p>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                     <div>
                       <Label className="text-xs text-muted-foreground">Superficie</Label>
                       <p className="text-sm">{selectedContribution.area_sqm ? `${selectedContribution.area_sqm} m²` : 'Non renseigné'}</p>
@@ -848,9 +860,9 @@ const AdminCCCContributions: React.FC = () => {
                   {selectedContribution.parcel_sides && Array.isArray(selectedContribution.parcel_sides) && selectedContribution.parcel_sides.length > 0 && (
                     <div>
                       <Label className="text-xs text-muted-foreground">Dimensions des côtés</Label>
-                      <div className="grid grid-cols-2 gap-2 mt-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 md:gap-2 mt-1">
                         {selectedContribution.parcel_sides.map((side: any, idx: number) => (
-                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                          <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
                             <p><strong>{side.name}:</strong> {side.length} m</p>
                           </div>
                         ))}
@@ -860,8 +872,8 @@ const AdminCCCContributions: React.FC = () => {
                 </TabsContent>
 
                 {/* Onglet Localisation */}
-                <TabsContent value="location" className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                <TabsContent value="location" className="space-y-2 md:space-y-3 mt-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
                     <div>
                       <Label className="text-xs text-muted-foreground">Province</Label>
                       <p className="text-sm">{selectedContribution.province || 'Non renseigné'}</p>
@@ -905,8 +917,8 @@ const AdminCCCContributions: React.FC = () => {
                       <Label className="text-xs text-muted-foreground">Coordonnées GPS</Label>
                       <div className="space-y-1 mt-1">
                         {selectedContribution.gps_coordinates.map((coord: any, idx: number) => (
-                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
-                            <p><strong>Borne {coord.borne}:</strong> Lat: {coord.lat}, Lng: {coord.lng}</p>
+                          <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
+                            <p className="text-xs md:text-sm"><strong>Borne {coord.borne}:</strong> {coord.lat}, {coord.lng}</p>
                           </div>
                         ))}
                       </div>
@@ -915,26 +927,26 @@ const AdminCCCContributions: React.FC = () => {
                 </TabsContent>
 
                 {/* Onglet Permis */}
-                <TabsContent value="permits" className="space-y-3">
+                <TabsContent value="permits" className="space-y-2 md:space-y-3 mt-2">
                   {selectedContribution.building_permits && Array.isArray(selectedContribution.building_permits) && selectedContribution.building_permits.length > 0 ? (
                     <div>
                       <Label className="text-xs text-muted-foreground">Permis de construire existants</Label>
-                      <div className="space-y-2 mt-1">
+                      <div className="space-y-1 md:space-y-2 mt-1">
                         {selectedContribution.building_permits.map((permit: any, idx: number) => (
-                          <div key={idx} className="p-3 bg-secondary rounded space-y-1 text-sm">
-                            <p><strong>Type:</strong> {permit.permitType === 'construction' ? 'Construction' : 'Régularisation'}</p>
-                            <p><strong>N° de permis:</strong> {permit.permitNumber}</p>
-                            <p><strong>Service émetteur:</strong> {permit.issuingService}</p>
-                            <p><strong>Date d'émission:</strong> {new Date(permit.issueDate).toLocaleDateString('fr-FR')}</p>
-                            <p><strong>Validité:</strong> {permit.validityMonths} mois</p>
-                            <p><strong>Statut:</strong> {permit.administrativeStatus}</p>
-                            {permit.issuingServiceContact && <p><strong>Contact:</strong> {permit.issuingServiceContact}</p>}
+                          <div key={idx} className="p-2 md:p-3 bg-secondary rounded space-y-0.5 md:space-y-1 text-xs md:text-sm">
+                            <p className="text-xs md:text-sm"><strong>Type:</strong> {permit.permitType === 'construction' ? 'Construction' : 'Régularisation'}</p>
+                            <p className="text-xs md:text-sm"><strong>N° de permis:</strong> {permit.permitNumber}</p>
+                            <p className="text-xs md:text-sm"><strong>Service émetteur:</strong> {permit.issuingService}</p>
+                            <p className="text-xs md:text-sm"><strong>Date d'émission:</strong> {new Date(permit.issueDate).toLocaleDateString('fr-FR')}</p>
+                            <p className="text-xs md:text-sm"><strong>Validité:</strong> {permit.validityMonths} mois</p>
+                            <p className="text-xs md:text-sm"><strong>Statut:</strong> {permit.administrativeStatus}</p>
+                            {permit.issuingServiceContact && <p className="text-xs md:text-sm"><strong>Contact:</strong> {permit.issuingServiceContact}</p>}
                           </div>
                         ))}
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Aucun permis enregistré</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Aucun permis enregistré</p>
                   )}
 
                   {selectedContribution.previous_permit_number && (
@@ -945,9 +957,9 @@ const AdminCCCContributions: React.FC = () => {
                   )}
 
                   {selectedContribution.permit_request_data && (
-                    <div className="mt-4">
+                    <div className="mt-2 md:mt-4">
                       <Label className="text-xs text-muted-foreground">Demande de permis</Label>
-                      <div className="p-3 bg-secondary rounded space-y-1 text-sm mt-1">
+                      <div className="p-2 md:p-3 bg-secondary rounded space-y-0.5 md:space-y-1 text-xs md:text-sm mt-1">
                         <p><strong>Type:</strong> {selectedContribution.permit_request_data.permitType === 'construction' ? 'Construction' : 'Régularisation'}</p>
                         <p><strong>Construction existante:</strong> {selectedContribution.permit_request_data.hasExistingConstruction ? 'Oui' : 'Non'}</p>
                         <p><strong>Description:</strong> {selectedContribution.permit_request_data.constructionDescription}</p>
@@ -966,7 +978,7 @@ const AdminCCCContributions: React.FC = () => {
                 </TabsContent>
 
                 {/* Onglet Historiques */}
-                <TabsContent value="history" className="space-y-3">
+                <TabsContent value="history" className="space-y-2 md:space-y-3 mt-2">
                   {selectedContribution.ownership_history && Array.isArray(selectedContribution.ownership_history) && selectedContribution.ownership_history.length > 0 ? (
                     <div>
                       <Label className="text-xs text-muted-foreground">Historique de propriété</Label>
@@ -1003,13 +1015,13 @@ const AdminCCCContributions: React.FC = () => {
                 </TabsContent>
 
                 {/* Onglet Obligations */}
-                <TabsContent value="obligations" className="space-y-3">
+                <TabsContent value="obligations" className="space-y-2 md:space-y-3 mt-2">
                   {selectedContribution.tax_history && Array.isArray(selectedContribution.tax_history) && selectedContribution.tax_history.length > 0 ? (
                     <div>
                       <Label className="text-xs text-muted-foreground">Historique fiscal</Label>
-                      <div className="space-y-2 mt-1">
+                      <div className="space-y-1 md:space-y-2 mt-1">
                         {selectedContribution.tax_history.map((tax: any, idx: number) => (
-                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                          <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
                             <p><strong>Année:</strong> {tax.taxYear}</p>
                             <p><strong>Montant:</strong> ${tax.amountUsd}</p>
                             <p><strong>Statut:</strong> {tax.paymentStatus}</p>
@@ -1020,15 +1032,15 @@ const AdminCCCContributions: React.FC = () => {
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">Aucun historique fiscal</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Aucun historique fiscal</p>
                   )}
 
                   {selectedContribution.mortgage_history && Array.isArray(selectedContribution.mortgage_history) && selectedContribution.mortgage_history.length > 0 && (
-                    <div className="mt-4">
+                    <div className="mt-2 md:mt-4">
                       <Label className="text-xs text-muted-foreground">Historique hypothécaire</Label>
-                      <div className="space-y-2 mt-1">
+                      <div className="space-y-1 md:space-y-2 mt-1">
                         {selectedContribution.mortgage_history.map((mortgage: any, idx: number) => (
-                          <div key={idx} className="p-2 bg-secondary rounded text-sm">
+                          <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
                             <p><strong>Montant:</strong> ${mortgage.mortgageAmountUsd}</p>
                             <p><strong>Durée:</strong> {mortgage.durationMonths} mois</p>
                             <p><strong>Créancier:</strong> {mortgage.creditorName} ({mortgage.creditorType})</p>
@@ -1042,11 +1054,11 @@ const AdminCCCContributions: React.FC = () => {
                 </TabsContent>
 
                 {/* Onglet Documents */}
-                <TabsContent value="documents" className="space-y-3">
+                <TabsContent value="documents" className="space-y-2 md:space-y-3 mt-2">
                   {selectedContribution.whatsapp_number && (
                     <div>
                       <Label className="text-xs text-muted-foreground">Numéro WhatsApp</Label>
-                      <p className="text-sm font-mono">{selectedContribution.whatsapp_number}</p>
+                      <p className="text-xs md:text-sm font-mono">{selectedContribution.whatsapp_number}</p>
                     </div>
                   )}
                   
@@ -1057,9 +1069,9 @@ const AdminCCCContributions: React.FC = () => {
                         href={selectedContribution.owner_document_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                        className="text-xs md:text-sm text-primary hover:underline flex items-center gap-1"
                       >
-                        Voir le document <ExternalLink className="h-3 w-3" />
+                        Voir <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
                   )}
@@ -1071,15 +1083,15 @@ const AdminCCCContributions: React.FC = () => {
                         href={selectedContribution.property_title_document_url} 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                        className="text-xs md:text-sm text-primary hover:underline flex items-center gap-1"
                       >
-                        Voir le document <ExternalLink className="h-3 w-3" />
+                        Voir <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>
                   )}
 
                   {!selectedContribution.owner_document_url && !selectedContribution.property_title_document_url && !selectedContribution.whatsapp_number && (
-                    <p className="text-sm text-muted-foreground">Aucun document attaché</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">Aucun document attaché</p>
                   )}
                 </TabsContent>
               </Tabs>
@@ -1087,28 +1099,33 @@ const AdminCCCContributions: React.FC = () => {
               {selectedContribution.status === 'pending' && (
                 <>
                   <div>
-                    <Label htmlFor="rejection_reason">Raison de rejet (optionnel)</Label>
+                    <Label htmlFor="rejection_reason" className="text-xs md:text-sm">Raison de rejet (optionnel)</Label>
                     <Textarea
                       id="rejection_reason"
                       value={rejectionReason}
                       onChange={(e) => setRejectionReason(e.target.value)}
                       placeholder="Expliquez pourquoi cette contribution est rejetée..."
-                      rows={3}
+                      rows={2}
+                      className="text-xs md:text-sm"
                     />
                   </div>
 
-                  <div className="flex justify-end space-x-2">
+                  <div className="flex flex-col sm:flex-row justify-end gap-2">
                     <Button
                       variant="destructive"
                       onClick={() => handleReject(selectedContribution.id)}
+                      size="sm"
+                      className="w-full sm:w-auto"
                     >
-                      <XCircle className="h-4 w-4 mr-2" />
+                      <XCircle className="h-3 w-3 md:h-4 md:w-4 mr-2" />
                       Rejeter
                     </Button>
                     <Button
                       onClick={() => handleApprove(selectedContribution.id)}
+                      size="sm"
+                      className="w-full sm:w-auto"
                     >
-                      <CheckCircle className="h-4 w-4 mr-2" />
+                      <CheckCircle className="h-3 w-3 md:h-4 md:w-4 mr-2" />
                       Approuver
                     </Button>
                   </div>
@@ -1116,11 +1133,11 @@ const AdminCCCContributions: React.FC = () => {
               )}
 
               {selectedContribution.status === 'rejected' && selectedContribution.rejection_reason && (
-                <Alert variant="destructive">
-                  <XCircle className="h-4 w-4" />
-                  <AlertDescription>
+                <Alert variant="destructive" className="py-2">
+                  <XCircle className="h-3 w-3 md:h-4 md:w-4" />
+                  <AlertDescription className="text-xs md:text-sm">
                     <strong>Raison du rejet:</strong><br />
-                    {selectedContribution.rejection_reason}
+                    <span className="text-xs md:text-sm">{selectedContribution.rejection_reason}</span>
                   </AlertDescription>
                 </Alert>
               )}
@@ -1131,24 +1148,24 @@ const AdminCCCContributions: React.FC = () => {
 
       {/* Test Results Dialog */}
       <Dialog open={showTestDialog} onOpenChange={setShowTestDialog}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Résultats des Tests d'Intégrité CCC</DialogTitle>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto p-3 md:p-6">
+          <DialogHeader className="pb-2">
+            <DialogTitle className="text-base md:text-lg">Tests d'Intégrité CCC</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             {testResults.map((result, idx) => (
-              <div key={idx} className="p-3 rounded border">
-                <div className="flex items-start gap-3">
+              <div key={idx} className="p-2 md:p-3 rounded border">
+                <div className="flex items-start gap-2 md:gap-3">
                   <div className="mt-0.5">
-                    {result.status === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
-                    {result.status === 'warning' && <AlertTriangle className="h-5 w-5 text-orange-500" />}
-                    {result.status === 'error' && <XCircle className="h-5 w-5 text-red-500" />}
+                    {result.status === 'success' && <CheckCircle className="h-4 w-4 md:h-5 md:w-5 text-green-500" />}
+                    {result.status === 'warning' && <AlertTriangle className="h-4 w-4 md:h-5 md:w-5 text-orange-500" />}
+                    {result.status === 'error' && <XCircle className="h-4 w-4 md:h-5 md:w-5 text-red-500" />}
                   </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{result.test}</p>
-                    <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-xs md:text-sm">{result.test}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground mt-0.5 md:mt-1">{result.message}</p>
                     {result.details && (
-                      <pre className="text-xs bg-secondary p-2 rounded mt-2 overflow-x-auto">
+                      <pre className="text-[10px] md:text-xs bg-secondary p-1.5 md:p-2 rounded mt-1 md:mt-2 overflow-x-auto">
                         {JSON.stringify(result.details, null, 2)}
                       </pre>
                     )}
@@ -1158,18 +1175,18 @@ const AdminCCCContributions: React.FC = () => {
             ))}
             
             {testResults.length > 0 && (
-              <div className="pt-3 border-t">
-                <div className="flex items-center gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-500" />
+              <div className="pt-2 md:pt-3 border-t">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 md:gap-4 text-xs md:text-sm">
+                  <div className="flex items-center gap-1 md:gap-2">
+                    <CheckCircle className="h-3 w-3 md:h-4 md:w-4 text-green-500" />
                     <span>{testResults.filter(r => r.status === 'success').length} succès</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4 text-orange-500" />
-                    <span>{testResults.filter(r => r.status === 'warning').length} avertissements</span>
+                  <div className="flex items-center gap-1 md:gap-2">
+                    <AlertTriangle className="h-3 w-3 md:h-4 md:w-4 text-orange-500" />
+                    <span>{testResults.filter(r => r.status === 'warning').length} avert.</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-red-500" />
+                  <div className="flex items-center gap-1 md:gap-2">
+                    <XCircle className="h-3 w-3 md:h-4 md:w-4 text-red-500" />
                     <span>{testResults.filter(r => r.status === 'error').length} erreurs</span>
                   </div>
                 </div>
