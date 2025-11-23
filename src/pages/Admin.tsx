@@ -10,10 +10,10 @@ import { toast } from 'sonner';
 import AdminPublications from '@/components/admin/AdminPublications';
 import AdminPayments from '@/components/admin/AdminPayments';
 import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard';
+import { AdminUserRolesEnhanced } from '@/components/admin/AdminUserRolesEnhanced';
 import AdminUsers from '@/components/admin/AdminUsers';
 import AdminResellers from '@/components/admin/AdminResellers';
 import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
-import { AdminUserRoles } from '@/components/admin/AdminUserRoles';
 import AdminCadastralServices from '@/components/admin/AdminCadastralServices';
 import AdminCadastralMap from '@/components/admin/AdminCadastralMap';
 import AdminCadastralTooltip from '@/components/admin/AdminCadastralTooltip';
@@ -122,7 +122,7 @@ const Admin = () => {
       case 'users':
         return <AdminUsers onRefresh={fetchPendingCount} />;
       case 'roles':
-        return <AdminUserRoles />;
+        return <AdminUserRolesEnhanced />;
       case 'fraud':
         return <AdminFraudDetection />;
       case 'ccc':
