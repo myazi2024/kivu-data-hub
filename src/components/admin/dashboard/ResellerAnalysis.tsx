@@ -21,6 +21,9 @@ interface ResellerAnalysisProps {
 }
 
 export function ResellerAnalysis({ loading = false, resellers = [] }: ResellerAnalysisProps) {
+  // Ensure resellers is always an array
+  const safeResellers = Array.isArray(resellers) ? resellers : [];
+
   if (loading) {
     return (
       <div className="space-y-4">
@@ -36,15 +39,15 @@ export function ResellerAnalysis({ loading = false, resellers = [] }: ResellerAn
     );
   }
 
-  const topResellers = [...resellers]
+  const topResellers = [...safeResellers]
     .sort((a, b) => b.totalSales - a.totalSales)
     .slice(0, 5);
 
   const totalStats = {
-    totalSales: resellers.reduce((sum, r) => sum + r.totalSales, 0),
-    totalCommissions: resellers.reduce((sum, r) => sum + r.commissionEarned, 0),
-    avgConversionRate: resellers.reduce((sum, r) => sum + r.conversionRate, 0) / resellers.length || 0,
-    activeResellers: resellers.filter(r => r.salesCount > 0).length
+    totalSales: safeResellers.reduce((sum, r) => sum + r.totalSales, 0),
+    totalCommissions: safeResellers.reduce((sum, r) => sum + r.commissionEarned, 0),
+    avgConversionRate: safeResellers.length > 0 ? safeResellers.reduce((sum, r) => sum + r.conversionRate, 0) / safeResellers.length : 0,
+    activeResellers: safeResellers.filter(r => r.salesCount > 0).length
   };
 
   return (
