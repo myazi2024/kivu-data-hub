@@ -3,7 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 
 export const useEnhancedAnalytics = (startDate?: Date, endDate?: Date) => {
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any>({});
+  const [data, setData] = useState<any>({
+    historicalRevenue: [],
+    zonesData: [],
+    contributionPerf: {},
+    businessMetrics: {},
+    resellersAnalysis: [],
+    cohortData: [],
+    alerts: []
+  });
 
   useEffect(() => {
     fetchEnhancedData();
