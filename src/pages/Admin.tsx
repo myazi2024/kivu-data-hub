@@ -33,6 +33,7 @@ import AdminTransactions from '@/components/admin/AdminTransactions';
 import AdminCommissions from '@/components/admin/AdminCommissions';
 import AdminDiscountCodes from '@/components/admin/AdminDiscountCodes';
 import AdminBuildingPermits from '@/components/admin/AdminBuildingPermits';
+import AdminPermitFeesConfig from '@/components/admin/AdminPermitFeesConfig';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();

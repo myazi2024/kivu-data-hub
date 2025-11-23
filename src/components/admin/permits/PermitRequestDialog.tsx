@@ -7,9 +7,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { FileText, CheckCircle, XCircle, Building2, User, Phone, Mail, AlertCircle, Image } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Building2, User, Phone, Mail, AlertCircle, Image, History } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PermitActionsHistory } from './PermitActionsHistory';
+import { useAuth } from '@/hooks/useAuth';
 
 interface PermitRequestDialogProps {
   open: boolean;
@@ -30,6 +32,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
   userId,
   onProcessed
 }) => {
+  const { user } = useAuth();
   const [processing, setProcessing] = useState(false);
   const [response, setResponse] = useState('');
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
@@ -39,6 +42,11 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
   const handleProcessRequest = async (action: 'approve' | 'reject') => {
     if (!response.trim()) {
       toast.error('Veuillez fournir une réponse');
+      return;
+    }
+
+    if (!user) {
+      toast.error('Erreur d\'authentification');
       return;
     }
 
@@ -52,25 +60,72 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
         processedAt: new Date().toISOString()
       };
 
+      // Si approuvé, générer un numéro de permis et créer l'enregistrement
+      if (action === 'approve') {
+        // Récupérer les infos de la contribution
+        const { data: contribution } = await supabase
+          .from('cadastral_contributions')
+          .select('province')
+          .eq('id', contributionId)
+          .single();
+
+        // Générer numéro de permis
+        const { data: permitNumber } = await supabase.rpc('generate_permit_number', {
+          permit_type: permitRequestData.permitType,
+          province: contribution?.province || 'RDC'
+        });
+
+        // Créer le permis dans cadastral_building_permits
+        const { error: permitError } = await supabase
+          .from('cadastral_building_permits')
+          .insert({
+            parcel_id: contributionId,
+            permit_number: permitNumber,
+            issuing_service: permitRequestData.issuingService || 'Service de l\'Urbanisme',
+            issue_date: new Date().toISOString().split('T')[0],
+            validity_period_months: 36,
+            administrative_status: 'Délivré',
+            is_current: true
+          });
+
+        if (permitError) {
+          console.error('Error creating permit:', permitError);
+        }
+
+        // Mettre à jour building_permits dans la contribution
+        updatedPermitData.permitNumber = permitNumber;
+      }
+
       const { error } = await supabase
         .from('cadastral_contributions')
         .update({
-          permit_request_data: updatedPermitData
+          permit_request_data: updatedPermitData,
+          status: action === 'approve' ? 'approved' : 'rejected'
         })
         .eq('id', contributionId);
 
       if (error) throw error;
 
+      // Enregistrer l'action admin
+      await supabase.from('permit_admin_actions').insert({
+        contribution_id: contributionId,
+        admin_user_id: user.id,
+        action_type: action === 'approve' ? 'approved' : 'rejected',
+        comment: response
+      });
+
       // Créer notification
       await supabase.from('notifications').insert({
         user_id: userId,
         type: action === 'approve' ? 'success' : 'error',
-        title: action === 'approve' ? 'Demande de permis approuvée' : 'Demande de permis rejetée',
-        message: `Votre demande de permis pour la parcelle ${parcelNumber} a été ${action === 'approve' ? 'approuvée' : 'rejetée'}. ${response}`,
+        title: action === 'approve' ? 'Permis délivré !' : 'Demande rejetée',
+        message: action === 'approve'
+          ? `Votre permis ${updatedPermitData.permitNumber} a été délivré pour la parcelle ${parcelNumber}. Vous pouvez le télécharger depuis votre espace.`
+          : `Votre demande de permis pour la parcelle ${parcelNumber} a été rejetée. ${response}`,
         action_url: '/user-dashboard?tab=building-permits'
       });
 
-      toast.success(action === 'approve' ? 'Demande approuvée' : 'Demande rejetée');
+      toast.success(action === 'approve' ? 'Permis délivré avec succès' : 'Demande rejetée');
       onProcessed();
       onOpenChange(false);
     } catch (error: any) {
@@ -249,6 +304,9 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
                 </p>
               </Card>
             )}
+
+            {/* Historique des actions */}
+            <PermitActionsHistory contributionId={contributionId} />
 
             {/* Interface de traitement */}
             {(!permitRequestData.status || permitRequestData.status === 'pending') && (
