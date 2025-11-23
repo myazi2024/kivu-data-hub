@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { CreditCard, CheckCircle2, Clock, AlertCircle, Download } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { usePermitPayment } from "@/hooks/usePermitPayment";
 
 interface PaymentItem {
   label: string;
@@ -26,33 +28,50 @@ export function PermitPaymentTracker({
   permitType,
   status,
 }: PermitPaymentTrackerProps) {
-  // Calcul des frais selon le type de permis
+  const { getPaymentForContribution } = usePermitPayment();
+  const [paymentData, setPaymentData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadPayment();
+  }, [contributionId]);
+
+  const loadPayment = async () => {
+    setLoading(true);
+    const data = await getPaymentForContribution(contributionId);
+    setPaymentData(data);
+    setLoading(false);
+  };
+
+  if (loading) {
+    return (
+      <Card className="border-border/50">
+        <CardContent className="p-6">
+          <div className="text-center text-sm text-muted-foreground">Chargement...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!paymentData) {
+    return (
+      <Card className="border-border/50">
+        <CardContent className="p-6">
+          <div className="text-center text-sm text-muted-foreground">
+            Aucune information de paiement disponible
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   const getFees = (): PaymentItem[] => {
-    const baseFees: PaymentItem[] = [
-      {
-        label: "Frais d'examen du dossier",
-        amount: 50,
-        status: "paid",
-        paidDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-      },
-      {
-        label: "Frais de délivrance du permis",
-        amount: 150,
-        status: status === "approved" ? "due" : "pending",
-        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      },
-    ];
-
-    if (permitType === "construction") {
-      baseFees.push({
-        label: "Caution de conformité",
-        amount: 200,
-        status: "pending",
-        dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-      });
-    }
-
-    return baseFees;
+    return paymentData.fee_items.map((item: any) => ({
+      label: item.fee_name,
+      amount: item.amount_usd,
+      status: paymentData.status === 'completed' ? 'paid' : paymentData.status === 'pending' ? 'pending' : 'due',
+      paidDate: paymentData.paid_at ? new Date(paymentData.paid_at) : undefined,
+    }));
   };
 
   const fees = getFees();

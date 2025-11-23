@@ -12,6 +12,7 @@ import { DocumentUploadSection } from "./DocumentUploadSection";
 import { PermitMessaging } from "./PermitMessaging";
 import { PermitPaymentTracker } from "./PermitPaymentTracker";
 import { PermitLocationMap } from "./PermitLocationMap";
+import { PermitDownloadButton } from "./PermitDownloadButton";
 
 interface PermitCardProps {
   permit: any;
@@ -232,6 +233,7 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
                       <span className="ml-1 font-medium">{bp.validityMonths} mois</span>
                     </div>
                   </div>
+                  <PermitDownloadButton permit={permit} className="w-full" />
                 </div>
               ))}
             </div>

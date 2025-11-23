@@ -1368,6 +1368,145 @@ export type Database = {
           },
         ]
       }
+      permit_admin_actions: {
+        Row: {
+          action_type: string
+          admin_user_id: string
+          comment: string | null
+          contribution_id: string
+          created_at: string
+          id: string
+          requested_documents: Json | null
+        }
+        Insert: {
+          action_type: string
+          admin_user_id: string
+          comment?: string | null
+          contribution_id: string
+          created_at?: string
+          id?: string
+          requested_documents?: Json | null
+        }
+        Update: {
+          action_type?: string
+          admin_user_id?: string
+          comment?: string | null
+          contribution_id?: string
+          created_at?: string
+          id?: string
+          requested_documents?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permit_admin_actions_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permit_fees_config: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          description: string | null
+          display_order: number
+          fee_name: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          permit_type: string
+          updated_at: string
+        }
+        Insert: {
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          permit_type: string
+          updated_at?: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          permit_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      permit_payments: {
+        Row: {
+          contribution_id: string
+          created_at: string
+          fee_items: Json
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_provider: string | null
+          permit_type: string
+          phone_number: string | null
+          receipt_url: string | null
+          status: string
+          total_amount_usd: number
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contribution_id: string
+          created_at?: string
+          fee_items?: Json
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_provider?: string | null
+          permit_type: string
+          phone_number?: string | null
+          receipt_url?: string | null
+          status?: string
+          total_amount_usd?: number
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contribution_id?: string
+          created_at?: string
+          fee_items?: Json
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_provider?: string | null
+          permit_type?: string
+          phone_number?: string | null
+          receipt_url?: string | null
+          status?: string
+          total_amount_usd?: number
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permit_payments_contribution_id_fkey"
+            columns: ["contribution_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_contributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -2017,6 +2156,10 @@ export type Database = {
       }
       generate_ccc_code: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
+      generate_permit_number: {
+        Args: { permit_type: string; province: string }
+        Returns: string
+      }
       generate_reseller_code: { Args: never; Returns: string }
       generate_service_id: { Args: { service_name: string }; Returns: string }
       get_admin_statistics: {
