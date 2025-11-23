@@ -28,6 +28,11 @@ export interface DiscountCode {
   max_usage?: number;
   created_at: string;
   updated_at: string;
+  resellers?: {
+    business_name?: string;
+    reseller_code?: string;
+    user_id?: string;
+  } | null;
 }
 
 export interface ResellerSale {

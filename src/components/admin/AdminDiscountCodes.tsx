@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Tag, Eye, Power, Pencil, Trash2, TrendingUp, Users, DollarSign, Calendar } from 'lucide-react';
+import { Plus, Search, Tag, Eye, Power, Pencil, Trash2, TrendingUp, Users, DollarSign, Calendar, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -57,7 +57,8 @@ const AdminDiscountCodes = () => {
   }, []);
 
   const filteredCodes = codes.filter((code) => {
-    const matchesSearch = code.code.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (code.resellers?.business_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = 
       filterStatus === 'all' ? true :
       filterStatus === 'active' ? code.is_active :
@@ -70,7 +71,7 @@ const AdminDiscountCodes = () => {
     active: codes.filter(c => c.is_active).length,
     totalUsage: codes.reduce((sum, c) => sum + c.usage_count, 0),
     totalDiscount: codes.reduce((sum, c) => {
-      return sum + (c.discount_amount_usd * c.usage_count);
+      return sum + ((c.discount_amount_usd || 0) * c.usage_count);
     }, 0)
   };
 
@@ -162,6 +163,17 @@ const AdminDiscountCodes = () => {
 
   return (
     <div className="space-y-6">
+      {/* Alert si des revendeurs Legacy existent */}
+      {codes.some(code => code.resellers?.business_name?.includes('Legacy')) && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription>
+            Certains codes de remise sont associés à des revendeurs non configurés ("Legacy"). 
+            Veuillez accéder à la section <strong>Revendeurs</strong> pour les configurer correctement.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Statistics Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
@@ -365,7 +377,21 @@ const AdminDiscountCodes = () => {
                     <TableRow key={code.id}>
                       <TableCell className="font-mono font-medium">{code.code}</TableCell>
                       <TableCell>
-                        {(code as any).resellers?.business_name || (code as any).resellers?.reseller_code || 'N/A'}
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {code.resellers?.business_name || 'Non configuré'}
+                          </span>
+                          {code.resellers?.business_name?.includes('Legacy') && (
+                            <Badge variant="destructive" className="mt-1 w-fit text-xs">
+                              À configurer
+                            </Badge>
+                          )}
+                          {code.resellers?.reseller_code && (
+                            <span className="text-xs text-muted-foreground font-mono">
+                              {code.resellers.reseller_code}
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {code.discount_percentage > 0 
