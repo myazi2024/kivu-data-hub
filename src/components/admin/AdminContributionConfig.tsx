@@ -159,40 +159,40 @@ const AdminContributionConfig = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-6">
       <Card>
-        <CardHeader>
-          <CardTitle>Configuration du formulaire de contribution CCC</CardTitle>
-          <CardDescription>
-            Configurez les sections, champs et règles du formulaire de contribution cadastrale
+        <CardHeader className="p-3 sm:p-6">
+          <CardTitle className="text-base sm:text-lg">Configuration du formulaire CCC</CardTitle>
+          <CardDescription className="text-xs sm:text-sm">
+            Configurez les sections, champs et règles du formulaire
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-3 sm:p-6">
           <Tabs defaultValue="sections">
-            <TabsList className="grid w-full grid-cols-7">
-              <TabsTrigger value="sections">Sections</TabsTrigger>
-              <TabsTrigger value="required">Champs obligatoires</TabsTrigger>
-              <TabsTrigger value="labels">Labels</TabsTrigger>
-              <TabsTrigger value="help">Aide</TabsTrigger>
-              <TabsTrigger value="validation">Validation</TabsTrigger>
-              <TabsTrigger value="ccc">Calcul CCC</TabsTrigger>
-              <TabsTrigger value="map">Aperçu Parcelle</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-7 h-8 sm:h-10 text-[10px] sm:text-xs p-0.5 sm:p-1">
+              <TabsTrigger value="sections" className="text-[10px] sm:text-xs px-1 sm:px-3">Sections</TabsTrigger>
+              <TabsTrigger value="required" className="text-[10px] sm:text-xs px-1 sm:px-3">Requis</TabsTrigger>
+              <TabsTrigger value="labels" className="text-[10px] sm:text-xs px-1 sm:px-3">Labels</TabsTrigger>
+              <TabsTrigger value="help" className="text-[10px] sm:text-xs px-1 sm:px-3">Aide</TabsTrigger>
+              <TabsTrigger value="validation" className="text-[10px] sm:text-xs px-1 sm:px-3">Valid.</TabsTrigger>
+              <TabsTrigger value="ccc" className="text-[10px] sm:text-xs px-1 sm:px-3">CCC</TabsTrigger>
+              <TabsTrigger value="map" className="text-[10px] sm:text-xs px-1 sm:px-3">Carte</TabsTrigger>
             </TabsList>
 
             {/* Sections du formulaire */}
-            <TabsContent value="sections" className="space-y-4">
-              <Alert>
-                <FileText className="h-4 w-4" />
-                <AlertDescription>
-                  Activez ou désactivez les sections du formulaire de contribution
+            <TabsContent value="sections" className="space-y-2 sm:space-y-4 mt-2 sm:mt-4">
+              <Alert className="p-2 sm:p-4">
+                <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
+                <AlertDescription className="text-xs sm:text-sm">
+                  Activez ou désactivez les sections du formulaire
                 </AlertDescription>
               </Alert>
 
               {Object.entries(formSections).map(([key, value]: [string, any]) => (
-                <div key={key} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <Label>{value.label}</Label>
-                    <p className="text-sm text-muted-foreground">Ordre: {value.order}</p>
+                <div key={key} className="flex items-center justify-between p-2 sm:p-4 border rounded-lg">
+                  <div className="space-y-0.5 sm:space-y-1">
+                    <Label className="text-xs sm:text-sm">{value.label}</Label>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground">Ordre: {value.order}</p>
                   </div>
                   <Switch
                     checked={value.enabled}
@@ -206,15 +206,15 @@ const AdminContributionConfig = () => {
                 </div>
               ))}
 
-              <Button onClick={handleSaveFormSections} disabled={saving === 'form_sections'}>
+              <Button onClick={handleSaveFormSections} disabled={saving === 'form_sections'} size="sm" className="text-xs">
                 {saving === 'form_sections' ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1 h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
                     Enregistrement...
                   </>
                 ) : (
                   <>
-                    <Save className="mr-2 h-4 w-4" />
+                    <Save className="mr-1 h-3 w-3 sm:h-4 sm:w-4" />
                     Enregistrer
                   </>
                 )}
