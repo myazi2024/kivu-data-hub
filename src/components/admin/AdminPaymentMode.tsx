@@ -60,22 +60,49 @@ const AdminPaymentMode: React.FC = () => {
     try {
       setSaving(true);
 
-      const { error } = await supabase
+      // Vérifier d'abord si l'enregistrement existe
+      const { data: existingConfig } = await supabase
         .from('cadastral_search_config')
-        .update({
-          config_value: config as any,
-          updated_at: new Date().toISOString()
-        })
-        .eq('config_key', 'payment_mode');
+        .select('id')
+        .eq('config_key', 'payment_mode')
+        .maybeSingle();
 
-      if (error) throw error;
+      let result;
+      if (existingConfig) {
+        // Mettre à jour l'enregistrement existant
+        result = await supabase
+          .from('cadastral_search_config')
+          .update({
+            config_value: config as any,
+            updated_at: new Date().toISOString(),
+            is_active: true
+          })
+          .eq('config_key', 'payment_mode');
+      } else {
+        // Créer un nouvel enregistrement si inexistant
+        result = await supabase
+          .from('cadastral_search_config')
+          .insert({
+            config_key: 'payment_mode',
+            config_value: config as any,
+            is_active: true,
+            description: 'Configuration du mode de paiement pour les services cadastraux'
+          });
+      }
+
+      if (result.error) throw result.error;
 
       toast.success('Configuration enregistrée avec succès', {
-        description: 'Les changements sont effectifs immédiatement'
+        description: 'Les changements sont effectifs immédiatement pour tous les utilisateurs'
       });
+
+      // Recharger la configuration pour confirmer
+      await loadConfiguration();
     } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement:', error);
-      toast.error('Erreur lors de l\'enregistrement de la configuration');
+      toast.error('Erreur lors de l\'enregistrement de la configuration', {
+        description: error.message || 'Veuillez réessayer'
+      });
     } finally {
       setSaving(false);
     }
