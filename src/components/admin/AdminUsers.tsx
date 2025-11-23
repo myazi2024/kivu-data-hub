@@ -200,8 +200,8 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
     const { variant, icon: Icon, label } = config[role as keyof typeof config] || config.user;
     
     return (
-      <Badge variant={variant} className="flex items-center gap-1">
-        <Icon className="w-3 h-3" />
+      <Badge variant={variant} className="flex items-center gap-0.5 text-[10px] py-0 px-1.5">
+        <Icon className="w-2.5 h-2.5" />
         {label}
       </Badge>
     );
@@ -246,36 +246,36 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
 
   return (
     <Card>
-      <CardHeader className="p-4 md:p-6">
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-              <Users className="w-4 h-4 md:w-5 md:h-5" />
+      <CardHeader className="p-2 md:p-3">
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <CardTitle className="flex items-center gap-1.5 text-sm md:text-base">
+              <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
               Gestion des Utilisateurs ({filteredAndSortedUsers.length})
             </CardTitle>
-            <Button onClick={exportToCSV} variant="outline" size="sm" className="gap-2">
-              <Download className="w-4 h-4" />
-              Exporter CSV
+            <Button onClick={exportToCSV} variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
+              <Download className="w-3 h-3" />
+              Exporter
             </Button>
           </div>
           
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 w-full">
             <div className="relative flex-1 sm:flex-none">
-              <Search className="absolute left-2 top-2.5 h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
+              <Search className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
               <Input
                 placeholder="Rechercher..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-8 w-full sm:w-48 md:w-64 h-9 text-sm"
+                className="pl-7 w-full sm:w-40 md:w-52 h-7 text-xs"
               />
             </div>
             
             <Select value={roleFilter} onValueChange={setRoleFilter}>
-              <SelectTrigger className="w-full sm:w-36 h-9 text-sm">
+              <SelectTrigger className="w-full sm:w-28 h-7 text-xs">
                 <SelectValue placeholder="Rôle" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les rôles</SelectItem>
+                <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="partner">Partenaire</SelectItem>
@@ -284,11 +284,11 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
             </Select>
             
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-36 h-9 text-sm">
+              <SelectTrigger className="w-full sm:w-28 h-7 text-xs">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous statuts</SelectItem>
+                <SelectItem value="all">Tous</SelectItem>
                 <SelectItem value="active">Actifs</SelectItem>
                 <SelectItem value="blocked">Bloqués</SelectItem>
                 <SelectItem value="suspicious">Suspects</SelectItem>
@@ -301,15 +301,15 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
               onClick={() => {
                 setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
               }}
-              className="gap-2"
+              className="gap-1 h-7 text-xs"
             >
               <ArrowUpDown className="w-3 h-3" />
-              {sortOrder === 'asc' ? 'Croissant' : 'Décroissant'}
+              {sortOrder === 'asc' ? '↑' : '↓'}
             </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-0 md:p-6">
+      <CardContent className="p-0 md:p-3">
         <div className="overflow-x-auto">
           <ResponsiveTable className="border-none">
             <ResponsiveTableHeader>
@@ -326,18 +326,18 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
               {paginatedUsers.map((user) => (
                 <ResponsiveTableRow key={user.id}>
                   <ResponsiveTableCell priority="high" label="Utilisateur">
-                    <div className="flex items-center space-x-2 md:space-x-3">
-                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                        <User className="w-4 h-4" />
+                    <div className="flex items-center space-x-1.5 md:space-x-2">
+                      <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                        <User className="w-3 h-3" />
                       </div>
                       <div className="min-w-0">
-                        <div className="font-medium text-sm flex items-center gap-2 flex-wrap">
+                        <div className="font-medium text-xs flex items-center gap-1 flex-wrap">
                           {user.full_name || 'Nom non défini'}
                           {user.fraud_strikes > 0 && (
-                            <AlertTriangle className="w-3 h-3 text-destructive" />
+                            <AlertTriangle className="w-2.5 h-2.5 text-destructive" />
                           )}
                         </div>
-                        <div className="text-xs text-muted-foreground truncate">{user.email}</div>
+                        <div className="text-[10px] text-muted-foreground truncate">{user.email}</div>
                       </div>
                     </div>
                   </ResponsiveTableCell>
@@ -348,11 +348,11 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
                     {user.organization || 'Non spécifiée'}
                   </ResponsiveTableCell>
                   <ResponsiveTableCell priority="medium" label="Rôle">
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-0.5">
                       {getRoleBadge(user.role)}
                       {user.is_blocked && (
-                        <Badge variant="destructive" className="text-xs gap-1 w-fit">
-                          <Ban className="w-3 h-3" />
+                        <Badge variant="destructive" className="text-[10px] gap-0.5 w-fit py-0 px-1">
+                          <Ban className="w-2.5 h-2.5" />
                           Bloqué
                         </Badge>
                       )}
@@ -362,7 +362,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
                     {new Date(user.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
                   </ResponsiveTableCell>
                   <ResponsiveTableCell priority="high" label="Actions">
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-0.5">
                       <Dialog>
                         <DialogTrigger asChild>
                           <Button
@@ -372,7 +372,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
                               setSelectedUser(user);
                               fetchUserStats(user.user_id);
                             }}
-                            className="h-8 gap-1"
+                            className="h-6 gap-1 px-2 text-xs"
                           >
                             <Eye className="w-3 h-3" />
                             <span className="hidden sm:inline">Voir</span>
@@ -534,28 +534,28 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
         )}
         
         {totalPages > 1 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-4 px-3 md:px-0 border-t">
-            <div className="text-xs md:text-sm text-muted-foreground text-center sm:text-left">
-              Page {currentPage} sur {totalPages} ({filteredAndSortedUsers.length} utilisateur{filteredAndSortedUsers.length > 1 ? 's' : ''})
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 mt-2 pt-2 px-2 md:px-0 border-t">
+            <div className="text-[10px] md:text-xs text-muted-foreground text-center sm:text-left">
+              Page {currentPage}/{totalPages} ({filteredAndSortedUsers.length} user{filteredAndSortedUsers.length > 1 ? 's' : ''})
             </div>
-            <div className="flex gap-2 w-full sm:w-auto">
+            <div className="flex gap-1.5 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none h-7 text-xs"
               >
-                Précédent
+                Préc.
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="flex-1 sm:flex-none"
+                className="flex-1 sm:flex-none h-7 text-xs"
               >
-                Suivant
+                Suiv.
               </Button>
             </div>
           </div>

@@ -181,87 +181,87 @@ export default function AdminFraudDetection() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Alert Banner */}
       {stats.highSeverity > 0 && (
-        <Alert variant="destructive">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
+        <Alert variant="destructive" className="py-2">
+          <AlertTriangle className="h-3 w-3" />
+          <AlertDescription className="text-xs">
             {stats.highSeverity} tentative{stats.highSeverity > 1 ? 's' : ''} de fraude de haute gravité détectée{stats.highSeverity > 1 ? 's' : ''}
           </AlertDescription>
         </Alert>
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <Card>
-          <CardHeader className="pb-2 p-3 md:p-4">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <AlertTriangle className="h-3 w-3 md:h-4 md:w-4" />
+          <CardHeader className="pb-1 p-2">
+            <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
               Tentatives totales
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 md:p-4 pt-0">
-            <div className="text-xl md:text-2xl font-bold">{stats.totalAttempts}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">
+          <CardContent className="p-2 pt-0">
+            <div className="text-lg md:text-xl font-bold">{stats.totalAttempts}</div>
+            <p className="text-[9px] md:text-[10px] text-muted-foreground">
               {stats.highSeverity} haute gravité
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2 p-3 md:p-4">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Users className="h-3 w-3 md:h-4 md:w-4" />
+          <CardHeader className="pb-1 p-2">
+            <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Users className="h-3 w-3" />
               Utilisateurs suspects
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 md:p-4 pt-0">
-            <div className="text-xl md:text-2xl font-bold">{stats.usersWithStrikes}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Avec avertissements</p>
+          <CardContent className="p-2 pt-0">
+            <div className="text-lg md:text-xl font-bold">{stats.usersWithStrikes}</div>
+            <p className="text-[9px] md:text-[10px] text-muted-foreground">Avec avertissements</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2 p-3 md:p-4">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Ban className="h-3 w-3 md:h-4 md:w-4" />
+          <CardHeader className="pb-1 p-2">
+            <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Ban className="h-3 w-3" />
               Utilisateurs bloqués
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 md:p-4 pt-0">
-            <div className="text-xl md:text-2xl font-bold text-destructive">{stats.blockedUsers}</div>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Actuellement</p>
+          <CardContent className="p-2 pt-0">
+            <div className="text-lg md:text-xl font-bold text-destructive">{stats.blockedUsers}</div>
+            <p className="text-[9px] md:text-[10px] text-muted-foreground">Actuellement</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader className="pb-2 p-3 md:p-4">
-            <CardTitle className="text-xs md:text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <Shield className="h-3 w-3 md:h-4 md:w-4" />
+          <CardHeader className="pb-1 p-2">
+            <CardTitle className="text-[10px] md:text-xs font-medium text-muted-foreground flex items-center gap-1">
+              <Shield className="h-3 w-3" />
               Taux de détection
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-3 md:p-4 pt-0">
-            <div className="text-xl md:text-2xl font-bold text-success">
+          <CardContent className="p-2 pt-0">
+            <div className="text-lg md:text-xl font-bold text-success">
               {stats.totalAttempts > 0 
                 ? ((stats.usersWithStrikes / stats.totalAttempts) * 100).toFixed(0)
                 : 0}%
             </div>
-            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">Actions prises</p>
+            <p className="text-[9px] md:text-[10px] text-muted-foreground">Actions prises</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Suspicious Users */}
       <Card>
-        <CardHeader className="p-4 md:p-6">
-          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-            <Users className="w-4 h-4 md:w-5 md:h-5" />
+        <CardHeader className="p-2 md:p-3">
+          <CardTitle className="flex items-center gap-1.5 text-sm md:text-base">
+            <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
             Utilisateurs Suspects
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0 md:p-6">
+        <CardContent className="p-0 md:p-2">
           <div className="overflow-x-auto">
             <ResponsiveTable className="border-none">
               <ResponsiveTableHeader>
@@ -351,13 +351,13 @@ export default function AdminFraudDetection() {
 
       {/* Fraud Attempts */}
       <Card>
-        <CardHeader className="p-4 md:p-6">
-          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-            <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
+        <CardHeader className="p-2 md:p-3">
+          <CardTitle className="flex items-center gap-1.5 text-sm md:text-base">
+            <AlertTriangle className="w-3.5 h-3.5 md:w-4 md:h-4" />
             Tentatives de Fraude Récentes
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-0 md:p-6">
+        <CardContent className="p-0 md:p-2">
           <div className="overflow-x-auto">
             <ResponsiveTable className="border-none">
               <ResponsiveTableHeader>
