@@ -23,7 +23,9 @@ import {
   Map as MapIcon,
   Tag,
   Building2,
-  Receipt
+  Receipt,
+  TrendingUp,
+  Smartphone
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -63,8 +65,9 @@ const menuItems = [
     items: [
       { icon: BarChart, label: 'Tableau de Bord', value: 'financial', badge: null },
       { icon: CreditCard, label: 'Paiements', value: 'payments', badge: null },
-      { icon: Settings, label: 'Moyens de Paiement', value: 'payment-methods', badge: null },
-      { icon: CreditCard, label: 'Mode de Paiement', value: 'payment-mode', badge: null },
+      { icon: Smartphone, label: 'Moyens de Paiement', value: 'payment-methods', badge: null },
+      { icon: Settings, label: 'Mode de Paiement', value: 'payment-mode', badge: null },
+      { icon: TrendingUp, label: 'Monitoring Paiements', value: 'payment-monitoring', badge: null },
       { icon: Receipt, label: 'Config Facturation', value: 'billing-config', badge: null },
       { icon: DollarSign, label: 'Factures', value: 'invoices', badge: null },
       { icon: FileText, label: 'Transactions', value: 'transactions', badge: null },

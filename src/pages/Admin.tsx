@@ -37,6 +37,7 @@ import AdminPermitFeesConfig from '@/components/admin/AdminPermitFeesConfig';
 import AdminPaymentMethods from '@/components/admin/AdminPaymentMethods';
 import AdminPaymentMode from '@/components/admin/AdminPaymentMode';
 import AdminBillingConfig from '@/components/admin/AdminBillingConfig';
+import { AdminPaymentMonitoring } from '@/components/admin/AdminPaymentMonitoring';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -142,6 +143,8 @@ const Admin = () => {
         return <AdminPaymentMethods />;
       case 'payment-mode':
         return <AdminPaymentMode />;
+      case 'payment-monitoring':
+        return <AdminPaymentMonitoring />;
       case 'billing-config':
         return <AdminBillingConfig />;
       case 'invoices':

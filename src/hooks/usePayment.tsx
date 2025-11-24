@@ -31,62 +31,100 @@ export const usePayment = () => {
       setLoading(true);
       setPaymentStep('processing');
 
-      // Paiement réel - processus normal
-      const { data: paymentRecord, error: paymentError } = await supabase
-        .from('payments')
-        .insert([{
-          user_id: user.id,
-          publication_id: item.id,
-          amount_usd: item.price,
-          payment_method: 'mobile_money',
-          payment_provider: paymentData.provider,
-          phone_number: paymentData.phoneNumber,
-          status: 'pending'
-        }])
-        .select()
-        .maybeSingle();
+      // Check payment mode configuration
+      const { data: paymentModeConfig } = await supabase
+        .from('cadastral_search_config')
+        .select('config_value')
+        .eq('config_key', 'payment_mode')
+        .single();
+
+      const paymentConfig = paymentModeConfig?.config_value as any || {};
+      const isTestMode = paymentConfig.test_mode || false;
+
+      // Call Mobile Money payment edge function
+      const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
+        'process-mobile-money-payment',
+        {
+          body: {
+            item_id: item.id,
+            payment_provider: paymentData.provider,
+            phone_number: paymentData.phoneNumber,
+            amount_usd: item.price,
+            payment_type: 'publication',
+            test_mode: isTestMode
+          }
+        }
+      );
 
       if (paymentError) throw paymentError;
 
-      // TODO PRODUCTION: Remplacer par une vraie intégration Mobile Money API
-      // Actuellement simulation pour tests - délai de 3 secondes
-      console.warn('⚠️ SIMULATION DE PAIEMENT - À remplacer par une vraie API en production');
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      if (!paymentResult.success) {
+        throw new Error(paymentResult.error || 'Payment failed');
+      }
 
-      // Mise à jour du statut du paiement
-      const { error: updateError } = await supabase
-        .from('payments')
-        .update({ 
-          status: 'completed',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', paymentRecord.id);
+      // Poll transaction status
+      const transactionId = paymentResult.transaction_id;
+      let attempts = 0;
+      const maxAttempts = 20;
+      
+      while (attempts < maxAttempts) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const { data: transaction } = await supabase
+          .from('payment_transactions')
+          .select('status, transaction_reference')
+          .eq('id', transactionId)
+          .single();
 
-      if (updateError) throw updateError;
+        if (transaction?.status === 'completed') {
+          // Create payment record for compatibility
+          const { data: paymentRecord } = await supabase
+            .from('payments')
+            .insert({
+              user_id: user.id,
+              publication_id: item.id,
+              amount_usd: item.price,
+              payment_method: 'mobile_money',
+              payment_provider: paymentData.provider,
+              phone_number: paymentData.phoneNumber,
+              status: 'completed',
+              transaction_id: transaction.transaction_reference
+            })
+            .select()
+            .single();
 
-      // Créer l'enregistrement de téléchargement
-      const { error: downloadError } = await supabase
-        .from('publication_downloads')
-        .insert([{
-          user_id: user.id,
-          publication_id: item.id,
-          payment_id: paymentRecord.id
-        }]);
+          // Create download access
+          await supabase
+            .from('publication_downloads')
+            .insert({
+              user_id: user.id,
+              publication_id: item.id,
+              payment_id: paymentRecord.id
+            });
 
-      if (downloadError) throw downloadError;
+          setPaymentStep('success');
+          toast({
+            title: "Paiement réussi",
+            description: isTestMode 
+              ? "Paiement test confirmé - Publication accessible"
+              : "Votre publication est maintenant disponible"
+          });
 
-      setPaymentStep('success');
-      toast({
-        title: "Paiement réussi",
-        description: "Votre publication est maintenant disponible pour téléchargement"
-      });
+          return paymentRecord;
+        } else if (transaction?.status === 'failed') {
+          throw new Error('Payment failed');
+        }
+        
+        attempts++;
+      }
 
-      return paymentRecord;
-    } catch (error) {
+      throw new Error('Payment timeout - please check your transaction status');
+
+    } catch (error: any) {
       console.error('Erreur de paiement:', error);
       toast({
         title: "Erreur de paiement",
-        description: "Une erreur s'est produite lors du traitement de votre paiement",
+        description: error.message || "Une erreur s'est produite lors du traitement de votre paiement",
         variant: "destructive"
       });
       setPaymentStep('form');
