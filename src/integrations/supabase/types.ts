@@ -1050,10 +1050,13 @@ export type Database = {
           created_at: string
           deleted_at: string | null
           description: string | null
+          display_order: number | null
+          icon_name: string | null
           id: string
           is_active: boolean
           name: string
           price_usd: number
+          required_data_fields: Json | null
           service_id: string
           updated_at: string
         }
@@ -1061,10 +1064,13 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           description?: string | null
+          display_order?: number | null
+          icon_name?: string | null
           id?: string
           is_active?: boolean
           name: string
           price_usd?: number
+          required_data_fields?: Json | null
           service_id: string
           updated_at?: string
         }
@@ -1072,10 +1078,13 @@ export type Database = {
           created_at?: string
           deleted_at?: string | null
           description?: string | null
+          display_order?: number | null
+          icon_name?: string | null
           id?: string
           is_active?: boolean
           name?: string
           price_usd?: number
+          required_data_fields?: Json | null
           service_id?: string
           updated_at?: string
         }
@@ -1121,6 +1130,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      catalog_config: {
+        Row: {
+          config_key: string
+          config_value: Json
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: Json
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       discount_codes: {
         Row: {

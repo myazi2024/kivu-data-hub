@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useCadastralSearch } from '@/hooks/useCadastralSearch';
-import { useSearchConfig } from '@/hooks/useSearchConfig';
+import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 import CadastralResultsDialog from './CadastralResultsDialog';
 import CadastralContributionDialog from './CadastralContributionDialog';
 import CCCIntroDialog from './CCCIntroDialog';
@@ -54,8 +54,8 @@ const CadastralSearchBar = () => {
     }
   }, []);
 
-  const { getAnimatedExamples } = useSearchConfig();
-  const animatedTexts = getAnimatedExamples();
+  const { config: catalogConfig } = useCatalogConfig();
+  const animatedTexts = catalogConfig.search_animated_examples;
 
   const [displayedText, setDisplayedText] = useState('');
   const [showCursor, setShowCursor] = useState(true);

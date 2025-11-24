@@ -9,7 +9,7 @@ import { useCadastralContribution } from '@/hooks/useCadastralContribution';
 import { useToast } from '@/hooks/use-toast';
 import { Link } from 'react-router-dom';
 
-const PLACEHOLDER_EXAMPLES = ['BIC-RV001', 'PROMO2024', 'REMISE50'];
+import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 
 interface DiscountCodeInputProps {
   invoiceAmount: number;
@@ -45,6 +45,9 @@ const DiscountCodeInput: React.FC<DiscountCodeInputProps> = ({
   const { validateDiscountCode } = useDiscountCodes();
   const { validateCCCCode } = useCadastralContribution();
   const { toast } = useToast();
+  const { config: catalogConfig } = useCatalogConfig();
+  
+  const PLACEHOLDER_EXAMPLES = catalogConfig.discount_code_placeholders;
 
   // Animation du placeholder
   useEffect(() => {
