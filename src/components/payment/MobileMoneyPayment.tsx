@@ -7,6 +7,7 @@ import PhoneNumberInput from '@/components/ui/phone-number-input';
 import { usePayment, PaymentData } from '@/hooks/usePayment';
 import { Smartphone, DollarSign, CheckCircle, Loader2, Shield } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MobileMoneyPaymentProps {
   item: CartItem;
@@ -26,35 +27,61 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
   });
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [showProviderReminder, setShowProviderReminder] = useState(false);
+  const [availableProviders, setAvailableProviders] = useState<Array<{
+    value: string;
+    label: string;
+    prefix: string;
+    color: string;
+  }>>([]);
 
   const { loading, paymentStep, createPayment, resetPaymentState } = usePayment();
+
+  // Charger les providers actifs depuis la configuration
+  useEffect(() => {
+    const loadActiveProviders = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('payment_methods_config')
+          .select('*')
+          .eq('config_type', 'mobile_money')
+          .eq('is_enabled', true)
+          .order('display_order', { ascending: true });
+
+        if (error) throw error;
+
+        const providerMap: Record<string, { prefix: string; color: string }> = {
+          'airtel_money': { prefix: '+243 97', color: 'from-red-500 to-red-600' },
+          'orange_money': { prefix: '+243 84', color: 'from-orange-500 to-orange-600' },
+          'mpesa': { prefix: '+243 99', color: 'from-green-500 to-green-600' }
+        };
+
+        const providers = data?.map(p => ({
+          value: p.provider_id,
+          label: p.provider_name,
+          prefix: providerMap[p.provider_id]?.prefix || '+243 XX',
+          color: providerMap[p.provider_id]?.color || 'from-blue-500 to-blue-600'
+        })) || [];
+
+        setAvailableProviders(providers);
+      } catch (error) {
+        console.error('Error loading payment providers:', error);
+        // Fallback aux providers par défaut si erreur
+        setAvailableProviders([
+          { value: 'airtel_money', label: 'Airtel Money', prefix: '+243 97', color: 'from-red-500 to-red-600' },
+          { value: 'orange_money', label: 'Orange Money', prefix: '+243 84', color: 'from-orange-500 to-orange-600' },
+          { value: 'mpesa', label: 'M-Pesa', prefix: '+243 99', color: 'from-green-500 to-green-600' }
+        ]);
+      }
+    };
+
+    loadActiveProviders();
+  }, []);
 
   // Animation d'apparition du formulaire
   useEffect(() => {
     const timer = setTimeout(() => setIsFormVisible(true), 100);
     return () => clearTimeout(timer);
   }, []);
-
-  const providers = [
-    { 
-      value: 'airtel_money', 
-      label: 'Airtel Money', 
-      prefix: '+243 97',
-      color: 'from-red-500 to-red-600'
-    },
-    { 
-      value: 'orange_money', 
-      label: 'Orange Money', 
-      prefix: '+243 84',
-      color: 'from-orange-500 to-orange-600'
-    },
-    { 
-      value: 'mpesa', 
-      label: 'M-Pesa', 
-      prefix: '+243 99',
-      color: 'from-green-500 to-green-600'
-    }
-  ];
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,15 +202,21 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
               <SelectValue placeholder="Choisissez votre fournisseur" />
             </SelectTrigger>
             <SelectContent>
-              {providers.map((provider) => (
-                <SelectItem key={provider.value} value={provider.value} className="py-3">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${provider.color}`}></div>
-                    <span className="font-medium">{provider.label}</span>
-                    <span className="text-xs text-muted-foreground ml-auto">{provider.prefix}</span>
-                  </div>
-                </SelectItem>
-              ))}
+              {availableProviders.length > 0 ? (
+                availableProviders.map((provider) => (
+                  <SelectItem key={provider.value} value={provider.value} className="py-3">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3 h-3 rounded-full bg-gradient-to-r ${provider.color}`}></div>
+                      <span className="font-medium">{provider.label}</span>
+                      <span className="text-xs text-muted-foreground ml-auto">{provider.prefix}</span>
+                    </div>
+                  </SelectItem>
+                ))
+              ) : (
+                <div className="px-3 py-2 text-sm text-muted-foreground">
+                  Aucun moyen de paiement activé
+                </div>
+              )}
             </SelectContent>
           </Select>
         </div>
