@@ -15,6 +15,7 @@ import AdminUsers from '@/components/admin/AdminUsers';
 import AdminResellers from '@/components/admin/AdminResellers';
 import AdminTerritorialZones from '@/components/admin/AdminTerritorialZones';
 import AdminCadastralServices from '@/components/admin/AdminCadastralServices';
+import AdminCatalogConfig from '@/components/admin/AdminCatalogConfig';
 import AdminCadastralMap from '@/components/admin/AdminCadastralMap';
 import AdminCadastralTooltip from '@/components/admin/AdminCadastralTooltip';
 import AdminCCCContributions from '@/components/admin/AdminCCCContributions';
@@ -161,6 +162,8 @@ const Admin = () => {
         return <AdminDiscountCodes />;
       case 'services':
         return <AdminCadastralServices />;
+      case 'catalog-config':
+        return <AdminCatalogConfig />;
       case 'cadastral-map':
         return <AdminCadastralMap />;
       case 'cadastral-tooltip':

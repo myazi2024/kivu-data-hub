@@ -81,6 +81,7 @@ const menuItems = [
     items: [
       { icon: MapIcon, label: 'Carte Cadastrale', value: 'cadastral-map', badge: null },
       { icon: Database, label: 'Services Cadastraux', value: 'services', badge: null },
+      { icon: Settings, label: 'Config Catalogue', value: 'catalog-config', badge: null },
       { icon: Settings, label: 'Infobulle Carte', value: 'cadastral-tooltip', badge: null },
       { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null },
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
