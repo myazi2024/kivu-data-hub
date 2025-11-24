@@ -240,9 +240,6 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
         <div className="space-y-1.5">
           <label className="text-xs font-medium text-foreground">
             Code secret
-            <span className="ml-2 text-xs text-blue-600 dark:text-blue-400 font-normal">
-              (Test: 97123456 + 1234)
-            </span>
           </label>
           <div className="relative">
             <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
@@ -250,7 +247,7 @@ const MobileMoneyPayment: React.FC<MobileMoneyPaymentProps> = ({
               type="tel"
               inputMode="numeric"
               pattern="[0-9]*"
-              placeholder="1234"
+              placeholder="Votre code PIN"
               value={paymentData.name}
               onChange={(e) => {
                 const numericValue = e.target.value.replace(/[^0-9]/g, '');
