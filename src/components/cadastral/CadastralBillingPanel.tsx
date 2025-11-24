@@ -652,16 +652,15 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     <CreditCard className="h-5 w-5" />
                   )}
                   <span>
-                    {selectedServices.length === 0 
-                      ? 'Sélectionner des services' 
-                      : !acceptedTerms 
-                      ? 'Accepter les conditions'
-                      : paymentConfig?.bypass_payment
-                      ? 'Accéder aux services (Gratuit)'
-                      : paymentConfig?.test_mode
-                      ? 'Payer (Mode Test)'
-                      : 'Payer'
-                    }
+                      {selectedServices.length === 0 
+                       ? 'Sélectionner des services' 
+                       : !acceptedTerms 
+                       ? 'Accepter les conditions'
+                       : paymentConfig?.bypass_payment
+                       ? 'Accéder aux services'
+                       : 'Payer'
+                     }
+
                   </span>
                   {selectedServices.length > 0 && acceptedTerms && (
                     <div className="ml-auto flex items-center gap-1 text-sm opacity-90">
@@ -695,10 +694,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                   <p className="text-sm">
                     {paymentConfig?.bypass_payment 
                       ? 'Accès gratuit en mode développement' 
-                      : paymentConfig?.test_mode
-                      ? 'Prêt pour le paiement de test'
                       : 'Prêt pour le paiement sécurisé'
-                    }
+                     }
+
                   </p>
                 </div>
               )}
