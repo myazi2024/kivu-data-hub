@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, ShoppingCart, MapPin, Calendar, CreditCard, Minus } from 'lucide-react';
+import { Download, FileText, ShoppingCart, MapPin, Calendar, CreditCard, Minus, Smartphone } from 'lucide-react';
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import reportThumbnail from '@/assets/report-card-thumbnail.webp';
+import { MobileMoneyDialog } from './MobileMoneyDialog';
 
 interface Publication {
   id: string;
@@ -29,6 +30,26 @@ interface PublicationCardProps {
 export const PublicationCard: React.FC<PublicationCardProps> = ({ publication }) => {
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { toast } = useToast();
+  const [showMobileMoneyDialog, setShowMobileMoneyDialog] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<{
+    hasStripe: boolean;
+    hasMobileMoney: boolean;
+  }>({ hasStripe: false, hasMobileMoney: false });
+
+  useEffect(() => {
+    const loadPaymentMethods = async () => {
+      const { data } = await supabase
+        .from('payment_methods_config')
+        .select('config_type')
+        .eq('is_enabled', true);
+
+      setPaymentMethods({
+        hasStripe: data?.some(p => p.config_type === 'bank_card') || false,
+        hasMobileMoney: data?.some(p => p.config_type === 'mobile_money') || false,
+      });
+    };
+    loadPaymentMethods();
+  }, []);
 
   // Extract metadata from description or tags
   const getPeriod = () => {
@@ -95,39 +116,50 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
       return;
     }
 
-    // Create cart item for immediate purchase
-    const cartItem: CartItem = {
-      id: publication.id,
-      title: publication.title,
-      price: publication.price_usd,
-      cover_image_url: publication.cover_image_url,
-      description: publication.description,
-      period: getPeriod(),
-      zone: getZone(),
-      pages: getPages(),
-    };
+    // If only Mobile Money available, show dialog
+    if (!paymentMethods.hasStripe && paymentMethods.hasMobileMoney) {
+      setShowMobileMoneyDialog(true);
+      return;
+    }
 
-    // Direct purchase without adding to cart
-    try {
-      // SECURITY: Send only item ID, price will be fetched from database
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          items: [publication.id],
-        },
-      });
+    // If both available, try Stripe first
+    if (paymentMethods.hasStripe) {
+      try {
+        const { data, error } = await supabase.functions.invoke('create-payment', {
+          body: {
+            items: [publication.id],
+          },
+        });
 
-      if (error) throw error;
+        if (error) {
+          // If Stripe fails and Mobile Money available, show dialog
+          if (paymentMethods.hasMobileMoney) {
+            toast({
+              title: "Paiement par carte indisponible",
+              description: "Essayez avec Mobile Money",
+            });
+            setShowMobileMoneyDialog(true);
+          } else {
+            throw error;
+          }
+          return;
+        }
 
-      if (data?.url) {
-        window.open(data.url, '_blank');
-      } else {
-        throw new Error('URL de paiement non reçue');
+        if (data?.url) {
+          window.open(data.url, '_blank');
+        }
+      } catch (error) {
+        console.error('Payment error:', error);
+        toast({
+          title: "Erreur de paiement",
+          description: "Une erreur est survenue. Veuillez réessayer.",
+          variant: "destructive",
+        });
       }
-    } catch (error) {
-      console.error('Payment error:', error);
+    } else {
       toast({
-        title: "Erreur de paiement",
-        description: "Une erreur est survenue lors du traitement du paiement",
+        title: "Aucun moyen de paiement",
+        description: "Veuillez contacter l'administrateur",
         variant: "destructive",
       });
     }
@@ -138,7 +170,23 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
   const isAvailable = publication.status === 'published';
 
   return (
-    <Card className="border-border hover:border-primary/20 transition-all duration-300 h-full flex flex-col focus-visible-ring hover-interactive contrast-aa">
+    <>
+      <MobileMoneyDialog
+        open={showMobileMoneyDialog}
+        onOpenChange={setShowMobileMoneyDialog}
+        publication={{
+          id: publication.id,
+          title: publication.title,
+          price_usd: publication.price_usd,
+        }}
+        onPaymentSuccess={() => {
+          toast({
+            title: "Paiement réussi",
+            description: "Vous pouvez maintenant télécharger votre publication",
+          });
+        }}
+      />
+      <Card className="border-border hover:border-primary/20 transition-all duration-300 h-full flex flex-col focus-visible-ring hover-interactive contrast-aa">
       {/* Cover Image - Compact */}
       <div className="relative h-28 sm:h-32 bg-secondary/50 rounded-t-lg overflow-hidden">
         {publication.cover_image_url ? (
@@ -248,5 +296,6 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
         </div>
       </CardContent>
     </Card>
+    </>
   );
 };

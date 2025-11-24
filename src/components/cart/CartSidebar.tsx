@@ -39,27 +39,56 @@ export const CartSidebar = ({ onClose }: CartSidebarProps) => {
     setIsProcessing(true);
 
     try {
-      // SECURITY: Send only item IDs, prices will be fetched from database
-      const itemIds = cartItems.map(item => item.id);
-      
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          items: itemIds,
-        },
-      });
+      // Check which payment system to use
+      const { data: paymentMethodsConfig } = await supabase
+        .from('payment_methods_config')
+        .select('*')
+        .eq('is_enabled', true);
 
-      if (error) throw error;
+      const hasStripe = paymentMethodsConfig?.some(p => p.config_type === 'bank_card');
+      const hasMobileMoney = paymentMethodsConfig?.some(p => p.config_type === 'mobile_money');
 
-      if (data?.url) {
-        // Open Stripe checkout in new tab
-        window.open(data.url, '_blank');
-        clearCart();
+      // If Stripe is available, use it
+      if (hasStripe) {
+        const itemIds = cartItems.map(item => item.id);
+        
+        const { data, error } = await supabase.functions.invoke('create-payment', {
+          body: {
+            items: itemIds,
+          },
+        });
+
+        if (error) {
+          // If Stripe fails and Mobile Money available, show option to user
+          if (hasMobileMoney) {
+            toast({
+              title: "Paiement par carte indisponible",
+              description: "Veuillez utiliser Mobile Money depuis les publications individuelles",
+              variant: "destructive",
+            });
+          } else {
+            throw error;
+          }
+          return;
+        }
+
+        if (data?.url) {
+          window.open(data.url, '_blank');
+          clearCart();
+        }
+      } else if (hasMobileMoney) {
+        toast({
+          title: "Paiement Mobile Money",
+          description: "Veuillez utiliser le bouton 'Acheter' sur chaque publication pour payer par Mobile Money",
+        });
+      } else {
+        throw new Error('Aucun moyen de paiement configuré');
       }
     } catch (error) {
       console.error('Payment error:', error);
       toast({
         title: "Erreur de paiement",
-        description: "Une erreur est survenue lors du traitement du paiement",
+        description: "Une erreur est survenue lors du traitement du paiement. Veuillez réessayer ou contacter le support.",
         variant: "destructive",
       });
     } finally {
