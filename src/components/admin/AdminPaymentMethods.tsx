@@ -63,16 +63,42 @@ const AdminPaymentMethods = () => {
   const loadConfiguration = async () => {
     setLoading(true);
     try {
-      // Load from localStorage for now (can be moved to database later)
-      const savedMobileMoney = localStorage.getItem('admin_mobile_money_config');
-      const savedBankCard = localStorage.getItem('admin_bank_card_config');
+      const { data, error } = await supabase
+        .from('payment_methods_config')
+        .select('*')
+        .order('display_order', { ascending: true });
 
-      if (savedMobileMoney) {
-        setMobileMoneyProviders(JSON.parse(savedMobileMoney));
+      if (error) throw error;
+
+      // Charger Mobile Money providers
+      const mobileMoneyData = data?.filter(p => p.config_type === 'mobile_money') || [];
+      const mobileMoney = mobileMoneyData.map(p => {
+        const credentials = p.api_credentials as any || {};
+        return {
+          id: p.provider_id,
+          name: p.provider_name,
+          enabled: p.is_enabled,
+          apiKey: credentials.apiKey || '',
+          merchantCode: credentials.merchantCode || '',
+          secretKey: credentials.secretKey || ''
+        };
+      });
+      
+      if (mobileMoney.length > 0) {
+        setMobileMoneyProviders(mobileMoney);
       }
 
-      if (savedBankCard) {
-        setBankCardConfig(JSON.parse(savedBankCard));
+      // Charger Bank Card config
+      const bankCardData = data?.find(p => p.config_type === 'bank_card');
+      if (bankCardData) {
+        const credentials = bankCardData.api_credentials as any || {};
+        setBankCardConfig({
+          enabled: bankCardData.is_enabled,
+          provider: (credentials.provider || 'stripe') as 'stripe' | 'flutterwave' | 'paypal',
+          publicKey: credentials.publicKey || '',
+          secretKey: credentials.secretKey || '',
+          webhookSecret: credentials.webhookSecret || ''
+        });
       }
 
       toast({
@@ -94,13 +120,48 @@ const AdminPaymentMethods = () => {
   const saveConfiguration = async () => {
     setSaving(true);
     try {
-      // Save to localStorage for now
-      localStorage.setItem('admin_mobile_money_config', JSON.stringify(mobileMoneyProviders));
-      localStorage.setItem('admin_bank_card_config', JSON.stringify(bankCardConfig));
+      // Sauvegarder Mobile Money providers
+      for (const provider of mobileMoneyProviders) {
+        await supabase
+          .from('payment_methods_config')
+          .upsert({
+            config_type: 'mobile_money',
+            provider_id: provider.id,
+            provider_name: provider.name,
+            is_enabled: provider.enabled,
+            api_credentials: {
+              apiKey: provider.apiKey,
+              merchantCode: provider.merchantCode,
+              secretKey: provider.secretKey
+            },
+            display_order: mobileMoneyProviders.indexOf(provider)
+          }, {
+            onConflict: 'config_type,provider_id'
+          });
+      }
+
+      // Sauvegarder Bank Card config
+      await supabase
+        .from('payment_methods_config')
+        .upsert({
+          config_type: 'bank_card',
+          provider_id: bankCardConfig.provider,
+          provider_name: bankCardConfig.provider.charAt(0).toUpperCase() + bankCardConfig.provider.slice(1),
+          is_enabled: bankCardConfig.enabled,
+          api_credentials: {
+            provider: bankCardConfig.provider,
+            publicKey: bankCardConfig.publicKey,
+            secretKey: bankCardConfig.secretKey,
+            webhookSecret: bankCardConfig.webhookSecret
+          },
+          display_order: 0
+        }, {
+          onConflict: 'config_type,provider_id'
+        });
 
       toast({
         title: "Configuration sauvegardée",
-        description: "Les moyens de paiement ont été configurés avec succès",
+        description: "Les moyens de paiement sont maintenant actifs",
       });
     } catch (error) {
       console.error('Error saving configuration:', error);

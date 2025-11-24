@@ -1318,6 +1318,90 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_methods_config: {
+        Row: {
+          api_credentials: Json | null
+          config_type: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          is_enabled: boolean
+          provider_id: string
+          provider_name: string
+          updated_at: string | null
+        }
+        Insert: {
+          api_credentials?: Json | null
+          config_type: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_enabled?: boolean
+          provider_id: string
+          provider_name: string
+          updated_at?: string | null
+        }
+        Update: {
+          api_credentials?: Json | null
+          config_type?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          is_enabled?: boolean
+          provider_id?: string
+          provider_name?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      payment_transactions: {
+        Row: {
+          amount_usd: number
+          created_at: string | null
+          error_message: string | null
+          id: string
+          invoice_id: string | null
+          metadata: Json | null
+          payment_method: string
+          phone_number: string | null
+          provider: string
+          status: string
+          transaction_reference: string | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_usd?: number
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          payment_method: string
+          phone_number?: string | null
+          provider: string
+          status?: string
+          transaction_reference?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string | null
+          error_message?: string | null
+          id?: string
+          invoice_id?: string | null
+          metadata?: Json | null
+          payment_method?: string
+          phone_number?: string | null
+          provider?: string
+          status?: string
+          transaction_reference?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       payments: {
         Row: {
           amount_usd: number
