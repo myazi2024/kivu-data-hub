@@ -5,8 +5,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, CreditCard, ShieldAlert, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import { Loader2, CreditCard, ShieldAlert, AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { toast } from 'sonner';
 
 interface PaymentModeConfig {
@@ -18,6 +19,7 @@ interface PaymentModeConfig {
 const AdminPaymentMode: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const { paymentMode: loadedConfig, availableMethods, refreshConfiguration } = usePaymentConfig();
   const [config, setConfig] = useState<PaymentModeConfig>({
     enabled: false,
     bypass_payment: true,
@@ -25,36 +27,11 @@ const AdminPaymentMode: React.FC = () => {
   });
 
   useEffect(() => {
-    loadConfiguration();
-  }, []);
-
-  const loadConfiguration = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('cadastral_search_config')
-        .select('config_value')
-        .eq('config_key', 'payment_mode')
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data?.config_value) {
-        const value = data.config_value as any;
-        setConfig({
-          enabled: value.enabled ?? false,
-          bypass_payment: value.bypass_payment ?? true,
-          test_mode: value.test_mode ?? true
-        });
-      }
-    } catch (error: any) {
-      console.error('Erreur lors du chargement de la configuration:', error);
-      toast.error('Erreur lors du chargement de la configuration');
-    } finally {
+    if (loadedConfig) {
+      setConfig(loadedConfig);
       setLoading(false);
     }
-  };
+  }, [loadedConfig]);
 
   const saveConfiguration = async () => {
     try {
@@ -97,7 +74,7 @@ const AdminPaymentMode: React.FC = () => {
       });
 
       // Recharger la configuration pour confirmer
-      await loadConfiguration();
+      await refreshConfiguration();
     } catch (error: any) {
       console.error('Erreur lors de l\'enregistrement:', error);
       toast.error('Erreur lors de l\'enregistrement de la configuration', {
@@ -314,6 +291,66 @@ const AdminPaymentMode: React.FC = () => {
               Les changements sont appliqués immédiatement pour tous les nouveaux accès aux services.
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* État des méthodes de paiement configurées */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <Info className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base">Méthodes de paiement configurées</CardTitle>
+          </div>
+          <CardDescription>
+            Vue d'ensemble des moyens de paiement disponibles sur la plateforme
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {/* Mobile Money */}
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${availableMethods.hasMobileMoney ? 'bg-green-100 dark:bg-green-900/20' : 'bg-muted'}`}>
+                <CreditCard className={`h-4 w-4 ${availableMethods.hasMobileMoney ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Mobile Money</p>
+                <p className="text-xs text-muted-foreground">
+                  {availableMethods.enabledProviders.mobileMoneyProviders.length} fournisseur(s) actif(s)
+                </p>
+              </div>
+            </div>
+            <Badge variant={availableMethods.hasMobileMoney ? 'default' : 'secondary'}>
+              {availableMethods.hasMobileMoney ? 'Actif' : 'Inactif'}
+            </Badge>
+          </div>
+
+          {/* Carte Bancaire */}
+          <div className="flex items-center justify-between p-3 rounded-lg border bg-card">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-lg ${availableMethods.hasBankCard ? 'bg-green-100 dark:bg-green-900/20' : 'bg-muted'}`}>
+                <CreditCard className={`h-4 w-4 ${availableMethods.hasBankCard ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}`} />
+              </div>
+              <div>
+                <p className="text-sm font-medium">Carte Bancaire</p>
+                <p className="text-xs text-muted-foreground">
+                  {availableMethods.enabledProviders.bankCardProvider ? `Via ${availableMethods.enabledProviders.bankCardProvider}` : 'Non configuré'}
+                </p>
+              </div>
+            </div>
+            <Badge variant={availableMethods.hasBankCard ? 'default' : 'secondary'}>
+              {availableMethods.hasBankCard ? 'Actif' : 'Inactif'}
+            </Badge>
+          </div>
+
+          {!availableMethods.hasAnyMethod && config.enabled && !config.bypass_payment && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Attention :</strong> Le paiement est activé mais aucun moyen de paiement n'est configuré. 
+                Les utilisateurs ne pourront pas payer. Configurez au moins une méthode dans l'onglet "Moyens de paiement".
+              </AlertDescription>
+            </Alert>
+          )}
         </CardContent>
       </Card>
     </div>

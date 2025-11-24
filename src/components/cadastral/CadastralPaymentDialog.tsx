@@ -5,7 +5,8 @@ import {
   Download,
   Clock,
   Loader2,
-  CreditCard
+  CreditCard,
+  Smartphone
 } from 'lucide-react';
 import { 
   Dialog, 
@@ -14,9 +15,12 @@ import {
   DialogTitle 
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCadastralBilling, CADASTRAL_SERVICES, CadastralInvoice } from '@/hooks/useCadastralBilling';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
+import BankCardPayment from '@/components/payment/BankCardPayment';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 
 interface CadastralPaymentDialogProps {
   invoice: CadastralInvoice;
@@ -31,13 +35,24 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
 }) => {
   const [paymentStep, setPaymentStep] = useState<'selection' | 'processing' | 'success'>('selection');
   const [isAnimating, setIsAnimating] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const { updateInvoiceStatus } = useCadastralBilling();
   const { toast } = useToast();
+  const { availableMethods, loading: configLoading } = usePaymentConfig();
 
-  // Animation sur montage du composant
+  // Animation sur montage du composant et sélection automatique du moyen de paiement
   useEffect(() => {
     setIsAnimating(true);
-  }, []);
+    
+    // Sélectionner automatiquement le meilleur moyen de paiement disponible
+    if (!configLoading) {
+      if (availableMethods.hasBankCard) {
+        setSelectedPaymentMethod('bank_card');
+      } else if (availableMethods.hasMobileMoney) {
+        setSelectedPaymentMethod('mobile_money');
+      }
+    }
+  }, [configLoading, availableMethods]);
 
   const getSelectedServices = () => {
     return CADASTRAL_SERVICES.filter(service => {
@@ -179,18 +194,68 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                 </div>
               </div>
 
-              {/* Composant de paiement Mobile Money */}
-              <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                <MobileMoneyPayment
-                  item={{
-                    id: invoice.id,
-                    title: `Facture ${invoice.invoice_number}`,
-                    price: invoice.total_amount_usd
-                  }}
-                  currency="USD"
-                  onPaymentSuccess={handleMobileMoneySuccess}
-                />
-              </div>
+              {/* Sélection du moyen de paiement si plusieurs options disponibles */}
+              {availableMethods.hasMobileMoney && availableMethods.hasBankCard ? (
+                <Tabs value={selectedPaymentMethod} onValueChange={(v) => setSelectedPaymentMethod(v as any)} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 mb-3">
+                    <TabsTrigger value="bank_card" className="text-xs">
+                      <CreditCard className="h-3 w-3 mr-1" />
+                      Carte Bancaire
+                    </TabsTrigger>
+                    <TabsTrigger value="mobile_money" className="text-xs">
+                      <Smartphone className="h-3 w-3 mr-1" />
+                      Mobile Money
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="bank_card" className="mt-0">
+                    <BankCardPayment
+                      invoiceId={invoice.id}
+                      amount={invoice.total_amount_usd}
+                      onPaymentSuccess={handlePaymentSuccess}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="mobile_money" className="mt-0">
+                    <MobileMoneyPayment
+                      item={{
+                        id: invoice.id,
+                        title: `Facture ${invoice.invoice_number}`,
+                        price: invoice.total_amount_usd
+                      }}
+                      currency="USD"
+                      onPaymentSuccess={handleMobileMoneySuccess}
+                    />
+                  </TabsContent>
+                </Tabs>
+              ) : availableMethods.hasBankCard ? (
+                /* Uniquement carte bancaire disponible */
+                <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                  <BankCardPayment
+                    invoiceId={invoice.id}
+                    amount={invoice.total_amount_usd}
+                    onPaymentSuccess={handlePaymentSuccess}
+                  />
+                </div>
+              ) : availableMethods.hasMobileMoney ? (
+                /* Uniquement Mobile Money disponible */
+                <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                  <MobileMoneyPayment
+                    item={{
+                      id: invoice.id,
+                      title: `Facture ${invoice.invoice_number}`,
+                      price: invoice.total_amount_usd
+                    }}
+                    currency="USD"
+                    onPaymentSuccess={handleMobileMoneySuccess}
+                  />
+                </div>
+              ) : (
+                /* Aucun moyen de paiement configuré */
+                <div className="text-center text-sm text-muted-foreground p-4">
+                  Aucun moyen de paiement configuré
+                </div>
+              )}
             </div>
           )}
         </div>

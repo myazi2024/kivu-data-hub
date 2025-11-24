@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,6 +6,7 @@ import { Download, FileText, ShoppingCart, MapPin, Calendar, CreditCard, Minus, 
 import { useCart, CartItem } from '@/hooks/useCart';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import reportThumbnail from '@/assets/report-card-thumbnail.webp';
 import { MobileMoneyDialog } from './MobileMoneyDialog';
 
@@ -31,25 +32,7 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
   const { addToCart, removeFromCart, isInCart } = useCart();
   const { toast } = useToast();
   const [showMobileMoneyDialog, setShowMobileMoneyDialog] = useState(false);
-  const [paymentMethods, setPaymentMethods] = useState<{
-    hasStripe: boolean;
-    hasMobileMoney: boolean;
-  }>({ hasStripe: false, hasMobileMoney: false });
-
-  useEffect(() => {
-    const loadPaymentMethods = async () => {
-      const { data } = await supabase
-        .from('payment_methods_config')
-        .select('config_type')
-        .eq('is_enabled', true);
-
-      setPaymentMethods({
-        hasStripe: data?.some(p => p.config_type === 'bank_card') || false,
-        hasMobileMoney: data?.some(p => p.config_type === 'mobile_money') || false,
-      });
-    };
-    loadPaymentMethods();
-  }, []);
+  const { availableMethods } = usePaymentConfig();
 
   // Extract metadata from description or tags
   const getPeriod = () => {
@@ -116,24 +99,19 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
       return;
     }
 
-    // If only Mobile Money available, show dialog
-    if (!paymentMethods.hasStripe && paymentMethods.hasMobileMoney) {
-      setShowMobileMoneyDialog(true);
-      return;
-    }
-
-    // If both available, try Stripe first
-    if (paymentMethods.hasStripe) {
+    // Prioriser la carte bancaire si disponible
+    if (availableMethods.hasBankCard) {
       try {
         const { data, error } = await supabase.functions.invoke('create-payment', {
           body: {
             items: [publication.id],
+            payment_type: 'publications'
           },
         });
 
         if (error) {
-          // If Stripe fails and Mobile Money available, show dialog
-          if (paymentMethods.hasMobileMoney) {
+          // Si Stripe échoue et Mobile Money disponible, proposer l'alternative
+          if (availableMethods.hasMobileMoney) {
             toast({
               title: "Paiement par carte indisponible",
               description: "Essayez avec Mobile Money",
@@ -146,7 +124,7 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
         }
 
         if (data?.url) {
-          window.open(data.url, '_blank');
+          window.location.href = data.url;
         }
       } catch (error) {
         console.error('Payment error:', error);
@@ -156,7 +134,13 @@ export const PublicationCard: React.FC<PublicationCardProps> = ({ publication })
           variant: "destructive",
         });
       }
-    } else {
+    } 
+    // Sinon utiliser Mobile Money si disponible
+    else if (availableMethods.hasMobileMoney) {
+      setShowMobileMoneyDialog(true);
+    } 
+    // Aucun moyen de paiement
+    else {
       toast({
         title: "Aucun moyen de paiement",
         description: "Veuillez contacter l'administrateur",

@@ -7,16 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface CartItem {
-  id: string;
-  title: string;
-  price: number; // in USD
-  cover_image_url?: string;
-}
-
 interface PaymentRequest {
-  items: CartItem[];
-  email?: string;
+  items?: string[]; // Publication IDs
+  invoice_id?: string; // Cadastral invoice ID
+  payment_type: 'publications' | 'cadastral_service';
+  amount_usd?: number; // For cadastral services
 }
 
 serve(async (req) => {
@@ -45,22 +40,82 @@ serve(async (req) => {
       throw new Error("Invalid authentication token");
     }
 
-    // Parse request - only get item IDs, not prices
-    const { items: itemIds }: { items: string[] } = await req.json();
-    
-    if (!itemIds || itemIds.length === 0) {
-      throw new Error("Cart is empty");
+    // Parse request
+    const body: PaymentRequest = await req.json();
+    const { items: itemIds, invoice_id, payment_type, amount_usd } = body;
+
+    let lineItems: any[] = [];
+    let totalAmount = 0;
+    let orderMetadata: any = {
+      user_id: user?.id || "guest",
+      email: user?.email || "",
+      payment_type
+    };
+
+    // Handle Publications payment
+    if (payment_type === 'publications' && itemIds && itemIds.length > 0) {
+      // SECURITY: Fetch real prices from database, not from client
+      const { data: publications, error: pubError } = await supabaseClient
+        .from("publications")
+        .select("id, title, price_usd, cover_image_url, status")
+        .in("id", itemIds)
+        .eq("status", "published");
+
+      if (pubError || !publications || publications.length === 0) {
+        throw new Error("Invalid items in cart");
+      }
+
+      lineItems = publications.map(pub => ({
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: pub.title,
+            images: pub.cover_image_url ? [pub.cover_image_url] : [],
+          },
+          unit_amount: Math.round(pub.price_usd * 100),
+        },
+        quantity: 1,
+      }));
+
+      totalAmount = Math.round(publications.reduce((sum, pub) => sum + pub.price_usd, 0) * 100);
     }
+    // Handle Cadastral Service payment
+    else if (payment_type === 'cadastral_service' && invoice_id && amount_usd) {
+      // Fetch invoice details from database
+      const supabaseService = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
 
-    // SECURITY: Fetch real prices from database, not from client
-    const { data: publications, error: pubError } = await supabaseClient
-      .from("publications")
-      .select("id, title, price_usd, cover_image_url, status")
-      .in("id", itemIds)
-      .eq("status", "published");
+      const { data: invoice, error: invoiceError } = await supabaseService
+        .from("cadastral_invoices")
+        .select("*")
+        .eq("id", invoice_id)
+        .eq("user_id", user.id)
+        .single();
 
-    if (pubError || !publications || publications.length === 0) {
-      throw new Error("Invalid items in cart");
+      if (invoiceError || !invoice) {
+        throw new Error("Invalid invoice");
+      }
+
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: `Facture Cadastrale ${invoice.invoice_number}`,
+            description: `Services cadastraux pour parcelle ${invoice.parcel_number}`,
+          },
+          unit_amount: Math.round(invoice.total_amount_usd * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(invoice.total_amount_usd * 100);
+      orderMetadata.invoice_id = invoice_id;
+      orderMetadata.parcel_number = invoice.parcel_number;
+    } else {
+      throw new Error("Invalid payment request: missing items or invoice_id");
     }
 
     // Rate limiting: Check recent payment attempts
@@ -89,24 +144,10 @@ serve(async (req) => {
       ip_address: req.headers.get("x-forwarded-for") || null,
     });
 
-    // Build items with server-side prices
-    const items: CartItem[] = publications.map(pub => ({
-      id: pub.id,
-      title: pub.title,
-      price: pub.price_usd,
-      cover_image_url: pub.cover_image_url || undefined,
-    }));
-
-    // Determine email for the order
-    const orderEmail = user.email || "guest@bic-goma.com";
-
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",
     });
-
-    // Calculate total amount in cents
-    const totalAmount = Math.round(items.reduce((sum, item) => sum + item.price, 0) * 100);
 
     // Check if customer exists for authenticated users
     let customerId;
@@ -117,45 +158,61 @@ serve(async (req) => {
       }
     }
 
-    // Create line items for Stripe
-    const lineItems = items.map(item => ({
-      price_data: {
-        currency: "usd",
-        product_data: {
-          name: item.title,
-          images: item.cover_image_url ? [item.cover_image_url] : [],
-        },
-        unit_amount: Math.round(item.price * 100), // Convert to cents
-      },
-      quantity: 1,
-    }));
-
     // Create Stripe checkout session
+    const successUrl = payment_type === 'cadastral_service'
+      ? `${req.headers.get("origin")}/services?payment=success&session_id={CHECKOUT_SESSION_ID}`
+      : `${req.headers.get("origin")}/publications?payment=success&session_id={CHECKOUT_SESSION_ID}`;
+
+    const cancelUrl = payment_type === 'cadastral_service'
+      ? `${req.headers.get("origin")}/services?payment=cancelled`
+      : `${req.headers.get("origin")}/publications?payment=cancelled`;
+
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
-      customer_email: customerId ? undefined : orderEmail,
+      customer_email: customerId ? undefined : user?.email || undefined,
       line_items: lineItems,
       mode: "payment",
-      success_url: `${req.headers.get("origin")}/publications?payment=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.get("origin")}/publications?payment=cancelled`,
-      metadata: {
-        user_id: user?.id || "guest",
-        email: orderEmail,
-      },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      metadata: orderMetadata,
     });
 
-    // Store order in database (supabaseService already created above)
-    const { error: orderError } = await supabaseService.from("orders").insert({
-      user_id: user?.id || null,
-      email: orderEmail,
-      stripe_session_id: session.id,
-      amount: totalAmount,
-      status: "pending",
-      items: items,
-    });
+    // Store order/transaction in database
+    if (payment_type === 'publications') {
+      const { error: orderError } = await supabaseService.from("orders").insert({
+        user_id: user?.id || null,
+        email: user?.email || "",
+        stripe_session_id: session.id,
+        amount: totalAmount,
+        status: "pending",
+        items: lineItems.map((item, idx) => ({
+          id: itemIds![idx],
+          title: item.price_data.product_data.name,
+          price: item.price_data.unit_amount / 100
+        })),
+      });
 
-    if (orderError) {
-      console.error("Error creating order:", orderError);
+      if (orderError) {
+        console.error("Error creating order:", orderError);
+      }
+    } else if (payment_type === 'cadastral_service' && invoice_id) {
+      // Create payment transaction for cadastral service
+      await supabaseService.from("payment_transactions").insert({
+        user_id: user.id,
+        invoice_id: invoice_id,
+        payment_method: 'bank_card',
+        provider: 'stripe',
+        amount_usd: amount_usd!,
+        status: 'pending',
+        transaction_reference: session.id,
+        metadata: { stripe_session_id: session.id }
+      });
+
+      // Update invoice with payment info
+      await supabaseService.from("cadastral_invoices").update({
+        payment_method: 'stripe',
+        status: 'processing'
+      }).eq('id', invoice_id);
     }
 
     return new Response(JSON.stringify({ url: session.url }), {
