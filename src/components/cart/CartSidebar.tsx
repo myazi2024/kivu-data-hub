@@ -8,6 +8,7 @@ import { Trash2, CreditCard, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import {
   Alert,
   AlertDescription,
@@ -21,6 +22,7 @@ export const CartSidebar = ({ onClose }: CartSidebarProps) => {
   const { cartItems, removeFromCart, getTotalPrice, clearCart } = useCart();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { availableMethods, loading: configLoading } = usePaymentConfig();
   const [email, setEmail] = useState(user?.email || '');
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -39,32 +41,34 @@ export const CartSidebar = ({ onClose }: CartSidebarProps) => {
     setIsProcessing(true);
 
     try {
-      // Check which payment system to use
-      const { data: paymentMethodsConfig } = await supabase
-        .from('payment_methods_config')
-        .select('*')
-        .eq('is_enabled', true);
+      // Vérifier les moyens de paiement disponibles
+      if (!availableMethods.hasAnyMethod) {
+        toast({
+          title: "Aucun moyen de paiement",
+          description: "Aucun moyen de paiement n'est configuré. Contactez l'administrateur.",
+          variant: "destructive"
+        });
+        return;
+      }
 
-      const hasStripe = paymentMethodsConfig?.some(p => p.config_type === 'bank_card');
-      const hasMobileMoney = paymentMethodsConfig?.some(p => p.config_type === 'mobile_money');
-
-      // If Stripe is available, use it
-      if (hasStripe) {
+      // Prioriser la carte bancaire (Stripe) si disponible
+      if (availableMethods.hasBankCard) {
         const itemIds = cartItems.map(item => item.id);
         
         const { data, error } = await supabase.functions.invoke('create-payment', {
           body: {
             items: itemIds,
-          },
+            payment_type: 'publications'
+          }
         });
 
         if (error) {
-          // If Stripe fails and Mobile Money available, show option to user
-          if (hasMobileMoney) {
+          // Si Stripe échoue et Mobile Money est disponible, proposer l'alternative
+          if (availableMethods.hasMobileMoney) {
             toast({
               title: "Paiement par carte indisponible",
-              description: "Veuillez utiliser Mobile Money depuis les publications individuelles",
-              variant: "destructive",
+              description: "Utilisez le bouton 'Acheter' sur chaque publication pour payer par Mobile Money",
+              variant: "destructive"
             });
           } else {
             throw error;
@@ -73,16 +77,15 @@ export const CartSidebar = ({ onClose }: CartSidebarProps) => {
         }
 
         if (data?.url) {
-          window.open(data.url, '_blank');
+          window.location.href = data.url;
           clearCart();
         }
-      } else if (hasMobileMoney) {
+      } else if (availableMethods.hasMobileMoney) {
+        // Seulement Mobile Money disponible
         toast({
           title: "Paiement Mobile Money",
-          description: "Veuillez utiliser le bouton 'Acheter' sur chaque publication pour payer par Mobile Money",
+          description: "Utilisez le bouton 'Acheter' sur chaque publication pour payer par Mobile Money",
         });
-      } else {
-        throw new Error('Aucun moyen de paiement configuré');
       }
     } catch (error) {
       console.error('Payment error:', error);

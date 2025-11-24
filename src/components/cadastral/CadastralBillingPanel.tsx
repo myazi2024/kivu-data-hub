@@ -25,6 +25,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { useCadastralBilling } from '@/hooks/useCadastralBilling';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { supabase } from '@/integrations/supabase/client';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
 import DiscountCodeInput from './DiscountCodeInput';
