@@ -31,17 +31,7 @@ export const usePayment = () => {
       setLoading(true);
       setPaymentStep('processing');
 
-      // Check payment mode configuration
-      const { data: paymentModeConfig } = await supabase
-        .from('cadastral_search_config')
-        .select('config_value')
-        .eq('config_key', 'payment_mode')
-        .single();
-
-      const paymentConfig = paymentModeConfig?.config_value as any || {};
-      const isTestMode = paymentConfig.test_mode || false;
-
-      // Call Mobile Money payment edge function
+      // Appeler la fonction edge de paiement Mobile Money
       const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
         'process-mobile-money-payment',
         {
@@ -51,7 +41,8 @@ export const usePayment = () => {
             phone_number: paymentData.phoneNumber,
             amount_usd: item.price,
             payment_type: 'publication',
-            test_mode: isTestMode
+            // On force le mode réel : le comportement de test est géré côté fournisseur
+            test_mode: false
           }
         }
       );
@@ -104,11 +95,9 @@ export const usePayment = () => {
 
           setPaymentStep('success');
           toast({
-            title: "Paiement réussi",
-            description: isTestMode 
-              ? "Paiement test confirmé - Publication accessible"
-              : "Votre publication est maintenant disponible"
-          });
+          title: "Paiement réussi",
+          description: "Votre publication est maintenant disponible"
+        });
 
           return paymentRecord;
         } else if (transaction?.status === 'failed') {
