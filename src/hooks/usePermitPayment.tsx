@@ -144,21 +144,84 @@ export const usePermitPayment = () => {
 
       if (paymentError) throw paymentError;
 
-      // TODO: Intégrer vraie API de paiement
-      // Simulation pour le moment
-      console.warn('⚠️ SIMULATION DE PAIEMENT - À remplacer par une vraie API');
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Traiter le paiement selon le moyen de paiement
+      if (paymentData.payment_method === 'mobile_money' && paymentData.payment_provider && paymentData.phone_number) {
+        // Appeler l'edge function pour Mobile Money
+        const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
+          'process-mobile-money-payment',
+          {
+            body: {
+              payment_provider: paymentData.payment_provider,
+              phone_number: paymentData.phone_number,
+              amount_usd: totalAmount,
+              payment_type: 'permit_fee',
+              invoice_id: paymentRecord.id
+            }
+          }
+        );
 
-      // Mettre à jour le statut
-      const { error: updateError } = await supabase
-        .from('permit_payments')
-        .update({
-          status: 'completed',
-          paid_at: new Date().toISOString()
-        })
-        .eq('id', paymentRecord.id);
+        if (paymentError) throw paymentError;
 
-      if (updateError) throw updateError;
+        // Attendre la confirmation du paiement (polling)
+        let attempts = 0;
+        const maxAttempts = 30;
+        while (attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          const { data: txData } = await supabase
+            .from('payment_transactions')
+            .select('status')
+            .eq('invoice_id', paymentRecord.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (txData?.status === 'completed') {
+            // Mettre à jour le statut du paiement de permis
+            const { error: updateError } = await supabase
+              .from('permit_payments')
+              .update({
+                status: 'completed',
+                paid_at: new Date().toISOString(),
+                transaction_id: paymentResult.transaction_id
+              })
+              .eq('id', paymentRecord.id);
+
+            if (updateError) throw updateError;
+            break;
+          } else if (txData?.status === 'failed') {
+            throw new Error('Le paiement a échoué');
+          }
+          
+          attempts++;
+        }
+
+        if (attempts >= maxAttempts) {
+          throw new Error('Délai de paiement dépassé');
+        }
+      } else if (paymentData.payment_method === 'bank_card') {
+        // Pour Stripe, créer une session de paiement
+        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke(
+          'create-payment',
+          {
+            body: {
+              invoice_id: paymentRecord.id,
+              payment_type: 'permit_fee',
+              amount_usd: totalAmount
+            }
+          }
+        );
+
+        if (stripeError) throw stripeError;
+
+        if (stripeSession?.url) {
+          // Rediriger vers Stripe
+          window.location.href = stripeSession.url;
+          return null; // Le paiement sera complété après redirection
+        }
+      } else {
+        throw new Error('Moyen de paiement non supporté');
+      }
 
       // Créer notification
       await supabase.from('notifications').insert({
