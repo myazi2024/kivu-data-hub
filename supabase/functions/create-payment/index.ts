@@ -144,6 +144,20 @@ serve(async (req) => {
       ip_address: req.headers.get("x-forwarded-for") || null,
     });
 
+    // Validate that Stripe is enabled in payment_methods_config
+    const { data: stripeConfig, error: stripeConfigError } = await supabaseService
+      .from('payment_methods_config')
+      .select('*')
+      .eq('provider_id', 'stripe')
+      .eq('config_type', 'bank_card')
+      .eq('is_enabled', true)
+      .single();
+
+    if (stripeConfigError || !stripeConfig) {
+      console.error("Stripe not enabled:", stripeConfigError);
+      throw new Error("Stripe payment method is not available");
+    }
+
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2023-10-16",

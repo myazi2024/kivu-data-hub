@@ -5,6 +5,7 @@ import { CreditCard, Loader2, Shield, CheckCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 
 interface BankCardPaymentProps {
   invoiceId: string;
@@ -21,12 +22,23 @@ const BankCardPayment: React.FC<BankCardPaymentProps> = ({
   const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'success'>('form');
   const { user } = useAuth();
   const { toast } = useToast();
+  const { availableMethods, loading: configLoading } = usePaymentConfig();
 
   const handleStripePayment = async () => {
     if (!user) {
       toast({
         title: "Authentification requise",
         description: "Vous devez être connecté pour payer par carte",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Vérifier que Stripe est activé dans la configuration
+    if (!availableMethods.hasBankCard) {
+      toast({
+        title: "Paiement non disponible",
+        description: "Le paiement par carte bancaire n'est pas activé",
         variant: "destructive"
       });
       return;
@@ -108,6 +120,22 @@ const BankCardPayment: React.FC<BankCardPaymentProps> = ({
             </div>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (configLoading) {
+    return (
+      <div className="text-center py-4">
+        <Loader2 className="h-5 w-5 animate-spin mx-auto text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!availableMethods.hasBankCard) {
+    return (
+      <div className="text-center text-sm text-muted-foreground p-4">
+        Le paiement par carte bancaire n'est pas disponible actuellement
       </div>
     );
   }

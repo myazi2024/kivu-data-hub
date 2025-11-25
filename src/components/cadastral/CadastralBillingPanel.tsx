@@ -102,12 +102,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [highlightTerms, setHighlightTerms] = useState(false);
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
-  const [paymentConfig, setPaymentConfig] = useState<{
-    enabled: boolean;
-    bypass_payment: boolean;
-    test_mode: boolean;
-  } | null>(null);
   const { toast } = useToast();
+  const { paymentMode, isPaymentRequired } = usePaymentConfig();
   const {
     loading,
     selectedServices,
@@ -125,50 +121,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     [searchResult]
   );
 
-  // Charger la configuration du mode de paiement
-  React.useEffect(() => {
-    const loadPaymentConfig = async () => {
-      const { data } = await supabase
-        .from('cadastral_search_config')
-        .select('config_value')
-        .eq('config_key', 'payment_mode')
-        .eq('is_active', true)
-        .maybeSingle();
-
-      if (data?.config_value) {
-        setPaymentConfig(data.config_value as any);
-      }
-    };
-    
-    loadPaymentConfig();
-    
-    // Écouter les changements de configuration en temps réel
-    const channel = supabase
-      .channel('payment-config-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'cadastral_search_config',
-          filter: 'config_key=eq.payment_mode'
-        },
-        (payload) => {
-          if (payload.new.config_value) {
-            setPaymentConfig(payload.new.config_value as any);
-            toast({
-              title: "Configuration mise à jour",
-              description: "Le mode de paiement a été actualisé",
-            });
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   // Initialiser tous les services comme déroulés par défaut
   React.useEffect(() => {
@@ -212,7 +164,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
     
     // Mode développement - bypass du paiement
-    if (paymentConfig?.bypass_payment) {
+    if (paymentMode.bypass_payment) {
       const invoice = await createInvoice(searchResult, appliedDiscount);
       if (invoice) {
         toast({
@@ -226,7 +178,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
     
     // Mode paiement activé
-    if (paymentConfig?.enabled) {
+    if (isPaymentRequired()) {
       const invoice = await createInvoice(searchResult, appliedDiscount);
       if (invoice) {
         setShowPaymentDialog(true);
@@ -647,7 +599,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 </div>
               ) : (
                 <div className="flex items-center gap-3">
-                  {paymentConfig?.bypass_payment ? (
+                  {paymentMode.bypass_payment ? (
                     <CheckCircle className="h-5 w-5" />
                   ) : (
                     <CreditCard className="h-5 w-5" />
@@ -657,7 +609,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                        ? 'Sélectionner des services' 
                        : !acceptedTerms 
                        ? 'Accepter les conditions'
-                       : paymentConfig?.bypass_payment
+                       : paymentMode.bypass_payment
                        ? 'Accéder aux services'
                        : 'Payer'
                      }
@@ -693,7 +645,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
                   <CheckCircle className="h-4 w-4" />
                   <p className="text-sm">
-                    {paymentConfig?.bypass_payment 
+                    {paymentMode.bypass_payment 
                       ? 'Accès gratuit en mode développement' 
                       : 'Prêt pour le paiement sécurisé'
                      }
