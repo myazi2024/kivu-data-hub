@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Gift, Copy, CheckCircle, XCircle, Clock, DollarSign, Eye, AlertCircle } from 'lucide-react';
+import { Gift, Copy, DollarSign, Eye } from 'lucide-react';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { UserCCCCodeDetailsDialog } from './UserCCCCodeDetailsDialog';
 
 interface CCCCode {
@@ -60,35 +60,14 @@ export const UserCCCCodes: React.FC = () => {
     toast.success('Code copié dans le presse-papier');
   };
 
-  const getStatusBadge = (code: CCCCode) => {
-    if (!code.is_valid) {
-      return <Badge variant="destructive" className="flex items-center gap-1">
-        <XCircle className="h-3 w-3" />
-        Invalide
-      </Badge>;
-    }
-    
-    if (code.is_used) {
-      return <Badge variant="secondary" className="flex items-center gap-1">
-        <CheckCircle className="h-3 w-3" />
-        Utilisé
-      </Badge>;
-    }
-
-    const expiresAt = new Date(code.expires_at);
+  const getCodeStatus = (code: CCCCode): 'valid' | 'used' | 'expired' | 'invalidated' => {
     const now = new Date();
+    const isExpired = new Date(code.expires_at) <= now;
     
-    if (expiresAt < now) {
-      return <Badge variant="destructive" className="flex items-center gap-1">
-        <Clock className="h-3 w-3" />
-        Expiré
-      </Badge>;
-    }
-
-    return <Badge variant="default" className="bg-green-500 flex items-center gap-1">
-      <Gift className="h-3 w-3" />
-      Disponible
-    </Badge>;
+    if (!code.is_valid) return 'invalidated';
+    if (code.is_used) return 'used';
+    if (isExpired) return 'expired';
+    return 'valid';
   };
 
   const getStats = () => {
@@ -204,7 +183,9 @@ export const UserCCCCodes: React.FC = () => {
                         <TableCell>
                           {new Date(code.created_at).toLocaleDateString('fr-FR')}
                         </TableCell>
-                        <TableCell>{getStatusBadge(code)}</TableCell>
+                        <TableCell>
+                          <StatusBadge status={getCodeStatus(code)} />
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button
@@ -247,7 +228,7 @@ export const UserCCCCodes: React.FC = () => {
                             Parcelle: {code.parcel_number}
                           </p>
                         </div>
-                        {getStatusBadge(code)}
+                        <StatusBadge status={getCodeStatus(code)} />
                       </div>
 
                       <div className="flex items-center justify-between py-1 border-y">
