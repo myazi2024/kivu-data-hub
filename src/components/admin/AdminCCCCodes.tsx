@@ -2,29 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { 
-  Gift, 
-  Search, 
-  Download, 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle,
-  Eye,
-  Ban,
-  TrendingUp,
-  DollarSign,
-  Calendar
-} from 'lucide-react';
+import { Gift, Eye, Ban, TrendingUp, DollarSign, AlertCircle, Search, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { ResponsiveTable } from '@/components/ui/responsive-table';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 
 interface CCCCode {
   id: string;
@@ -55,15 +42,6 @@ interface CodeStats {
 
 export default function AdminCCCCodes() {
   const [codes, setCodes] = useState<CCCCode[]>([]);
-  const [stats, setStats] = useState<CodeStats>({
-    total: 0,
-    valid: 0,
-    used: 0,
-    expired: 0,
-    invalidated: 0,
-    total_value: 0,
-    used_value: 0
-  });
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCode, setSelectedCode] = useState<CCCCode | null>(null);
@@ -83,9 +61,7 @@ export default function AdminCCCCodes() {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-
       setCodes(data || []);
-      calculateStats(data || []);
     } catch (error: any) {
       console.error('Erreur:', error);
       toast.error('Erreur lors du chargement des codes');
@@ -94,19 +70,18 @@ export default function AdminCCCCodes() {
     }
   };
 
-  const calculateStats = (codesData: CCCCode[]) => {
+  const stats = React.useMemo(() => {
     const now = new Date();
-    const stats: CodeStats = {
-      total: codesData.length,
-      valid: codesData.filter(c => c.is_valid && !c.is_used && new Date(c.expires_at) > now).length,
-      used: codesData.filter(c => c.is_used).length,
-      expired: codesData.filter(c => !c.is_used && new Date(c.expires_at) <= now).length,
-      invalidated: codesData.filter(c => !c.is_valid).length,
-      total_value: codesData.reduce((sum, c) => sum + c.value_usd, 0),
-      used_value: codesData.filter(c => c.is_used).reduce((sum, c) => sum + c.value_usd, 0)
+    return {
+      total: codes.length,
+      valid: codes.filter(c => c.is_valid && !c.is_used && new Date(c.expires_at) > now).length,
+      used: codes.filter(c => c.is_used).length,
+      expired: codes.filter(c => !c.is_used && new Date(c.expires_at) <= now).length,
+      invalidated: codes.filter(c => !c.is_valid).length,
+      total_value: codes.reduce((sum, c) => sum + c.value_usd, 0),
+      used_value: codes.filter(c => c.is_used).reduce((sum, c) => sum + c.value_usd, 0)
     };
-    setStats(stats);
-  };
+  }, [codes]);
 
   const handleInvalidateCode = async () => {
     if (!selectedCode || !invalidationReason.trim()) {
@@ -159,20 +134,14 @@ export default function AdminCCCCodes() {
     a.click();
   };
 
-  const getStatusBadge = (code: CCCCode) => {
+  const getCodeStatus = (code: CCCCode): 'valid' | 'used' | 'expired' | 'invalidated' => {
     const now = new Date();
     const isExpired = new Date(code.expires_at) <= now;
-
-    if (!code.is_valid) {
-      return <Badge variant="destructive" className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0"><Ban className="h-2 w-2 sm:h-3 sm:w-3" /><span className="hidden sm:inline">Invalidé</span><span className="sm:hidden">Inv.</span></Badge>;
-    }
-    if (code.is_used) {
-      return <Badge variant="secondary" className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0"><CheckCircle className="h-2 w-2 sm:h-3 sm:w-3" /><span className="hidden sm:inline">Utilisé</span><span className="sm:hidden">Util.</span></Badge>;
-    }
-    if (isExpired) {
-      return <Badge variant="outline" className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0"><XCircle className="h-2 w-2 sm:h-3 sm:w-3" /><span className="hidden sm:inline">Expiré</span><span className="sm:hidden">Exp.</span></Badge>;
-    }
-    return <Badge variant="default" className="gap-0.5 text-[10px] sm:text-xs px-1.5 py-0"><Gift className="h-2 w-2 sm:h-3 sm:w-3" />Valide</Badge>;
+    
+    if (!code.is_valid) return 'invalidated';
+    if (code.is_used) return 'used';
+    if (isExpired) return 'expired';
+    return 'valid';
   };
 
   const filteredCodes = codes.filter(code =>
@@ -313,7 +282,9 @@ export default function AdminCCCCodes() {
                       <TableCell className="hidden lg:table-cell p-2 text-xs text-muted-foreground">
                         {format(new Date(code.expires_at), 'dd/MM', { locale: fr })}
                       </TableCell>
-                      <TableCell className="p-2">{getStatusBadge(code)}</TableCell>
+                      <TableCell className="p-2">
+                        <StatusBadge status={getCodeStatus(code)} compact />
+                      </TableCell>
                       <TableCell className="p-2">
                         <div className="flex items-center justify-end gap-1">
                           <Dialog>
