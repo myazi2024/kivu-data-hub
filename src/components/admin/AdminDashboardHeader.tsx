@@ -1,4 +1,4 @@
-import { Bell, Menu, Search, User, Trash2 } from 'lucide-react';
+import { Bell, Menu, Search, User, Trash2, TestTube } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/hooks/useAuth';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useTestMode } from '@/hooks/useTestMode';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -31,6 +32,7 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAsRead, markAllAsRead, deleteNotification } = useNotifications();
+  const { testMode } = useTestMode();
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   const handleLogout = async () => {
@@ -90,6 +92,19 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
         </div>
 
         <div className="flex items-center gap-1 md:gap-2">
+          {/* Indicateur mode test */}
+          {testMode.enabled && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2 h-8 border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20"
+              onClick={() => navigate('/admin?tab=test-mode')}
+            >
+              <TestTube className="h-4 w-4" />
+              <span className="hidden md:inline">Mode Test</span>
+            </Button>
+          )}
+
           <Popover open={notificationsOpen} onOpenChange={setNotificationsOpen}>
             <PopoverTrigger asChild>
               <Button variant="ghost" size="icon" className="relative h-8 w-8 md:h-10 md:w-10">

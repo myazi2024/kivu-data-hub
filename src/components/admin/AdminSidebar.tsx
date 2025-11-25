@@ -25,7 +25,8 @@ import {
   Building2,
   Receipt,
   TrendingUp,
-  Smartphone
+  Smartphone,
+  TestTube
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -101,6 +102,7 @@ const menuItems = [
   {
     category: 'Système',
     items: [
+      { icon: TestTube, label: 'Mode Test', value: 'test-mode', badge: null },
       { icon: Shield, label: 'Logs d\'Audit', value: 'audit-logs', badge: null },
     ]
   },
