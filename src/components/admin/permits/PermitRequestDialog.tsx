@@ -7,11 +7,12 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { FileText, CheckCircle, XCircle, Building2, User, Phone, Mail, AlertCircle, Image, History } from 'lucide-react';
+import { FileText, CheckCircle, XCircle, Building2, User, Phone, Mail, AlertCircle, Image, History, DollarSign } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PermitActionsHistory } from './PermitActionsHistory';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermitPayment } from '@/hooks/usePermitPayment';
 
 interface PermitRequestDialogProps {
   open: boolean;
@@ -33,9 +34,22 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
   onProcessed
 }) => {
   const { user } = useAuth();
+  const { checkPaymentStatus } = usePermitPayment();
   const [processing, setProcessing] = useState(false);
   const [response, setResponse] = useState('');
   const [selectedImages, setSelectedImages] = useState<number[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'pending' | 'not_found' | 'failed' | null>(null);
+
+  React.useEffect(() => {
+    if (open && contributionId) {
+      loadPaymentStatus();
+    }
+  }, [open, contributionId]);
+
+  const loadPaymentStatus = async () => {
+    const status = await checkPaymentStatus(contributionId);
+    setPaymentStatus(status);
+  };
 
   if (!permitRequestData) return null;
 
@@ -48,6 +62,20 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
     if (!user) {
       toast.error('Erreur d\'authentification');
       return;
+    }
+
+    // Vérifier le paiement avant d'approuver
+    if (action === 'approve' && paymentStatus !== 'paid') {
+      if (paymentStatus === 'pending') {
+        toast.error('Le paiement des frais de permis est en attente. Veuillez attendre la confirmation du paiement.');
+        return;
+      } else if (paymentStatus === 'failed') {
+        toast.error('Le paiement des frais de permis a échoué. Le demandeur doit effectuer le paiement à nouveau.');
+        return;
+      } else if (paymentStatus === 'not_found') {
+        toast.error('Aucun paiement trouvé pour cette demande. Le demandeur doit d\'abord payer les frais de permis.');
+        return;
+      }
     }
 
     setProcessing(true);
@@ -311,6 +339,46 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
               </Card>
             )}
 
+            {/* Statut du paiement */}
+            <Card className="p-4">
+              <Label className="text-sm font-semibold mb-2 block flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Statut du paiement des frais
+              </Label>
+              {paymentStatus === 'paid' && (
+                <Alert className="bg-green-50 border-green-200">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    Les frais de permis ont été payés avec succès
+                  </AlertDescription>
+                </Alert>
+              )}
+              {paymentStatus === 'pending' && (
+                <Alert className="bg-yellow-50 border-yellow-200">
+                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                  <AlertDescription className="text-yellow-800">
+                    Paiement en attente de confirmation
+                  </AlertDescription>
+                </Alert>
+              )}
+              {paymentStatus === 'failed' && (
+                <Alert className="bg-red-50 border-red-200">
+                  <XCircle className="h-4 w-4 text-red-600" />
+                  <AlertDescription className="text-red-800">
+                    Le paiement a échoué
+                  </AlertDescription>
+                </Alert>
+              )}
+              {paymentStatus === 'not_found' && (
+                <Alert className="bg-gray-50 border-gray-200">
+                  <AlertCircle className="h-4 w-4 text-gray-600" />
+                  <AlertDescription className="text-gray-800">
+                    Aucun paiement enregistré pour cette demande
+                  </AlertDescription>
+                </Alert>
+              )}
+            </Card>
+
             {/* Réponse admin (si déjà traité) */}
             {permitRequestData.status && permitRequestData.status !== 'pending' && (
               <Card className="p-4 bg-muted">
@@ -360,8 +428,9 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
             </Button>
             <Button
               onClick={() => handleProcessRequest('approve')}
-              disabled={processing || !response.trim()}
+              disabled={processing || !response.trim() || paymentStatus !== 'paid'}
               className="gap-2"
+              title={paymentStatus !== 'paid' ? 'Le paiement doit être effectué avant d\'approuver' : ''}
             >
               <CheckCircle className="h-4 w-4" />
               Approuver

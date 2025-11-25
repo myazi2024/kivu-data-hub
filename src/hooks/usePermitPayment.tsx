@@ -8,8 +8,9 @@ export interface PermitFee {
   permit_type: 'construction' | 'regularization';
   fee_name: string;
   amount_usd: number;
-  description: string;
+  description: string | null;
   is_mandatory: boolean;
+  is_active: boolean;
   display_order: number;
 }
 
@@ -73,6 +74,26 @@ export const usePermitPayment = () => {
     } catch (error: any) {
       console.error('Error fetching payment:', error);
       return null;
+    }
+  };
+
+  const checkPaymentStatus = async (contributionId: string): Promise<'paid' | 'pending' | 'not_found' | 'failed'> => {
+    try {
+      const { data, error } = await supabase
+        .from('permit_payments')
+        .select('status')
+        .eq('contribution_id', contributionId)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (!data) return 'not_found';
+      if (data.status === 'completed') return 'paid';
+      if (data.status === 'failed') return 'failed';
+      return 'pending';
+    } catch (error: any) {
+      console.error('Error checking payment status:', error);
+      return 'not_found';
     }
   };
 
@@ -172,6 +193,7 @@ export const usePermitPayment = () => {
     fees,
     fetchFees,
     getPaymentForContribution,
+    checkPaymentStatus,
     createPayment
   };
 };
