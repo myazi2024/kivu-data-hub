@@ -67,6 +67,7 @@ const menuItems = [
       { icon: CreditCard, label: 'Paiements', value: 'payments', badge: null },
       { icon: Smartphone, label: 'Moyens de Paiement', value: 'payment-methods', badge: null },
       { icon: Settings, label: 'Mode de Paiement', value: 'payment-mode', badge: null },
+      { icon: CheckSquare, label: 'Intégration Services', value: 'payment-integration', badge: 'new' },
       { icon: TrendingUp, label: 'Monitoring Paiements', value: 'payment-monitoring', badge: null },
       { icon: Receipt, label: 'Config Facturation', value: 'billing-config', badge: null },
       { icon: DollarSign, label: 'Factures', value: 'invoices', badge: null },
