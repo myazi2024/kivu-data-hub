@@ -60,6 +60,10 @@ export interface CadastralInvoice {
   original_amount_usd?: number;
 }
 
+/**
+ * @deprecated Utilisez useCadastralCart et useCadastralPayment à la place
+ * Ce hook est maintenu uniquement pour compatibilité ascendante
+ */
 export const useCadastralBilling = () => {
   const [loading, setLoading] = useState(false);
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
