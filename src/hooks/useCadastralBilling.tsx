@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { CadastralService, useCadastralServices } from '@/hooks/useCadastralServices';
 
@@ -45,9 +44,9 @@ export interface CadastralInvoice {
   id: string;
   parcel_number: string;
   search_date: string;
-  selected_services: any;
+  selected_services: any; // Will be parsed from JSON
   total_amount_usd: number;
-  status: string;
+  status: string; // Database returns string, not restricted type
   invoice_number: string;
   client_name?: string | null;
   client_email: string;
@@ -69,14 +68,8 @@ export const useCadastralBilling = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // Hooks pour configuration
+  // Utiliser le hook réactif pour les services
   const { services: catalogServices } = useCadastralServices();
-  const { 
-    paymentMode, 
-    availableMethods, 
-    loading: configLoading,
-    isPaymentRequired 
-  } = usePaymentConfig();
 
   // Synchroniser la variable globale deprecated pour compatibilité
   useEffect(() => {
@@ -115,16 +108,6 @@ export const useCadastralBilling = () => {
       return null;
     }
 
-    // Vérifier si des méthodes de paiement sont configurées (en mode production uniquement)
-    if (isPaymentRequired() && !availableMethods.hasAnyMethod) {
-      toast({
-        title: "Moyens de paiement non configurés",
-        description: "Aucun moyen de paiement n'est actuellement disponible. Veuillez contacter l'administrateur.",
-        variant: "destructive"
-      });
-      return null;
-    }
-
     try {
       setLoading(true);
 
@@ -133,119 +116,48 @@ export const useCadastralBilling = () => {
       const finalAmount = Math.max(0, originalAmount - discountAmount);
       const geographicalZone = `${searchResult.parcel?.commune || ''}, ${searchResult.parcel?.quartier || ''}, ${searchResult.parcel?.province || ''}`.replace(/^,\s*|,\s*$/g, '');
 
-      // MODE TEST : bypass_payment activé OU paiement désactivé
-      if (!isPaymentRequired()) {
-        const simulatedInvoice: CadastralInvoice = {
-          id: `test-${Date.now()}`,
-          parcel_number: searchResult.parcel.parcel_number,
-          search_date: new Date().toISOString(),
-          selected_services: selectedServices,
-          total_amount_usd: finalAmount,
-          client_email: user?.email || 'guest@example.com',
-          geographical_zone: geographicalZone,
-          invoice_number: `INV-TEST-${Date.now()}`,
-          status: 'pending',
-          client_name: user?.user_metadata?.full_name || null,
-          client_organization: null,
-          payment_method: null,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          discount_code_used: discountData?.code || null,
-          discount_amount_usd: discountAmount,
-          original_amount_usd: originalAmount
-        };
-
-        setCurrentInvoice(simulatedInvoice);
-        localStorage.setItem('currentCadastralInvoice', JSON.stringify(simulatedInvoice));
-
-        toast({
-          title: "Accès accordé (Mode Test)",
-          description: paymentMode.bypass_payment 
-            ? "Paiement contourné - Mode développement activé"
-            : "Paiement désactivé - Accès gratuit aux services"
-        });
-
-        window.dispatchEvent(new CustomEvent('cadastralNewPayment'));
-        return simulatedInvoice;
-      }
-
-      // MODE PRODUCTION : Créer une vraie facture en base de données
-      if (!user) {
-        toast({
-          title: "Authentification requise",
-          description: "Veuillez vous connecter pour créer une facture",
-          variant: "destructive"
-        });
-        return null;
-      }
-
-      // Appeler la fonction RPC sécurisée pour créer la facture
-      const { data: invoiceData, error: rpcError } = await supabase.rpc(
-        'create_cadastral_invoice_secure',
-        {
-          parcel_number_param: searchResult.parcel.parcel_number,
-          selected_services_param: selectedServices,
-          discount_code_param: discountData?.code || null
-        }
-      );
-
-      if (rpcError) {
-        console.error('Erreur RPC création facture:', rpcError);
-        throw new Error(rpcError.message || 'Erreur lors de la création de la facture');
-      }
-
-      if (!invoiceData || invoiceData.length === 0) {
-        throw new Error('Aucune donnée de facture retournée');
-      }
-
-      const invoiceResult = invoiceData[0];
-
-      if (invoiceResult.error_message) {
-        toast({
-          title: "Erreur de facturation",
-          description: invoiceResult.error_message,
-          variant: "destructive"
-        });
-        return null;
-      }
-
-      // Récupérer la facture complète créée
-      const { data: fullInvoice, error: fetchError } = await supabase
-        .from('cadastral_invoices')
-        .select('*')
-        .eq('id', invoiceResult.invoice_id)
-        .single();
-
-      if (fetchError || !fullInvoice) {
-        console.error('Erreur récupération facture:', fetchError);
-        throw new Error('Impossible de récupérer la facture créée');
-      }
-
-      // Transformer pour le format attendu
-      const transformedInvoice: CadastralInvoice = {
-        ...fullInvoice,
-        selected_services: Array.isArray(fullInvoice.selected_services)
-          ? fullInvoice.selected_services
-          : JSON.parse(fullInvoice.selected_services as string || '[]')
+      // Pour les tests, créer une facture simulée sans base de données
+      const simulatedInvoice: CadastralInvoice = {
+        id: `test-${Date.now()}`,
+        parcel_number: searchResult.parcel.parcel_number,
+        search_date: new Date().toISOString(),
+        selected_services: selectedServices,
+        total_amount_usd: finalAmount,
+        client_email: user?.email || 'guest@example.com',
+        geographical_zone: geographicalZone,
+        invoice_number: `INV-TEST-${Date.now()}`,
+        status: 'pending',
+        client_name: user?.user_metadata?.full_name || null,
+        client_organization: null,
+        payment_method: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        discount_code_used: discountData?.code || null,
+        discount_amount_usd: discountAmount,
+        original_amount_usd: originalAmount
       };
 
-      setCurrentInvoice(transformedInvoice);
+      setCurrentInvoice(simulatedInvoice);
+
+      // Stocker les données de facture dans le localStorage pour la récupération par la facture
+      localStorage.setItem('currentCadastralInvoice', JSON.stringify(simulatedInvoice));
 
       toast({
-        title: "Facture créée",
-        description: discountData
-          ? `Code de remise appliqué ! Économie de ${discountAmount.toFixed(2)} USD`
-          : `Facture #${transformedInvoice.invoice_number} créée avec succès`,
+        title: "Accès accordé (mode test)",
+        description: discountData ? 
+          `Code de remise appliqué ! Économie de ${discountAmount.toFixed(2)} USD` :
+          "Vous pouvez maintenant consulter les données cadastrales"
       });
 
+      // Déclencher l'événement pour mettre à jour les statistiques même en mode test
       window.dispatchEvent(new CustomEvent('cadastralNewPayment'));
-      return transformedInvoice;
 
+      return simulatedInvoice;
     } catch (error) {
       console.error('Erreur lors de la création de la facture:', error);
       toast({
         title: "Erreur de facturation",
-        description: error instanceof Error ? error.message : "Une erreur s'est produite",
+        description: "Une erreur s'est produite lors de la création de la facture",
         variant: "destructive"
       });
       return null;
@@ -266,14 +178,13 @@ export const useCadastralBilling = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+      // Transform the data to ensure selected_services is an array
       const transformedData = (data || []).map(invoice => ({
         ...invoice,
         selected_services: Array.isArray(invoice.selected_services) 
           ? invoice.selected_services 
           : JSON.parse(invoice.selected_services as string || '[]')
       })) as CadastralInvoice[];
-      
       setInvoices(transformedData);
     } catch (error) {
       console.error('Erreur lors de la récupération des factures:', error);
@@ -288,11 +199,6 @@ export const useCadastralBilling = () => {
   };
 
   const checkServiceAccess = async (parcelNumber: string, serviceType: string): Promise<boolean> => {
-    // En mode test, accorder l'accès automatiquement
-    if (!isPaymentRequired()) {
-      return true;
-    }
-
     if (!user) return false;
 
     try {
@@ -306,6 +212,7 @@ export const useCadastralBilling = () => {
 
       if (error) throw error;
       
+      // Check if access has expired
       if (data?.expires_at) {
         return new Date(data.expires_at) > new Date();
       }
@@ -330,13 +237,13 @@ export const useCadastralBilling = () => {
           variant: status === 'paid' ? "default" : "destructive"
         });
         
+        // Déclencher un événement pour actualiser les statistiques même en mode test
         if (status === 'paid') {
           window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
         }
         return;
       }
 
-      // Mode production : mise à jour réelle en base
       const updateData: any = { status, updated_at: new Date().toISOString() };
       if (paymentId) updateData.payment_id = paymentId;
 
@@ -347,7 +254,7 @@ export const useCadastralBilling = () => {
 
       if (error) throw error;
 
-      // Si paiement réussi, accorder l'accès aux services
+      // If payment successful, grant service access
       if (status === 'paid' && currentInvoice) {
         const accessPromises = selectedServices.map(serviceType => 
           supabase
@@ -371,6 +278,7 @@ export const useCadastralBilling = () => {
         variant: status === 'paid' ? "default" : "destructive"
       });
 
+      // Déclencher un événement pour actualiser les statistiques
       if (status === 'paid') {
         window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
         window.dispatchEvent(new CustomEvent('cadastralInvoiceUpdated'));
@@ -378,11 +286,6 @@ export const useCadastralBilling = () => {
 
     } catch (error) {
       console.error('Erreur lors de la mise à jour de la facture:', error);
-      toast({
-        title: "Erreur",
-        description: "Impossible de mettre à jour le statut de la facture",
-        variant: "destructive"
-      });
     }
   };
 
@@ -392,14 +295,11 @@ export const useCadastralBilling = () => {
   };
 
   return {
-    loading: loading || configLoading,
+    loading,
     selectedServices,
     invoices,
     currentInvoice,
-    catalogServices,
-    paymentMode,
-    availableMethods,
-    isPaymentRequired,
+    catalogServices, // Services réactifs du catalogue
     toggleService,
     getTotalAmount,
     createInvoice,
