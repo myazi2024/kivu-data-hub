@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { CartItem } from '@/hooks/useCart';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 
 export interface PaymentData {
   provider: string;
@@ -15,6 +16,7 @@ export const usePayment = () => {
   const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'success'>('form');
   const { user } = useAuth();
   const { toast } = useToast();
+  const { paymentMode, availableMethods } = usePaymentConfig();
 
   const createPayment = async (item: CartItem, paymentData: PaymentData) => {
     // SECURITY: Vérifier l'authentification pour tous les paiements
@@ -31,6 +33,11 @@ export const usePayment = () => {
       setLoading(true);
       setPaymentStep('processing');
 
+      // Vérifier si Mobile Money est configuré
+      if (!availableMethods.hasMobileMoney) {
+        throw new Error('Aucun moyen de paiement Mobile Money configuré');
+      }
+
       // Appeler la fonction edge de paiement Mobile Money
       const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
         'process-mobile-money-payment',
@@ -41,8 +48,7 @@ export const usePayment = () => {
             phone_number: paymentData.phoneNumber,
             amount_usd: item.price,
             payment_type: 'publication',
-            // On force le mode réel : le comportement de test est géré côté fournisseur
-            test_mode: false
+            test_mode: paymentMode.test_mode // Utiliser la config admin
           }
         }
       );
@@ -127,11 +133,19 @@ export const usePayment = () => {
     try {
       setLoading(true);
       
+      // Vérifier si Stripe est configuré
+      if (!availableMethods.hasBankCard) {
+        throw new Error('Aucun moyen de paiement par carte bancaire configuré');
+      }
+      
       // SECURITY: Send only item IDs, prices will be fetched from database
       const itemIds = items.map(item => item.id);
       
       const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: { items: itemIds },
+        body: { 
+          items: itemIds,
+          test_mode: paymentMode.test_mode // Utiliser la config admin
+        },
       });
 
       if (error) throw error;

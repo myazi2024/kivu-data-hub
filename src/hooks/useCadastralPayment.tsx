@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useCadastralCart } from './useCadastralCart';
+import { usePaymentConfig } from './usePaymentConfig';
 
 export interface CadastralPaymentData {
   provider: string;
@@ -16,6 +17,7 @@ export const useCadastralPayment = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { selectedServices, parcelNumber, clearServices } = useCadastralCart();
+  const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
 
   const createInvoice = async (discountData?: {
     code: string;
@@ -59,6 +61,55 @@ export const useCadastralPayment = () => {
       
       const geographicalZone = selectedServices[0]?.parcel_location || '';
       const serviceIds = selectedServices.map(s => s.id);
+      
+      // Vérifier le mode de paiement
+      if (!isPaymentRequired()) {
+        // Mode développement (bypass) - accès gratuit
+        const { data: invoice, error } = await supabase
+          .from('cadastral_invoices')
+          .insert({
+            user_id: user.id,
+            parcel_number: parcelNumber,
+            invoice_number: `INV-CAD-${Date.now()}`,
+            selected_services: serviceIds,
+            total_amount_usd: 0, // Gratuit en mode bypass
+            original_amount_usd: originalAmount,
+            discount_amount_usd: originalAmount, // 100% de remise
+            discount_code_used: 'MODE_DEV',
+            client_email: user.email || '',
+            client_name: user.user_metadata?.full_name || null,
+            geographical_zone: geographicalZone,
+            status: 'paid' // Directement payé
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+
+        // Créer l'accès aux services directement
+        const accessPromises = serviceIds.map(serviceId =>
+          supabase
+            .from('cadastral_service_access')
+            .insert({
+              user_id: user.id,
+              invoice_id: invoice.id,
+              parcel_number: parcelNumber!,
+              service_type: serviceId
+            })
+        );
+
+        await Promise.all(accessPromises);
+
+        toast({
+          title: "Accès accordé (mode développement)",
+          description: "Services accessibles gratuitement"
+        });
+
+        clearServices();
+        window.dispatchEvent(new CustomEvent('cadastralPaymentCompleted'));
+
+        return invoice;
+      }
 
       const invoiceNumber = `INV-CAD-${Date.now()}`;
 
@@ -124,6 +175,11 @@ export const useCadastralPayment = () => {
 
       if (invoice.error) throw invoice.error;
 
+      // Vérifier si des moyens de paiement sont configurés
+      if (!availableMethods.hasMobileMoney) {
+        throw new Error('Aucun moyen de paiement Mobile Money configuré');
+      }
+
       const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
         'process-mobile-money-payment',
         {
@@ -133,7 +189,7 @@ export const useCadastralPayment = () => {
             phone_number: paymentData.phoneNumber,
             amount_usd: invoice.data.total_amount_usd,
             payment_type: 'cadastral_service',
-            test_mode: false
+            test_mode: paymentMode.test_mode // Utiliser la config admin
           }
         }
       );
@@ -218,10 +274,16 @@ export const useCadastralPayment = () => {
     try {
       setLoading(true);
 
+      // Vérifier si Stripe est configuré
+      if (!availableMethods.hasBankCard) {
+        throw new Error('Aucun moyen de paiement par carte bancaire configuré');
+      }
+
       const { data, error } = await supabase.functions.invoke('create-payment', {
         body: {
           items: [invoiceId],
-          payment_type: 'cadastral_service'
+          payment_type: 'cadastral_service',
+          test_mode: paymentMode.test_mode // Utiliser la config admin
         }
       });
 
