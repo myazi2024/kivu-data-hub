@@ -42,7 +42,7 @@ const DEFAULT_MAP_CONFIG: MapConfig = {
   maxMarkers: 50,
   markerColor: '#3b82f6',
   showSideDimensions: true,
-  dimensionUnit: 'meters',
+  dimensionUnit: 'm',
   dimensionTextColor: '#000000',
   dimensionFontSize: 11,
   dimensionFormat: '{value}m',
