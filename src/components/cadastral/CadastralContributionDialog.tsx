@@ -4615,7 +4615,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                  {/* Aperçu de la parcelle sur la carte - Toujours afficher */}
                 <div className="pt-4 animate-fade-in">
                   <ParcelMapPreview 
-                    coordinates={gpsCoordinates}
+                     coordinates={gpsCoordinates}
                     onCoordinatesUpdate={(updatedCoords) => {
                       setGpsCoordinates(updatedCoords);
                     }}
@@ -4624,6 +4624,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     enableConflictDetection={true}
                     roadSides={roadSides}
                     onRoadSidesChange={setRoadSides}
+                    parcelSides={parcelSides}
+                    onParcelSidesUpdate={setParcelSides}
                   />
                 </div>
 
