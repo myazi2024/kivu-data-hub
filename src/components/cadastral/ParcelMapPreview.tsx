@@ -355,8 +355,10 @@ export const ParcelMapPreview = ({
 
         if (mapConfig.showMarkers) {
           const markerColor = mapConfig.markerColor || '#3b82f6';
+          // En mode de déplacement groupé, désactiver le dragging individuel
+          const isDraggable = (mapConfig.enableDragging !== false) && !groupDragMode;
           const marker = L.marker([lat, lng], {
-            draggable: mapConfig.enableDragging !== false,
+            draggable: isDraggable,
             icon: L.divIcon({
               className: 'custom-marker',
             html: `<div style="
@@ -498,7 +500,7 @@ export const ParcelMapPreview = ({
     };
 
     updateMap();
-  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange]);
+  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, groupDragMode]);
 
   // Gérer le mode de déplacement groupé
   useEffect(() => {
