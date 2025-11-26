@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from '@/hooks/useCart';
+import { CadastralCartProvider } from '@/hooks/useCadastralCart';
 import { CookieProvider } from "@/hooks/useCookies";
 import CookieBanner from "@/components/CookieBanner";
 import { CartButton } from '@/components/cart/CartButton';
@@ -36,7 +37,8 @@ const App = () => (
     <CookieProvider>
       <AuthProvider>
         <CartProvider>
-          <TooltipProvider>
+          <CadastralCartProvider>
+            <TooltipProvider>
             <Toaster />
             <Sonner />
             <Routes>
@@ -65,7 +67,8 @@ const App = () => (
             {/* Global floating cart button */}
             <CartButton />
             <CookieBanner />
-          </TooltipProvider>
+            </TooltipProvider>
+          </CadastralCartProvider>
         </CartProvider>
       </AuthProvider>
     </CookieProvider>

@@ -22,11 +22,12 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useCadastralBilling } from '@/hooks/useCadastralBilling';
+import { useCadastralCart } from '@/hooks/useCadastralCart';
+import { useCadastralPayment } from '@/hooks/useCadastralPayment';
+import { useCadastralServices } from '@/hooks/useCadastralServices';
 import { CadastralSearchResult } from '@/hooks/useCadastralSearch';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
-import { supabase } from '@/integrations/supabase/client';
 import CadastralPaymentDialog from './CadastralPaymentDialog';
 import DiscountCodeInput from './DiscountCodeInput';
 
@@ -38,40 +39,16 @@ interface CadastralBillingPanelProps {
   onRequestContribution?: () => void;
 }
 
-// Icône pour chaque service
-const getServiceIcon = (serviceId: string) => {
-  switch (serviceId) {
-    case 'information':
-      return Info;
-    case 'location_history':
-      return MapPin;
-    case 'history':
-      return History;
-    case 'obligations':
-      return Receipt;
-    default:
-      return FileText;
-  }
-};
-
-// Mapping des services aux données disponibles dans une parcelle
 const getServiceDataAvailability = (searchResult: CadastralSearchResult) => {
   const { parcel, ownership_history, tax_history, mortgage_history, boundary_history, building_permits } = searchResult;
   
-  // Service "information" - Informations générales (toujours disponible)
   const hasInformation = true;
-  
-  // Service "location_history" - Localisation et Historique de bornage
   const hasLocationHistory = !!(
     (parcel.province && parcel.ville) || 
     (boundary_history && boundary_history.length > 0) ||
     (parcel.gps_coordinates && Array.isArray(parcel.gps_coordinates) && parcel.gps_coordinates.length > 0)
   );
-  
-  // Service "history" - Historique complet des propriétaires
   const hasHistory = !!(ownership_history && ownership_history.length > 0);
-  
-  // Service "obligations" - Obligations fiscales et hypothécaires
   const hasObligations = !!(
     (tax_history && tax_history.length > 0) ||
     (mortgage_history && mortgage_history.length > 0)
@@ -93,6 +70,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   onRequestContribution
 }) => {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [currentInvoice, setCurrentInvoice] = useState<any>(null);
   const [appliedDiscount, setAppliedDiscount] = useState<{
     code: string;
     amount: number;
@@ -104,25 +82,19 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
   const [expandedServices, setExpandedServices] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { paymentMode, isPaymentRequired } = usePaymentConfig();
-  const {
-    loading,
-    selectedServices,
-    currentInvoice,
-    catalogServices, // Services réactifs du catalogue
-    toggleService,
-    getTotalAmount,
-    createInvoice,
-    setCurrentInvoice
-  } = useCadastralBilling();
+  const { services: catalogServices } = useCadastralServices();
+  const { selectedServices, toggleService, getTotalAmount, setParcelNumber } = useCadastralCart();
+  const { loading, createInvoice } = useCadastralPayment();
 
-  // Vérifier la disponibilité des données pour chaque service
   const serviceAvailability = React.useMemo(() => 
     getServiceDataAvailability(searchResult), 
     [searchResult]
   );
 
+  React.useEffect(() => {
+    setParcelNumber(searchResult.parcel.parcel_number);
+  }, [searchResult.parcel.parcel_number, setParcelNumber]);
 
-  // Initialiser tous les services comme déroulés par défaut
   React.useEffect(() => {
     if (catalogServices.length > 0 && expandedServices.size === 0) {
       const allServiceIds = new Set(catalogServices.map(s => s.id));
@@ -130,15 +102,34 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
   }, [catalogServices]);
 
-  // Pré-sélectionner un service si demandé
   React.useEffect(() => {
-    if (preselectServiceId && !selectedServices.includes(preselectServiceId)) {
-      toggleService(preselectServiceId);
+    if (preselectServiceId && !selectedServices.some(s => s.id === preselectServiceId)) {
+      const service = catalogServices.find(s => s.id === preselectServiceId);
+      if (service) {
+        toggleService({
+          id: service.id,
+          name: service.name,
+          price: service.price,
+          description: service.description,
+          parcel_number: searchResult.parcel.parcel_number,
+          parcel_location: searchResult.parcel.location
+        });
+      }
     }
   }, [preselectServiceId]);
 
   const handleServiceToggle = (serviceId: string) => {
-    toggleService(serviceId);
+    const service = catalogServices.find(s => s.id === serviceId);
+    if (service) {
+      toggleService({
+        id: service.id,
+        name: service.name,
+        price: service.price,
+        description: service.description,
+        parcel_number: searchResult.parcel.parcel_number,
+        parcel_location: searchResult.parcel.location
+      });
+    }
   };
 
   const toggleServiceExpansion = (serviceId: string) => {
@@ -150,9 +141,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     }
     setExpandedServices(newExpandedServices);
   };
+
   const handleProceedToPayment = async () => {
     if (!acceptedTerms) {
-      // Déclencher l'animation de surbrillance
       setHighlightTerms(true);
       setTimeout(() => setHighlightTerms(false), 2000);
       toast({
@@ -163,28 +154,26 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
       return;
     }
     
-    // Mode développement - bypass du paiement
     if (paymentMode.bypass_payment) {
-      const invoice = await createInvoice(searchResult, appliedDiscount);
+      const invoice = await createInvoice(appliedDiscount);
       if (invoice) {
         toast({
           title: "Accès accordé",
           description: "Services débloqués avec succès (mode développement)",
           duration: 3000
         });
-        onPaymentSuccess(selectedServices);
+        onPaymentSuccess(selectedServices.map(s => s.id));
       }
       return;
     }
     
-    // Mode paiement activé
     if (isPaymentRequired()) {
-      const invoice = await createInvoice(searchResult, appliedDiscount);
+      const invoice = await createInvoice(appliedDiscount);
       if (invoice) {
+        setCurrentInvoice(invoice);
         setShowPaymentDialog(true);
       }
     } else {
-      // Par défaut, si aucune configuration, on affiche un message d'erreur
       toast({
         title: "Paiement non configuré",
         description: "Le système de paiement n'est pas encore configuré. Contactez l'administrateur.",
@@ -195,10 +184,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
   const handlePaymentSuccess = () => {
     setShowPaymentDialog(false);
-    onPaymentSuccess(selectedServices);
+    onPaymentSuccess(selectedServices.map(s => s.id));
   };
 
-  // Service icons mapping pour une meilleure identité visuelle
   const getServiceIcon = (serviceId: string) => {
     const iconMap = {
       'information': FileText,
@@ -211,11 +199,11 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
   const totalAmount = getTotalAmount();
   const discountedAmount = appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount;
+  const selectedServiceIds = selectedServices.map(s => s.id);
 
   return (
     <TooltipProvider>
       <Card className="w-full border-primary/20 bg-gradient-to-br from-background to-secondary/5 relative">
-        {/* Bouton fermer */}
         {onClose && (
           <button
             type="button"
@@ -244,7 +232,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         </CardHeader>
 
         <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
-          {/* Information douce sur les données trouvées avec code couleur animé */}
           <div 
             className={`
               flex items-start gap-3 p-3 rounded-lg border transition-all duration-300 cursor-pointer
@@ -262,9 +249,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 }
               })()}
             `}
-            onClick={() => {
-              // Animation subtile déjà gérée par les classes CSS
-            }}
           >
             <div className="flex-shrink-0 mt-0.5">
               <CheckCircle className={`
@@ -304,7 +288,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           </div>
 
-          {/* Catalogue de services modernisé */}
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-base md:text-lg flex items-center gap-2">
@@ -318,24 +301,21 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </div>
             </div>
             
-            {/* Option sélectionner tout */}
             <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-dashed">
               <div className="flex items-center gap-2">
                 <Checkbox 
-                  checked={selectedServices.length === catalogServices.filter(s => serviceAvailability[s.id] ?? true).length && selectedServices.length > 0}
+                  checked={selectedServiceIds.length === catalogServices.filter(s => serviceAvailability[s.id] ?? true).length && selectedServiceIds.length > 0}
                   onCheckedChange={(checked) => {
                     const availableServices = catalogServices.filter(s => serviceAvailability[s.id] ?? true);
                     if (checked) {
-                      // Sélectionner tous les services disponibles
                       availableServices.forEach(service => {
-                        if (!selectedServices.includes(service.id)) {
-                          toggleService(service.id);
+                        if (!selectedServiceIds.includes(service.id)) {
+                          handleServiceToggle(service.id);
                         }
                       });
                     } else {
-                      // Désélectionner tous les services
-                      selectedServices.forEach(serviceId => {
-                        toggleService(serviceId);
+                      selectedServices.forEach(s => {
+                        handleServiceToggle(s.id);
                       });
                     }
                   }}
@@ -348,11 +328,10 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </Badge>
             </div>
             
-            {/* Services simplifiés avec détails masquables */}
             <div className="space-y-3">
               {catalogServices.map((service) => {
                 const IconComponent = getServiceIcon(service.id);
-                const isSelected = selectedServices.includes(service.id);
+                const isSelected = selectedServiceIds.includes(service.id);
                 const isExpanded = expandedServices.has(service.id);
                 const hasData = serviceAvailability[service.id] ?? true;
                 const isDisabled = !hasData;
@@ -370,7 +349,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     `}
                   >
                     <div className="flex items-start gap-3 p-4">
-                      {/* Icône du service */}
                       <div className={`
                         p-2 rounded-lg shrink-0 transition-colors
                         ${isSelected 
@@ -382,7 +360,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         <IconComponent className="h-4 w-4" />
                       </div>
 
-                      {/* Détails du service alignés à gauche */}
                       <div className="flex-1 min-w-0 text-left">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1 text-left">
@@ -396,7 +373,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         </div>
                       </div>
 
-                      {/* Bouton pour dérouler/masquer les détails */}
                       <Collapsible>
                         <CollapsibleTrigger asChild>
                           <Button
@@ -413,7 +389,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         </CollapsibleTrigger>
                       </Collapsible>
 
-                      {/* Prix et Checkbox */}
                       <div className="flex flex-col items-center gap-1">
                         <Badge variant="secondary" className="text-xs">
                           ${service.price}
@@ -427,7 +402,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       </div>
                     </div>
 
-                    {/* Détails déroulants */}
                     <Collapsible open={isExpanded}>
                       <CollapsibleContent className="px-4 pb-4">
                         <div className="space-y-2 text-left">
@@ -464,8 +438,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           </div>
 
-          {/* Code de remise modernisé */}
-          {selectedServices.length > 0 && (
+          {selectedServiceIds.length > 0 && (
             <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-background via-background to-secondary/10">
               <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
               <div className="relative p-4">
@@ -485,10 +458,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           )}
 
-          {/* Total avec TVA */}
-          {selectedServices.length > 0 && (
+          {selectedServiceIds.length > 0 && (
             <div className="space-y-3">
-              {/* Sous-total et TVA */}
               <div className="space-y-2 px-4 py-3 bg-muted/20 rounded-lg">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Sous-total services</span>
@@ -504,7 +475,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 </div>
               </div>
               
-              {/* Total final */}
               <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
                 <span className="font-semibold">Total à payer</span>
                 <div className="text-right">
@@ -521,8 +491,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           )}
 
-          {/* Conditions d'utilisation modernisées */}
-          {selectedServices.length > 0 && (
+          {selectedServiceIds.length > 0 && (
             <div className={`
               p-4 rounded-xl border-2 transition-all duration-500
               ${highlightTerms 
@@ -567,22 +536,21 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
             </div>
           )}
 
-          {/* Bouton d'accès direct modernisé */}
           <div className="space-y-4">
             <Button 
               onClick={handleProceedToPayment}
-              disabled={selectedServices.length === 0 || loading}
+              disabled={selectedServiceIds.length === 0 || loading}
               className={`
                 w-full h-12 md:h-14 text-base md:text-lg font-semibold
                 rounded-xl transition-all duration-300 ease-out touch-target
-                ${selectedServices.length > 0 && acceptedTerms 
+                ${selectedServiceIds.length > 0 && acceptedTerms 
                   ? `
                     bg-gradient-to-r from-primary via-primary to-primary/90 
                     hover:from-primary/90 hover:via-primary hover:to-primary 
                     shadow-elegant hover:shadow-hover hover:scale-[1.02] 
                     active:scale-[0.98] ring-2 ring-primary/20 ring-offset-2
                   ` 
-                  : selectedServices.length > 0 
+                  : selectedServiceIds.length > 0 
                   ? `
                     bg-gradient-to-r from-muted-foreground to-muted-foreground/80 
                     hover:from-muted-foreground/90 hover:to-muted-foreground/70
@@ -605,17 +573,16 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                     <CreditCard className="h-5 w-5" />
                   )}
                   <span>
-                      {selectedServices.length === 0 
-                       ? 'Sélectionner des services' 
-                       : !acceptedTerms 
-                       ? 'Accepter les conditions'
-                       : paymentMode.bypass_payment
-                       ? 'Accéder aux services'
-                       : 'Payer'
-                     }
-
+                    {selectedServiceIds.length === 0 
+                      ? 'Sélectionner des services' 
+                      : !acceptedTerms 
+                      ? 'Accepter les conditions'
+                      : paymentMode.bypass_payment
+                      ? 'Accéder aux services'
+                      : 'Payer'
+                    }
                   </span>
-                  {selectedServices.length > 0 && acceptedTerms && (
+                  {selectedServiceIds.length > 0 && acceptedTerms && (
                     <div className="ml-auto flex items-center gap-1 text-sm opacity-90">
                       <Lock className="h-3 w-3" />
                       <span className="hidden sm:inline">Sécurisé</span>
@@ -625,31 +592,29 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               )}
             </Button>
             
-            {/* Messages d'aide contextuels */}
             <div className="text-center space-y-2">
-              {selectedServices.length === 0 && (
+              {selectedServiceIds.length === 0 && (
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
                   <CheckCircle className="h-4 w-4" />
                   <p className="text-sm">Choisissez les services qui vous intéressent ci-dessus</p>
                 </div>
               )}
               
-              {selectedServices.length > 0 && !acceptedTerms && (
+              {selectedServiceIds.length > 0 && !acceptedTerms && (
                 <div className="flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400">
                   <Shield className="h-4 w-4" />
                   <p className="text-sm">Validation des conditions requise pour continuer</p>
                 </div>
               )}
               
-              {selectedServices.length > 0 && acceptedTerms && (
+              {selectedServiceIds.length > 0 && acceptedTerms && (
                 <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
                   <CheckCircle className="h-4 w-4" />
                   <p className="text-sm">
                     {paymentMode.bypass_payment 
                       ? 'Accès gratuit en mode développement' 
                       : 'Prêt pour le paiement sécurisé'
-                     }
-
+                    }
                   </p>
                 </div>
               )}
@@ -658,7 +623,6 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
         </CardContent>
       </Card>
 
-      {/* Dialog de paiement */}
       {showPaymentDialog && currentInvoice && (
         <CadastralPaymentDialog
           invoice={currentInvoice}
