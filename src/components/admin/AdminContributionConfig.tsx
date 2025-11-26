@@ -1115,6 +1115,25 @@ const AdminContributionConfig = () => {
                     </div>
 
                     <div className="space-y-2">
+                      <Label>Minimum de bornes</Label>
+                      <Input
+                        type="number"
+                        min="3"
+                        max="10"
+                        value={mapPreviewSettings.minMarkers || 3}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            minMarkers: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Minimum requis pour former une parcelle valide
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
                       <Label>Maximum de bornes</Label>
                       <Input
                         type="number"
@@ -1132,41 +1151,188 @@ const AdminContributionConfig = () => {
                   </div>
                 </div>
 
-                {/* Interaction */}
+                {/* Types de routes personnalisables */}
                 <div className="space-y-4 p-4 border rounded-lg">
-                  <h4 className="font-semibold text-sm">Options d'interaction</h4>
-                  
                   <div className="flex items-center justify-between">
+                    <h4 className="font-semibold text-sm">Types de routes</h4>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        const currentTypes = mapPreviewSettings.roadTypes || [];
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          roadTypes: [
+                            ...currentTypes,
+                            { value: `route_${currentTypes.length + 1}`, label: `Nouveau type ${currentTypes.length + 1}` }
+                          ]
+                        });
+                      }}
+                      className="h-7 text-xs"
+                    >
+                      Ajouter un type
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Types de routes disponibles pour identifier les côtés de parcelles bordant une voie
+                  </p>
+                  
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                    {(mapPreviewSettings.roadTypes || []).map((roadType: any, index: number) => (
+                      <div key={index} className="flex gap-2 items-start p-2 bg-muted/30 rounded">
+                        <div className="flex-1 grid grid-cols-2 gap-2">
+                          <Input
+                            placeholder="Valeur (slug)"
+                            value={roadType.value}
+                            onChange={(e) => {
+                              const updated = [...(mapPreviewSettings.roadTypes || [])];
+                              updated[index] = { ...updated[index], value: e.target.value };
+                              setMapPreviewSettings({
+                                ...mapPreviewSettings,
+                                roadTypes: updated
+                              });
+                            }}
+                            className="h-8 text-xs"
+                          />
+                          <Input
+                            placeholder="Libellé"
+                            value={roadType.label}
+                            onChange={(e) => {
+                              const updated = [...(mapPreviewSettings.roadTypes || [])];
+                              updated[index] = { ...updated[index], label: e.target.value };
+                              setMapPreviewSettings({
+                                ...mapPreviewSettings,
+                                roadTypes: updated
+                              });
+                            }}
+                            className="h-8 text-xs"
+                          />
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const updated = (mapPreviewSettings.roadTypes || []).filter((_: any, i: number) => i !== index);
+                            setMapPreviewSettings({
+                              ...mapPreviewSettings,
+                              roadTypes: updated
+                            });
+                          }}
+                          className="h-8 w-8 p-0"
+                        >
+                          ×
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Configuration des dimensions */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm">Dimensions des côtés</h4>
+                  
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                     <div className="space-y-1">
-                      <Label>Permettre le déplacement des marqueurs</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Les utilisateurs peuvent glisser-déposer les bornes GPS
+                      <Label>Afficher les dimensions</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Afficher la longueur de chaque côté de la parcelle
                       </p>
                     </div>
                     <Switch
-                      checked={mapPreviewSettings.enableDragging}
+                      checked={mapPreviewSettings.showSideDimensions !== false}
                       onCheckedChange={(checked) => {
                         setMapPreviewSettings({
                           ...mapPreviewSettings,
-                          enableDragging: checked
+                          showSideDimensions: checked
                         });
                       }}
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Format d'affichage</Label>
+                      <Input
+                        placeholder="{value}m"
+                        value={mapPreviewSettings.dimensionFormat || '{value}m'}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            dimensionFormat: e.target.value
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Utiliser {'{value}'} pour la valeur. Ex: {'{value}m, {value} mètres'}
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Unité</Label>
+                      <Select
+                        value={mapPreviewSettings.dimensionUnit || 'm'}
+                        onValueChange={(value) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            dimensionUnit: value
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="m">Mètres (m)</SelectItem>
+                          <SelectItem value="km">Kilomètres (km)</SelectItem>
+                          <SelectItem value="ft">Pieds (ft)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Taille de police</Label>
+                      <Input
+                        type="number"
+                        min="8"
+                        max="16"
+                        value={mapPreviewSettings.dimensionFontSize || 11}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            dimensionFontSize: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Couleur du texte</Label>
+                      <Input
+                        type="color"
+                        value={mapPreviewSettings.dimensionTextColor || '#000000'}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            dimensionTextColor: e.target.value
+                          });
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                     <div className="space-y-1">
-                      <Label>Permettre l'édition</Label>
-                      <p className="text-sm text-muted-foreground">
-                        Permettre toutes les modifications sur la carte
+                      <Label>Afficher "Côté X"</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Préfixer chaque dimension avec "Côté 1", "Côté 2", etc.
                       </p>
                     </div>
                     <Switch
-                      checked={mapPreviewSettings.enableEditing}
+                      checked={mapPreviewSettings.showSideLabels !== false}
                       onCheckedChange={(checked) => {
                         setMapPreviewSettings({
                           ...mapPreviewSettings,
-                          enableEditing: checked
+                          showSideLabels: checked
                         });
                       }}
                     />

@@ -196,7 +196,7 @@ export const ParcelMapPreview = ({
         zoomControl: true,
         attributionControl: true,
         center: mapCenter,
-        zoom: 19,
+        zoom: mapConfig.defaultZoom || 15,
       });
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -593,22 +593,35 @@ export const ParcelMapPreview = ({
       const midLat = (start[0] + end[0]) / 2;
       const midLng = (start[1] + end[1]) / 2;
       
-      // Créer le label
-      const labelText = mapConfig.showSideLabels 
-        ? `Côté ${i + 1}: ${distance.toFixed(2)} m`
-        : `${distance.toFixed(2)} m`;
+      // Vérifier si ce côté borde une route
+      const roadSide = roadSides.find(s => s.sideIndex === i);
+      const isRoadBordering = roadSide?.bordersRoad || false;
+      
+      // Utiliser le format configuré
+      const dimensionFormat = mapConfig.dimensionFormat || '{value}m';
+      const dimensionUnit = mapConfig.dimensionUnit || 'm';
+      const formattedDistance = dimensionFormat.replace('{value}', distance.toFixed(2));
+      
+      // Créer le label avec infos route si applicable
+      let labelText = formattedDistance;
+      if (mapConfig.showSideLabels) {
+        labelText = `Côté ${i + 1}: ${formattedDistance}`;
+      }
+      if (isRoadBordering && roadSide?.roadType) {
+        labelText += ` (${roadSide.roadType})`;
+      }
       
       const dimensionMarker = L.marker([midLat, midLng], {
         icon: L.divIcon({
           className: 'dimension-label',
           html: `<div style="
-            background-color: rgba(255, 255, 255, 0.95);
-            color: hsl(var(--foreground));
+            background-color: white;
+            color: ${mapConfig.dimensionTextColor || '#000000'};
             padding: 4px 8px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: ${mapConfig.dimensionFontSize || 11}px;
             font-weight: 600;
-            border: 1px solid ${mapConfig.markerColor || 'hsl(var(--primary))'};
+            border: 1px solid ${isRoadBordering ? '#f59e0b' : (mapConfig.lineColor || '#3b82f6')};
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             white-space: nowrap;
           ">${labelText}</div>`,
@@ -724,6 +737,16 @@ export const ParcelMapPreview = ({
             >
               Signaler
             </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Validation du nombre minimum de marqueurs */}
+      {mapConfig.minMarkers && validCoords.length > 0 && validCoords.length < mapConfig.minMarkers && (
+        <Alert variant="destructive" className="py-2 md:py-3">
+          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <AlertDescription className="text-xs md:text-sm">
+            Nombre de bornes insuffisant: {validCoords.length} sur {mapConfig.minMarkers} minimum requis pour une parcelle valide.
           </AlertDescription>
         </Alert>
       )}
