@@ -8,41 +8,12 @@ import { AlertCircle, MapPin, AlertTriangle, Info } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
+import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
 
 interface Coordinate {
   borne: string;
   lat: string;
   lng: string;
-}
-
-interface MapConfig {
-  enabled?: boolean;
-  defaultZoom?: number;
-  defaultCenter?: [number, number];
-  showMarkers?: boolean;
-  autoCalculateSurface?: boolean;
-  minMarkers?: number;
-  maxMarkers?: number;
-  markerColor?: string;
-  showSideDimensions?: boolean;
-  dimensionUnit?: string;
-  dimensionTextColor?: string;
-  dimensionFontSize?: number;
-  dimensionFormat?: string;
-  allowDimensionEditing?: boolean;
-  showSideLabels?: boolean;
-  lineColor?: string;
-  lineWidth?: number;
-  lineStyle?: 'solid' | 'dashed';
-  fillColor?: string;
-  fillOpacity?: number;
-  minSurfaceSqm?: number;
-  maxSurfaceSqm?: number;
-  enableEditing?: boolean;
-  enableDragging?: boolean;
-  enableConflictDetection?: boolean;
-  enableRoadBorderingFeature?: boolean;
-  roadTypes?: Array<{ value: string; label: string }>;
 }
 
 interface ConflictingParcel {
@@ -66,7 +37,7 @@ interface ParcelMapPreviewProps {
 export const ParcelMapPreview = ({ 
   coordinates, 
   onCoordinatesUpdate, 
-  config,
+  config: propConfig,
   currentParcelNumber,
   enableConflictDetection = true,
   roadSides = [],
@@ -85,37 +56,16 @@ export const ParcelMapPreview = ({
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [loadingConflicts, setLoadingConflicts] = useState(false);
   
-  // Configuration par défaut
-  const defaultConfig: MapConfig = {
-    enabled: true,
-    defaultZoom: 15,
-    defaultCenter: [0, 0],
-    showMarkers: true,
-    autoCalculateSurface: true,
-    minMarkers: 3,
-    maxMarkers: 50,
-    markerColor: 'hsl(var(--primary))',
-    showSideDimensions: true,
-    dimensionUnit: 'meters',
-    dimensionTextColor: '#000000',
-    dimensionFontSize: 11,
-    dimensionFormat: '{value}m',
-    allowDimensionEditing: true,
-    showSideLabels: true,
-    lineColor: '#3b82f6',
-    lineWidth: 3,
-    lineStyle: 'solid',
-    fillColor: '#3b82f6',
-    fillOpacity: 0.2,
-    minSurfaceSqm: 0,
-    maxSurfaceSqm: 100000,
-    enableEditing: true,
-    enableDragging: true,
-    enableConflictDetection: true,
-    enableRoadBorderingFeature: true,
-  };
+  // Charger la configuration depuis Supabase
+  const { config: dbConfig, loading: configLoading } = useMapConfig();
   
-  const mapConfig = { ...defaultConfig, ...config };
+  // Fusionner propConfig avec dbConfig (propConfig prioritaire si fourni)
+  const mapConfig = useMemo(() => {
+    const baseConfig = { ...dbConfig };
+    const finalConfig = { ...baseConfig, ...propConfig };
+    
+    return finalConfig;
+  }, [dbConfig, propConfig]);
 
   // Calculer le centre de la carte basé sur la borne 1
   const mapCenter = useMemo(() => {
@@ -127,7 +77,14 @@ export const ParcelMapPreview = ({
         return [lat, lng] as [number, number];
       }
     }
-    return mapConfig.defaultCenter || [0, 0] as [number, number];
+    // Utiliser le defaultCenter de la config
+    const center = mapConfig.defaultCenter;
+    if (center) {
+      if ('lat' in center && 'lng' in center) {
+        return [center.lat, center.lng] as [number, number];
+      }
+    }
+    return [0, 0] as [number, number];
   }, [coordinates, mapConfig.defaultCenter]);
 
   // Mémoriser les coordonnées valides pour éviter les re-renders inutiles
@@ -346,12 +303,13 @@ export const ParcelMapPreview = ({
         latLngs.push([lat, lng]);
 
         if (mapConfig.showMarkers) {
+          const markerColor = mapConfig.markerColor || '#3b82f6';
           const marker = L.marker([lat, lng], {
             draggable: mapConfig.enableDragging !== false,
             icon: L.divIcon({
               className: 'custom-marker',
             html: `<div style="
-              background-color: ${mapConfig.markerColor || 'hsl(var(--primary))'};
+              background-color: ${markerColor};
               color: white;
               width: 30px;
               height: 30px;
@@ -363,12 +321,12 @@ export const ParcelMapPreview = ({
               border: 2px solid white;
               box-shadow: 0 2px 8px rgba(0,0,0,0.3);
               position: relative;
-              z-index: 1000;
             ">
               <span style="transform: rotate(45deg); font-weight: bold; font-size: 12px;">${index + 1}</span>
             </div>`,
             iconSize: [30, 30],
             iconAnchor: [15, 30],
+            pane: 'markerPane', // Utiliser le pane dédié aux marqueurs (z-index 600)
           }),
         }).addTo(map);
 
@@ -403,6 +361,7 @@ export const ParcelMapPreview = ({
           
           const roadSide = roadSides.find(s => s.sideIndex === index);
           const isRoadBordering = roadSide?.bordersRoad || false;
+          const lineColor = mapConfig.lineColor || '#3b82f6';
           
           const segment = L.polyline(
             [
@@ -410,9 +369,10 @@ export const ParcelMapPreview = ({
               [parseFloat(nextCoord.lat), parseFloat(nextCoord.lng)]
             ],
             {
-              color: isRoadBordering ? '#f59e0b' : (mapConfig.markerColor || 'hsl(var(--primary))'),
-              weight: isRoadBordering ? 5 : 3,
+              color: isRoadBordering ? '#f59e0b' : lineColor,
+              weight: isRoadBordering ? 5 : (mapConfig.lineWidth || 3),
               opacity: 0.9,
+              dashArray: mapConfig.lineStyle === 'dashed' ? '10, 10' : undefined,
             }
           ).addTo(map);
           
@@ -447,10 +407,11 @@ export const ParcelMapPreview = ({
         });
         
         // Dessiner le polygone rempli (non-interactif, derrière les segments)
+        const fillColor = mapConfig.fillColor || '#3b82f6';
         const polygon = L.polygon(latLngs, {
           color: 'transparent',
-          fillColor: mapConfig.markerColor || 'hsl(var(--primary))',
-          fillOpacity: 0.1,
+          fillColor: fillColor,
+          fillOpacity: mapConfig.fillOpacity || 0.2,
           weight: 0,
           interactive: false,
         }).addTo(map);

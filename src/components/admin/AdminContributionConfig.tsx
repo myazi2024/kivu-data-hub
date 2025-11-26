@@ -7,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { Loader2, Save, Plus, Trash2, FileText, MapPin, Users, DollarSign } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -931,6 +932,23 @@ const AdminContributionConfig = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
+                      <Label>Couleur des marqueurs</Label>
+                      <Input
+                        type="color"
+                        value={mapPreviewSettings.markerColor || '#3b82f6'}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            markerColor: e.target.value
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Couleur des marqueurs de bornes sur la carte
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
                       <Label>Couleur des lignes</Label>
                       <Input
                         type="color"
@@ -958,6 +976,27 @@ const AdminContributionConfig = () => {
                           });
                         }}
                       />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Style de ligne</Label>
+                      <Select
+                        value={mapPreviewSettings.lineStyle || 'solid'}
+                        onValueChange={(value) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            lineStyle: value as 'solid' | 'dashed'
+                          });
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="solid">Ligne solide</SelectItem>
+                          <SelectItem value="dashed">Ligne pointillée</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="space-y-2">
@@ -990,6 +1029,47 @@ const AdminContributionConfig = () => {
                         }}
                       />
                     </div>
+                  </div>
+                </div>
+
+                {/* Options d'édition */}
+                <div className="space-y-3 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm">Options d'édition</h4>
+                  
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="space-y-1">
+                      <Label>Permettre le déplacement des marqueurs</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Les utilisateurs peuvent ajuster la position des bornes en les glissant sur la carte
+                      </p>
+                    </div>
+                    <Switch
+                      checked={mapPreviewSettings.enableDragging !== false}
+                      onCheckedChange={(checked) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          enableDragging: checked
+                        });
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="space-y-1">
+                      <Label>Activer les outils d'édition</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Fonctionnalités d'édition avancées pour modifier la parcelle
+                      </p>
+                    </div>
+                    <Switch
+                      checked={mapPreviewSettings.enableEditing !== false}
+                      onCheckedChange={(checked) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          enableEditing: checked
+                        });
+                      }}
+                    />
                   </div>
                 </div>
 
