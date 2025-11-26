@@ -505,11 +505,15 @@ export const ParcelMapPreview = ({
     if (!isMapReady || !mapInstanceRef.current || markersRef.current.length === 0) return;
     
     const map = mapInstanceRef.current;
+    const mapContainer = map.getContainer();
     
     if (groupDragMode) {
+      // Changer le curseur pour indiquer le mode de déplacement groupé
+      mapContainer.style.cursor = 'move';
+      
       // Désactiver le drag individuel des marqueurs
       markersRef.current.forEach(marker => {
-        if (marker.dragging) {
+        if (marker && marker.dragging) {
           marker.dragging.disable();
         }
       });
@@ -517,67 +521,66 @@ export const ParcelMapPreview = ({
       // Variables pour le drag groupé
       let isDragging = false;
       let startPoint: { lat: number; lng: number } | null = null;
-      let animationFrameId: number | null = null;
       
       const onMouseDown = (e: any) => {
         isDragging = true;
         startPoint = e.latlng;
         map.dragging.disable();
+        mapContainer.style.cursor = 'grabbing';
       };
       
       const onMouseMove = (e: any) => {
         if (!isDragging || !startPoint) return;
         
-        // Utiliser requestAnimationFrame pour optimiser les performances
-        if (animationFrameId !== null) {
-          cancelAnimationFrame(animationFrameId);
+        const currentPoint = e.latlng;
+        const deltaLat = currentPoint.lat - startPoint.lat;
+        const deltaLng = currentPoint.lng - startPoint.lng;
+        
+        // Déplacer tous les marqueurs simultanément
+        markersRef.current.forEach((marker) => {
+          if (marker) {
+            const markerPos = marker.getLatLng();
+            marker.setLatLng([markerPos.lat + deltaLat, markerPos.lng + deltaLng]);
+          }
+        });
+        
+        // Redessiner le polygone et les dimensions
+        if (polygonRef.current && validCoords.length >= 3) {
+          const newLatLngs: [number, number][] = markersRef.current.map(m => {
+            const pos = m.getLatLng();
+            return [pos.lat, pos.lng];
+          });
+          polygonRef.current.setLatLngs(newLatLngs);
         }
         
-        animationFrameId = requestAnimationFrame(() => {
-          const currentPoint = e.latlng;
-          const deltaLat = currentPoint.lat - startPoint!.lat;
-          const deltaLng = currentPoint.lng - startPoint!.lng;
-          
-          // Déplacer tous les marqueurs
-          markersRef.current.forEach((marker) => {
-            if (marker) {
-              const markerPos = marker.getLatLng();
-              const newLat = markerPos.lat + deltaLat;
-              const newLng = markerPos.lng + deltaLng;
-              marker.setLatLng([newLat, newLng]);
-            }
-          });
-          
-          startPoint = currentPoint;
-        });
+        startPoint = currentPoint;
       };
       
       const onMouseUp = () => {
         if (!isDragging) return;
         isDragging = false;
         startPoint = null;
-        
-        if (animationFrameId !== null) {
-          cancelAnimationFrame(animationFrameId);
-          animationFrameId = null;
-        }
-        
+        mapContainer.style.cursor = 'move';
         map.dragging.enable();
         
         // Mettre à jour les coordonnées finales en préservant l'ordre
-        const updatedCoords = coordinates.map((coord) => {
-          if (!coord.lat || !coord.lng) return coord;
+        const updatedCoords = [...coordinates];
+        
+        // Parcourir tous les marqueurs et mettre à jour les coordonnées correspondantes
+        markersRef.current.forEach((marker, markerIndex) => {
+          if (!marker) return;
           
-          // Trouver le marqueur correspondant à cette borne
-          const validIndex = validCoords.findIndex(c => c.borne === coord.borne);
-          if (validIndex === -1) return coord;
+          // Trouver la coordonnée correspondante dans validCoords
+          const validCoord = validCoords[markerIndex];
+          if (!validCoord) return;
           
-          const marker = markersRef.current[validIndex];
-          if (!marker) return coord;
+          // Trouver l'index de cette coordonnée dans le tableau complet
+          const fullIndex = coordinates.findIndex(c => c.borne === validCoord.borne);
+          if (fullIndex === -1) return;
           
           const newPos = marker.getLatLng();
-          return {
-            ...coord,
+          updatedCoords[fullIndex] = {
+            ...updatedCoords[fullIndex],
             lat: newPos.lat.toFixed(6),
             lng: newPos.lng.toFixed(6)
           };
@@ -587,30 +590,68 @@ export const ParcelMapPreview = ({
         updateParcelSidesFromCoordinates(updatedCoords);
       };
       
+      // Gérer également le cas où la souris sort de la carte
+      const onMouseLeave = () => {
+        if (isDragging) {
+          isDragging = false;
+          startPoint = null;
+          mapContainer.style.cursor = 'move';
+          map.dragging.enable();
+          
+          // Mettre à jour les coordonnées comme dans onMouseUp
+          const updatedCoords = [...coordinates];
+          markersRef.current.forEach((marker, markerIndex) => {
+            if (!marker) return;
+            const validCoord = validCoords[markerIndex];
+            if (!validCoord) return;
+            const fullIndex = coordinates.findIndex(c => c.borne === validCoord.borne);
+            if (fullIndex === -1) return;
+            const newPos = marker.getLatLng();
+            updatedCoords[fullIndex] = {
+              ...updatedCoords[fullIndex],
+              lat: newPos.lat.toFixed(6),
+              lng: newPos.lng.toFixed(6)
+            };
+          });
+          onCoordinatesUpdate(updatedCoords);
+          updateParcelSidesFromCoordinates(updatedCoords);
+        }
+      };
+      
       map.on('mousedown', onMouseDown);
       map.on('mousemove', onMouseMove);
       map.on('mouseup', onMouseUp);
+      mapContainer.addEventListener('mouseleave', onMouseLeave);
       
       return () => {
-        if (animationFrameId !== null) {
-          cancelAnimationFrame(animationFrameId);
-        }
         map.off('mousedown', onMouseDown);
         map.off('mousemove', onMouseMove);
         map.off('mouseup', onMouseUp);
+        mapContainer.removeEventListener('mouseleave', onMouseLeave);
+        mapContainer.style.cursor = '';
         map.dragging.enable();
+        
+        // Réactiver le drag individuel des marqueurs si configuré
+        if (mapConfig.enableDragging !== false) {
+          markersRef.current.forEach(marker => {
+            if (marker && marker.dragging) {
+              marker.dragging.enable();
+            }
+          });
+        }
       };
     } else {
-      // Réactiver le drag individuel des marqueurs si configuré
+      // Mode individuel : réactiver le drag individuel et réinitialiser le curseur
+      mapContainer.style.cursor = '';
       if (mapConfig.enableDragging !== false) {
         markersRef.current.forEach(marker => {
-          if (marker?.dragging) {
+          if (marker && marker.dragging) {
             marker.dragging.enable();
           }
         });
       }
     }
-  }, [groupDragMode, isMapReady, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates, parcelSides]);
+  }, [groupDragMode, isMapReady, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
   // Détection des conflits avec des parcelles voisines
   const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
