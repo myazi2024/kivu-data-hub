@@ -39,6 +39,7 @@ import { CartItem } from '@/hooks/useCart';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { PermitPaymentDialog } from './PermitPaymentDialog';
+import { useMapConfig } from '@/hooks/useMapConfig';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -53,6 +54,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 }) => {
   const { submitContribution, loading } = useCadastralContribution();
   const { getConfig } = useContributionConfig();
+  const { config: mapConfig, loading: mapConfigLoading } = useMapConfig();
   const { toast } = useToast();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -4610,19 +4612,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   ))}
                 </div>
                   
-                {/* Aperçu de la parcelle sur la carte - Toujours afficher */}
+                 {/* Aperçu de la parcelle sur la carte - Toujours afficher */}
                 <div className="pt-4 animate-fade-in">
                   <ParcelMapPreview 
                     coordinates={gpsCoordinates}
                     onCoordinatesUpdate={(updatedCoords) => {
                       setGpsCoordinates(updatedCoords);
                     }}
-                    config={getConfig('map_preview_settings') || {}}
+                    config={mapConfig}
                     currentParcelNumber={parcelNumber}
                     enableConflictDetection={true}
                     roadSides={roadSides}
                     onRoadSidesChange={setRoadSides}
-                    />
+                  />
                 </div>
 
                 {/* Bouton Ajouter */}
