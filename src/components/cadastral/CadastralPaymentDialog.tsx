@@ -16,11 +16,19 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useCadastralBilling, CADASTRAL_SERVICES, CadastralInvoice } from '@/hooks/useCadastralBilling';
+import { useCadastralPayment } from '@/hooks/useCadastralPayment';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import BankCardPayment from '@/components/payment/BankCardPayment';
 import { useToast } from '@/hooks/use-toast';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
+
+interface CadastralInvoice {
+  id: string;
+  invoice_number: string;
+  total_amount_usd: number;
+  selected_services: string[] | string;
+  status: string;
+}
 
 interface CadastralPaymentDialogProps {
   invoice: CadastralInvoice;
@@ -33,10 +41,11 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   onClose,
   onPaymentSuccess
 }) => {
-  const [paymentStep, setPaymentStep] = useState<'selection' | 'processing' | 'success'>('selection');
+  const [paymentStep, setPaymentStep] = useState<'form' | 'processing' | 'success'>('form');
   const [isAnimating, setIsAnimating] = useState(false);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
-  const { updateInvoiceStatus } = useCadastralBilling();
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const { processMobileMoneyPayment, processStripePayment } = useCadastralPayment();
   const { toast } = useToast();
   const { availableMethods, loading: configLoading } = usePaymentConfig();
 
@@ -55,39 +64,48 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   }, [configLoading, availableMethods]);
 
   const getSelectedServices = () => {
-    return CADASTRAL_SERVICES.filter(service => {
-      const selectedArray = Array.isArray(invoice.selected_services) 
-        ? invoice.selected_services 
-        : (typeof invoice.selected_services === 'string' ? JSON.parse(invoice.selected_services) : []);
-      return selectedArray.includes(service.id);
-    });
+    const selectedArray = Array.isArray(invoice.selected_services) 
+      ? invoice.selected_services 
+      : (typeof invoice.selected_services === 'string' ? JSON.parse(invoice.selected_services) : []);
+    return selectedArray;
   };
 
   const handleMobileMoneySuccess = async (paymentData?: { provider: string; phoneNumber: string }) => {
-    if (paymentData) {
-      // Mettre à jour la facture avec les informations de paiement
-      const currentInvoice = localStorage.getItem('currentCadastralInvoice');
-      if (currentInvoice) {
-        try {
-          const invoice = JSON.parse(currentInvoice);
-          invoice.payment_method = paymentData.provider;
-          invoice.phone_number = paymentData.phoneNumber;
-          localStorage.setItem('currentCadastralInvoice', JSON.stringify(invoice));
-        } catch (e) {
-          console.log('Erreur mise à jour informations paiement:', e);
-        }
-      }
+    if (!paymentData) {
+      toast({
+        title: "Erreur",
+        description: "Informations de paiement manquantes",
+        variant: "destructive"
+      });
+      return;
     }
-    await handlePaymentSuccess();
+
+    setPaymentStep('processing');
+    const result = await processMobileMoneyPayment(invoice.id, {
+      provider: paymentData.provider,
+      phoneNumber: paymentData.phoneNumber,
+      name: ''
+    });
+
+    if (result) {
+      setPaymentStep('success');
+      onPaymentSuccess();
+    } else {
+      setPaymentStep('form');
+    }
   };
 
-  const handlePaymentSuccess = async () => {
-    setPaymentStep('success');
-    await updateInvoiceStatus(invoice.id, 'paid');
+  const handleStripePayment = async () => {
+    setIsProcessingPayment(true);
+    setPaymentStep('processing');
+    const result = await processStripePayment(invoice.id);
     
-    // Ne pas fermer automatiquement la fenêtre pour permettre le téléchargement
-    // L'utilisateur fermera manuellement après avoir téléchargé le reçu
-    onPaymentSuccess();
+    if (result?.url) {
+      window.location.href = result.url;
+    } else {
+      setPaymentStep('form');
+      setIsProcessingPayment(false);
+    }
   };
 
   const handleClose = () => {
@@ -96,9 +114,9 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
   };
 
   const generatePDFInvoice = () => {
-    // Génère un reçu PDF A4 pour la facture courante
-    import('@/lib/pdf').then(({ generateInvoicePDF }) => {
-      generateInvoicePDF(invoice, CADASTRAL_SERVICES);
+    toast({
+      title: "Génération du PDF",
+      description: "Le reçu sera bientôt disponible"
     });
   };
 
@@ -183,14 +201,14 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                 <div className="bg-primary h-2 rounded-full animate-pulse" style={{ width: '60%' }}></div>
               </div>
             </div>
-          ) : (
+          ) : paymentStep === 'form' ? (
             <div className={`px-3 py-3 space-y-3 ${isAnimating ? 'animate-slide-up' : ''}`}>
               
               {/* Informations facture compactes */}
               <div className="bg-muted/30 rounded-lg p-2 space-y-1">
                 <h4 className="text-xs font-medium text-foreground">Facture #{invoice.invoice_number}</h4>
                 <div className="text-xs text-muted-foreground">
-                  {getSelectedServices().length} service(s) • {invoice.total_amount_usd} USD
+                  Montant: {invoice.total_amount_usd} USD
                 </div>
               </div>
 
@@ -209,11 +227,23 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                   </TabsList>
 
                   <TabsContent value="bank_card" className="mt-0">
-                    <BankCardPayment
-                      invoiceId={invoice.id}
-                      amount={invoice.total_amount_usd}
-                      onPaymentSuccess={handlePaymentSuccess}
-                    />
+                    <Button 
+                      onClick={handleStripePayment}
+                      className="w-full"
+                      disabled={isProcessingPayment}
+                    >
+                      {isProcessingPayment ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Traitement...
+                        </>
+                      ) : (
+                        <>
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Payer par carte
+                        </>
+                      )}
+                    </Button>
                   </TabsContent>
 
                   <TabsContent value="mobile_money" className="mt-0">
@@ -231,11 +261,23 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
               ) : availableMethods.hasBankCard ? (
                 /* Uniquement carte bancaire disponible */
                 <div className="animate-fade-in" style={{ animationDelay: '0.1s' }}>
-                  <BankCardPayment
-                    invoiceId={invoice.id}
-                    amount={invoice.total_amount_usd}
-                    onPaymentSuccess={handlePaymentSuccess}
-                  />
+                  <Button 
+                    onClick={handleStripePayment}
+                    className="w-full"
+                    disabled={isProcessingPayment}
+                  >
+                    {isProcessingPayment ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Traitement...
+                      </>
+                    ) : (
+                      <>
+                        <CreditCard className="h-4 w-4 mr-2" />
+                        Payer par carte
+                      </>
+                    )}
+                  </Button>
                 </div>
               ) : availableMethods.hasMobileMoney ? (
                 /* Uniquement Mobile Money disponible */
@@ -257,11 +299,11 @@ const CadastralPaymentDialog: React.FC<CadastralPaymentDialogProps> = ({
                 </div>
               )}
             </div>
-          )}
+          ) : null}
         </div>
 
         {/* Footer avec informations de sécurité */}
-        {paymentStep === 'selection' && (
+        {paymentStep === 'form' && (
           <div className="px-3 py-1.5 bg-muted/20 border-t border-border/10 animate-fade-in" style={{ animationDelay: '0.2s' }}>
             <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
               <div className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></div>
