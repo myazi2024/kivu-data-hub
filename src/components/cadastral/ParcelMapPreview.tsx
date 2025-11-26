@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,11 @@ interface ConflictingParcel {
   overlapArea?: number;
 }
 
+interface ParcelSide {
+  name: string;
+  length: string;
+}
+
 interface ParcelMapPreviewProps {
   coordinates: Coordinate[];
   onCoordinatesUpdate: (coordinates: Coordinate[]) => void;
@@ -32,6 +37,8 @@ interface ParcelMapPreviewProps {
   enableConflictDetection?: boolean;
   roadSides?: RoadSideInfo[];
   onRoadSidesChange?: (roadSides: RoadSideInfo[]) => void;
+  parcelSides?: ParcelSide[];
+  onParcelSidesUpdate?: (sides: ParcelSide[]) => void;
 }
 
 export const ParcelMapPreview = ({ 
@@ -41,7 +48,9 @@ export const ParcelMapPreview = ({
   currentParcelNumber,
   enableConflictDetection = true,
   roadSides = [],
-  onRoadSidesChange
+  onRoadSidesChange,
+  parcelSides = [],
+  onParcelSidesUpdate
 }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -55,6 +64,8 @@ export const ParcelMapPreview = ({
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [loadingConflicts, setLoadingConflicts] = useState(false);
+  const [groupDragMode, setGroupDragMode] = useState(false);
+  const groupDragStartRef = useRef<{ lat: number; lng: number } | null>(null);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -117,6 +128,46 @@ export const ParcelMapPreview = ({
     if (normalized >= 135 && normalized < 225) return 'Sud';
     return 'Ouest';
   };
+
+  // Mettre à jour parcelSides quand les coordonnées changent
+  const updateParcelSidesFromCoordinates = useCallback((coords: Coordinate[]) => {
+    if (!onParcelSidesUpdate) return;
+    
+    const validCoords = coords.filter(
+      coord => coord.lat && coord.lng && !isNaN(parseFloat(coord.lat)) && !isNaN(parseFloat(coord.lng))
+    );
+    
+    if (validCoords.length < 2) return;
+    
+    const updatedSides: ParcelSide[] = [];
+    
+    for (let i = 0; i < validCoords.length; i++) {
+      const nextIndex = (i + 1) % validCoords.length;
+      const current = validCoords[i];
+      const next = validCoords[nextIndex];
+      
+      const distance = calculateDistance(
+        parseFloat(current.lat),
+        parseFloat(current.lng),
+        parseFloat(next.lat),
+        parseFloat(next.lng)
+      );
+      
+      // Trouver le côté correspondant en se basant sur le numéro de borne
+      const currentBorneNum = parseInt(current.borne);
+      const existingSide = parcelSides.find(side => {
+        const match = side.name.match(/Côté (\d+)/);
+        return match && parseInt(match[1]) === currentBorneNum;
+      }) || parcelSides[i];
+      
+      updatedSides.push({
+        name: existingSide?.name || `Côté ${currentBorneNum}`,
+        length: distance.toFixed(2)
+      });
+    }
+    
+    onParcelSidesUpdate(updatedSides);
+  }, [onParcelSidesUpdate, parcelSides]);
 
   // Initialiser/mettre à jour les roadSides quand les coordonnées changent
   useEffect(() => {
@@ -342,6 +393,8 @@ export const ParcelMapPreview = ({
                 lng: newPos.lng.toFixed(6),
               };
               onCoordinatesUpdate(updatedCoords);
+              // Mettre à jour les dimensions après déplacement
+              updateParcelSidesFromCoordinates(updatedCoords);
             }
           });
 
@@ -446,6 +499,118 @@ export const ParcelMapPreview = ({
 
     updateMap();
   }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange]);
+
+  // Gérer le mode de déplacement groupé
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current || markersRef.current.length === 0) return;
+    
+    const map = mapInstanceRef.current;
+    
+    if (groupDragMode) {
+      // Désactiver le drag individuel des marqueurs
+      markersRef.current.forEach(marker => {
+        if (marker.dragging) {
+          marker.dragging.disable();
+        }
+      });
+      
+      // Variables pour le drag groupé
+      let isDragging = false;
+      let startPoint: { lat: number; lng: number } | null = null;
+      let animationFrameId: number | null = null;
+      
+      const onMouseDown = (e: any) => {
+        isDragging = true;
+        startPoint = e.latlng;
+        map.dragging.disable();
+      };
+      
+      const onMouseMove = (e: any) => {
+        if (!isDragging || !startPoint) return;
+        
+        // Utiliser requestAnimationFrame pour optimiser les performances
+        if (animationFrameId !== null) {
+          cancelAnimationFrame(animationFrameId);
+        }
+        
+        animationFrameId = requestAnimationFrame(() => {
+          const currentPoint = e.latlng;
+          const deltaLat = currentPoint.lat - startPoint!.lat;
+          const deltaLng = currentPoint.lng - startPoint!.lng;
+          
+          // Déplacer tous les marqueurs
+          markersRef.current.forEach((marker) => {
+            if (marker) {
+              const markerPos = marker.getLatLng();
+              const newLat = markerPos.lat + deltaLat;
+              const newLng = markerPos.lng + deltaLng;
+              marker.setLatLng([newLat, newLng]);
+            }
+          });
+          
+          startPoint = currentPoint;
+        });
+      };
+      
+      const onMouseUp = () => {
+        if (!isDragging) return;
+        isDragging = false;
+        startPoint = null;
+        
+        if (animationFrameId !== null) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+        
+        map.dragging.enable();
+        
+        // Mettre à jour les coordonnées finales en préservant l'ordre
+        const updatedCoords = coordinates.map((coord) => {
+          if (!coord.lat || !coord.lng) return coord;
+          
+          // Trouver le marqueur correspondant à cette borne
+          const validIndex = validCoords.findIndex(c => c.borne === coord.borne);
+          if (validIndex === -1) return coord;
+          
+          const marker = markersRef.current[validIndex];
+          if (!marker) return coord;
+          
+          const newPos = marker.getLatLng();
+          return {
+            ...coord,
+            lat: newPos.lat.toFixed(6),
+            lng: newPos.lng.toFixed(6)
+          };
+        });
+        
+        onCoordinatesUpdate(updatedCoords);
+        updateParcelSidesFromCoordinates(updatedCoords);
+      };
+      
+      map.on('mousedown', onMouseDown);
+      map.on('mousemove', onMouseMove);
+      map.on('mouseup', onMouseUp);
+      
+      return () => {
+        if (animationFrameId !== null) {
+          cancelAnimationFrame(animationFrameId);
+        }
+        map.off('mousedown', onMouseDown);
+        map.off('mousemove', onMouseMove);
+        map.off('mouseup', onMouseUp);
+        map.dragging.enable();
+      };
+    } else {
+      // Réactiver le drag individuel des marqueurs si configuré
+      if (mapConfig.enableDragging !== false) {
+        markersRef.current.forEach(marker => {
+          if (marker?.dragging) {
+            marker.dragging.enable();
+          }
+        });
+      }
+    }
+  }, [groupDragMode, isMapReady, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates, parcelSides]);
 
   // Détection des conflits avec des parcelles voisines
   const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
@@ -586,8 +751,13 @@ export const ParcelMapPreview = ({
       const start = latLngs[i];
       const end = latLngs[j];
       
-      // Calculer la distance
-      const distance = calculateDistance(start[0], start[1], end[0], end[1]);
+      // Utiliser la dimension du formulaire si elle existe, sinon calculer
+      let distance: number;
+      if (parcelSides[i]?.length && parseFloat(parcelSides[i].length) > 0) {
+        distance = parseFloat(parcelSides[i].length);
+      } else {
+        distance = calculateDistance(start[0], start[1], end[0], end[1]);
+      }
       
       // Point milieu
       const midLat = (start[0] + end[0]) / 2;
@@ -707,6 +877,17 @@ export const ParcelMapPreview = ({
           Aperçu de la parcelle
         </Label>
         <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+          {mapConfig.enableDragging && validCoords.length >= 3 && (
+            <Button
+              type="button"
+              variant={groupDragMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setGroupDragMode(!groupDragMode)}
+              className="text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2"
+            >
+              {groupDragMode ? "Mode individuel" : "Déplacer groupe"}
+            </Button>
+          )}
           {coordinates.length > 0 && (
             <Badge variant="outline" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
               <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
