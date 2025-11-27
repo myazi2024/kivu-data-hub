@@ -812,7 +812,7 @@ export const ParcelMapPreview = ({
         });
       }
     }
-  }, [groupDragMode, isMapReady, markersRef.current.length, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
+  }, [groupDragMode, isMapReady, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
   // Détection des conflits avec des parcelles voisines
   const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
