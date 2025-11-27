@@ -1078,7 +1078,7 @@ export const ParcelMapPreview = ({
         <div
           ref={mapRef}
           className={cn(
-            "w-full rounded-lg",
+            "w-full rounded-lg relative z-10",
             isFullScreen ? "h-screen" : "h-[250px] md:h-[350px] lg:h-[400px]"
           )}
         />
