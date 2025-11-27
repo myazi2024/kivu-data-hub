@@ -4063,15 +4063,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
           </TabsContent>
 
-          <TabsContent value="location" className="space-y-6 mt-6 animate-fade-in">
+          <TabsContent value="location" className="space-y-3 md:space-y-6 mt-4 md:mt-6 animate-fade-in">
             {/* Choix du type de section */}
-            <div className="space-y-2 pb-4 border-t">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="sectionType">Type de section *</Label>
+            <div className="space-y-1.5 md:space-y-2 pb-2 md:pb-4 border-t pt-2 md:pt-0">
+              <div className="flex items-center gap-1.5 md:gap-2">
+                <Label htmlFor="sectionType" className="text-xs md:text-sm">Type de section *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                      <Info className="h-4 w-4 text-muted-foreground" />
+                    <Button type="button" variant="ghost" size="sm" className="h-5 w-5 md:h-6 md:w-6 p-0 hover:bg-primary/10">
+                      <Info className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 text-sm">
@@ -4091,7 +4091,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 onValueChange={(value: 'urbaine' | 'rurale') => handleSectionTypeChange(value)}
                 disabled={sectionTypeAutoDetected}
               >
-                <SelectTrigger className={sectionTypeAutoDetected ? 'bg-muted/50 cursor-not-allowed' : ''}>
+                <SelectTrigger className={cn(
+                  "h-8 md:h-10 text-xs md:text-sm",
+                  sectionTypeAutoDetected && 'bg-muted/50 cursor-not-allowed'
+                )}>
                   <SelectValue placeholder="Choisir le type de section" />
                 </SelectTrigger>
                 <SelectContent>
@@ -4100,12 +4103,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </SelectContent>
               </Select>
               {sectionTypeAutoDetected ? (
-                <p className="text-xs text-primary flex items-center gap-1.5">
+                <p className="text-[10px] md:text-xs text-primary flex items-center gap-1">
                   <CheckCircle2 className="h-3 w-3" />
                   Type détecté automatiquement à partir du préfixe "{parcelNumber.toUpperCase().startsWith('SU') ? 'SU' : 'SR'}"
                 </p>
               ) : (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-[10px] md:text-xs text-muted-foreground">
                   Choisissez si vous renseignez un numéro SU (zone urbaine) ou SR (zone rurale)
                 </p>
               )}
@@ -4119,7 +4122,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   value={formData.province} 
                   onValueChange={(value) => handleInputChange('province', value)}
                 >
-                  <SelectTrigger className="h-9 md:h-11 text-sm">
+                  <SelectTrigger className="h-8 md:h-10 text-xs md:text-sm">
                     <SelectValue placeholder="Sélectionner la province" />
                   </SelectTrigger>
                   <SelectContent>
