@@ -67,7 +67,6 @@ export const ParcelMapPreview = ({
   const [loadingConflicts, setLoadingConflicts] = useState(false);
   const [groupDragMode, setGroupDragMode] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  const groupDragStartRef = useRef<{ lat: number; lng: number } | null>(null);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -203,12 +202,20 @@ export const ParcelMapPreview = ({
         };
       });
       
-      // Ne mettre à jour que si la structure a changé (nombre de côtés différent)
-      if (roadSides.length !== newSides.length) {
+      // Mettre à jour uniquement si le nombre de côtés a changé OU si les longueurs/orientations ont changé
+      const hasChanges = roadSides.length !== newSides.length || 
+        newSides.some((side, idx) => {
+          const existing = roadSides[idx];
+          return !existing || 
+            Math.abs(existing.length - side.length) > 0.01 || 
+            existing.orientation !== side.orientation;
+        });
+      
+      if (hasChanges) {
         onRoadSidesChange(newSides);
       }
     }
-  }, [validCoords.length]);
+  }, [validCoords.length, coordinates, onRoadSidesChange]);
 
   // Calculer la distance entre 2 points GPS
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -511,18 +518,9 @@ export const ParcelMapPreview = ({
     updateMap();
   }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, groupDragMode]);
 
-  // Ajuster l'affichage de la carte lors du passage en plein écran
-  useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current) return;
-    const map = mapInstanceRef.current;
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 150);
-  }, [isFullScreen, isMapReady]);
-
   // Gérer le mode de déplacement groupé
   useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current) return;
+    if (!isMapReady || !mapInstanceRef.current || markersRef.current.length === 0) return;
     
     const map = mapInstanceRef.current;
     const mapContainer = map.getContainer();
@@ -580,7 +578,7 @@ export const ParcelMapPreview = ({
         if (!isDragging) return;
         isDragging = false;
         startPoint = null;
-        mapContainer.style.cursor = 'move';
+        mapContainer.style.cursor = groupDragMode ? 'move' : '';
         map.dragging.enable();
         
         // Mettre à jour les coordonnées finales en préservant l'ordre
@@ -615,7 +613,7 @@ export const ParcelMapPreview = ({
         if (isDragging) {
           isDragging = false;
           startPoint = null;
-          mapContainer.style.cursor = 'move';
+          mapContainer.style.cursor = groupDragMode ? 'move' : '';
           map.dragging.enable();
           
           // Mettre à jour les coordonnées comme dans onMouseUp
@@ -648,7 +646,7 @@ export const ParcelMapPreview = ({
         map.off('mousemove', onMouseMove);
         map.off('mouseup', onMouseUp);
         mapContainer.removeEventListener('mouseleave', onMouseLeave);
-        mapContainer.style.cursor = '';
+        mapContainer.style.cursor = groupDragMode ? 'move' : '';
         map.dragging.enable();
         
         // Réactiver le drag individuel des marqueurs si configuré
@@ -677,10 +675,9 @@ export const ParcelMapPreview = ({
   useEffect(() => {
     if (!mapInstanceRef.current || !isMapReady) return;
     
-    // Petit délai pour que le DOM se mette à jour avant le redimensionnement
     const timer = setTimeout(() => {
       mapInstanceRef.current?.invalidateSize();
-    }, 100);
+    }, 150);
     
     return () => clearTimeout(timer);
   }, [isFullScreen, isMapReady]);
@@ -771,26 +768,27 @@ export const ParcelMapPreview = ({
     return {
       minLat: Math.min(...lats) - 0.01,
       maxLat: Math.max(...lats) + 0.01,
-      minLng: Math.min(...lngs) + 0.01,
+      minLng: Math.min(...lngs) - 0.01,
       maxLng: Math.max(...lngs) + 0.01
     };
   };
 
-  // Vérifier si deux polygones se chevauchent
+  // Vérifier si deux polygones se chevauchent (optimisé)
   const checkPolygonOverlap = (
     poly1: [number, number][], 
     poly2: [number, number][]
   ): { hasOverlap: boolean; area?: number } => {
-    // Vérifier si des points d'un polygone sont à l'intérieur de l'autre
-    const hasPointInside = poly1.some(point => isPointInPolygon(point, poly2)) ||
-                           poly2.some(point => isPointInPolygon(point, poly1));
+    // Calculer une seule fois les points de chevauchement
+    const overlapPoints = poly1.filter(point => isPointInPolygon(point, poly2));
+    const reverseOverlapPoints = poly2.filter(point => isPointInPolygon(point, poly1));
+    
+    const hasOverlap = overlapPoints.length > 0 || reverseOverlapPoints.length > 0;
 
-    if (!hasPointInside) {
+    if (!hasOverlap) {
       return { hasOverlap: false };
     }
 
-    // Estimer la zone de chevauchement (approximation simple)
-    const overlapPoints = poly1.filter(point => isPointInPolygon(point, poly2));
+    // Estimer la zone de chevauchement si suffisamment de points
     if (overlapPoints.length > 2) {
       const area = calculatePolygonArea(overlapPoints);
       return { hasOverlap: true, area };
@@ -817,16 +815,20 @@ export const ParcelMapPreview = ({
     return inside;
   };
 
-  // Afficher les dimensions des côtés
+  // Afficher les dimensions des côtés (optimisé)
   const displaySideDimensions = (L: any, map: any, latLngs: [number, number][]) => {
     for (let i = 0; i < latLngs.length; i++) {
       const j = (i + 1) % latLngs.length;
       const start = latLngs[i];
       const end = latLngs[j];
       
-      // Utiliser la dimension du formulaire si elle existe, sinon calculer
+      // Utiliser directement les dimensions des roadSides qui sont déjà calculées
+      const roadSide = roadSides.find(s => s.sideIndex === i);
       let distance: number;
-      if (parcelSides[i]?.length && parseFloat(parcelSides[i].length) > 0) {
+      
+      if (roadSide?.length) {
+        distance = roadSide.length;
+      } else if (parcelSides[i]?.length && parseFloat(parcelSides[i].length) > 0) {
         distance = parseFloat(parcelSides[i].length);
       } else {
         distance = calculateDistance(start[0], start[1], end[0], end[1]);
@@ -836,8 +838,7 @@ export const ParcelMapPreview = ({
       const midLat = (start[0] + end[0]) / 2;
       const midLng = (start[1] + end[1]) / 2;
       
-      // Vérifier si ce côté borde une route
-      const roadSide = roadSides.find(s => s.sideIndex === i);
+      // roadSide est déjà défini au-dessus
       const isRoadBordering = roadSide?.bordersRoad || false;
       
       // Utiliser le format configuré
@@ -1042,15 +1043,15 @@ export const ParcelMapPreview = ({
 
       <Card
         className={cn(
-          "overflow-hidden border-2 border-primary/20 relative",
+          "overflow-hidden border-2 border-primary/20 relative z-10",
           isFullScreen && "fixed inset-0 z-[1000] rounded-none border-0 bg-background"
         )}
       >
-        {/* Contrôles de carte en overlay - optimisés pour mobile en plein écran */}
+        {/* Contrôles de carte en overlay - optimisés pour mobile */}
         {mapConfig.enableDragging && validCoords.length >= 3 && (
           <div className={cn(
-            "absolute flex gap-1 md:gap-1.5 z-[1100]",
-            isFullScreen ? "top-2 left-2" : "top-1.5 md:top-2 left-1.5 md:left-2"
+            "absolute flex gap-1.5 md:gap-2 z-[1100]",
+            isFullScreen ? "top-3 left-3" : "top-2 md:top-2.5 left-2 md:left-2.5"
           )}>
             <Button
               type="button"
@@ -1058,15 +1059,15 @@ export const ParcelMapPreview = ({
               size="sm"
               onClick={() => setGroupDragMode(false)}
               className={cn(
-                "shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center",
+                "shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center touch-manipulation",
                 isFullScreen 
-                  ? "h-8 w-8 md:w-auto p-0 md:px-2 md:gap-1.5" 
-                  : "h-6 md:h-7 w-6 md:w-auto px-1 md:px-2 md:gap-1.5"
+                  ? "h-11 w-11 md:w-auto p-0 md:px-3 md:gap-2" 
+                  : "h-9 md:h-10 w-9 md:w-auto px-0 md:px-2.5 md:gap-1.5"
               )}
               title="Mode individuel"
             >
-              <MousePointer className={cn(isFullScreen ? "h-4 w-4" : "h-3 w-3 md:h-3.5 md:w-3.5")} />
-              <span className="hidden md:inline text-xs">Individuel</span>
+              <MousePointer className={cn(isFullScreen ? "h-5 w-5 md:h-4 md:w-4" : "h-4 w-4 md:h-4 md:w-4")} />
+              <span className="hidden md:inline text-xs font-medium">Individuel</span>
             </Button>
             <Button
               type="button"
@@ -1074,15 +1075,15 @@ export const ParcelMapPreview = ({
               size="sm"
               onClick={() => setGroupDragMode(true)}
               className={cn(
-                "shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center",
+                "shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center touch-manipulation",
                 isFullScreen 
-                  ? "h-8 w-8 md:w-auto p-0 md:px-2 md:gap-1.5" 
-                  : "h-6 md:h-7 w-6 md:w-auto px-1 md:px-2 md:gap-1.5"
+                  ? "h-11 w-11 md:w-auto p-0 md:px-3 md:gap-2" 
+                  : "h-9 md:h-10 w-9 md:w-auto px-0 md:px-2.5 md:gap-1.5"
               )}
               title="Déplacer groupe"
             >
-              <Move className={cn(isFullScreen ? "h-4 w-4" : "h-3 w-3 md:h-3.5 md:w-3.5")} />
-              <span className="hidden md:inline text-xs">Groupe</span>
+              <Move className={cn(isFullScreen ? "h-5 w-5 md:h-4 md:w-4" : "h-4 w-4 md:h-4 md:w-4")} />
+              <span className="hidden md:inline text-xs font-medium">Groupe</span>
             </Button>
           </div>
         )}
@@ -1090,7 +1091,7 @@ export const ParcelMapPreview = ({
         {/* Bouton plein écran - optimisé pour mobile */}
         <div className={cn(
           "absolute z-[1100]",
-          isFullScreen ? "top-2 right-2" : "top-1.5 md:top-2 right-1.5 md:right-2"
+          isFullScreen ? "top-3 right-3" : "top-2 md:top-2.5 right-2 md:right-2.5"
         )}>
           <Button
             type="button"
@@ -1098,29 +1099,29 @@ export const ParcelMapPreview = ({
             size="sm"
             onClick={() => setIsFullScreen(!isFullScreen)}
             className={cn(
-              "p-0 rounded-full bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center shadow-lg",
-              isFullScreen ? "h-8 w-8" : "h-6 w-6 md:h-7 md:w-7"
+              "p-0 rounded-full bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center shadow-lg touch-manipulation",
+              isFullScreen ? "h-11 w-11" : "h-9 w-9 md:h-10 md:w-10"
             )}
             title={isFullScreen ? "Quitter plein écran" : "Plein écran"}
           >
             {isFullScreen ? (
-              <Minimize2 className={cn(isFullScreen ? "h-4 w-4" : "h-3 w-3 md:h-3.5 md:w-3.5")} />
+              <Minimize2 className={cn(isFullScreen ? "h-5 w-5" : "h-4 w-4 md:h-4.5 md:w-4.5")} />
             ) : (
-              <Maximize2 className={cn(isFullScreen ? "h-4 w-4" : "h-3 w-3 md:h-3.5 md:w-3.5")} />
+              <Maximize2 className={cn(isFullScreen ? "h-5 w-5" : "h-4 w-4 md:h-4.5 md:w-4.5")} />
             )}
           </Button>
         </div>
         
-        {/* Badges de surface en mode plein écran - affichés en overlay en bas à gauche sur mobile */}
+        {/* Badges de surface en mode plein écran - affichés en overlay en bas à gauche */}
         {isFullScreen && (
-          <div className="absolute bottom-12 md:bottom-16 left-2 z-[1100] flex flex-col gap-1 md:hidden">
+          <div className="absolute bottom-12 md:bottom-16 left-3 z-[1100] flex flex-col gap-1.5">
             {coordinates.length > 0 && (
-              <Badge variant="outline" className="gap-1 text-xs h-6 px-2 bg-background/95 backdrop-blur-sm shadow-lg">
+              <Badge variant="outline" className="gap-1 text-xs md:text-sm h-7 md:h-8 px-2.5 md:px-3 bg-background/95 backdrop-blur-sm shadow-lg">
                 <span className="font-medium">{validCoords.length}/{coordinates.length} bornes</span>
               </Badge>
             )}
             {surfaceArea > 0 && (
-              <Badge variant="secondary" className="font-mono text-xs h-6 px-2 bg-background/95 backdrop-blur-sm shadow-lg">
+              <Badge variant="secondary" className="font-mono text-xs md:text-sm h-7 md:h-8 px-2.5 md:px-3 bg-background/95 backdrop-blur-sm shadow-lg">
                 {surfaceArea.toLocaleString()} m²
               </Badge>
             )}
