@@ -4191,54 +4191,56 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
                 </div>
 
-                <div className="space-y-1 md:space-y-2">
-                  <Label htmlFor="quartier" className="text-xs md:text-sm">Quartier</Label>
-                  <Select 
-                    value={formData.quartier}
-                    onValueChange={(value) => handleInputChange('quartier', value)}
-                    disabled={!formData.commune || availableQuartiers.length === 0}
-                  >
-                    <SelectTrigger className="h-9 md:h-11 text-xs md:text-sm">
-                      <SelectValue placeholder={
-                        !formData.commune 
-                        ? "Commune d'abord" 
-                        : availableQuartiers.length === 0 
-                        ? "Saisie manuelle"
-                        : "Sélectionner"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableQuartiers.map(quartier => (
-                        <SelectItem key={quartier} value={quartier}>{quartier}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {availableQuartiers.length === 0 && formData.commune && (
-                    <div className="space-y-1 mt-1.5">
-                      <Input
-                        className="h-9 md:h-11 text-xs md:text-sm"
-                        placeholder="Saisir le nom du quartier"
-                        value={formData.quartier || ''}
-                        onChange={(e) => handleInputChange('quartier', e.target.value)}
-                      />
-                      <p className="text-[10px] leading-tight md:text-xs text-muted-foreground">Aucun quartier prédéfini - saisie manuelle</p>
-                    </div>
-                  )}
-                </div>
+                <div className="grid grid-cols-2 gap-2 md:gap-3">
+                  <div className="space-y-1 md:space-y-2">
+                    <Label htmlFor="quartier" className="text-[10px] md:text-sm">Quartier</Label>
+                    <Select 
+                      value={formData.quartier}
+                      onValueChange={(value) => handleInputChange('quartier', value)}
+                      disabled={!formData.commune || availableQuartiers.length === 0}
+                    >
+                      <SelectTrigger className="h-8 md:h-10 text-[10px] md:text-sm">
+                        <SelectValue placeholder={
+                          !formData.commune 
+                          ? "Commune d'abord" 
+                          : availableQuartiers.length === 0 
+                          ? "Saisie manuelle"
+                          : "Sélectionner"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableQuartiers.map(quartier => (
+                          <SelectItem key={quartier} value={quartier}>{quartier}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {availableQuartiers.length === 0 && formData.commune && (
+                      <div className="space-y-1">
+                        <Input
+                          className="h-8 md:h-10 text-[10px] md:text-sm"
+                          placeholder="Saisir quartier"
+                          value={formData.quartier || ''}
+                          onChange={(e) => handleInputChange('quartier', e.target.value)}
+                        />
+                        <p className="text-[9px] md:text-xs text-muted-foreground">Saisie manuelle</p>
+                      </div>
+                    )}
+                  </div>
 
-                <div className="space-y-1 md:space-y-2">
-                  <Label htmlFor="avenue" className="text-xs md:text-sm">Avenue</Label>
-                  <Input
-                    id="avenue"
-                    className="h-9 md:h-11 text-xs md:text-sm"
-                    placeholder="Saisir le nom de l'avenue"
-                    value={formData.avenue || ''}
-                    onChange={(e) => handleInputChange('avenue', e.target.value)}
-                    disabled={!formData.quartier}
-                  />
-                  <p className="text-[10px] leading-tight md:text-xs text-muted-foreground">
-                    {!formData.quartier ? "Quartier d'abord" : "Saisie manuelle"}
-                  </p>
+                  <div className="space-y-1 md:space-y-2">
+                    <Label htmlFor="avenue" className="text-[10px] md:text-sm">Avenue</Label>
+                    <Input
+                      id="avenue"
+                      className="h-8 md:h-10 text-[10px] md:text-sm"
+                      placeholder="Nom de l'avenue"
+                      value={formData.avenue || ''}
+                      onChange={(e) => handleInputChange('avenue', e.target.value)}
+                      disabled={!formData.quartier}
+                    />
+                    <p className="text-[9px] md:text-xs text-muted-foreground">
+                      {!formData.quartier ? "Quartier d'abord" : "Saisie manuelle"}
+                    </p>
+                  </div>
                 </div>
               </div>
             )}
