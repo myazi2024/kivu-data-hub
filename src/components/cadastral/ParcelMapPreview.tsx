@@ -673,6 +673,18 @@ export const ParcelMapPreview = ({
     }
   }, [groupDragMode, isMapReady, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
+  // Redimensionner la carte Leaflet lors du changement de mode plein écran
+  useEffect(() => {
+    if (!mapInstanceRef.current || !isMapReady) return;
+    
+    // Petit délai pour que le DOM se mette à jour avant le redimensionnement
+    const timer = setTimeout(() => {
+      mapInstanceRef.current?.invalidateSize();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [isFullScreen, isMapReady]);
+
   // Détection des conflits avec des parcelles voisines
   const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
     if (!currentParcelNumber || currentCoords.length < 3) return;
@@ -932,95 +944,100 @@ export const ParcelMapPreview = ({
 
   return (
     <div className="space-y-2 md:space-y-3">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
-          <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-          Aperçu de la parcelle
-        </Label>
-        <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-          {coordinates.length > 0 && (
-            <Badge variant="outline" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
-              <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
-              <span className="hidden sm:inline">bornes</span>
-              <span className="sm:hidden">b.</span>
-            </Badge>
-          )}
-          {surfaceArea > 0 && (
-            <Badge variant="secondary" className="font-mono text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
-              {surfaceArea.toLocaleString()} m²
-            </Badge>
-          )}
-        </div>
-      </div>
-
-      {conflictingParcels.length > 0 && (
-        <Alert variant="destructive" className="py-2 md:py-3">
-          <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs md:text-sm">
-            <span>
-              {conflictingParcels.length} conflit(s) détecté(s)
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowConflictDialog(true)}
-              className="h-7 text-xs w-full sm:w-auto"
-            >
-              Signaler
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Validation du nombre minimum de marqueurs */}
-      {mapConfig.minMarkers && validCoords.length > 0 && validCoords.length < mapConfig.minMarkers && (
-        <Alert variant="destructive" className="py-2 md:py-3">
-          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <AlertDescription className="text-xs md:text-sm">
-            Nombre de bornes insuffisant: {validCoords.length} sur {mapConfig.minMarkers} minimum requis pour une parcelle valide.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Validation du nombre maximum de marqueurs */}
-      {mapConfig.maxMarkers && validCoords.length > mapConfig.maxMarkers && (
-        <Alert variant="destructive" className="py-2 md:py-3">
-          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <AlertDescription className="text-xs md:text-sm">
-            Dépassement: {validCoords.length - mapConfig.maxMarkers} borne(s) en trop (max: {mapConfig.maxMarkers}).
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Validation de la surface */}
-      {surfaceArea > 0 && (
+      {/* Header et badges - cachés en plein écran */}
+      {!isFullScreen && (
         <>
-          {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+            <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
+              <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+              Aperçu de la parcelle
+            </Label>
+            <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+              {coordinates.length > 0 && (
+                <Badge variant="outline" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
+                  <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
+                  <span className="hidden sm:inline">bornes</span>
+                  <span className="sm:hidden">b.</span>
+                </Badge>
+              )}
+              {surfaceArea > 0 && (
+                <Badge variant="secondary" className="font-mono text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
+                  {surfaceArea.toLocaleString()} m²
+                </Badge>
+              )}
+            </div>
+          </div>
+
+          {conflictingParcels.length > 0 && (
             <Alert variant="destructive" className="py-2 md:py-3">
-              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              <AlertDescription className="text-xs md:text-sm">
-                Surface trop petite: {surfaceArea.toLocaleString()} m² (min: {mapConfig.minSurfaceSqm.toLocaleString()} m²).
+              <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs md:text-sm">
+                <span>
+                  {conflictingParcels.length} conflit(s) détecté(s)
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowConflictDialog(true)}
+                  className="h-7 text-xs w-full sm:w-auto"
+                >
+                  Signaler
+                </Button>
               </AlertDescription>
             </Alert>
           )}
-          {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
+
+          {/* Validation du nombre minimum de marqueurs */}
+          {mapConfig.minMarkers && validCoords.length > 0 && validCoords.length < mapConfig.minMarkers && (
             <Alert variant="destructive" className="py-2 md:py-3">
               <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
               <AlertDescription className="text-xs md:text-sm">
-                Surface trop grande: {surfaceArea.toLocaleString()} m² (max: {mapConfig.maxSurfaceSqm.toLocaleString()} m²).
+                Nombre de bornes insuffisant: {validCoords.length} sur {mapConfig.minMarkers} minimum requis pour une parcelle valide.
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Validation du nombre maximum de marqueurs */}
+          {mapConfig.maxMarkers && validCoords.length > mapConfig.maxMarkers && (
+            <Alert variant="destructive" className="py-2 md:py-3">
+              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <AlertDescription className="text-xs md:text-sm">
+                Dépassement: {validCoords.length - mapConfig.maxMarkers} borne(s) en trop (max: {mapConfig.maxMarkers}).
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Validation de la surface */}
+          {surfaceArea > 0 && (
+            <>
+              {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
+                <Alert variant="destructive" className="py-2 md:py-3">
+                  <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <AlertDescription className="text-xs md:text-sm">
+                    Surface trop petite: {surfaceArea.toLocaleString()} m² (min: {mapConfig.minSurfaceSqm.toLocaleString()} m²).
+                  </AlertDescription>
+                </Alert>
+              )}
+              {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
+                <Alert variant="destructive" className="py-2 md:py-3">
+                  <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <AlertDescription className="text-xs md:text-sm">
+                    Surface trop grande: {surfaceArea.toLocaleString()} m² (max: {mapConfig.maxSurfaceSqm.toLocaleString()} m²).
+                  </AlertDescription>
+                </Alert>
+              )}
+            </>
+          )}
+
+          {loadingConflicts && (
+            <Alert className="py-2 md:py-3">
+              <Info className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <AlertDescription className="text-xs md:text-sm">
+                Vérification des parcelles voisines...
               </AlertDescription>
             </Alert>
           )}
         </>
-      )}
-
-      {loadingConflicts && (
-        <Alert className="py-2 md:py-3">
-          <Info className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <AlertDescription className="text-xs md:text-sm">
-            Vérification des parcelles voisines...
-          </AlertDescription>
-        </Alert>
       )}
 
       <Card
@@ -1029,75 +1046,115 @@ export const ParcelMapPreview = ({
           isFullScreen && "fixed inset-0 z-[1000] rounded-none border-0 bg-background"
         )}
       >
-        {/* Contrôles de carte en overlay */}
+        {/* Contrôles de carte en overlay - optimisés pour mobile en plein écran */}
         {mapConfig.enableDragging && validCoords.length >= 3 && (
-          <div className="absolute top-1.5 md:top-2 left-1.5 md:left-2 flex gap-1 md:gap-1.5 z-[1100]">
+          <div className={cn(
+            "absolute flex gap-1 md:gap-1.5 z-[1100]",
+            isFullScreen ? "top-2 left-2" : "top-1.5 md:top-2 left-1.5 md:left-2"
+          )}>
             <Button
               type="button"
               variant={!groupDragMode ? "default" : "outline"}
               size="sm"
               onClick={() => setGroupDragMode(false)}
-              className="h-6 md:h-7 w-6 md:w-auto px-1 md:px-2 text-[10px] md:text-xs shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center md:gap-1.5"
+              className={cn(
+                "shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center",
+                isFullScreen 
+                  ? "h-8 w-8 md:w-auto p-0 md:px-2 md:gap-1.5" 
+                  : "h-6 md:h-7 w-6 md:w-auto px-1 md:px-2 md:gap-1.5"
+              )}
               title="Mode individuel"
             >
-              <MousePointer className="h-3 w-3 md:h-3.5 md:w-3.5" />
-              <span className="hidden md:inline">Individuel</span>
+              <MousePointer className={cn(isFullScreen ? "h-4 w-4" : "h-3 w-3 md:h-3.5 md:w-3.5")} />
+              <span className="hidden md:inline text-xs">Individuel</span>
             </Button>
             <Button
               type="button"
               variant={groupDragMode ? "default" : "outline"}
               size="sm"
               onClick={() => setGroupDragMode(true)}
-              className="h-6 md:h-7 w-6 md:w-auto px-1 md:px-2 text-[10px] md:text-xs shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center md:gap-1.5"
+              className={cn(
+                "shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center",
+                isFullScreen 
+                  ? "h-8 w-8 md:w-auto p-0 md:px-2 md:gap-1.5" 
+                  : "h-6 md:h-7 w-6 md:w-auto px-1 md:px-2 md:gap-1.5"
+              )}
               title="Déplacer groupe"
             >
-              <Move className="h-3 w-3 md:h-3.5 md:w-3.5" />
-              <span className="hidden md:inline">Groupe</span>
+              <Move className={cn(isFullScreen ? "h-4 w-4" : "h-3 w-3 md:h-3.5 md:w-3.5")} />
+              <span className="hidden md:inline text-xs">Groupe</span>
             </Button>
           </div>
         )}
 
-        {/* Bouton plein écran */}
-        <div className="absolute top-1.5 md:top-2 right-1.5 md:right-2 z-[1100]">
+        {/* Bouton plein écran - optimisé pour mobile */}
+        <div className={cn(
+          "absolute z-[1100]",
+          isFullScreen ? "top-2 right-2" : "top-1.5 md:top-2 right-1.5 md:right-2"
+        )}>
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => setIsFullScreen(!isFullScreen)}
-            className="h-6 w-6 md:h-7 md:w-7 p-0 rounded-full bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center shadow-lg"
+            className={cn(
+              "p-0 rounded-full bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center shadow-lg",
+              isFullScreen ? "h-8 w-8" : "h-6 w-6 md:h-7 md:w-7"
+            )}
             title={isFullScreen ? "Quitter plein écran" : "Plein écran"}
           >
             {isFullScreen ? (
-              <Minimize2 className="h-3 w-3 md:h-3.5 md:w-3.5" />
+              <Minimize2 className={cn(isFullScreen ? "h-4 w-4" : "h-3 w-3 md:h-3.5 md:w-3.5")} />
             ) : (
-              <Maximize2 className="h-3 w-3 md:h-3.5 md:w-3.5" />
+              <Maximize2 className={cn(isFullScreen ? "h-4 w-4" : "h-3 w-3 md:h-3.5 md:w-3.5")} />
             )}
           </Button>
         </div>
+        
+        {/* Badges de surface en mode plein écran - affichés en overlay en bas à gauche sur mobile */}
+        {isFullScreen && (
+          <div className="absolute bottom-12 md:bottom-16 left-2 z-[1100] flex flex-col gap-1 md:hidden">
+            {coordinates.length > 0 && (
+              <Badge variant="outline" className="gap-1 text-xs h-6 px-2 bg-background/95 backdrop-blur-sm shadow-lg">
+                <span className="font-medium">{validCoords.length}/{coordinates.length} bornes</span>
+              </Badge>
+            )}
+            {surfaceArea > 0 && (
+              <Badge variant="secondary" className="font-mono text-xs h-6 px-2 bg-background/95 backdrop-blur-sm shadow-lg">
+                {surfaceArea.toLocaleString()} m²
+              </Badge>
+            )}
+          </div>
+        )}
 
         <div
           ref={mapRef}
           className={cn(
-            "w-full rounded-lg",
-            isFullScreen ? "h-screen" : "h-[250px] md:h-[350px] lg:h-[400px]"
+            "w-full",
+            isFullScreen ? "h-screen rounded-none" : "h-[250px] md:h-[350px] lg:h-[400px] rounded-lg"
           )}
         />
       </Card>
       
-      <div className="text-[10px] md:text-xs text-muted-foreground flex items-start gap-1 md:gap-1.5">
-        <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
-        <span>
-          Glissez les marqueurs pour ajuster.
-          {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
-        </span>
-      </div>
+      {/* Aide et RoadBorderingSidesPanel - cachés en plein écran */}
+      {!isFullScreen && (
+        <>
+          <div className="text-[10px] md:text-xs text-muted-foreground flex items-start gap-1 md:gap-1.5">
+            <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
+            <span>
+              Glissez les marqueurs pour ajuster.
+              {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
+            </span>
+          </div>
 
-      {validCoords.length >= 3 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
-        <RoadBorderingSidesPanel
-          sides={roadSides}
-          onSideUpdate={handleRoadSideUpdate}
-          roadTypes={mapConfig.roadTypes}
-        />
+          {validCoords.length >= 3 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
+            <RoadBorderingSidesPanel
+              sides={roadSides}
+              onSideUpdate={handleRoadSideUpdate}
+              roadTypes={mapConfig.roadTypes}
+            />
+          )}
+        </>
       )}
 
       <BoundaryConflictDialog
