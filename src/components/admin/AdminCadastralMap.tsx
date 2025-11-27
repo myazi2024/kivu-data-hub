@@ -8,10 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { MapPin, Search, Filter, Eye, Trash2, RefreshCw, Download, Map as MapIcon } from 'lucide-react';
+import { MapPin, Search, Filter, Eye, Trash2, RefreshCw, Download, Map as MapIcon, Edit } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { geographicData } from '@/lib/geographicData';
+import { AdminParcelEditDialog } from './AdminParcelEditDialog';
 
 // Extraire les provinces
 const provinces = Object.keys(geographicData);
@@ -42,6 +43,7 @@ const AdminCadastralMap = () => {
   const [selectedProvince, setSelectedProvince] = useState('all');
   const [selectedParcel, setSelectedParcel] = useState<CadastralParcel | null>(null);
   const [showMapDialog, setShowMapDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const mapRef = useRef<HTMLDivElement>(null);
@@ -230,6 +232,23 @@ const AdminCadastralMap = () => {
     setSelectedParcel(null);
   };
 
+  const handleEditGPS = (parcel: CadastralParcel) => {
+    setSelectedParcel(parcel);
+    setShowEditDialog(true);
+  };
+
+  const handleCloseEditDialog = () => {
+    setShowEditDialog(false);
+    setSelectedParcel(null);
+  };
+
+  const handleSaveEdit = () => {
+    setShowEditDialog(false);
+    setSelectedParcel(null);
+    fetchParcels(); // Recharger les parcelles
+    toast.success('Modifications GPS enregistrées');
+  };
+
   const handleDelete = async (parcelId: string) => {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette contribution validée ?')) return;
 
@@ -410,20 +429,33 @@ const AdminCadastralMap = () => {
                         <TableCell className="px-2 py-2 text-right">
                           <div className="flex justify-end gap-1">
                             {parcel.latitude && parcel.longitude && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleViewOnMap(parcel)}
-                                className="h-7 px-2"
-                              >
-                                <MapIcon className="h-3 w-3" />
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleViewOnMap(parcel)}
+                                  className="h-7 px-2"
+                                  title="Voir sur carte"
+                                >
+                                  <Eye className="h-3 w-3" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEditGPS(parcel)}
+                                  className="h-7 px-2"
+                                  title="Éditer GPS"
+                                >
+                                  <Edit className="h-3 w-3" />
+                                </Button>
+                              </>
                             )}
                             <Button
                               size="sm"
                               variant="ghost"
                               onClick={() => handleDelete(parcel.id)}
                               className="h-7 px-2 text-destructive hover:text-destructive"
+                              title="Supprimer"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -499,6 +531,14 @@ const AdminCadastralMap = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog Édition GPS */}
+      <AdminParcelEditDialog
+        parcel={selectedParcel}
+        open={showEditDialog}
+        onClose={handleCloseEditDialog}
+        onSave={handleSaveEdit}
+      />
     </div>
   );
 };
