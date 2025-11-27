@@ -4064,75 +4064,74 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="location" className="space-y-3 md:space-y-6 mt-4 md:mt-6 animate-fade-in">
-            {/* Choix du type de section */}
-            <div className="space-y-1.5 md:space-y-2 pb-2 md:pb-4 border-t pt-2 md:pt-0">
-              <div className="flex items-center gap-1.5 md:gap-2">
-                <Label htmlFor="sectionType" className="text-xs md:text-sm">Type de section *</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="h-5 w-5 md:h-6 md:w-6 p-0 hover:bg-primary/10">
-                      <Info className="h-3.5 w-3.5 md:h-4 md:w-4 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 text-sm">
-                    <h4 className="font-semibold mb-2">Type de section cadastrale</h4>
-                    <p className="text-muted-foreground">
-                      La RDC divise les parcelles en sections urbaines (SU) et sections rurales (SR). Cette classification détermine la structure administrative de localisation de votre bien.
-                    </p>
-                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <li>• <strong>SU (Section Urbaine)</strong>: Zones urbanisées avec Ville → Commune → Quartier</li>
-                      <li>• <strong>SR (Section Rurale)</strong>: Zones rurales avec Territoire → Collectivité → Village</li>
-                    </ul>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <Select 
-                value={sectionType} 
-                onValueChange={(value: 'urbaine' | 'rurale') => handleSectionTypeChange(value)}
-                disabled={sectionTypeAutoDetected}
-              >
-                <SelectTrigger className={cn(
-                  "h-8 md:h-10 text-xs md:text-sm",
-                  sectionTypeAutoDetected && 'bg-muted/50 cursor-not-allowed'
-                )}>
-                  <SelectValue placeholder="Choisir le type de section" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="urbaine">Section Urbaine (SU)</SelectItem>
-                  <SelectItem value="rurale">Section rurale (SR)</SelectItem>
-                </SelectContent>
-              </Select>
-              {sectionTypeAutoDetected ? (
-                <p className="text-[10px] md:text-xs text-primary flex items-center gap-1">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Type détecté automatiquement à partir du préfixe "{parcelNumber.toUpperCase().startsWith('SU') ? 'SU' : 'SR'}"
-                </p>
-              ) : (
-                <p className="text-[10px] md:text-xs text-muted-foreground">
-                  Choisissez si vous renseignez un numéro SU (zone urbaine) ou SR (zone rurale)
-                </p>
-              )}
-            </div>
-
-            {/* Province - toujours visible */}
-            {sectionType && (
-              <div className="space-y-1 md:space-y-2">
-                <Label htmlFor="province" className="text-xs md:text-sm">Province *</Label>
+            {/* Type de section et Province côte-à-côte */}
+            <div className="grid grid-cols-2 gap-2 md:gap-4 pb-2 md:pb-4 border-t pt-2 md:pt-0">
+              {/* Choix du type de section */}
+              <div className="space-y-1 md:space-y-1.5">
+                <div className="flex items-center gap-1">
+                  <Label htmlFor="sectionType" className="text-[10px] md:text-sm">Type de section *</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button type="button" variant="ghost" size="sm" className="h-4 w-4 md:h-6 md:w-6 p-0 hover:bg-primary/10">
+                        <Info className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 text-sm">
+                      <h4 className="font-semibold mb-2">Type de section cadastrale</h4>
+                      <p className="text-muted-foreground">
+                        La RDC divise les parcelles en sections urbaines (SU) et sections rurales (SR). Cette classification détermine la structure administrative de localisation de votre bien.
+                      </p>
+                      <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+                        <li>• <strong>SU (Section Urbaine)</strong>: Zones urbanisées avec Ville → Commune → Quartier</li>
+                        <li>• <strong>SR (Section Rurale)</strong>: Zones rurales avec Territoire → Collectivité → Village</li>
+                      </ul>
+                    </PopoverContent>
+                  </Popover>
+                </div>
                 <Select 
-                  value={formData.province} 
-                  onValueChange={(value) => handleInputChange('province', value)}
+                  value={sectionType} 
+                  onValueChange={(value: 'urbaine' | 'rurale') => handleSectionTypeChange(value)}
+                  disabled={sectionTypeAutoDetected}
                 >
-                  <SelectTrigger className="h-8 md:h-10 text-xs md:text-sm">
-                    <SelectValue placeholder="Sélectionner la province" />
+                  <SelectTrigger className={cn(
+                    "h-8 md:h-10 text-[10px] md:text-sm",
+                    sectionTypeAutoDetected && 'bg-muted/50 cursor-not-allowed'
+                  )}>
+                    <SelectValue placeholder="Type" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAllProvinces().map(province => (
-                      <SelectItem key={province} value={province}>{province}</SelectItem>
-                    ))}
+                    <SelectItem value="urbaine">SU</SelectItem>
+                    <SelectItem value="rurale">SR</SelectItem>
                   </SelectContent>
                 </Select>
+                {sectionTypeAutoDetected && (
+                  <p className="text-[9px] md:text-xs text-primary flex items-center gap-0.5">
+                    <CheckCircle2 className="h-2.5 w-2.5 md:h-3 md:w-3" />
+                    Auto-détecté
+                  </p>
+                )}
               </div>
-            )}
+
+              {/* Province */}
+              {sectionType && (
+                <div className="space-y-1 md:space-y-1.5">
+                  <Label htmlFor="province" className="text-[10px] md:text-sm">Province *</Label>
+                  <Select 
+                    value={formData.province} 
+                    onValueChange={(value) => handleInputChange('province', value)}
+                  >
+                    <SelectTrigger className="h-8 md:h-10 text-[10px] md:text-sm">
+                      <SelectValue placeholder="Province" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {getAllProvinces().map(province => (
+                        <SelectItem key={province} value={province}>{province}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
 
             {/* Section Urbaine (SU) - visible uniquement si type urbain sélectionné */}
             {sectionType === 'urbaine' && (
