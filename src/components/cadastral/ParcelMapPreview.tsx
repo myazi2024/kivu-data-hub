@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, MapPin, AlertTriangle, Info } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
@@ -59,6 +59,7 @@ export const ParcelMapPreview = ({
   const dimensionLayersRef = useRef<any[]>([]);
   const conflictLayersRef = useRef<any[]>([]);
   const segmentLayersRef = useRef<any[]>([]);
+  const groupDragControlRef = useRef<any>(null);
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
@@ -292,6 +293,104 @@ export const ParcelMapPreview = ({
       });
       new CompassControl().addTo(map);
 
+      // Ajouter les contrôles de déplacement groupé
+      const GroupDragControl = L.Control.extend({
+        options: {
+          position: 'topleft'
+        },
+        onAdd: function() {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control group-drag-controls');
+          container.style.display = 'flex';
+          container.style.flexDirection = 'column';
+          container.style.gap = '2px';
+          
+          // Bouton Mode Groupé
+          const groupBtn = L.DomUtil.create('a', 'leaflet-control-group-drag', container);
+          groupBtn.href = '#';
+          groupBtn.title = 'Mode déplacement groupé';
+          groupBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/>
+            </svg>
+          `;
+          groupBtn.style.width = '34px';
+          groupBtn.style.height = '34px';
+          groupBtn.style.display = 'flex';
+          groupBtn.style.alignItems = 'center';
+          groupBtn.style.justifyContent = 'center';
+          groupBtn.style.backgroundColor = 'white';
+          groupBtn.style.color = '#666';
+          groupBtn.style.borderRadius = '4px';
+          groupBtn.style.cursor = 'pointer';
+          groupBtn.style.transition = 'all 0.2s';
+          
+          // Bouton Mode Individuel
+          const individualBtn = L.DomUtil.create('a', 'leaflet-control-individual-drag', container);
+          individualBtn.href = '#';
+          individualBtn.title = 'Mode déplacement individuel';
+          individualBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 3L5 7l4 4M15 3l4 4-4 4M9 21l-4-4 4-4M15 21l4-4-4-4"/>
+            </svg>
+          `;
+          individualBtn.style.width = '34px';
+          individualBtn.style.height = '34px';
+          individualBtn.style.display = 'flex';
+          individualBtn.style.alignItems = 'center';
+          individualBtn.style.justifyContent = 'center';
+          individualBtn.style.backgroundColor = 'white';
+          individualBtn.style.color = '#666';
+          individualBtn.style.borderRadius = '4px';
+          individualBtn.style.cursor = 'pointer';
+          individualBtn.style.transition = 'all 0.2s';
+          
+          // Fonction pour mettre à jour l'état visuel
+          const updateButtonStates = (isGroupMode: boolean) => {
+            if (isGroupMode) {
+              groupBtn.style.backgroundColor = 'hsl(var(--primary))';
+              groupBtn.style.color = 'white';
+              individualBtn.style.backgroundColor = 'white';
+              individualBtn.style.color = '#666';
+            } else {
+              groupBtn.style.backgroundColor = 'white';
+              groupBtn.style.color = '#666';
+              individualBtn.style.backgroundColor = 'hsl(var(--primary))';
+              individualBtn.style.color = 'white';
+            }
+          };
+          
+          // État initial (mode individuel par défaut)
+          updateButtonStates(false);
+          
+          // Event handlers
+          L.DomEvent.on(groupBtn, 'click', function(e: Event) {
+            L.DomEvent.preventDefault(e);
+            L.DomEvent.stopPropagation(e);
+            setGroupDragMode(true);
+            updateButtonStates(true);
+          });
+          
+          L.DomEvent.on(individualBtn, 'click', function(e: Event) {
+            L.DomEvent.preventDefault(e);
+            L.DomEvent.stopPropagation(e);
+            setGroupDragMode(false);
+            updateButtonStates(false);
+          });
+          
+          // Empêcher la propagation des événements de la souris
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+          
+          return container;
+        }
+      });
+      
+      if (mapConfig.enableDragging !== false) {
+        const groupControl = new GroupDragControl();
+        groupControl.addTo(map);
+        groupDragControlRef.current = groupControl;
+      }
+
       mapInstanceRef.current = map;
       
       // S'assurer que la carte se redessine correctement
@@ -308,6 +407,12 @@ export const ParcelMapPreview = ({
 
     return () => {
       if (mapInstanceRef.current) {
+        // Supprimer les contrôles personnalisés
+        if (groupDragControlRef.current) {
+          groupDragControlRef.current.remove();
+          groupDragControlRef.current = null;
+        }
+        
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
         setIsMapReady(false);
@@ -502,14 +607,41 @@ export const ParcelMapPreview = ({
     updateMap();
   }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, groupDragMode]);
 
+  // Synchroniser l'état visuel des boutons de contrôle avec groupDragMode
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current || !groupDragControlRef.current) return;
+    
+    const container = groupDragControlRef.current.getContainer();
+    if (!container) return;
+    
+    const groupBtn = container.querySelector('.leaflet-control-group-drag');
+    const individualBtn = container.querySelector('.leaflet-control-individual-drag');
+    
+    if (groupBtn && individualBtn) {
+      if (groupDragMode) {
+        groupBtn.style.backgroundColor = 'hsl(var(--primary))';
+        groupBtn.style.color = 'white';
+        individualBtn.style.backgroundColor = 'white';
+        individualBtn.style.color = '#666';
+      } else {
+        groupBtn.style.backgroundColor = 'white';
+        groupBtn.style.color = '#666';
+        individualBtn.style.backgroundColor = 'hsl(var(--primary))';
+        individualBtn.style.color = 'white';
+      }
+    }
+  }, [groupDragMode, isMapReady]);
+
   // Gérer le mode de déplacement groupé
   useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current || markersRef.current.length === 0) return;
+    if (!isMapReady || !mapInstanceRef.current) return;
     
     const map = mapInstanceRef.current;
     const mapContainer = map.getContainer();
     
-    if (groupDragMode) {
+    if (groupDragMode && markersRef.current.length > 0) {
+      console.log('Activation du mode déplacement groupé avec', markersRef.current.length, 'marqueurs');
+      
       // Changer le curseur pour indiquer le mode de déplacement groupé
       mapContainer.style.cursor = 'move';
       
@@ -525,10 +657,20 @@ export const ParcelMapPreview = ({
       let startPoint: { lat: number; lng: number } | null = null;
       
       const onMouseDown = (e: any) => {
+        // Vérifier si le clic est sur un marqueur ou sur la carte
+        if (e.originalEvent && e.originalEvent.target) {
+          const target = e.originalEvent.target;
+          // Ne pas démarrer le drag si on clique sur un contrôle
+          if (target.closest('.leaflet-control')) {
+            return;
+          }
+        }
+        
         isDragging = true;
         startPoint = e.latlng;
         map.dragging.disable();
         mapContainer.style.cursor = 'grabbing';
+        console.log('Début du drag groupé à', startPoint);
       };
       
       const onMouseMove = (e: any) => {
@@ -546,8 +688,8 @@ export const ParcelMapPreview = ({
           }
         });
         
-        // Redessiner le polygone et les dimensions
-        if (polygonRef.current && validCoords.length >= 3) {
+        // Redessiner le polygone en temps réel
+        if (polygonRef.current && markersRef.current.length >= 3) {
           const newLatLngs: [number, number][] = markersRef.current.map(m => {
             const pos = m.getLatLng();
             return [pos.lat, pos.lng];
@@ -555,11 +697,25 @@ export const ParcelMapPreview = ({
           polygonRef.current.setLatLngs(newLatLngs);
         }
         
+        // Redessiner les segments en temps réel
+        segmentLayersRef.current.forEach((segment, index) => {
+          const nextIndex = (index + 1) % markersRef.current.length;
+          const marker1 = markersRef.current[index];
+          const marker2 = markersRef.current[nextIndex];
+          if (marker1 && marker2) {
+            const pos1 = marker1.getLatLng();
+            const pos2 = marker2.getLatLng();
+            segment.setLatLngs([[pos1.lat, pos1.lng], [pos2.lat, pos2.lng]]);
+          }
+        });
+        
         startPoint = currentPoint;
       };
       
       const onMouseUp = () => {
         if (!isDragging) return;
+        
+        console.log('Fin du drag groupé');
         isDragging = false;
         startPoint = null;
         mapContainer.style.cursor = 'move';
@@ -595,6 +751,7 @@ export const ParcelMapPreview = ({
       // Gérer également le cas où la souris sort de la carte
       const onMouseLeave = () => {
         if (isDragging) {
+          console.log('Souris sortie de la carte pendant le drag');
           isDragging = false;
           startPoint = null;
           mapContainer.style.cursor = 'move';
@@ -626,6 +783,7 @@ export const ParcelMapPreview = ({
       mapContainer.addEventListener('mouseleave', onMouseLeave);
       
       return () => {
+        console.log('Nettoyage des event listeners du mode groupé');
         map.off('mousedown', onMouseDown);
         map.off('mousemove', onMouseMove);
         map.off('mouseup', onMouseUp);
@@ -642,10 +800,11 @@ export const ParcelMapPreview = ({
           });
         }
       };
-    } else {
+    } else if (!groupDragMode) {
       // Mode individuel : réactiver le drag individuel et réinitialiser le curseur
+      console.log('Mode individuel activé');
       mapContainer.style.cursor = '';
-      if (mapConfig.enableDragging !== false) {
+      if (mapConfig.enableDragging !== false && markersRef.current.length > 0) {
         markersRef.current.forEach(marker => {
           if (marker && marker.dragging) {
             marker.dragging.enable();
@@ -653,7 +812,7 @@ export const ParcelMapPreview = ({
         });
       }
     }
-  }, [groupDragMode, isMapReady, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
+  }, [groupDragMode, isMapReady, markersRef.current.length, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
   // Détection des conflits avec des parcelles voisines
   const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
@@ -920,17 +1079,6 @@ export const ParcelMapPreview = ({
           Aperçu de la parcelle
         </Label>
         <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-          {mapConfig.enableDragging && validCoords.length >= 3 && (
-            <Button
-              type="button"
-              variant={groupDragMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGroupDragMode(!groupDragMode)}
-              className="text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2"
-            >
-              {groupDragMode ? "Mode individuel" : "Déplacer groupe"}
-            </Button>
-          )}
           {coordinates.length > 0 && (
             <Badge variant="outline" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
               <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
@@ -1026,7 +1174,7 @@ export const ParcelMapPreview = ({
       <div className="text-[10px] md:text-xs text-muted-foreground flex items-start gap-1 md:gap-1.5">
         <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
         <span>
-          Glissez les marqueurs pour ajuster.
+          Utilisez les contrôles sur la carte pour choisir entre déplacement groupé ou individuel.
           {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
         </span>
       </div>
