@@ -4,12 +4,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, MapPin, AlertTriangle, Info, Maximize2, Minimize2, Move, MousePointer } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
 import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
-import { cn } from '@/lib/utils';
 
 interface Coordinate {
   borne: string;
@@ -66,7 +65,7 @@ export const ParcelMapPreview = ({
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [loadingConflicts, setLoadingConflicts] = useState(false);
   const [groupDragMode, setGroupDragMode] = useState(false);
-  const [isFullScreen, setIsFullScreen] = useState(false);
+  const groupDragStartRef = useRef<{ lat: number; lng: number } | null>(null);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -118,13 +117,6 @@ export const ParcelMapPreview = ({
     }).filter(Boolean) as typeof coordinates,
     [coordinates]
   );
-
-  // Désactiver le mode groupe si les marqueurs sont désactivés ou le dragging est désactivé
-  useEffect(() => {
-    if (groupDragMode && (!mapConfig.showMarkers || mapConfig.enableDragging === false)) {
-      setGroupDragMode(false);
-    }
-  }, [groupDragMode, mapConfig.showMarkers, mapConfig.enableDragging]);
 
   // Calculer l'orientation d'un côté basé sur le bearing
   const calculateOrientation = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
@@ -209,20 +201,12 @@ export const ParcelMapPreview = ({
         };
       });
       
-      // Mettre à jour uniquement si le nombre de côtés a changé OU si les longueurs/orientations ont changé
-      const hasChanges = roadSides.length !== newSides.length || 
-        newSides.some((side, idx) => {
-          const existing = roadSides[idx];
-          return !existing || 
-            Math.abs(existing.length - side.length) > 0.01 || 
-            existing.orientation !== side.orientation;
-        });
-      
-      if (hasChanges) {
+      // Ne mettre à jour que si la structure a changé (nombre de côtés différent)
+      if (roadSides.length !== newSides.length) {
         onRoadSidesChange(newSides);
       }
     }
-  }, [validCoords.length, coordinates, onRoadSidesChange]);
+  }, [validCoords.length]);
 
   // Calculer la distance entre 2 points GPS
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
@@ -260,16 +244,11 @@ export const ParcelMapPreview = ({
       });
 
       const map = L.map(mapRef.current, {
-        zoomControl: false, // Désactiver le contrôle par défaut pour le repositionner
+        zoomControl: true,
         attributionControl: true,
         center: mapCenter,
         zoom: mapConfig.defaultZoom || 15,
       });
-
-      // Ajouter le contrôle de zoom en bas à droite pour éviter les conflits avec nos boutons
-      L.control.zoom({
-        position: 'bottomright'
-      }).addTo(map);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
@@ -357,8 +336,6 @@ export const ParcelMapPreview = ({
       dimensionLayersRef.current = [];
       conflictLayersRef.current.forEach(layer => layer.remove());
       conflictLayersRef.current = [];
-      segmentLayersRef.current.forEach(layer => layer.remove());
-      segmentLayersRef.current = [];
 
       // Si pas de coordonnées valides, afficher message mais garder la carte visible
       if (validCoords.length === 0) {
@@ -525,7 +502,7 @@ export const ParcelMapPreview = ({
     updateMap();
   }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, groupDragMode]);
 
-  // Gérer le mode de déplacement groupé (souris ET tactile)
+  // Gérer le mode de déplacement groupé
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current || markersRef.current.length === 0) return;
     
@@ -547,20 +524,6 @@ export const ParcelMapPreview = ({
       let isDragging = false;
       let startPoint: { lat: number; lng: number } | null = null;
       
-      // Fonction pour recalculer et afficher la surface en temps réel
-      const updateSurfaceRealTime = async () => {
-        if (validCoords.length >= 3) {
-          const L = await import('leaflet');
-          const newLatLngs: [number, number][] = markersRef.current.map(m => {
-            const pos = m.getLatLng();
-            return [pos.lat, pos.lng];
-          });
-          const area = calculatePolygonArea(newLatLngs);
-          setSurfaceArea(area);
-        }
-      };
-      
-      // === Handlers pour SOURIS ===
       const onMouseDown = (e: any) => {
         isDragging = true;
         startPoint = e.latlng;
@@ -583,7 +546,7 @@ export const ParcelMapPreview = ({
           }
         });
         
-        // Redessiner le polygone
+        // Redessiner le polygone et les dimensions
         if (polygonRef.current && validCoords.length >= 3) {
           const newLatLngs: [number, number][] = markersRef.current.map(m => {
             const pos = m.getLatLng();
@@ -592,9 +555,6 @@ export const ParcelMapPreview = ({
           polygonRef.current.setLatLngs(newLatLngs);
         }
         
-        // Recalculer la surface en temps réel
-        updateSurfaceRealTime();
-        
         startPoint = currentPoint;
       };
       
@@ -602,16 +562,21 @@ export const ParcelMapPreview = ({
         if (!isDragging) return;
         isDragging = false;
         startPoint = null;
-        mapContainer.style.cursor = 'move'; // Remettre le curseur "move" (pas le curseur par défaut)
+        mapContainer.style.cursor = 'move';
         map.dragging.enable();
         
         // Mettre à jour les coordonnées finales en préservant l'ordre
         const updatedCoords = [...coordinates];
         
+        // Parcourir tous les marqueurs et mettre à jour les coordonnées correspondantes
         markersRef.current.forEach((marker, markerIndex) => {
           if (!marker) return;
+          
+          // Trouver la coordonnée correspondante dans validCoords
           const validCoord = validCoords[markerIndex];
           if (!validCoord) return;
+          
+          // Trouver l'index de cette coordonnée dans le tableau complet
           const fullIndex = coordinates.findIndex(c => c.borne === validCoord.borne);
           if (fullIndex === -1) return;
           
@@ -627,6 +592,7 @@ export const ParcelMapPreview = ({
         updateParcelSidesFromCoordinates(updatedCoords);
       };
       
+      // Gérer également le cas où la souris sort de la carte
       const onMouseLeave = () => {
         if (isDragging) {
           isDragging = false;
@@ -634,6 +600,7 @@ export const ParcelMapPreview = ({
           mapContainer.style.cursor = 'move';
           map.dragging.enable();
           
+          // Mettre à jour les coordonnées comme dans onMouseUp
           const updatedCoords = [...coordinates];
           markersRef.current.forEach((marker, markerIndex) => {
             if (!marker) return;
@@ -653,105 +620,16 @@ export const ParcelMapPreview = ({
         }
       };
       
-      // === Handlers pour TACTILE (mobile/tablette) ===
-      const onTouchStart = (e: TouchEvent) => {
-        if (e.touches.length !== 1) return; // Uniquement pour un seul doigt
-        
-        const touch = e.touches[0];
-        const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
-        
-        isDragging = true;
-        startPoint = point;
-        map.dragging.disable();
-        e.preventDefault();
-      };
-      
-      const onTouchMove = (e: TouchEvent) => {
-        if (!isDragging || !startPoint || e.touches.length !== 1) return;
-        
-        const touch = e.touches[0];
-        const currentPoint = map.containerPointToLatLng([touch.clientX, touch.clientY]);
-        const deltaLat = currentPoint.lat - startPoint.lat;
-        const deltaLng = currentPoint.lng - startPoint.lng;
-        
-        // Déplacer tous les marqueurs simultanément
-        markersRef.current.forEach((marker) => {
-          if (marker) {
-            const markerPos = marker.getLatLng();
-            marker.setLatLng([markerPos.lat + deltaLat, markerPos.lng + deltaLng]);
-          }
-        });
-        
-        // Redessiner le polygone
-        if (polygonRef.current && validCoords.length >= 3) {
-          const newLatLngs: [number, number][] = markersRef.current.map(m => {
-            const pos = m.getLatLng();
-            return [pos.lat, pos.lng];
-          });
-          polygonRef.current.setLatLngs(newLatLngs);
-        }
-        
-        // Recalculer la surface en temps réel
-        updateSurfaceRealTime();
-        
-        startPoint = currentPoint;
-        e.preventDefault();
-      };
-      
-      const onTouchEnd = (e: TouchEvent) => {
-        if (!isDragging) return;
-        
-        isDragging = false;
-        startPoint = null;
-        map.dragging.enable();
-        
-        // Mettre à jour les coordonnées finales
-        const updatedCoords = [...coordinates];
-        markersRef.current.forEach((marker, markerIndex) => {
-          if (!marker) return;
-          const validCoord = validCoords[markerIndex];
-          if (!validCoord) return;
-          const fullIndex = coordinates.findIndex(c => c.borne === validCoord.borne);
-          if (fullIndex === -1) return;
-          
-          const newPos = marker.getLatLng();
-          updatedCoords[fullIndex] = {
-            ...updatedCoords[fullIndex],
-            lat: newPos.lat.toFixed(6),
-            lng: newPos.lng.toFixed(6)
-          };
-        });
-        
-        onCoordinatesUpdate(updatedCoords);
-        updateParcelSidesFromCoordinates(updatedCoords);
-        e.preventDefault();
-      };
-      
-      // Ajouter les event listeners
       map.on('mousedown', onMouseDown);
       map.on('mousemove', onMouseMove);
       map.on('mouseup', onMouseUp);
       mapContainer.addEventListener('mouseleave', onMouseLeave);
       
-      // Listeners tactiles
-      mapContainer.addEventListener('touchstart', onTouchStart, { passive: false });
-      mapContainer.addEventListener('touchmove', onTouchMove, { passive: false });
-      mapContainer.addEventListener('touchend', onTouchEnd, { passive: false });
-      mapContainer.addEventListener('touchcancel', onTouchEnd, { passive: false });
-      
       return () => {
-        // Nettoyer les event listeners
         map.off('mousedown', onMouseDown);
         map.off('mousemove', onMouseMove);
         map.off('mouseup', onMouseUp);
         mapContainer.removeEventListener('mouseleave', onMouseLeave);
-        
-        mapContainer.removeEventListener('touchstart', onTouchStart);
-        mapContainer.removeEventListener('touchmove', onTouchMove);
-        mapContainer.removeEventListener('touchend', onTouchEnd);
-        mapContainer.removeEventListener('touchcancel', onTouchEnd);
-        
-        // Toujours réinitialiser le curseur proprement
         mapContainer.style.cursor = '';
         map.dragging.enable();
         
@@ -776,17 +654,6 @@ export const ParcelMapPreview = ({
       }
     }
   }, [groupDragMode, isMapReady, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
-
-  // Redimensionner la carte Leaflet lors du changement de mode plein écran
-  useEffect(() => {
-    if (!mapInstanceRef.current || !isMapReady) return;
-    
-    const timer = setTimeout(() => {
-      mapInstanceRef.current?.invalidateSize();
-    }, 150);
-    
-    return () => clearTimeout(timer);
-  }, [isFullScreen, isMapReady]);
 
   // Détection des conflits avec des parcelles voisines
   const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
@@ -874,27 +741,26 @@ export const ParcelMapPreview = ({
     return {
       minLat: Math.min(...lats) - 0.01,
       maxLat: Math.max(...lats) + 0.01,
-      minLng: Math.min(...lngs) - 0.01,
+      minLng: Math.min(...lngs) + 0.01,
       maxLng: Math.max(...lngs) + 0.01
     };
   };
 
-  // Vérifier si deux polygones se chevauchent (optimisé)
+  // Vérifier si deux polygones se chevauchent
   const checkPolygonOverlap = (
     poly1: [number, number][], 
     poly2: [number, number][]
   ): { hasOverlap: boolean; area?: number } => {
-    // Calculer une seule fois les points de chevauchement
-    const overlapPoints = poly1.filter(point => isPointInPolygon(point, poly2));
-    const reverseOverlapPoints = poly2.filter(point => isPointInPolygon(point, poly1));
-    
-    const hasOverlap = overlapPoints.length > 0 || reverseOverlapPoints.length > 0;
+    // Vérifier si des points d'un polygone sont à l'intérieur de l'autre
+    const hasPointInside = poly1.some(point => isPointInPolygon(point, poly2)) ||
+                           poly2.some(point => isPointInPolygon(point, poly1));
 
-    if (!hasOverlap) {
+    if (!hasPointInside) {
       return { hasOverlap: false };
     }
 
-    // Estimer la zone de chevauchement si suffisamment de points
+    // Estimer la zone de chevauchement (approximation simple)
+    const overlapPoints = poly1.filter(point => isPointInPolygon(point, poly2));
     if (overlapPoints.length > 2) {
       const area = calculatePolygonArea(overlapPoints);
       return { hasOverlap: true, area };
@@ -921,20 +787,16 @@ export const ParcelMapPreview = ({
     return inside;
   };
 
-  // Afficher les dimensions des côtés (optimisé)
+  // Afficher les dimensions des côtés
   const displaySideDimensions = (L: any, map: any, latLngs: [number, number][]) => {
     for (let i = 0; i < latLngs.length; i++) {
       const j = (i + 1) % latLngs.length;
       const start = latLngs[i];
       const end = latLngs[j];
       
-      // Utiliser directement les dimensions des roadSides qui sont déjà calculées
-      const roadSide = roadSides.find(s => s.sideIndex === i);
+      // Utiliser la dimension du formulaire si elle existe, sinon calculer
       let distance: number;
-      
-      if (roadSide?.length) {
-        distance = roadSide.length;
-      } else if (parcelSides[i]?.length && parseFloat(parcelSides[i].length) > 0) {
+      if (parcelSides[i]?.length && parseFloat(parcelSides[i].length) > 0) {
         distance = parseFloat(parcelSides[i].length);
       } else {
         distance = calculateDistance(start[0], start[1], end[0], end[1]);
@@ -944,7 +806,8 @@ export const ParcelMapPreview = ({
       const midLat = (start[0] + end[0]) / 2;
       const midLng = (start[1] + end[1]) / 2;
       
-      // roadSide est déjà défini au-dessus
+      // Vérifier si ce côté borde une route
+      const roadSide = roadSides.find(s => s.sideIndex === i);
       const isRoadBordering = roadSide?.bordersRoad || false;
       
       // Utiliser le format configuré
@@ -1051,217 +914,129 @@ export const ParcelMapPreview = ({
 
   return (
     <div className="space-y-2 md:space-y-3">
-      {/* Header et badges - cachés en plein écran */}
-      {!isFullScreen && (
-        <>
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-            <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
-              <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-              Aperçu de la parcelle
-            </Label>
-            <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
-              {coordinates.length > 0 && (
-                <Badge variant="outline" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
-                  <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
-                  <span className="hidden sm:inline">bornes</span>
-                  <span className="sm:hidden">b.</span>
-                </Badge>
-              )}
-              {surfaceArea > 0 && (
-                <Badge variant="secondary" className="font-mono text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
-                  {surfaceArea.toLocaleString()} m²
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {conflictingParcels.length > 0 && (
-            <Alert variant="destructive" className="py-2 md:py-3">
-              <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs md:text-sm">
-                <span>
-                  {conflictingParcels.length} conflit(s) détecté(s)
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setShowConflictDialog(true)}
-                  className="h-7 text-xs w-full sm:w-auto"
-                >
-                  Signaler
-                </Button>
-              </AlertDescription>
-            </Alert>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
+          <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
+          Aperçu de la parcelle
+        </Label>
+        <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+          {mapConfig.enableDragging && validCoords.length >= 3 && (
+            <Button
+              type="button"
+              variant={groupDragMode ? "default" : "outline"}
+              size="sm"
+              onClick={() => setGroupDragMode(!groupDragMode)}
+              className="text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2"
+            >
+              {groupDragMode ? "Mode individuel" : "Déplacer groupe"}
+            </Button>
           )}
-
-          {/* Validation du nombre minimum de marqueurs */}
-          {mapConfig.minMarkers && validCoords.length > 0 && validCoords.length < mapConfig.minMarkers && (
-            <Alert variant="destructive" className="py-2 md:py-3">
-              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              <AlertDescription className="text-xs md:text-sm">
-                Nombre de bornes insuffisant: {validCoords.length} sur {mapConfig.minMarkers} minimum requis pour une parcelle valide.
-              </AlertDescription>
-            </Alert>
+          {coordinates.length > 0 && (
+            <Badge variant="outline" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
+              <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
+              <span className="hidden sm:inline">bornes</span>
+              <span className="sm:hidden">b.</span>
+            </Badge>
           )}
-
-          {/* Validation du nombre maximum de marqueurs */}
-          {mapConfig.maxMarkers && validCoords.length > mapConfig.maxMarkers && (
-            <Alert variant="destructive" className="py-2 md:py-3">
-              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              <AlertDescription className="text-xs md:text-sm">
-                Dépassement: {validCoords.length - mapConfig.maxMarkers} borne(s) en trop (max: {mapConfig.maxMarkers}).
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Validation de la surface */}
           {surfaceArea > 0 && (
-            <>
-              {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
-                <Alert variant="destructive" className="py-2 md:py-3">
-                  <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                  <AlertDescription className="text-xs md:text-sm">
-                    Surface trop petite: {surfaceArea.toLocaleString()} m² (min: {mapConfig.minSurfaceSqm.toLocaleString()} m²).
-                  </AlertDescription>
-                </Alert>
-              )}
-              {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
-                <Alert variant="destructive" className="py-2 md:py-3">
-                  <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                  <AlertDescription className="text-xs md:text-sm">
-                    Surface trop grande: {surfaceArea.toLocaleString()} m² (max: {mapConfig.maxSurfaceSqm.toLocaleString()} m²).
-                  </AlertDescription>
-                </Alert>
-              )}
-            </>
+            <Badge variant="secondary" className="font-mono text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
+              {surfaceArea.toLocaleString()} m²
+            </Badge>
           )}
+        </div>
+      </div>
 
-          {loadingConflicts && (
-            <Alert className="py-2 md:py-3">
-              <Info className="h-3.5 w-3.5 md:h-4 md:w-4" />
+      {conflictingParcels.length > 0 && (
+        <Alert variant="destructive" className="py-2 md:py-3">
+          <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs md:text-sm">
+            <span>
+              {conflictingParcels.length} conflit(s) détecté(s)
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowConflictDialog(true)}
+              className="h-7 text-xs w-full sm:w-auto"
+            >
+              Signaler
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Validation du nombre minimum de marqueurs */}
+      {mapConfig.minMarkers && validCoords.length > 0 && validCoords.length < mapConfig.minMarkers && (
+        <Alert variant="destructive" className="py-2 md:py-3">
+          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <AlertDescription className="text-xs md:text-sm">
+            Nombre de bornes insuffisant: {validCoords.length} sur {mapConfig.minMarkers} minimum requis pour une parcelle valide.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Validation du nombre maximum de marqueurs */}
+      {mapConfig.maxMarkers && validCoords.length > mapConfig.maxMarkers && (
+        <Alert variant="destructive" className="py-2 md:py-3">
+          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <AlertDescription className="text-xs md:text-sm">
+            Dépassement: {validCoords.length - mapConfig.maxMarkers} borne(s) en trop (max: {mapConfig.maxMarkers}).
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Validation de la surface */}
+      {surfaceArea > 0 && (
+        <>
+          {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
+            <Alert variant="destructive" className="py-2 md:py-3">
+              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
               <AlertDescription className="text-xs md:text-sm">
-                Vérification des parcelles voisines...
+                Surface trop petite: {surfaceArea.toLocaleString()} m² (min: {mapConfig.minSurfaceSqm.toLocaleString()} m²).
+              </AlertDescription>
+            </Alert>
+          )}
+          {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
+            <Alert variant="destructive" className="py-2 md:py-3">
+              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <AlertDescription className="text-xs md:text-sm">
+                Surface trop grande: {surfaceArea.toLocaleString()} m² (max: {mapConfig.maxSurfaceSqm.toLocaleString()} m²).
               </AlertDescription>
             </Alert>
           )}
         </>
       )}
 
-      <Card
-        className={cn(
-          "overflow-hidden border-2 border-primary/20 relative z-10",
-          isFullScreen && "fixed inset-0 z-[1000] rounded-none border-0 bg-background"
-        )}
-      >
-        {/* Contrôles de carte en overlay - optimisés pour mobile */}
-        {mapConfig.enableDragging && mapConfig.showMarkers && validCoords.length >= 3 && (
-          <div className={cn(
-            "absolute flex gap-1.5 md:gap-2 z-[1100]",
-            isFullScreen ? "top-3 left-3" : "top-2 md:top-2.5 left-2 md:left-2.5"
-          )}>
-            <Button
-              type="button"
-              variant={!groupDragMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGroupDragMode(false)}
-              className={cn(
-                "shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center touch-manipulation",
-                isFullScreen 
-                  ? "h-11 w-11 md:w-auto p-0 md:px-3 md:gap-2" 
-                  : "h-9 md:h-10 w-9 md:w-auto px-0 md:px-2.5 md:gap-1.5"
-              )}
-              title="Mode individuel"
-            >
-              <MousePointer className={cn(isFullScreen ? "h-5 w-5 md:h-4 md:w-4" : "h-4 w-4 md:h-4 md:w-4")} />
-              <span className="hidden md:inline text-xs font-medium">Individuel</span>
-            </Button>
-            <Button
-              type="button"
-              variant={groupDragMode ? "default" : "outline"}
-              size="sm"
-              onClick={() => setGroupDragMode(true)}
-              className={cn(
-                "shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center touch-manipulation",
-                isFullScreen 
-                  ? "h-11 w-11 md:w-auto p-0 md:px-3 md:gap-2" 
-                  : "h-9 md:h-10 w-9 md:w-auto px-0 md:px-2.5 md:gap-1.5"
-              )}
-              title="Déplacer groupe"
-            >
-              <Move className={cn(isFullScreen ? "h-5 w-5 md:h-4 md:w-4" : "h-4 w-4 md:h-4 md:w-4")} />
-              <span className="hidden md:inline text-xs font-medium">Groupe</span>
-            </Button>
-          </div>
-        )}
+      {loadingConflicts && (
+        <Alert className="py-2 md:py-3">
+          <Info className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <AlertDescription className="text-xs md:text-sm">
+            Vérification des parcelles voisines...
+          </AlertDescription>
+        </Alert>
+      )}
 
-        {/* Bouton plein écran - optimisé pour mobile */}
-        <div className={cn(
-          "absolute z-[1100]",
-          isFullScreen ? "top-3 right-3" : "top-2 md:top-2.5 right-2 md:right-2.5"
-        )}>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setIsFullScreen(!isFullScreen)}
-            className={cn(
-              "p-0 rounded-full bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center shadow-lg touch-manipulation",
-              isFullScreen ? "h-11 w-11" : "h-9 w-9 md:h-10 md:w-10"
-            )}
-            title={isFullScreen ? "Quitter plein écran" : "Plein écran"}
-          >
-            {isFullScreen ? (
-              <Minimize2 className={cn(isFullScreen ? "h-5 w-5" : "h-4 w-4 md:h-4.5 md:w-4.5")} />
-            ) : (
-              <Maximize2 className={cn(isFullScreen ? "h-5 w-5" : "h-4 w-4 md:h-4.5 md:w-4.5")} />
-            )}
-          </Button>
-        </div>
-        
-        {/* Badges de surface en mode plein écran - affichés en overlay en bas à gauche */}
-        {isFullScreen && (
-          <div className="absolute bottom-12 md:bottom-16 left-3 z-[1100] flex flex-col gap-1.5">
-            {coordinates.length > 0 && (
-              <Badge variant="outline" className="gap-1 text-xs md:text-sm h-7 md:h-8 px-2.5 md:px-3 bg-background/95 backdrop-blur-sm shadow-lg">
-                <span className="font-medium">{validCoords.length}/{coordinates.length} bornes</span>
-              </Badge>
-            )}
-            {surfaceArea > 0 && (
-              <Badge variant="secondary" className="font-mono text-xs md:text-sm h-7 md:h-8 px-2.5 md:px-3 bg-background/95 backdrop-blur-sm shadow-lg">
-                {surfaceArea.toLocaleString()} m²
-              </Badge>
-            )}
-          </div>
-        )}
-
-        <div
-          ref={mapRef}
-          className={cn(
-            "w-full",
-            isFullScreen ? "h-screen rounded-none" : "h-[250px] md:h-[350px] lg:h-[400px] rounded-lg"
-          )}
+      <Card className="overflow-hidden border-2 border-primary/20 relative z-0">
+        <div 
+          ref={mapRef} 
+          className="h-[250px] md:h-[350px] lg:h-[400px] w-full rounded-lg relative z-0"
         />
       </Card>
       
-      {/* Aide et RoadBorderingSidesPanel - cachés en plein écran */}
-      {!isFullScreen && (
-        <>
-          <div className="text-[10px] md:text-xs text-muted-foreground flex items-start gap-1 md:gap-1.5">
-            <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
-            <span>
-              Glissez les marqueurs pour ajuster.
-              {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
-            </span>
-          </div>
+      <div className="text-[10px] md:text-xs text-muted-foreground flex items-start gap-1 md:gap-1.5">
+        <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
+        <span>
+          Glissez les marqueurs pour ajuster.
+          {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
+        </span>
+      </div>
 
-          {validCoords.length >= 3 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
-            <RoadBorderingSidesPanel
-              sides={roadSides}
-              onSideUpdate={handleRoadSideUpdate}
-              roadTypes={mapConfig.roadTypes}
-            />
-          )}
-        </>
+      {validCoords.length >= 3 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
+        <RoadBorderingSidesPanel
+          sides={roadSides}
+          onSideUpdate={handleRoadSideUpdate}
+          roadTypes={mapConfig.roadTypes}
+        />
       )}
 
       <BoundaryConflictDialog
