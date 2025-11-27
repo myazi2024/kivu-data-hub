@@ -246,11 +246,16 @@ export const ParcelMapPreview = ({
       });
 
       const map = L.map(mapRef.current, {
-        zoomControl: true,
+        zoomControl: false, // Désactiver le contrôle par défaut pour le repositionner
         attributionControl: true,
         center: mapCenter,
         zoom: mapConfig.defaultZoom || 15,
       });
+
+      // Ajouter le contrôle de zoom en bas à droite pour éviter les conflits avec nos boutons
+      L.control.zoom({
+        position: 'bottomright'
+      }).addTo(map);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
@@ -1020,49 +1025,52 @@ export const ParcelMapPreview = ({
 
       <Card
         className={cn(
-          "overflow-hidden border-2 border-primary/20 relative z-0",
-          isFullScreen && "fixed inset-0 z-50 rounded-none border-0 bg-background"
+          "overflow-hidden border-2 border-primary/20 relative",
+          isFullScreen && "fixed inset-0 z-[1000] rounded-none border-0 bg-background"
         )}
       >
         {/* Contrôles de carte en overlay */}
         {mapConfig.enableDragging && validCoords.length >= 3 && (
-          <div className="absolute top-2 left-2 flex flex-col sm:flex-row gap-1.5 z-[1000]">
+          <div className="absolute top-1.5 md:top-2 left-1.5 md:left-2 flex gap-1 md:gap-1.5 z-[1100]">
             <Button
               type="button"
               variant={!groupDragMode ? "default" : "outline"}
               size="sm"
               onClick={() => setGroupDragMode(false)}
-              className="h-8 px-2 text-[10px] md:text-xs shadow-sm bg-background/90 backdrop-blur border border-primary/30 flex items-center gap-1"
+              className="h-6 md:h-7 w-6 md:w-auto px-1 md:px-2 text-[10px] md:text-xs shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center md:gap-1.5"
+              title="Mode individuel"
             >
-              <MousePointer className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Mode individuel</span>
+              <MousePointer className="h-3 w-3 md:h-3.5 md:w-3.5" />
+              <span className="hidden md:inline">Individuel</span>
             </Button>
             <Button
               type="button"
               variant={groupDragMode ? "default" : "outline"}
               size="sm"
               onClick={() => setGroupDragMode(true)}
-              className="h-8 px-2 text-[10px] md:text-xs shadow-sm bg-background/90 backdrop-blur border border-primary/30 flex items-center gap-1"
+              className="h-6 md:h-7 w-6 md:w-auto px-1 md:px-2 text-[10px] md:text-xs shadow-lg bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center md:gap-1.5"
+              title="Déplacer groupe"
             >
-              <Move className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Déplacer groupe</span>
+              <Move className="h-3 w-3 md:h-3.5 md:w-3.5" />
+              <span className="hidden md:inline">Groupe</span>
             </Button>
           </div>
         )}
 
         {/* Bouton plein écran */}
-        <div className="absolute top-2 right-2 z-[1000] flex items-center gap-1">
+        <div className="absolute top-1.5 md:top-2 right-1.5 md:right-2 z-[1100]">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={() => setIsFullScreen(!isFullScreen)}
-            className="h-8 w-8 p-0 rounded-full bg-background/90 backdrop-blur border border-primary/30 flex items-center justify-center shadow-sm"
+            className="h-6 w-6 md:h-7 md:w-7 p-0 rounded-full bg-background/95 backdrop-blur-sm border border-primary/30 flex items-center justify-center shadow-lg"
+            title={isFullScreen ? "Quitter plein écran" : "Plein écran"}
           >
             {isFullScreen ? (
-              <Minimize2 className="h-3.5 w-3.5" />
+              <Minimize2 className="h-3 w-3 md:h-3.5 md:w-3.5" />
             ) : (
-              <Maximize2 className="h-3.5 w-3.5" />
+              <Maximize2 className="h-3 w-3 md:h-3.5 md:w-3.5" />
             )}
           </Button>
         </div>
@@ -1070,7 +1078,7 @@ export const ParcelMapPreview = ({
         <div
           ref={mapRef}
           className={cn(
-            "w-full rounded-lg relative z-0",
+            "w-full rounded-lg",
             isFullScreen ? "h-screen" : "h-[250px] md:h-[350px] lg:h-[400px]"
           )}
         />
