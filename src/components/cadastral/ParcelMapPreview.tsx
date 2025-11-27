@@ -39,8 +39,6 @@ interface ParcelMapPreviewProps {
   onRoadSidesChange?: (roadSides: RoadSideInfo[]) => void;
   parcelSides?: ParcelSide[];
   onParcelSidesUpdate?: (sides: ParcelSide[]) => void;
-  clickToSetMarkerIndex?: number | null;
-  onClickToSetMarkerComplete?: () => void;
 }
 
 export const ParcelMapPreview = ({ 
@@ -52,9 +50,7 @@ export const ParcelMapPreview = ({
   roadSides = [],
   onRoadSidesChange,
   parcelSides = [],
-  onParcelSidesUpdate,
-  clickToSetMarkerIndex = null,
-  onClickToSetMarkerComplete
+  onParcelSidesUpdate
 }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -70,7 +66,6 @@ export const ParcelMapPreview = ({
   const [loadingConflicts, setLoadingConflicts] = useState(false);
   const [groupDragMode, setGroupDragMode] = useState(false);
   const groupDragStartRef = useRef<{ lat: number; lng: number } | null>(null);
-  const clickHandlerRef = useRef<((e: any) => void) | null>(null);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -319,64 +314,6 @@ export const ParcelMapPreview = ({
       }
     };
   }, [mapCenter, mapConfig.defaultZoom]);
-
-  // Gérer le mode de pointage sur carte (click to set marker)
-  useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current) return;
-    
-    const map = mapInstanceRef.current;
-    
-    // Nettoyer l'ancien handler s'il existe
-    if (clickHandlerRef.current) {
-      map.off('click', clickHandlerRef.current);
-      clickHandlerRef.current = null;
-    }
-    
-    // Si le mode click-to-set est actif
-    if (clickToSetMarkerIndex !== null && clickToSetMarkerIndex >= 0 && clickToSetMarkerIndex < coordinates.length) {
-      // Changer le curseur de la carte
-      map.getContainer().style.cursor = 'crosshair';
-      
-      // Créer le gestionnaire de clic
-      const handleMapClick = (e: any) => {
-        const { lat, lng } = e.latlng;
-        
-        // Vérifier que l'index est toujours valide
-        if (clickToSetMarkerIndex !== null && clickToSetMarkerIndex >= 0 && clickToSetMarkerIndex < coordinates.length) {
-          // Mettre à jour les coordonnées de la borne sélectionnée
-          const updatedCoords = [...coordinates];
-          updatedCoords[clickToSetMarkerIndex] = {
-            ...updatedCoords[clickToSetMarkerIndex],
-            lat: lat.toFixed(6),
-            lng: lng.toFixed(6),
-          };
-          onCoordinatesUpdate(updatedCoords);
-          
-          // Notifier la fin du pointage
-          if (onClickToSetMarkerComplete) {
-            onClickToSetMarkerComplete();
-          }
-        }
-      };
-      
-      clickHandlerRef.current = handleMapClick;
-      map.on('click', handleMapClick);
-    } else {
-      // Restaurer le curseur normal
-      map.getContainer().style.cursor = '';
-    }
-    
-    // Cleanup
-    return () => {
-      if (clickHandlerRef.current && mapInstanceRef.current) {
-        mapInstanceRef.current.off('click', clickHandlerRef.current);
-        clickHandlerRef.current = null;
-      }
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.getContainer().style.cursor = '';
-      }
-    };
-  }, [isMapReady, clickToSetMarkerIndex, coordinates.length, onCoordinatesUpdate, onClickToSetMarkerComplete]);
 
   // Mettre à jour les marqueurs et le polygone quand les coordonnées changent
   useEffect(() => {
@@ -977,14 +914,6 @@ export const ParcelMapPreview = ({
 
   return (
     <div className="space-y-2 md:space-y-3">
-      {clickToSetMarkerIndex !== null && (
-        <Alert className="bg-primary/10 border-primary/30 animate-fade-in">
-          <MapPin className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-xs md:text-sm">
-            Cliquez sur la carte pour définir la position de la <strong>Borne {clickToSetMarkerIndex + 1}</strong>
-          </AlertDescription>
-        </Alert>
-      )}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
         <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
           <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
