@@ -119,6 +119,13 @@ export const ParcelMapPreview = ({
     [coordinates]
   );
 
+  // Désactiver le mode groupe si les marqueurs sont désactivés ou le dragging est désactivé
+  useEffect(() => {
+    if (groupDragMode && (!mapConfig.showMarkers || mapConfig.enableDragging === false)) {
+      setGroupDragMode(false);
+    }
+  }, [groupDragMode, mapConfig.showMarkers, mapConfig.enableDragging]);
+
   // Calculer l'orientation d'un côté basé sur le bearing
   const calculateOrientation = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
     const bearing = Math.atan2(lng2 - lng1, lat2 - lat1) * (180 / Math.PI);
@@ -518,7 +525,7 @@ export const ParcelMapPreview = ({
     updateMap();
   }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, groupDragMode]);
 
-  // Gérer le mode de déplacement groupé
+  // Gérer le mode de déplacement groupé (souris ET tactile)
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current || markersRef.current.length === 0) return;
     
@@ -540,6 +547,20 @@ export const ParcelMapPreview = ({
       let isDragging = false;
       let startPoint: { lat: number; lng: number } | null = null;
       
+      // Fonction pour recalculer et afficher la surface en temps réel
+      const updateSurfaceRealTime = async () => {
+        if (validCoords.length >= 3) {
+          const L = await import('leaflet');
+          const newLatLngs: [number, number][] = markersRef.current.map(m => {
+            const pos = m.getLatLng();
+            return [pos.lat, pos.lng];
+          });
+          const area = calculatePolygonArea(newLatLngs);
+          setSurfaceArea(area);
+        }
+      };
+      
+      // === Handlers pour SOURIS ===
       const onMouseDown = (e: any) => {
         isDragging = true;
         startPoint = e.latlng;
@@ -562,7 +583,7 @@ export const ParcelMapPreview = ({
           }
         });
         
-        // Redessiner le polygone et les dimensions
+        // Redessiner le polygone
         if (polygonRef.current && validCoords.length >= 3) {
           const newLatLngs: [number, number][] = markersRef.current.map(m => {
             const pos = m.getLatLng();
@@ -571,6 +592,9 @@ export const ParcelMapPreview = ({
           polygonRef.current.setLatLngs(newLatLngs);
         }
         
+        // Recalculer la surface en temps réel
+        updateSurfaceRealTime();
+        
         startPoint = currentPoint;
       };
       
@@ -578,21 +602,16 @@ export const ParcelMapPreview = ({
         if (!isDragging) return;
         isDragging = false;
         startPoint = null;
-        mapContainer.style.cursor = groupDragMode ? 'move' : '';
+        mapContainer.style.cursor = 'move'; // Remettre le curseur "move" (pas le curseur par défaut)
         map.dragging.enable();
         
         // Mettre à jour les coordonnées finales en préservant l'ordre
         const updatedCoords = [...coordinates];
         
-        // Parcourir tous les marqueurs et mettre à jour les coordonnées correspondantes
         markersRef.current.forEach((marker, markerIndex) => {
           if (!marker) return;
-          
-          // Trouver la coordonnée correspondante dans validCoords
           const validCoord = validCoords[markerIndex];
           if (!validCoord) return;
-          
-          // Trouver l'index de cette coordonnée dans le tableau complet
           const fullIndex = coordinates.findIndex(c => c.borne === validCoord.borne);
           if (fullIndex === -1) return;
           
@@ -608,15 +627,13 @@ export const ParcelMapPreview = ({
         updateParcelSidesFromCoordinates(updatedCoords);
       };
       
-      // Gérer également le cas où la souris sort de la carte
       const onMouseLeave = () => {
         if (isDragging) {
           isDragging = false;
           startPoint = null;
-          mapContainer.style.cursor = groupDragMode ? 'move' : '';
+          mapContainer.style.cursor = 'move';
           map.dragging.enable();
           
-          // Mettre à jour les coordonnées comme dans onMouseUp
           const updatedCoords = [...coordinates];
           markersRef.current.forEach((marker, markerIndex) => {
             if (!marker) return;
@@ -636,17 +653,106 @@ export const ParcelMapPreview = ({
         }
       };
       
+      // === Handlers pour TACTILE (mobile/tablette) ===
+      const onTouchStart = (e: TouchEvent) => {
+        if (e.touches.length !== 1) return; // Uniquement pour un seul doigt
+        
+        const touch = e.touches[0];
+        const point = map.containerPointToLatLng([touch.clientX, touch.clientY]);
+        
+        isDragging = true;
+        startPoint = point;
+        map.dragging.disable();
+        e.preventDefault();
+      };
+      
+      const onTouchMove = (e: TouchEvent) => {
+        if (!isDragging || !startPoint || e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        const currentPoint = map.containerPointToLatLng([touch.clientX, touch.clientY]);
+        const deltaLat = currentPoint.lat - startPoint.lat;
+        const deltaLng = currentPoint.lng - startPoint.lng;
+        
+        // Déplacer tous les marqueurs simultanément
+        markersRef.current.forEach((marker) => {
+          if (marker) {
+            const markerPos = marker.getLatLng();
+            marker.setLatLng([markerPos.lat + deltaLat, markerPos.lng + deltaLng]);
+          }
+        });
+        
+        // Redessiner le polygone
+        if (polygonRef.current && validCoords.length >= 3) {
+          const newLatLngs: [number, number][] = markersRef.current.map(m => {
+            const pos = m.getLatLng();
+            return [pos.lat, pos.lng];
+          });
+          polygonRef.current.setLatLngs(newLatLngs);
+        }
+        
+        // Recalculer la surface en temps réel
+        updateSurfaceRealTime();
+        
+        startPoint = currentPoint;
+        e.preventDefault();
+      };
+      
+      const onTouchEnd = (e: TouchEvent) => {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        startPoint = null;
+        map.dragging.enable();
+        
+        // Mettre à jour les coordonnées finales
+        const updatedCoords = [...coordinates];
+        markersRef.current.forEach((marker, markerIndex) => {
+          if (!marker) return;
+          const validCoord = validCoords[markerIndex];
+          if (!validCoord) return;
+          const fullIndex = coordinates.findIndex(c => c.borne === validCoord.borne);
+          if (fullIndex === -1) return;
+          
+          const newPos = marker.getLatLng();
+          updatedCoords[fullIndex] = {
+            ...updatedCoords[fullIndex],
+            lat: newPos.lat.toFixed(6),
+            lng: newPos.lng.toFixed(6)
+          };
+        });
+        
+        onCoordinatesUpdate(updatedCoords);
+        updateParcelSidesFromCoordinates(updatedCoords);
+        e.preventDefault();
+      };
+      
+      // Ajouter les event listeners
       map.on('mousedown', onMouseDown);
       map.on('mousemove', onMouseMove);
       map.on('mouseup', onMouseUp);
       mapContainer.addEventListener('mouseleave', onMouseLeave);
       
+      // Listeners tactiles
+      mapContainer.addEventListener('touchstart', onTouchStart, { passive: false });
+      mapContainer.addEventListener('touchmove', onTouchMove, { passive: false });
+      mapContainer.addEventListener('touchend', onTouchEnd, { passive: false });
+      mapContainer.addEventListener('touchcancel', onTouchEnd, { passive: false });
+      
       return () => {
+        // Nettoyer les event listeners
         map.off('mousedown', onMouseDown);
         map.off('mousemove', onMouseMove);
         map.off('mouseup', onMouseUp);
         mapContainer.removeEventListener('mouseleave', onMouseLeave);
-        mapContainer.style.cursor = groupDragMode ? 'move' : '';
+        
+        mapContainer.removeEventListener('touchstart', onTouchStart);
+        mapContainer.removeEventListener('touchmove', onTouchMove);
+        mapContainer.removeEventListener('touchend', onTouchEnd);
+        mapContainer.removeEventListener('touchcancel', onTouchEnd);
+        
+        // Toujours réinitialiser le curseur proprement
+        mapContainer.style.cursor = '';
         map.dragging.enable();
         
         // Réactiver le drag individuel des marqueurs si configuré
@@ -1048,7 +1154,7 @@ export const ParcelMapPreview = ({
         )}
       >
         {/* Contrôles de carte en overlay - optimisés pour mobile */}
-        {mapConfig.enableDragging && validCoords.length >= 3 && (
+        {mapConfig.enableDragging && mapConfig.showMarkers && validCoords.length >= 3 && (
           <div className={cn(
             "absolute flex gap-1.5 md:gap-2 z-[1100]",
             isFullScreen ? "top-3 left-3" : "top-2 md:top-2.5 left-2 md:left-2.5"
