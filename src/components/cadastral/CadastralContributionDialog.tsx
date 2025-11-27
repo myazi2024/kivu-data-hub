@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useCadastralContribution, CadastralContributionData } from '@/hooks/useCadastralContribution';
-import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, Camera } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Plus, Trash2, Info, ExternalLink, RotateCcw, ChevronRight, Camera, MapPin } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { MdDashboard, MdLocationOn, MdEventNote, MdAccountBalance, MdRateReview, MdInsertDriveFile } from 'react-icons/md';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -91,6 +91,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [shouldBlinkSuperficie, setShouldBlinkSuperficie] = useState(false);
   const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [clickToSetMarkerIndex, setClickToSetMarkerIndex] = useState<number | null>(null);
   
   // Fonction pour vérifier si le formulaire est valide pour soumission
   const isFormValidForSubmission = () => {
@@ -4578,6 +4579,40 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       {/* Mode manuel */}
                       {coord.mode === 'manual' && (
                         <div className="space-y-1.5">
+                          <Button
+                            type="button"
+                            variant={clickToSetMarkerIndex === index ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => {
+                              if (clickToSetMarkerIndex === index) {
+                                setClickToSetMarkerIndex(null);
+                                toast({
+                                  title: "Pointage annulé",
+                                  description: "Vous pouvez maintenant saisir manuellement ou pointer une autre borne.",
+                                });
+                              } else {
+                                setClickToSetMarkerIndex(index);
+                                // Scroll vers la carte avec une vérification
+                                setTimeout(() => {
+                                  const mapElement = document.querySelector('[class*="leaflet-container"]');
+                                  if (mapElement) {
+                                    mapElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  }
+                                }, 150);
+                              }
+                            }}
+                            className="w-full h-7 md:h-9 text-[10px] md:text-xs gap-1.5"
+                          >
+                            <MapPin className="h-3 md:h-4 w-3 md:w-4 flex-shrink-0" />
+                            {clickToSetMarkerIndex === index ? 'Annuler le pointage' : 'Pointer sur la carte'}
+                          </Button>
+                          
+                          {clickToSetMarkerIndex === index && (
+                            <p className="text-[10px] md:text-xs text-primary animate-pulse">
+                              Cliquez sur la carte ci-dessous pour définir la position de cette borne
+                            </p>
+                          )}
+                          
                           <div className="space-y-1.5">
                             <Label htmlFor={`lat-${index}`} className="text-[10px] md:text-xs">
                               Latitude
@@ -4590,6 +4625,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               value={coord.lat}
                               onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
                               className="h-7 md:h-9 text-[10px] md:text-sm px-1.5 md:px-2"
+                              disabled={clickToSetMarkerIndex === index}
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -4604,6 +4640,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               value={coord.lng}
                               onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
                               className="h-7 md:h-9 text-[10px] md:text-sm px-1.5 md:px-2"
+                              disabled={clickToSetMarkerIndex === index}
                             />
                           </div>
                         </div>
@@ -4626,6 +4663,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     onRoadSidesChange={setRoadSides}
                     parcelSides={parcelSides}
                     onParcelSidesUpdate={setParcelSides}
+                    clickToSetMarkerIndex={clickToSetMarkerIndex}
+                    onClickToSetMarkerComplete={() => {
+                      const borneNumber = (clickToSetMarkerIndex ?? 0) + 1;
+                      setClickToSetMarkerIndex(null);
+                      toast({
+                        title: "Coordonnées enregistrées",
+                        description: `La position de la Borne ${borneNumber} a été définie avec succès.`,
+                      });
+                    }}
                   />
                 </div>
 
