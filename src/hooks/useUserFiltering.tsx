@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { UserProfile } from './useUserManagement';
+import { useDebounce } from './useDebounce';
 
 interface UseUserFilteringProps {
   users: UserProfile[];
@@ -18,13 +19,16 @@ export const useUserFiltering = ({
   sortBy,
   sortOrder
 }: UseUserFilteringProps) => {
+  // Debounce search query to avoid excessive re-renders
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  
   const filteredAndSortedUsers = useMemo(() => {
     return users
       .filter(user => {
-        const matchesSearch = !searchQuery || 
-          user.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          user.organization?.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = !debouncedSearchQuery ||
+          user.full_name?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          user.email?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
+          user.organization?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
         
         const matchesRole = roleFilter === 'all' || user.role === roleFilter;
         const matchesStatus = statusFilter === 'all' || 
@@ -45,7 +49,7 @@ export const useUserFiltering = ({
         }
         return sortOrder === 'asc' ? comparison : -comparison;
       });
-  }, [users, searchQuery, roleFilter, statusFilter, sortBy, sortOrder]);
+  }, [users, debouncedSearchQuery, roleFilter, statusFilter, sortBy, sortOrder]);
 
   return filteredAndSortedUsers;
 };

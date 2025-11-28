@@ -24,10 +24,17 @@ export const UserStatsDisplay: React.FC<UserStatsDisplayProps> = ({
   const [endDate, setEndDate] = useState<Date>(new Date());
 
   const handleDateChange = () => {
+    // Validate dates
+    if (startDate > endDate) {
+      return; // Don't apply invalid date range
+    }
+    
     if (onPeriodChange) {
       onPeriodChange(startDate, endDate);
     }
   };
+
+  const isDateRangeValid = startDate <= endDate;
 
   if (loading) {
     return (
@@ -82,7 +89,17 @@ export const UserStatsDisplay: React.FC<UserStatsDisplayProps> = ({
                   locale={fr}
                 />
               </div>
-              <Button onClick={handleDateChange} size="sm" className="w-full">
+              {!isDateRangeValid && (
+                <p className="text-xs text-destructive">
+                  La date de début doit être antérieure à la date de fin
+                </p>
+              )}
+              <Button 
+                onClick={handleDateChange} 
+                size="sm" 
+                className="w-full"
+                disabled={!isDateRangeValid}
+              >
                 Appliquer
               </Button>
             </div>

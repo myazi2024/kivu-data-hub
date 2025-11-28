@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { UserSearchSelect } from './users/UserSearchSelect';
 
 type AppRole = 'super_admin' | 'admin' | 'partner' | 'user';
 
@@ -100,32 +101,33 @@ export const AdminUserRoles: React.FC = () => {
 
   const fetchUserRoles = async () => {
     try {
-      // First get user_roles
+      // Optimized query with single JOIN to avoid N+1
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
-        .select('id, user_id, role, created_at')
+        .select(`
+          id,
+          user_id,
+          role,
+          created_at,
+          profiles!inner (
+            user_id,
+            full_name,
+            email
+          )
+        `)
         .order('created_at', { ascending: false });
 
       if (rolesError) throw rolesError;
 
-      // Then get profiles for these users
-      const userIds = [...new Set(rolesData?.map(r => r.user_id) || [])];
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email')
-        .in('user_id', userIds);
-
-      if (profilesError) throw profilesError;
-
-      // Combine the data
+      // Transform the data to match expected structure
       const data = rolesData?.map(role => ({
-        ...role,
-        profiles: profilesData?.find(p => p.user_id === role.user_id) || { full_name: null, email: '' }
+        id: role.id,
+        user_id: role.user_id,
+        role: role.role,
+        created_at: role.created_at,
+        profiles: Array.isArray(role.profiles) ? role.profiles[0] : role.profiles
       }));
 
-      const error = null;
-
-      if (error) throw error;
       setUserRoles(data || []);
     } catch (error) {
       console.error('Error fetching user roles:', error);
@@ -261,18 +263,10 @@ export const AdminUserRoles: React.FC = () => {
         </CardHeader>
         <CardContent>
           <div className="flex gap-4">
-            <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-              <SelectTrigger className="flex-1">
-                <SelectValue placeholder="Sélectionner un utilisateur" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(userRolesGrouped).map(([userId, data]) => (
-                  <SelectItem key={userId} value={userId}>
-                    {data.user.full_name || data.user.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <UserSearchSelect 
+              value={selectedUserId} 
+              onValueChange={setSelectedUserId}
+            />
 
             <Select value={selectedRole} onValueChange={(value) => setSelectedRole(value as AppRole)}>
               <SelectTrigger className="w-[200px]">

@@ -29,6 +29,9 @@ export const BlockUserDialog: React.FC<BlockUserDialogProps> = ({
   const MAX_REASON_LENGTH = 500;
 
   const handleBlock = async () => {
+    // Prevent double-click
+    if (isBlocking) return;
+    
     if (!reason.trim()) {
       toast.error('Veuillez indiquer une raison pour le blocage');
       return;

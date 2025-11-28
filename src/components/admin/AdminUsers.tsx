@@ -51,8 +51,21 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
   const handleExportCSV = () => {
     exportToCSV({
       filename: `utilisateurs_${new Date().toISOString().split('T')[0]}.csv`,
-      headers: ['Nom', 'Email', 'Organisation', 'Rôle', 'Statut', 'Avertissements', 'Date inscription', 'Bloqué le', 'Raison du blocage'],
+      headers: [
+        'ID Utilisateur',
+        'Nom',
+        'Email',
+        'Organisation',
+        'Rôle',
+        'Statut',
+        'Avertissements',
+        'Date inscription',
+        'Bloqué le',
+        'Raison du blocage',
+        'Avatar URL'
+      ],
       data: filteredUsers.map(u => [
+        u.user_id,
         u.full_name || '',
         u.email,
         u.organization || '',
@@ -61,7 +74,8 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
         u.fraud_strikes.toString(),
         new Date(u.created_at).toLocaleDateString('fr-FR'),
         u.blocked_at ? new Date(u.blocked_at).toLocaleDateString('fr-FR') : '',
-        u.blocked_reason || ''
+        u.blocked_reason || '',
+        u.avatar_url || ''
       ])
     });
     toast.success('Export réussi');

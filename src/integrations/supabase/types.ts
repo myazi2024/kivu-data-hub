@@ -147,6 +147,7 @@ export type Database = {
       audit_logs: {
         Row: {
           action: string
+          admin_name: string | null
           created_at: string
           id: string
           ip_address: unknown
@@ -159,6 +160,7 @@ export type Database = {
         }
         Insert: {
           action: string
+          admin_name?: string | null
           created_at?: string
           id?: string
           ip_address?: unknown
@@ -171,6 +173,7 @@ export type Database = {
         }
         Update: {
           action?: string
+          admin_name?: string | null
           created_at?: string
           id?: string
           ip_address?: unknown

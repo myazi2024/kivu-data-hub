@@ -25,6 +25,7 @@ interface BlockHistory {
   blocked_at: string;
   blocked_reason: string;
   unblocked_at?: string;
+  admin_name?: string;
 }
 
 export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ 
@@ -70,7 +71,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
     try {
       const { data, error } = await supabase
         .from('audit_logs')
-        .select('created_at, new_values, old_values')
+        .select('created_at, new_values, old_values, admin_name')
         .eq('table_name', 'profiles')
         .eq('record_id', user.user_id)
         .in('action', ['block_user', 'unblock_user'])
@@ -85,7 +86,8 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           if (newVals.is_blocked === true && newVals.blocked_reason) {
             history.push({
               blocked_at: log.created_at,
-              blocked_reason: newVals.blocked_reason
+              blocked_reason: newVals.blocked_reason,
+              admin_name: log.admin_name || 'Admin inconnu'
             });
           } else if (newVals.is_blocked === false && history.length > 0) {
             history[history.length - 1].unblocked_at = log.created_at;
@@ -278,7 +280,12 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
                           {new Date(block.blocked_at).toLocaleDateString('fr-FR')}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2">{block.blocked_reason}</p>
+                      <p className="text-xs text-muted-foreground mb-1">{block.blocked_reason}</p>
+                      {block.admin_name && (
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Par: <span className="font-medium">{block.admin_name}</span>
+                        </p>
+                      )}
                       {block.unblocked_at && (
                         <p className="text-xs text-success">
                           Débloqué le: {new Date(block.unblocked_at).toLocaleDateString('fr-FR', {
