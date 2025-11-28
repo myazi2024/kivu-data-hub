@@ -181,17 +181,22 @@ export const AdminUserRolesEnhanced: React.FC = () => {
 
       if (error) throw error;
 
-      // Transform the data to match expected interface
-      const transformedData = data?.map((item: any) => ({
-        id: item.id,
-        user_id: item.user_id,
-        role: item.role,
-        created_at: item.created_at,
-        profiles: {
-          full_name: item.profiles?.full_name || null,
-          email: item.profiles?.email || ''
-        }
-      })) || [];
+      // Transform the data with proper null checks
+      const transformedData = (data || []).map((item: any) => {
+        // Safely access nested profile data
+        const profileData = item.profiles;
+        
+        return {
+          id: item.id,
+          user_id: item.user_id,
+          role: item.role,
+          created_at: item.created_at,
+          profiles: {
+            full_name: profileData?.full_name || null,
+            email: profileData?.email || 'Email non disponible'
+          }
+        };
+      });
 
       setUserRoles(transformedData);
     } catch (error) {
@@ -201,6 +206,7 @@ export const AdminUserRolesEnhanced: React.FC = () => {
         description: 'Impossible de charger les rôles',
         variant: 'destructive',
       });
+      setUserRoles([]); // Set empty array on error
     } finally {
       setLoading(false);
     }

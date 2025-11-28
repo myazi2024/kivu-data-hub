@@ -9,6 +9,7 @@ import { BlockUserDialog } from './BlockUserDialog';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { toast } from 'sonner';
 
 interface UserDetailsDialogProps {
   user: UserProfile;
@@ -77,10 +78,15 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         .in('action', ['block_user', 'unblock_user'])
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching block history:', error);
+        toast.error('Erreur lors du chargement de l\'historique');
+        setBlockHistory([]);
+        return;
+      }
 
       const history: BlockHistory[] = [];
-      data?.forEach((log) => {
+      (data || []).forEach((log) => {
         if (log.new_values && typeof log.new_values === 'object') {
           const newVals = log.new_values as any;
           if (newVals.is_blocked === true && newVals.blocked_reason) {
@@ -98,6 +104,8 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       setBlockHistory(history);
     } catch (error) {
       console.error('Error fetching block history:', error);
+      toast.error('Erreur lors du chargement de l\'historique');
+      setBlockHistory([]);
     }
   };
 

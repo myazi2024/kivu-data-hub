@@ -142,6 +142,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           }, 0);
         } else {
           setProfile(null);
+          // Clear cache on logout
+          setProfileCache(new Map());
         }
         
         setLoading(false);
@@ -162,7 +164,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      // Clear cache on component unmount
+      setProfileCache(new Map());
+    };
   }, []);
 
   const value = {

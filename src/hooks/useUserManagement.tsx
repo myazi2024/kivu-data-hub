@@ -35,8 +35,14 @@ export const useUserManagement = () => {
 
       if (profilesError) throw profilesError;
 
-      // Fetch roles for all users
+      // Fetch roles for all users with proper error handling
       const userIds = profilesData?.map(p => p.user_id) || [];
+      
+      if (userIds.length === 0) {
+        setUsers([]);
+        return;
+      }
+
       const { data: rolesData, error: rolesError } = await supabase
         .from('user_roles')
         .select('user_id, role')
@@ -44,6 +50,7 @@ export const useUserManagement = () => {
 
       if (rolesError) {
         console.error('Error fetching roles:', rolesError);
+        // Continue without roles rather than failing completely
       }
 
       // Combine profiles with their highest role
@@ -60,6 +67,7 @@ export const useUserManagement = () => {
 
         return {
           ...profile,
+          email: profile.email || 'Email non disponible', // Ensure email is always present
           role: highestRole
         };
       });
@@ -68,6 +76,7 @@ export const useUserManagement = () => {
     } catch (error) {
       console.error('Error loading users:', error);
       toast.error('Erreur lors du chargement des utilisateurs');
+      setUsers([]); // Set empty array on error to prevent undefined state
     } finally {
       setLoading(false);
     }
