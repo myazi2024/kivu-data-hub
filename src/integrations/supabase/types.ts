@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_user_notes: {
+        Row: {
+          admin_id: string
+          admin_name: string | null
+          created_at: string
+          id: string
+          is_important: boolean | null
+          note_content: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          admin_id: string
+          admin_name?: string | null
+          created_at?: string
+          id?: string
+          is_important?: boolean | null
+          note_content: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          admin_id?: string
+          admin_name?: string | null
+          created_at?: string
+          id?: string
+          is_important?: boolean | null
+          note_content?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       article_favorites: {
         Row: {
           article_id: string
@@ -1494,6 +1527,33 @@ export type Database = {
           },
         ]
       }
+      permissions: {
+        Row: {
+          action_name: string
+          created_at: string
+          description: string | null
+          display_name: string
+          id: string
+          resource_name: string
+        }
+        Insert: {
+          action_name: string
+          created_at?: string
+          description?: string | null
+          display_name: string
+          id?: string
+          resource_name: string
+        }
+        Update: {
+          action_name?: string
+          created_at?: string
+          description?: string | null
+          display_name?: string
+          id?: string
+          resource_name?: string
+        }
+        Relationships: []
+      }
       permit_admin_actions: {
         Row: {
           action_type: string
@@ -1974,6 +2034,38 @@ export type Database = {
         }
         Relationships: []
       }
+      role_permissions: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          permission_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          permission_id: string
+          role: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          permission_id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "role_permissions_permission_id_fkey"
+            columns: ["permission_id"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       territorial_zones: {
         Row: {
           coordinates: Json
@@ -2059,6 +2151,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_activity_logs: {
+        Row: {
+          activity_details: Json | null
+          activity_type: string
+          created_at: string
+          id: string
+          ip_address: unknown
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_details?: Json | null
+          activity_type: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_details?: Json | null
+          activity_type?: string
+          created_at?: string
+          id?: string
+          ip_address?: unknown
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       user_preferences: {
         Row: {
@@ -2350,6 +2472,16 @@ export type Database = {
         }
         Returns: Json
       }
+      get_role_permissions: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: {
+          action_name: string
+          description: string
+          display_name: string
+          permission_id: string
+          resource_name: string
+        }[]
+      }
       get_service_audit_history: {
         Args: { service_id_param: string }
         Returns: {
@@ -2358,6 +2490,17 @@ export type Database = {
           changed_by: string
           new_values: Json
           old_values: Json
+        }[]
+      }
+      get_user_activity_stats: {
+        Args: { _end_date?: string; _start_date?: string; _user_id: string }
+        Returns: {
+          contribution_count: number
+          last_activity: string
+          login_count: number
+          payment_count: number
+          search_count: number
+          total_activities: number
         }[]
       }
       get_user_highest_role: {
@@ -2407,6 +2550,10 @@ export type Database = {
       migrate_approved_contribution: {
         Args: { contribution_id: string }
         Returns: string
+      }
+      user_has_permission: {
+        Args: { _action: string; _resource: string; _user_id: string }
+        Returns: boolean
       }
       validate_and_apply_ccc: {
         Args: { code_input: string; invoice_amount: number }

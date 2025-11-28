@@ -13,9 +13,11 @@ import { useUserFiltering } from '@/hooks/useUserFiltering';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { UserDetailsDialog } from './users/UserDetailsDialog';
+import { BulkActionsDialog } from './users/BulkActionsDialog';
 import { exportToCSV } from '@/utils/csvExport';
 import { Shield, Users as UsersIcon, User as UserIcon, Ban } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface AdminUsersProps {
   onRefresh: () => void;
@@ -28,6 +30,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'email'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
 
   const filteredUsers = useUserFiltering({
     users,
@@ -148,10 +151,16 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
               <Users className="w-3.5 h-3.5 md:w-4 md:h-4" />
               Gestion des Utilisateurs ({filteredUsers.length})
             </CardTitle>
-            <Button onClick={handleExportCSV} variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
-              <Download className="w-3 h-3" />
-              Exporter CSV
-            </Button>
+            <div className="flex gap-1.5">
+              <BulkActionsDialog 
+                selectedUsers={selectedUsers} 
+                onComplete={() => { fetchUsers(); setSelectedUsers([]); }} 
+              />
+              <Button onClick={handleExportCSV} variant="outline" size="sm" className="gap-1.5 h-7 text-xs">
+                <Download className="w-3 h-3" />
+                Exporter CSV
+              </Button>
+            </div>
           </div>
           
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-1.5 w-full">
