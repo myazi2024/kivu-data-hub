@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, Clock, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { ResponsiveTable, ResponsiveTableHeader, ResponsiveTableBody, ResponsiveTableRow, ResponsiveTableCell, ResponsiveTableHead } from '@/components/ui/responsive-table';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
+import { format } from 'date-fns';
 
 interface Payment {
   id: string;
@@ -43,31 +47,36 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
 
   const fetchPayments = async () => {
     try {
-      // Récupérer les paiements d'abord
+      // Fetch payments
       const { data: paymentsData, error } = await supabase
         .from('payments')
-        .select('*')
+        .select(`
+          *,
+          publications(id, title)
+        `)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      // Récupérer les profils et publications séparément
-      const userIds = [...new Set(paymentsData?.map(p => p.user_id).filter(Boolean))];
-      const publicationIds = [...new Set(paymentsData?.map(p => p.publication_id).filter(Boolean))];
+      // Fetch profiles separately
+      const userIds = [...new Set(paymentsData?.map(p => p.user_id).filter(Boolean) || [])];
+      let profilesData: any[] = [];
+      
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, email')
+          .in('user_id', userIds);
+        profilesData = profiles || [];
+      }
 
-      const [profilesResult, publicationsResult] = await Promise.all([
-        userIds.length > 0 ? supabase.from('profiles').select('user_id, full_name, email').in('user_id', userIds) : { data: [] },
-        publicationIds.length > 0 ? supabase.from('publications').select('id, title').in('id', publicationIds) : { data: [] }
-      ]);
-
-      // Combiner les données
-      const paymentsWithDetails = paymentsData?.map(payment => ({
+      // Combine data
+      const combinedPayments = paymentsData?.map(payment => ({
         ...payment,
-        profiles: profilesResult.data?.find(p => p.user_id === payment.user_id) || null,
-        publications: publicationsResult.data?.find(p => p.id === payment.publication_id) || null
+        profiles: profilesData.find(p => p.user_id === payment.user_id) || null
       })) || [];
 
-      setPayments(paymentsWithDetails);
+      setPayments(combinedPayments);
     } catch (error) {
       console.error('Erreur lors du chargement des paiements:', error);
       toast.error('Erreur lors du chargement des paiements');
@@ -94,33 +103,15 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    const config = {
-      pending: { variant: 'secondary' as const, icon: Clock, label: 'En attente' },
-      completed: { variant: 'default' as const, icon: CheckCircle, label: 'Complété' },
-      failed: { variant: 'destructive' as const, icon: XCircle, label: 'Échoué' },
-      cancelled: { variant: 'outline' as const, icon: XCircle, label: 'Annulé' }
-    };
-    
-    const { variant, icon: Icon, label } = config[status as keyof typeof config] || config.pending;
-    
-    return (
-      <Badge variant={variant} className="flex items-center gap-1">
-        <Icon className="w-3 h-3" />
-        {label}
-      </Badge>
-    );
-  };
-
   const getProviderBadge = (provider: string) => {
     const colors = {
-      'mpesa': 'bg-green-100 text-green-800',
-      'orange_money': 'bg-orange-100 text-orange-800',
-      'airtel_money': 'bg-red-100 text-red-800'
+      'mpesa': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      'orange_money': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+      'airtel_money': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
     };
     
     return (
-      <span className={`px-2 py-1 rounded-full text-xs ${colors[provider as keyof typeof colors] || 'bg-gray-100 text-gray-800'}`}>
+      <span className={`px-2 py-1 rounded-full text-xs ${colors[provider as keyof typeof colors] || 'bg-muted text-muted-foreground'}`}>
         {provider?.replace('_', ' ').toUpperCase() || 'Mobile Money'}
       </span>
     );
@@ -130,21 +121,40 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
     ? payments 
     : payments.filter(payment => payment.status === filterStatus);
 
+  const pagination = usePagination(filteredPayments, { initialPageSize: 10 });
+
+  const handleExport = () => {
+    exportToCSV({
+      filename: `paiements_${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      headers: ['Date', 'Utilisateur', 'Email', 'Publication', 'Montant', 'Méthode', 'Téléphone', 'Statut'],
+      data: filteredPayments.map(p => [
+        format(new Date(p.created_at), 'dd/MM/yyyy HH:mm'),
+        p.profiles?.full_name || 'N/A',
+        p.profiles?.email || 'N/A',
+        p.publications?.title || 'N/A',
+        `$${p.amount_usd}`,
+        p.payment_provider || 'N/A',
+        p.phone_number || 'N/A',
+        p.status
+      ])
+    });
+  };
+
   if (loading) {
     return <div>Chargement...</div>;
   }
 
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <CreditCard className="w-5 h-5" />
+      <CardHeader className="p-3 sm:p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-4">
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <CreditCard className="w-4 h-4 sm:w-5 sm:h-5" />
             Gestion des Paiements
           </CardTitle>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="w-48">
+              <SelectTrigger className="w-32 sm:w-48 h-8 text-xs sm:text-sm">
                 <SelectValue placeholder="Filtrer par statut" />
               </SelectTrigger>
               <SelectContent>
@@ -155,74 +165,105 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
                 <SelectItem value="cancelled">Annulé</SelectItem>
               </SelectContent>
             </Select>
+            <Button onClick={handleExport} variant="outline" size="sm" className="gap-1 h-8 text-xs">
+              <Download className="h-3 w-3" />
+              <span className="hidden sm:inline">Exporter</span>
+            </Button>
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Utilisateur</TableHead>
-              <TableHead>Publication</TableHead>
-              <TableHead>Montant</TableHead>
-              <TableHead>Méthode</TableHead>
-              <TableHead>Téléphone</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filteredPayments.map((payment) => (
-              <TableRow key={payment.id}>
-                <TableCell>
+      <CardContent className="p-0 sm:p-6">
+        <ResponsiveTable>
+          <ResponsiveTableHeader>
+            <ResponsiveTableRow>
+              <ResponsiveTableHead priority="high">Utilisateur</ResponsiveTableHead>
+              <ResponsiveTableHead priority="medium">Publication</ResponsiveTableHead>
+              <ResponsiveTableHead priority="high">Montant</ResponsiveTableHead>
+              <ResponsiveTableHead priority="low">Méthode</ResponsiveTableHead>
+              <ResponsiveTableHead priority="low">Téléphone</ResponsiveTableHead>
+              <ResponsiveTableHead priority="high">Statut</ResponsiveTableHead>
+              <ResponsiveTableHead priority="medium">Date</ResponsiveTableHead>
+              <ResponsiveTableHead priority="high">Actions</ResponsiveTableHead>
+            </ResponsiveTableRow>
+          </ResponsiveTableHeader>
+          <ResponsiveTableBody>
+            {pagination.paginatedData.map((payment) => (
+              <ResponsiveTableRow key={payment.id}>
+                <ResponsiveTableCell priority="high" label="Utilisateur">
                   <div>
-                    <div className="font-medium">{payment.profiles?.full_name || 'Utilisateur'}</div>
-                    <div className="text-sm text-muted-foreground">{payment.profiles?.email}</div>
+                    <div className="font-medium text-xs sm:text-sm">{payment.profiles?.full_name || 'Utilisateur'}</div>
+                    <div className="text-xs text-muted-foreground">{payment.profiles?.email}</div>
                   </div>
-                </TableCell>
-                <TableCell className="font-medium">{payment.publications?.title}</TableCell>
-                <TableCell>${payment.amount_usd}</TableCell>
-                <TableCell>
+                </ResponsiveTableCell>
+                <ResponsiveTableCell priority="medium" label="Publication" className="font-medium text-xs sm:text-sm">
+                  {payment.publications?.title}
+                </ResponsiveTableCell>
+                <ResponsiveTableCell priority="high" label="Montant" className="font-semibold text-xs sm:text-sm">
+                  ${payment.amount_usd}
+                </ResponsiveTableCell>
+                <ResponsiveTableCell priority="low" label="Méthode">
                   <div className="space-y-1">
                     <div>{getProviderBadge(payment.payment_provider)}</div>
                     <div className="text-xs text-muted-foreground">
                       {payment.transaction_id && `ID: ${payment.transaction_id.slice(0, 8)}...`}
                     </div>
                   </div>
-                </TableCell>
-                <TableCell>{payment.phone_number}</TableCell>
-                <TableCell>{getStatusBadge(payment.status)}</TableCell>
-                <TableCell>{new Date(payment.created_at).toLocaleDateString()}</TableCell>
-                <TableCell>
+                </ResponsiveTableCell>
+                <ResponsiveTableCell priority="low" label="Téléphone" className="text-xs sm:text-sm">
+                  {payment.phone_number}
+                </ResponsiveTableCell>
+                <ResponsiveTableCell priority="high" label="Statut">
+                  <StatusBadge status={payment.status as any} />
+                </ResponsiveTableCell>
+                <ResponsiveTableCell priority="medium" label="Date" className="text-xs sm:text-sm">
+                  {format(new Date(payment.created_at), 'dd/MM/yyyy')}
+                </ResponsiveTableCell>
+                <ResponsiveTableCell priority="high" label="Actions">
                   {payment.status === 'pending' && (
-                    <div className="flex space-x-1">
+                    <div className="flex gap-1">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => updatePaymentStatus(payment.id, 'completed')}
+                        className="h-7 w-7 p-0 sm:h-8 sm:w-8"
                       >
-                        <CheckCircle className="w-4 h-4" />
+                        <CheckCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => updatePaymentStatus(payment.id, 'failed')}
+                        className="h-7 w-7 p-0 sm:h-8 sm:w-8"
                       >
-                        <XCircle className="w-4 h-4" />
+                        <XCircle className="w-3 h-3 sm:w-4 sm:h-4" />
                       </Button>
                     </div>
                   )}
-                </TableCell>
-              </TableRow>
+                </ResponsiveTableCell>
+              </ResponsiveTableRow>
             ))}
-          </TableBody>
-        </Table>
+          </ResponsiveTableBody>
+        </ResponsiveTable>
         
         {filteredPayments.length === 0 && (
-          <div className="text-center py-8 text-muted-foreground">
+          <div className="text-center py-8 text-xs sm:text-sm text-muted-foreground">
             Aucun paiement trouvé
           </div>
+        )}
+
+        {pagination.totalItems > 0 && (
+          <PaginationControls
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalItems}
+            hasNextPage={pagination.hasNextPage}
+            hasPreviousPage={pagination.hasPreviousPage}
+            onPageChange={pagination.goToPage}
+            onPageSizeChange={pagination.changePageSize}
+            onNextPage={pagination.goToNextPage}
+            onPreviousPage={pagination.goToPreviousPage}
+          />
         )}
       </CardContent>
     </Card>
