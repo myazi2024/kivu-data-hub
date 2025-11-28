@@ -92,13 +92,7 @@ export const useUserManagement = () => {
 
       if (error) throw error;
 
-      // Create audit log
-      await supabase.from('audit_logs').insert({
-        action: 'block_user',
-        table_name: 'profiles',
-        record_id: userId,
-        new_values: { is_blocked: true, blocked_reason: reason }
-      });
+      // Audit log is now handled by database trigger
 
       // Update local state instead of full refetch
       setUsers(prevUsers => 
@@ -131,13 +125,7 @@ export const useUserManagement = () => {
 
       if (error) throw error;
 
-      // Create audit log
-      await supabase.from('audit_logs').insert({
-        action: 'unblock_user',
-        table_name: 'profiles',
-        record_id: userId,
-        new_values: { is_blocked: false }
-      });
+      // Audit log is now handled by database trigger
 
       // Update local state instead of full refetch
       setUsers(prevUsers => 

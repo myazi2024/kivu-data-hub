@@ -43,7 +43,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
     fetchUsers();
   }, [fetchUsers]);
 
-  // Reset pagination when filters change
+  // Reset pagination only when search or filters change (not sort)
   useEffect(() => {
     pagination.goToPage(1);
   }, [searchQuery, roleFilter, statusFilter]);
@@ -121,7 +121,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
             <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par nom, email..."
+                placeholder="Nom, email, organisation..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-7 w-full sm:w-40 md:w-52 h-7 text-xs"
