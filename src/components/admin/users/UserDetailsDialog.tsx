@@ -1,18 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Eye, CheckCircle } from 'lucide-react';
+import { Eye, CheckCircle, History, Shield, Users as UsersIcon, User as UserIcon } from 'lucide-react';
 import { UserProfile } from '@/hooks/useUserManagement';
-import { UserStatistics, useUserStatistics } from '@/hooks/useUserStatistics';
+import { useAdminUserStatistics } from '@/hooks/useAdminUserStatistics';
 import { UserStatsDisplay } from './UserStatsDisplay';
 import { BlockUserDialog } from './BlockUserDialog';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Users, User as UserIcon } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 
 interface UserDetailsDialogProps {
   user: UserProfile;
   onBlock: (userId: string, reason: string, userRole: string) => Promise<boolean>;
   onUnblock: (userId: string) => Promise<boolean>;
+}
+
+interface UserRole {
+  role: string;
+  created_at: string;
+}
+
+interface BlockHistory {
+  blocked_at: string;
+  blocked_reason: string;
+  unblocked_at?: string;
 }
 
 export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({ 
@@ -21,30 +33,102 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
   onUnblock 
 }) => {
   const [open, setOpen] = useState(false);
-  const { statistics, loading: statsLoading, refetch } = useUserStatistics();
+  const { statistics, loading: statsLoading, refetch } = useAdminUserStatistics(user.user_id);
   const [isUnblocking, setIsUnblocking] = useState(false);
+  const [allRoles, setAllRoles] = useState<UserRole[]>([]);
+  const [blockHistory, setBlockHistory] = useState<BlockHistory[]>([]);
+  const [loadingRoles, setLoadingRoles] = useState(false);
+  const [showBlockHistory, setShowBlockHistory] = useState(false);
 
   useEffect(() => {
     if (open) {
       refetch();
+      fetchAllRoles();
+      fetchBlockHistory();
     }
-  }, [open, refetch]);
+  }, [open, refetch, user.user_id]);
+
+  const fetchAllRoles = async () => {
+    setLoadingRoles(true);
+    try {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('role, created_at')
+        .eq('user_id', user.user_id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAllRoles(data || []);
+    } catch (error) {
+      console.error('Error fetching user roles:', error);
+    } finally {
+      setLoadingRoles(false);
+    }
+  };
+
+  const fetchBlockHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('created_at, new_values, old_values')
+        .eq('table_name', 'profiles')
+        .eq('record_id', user.user_id)
+        .in('action', ['block_user', 'unblock_user'])
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const history: BlockHistory[] = [];
+      data?.forEach((log) => {
+        if (log.new_values && typeof log.new_values === 'object') {
+          const newVals = log.new_values as any;
+          if (newVals.is_blocked === true && newVals.blocked_reason) {
+            history.push({
+              blocked_at: log.created_at,
+              blocked_reason: newVals.blocked_reason
+            });
+          } else if (newVals.is_blocked === false && history.length > 0) {
+            history[history.length - 1].unblocked_at = log.created_at;
+          }
+        }
+      });
+
+      setBlockHistory(history);
+    } catch (error) {
+      console.error('Error fetching block history:', error);
+    }
+  };
 
   const handleUnblock = async () => {
     setIsUnblocking(true);
     const success = await onUnblock(user.user_id);
-    setIsUnblocking(false);
+    
     if (success) {
+      // Send notification to the user
+      try {
+        await supabase.from('notifications').insert({
+          user_id: user.user_id,
+          type: 'account',
+          title: 'Compte débloqué',
+          message: 'Votre compte a été débloqué. Vous pouvez à nouveau accéder à la plateforme.',
+          action_url: '/user-dashboard'
+        });
+      } catch (error) {
+        console.error('Error sending unblock notification:', error);
+      }
+
       setOpen(false);
     }
+    
+    setIsUnblocking(false);
   };
 
   const getRoleBadge = (role: string) => {
     const config: Record<string, { variant: any, icon: any, label: string }> = {
       super_admin: { variant: 'destructive', icon: Shield, label: 'Super Admin' },
-      admin: { variant: 'destructive', icon: Shield, label: 'Admin' },
-      partner: { variant: 'default', icon: Users, label: 'Partenaire' },
-      user: { variant: 'secondary', icon: UserIcon, label: 'Utilisateur' }
+      admin: { variant: 'default', icon: Shield, label: 'Admin' },
+      partner: { variant: 'secondary', icon: UsersIcon, label: 'Partenaire' },
+      user: { variant: 'outline', icon: UserIcon, label: 'Utilisateur' }
     };
     
     const { variant, icon: Icon, label } = config[role] || config.user;
@@ -88,7 +172,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
               <p className="font-medium text-sm md:text-base">{user.organization || 'Non spécifiée'}</p>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Rôle</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Rôle principal</p>
               <div className="mt-1">
                 {getRoleBadge(user.role)}
               </div>
@@ -102,10 +186,10 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
               </div>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Avertissements</p>
+              <p className="text-xs md:text-sm text-muted-foreground">Avertissements fraude</p>
               <div className="mt-1">
                 <Badge variant={user.fraud_strikes > 0 ? 'destructive' : 'secondary'}>
-                  {user.fraud_strikes} strikes
+                  {user.fraud_strikes} strike{user.fraud_strikes > 1 ? 's' : ''}
                 </Badge>
               </div>
             </div>
@@ -121,15 +205,93 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
             </div>
           </div>
 
-          <UserStatsDisplay stats={statistics} loading={statsLoading} />
+          {/* All Roles Section */}
+          {allRoles.length > 1 && (
+            <div className="border-t pt-4">
+              <h4 className="font-semibold mb-2 text-sm md:text-base">Tous les rôles ({allRoles.length})</h4>
+              <div className="flex flex-wrap gap-2">
+                {loadingRoles ? (
+                  <div className="text-xs text-muted-foreground">Chargement...</div>
+                ) : (
+                  allRoles.map((roleItem, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      {getRoleBadge(roleItem.role)}
+                      <span className="text-xs text-muted-foreground">
+                        depuis {new Date(roleItem.created_at).toLocaleDateString('fr-FR')}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
+          <UserStatsDisplay 
+            stats={statistics} 
+            loading={statsLoading}
+            onPeriodChange={(start, end) => refetch(start, end)}
+          />
+
+          {/* Current Block Info */}
           {user.is_blocked && user.blocked_reason && (
             <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2 text-sm md:text-base text-destructive">Raison du blocage</h4>
-              <p className="text-xs md:text-sm text-muted-foreground">{user.blocked_reason}</p>
-              <p className="text-xs text-muted-foreground mt-2">
-                Bloqué le: {new Date(user.blocked_at!).toLocaleDateString('fr-FR')}
-              </p>
+              <h4 className="font-semibold mb-2 text-sm md:text-base text-destructive">Blocage actuel</h4>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                <p className="text-xs md:text-sm font-medium mb-1">Raison:</p>
+                <p className="text-xs md:text-sm text-muted-foreground">{user.blocked_reason}</p>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Bloqué le: {new Date(user.blocked_at!).toLocaleDateString('fr-FR', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Block History */}
+          {blockHistory.length > 0 && (
+            <div className="border-t pt-4">
+              <Collapsible open={showBlockHistory} onOpenChange={setShowBlockHistory}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" size="sm" className="w-full justify-between">
+                    <div className="flex items-center gap-2">
+                      <History className="w-4 h-4" />
+                      <span className="font-semibold text-sm">Historique des blocages ({blockHistory.length})</span>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {showBlockHistory ? 'Masquer' : 'Afficher'}
+                    </span>
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-3 space-y-2">
+                  {blockHistory.map((block, index) => (
+                    <div key={index} className="bg-muted rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="destructive" className="text-xs">
+                          Blocage #{blockHistory.length - index}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(block.blocked_at).toLocaleDateString('fr-FR')}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mb-2">{block.blocked_reason}</p>
+                      {block.unblocked_at && (
+                        <p className="text-xs text-success">
+                          Débloqué le: {new Date(block.unblocked_at).toLocaleDateString('fr-FR', {
+                            day: '2-digit',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
 
@@ -148,6 +310,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
               <BlockUserDialog 
                 userId={user.user_id}
                 userName={user.full_name || user.email}
+                userEmail={user.email}
                 userRole={user.role}
                 onBlock={onBlock}
               />
