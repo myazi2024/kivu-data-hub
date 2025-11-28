@@ -67,10 +67,9 @@ const AdminInvoices = () => {
   const fetchInvoices = async () => {
     try {
       setLoading(true);
-      // Optimized query with join
       const { data, error } = await supabase
         .from('cadastral_invoices')
-        .select('*, profiles(user_id, full_name, email)')
+        .select('*')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -221,7 +220,7 @@ const AdminInvoices = () => {
             <ResponsiveTableBody>
               {pagination.paginatedData.length === 0 ? (
                 <ResponsiveTableRow>
-                  <ResponsiveTableCell colSpan={8} className="text-center text-xs sm:text-sm text-muted-foreground">
+                  <ResponsiveTableCell priority="high" className="text-center text-xs sm:text-sm text-muted-foreground">
                     Aucune facture trouvée
                   </ResponsiveTableCell>
                 </ResponsiveTableRow>
