@@ -390,8 +390,8 @@ export const AdminUserRolesEnhanced: React.FC = () => {
             Organisation des privilèges par ordre décroissant
           </CardDescription>
         </CardHeader>
-        <CardContent className="p-2 md:p-3">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+        <CardContent className="p-1.5 md:p-2">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-1.5">
             {(Object.keys(roleConfig) as AppRole[]).map((role) => {
               const config = roleConfig[role];
               const Icon = config.icon;
@@ -399,14 +399,14 @@ export const AdminUserRolesEnhanced: React.FC = () => {
               return (
                 <div
                   key={role}
-                  className="p-2 rounded-lg border bg-card hover:shadow-md transition-shadow"
+                  className="p-1.5 rounded-lg border bg-card hover:shadow-md transition-shadow"
                 >
-                  <div className={`w-8 h-8 rounded-full ${config.color} flex items-center justify-center mb-1.5`}>
-                    <Icon className="h-4 w-4 text-white" />
+                  <div className={`w-7 h-7 rounded-full ${config.color} flex items-center justify-center mb-1`}>
+                    <Icon className="h-3.5 w-3.5 text-white" />
                   </div>
-                  <h3 className="font-semibold text-xs mb-0.5">{config.label}</h3>
-                  <p className="text-[10px] text-muted-foreground mb-1 line-clamp-1">{config.description}</p>
-                  <Badge variant="secondary" className="text-[10px] py-0 px-1">{count}</Badge>
+                  <h3 className="font-semibold text-[11px] mb-0.5">{config.label}</h3>
+                  <p className="text-[9px] text-muted-foreground mb-0.5 line-clamp-1">{config.description}</p>
+                  <Badge variant="secondary" className="text-[9px] py-0 px-1">{count}</Badge>
                 </div>
               );
             })}
@@ -472,8 +472,8 @@ export const AdminUserRolesEnhanced: React.FC = () => {
             </Dialog>
           </div>
         </CardHeader>
-        <CardContent className="p-2 md:p-3">
-          <div className="flex flex-col gap-2">
+        <CardContent className="p-1.5 md:p-2">
+          <div className="flex flex-col gap-1.5">
             <div className="relative">
               <Search className="absolute left-2 top-1.5 h-3 w-3 text-muted-foreground" />
               <Input
@@ -520,9 +520,9 @@ export const AdminUserRolesEnhanced: React.FC = () => {
               </Button>
             </div>
 
-            <div className="flex items-center gap-1.5 p-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
-              <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
-              <p className="text-[10px] text-amber-700 dark:text-amber-300">
+            <div className="flex items-center gap-1 p-1.5 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800">
+              <AlertTriangle className="w-2.5 h-2.5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <p className="text-[9px] text-amber-700 dark:text-amber-300">
                 Vous ne pouvez pas retirer votre propre rôle administrateur
               </p>
             </div>
@@ -555,8 +555,8 @@ export const AdminUserRolesEnhanced: React.FC = () => {
             </Select>
           </div>
         </CardHeader>
-        <CardContent className="p-2 md:p-3">
-          <div className="space-y-1.5 md:space-y-2">
+        <CardContent className="p-1.5 md:p-2">
+          <div className="space-y-1.5">
             {filteredUsers.map(([userId, data]) => {
               const highestRole = data.roles.sort((a, b) => {
                 const order = { super_admin: 0, admin: 1, partner: 2, user: 3 };
@@ -569,21 +569,21 @@ export const AdminUserRolesEnhanced: React.FC = () => {
               return (
                 <div
                   key={userId}
-                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-2 rounded-lg border hover:border-primary/50 transition-colors"
+                  className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 p-1.5 rounded-lg border hover:border-primary/50 transition-colors"
                 >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className={`w-7 h-7 rounded-full ${config.color} flex items-center justify-center shrink-0`}>
-                      <Icon className="h-3.5 w-3.5 text-white" />
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <div className={`w-6 h-6 rounded-full ${config.color} flex items-center justify-center shrink-0`}>
+                      <Icon className="h-3 w-3 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-xs truncate">
+                      <p className="font-medium text-[11px] truncate">
                         {data.user.full_name || data.user.email}
                       </p>
-                      <p className="text-[10px] text-muted-foreground truncate">{data.user.email}</p>
+                      <p className="text-[9px] text-muted-foreground truncate">{data.user.email}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-1 flex-wrap w-full sm:w-auto">
+                  <div className="flex items-center gap-0.5 flex-wrap w-full sm:w-auto">
                     {data.roles.map((role) => {
                       const roleConf = roleConfig[role.role as AppRole];
                       const isCurrentUserRole = userId === user?.id && (role.role === 'admin' || role.role === 'super_admin');
@@ -592,13 +592,13 @@ export const AdminUserRolesEnhanced: React.FC = () => {
                         <Badge
                           key={role.id}
                           variant="secondary"
-                          className="flex items-center gap-0.5 text-[10px] py-0 px-1.5"
+                          className="flex items-center gap-0.5 text-[9px] py-0 px-1"
                         >
-                          <span className="truncate max-w-[100px]">{roleConf.label}</span>
+                          <span className="truncate max-w-[80px]">{roleConf.label}</span>
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-3 w-3 p-0 hover:bg-destructive/20 shrink-0"
+                            className="h-2.5 w-2.5 p-0 hover:bg-destructive/20 shrink-0"
                             onClick={() => removeRole(role.id, userId, role.role as AppRole)}
                             disabled={isCurrentUserRole}
                             title={isCurrentUserRole ? "Vous ne pouvez pas retirer votre propre rôle admin" : "Retirer ce rôle"}
@@ -614,7 +614,7 @@ export const AdminUserRolesEnhanced: React.FC = () => {
             })}
 
             {filteredUsers.length === 0 && (
-              <div className="text-center py-6 text-xs text-muted-foreground">
+              <div className="text-center py-4 text-xs text-muted-foreground">
                 Aucun utilisateur trouvé
               </div>
             )}

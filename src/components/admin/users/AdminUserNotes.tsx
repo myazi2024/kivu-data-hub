@@ -83,14 +83,14 @@ export const AdminUserNotes: React.FC<AdminUserNotesProps> = ({ userId }) => {
                   {editingNote ? 'Modifier la note' : 'Nouvelle note'}
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 <Textarea
                   placeholder="Écrivez votre note ici..."
                   value={noteContent}
                   onChange={(e) => setNoteContent(e.target.value)}
-                  className="min-h-[120px] text-sm"
+                  className="min-h-[100px] text-xs"
                 />
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-1.5">
                   <Checkbox
                     id="important"
                     checked={isImportant}
@@ -98,12 +98,12 @@ export const AdminUserNotes: React.FC<AdminUserNotesProps> = ({ userId }) => {
                   />
                   <label
                     htmlFor="important"
-                    className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    className="text-xs font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
                   >
                     Marquer comme importante
                   </label>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <Button
                     variant="outline"
                     onClick={() => {
@@ -137,40 +137,40 @@ export const AdminUserNotes: React.FC<AdminUserNotesProps> = ({ userId }) => {
             {notes.map((note) => (
               <div
                 key={note.id}
-                className={`p-2 rounded-lg border ${
+                className={`p-1.5 rounded-lg border ${
                   note.is_important ? 'border-destructive bg-destructive/5' : 'border-border'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <div className="flex items-center gap-1.5 flex-1">
-                    {note.is_important && <AlertCircle className="w-3 h-3 text-destructive shrink-0" />}
-                    <Badge variant="secondary" className="text-[10px] py-0 px-1.5">
+                <div className="flex items-start justify-between gap-1.5 mb-1">
+                  <div className="flex items-center gap-1 flex-1">
+                    {note.is_important && <AlertCircle className="w-2.5 h-2.5 text-destructive shrink-0" />}
+                    <Badge variant="secondary" className="text-[9px] py-0 px-1">
                       {note.admin_name || 'Admin'}
                     </Badge>
-                    <span className="text-[10px] text-muted-foreground">
-                      {format(new Date(note.created_at), 'dd MMM yyyy HH:mm', { locale: fr })}
+                    <span className="text-[9px] text-muted-foreground">
+                      {format(new Date(note.created_at), 'dd MMM HH:mm', { locale: fr })}
                     </span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-0.5">
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0"
+                      className="h-4 w-4 p-0"
                       onClick={() => handleEdit(note)}
                     >
-                      <Edit className="w-3 h-3" />
+                      <Edit className="w-2.5 h-2.5" />
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="h-5 w-5 p-0 hover:text-destructive"
+                      className="h-4 w-4 p-0 hover:text-destructive"
                       onClick={() => handleDelete(note.id)}
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-2.5 h-2.5" />
                     </Button>
                   </div>
                 </div>
-                <p className="text-xs whitespace-pre-wrap">{note.note_content}</p>
+                <p className="text-[10px] whitespace-pre-wrap">{note.note_content}</p>
               </div>
             ))}
           </div>

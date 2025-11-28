@@ -52,40 +52,40 @@ export const AdminUserActivity: React.FC<AdminUserActivityProps> = ({ userId }) 
               Statistiques d'Activité
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-2 md:p-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-              <div className="p-2 bg-muted rounded">
-                <p className="text-[10px] text-muted-foreground">Total</p>
-                <p className="text-lg font-bold">{stats.total_activities}</p>
+          <CardContent className="p-1.5 md:p-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-1.5">
+              <div className="p-1.5 bg-muted rounded">
+                <p className="text-[9px] text-muted-foreground">Total</p>
+                <p className="text-base font-bold">{stats.total_activities}</p>
               </div>
-              <div className="p-2 bg-blue-50 dark:bg-blue-950/20 rounded">
-                <p className="text-[10px] text-muted-foreground">Connexions</p>
-                <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+              <div className="p-1.5 bg-blue-50 dark:bg-blue-950/20 rounded">
+                <p className="text-[9px] text-muted-foreground">Connexions</p>
+                <p className="text-base font-bold text-blue-600 dark:text-blue-400">
                   {stats.login_count}
                 </p>
               </div>
-              <div className="p-2 bg-purple-50 dark:bg-purple-950/20 rounded">
-                <p className="text-[10px] text-muted-foreground">Recherches</p>
-                <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+              <div className="p-1.5 bg-purple-50 dark:bg-purple-950/20 rounded">
+                <p className="text-[9px] text-muted-foreground">Recherches</p>
+                <p className="text-base font-bold text-purple-600 dark:text-purple-400">
                   {stats.search_count}
                 </p>
               </div>
-              <div className="p-2 bg-green-50 dark:bg-green-950/20 rounded">
-                <p className="text-[10px] text-muted-foreground">Contributions</p>
-                <p className="text-lg font-bold text-green-600 dark:text-green-400">
+              <div className="p-1.5 bg-green-50 dark:bg-green-950/20 rounded">
+                <p className="text-[9px] text-muted-foreground">Contributions</p>
+                <p className="text-base font-bold text-green-600 dark:text-green-400">
                   {stats.contribution_count}
                 </p>
               </div>
-              <div className="p-2 bg-orange-50 dark:bg-orange-950/20 rounded">
-                <p className="text-[10px] text-muted-foreground">Paiements</p>
-                <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+              <div className="p-1.5 bg-orange-50 dark:bg-orange-950/20 rounded">
+                <p className="text-[9px] text-muted-foreground">Paiements</p>
+                <p className="text-base font-bold text-orange-600 dark:text-orange-400">
                   {stats.payment_count}
                 </p>
               </div>
             </div>
             {stats.last_activity && (
-              <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground">
-                <Clock className="w-3 h-3" />
+              <div className="mt-1.5 flex items-center gap-0.5 text-[9px] text-muted-foreground">
+                <Clock className="w-2.5 h-2.5" />
                 Dernière activité:{' '}
                 {format(new Date(stats.last_activity), 'dd MMMM yyyy à HH:mm', { locale: fr })}
               </div>

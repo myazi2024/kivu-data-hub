@@ -119,14 +119,14 @@ export const AdminPermissions: React.FC = () => {
           </Select>
         </div>
       </CardHeader>
-      <CardContent className="p-2 md:p-3">
-        <div className="space-y-3">
+      <CardContent className="p-1.5 md:p-2">
+        <div className="space-y-2">
           {Object.entries(groupedPermissions).map(([resource, perms]) => (
-            <div key={resource} className="border rounded-lg p-2 md:p-3">
-              <h3 className="font-semibold text-xs md:text-sm mb-2 capitalize">
+            <div key={resource} className="border rounded-lg p-1.5 md:p-2">
+              <h3 className="font-semibold text-[11px] md:text-xs mb-1.5 capitalize">
                 {resource.replace(/_/g, ' ')}
               </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 md:gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
                 {perms.map((perm) => {
                   const hasPermission = rolePerms.includes(perm.id);
                   const isProcessing = processingPermissions.has(perm.id);
@@ -136,22 +136,22 @@ export const AdminPermissions: React.FC = () => {
                       key={perm.id}
                       variant={hasPermission ? 'default' : 'outline'}
                       size="sm"
-                      className="h-auto py-1.5 px-2 flex flex-col items-start justify-start text-left gap-0.5"
+                      className="h-auto py-1 px-1.5 flex flex-col items-start justify-start text-left gap-0.5"
                       onClick={() => handleTogglePermission(perm.id, hasPermission)}
                       disabled={isProcessing}
                     >
-                      <div className="flex items-center gap-1 w-full">
+                      <div className="flex items-center gap-0.5 w-full">
                         {hasPermission ? (
-                          <Check className="w-3 h-3" />
+                          <Check className="w-2.5 h-2.5" />
                         ) : (
-                          <X className="w-3 h-3 opacity-50" />
+                          <X className="w-2.5 h-2.5 opacity-50" />
                         )}
-                        <span className="text-[10px] font-medium capitalize">
+                        <span className="text-[9px] font-medium capitalize">
                           {perm.action_name}
                         </span>
                       </div>
                       {perm.description && (
-                        <span className="text-[9px] opacity-70 line-clamp-1 w-full">
+                        <span className="text-[8px] opacity-70 line-clamp-1 w-full">
                           {perm.description}
                         </span>
                       )}
@@ -163,15 +163,15 @@ export const AdminPermissions: React.FC = () => {
           ))}
         </div>
 
-        <div className="mt-3 p-2 bg-muted rounded-lg">
-          <h4 className="font-semibold text-xs mb-1">Légende</h4>
-          <div className="flex flex-wrap gap-2 text-[10px]">
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full bg-primary" />
+        <div className="mt-2 p-1.5 bg-muted rounded-lg">
+          <h4 className="font-semibold text-[10px] mb-1">Légende</h4>
+          <div className="flex flex-wrap gap-1.5 text-[9px]">
+            <div className="flex items-center gap-0.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-primary" />
               <span>Permission active</span>
             </div>
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 rounded-full border-2 border-border" />
+            <div className="flex items-center gap-0.5">
+              <div className="w-1.5 h-1.5 rounded-full border-2 border-border" />
               <span>Permission inactive</span>
             </div>
           </div>
