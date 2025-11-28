@@ -63,15 +63,23 @@ export const useConfigValidation = () => {
     const errors: ValidationError[] = [];
 
     // Valider zoom
-    errors.push(...validateNumericRange(settings.defaultZoom, 'Zoom par défaut', 1, 20));
+    errors.push(...validateNumericRange(settings.defaultZoom, 'Zoom par défaut', 1, 19));
 
-    // Valider coordonnées
-    errors.push(...validateNumericRange(settings.defaultCenter.lat, 'Latitude', -90, 90));
-    errors.push(...validateNumericRange(settings.defaultCenter.lng, 'Longitude', -180, 180));
+    // Valider coordonnées (bounds géographiques)
+    if (!settings.defaultCenter || typeof settings.defaultCenter.lat !== 'number' || typeof settings.defaultCenter.lng !== 'number') {
+      errors.push({
+        field: 'defaultCenter',
+        message: 'Le centre par défaut doit contenir une latitude et longitude valides',
+        severity: 'error'
+      });
+    } else {
+      errors.push(...validateNumericRange(settings.defaultCenter.lat, 'Latitude', -90, 90));
+      errors.push(...validateNumericRange(settings.defaultCenter.lng, 'Longitude', -180, 180));
+    }
 
     // Valider markers
-    errors.push(...validateNumericRange(settings.minMarkers, 'Marqueurs minimum', 3));
-    errors.push(...validateNumericRange(settings.maxMarkers, 'Marqueurs maximum', 3));
+    errors.push(...validateNumericRange(settings.minMarkers, 'Marqueurs minimum', 3, 100));
+    errors.push(...validateNumericRange(settings.maxMarkers, 'Marqueurs maximum', 3, 100));
     errors.push(...validateMinMaxConsistency(
       settings.minMarkers,
       settings.maxMarkers,
@@ -81,11 +89,13 @@ export const useConfigValidation = () => {
     // Valider surface
     errors.push(...validateNumericRange(settings.minSurfaceSqm, 'Surface minimum', 0));
     errors.push(...validateNumericRange(settings.maxSurfaceSqm, 'Surface maximum', 0));
-    errors.push(...validateMinMaxConsistency(
-      settings.minSurfaceSqm,
-      settings.maxSurfaceSqm,
-      'Surface'
-    ));
+    if (settings.maxSurfaceSqm > 0) {
+      errors.push(...validateMinMaxConsistency(
+        settings.minSurfaceSqm,
+        settings.maxSurfaceSqm,
+        'Surface'
+      ));
+    }
 
     // Valider opacité
     if (settings.fillOpacity < 0 || settings.fillOpacity > 1) {
@@ -93,6 +103,59 @@ export const useConfigValidation = () => {
         field: 'fillOpacity',
         message: 'L\'opacité doit être entre 0 et 1',
         severity: 'error'
+      });
+    }
+
+    // Valider lineWidth
+    errors.push(...validateNumericRange(settings.lineWidth, 'Épaisseur des lignes', 1, 10));
+
+    // Valider dimensionFontSize
+    errors.push(...validateNumericRange(settings.dimensionFontSize, 'Taille de police', 8, 16));
+
+    // Valider dimensionFormat (doit contenir {value})
+    if (settings.dimensionFormat && !settings.dimensionFormat.includes('{value}')) {
+      errors.push({
+        field: 'dimensionFormat',
+        message: 'Le format de dimension doit contenir {value}',
+        severity: 'error'
+      });
+    }
+
+    // Valider couleurs (doivent être au format hex)
+    const validateColor = (color: string, field: string) => {
+      if (color && !color.match(/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/)) {
+        errors.push({
+          field,
+          message: `${field} doit être une couleur hexadécimale valide (ex: #3b82f6)`,
+          severity: 'error'
+        });
+      }
+    };
+
+    validateColor(settings.markerColor, 'Couleur des marqueurs');
+    validateColor(settings.lineColor, 'Couleur des lignes');
+    validateColor(settings.fillColor, 'Couleur de remplissage');
+    validateColor(settings.dimensionTextColor, 'Couleur du texte');
+
+    // Valider roadTypes
+    if (settings.roadTypes && Array.isArray(settings.roadTypes)) {
+      const values = new Set<string>();
+      settings.roadTypes.forEach((roadType: any, index: number) => {
+        if (!roadType.value || !roadType.label) {
+          errors.push({
+            field: `roadTypes[${index}]`,
+            message: `Le type de route ${index + 1} doit avoir une valeur et un libellé`,
+            severity: 'error'
+          });
+        }
+        if (roadType.value && values.has(roadType.value)) {
+          errors.push({
+            field: `roadTypes[${index}]`,
+            message: `La valeur "${roadType.value}" est dupliquée`,
+            severity: 'error'
+          });
+        }
+        values.add(roadType.value);
       });
     }
 

@@ -42,7 +42,7 @@ const DEFAULT_MAP_CONFIG: MapConfig = {
   maxMarkers: 50,
   markerColor: '#3b82f6',
   showSideDimensions: true,
-  dimensionUnit: 'm',
+  dimensionUnit: 'm', // Corrigé: 'm' au lieu de 'meters'
   dimensionTextColor: '#000000',
   dimensionFontSize: 11,
   dimensionFormat: '{value}m',
@@ -69,6 +69,21 @@ const DEFAULT_MAP_CONFIG: MapConfig = {
     { value: 'chemin', label: 'Chemin' },
     { value: 'piste', label: 'Piste' },
   ]
+};
+
+// Convertir une couleur HSL CSS variable en hex valide pour Leaflet
+const convertCssColorToHex = (color: string): string => {
+  // Si c'est déjà un hex, le retourner tel quel
+  if (color.startsWith('#')) {
+    return color;
+  }
+  
+  // Si c'est une variable CSS (hsl(var(--...))), retourner la couleur par défaut
+  if (color.includes('var(--')) {
+    return '#3b82f6'; // Bleu par défaut
+  }
+  
+  return color;
 };
 
 export const useMapConfig = () => {
@@ -122,16 +137,11 @@ export const useMapConfig = () => {
           ...data.config_value as MapConfig
         };
         
-        // Convertir les couleurs HSL si nécessaire
-        if (mergedConfig.markerColor?.includes('var(--')) {
-          mergedConfig.markerColor = '#3b82f6'; // Fallback pour les variables CSS
-        }
-        if (mergedConfig.lineColor?.includes('var(--')) {
-          mergedConfig.lineColor = '#3b82f6';
-        }
-        if (mergedConfig.fillColor?.includes('var(--')) {
-          mergedConfig.fillColor = '#3b82f6';
-        }
+        // Convertir les couleurs CSS variables en hex valides pour Leaflet
+        mergedConfig.markerColor = convertCssColorToHex(mergedConfig.markerColor || '#3b82f6');
+        mergedConfig.lineColor = convertCssColorToHex(mergedConfig.lineColor || '#3b82f6');
+        mergedConfig.fillColor = convertCssColorToHex(mergedConfig.fillColor || '#3b82f6');
+        mergedConfig.dimensionTextColor = convertCssColorToHex(mergedConfig.dimensionTextColor || '#000000');
         
         setConfig(mergedConfig);
       } else {
