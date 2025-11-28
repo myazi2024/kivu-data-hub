@@ -122,25 +122,16 @@ export const useMapConfig = () => {
           ...data.config_value as MapConfig
         };
         
-        // Convertir les couleurs invalides (HSL avec variables CSS, RGB, etc.) en HEX
-        const validateAndConvertColor = (color: string | undefined, fallback: string): string => {
-          if (!color) return fallback;
-          
-          // Si c'est déjà un HEX valide, le garder
-          if (/^#[0-9A-F]{6}$/i.test(color)) return color;
-          
-          // Si contient des variables CSS ou format HSL/RGB invalide, utiliser fallback
-          if (color.includes('var(--') || color.includes('hsl(') || color.includes('rgb(')) {
-            return fallback;
-          }
-          
-          return fallback;
-        };
-        
-        mergedConfig.markerColor = validateAndConvertColor(mergedConfig.markerColor, '#3b82f6');
-        mergedConfig.lineColor = validateAndConvertColor(mergedConfig.lineColor, '#3b82f6');
-        mergedConfig.fillColor = validateAndConvertColor(mergedConfig.fillColor, '#3b82f6');
-        mergedConfig.dimensionTextColor = validateAndConvertColor(mergedConfig.dimensionTextColor, '#000000');
+        // Convertir les couleurs HSL si nécessaire
+        if (mergedConfig.markerColor?.includes('var(--')) {
+          mergedConfig.markerColor = '#3b82f6'; // Fallback pour les variables CSS
+        }
+        if (mergedConfig.lineColor?.includes('var(--')) {
+          mergedConfig.lineColor = '#3b82f6';
+        }
+        if (mergedConfig.fillColor?.includes('var(--')) {
+          mergedConfig.fillColor = '#3b82f6';
+        }
         
         setConfig(mergedConfig);
       } else {

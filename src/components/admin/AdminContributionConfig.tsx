@@ -50,9 +50,9 @@ const AdminContributionConfig = () => {
     autoCalculateSurface: true,
     minMarkers: 3,
     maxMarkers: 50,
-    markerColor: '#3b82f6',
+    markerColor: 'hsl(var(--primary))',
     showSideDimensions: true,
-    dimensionUnit: 'm',
+    dimensionUnit: 'meters',
     dimensionTextColor: '#000000',
     dimensionFontSize: 11,
     dimensionFormat: '{value}m',
@@ -827,21 +827,21 @@ const AdminContributionConfig = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <Label>Nombre maximum de bornes</Label>
+                    <Label>Nombre minimum de bornes</Label>
                     <Input
                       type="number"
                       min="3"
                       max="100"
-                      value={mapPreviewSettings.maxMarkers}
+                      value={mapPreviewSettings.minMarkers}
                       onChange={(e) => {
                         setMapPreviewSettings({
                           ...mapPreviewSettings,
-                          maxMarkers: parseInt(e.target.value)
+                          minMarkers: parseInt(e.target.value)
                         });
                       }}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Maximum autorisé pour une parcelle
+                      Minimum requis pour tracer un polygone
                     </p>
                   </div>
 
@@ -850,24 +850,19 @@ const AdminContributionConfig = () => {
                     <Input
                       type="number"
                       step="0.0001"
-                      min="-90"
-                      max="90"
                       value={mapPreviewSettings.defaultCenter?.lat || -4.0383}
                       onChange={(e) => {
-                        const lat = parseFloat(e.target.value);
-                        if (lat >= -90 && lat <= 90) {
-                          setMapPreviewSettings({
-                            ...mapPreviewSettings,
-                            defaultCenter: {
-                              ...mapPreviewSettings.defaultCenter,
-                              lat
-                            }
-                          });
-                        }
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          defaultCenter: {
+                            ...mapPreviewSettings.defaultCenter,
+                            lat: parseFloat(e.target.value)
+                          }
+                        });
                       }}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Kinshasa: -4.0383 (plage: -90 à 90)
+                      Kinshasa: -4.0383
                     </p>
                   </div>
 
@@ -876,24 +871,19 @@ const AdminContributionConfig = () => {
                     <Input
                       type="number"
                       step="0.0001"
-                      min="-180"
-                      max="180"
                       value={mapPreviewSettings.defaultCenter?.lng || 21.7587}
                       onChange={(e) => {
-                        const lng = parseFloat(e.target.value);
-                        if (lng >= -180 && lng <= 180) {
-                          setMapPreviewSettings({
-                            ...mapPreviewSettings,
-                            defaultCenter: {
-                              ...mapPreviewSettings.defaultCenter,
-                              lng
-                            }
-                          });
-                        }
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          defaultCenter: {
+                            ...mapPreviewSettings.defaultCenter,
+                            lng: parseFloat(e.target.value)
+                          }
+                        });
                       }}
                     />
                     <p className="text-xs text-muted-foreground">
-                      Kinshasa: 21.7587 (plage: -180 à 180)
+                      Kinshasa: 21.7587
                     </p>
                   </div>
                 </div>
@@ -1123,6 +1113,41 @@ const AdminContributionConfig = () => {
                         0 = pas de limite maximale
                       </p>
                     </div>
+
+                    <div className="space-y-2">
+                      <Label>Minimum de bornes</Label>
+                      <Input
+                        type="number"
+                        min="3"
+                        max="10"
+                        value={mapPreviewSettings.minMarkers || 3}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            minMarkers: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Minimum requis pour former une parcelle valide
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Maximum de bornes</Label>
+                      <Input
+                        type="number"
+                        min="3"
+                        max="100"
+                        value={mapPreviewSettings.maxMarkers}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            maxMarkers: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -1135,21 +1160,11 @@ const AdminContributionConfig = () => {
                       variant="outline"
                       onClick={() => {
                         const currentTypes = mapPreviewSettings.roadTypes || [];
-                        const existingValues = currentTypes.map((t: any) => t.value);
-                        let newValue = `route_${currentTypes.length + 1}`;
-                        let counter = currentTypes.length + 1;
-                        
-                        // Éviter les doublons de valeur
-                        while (existingValues.includes(newValue)) {
-                          counter++;
-                          newValue = `route_${counter}`;
-                        }
-                        
                         setMapPreviewSettings({
                           ...mapPreviewSettings,
                           roadTypes: [
                             ...currentTypes,
-                            { value: newValue, label: `Nouveau type ${currentTypes.length + 1}` }
+                            { value: `route_${currentTypes.length + 1}`, label: `Nouveau type ${currentTypes.length + 1}` }
                           ]
                         });
                       }}
@@ -1166,43 +1181,32 @@ const AdminContributionConfig = () => {
                     {(mapPreviewSettings.roadTypes || []).map((roadType: any, index: number) => (
                       <div key={index} className="flex gap-2 items-start p-2 bg-muted/30 rounded">
                         <div className="flex-1 grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Input
-                              placeholder="Valeur (slug)"
-                              value={roadType.value}
-                              onChange={(e) => {
-                                const newValue = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_');
-                                const updated = [...(mapPreviewSettings.roadTypes || [])];
-                                updated[index] = { ...updated[index], value: newValue };
-                                setMapPreviewSettings({
-                                  ...mapPreviewSettings,
-                                  roadTypes: updated
-                                });
-                              }}
-                              className="h-8 text-xs"
-                            />
-                            {roadType.value && mapPreviewSettings.roadTypes.filter((t: any, i: number) => i !== index && t.value === roadType.value).length > 0 && (
-                              <p className="text-[10px] text-destructive">⚠️ Valeur en double</p>
-                            )}
-                          </div>
-                          <div className="space-y-1">
-                            <Input
-                              placeholder="Libellé"
-                              value={roadType.label}
-                              onChange={(e) => {
-                                const updated = [...(mapPreviewSettings.roadTypes || [])];
-                                updated[index] = { ...updated[index], label: e.target.value };
-                                setMapPreviewSettings({
-                                  ...mapPreviewSettings,
-                                  roadTypes: updated
-                                });
-                              }}
-                              className="h-8 text-xs"
-                            />
-                            {!roadType.label && (
-                              <p className="text-[10px] text-destructive">⚠️ Libellé requis</p>
-                            )}
-                          </div>
+                          <Input
+                            placeholder="Valeur (slug)"
+                            value={roadType.value}
+                            onChange={(e) => {
+                              const updated = [...(mapPreviewSettings.roadTypes || [])];
+                              updated[index] = { ...updated[index], value: e.target.value };
+                              setMapPreviewSettings({
+                                ...mapPreviewSettings,
+                                roadTypes: updated
+                              });
+                            }}
+                            className="h-8 text-xs"
+                          />
+                          <Input
+                            placeholder="Libellé"
+                            value={roadType.label}
+                            onChange={(e) => {
+                              const updated = [...(mapPreviewSettings.roadTypes || [])];
+                              updated[index] = { ...updated[index], label: e.target.value };
+                              setMapPreviewSettings({
+                                ...mapPreviewSettings,
+                                roadTypes: updated
+                              });
+                            }}
+                            className="h-8 text-xs"
+                          />
                         </div>
                         <Button
                           size="sm"
@@ -1252,23 +1256,15 @@ const AdminContributionConfig = () => {
                         placeholder="{value}m"
                         value={mapPreviewSettings.dimensionFormat || '{value}m'}
                         onChange={(e) => {
-                          const format = e.target.value;
-                          if (format.includes('{value}') || format === '') {
-                            setMapPreviewSettings({
-                              ...mapPreviewSettings,
-                              dimensionFormat: format || '{value}m'
-                            });
-                          }
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            dimensionFormat: e.target.value
+                          });
                         }}
                       />
                       <p className="text-xs text-muted-foreground">
                         Utiliser {'{value}'} pour la valeur. Ex: {'{value}m, {value} mètres'}
                       </p>
-                      {mapPreviewSettings.dimensionFormat && !mapPreviewSettings.dimensionFormat.includes('{value}') && (
-                        <p className="text-xs text-destructive">
-                          ⚠️ Le format doit contenir {'{value}'}
-                        </p>
-                      )}
                     </div>
 
                     <div className="space-y-2">
