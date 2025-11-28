@@ -15,6 +15,7 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import { UserDetailsDialog } from './users/UserDetailsDialog';
 import { exportToCSV } from '@/utils/csvExport';
 import { Shield, Users as UsersIcon, User as UserIcon, Ban } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminUsersProps {
   onRefresh: () => void;
@@ -41,6 +42,28 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
 
   useEffect(() => {
     fetchUsers();
+
+    // Set up real-time listener for profile changes
+    const channel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          console.log('Profile changed:', payload);
+          // Refetch users when a profile is updated
+          fetchUsers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchUsers]);
 
   // Reset pagination only when search or filters change (not sort)

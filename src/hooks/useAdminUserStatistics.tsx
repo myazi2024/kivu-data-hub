@@ -14,6 +14,10 @@ export interface AdminUserStatistics {
   ccc_codes_used: number;
 }
 
+// Cache for statistics to avoid redundant fetches
+const statisticsCache = new Map<string, { data: AdminUserStatistics; timestamp: number }>();
+const CACHE_DURATION = 2 * 60 * 1000; // 2 minutes
+
 export const useAdminUserStatistics = (userId: string | null) => {
   const [loading, setLoading] = useState(false);
   const [statistics, setStatistics] = useState<AdminUserStatistics | null>(null);
@@ -25,12 +29,21 @@ export const useAdminUserStatistics = (userId: string | null) => {
     }
 
     try {
-      setLoading(true);
-      
       const start = startDate?.toISOString().split('T')[0] || 
         new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const end = endDate?.toISOString().split('T')[0] || 
         new Date().toISOString().split('T')[0];
+
+      const cacheKey = `${userId}-${start}-${end}`;
+      const cached = statisticsCache.get(cacheKey);
+      
+      // Check cache validity
+      if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+        setStatistics(cached.data);
+        return;
+      }
+
+      setLoading(true);
 
       const { data, error } = await supabase.rpc('get_user_statistics', {
         target_user_id: userId,
@@ -61,6 +74,8 @@ export const useAdminUserStatistics = (userId: string | null) => {
       };
 
       setStatistics(stats);
+      // Cache the result
+      statisticsCache.set(cacheKey, { data: stats, timestamp: Date.now() });
 
     } catch (error: any) {
       console.error('Error loading user statistics:', error);

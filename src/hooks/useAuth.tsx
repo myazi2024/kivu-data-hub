@@ -33,8 +33,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileCache, setProfileCache] = useState<Map<string, Profile>>(new Map());
 
   const fetchProfile = async (userId: string) => {
+    // Check cache first to avoid redundant fetches
+    const cached = profileCache.get(userId);
+    if (cached) {
+      setProfile(cached);
+      return;
+    }
+
     try {
       // Fetch profile
       const { data: profileData, error: profileError } = await supabase
@@ -75,10 +83,20 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
       // Combine profile with role
       if (profileData) {
-        setProfile({
+        const fullProfile = {
           ...profileData,
           role: highestRole
-        });
+        };
+        setProfile(fullProfile);
+        // Cache for 5 minutes
+        setProfileCache(prev => new Map(prev).set(userId, fullProfile));
+        setTimeout(() => {
+          setProfileCache(prev => {
+            const newCache = new Map(prev);
+            newCache.delete(userId);
+            return newCache;
+          });
+        }, 5 * 60 * 1000);
       } else {
         setProfile(null);
       }
