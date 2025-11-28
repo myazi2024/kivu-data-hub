@@ -50,9 +50,9 @@ const AdminContributionConfig = () => {
     autoCalculateSurface: true,
     minMarkers: 3,
     maxMarkers: 50,
-    markerColor: '#3b82f6', // Corrigé: hex au lieu de hsl(var(--primary))
+    markerColor: 'hsl(var(--primary))',
     showSideDimensions: true,
-    dimensionUnit: 'm', // Corrigé: 'm' au lieu de 'meters'
+    dimensionUnit: 'meters',
     dimensionTextColor: '#000000',
     dimensionFontSize: 11,
     dimensionFormat: '{value}m',
