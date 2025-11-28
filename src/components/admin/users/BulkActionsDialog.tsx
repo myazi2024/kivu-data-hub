@@ -56,16 +56,16 @@ export const BulkActionsDialog: React.FC<BulkActionsDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="text-base">Actions en masse</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="bg-muted p-3 rounded-lg">
-            <p className="text-sm font-medium mb-1">Utilisateurs sélectionnés</p>
-            <Badge variant="secondary">{selectedUsers.length} utilisateur(s)</Badge>
+        <div className="space-y-3">
+          <div className="bg-muted p-2 rounded-lg">
+            <p className="text-xs font-medium mb-0.5">Utilisateurs sélectionnés</p>
+            <Badge variant="secondary" className="text-xs">{selectedUsers.length} utilisateur(s)</Badge>
           </div>
 
           <div>
-            <label className="text-sm font-medium mb-2 block">Type d'action</label>
+            <label className="text-xs font-medium mb-1.5 block">Type d'action</label>
             <Select value={actionType} onValueChange={(v) => setActionType(v as ActionType)}>
-              <SelectTrigger>
+              <SelectTrigger className="h-8 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -93,12 +93,12 @@ export const BulkActionsDialog: React.FC<BulkActionsDialogProps> = ({
 
           {actionType === 'block' && (
             <div>
-              <label className="text-sm font-medium mb-2 block">Raison du blocage</label>
+              <label className="text-xs font-medium mb-1.5 block">Raison du blocage</label>
               <Textarea
                 placeholder="Expliquez la raison du blocage en masse..."
                 value={blockReason}
                 onChange={(e) => setBlockReason(e.target.value)}
-                className="min-h-[100px]"
+                className="min-h-[80px] text-xs"
                 disabled={processing}
               />
             </div>
@@ -106,9 +106,9 @@ export const BulkActionsDialog: React.FC<BulkActionsDialogProps> = ({
 
           {actionType === 'add_role' && (
             <div>
-              <label className="text-sm font-medium mb-2 block">Rôle à ajouter</label>
+              <label className="text-xs font-medium mb-1.5 block">Rôle à ajouter</label>
               <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -120,8 +120,8 @@ export const BulkActionsDialog: React.FC<BulkActionsDialogProps> = ({
           )}
 
           {processing && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
                 <span>Traitement en cours...</span>
                 <span>{progress}%</span>
               </div>
@@ -129,7 +129,7 @@ export const BulkActionsDialog: React.FC<BulkActionsDialogProps> = ({
             </div>
           )}
 
-          <div className="flex gap-2">
+          <div className="flex gap-1.5">
             <Button
               variant="outline"
               onClick={() => setOpen(false)}

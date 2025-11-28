@@ -167,45 +167,45 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         <DialogHeader>
           <DialogTitle className="text-base md:text-lg">Détails utilisateur</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Nom complet</p>
-              <p className="font-medium text-sm md:text-base">{user.full_name || 'Non défini'}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Nom complet</p>
+              <p className="font-medium text-xs md:text-sm">{user.full_name || 'Non défini'}</p>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Email</p>
-              <p className="font-medium text-sm md:text-base break-all">{user.email}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Email</p>
+              <p className="font-medium text-xs md:text-sm break-all">{user.email}</p>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Organisation</p>
-              <p className="font-medium text-sm md:text-base">{user.organization || 'Non spécifiée'}</p>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Organisation</p>
+              <p className="font-medium text-xs md:text-sm">{user.organization || 'Non spécifiée'}</p>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Rôle principal</p>
-              <div className="mt-1">
+              <p className="text-[10px] md:text-xs text-muted-foreground">Rôle principal</p>
+              <div className="mt-0.5">
                 {getRoleBadge(user.role)}
               </div>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Statut</p>
-              <div className="mt-1">
-                <Badge variant={user.is_blocked ? 'destructive' : 'secondary'}>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Statut</p>
+              <div className="mt-0.5">
+                <Badge variant={user.is_blocked ? 'destructive' : 'secondary'} className="text-xs">
                   {user.is_blocked ? 'Bloqué' : 'Actif'}
                 </Badge>
               </div>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Avertissements fraude</p>
-              <div className="mt-1">
-                <Badge variant={user.fraud_strikes > 0 ? 'destructive' : 'secondary'}>
+              <p className="text-[10px] md:text-xs text-muted-foreground">Avertissements fraude</p>
+              <div className="mt-0.5">
+                <Badge variant={user.fraud_strikes > 0 ? 'destructive' : 'secondary'} className="text-xs">
                   {user.fraud_strikes} strike{user.fraud_strikes > 1 ? 's' : ''}
                 </Badge>
               </div>
             </div>
             <div>
-              <p className="text-xs md:text-sm text-muted-foreground">Inscription</p>
-              <p className="font-medium text-sm md:text-base">
+              <p className="text-[10px] md:text-xs text-muted-foreground">Inscription</p>
+              <p className="font-medium text-xs md:text-sm">
                 {new Date(user.created_at).toLocaleDateString('fr-FR', {
                   day: '2-digit',
                   month: 'long',
@@ -217,16 +217,16 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
           {/* All Roles Section */}
           {allRoles.length > 1 && (
-            <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2 text-sm md:text-base">Tous les rôles ({allRoles.length})</h4>
-              <div className="flex flex-wrap gap-2">
+            <div className="border-t pt-3">
+              <h4 className="font-semibold mb-1.5 text-xs md:text-sm">Tous les rôles ({allRoles.length})</h4>
+              <div className="flex flex-wrap gap-1.5">
                 {loadingRoles ? (
-                  <div className="text-xs text-muted-foreground">Chargement...</div>
+                  <div className="text-[10px] text-muted-foreground">Chargement...</div>
                 ) : (
                   allRoles.map((roleItem, index) => (
-                    <div key={index} className="flex items-center gap-2">
+                    <div key={index} className="flex items-center gap-1.5">
                       {getRoleBadge(roleItem.role)}
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[10px] text-muted-foreground">
                         depuis {new Date(roleItem.created_at).toLocaleDateString('fr-FR')}
                       </span>
                     </div>
@@ -244,12 +244,12 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
           {/* Current Block Info */}
           {user.is_blocked && user.blocked_reason && (
-            <div className="border-t pt-4">
-              <h4 className="font-semibold mb-2 text-sm md:text-base text-destructive">Blocage actuel</h4>
-              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                <p className="text-xs md:text-sm font-medium mb-1">Raison:</p>
-                <p className="text-xs md:text-sm text-muted-foreground">{user.blocked_reason}</p>
-                <p className="text-xs text-muted-foreground mt-2">
+            <div className="border-t pt-3">
+              <h4 className="font-semibold mb-1.5 text-xs md:text-sm text-destructive">Blocage actuel</h4>
+              <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-2">
+                <p className="text-[10px] md:text-xs font-medium mb-0.5">Raison:</p>
+                <p className="text-[10px] md:text-xs text-muted-foreground">{user.blocked_reason}</p>
+                <p className="text-[9px] text-muted-foreground mt-1.5">
                   Bloqué le: {new Date(user.blocked_at!).toLocaleDateString('fr-FR', {
                     day: '2-digit',
                     month: 'long',
@@ -264,38 +264,38 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
 
           {/* Block History */}
           {blockHistory.length > 0 && (
-            <div className="border-t pt-4">
+            <div className="border-t pt-3">
               <Collapsible open={showBlockHistory} onOpenChange={setShowBlockHistory}>
                 <CollapsibleTrigger asChild>
-                  <Button variant="ghost" size="sm" className="w-full justify-between">
-                    <div className="flex items-center gap-2">
-                      <History className="w-4 h-4" />
-                      <span className="font-semibold text-sm">Historique des blocages ({blockHistory.length})</span>
+                  <Button variant="ghost" size="sm" className="w-full justify-between h-7">
+                    <div className="flex items-center gap-1.5">
+                      <History className="w-3 h-3" />
+                      <span className="font-semibold text-xs">Historique des blocages ({blockHistory.length})</span>
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-[10px] text-muted-foreground">
                       {showBlockHistory ? 'Masquer' : 'Afficher'}
                     </span>
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="mt-3 space-y-2">
+                <CollapsibleContent className="mt-2 space-y-1.5">
                   {blockHistory.map((block, index) => (
-                    <div key={index} className="bg-muted rounded-lg p-3">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge variant="destructive" className="text-xs">
+                    <div key={index} className="bg-muted rounded-lg p-2">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant="destructive" className="text-[9px] py-0 px-1">
                           Blocage #{blockHistory.length - index}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-[10px] text-muted-foreground">
                           {new Date(block.blocked_at).toLocaleDateString('fr-FR')}
                         </span>
                       </div>
-                      <p className="text-xs text-muted-foreground mb-1">{block.blocked_reason}</p>
+                      <p className="text-[10px] text-muted-foreground mb-1">{block.blocked_reason}</p>
                       {block.admin_name && (
-                        <p className="text-xs text-muted-foreground mb-2">
+                        <p className="text-[10px] text-muted-foreground mb-1">
                           Par: <span className="font-medium">{block.admin_name}</span>
                         </p>
                       )}
                       {block.unblocked_at && (
-                        <p className="text-xs text-success">
+                        <p className="text-[10px] text-success">
                           Débloqué le: {new Date(block.unblocked_at).toLocaleDateString('fr-FR', {
                             day: '2-digit',
                             month: 'long',
@@ -310,11 +310,11 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row gap-2 pt-4 border-t">
+          <div className="flex flex-col sm:flex-row gap-1.5 pt-3 border-t">
             {user.is_blocked ? (
               <Button 
                 onClick={handleUnblock}
-                className="w-full sm:flex-1 gap-2 h-8 text-xs"
+                className="w-full sm:flex-1 gap-1.5 h-7 text-xs"
                 variant="default"
                 disabled={isUnblocking}
               >
