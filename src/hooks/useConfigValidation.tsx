@@ -62,16 +62,24 @@ export const useConfigValidation = () => {
   const validateMapPreviewSettings = (settings: any): ValidationError[] => {
     const errors: ValidationError[] = [];
 
-    // Valider zoom
-    errors.push(...validateNumericRange(settings.defaultZoom, 'Zoom par défaut', 1, 20));
+    // Valider zoom (1-19 pour Leaflet)
+    errors.push(...validateNumericRange(settings.defaultZoom, 'Zoom par défaut', 1, 19));
 
-    // Valider coordonnées
-    errors.push(...validateNumericRange(settings.defaultCenter.lat, 'Latitude', -90, 90));
-    errors.push(...validateNumericRange(settings.defaultCenter.lng, 'Longitude', -180, 180));
+    // Valider coordonnées latitude/longitude
+    if (settings.defaultCenter) {
+      errors.push(...validateNumericRange(settings.defaultCenter.lat, 'Latitude', -90, 90));
+      errors.push(...validateNumericRange(settings.defaultCenter.lng, 'Longitude', -180, 180));
+    } else {
+      errors.push({
+        field: 'defaultCenter',
+        message: 'Le centre par défaut est requis',
+        severity: 'error'
+      });
+    }
 
-    // Valider markers
-    errors.push(...validateNumericRange(settings.minMarkers, 'Marqueurs minimum', 3));
-    errors.push(...validateNumericRange(settings.maxMarkers, 'Marqueurs maximum', 3));
+    // Valider markers (minimum et maximum)
+    errors.push(...validateNumericRange(settings.minMarkers, 'Marqueurs minimum', 3, 100));
+    errors.push(...validateNumericRange(settings.maxMarkers, 'Marqueurs maximum', 3, 100));
     errors.push(...validateMinMaxConsistency(
       settings.minMarkers,
       settings.maxMarkers,
@@ -81,20 +89,95 @@ export const useConfigValidation = () => {
     // Valider surface
     errors.push(...validateNumericRange(settings.minSurfaceSqm, 'Surface minimum', 0));
     errors.push(...validateNumericRange(settings.maxSurfaceSqm, 'Surface maximum', 0));
-    errors.push(...validateMinMaxConsistency(
-      settings.minSurfaceSqm,
-      settings.maxSurfaceSqm,
-      'Surface'
-    ));
+    if (settings.maxSurfaceSqm > 0) {
+      errors.push(...validateMinMaxConsistency(
+        settings.minSurfaceSqm,
+        settings.maxSurfaceSqm,
+        'Surface'
+      ));
+    }
 
-    // Valider opacité
-    if (settings.fillOpacity < 0 || settings.fillOpacity > 1) {
+    // Valider opacité (entre 0 et 1)
+    if (settings.fillOpacity !== undefined) {
+      if (settings.fillOpacity < 0 || settings.fillOpacity > 1) {
+        errors.push({
+          field: 'fillOpacity',
+          message: 'L\'opacité doit être entre 0 et 1',
+          severity: 'error'
+        });
+      }
+    }
+
+    // Valider lineWidth
+    if (settings.lineWidth !== undefined) {
+      errors.push(...validateNumericRange(settings.lineWidth, 'Épaisseur des lignes', 1, 10));
+    }
+
+    // Valider dimensionFontSize
+    if (settings.dimensionFontSize !== undefined) {
+      errors.push(...validateNumericRange(settings.dimensionFontSize, 'Taille de police', 8, 16));
+    }
+
+    // Valider dimensionFormat (doit contenir {value})
+    if (settings.dimensionFormat && !settings.dimensionFormat.includes('{value}')) {
       errors.push({
-        field: 'fillOpacity',
-        message: 'L\'opacité doit être entre 0 et 1',
+        field: 'dimensionFormat',
+        message: 'Le format des dimensions doit contenir {value}',
         severity: 'error'
       });
     }
+
+    // Valider roadTypes (slugs uniques et labels non vides)
+    if (settings.roadTypes && Array.isArray(settings.roadTypes)) {
+      const values = settings.roadTypes.map((rt: any) => rt.value);
+      const uniqueValues = new Set(values);
+      if (values.length !== uniqueValues.size) {
+        errors.push({
+          field: 'roadTypes',
+          message: 'Les valeurs des types de routes doivent être uniques',
+          severity: 'error'
+        });
+      }
+
+      settings.roadTypes.forEach((rt: any, index: number) => {
+        if (!rt.value || rt.value.trim() === '') {
+          errors.push({
+            field: `roadTypes[${index}].value`,
+            message: `La valeur du type de route ${index + 1} ne peut pas être vide`,
+            severity: 'error'
+          });
+        }
+        if (!rt.label || rt.label.trim() === '') {
+          errors.push({
+            field: `roadTypes[${index}].label`,
+            message: `Le libellé du type de route ${index + 1} ne peut pas être vide`,
+            severity: 'error'
+          });
+        }
+      });
+    }
+
+    // Valider couleurs (format HEX valide)
+    const colorFields = ['markerColor', 'lineColor', 'fillColor', 'dimensionTextColor'];
+    colorFields.forEach(field => {
+      if (settings[field]) {
+        const colorValue = settings[field];
+        // Vérifier que c'est un HEX valide et pas une variable CSS
+        if (colorValue.includes('var(--') || colorValue.includes('hsl(')) {
+          errors.push({
+            field,
+            message: `${field} doit être une couleur HEX valide (ex: #3b82f6)`,
+            severity: 'error'
+          });
+        } else if (!/^#[0-9A-Fa-f]{6}$/.test(colorValue)) {
+          errors.push({
+            field,
+            message: `${field} doit être au format HEX valide (ex: #3b82f6)`,
+            severity: 'warning'
+          });
+        }
+      }
+    });
 
     return errors;
   };

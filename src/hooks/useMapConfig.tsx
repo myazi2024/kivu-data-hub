@@ -31,7 +31,7 @@ export interface MapConfig {
   roadTypes?: Array<{ value: string; label: string }>;
 }
 
-// Configuration par défaut de secours
+// Configuration par défaut de secours (garantit toujours des valeurs valides)
 const DEFAULT_MAP_CONFIG: MapConfig = {
   enabled: true,
   defaultZoom: 15,
