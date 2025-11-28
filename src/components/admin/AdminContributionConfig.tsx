@@ -50,9 +50,9 @@ const AdminContributionConfig = () => {
     autoCalculateSurface: true,
     minMarkers: 3,
     maxMarkers: 50,
-    markerColor: 'hsl(var(--primary))',
+    markerColor: '#3b82f6',
     showSideDimensions: true,
-    dimensionUnit: 'meters',
+    dimensionUnit: 'm',
     dimensionTextColor: '#000000',
     dimensionFontSize: 11,
     dimensionFormat: '{value}m',
@@ -806,124 +806,117 @@ const AdminContributionConfig = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Zoom par défaut</Label>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="19"
-                      value={mapPreviewSettings.defaultZoom}
-                      onChange={(e) => {
-                        setMapPreviewSettings({
-                          ...mapPreviewSettings,
-                          defaultZoom: parseInt(e.target.value)
-                        });
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Niveau de zoom initial (1-19)
-                    </p>
-                  </div>
+                {/* Paramètres de base de la carte */}
+                <div className="space-y-4 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm">Paramètres de base</h4>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Zoom par défaut</Label>
+                      <Input
+                        type="number"
+                        min="1"
+                        max="19"
+                        value={mapPreviewSettings.defaultZoom}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            defaultZoom: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Niveau de zoom initial (1-19)
+                      </p>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>Nombre minimum de bornes</Label>
-                    <Input
-                      type="number"
-                      min="3"
-                      max="100"
-                      value={mapPreviewSettings.minMarkers}
-                      onChange={(e) => {
-                        setMapPreviewSettings({
-                          ...mapPreviewSettings,
-                          minMarkers: parseInt(e.target.value)
-                        });
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Minimum requis pour tracer un polygone
-                    </p>
-                  </div>
+                    <div className="space-y-2">
+                      <Label>Latitude du centre</Label>
+                      <Input
+                        type="number"
+                        step="0.0001"
+                        min="-90"
+                        max="90"
+                        value={mapPreviewSettings.defaultCenter?.lat || -4.0383}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            defaultCenter: {
+                              ...mapPreviewSettings.defaultCenter,
+                              lat: parseFloat(e.target.value)
+                            }
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Kinshasa: -4.0383
+                      </p>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>Latitude du centre par défaut</Label>
-                    <Input
-                      type="number"
-                      step="0.0001"
-                      value={mapPreviewSettings.defaultCenter?.lat || -4.0383}
-                      onChange={(e) => {
-                        setMapPreviewSettings({
-                          ...mapPreviewSettings,
-                          defaultCenter: {
-                            ...mapPreviewSettings.defaultCenter,
-                            lat: parseFloat(e.target.value)
-                          }
-                        });
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Kinshasa: -4.0383
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Longitude du centre par défaut</Label>
-                    <Input
-                      type="number"
-                      step="0.0001"
-                      value={mapPreviewSettings.defaultCenter?.lng || 21.7587}
-                      onChange={(e) => {
-                        setMapPreviewSettings({
-                          ...mapPreviewSettings,
-                          defaultCenter: {
-                            ...mapPreviewSettings.defaultCenter,
-                            lng: parseFloat(e.target.value)
-                          }
-                        });
-                      }}
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Kinshasa: 21.7587
-                    </p>
+                    <div className="space-y-2">
+                      <Label>Longitude du centre</Label>
+                      <Input
+                        type="number"
+                        step="0.0001"
+                        min="-180"
+                        max="180"
+                        value={mapPreviewSettings.defaultCenter?.lng || 21.7587}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            defaultCenter: {
+                              ...mapPreviewSettings.defaultCenter,
+                              lng: parseFloat(e.target.value)
+                            }
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Kinshasa: 21.7587
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Détection de conflits de limites */}
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <Label>Détection de conflits de limites</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Vérifier automatiquement les chevauchements avec les parcelles voisines
-                    </p>
+                {/* Fonctionnalités avancées */}
+                <div className="space-y-3 p-4 border rounded-lg">
+                  <h4 className="font-semibold text-sm">Fonctionnalités avancées</h4>
+                  
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="space-y-1">
+                      <Label>Détection de conflits de limites</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Vérifier automatiquement les chevauchements avec les parcelles voisines
+                      </p>
+                    </div>
+                    <Switch
+                      checked={mapPreviewSettings.enableConflictDetection}
+                      onCheckedChange={(checked) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          enableConflictDetection: checked
+                        });
+                      }}
+                    />
                   </div>
-                  <Switch
-                    checked={mapPreviewSettings.enableConflictDetection}
-                    onCheckedChange={(checked) => {
-                      setMapPreviewSettings({
-                        ...mapPreviewSettings,
-                        enableConflictDetection: checked
-                      });
-                    }}
-                  />
-                </div>
 
-                {/* Gestion des côtés bordant une route */}
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="space-y-1">
-                    <Label>Gérer les côtés bordant une route</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Permettre aux utilisateurs d'indiquer quels côtés de la parcelle bordent une route
-                    </p>
+                  <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="space-y-1">
+                      <Label>Gestion des côtés bordant une route</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Permettre d'indiquer quels côtés de la parcelle bordent une route
+                      </p>
+                    </div>
+                    <Switch
+                      checked={mapPreviewSettings.enableRoadBorderingFeature}
+                      onCheckedChange={(checked) => {
+                        setMapPreviewSettings({
+                          ...mapPreviewSettings,
+                          enableRoadBorderingFeature: checked
+                        });
+                      }}
+                    />
                   </div>
-                  <Switch
-                    checked={mapPreviewSettings.enableRoadBorderingFeature}
-                    onCheckedChange={(checked) => {
-                      setMapPreviewSettings({
-                        ...mapPreviewSettings,
-                        enableRoadBorderingFeature: checked
-                      });
-                    }}
-                  />
                 </div>
 
                 {/* Style avancé */}
@@ -1075,9 +1068,47 @@ const AdminContributionConfig = () => {
 
                 {/* Validations */}
                 <div className="space-y-4 p-4 border rounded-lg">
-                  <h4 className="font-semibold text-sm">Validations</h4>
+                  <h4 className="font-semibold text-sm">Validations de la parcelle</h4>
                   
                   <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Minimum de bornes GPS</Label>
+                      <Input
+                        type="number"
+                        min="3"
+                        max="100"
+                        value={mapPreviewSettings.minMarkers || 3}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            minMarkers: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Minimum requis pour former une parcelle valide (3-100)
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Maximum de bornes GPS</Label>
+                      <Input
+                        type="number"
+                        min="3"
+                        max="100"
+                        value={mapPreviewSettings.maxMarkers}
+                        onChange={(e) => {
+                          setMapPreviewSettings({
+                            ...mapPreviewSettings,
+                            maxMarkers: parseInt(e.target.value)
+                          });
+                        }}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Maximum autorisé pour une parcelle (3-100)
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
                       <Label>Surface minimale (m²)</Label>
                       <Input
@@ -1112,41 +1143,6 @@ const AdminContributionConfig = () => {
                       <p className="text-xs text-muted-foreground">
                         0 = pas de limite maximale
                       </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Minimum de bornes</Label>
-                      <Input
-                        type="number"
-                        min="3"
-                        max="10"
-                        value={mapPreviewSettings.minMarkers || 3}
-                        onChange={(e) => {
-                          setMapPreviewSettings({
-                            ...mapPreviewSettings,
-                            minMarkers: parseInt(e.target.value)
-                          });
-                        }}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Minimum requis pour former une parcelle valide
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Maximum de bornes</Label>
-                      <Input
-                        type="number"
-                        min="3"
-                        max="100"
-                        value={mapPreviewSettings.maxMarkers}
-                        onChange={(e) => {
-                          setMapPreviewSettings({
-                            ...mapPreviewSettings,
-                            maxMarkers: parseInt(e.target.value)
-                          });
-                        }}
-                      />
                     </div>
                   </div>
                 </div>
@@ -1340,19 +1336,71 @@ const AdminContributionConfig = () => {
                 </div>
               </div>
 
-              <Button onClick={handleSaveMapPreviewSettings} disabled={saving === 'map_preview_settings'}>
-                {saving === 'map_preview_settings' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Enregistrement...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Enregistrer
-                  </>
-                )}
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={handleSaveMapPreviewSettings} disabled={saving === 'map_preview_settings'} className="flex-1">
+                  {saving === 'map_preview_settings' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Enregistrement...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      Enregistrer
+                    </>
+                  )}
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    const defaultSettings = {
+                      enabled: true,
+                      defaultZoom: 15,
+                      defaultCenter: { lat: -4.0383, lng: 21.7587 },
+                      showMarkers: true,
+                      autoCalculateSurface: true,
+                      minMarkers: 3,
+                      maxMarkers: 50,
+                      markerColor: '#3b82f6',
+                      showSideDimensions: true,
+                      dimensionUnit: 'm',
+                      dimensionTextColor: '#000000',
+                      dimensionFontSize: 11,
+                      dimensionFormat: '{value}m',
+                      allowDimensionEditing: true,
+                      showSideLabels: true,
+                      lineColor: '#3b82f6',
+                      lineWidth: 3,
+                      lineStyle: 'solid',
+                      fillColor: '#3b82f6',
+                      fillOpacity: 0.2,
+                      minSurfaceSqm: 0,
+                      maxSurfaceSqm: 100000,
+                      enableEditing: true,
+                      enableDragging: true,
+                      enableConflictDetection: true,
+                      enableRoadBorderingFeature: true,
+                      roadTypes: [
+                        { value: 'nationale', label: 'Route Nationale' },
+                        { value: 'provinciale', label: 'Route Provinciale' },
+                        { value: 'urbaine', label: 'Route Urbaine' },
+                        { value: 'avenue', label: 'Avenue' },
+                        { value: 'rue', label: 'Rue' },
+                        { value: 'ruelle', label: 'Ruelle' },
+                        { value: 'chemin', label: 'Chemin' },
+                        { value: 'piste', label: 'Piste' },
+                      ]
+                    };
+                    setMapPreviewSettings(defaultSettings);
+                    toast({
+                      title: "Paramètres réinitialisés",
+                      description: "Les paramètres de carte ont été réinitialisés aux valeurs par défaut"
+                    });
+                  }}
+                >
+                  Réinitialiser
+                </Button>
+              </div>
             </TabsContent>
           </Tabs>
         </CardContent>
