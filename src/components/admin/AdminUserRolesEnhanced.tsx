@@ -164,27 +164,36 @@ export const AdminUserRolesEnhanced: React.FC = () => {
 
   const fetchUserRoles = async () => {
     try {
-      const { data: rolesData, error: rolesError } = await supabase
+      // Optimized: Single query with JOIN to avoid N+1
+      const { data, error } = await supabase
         .from('user_roles')
-        .select('id, user_id, role, created_at')
+        .select(`
+          id,
+          user_id,
+          role,
+          created_at,
+          profiles!inner(
+            full_name,
+            email
+          )
+        `)
         .order('created_at', { ascending: false });
 
-      if (rolesError) throw rolesError;
+      if (error) throw error;
 
-      const userIds = [...new Set(rolesData?.map(r => r.user_id) || [])];
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('user_id, full_name, email')
-        .in('user_id', userIds);
+      // Transform the data to match expected interface
+      const transformedData = data?.map((item: any) => ({
+        id: item.id,
+        user_id: item.user_id,
+        role: item.role,
+        created_at: item.created_at,
+        profiles: {
+          full_name: item.profiles?.full_name || null,
+          email: item.profiles?.email || ''
+        }
+      })) || [];
 
-      if (profilesError) throw profilesError;
-
-      const data = rolesData?.map(role => ({
-        ...role,
-        profiles: profilesData?.find(p => p.user_id === role.user_id) || { full_name: null, email: '' }
-      }));
-
-      setUserRoles(data || []);
+      setUserRoles(transformedData);
     } catch (error) {
       console.error('Error fetching user roles:', error);
       toast({
@@ -224,6 +233,24 @@ export const AdminUserRolesEnhanced: React.FC = () => {
     }
 
     try {
+      // Check for duplicate role
+      const { data: existingRoles, error: checkError } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', selectedUserId)
+        .eq('role', selectedRole);
+
+      if (checkError) throw checkError;
+
+      if (existingRoles && existingRoles.length > 0) {
+        toast({
+          title: 'Rôle déjà attribué',
+          description: `L'utilisateur possède déjà le rôle ${roleConfig[selectedRole].label}`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const { error } = await supabase.from('user_roles').insert({
         user_id: selectedUserId,
         role: selectedRole,
@@ -248,7 +275,7 @@ export const AdminUserRolesEnhanced: React.FC = () => {
     }
   };
 
-  const removeRole = async (roleId: string, targetUserId: string) => {
+  const removeRole = async (roleId: string, targetUserId: string, roleToRemove: AppRole) => {
     // Empêcher de retirer son propre rôle admin
     if (targetUserId === user?.id && (profile?.role === 'admin' || profile?.role === 'super_admin')) {
       toast({
@@ -259,7 +286,24 @@ export const AdminUserRolesEnhanced: React.FC = () => {
       return;
     }
 
-    if (!confirm('Êtes-vous sûr de vouloir retirer ce rôle ?')) return;
+    // Double confirmation pour super_admin
+    if (roleToRemove === 'super_admin') {
+      const confirmation = window.prompt(
+        'ATTENTION: Vous êtes sur le point de retirer un rôle Super Admin.\n' +
+        'Cette action est critique et irréversible.\n\n' +
+        'Tapez "CONFIRMER" pour continuer:'
+      );
+      
+      if (confirmation !== 'CONFIRMER') {
+        toast({
+          title: 'Action annulée',
+          description: 'Retrait du rôle Super Admin annulé',
+        });
+        return;
+      }
+    } else {
+      if (!confirm(`Êtes-vous sûr de vouloir retirer le rôle ${roleConfig[roleToRemove].label} ?`)) return;
+    }
 
     try {
       const { error } = await supabase
@@ -549,7 +593,7 @@ export const AdminUserRolesEnhanced: React.FC = () => {
                             size="sm"
                             variant="ghost"
                             className="h-3 w-3 p-0 hover:bg-destructive/20 shrink-0"
-                            onClick={() => removeRole(role.id, userId)}
+                            onClick={() => removeRole(role.id, userId, role.role as AppRole)}
                             disabled={isCurrentUserRole}
                             title={isCurrentUserRole ? "Vous ne pouvez pas retirer votre propre rôle admin" : "Retirer ce rôle"}
                           >
