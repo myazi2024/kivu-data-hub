@@ -1,0 +1,196 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+export interface SearchFilters {
+  province?: string;
+  ville?: string;
+  commune?: string;
+  quartier?: string;
+  ownerName?: string;
+  areaSqmMin?: number;
+  areaSqmMax?: number;
+  parcelType?: string;
+  titleType?: string;
+  hasBuildingPermit?: boolean;
+  hasMortgage?: boolean;
+  hasTaxArrears?: boolean;
+  proximityLat?: number;
+  proximityLng?: number;
+  proximityRadius?: number;
+}
+
+export interface ParcelSearchResult {
+  id: string;
+  parcel_number: string;
+  current_owner_name: string;
+  area_sqm: number;
+  parcel_type: string;
+  property_title_type: string;
+  province: string | null;
+  ville: string | null;
+  commune: string | null;
+  quartier: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  gps_coordinates: any;
+  parcel_sides: any;
+  has_building_permit?: boolean;
+  has_mortgage?: boolean;
+  has_tax_arrears?: boolean;
+}
+
+export const useAdvancedCadastralSearch = () => {
+  const [filters, setFilters] = useState<SearchFilters>({});
+  const [results, setResults] = useState<ParcelSearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371e3;
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lng2 - lng1) * Math.PI) / 180;
+
+    const a = Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) *
+              Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  const searchParcels = async (customFilters?: SearchFilters) => {
+    setLoading(true);
+    const activeFilters = customFilters || filters;
+
+    try {
+      let query = supabase
+        .from('cadastral_parcels')
+        .select('*', { count: 'exact' })
+        .is('deleted_at', null);
+
+      // Filtres géographiques
+      if (activeFilters.province) {
+        query = query.ilike('province', `%${activeFilters.province}%`);
+      }
+      if (activeFilters.ville) {
+        query = query.ilike('ville', `%${activeFilters.ville}%`);
+      }
+      if (activeFilters.commune) {
+        query = query.ilike('commune', `%${activeFilters.commune}%`);
+      }
+      if (activeFilters.quartier) {
+        query = query.ilike('quartier', `%${activeFilters.quartier}%`);
+      }
+
+      // Filtres de propriétaire
+      if (activeFilters.ownerName) {
+        query = query.ilike('current_owner_name', `%${activeFilters.ownerName}%`);
+      }
+
+      // Filtres de superficie
+      if (activeFilters.areaSqmMin !== undefined) {
+        query = query.gte('area_sqm', activeFilters.areaSqmMin);
+      }
+      if (activeFilters.areaSqmMax !== undefined) {
+        query = query.lte('area_sqm', activeFilters.areaSqmMax);
+      }
+
+      // Filtres de type
+      if (activeFilters.parcelType) {
+        query = query.eq('parcel_type', activeFilters.parcelType);
+      }
+      if (activeFilters.titleType) {
+        query = query.eq('property_title_type', activeFilters.titleType);
+      }
+
+      const { data, error, count } = await query.limit(500);
+
+      if (error) throw error;
+
+      let filteredData: any[] = data || [];
+
+      // Filtres de proximité (post-processing)
+      if (activeFilters.proximityLat && activeFilters.proximityLng && activeFilters.proximityRadius) {
+        filteredData = filteredData.filter(parcel => {
+          if (!parcel.latitude || !parcel.longitude) return false;
+          const distance = calculateDistance(
+            activeFilters.proximityLat!,
+            activeFilters.proximityLng!,
+            parcel.latitude,
+            parcel.longitude
+          );
+          return distance <= activeFilters.proximityRadius!;
+        });
+      }
+
+      // Filtres de statut (nécessite des requêtes supplémentaires)
+      if (activeFilters.hasBuildingPermit || activeFilters.hasMortgage || activeFilters.hasTaxArrears) {
+        const parcelIds = filteredData.map(p => p.id);
+        
+        const [permitsData, mortgagesData, taxData] = await Promise.all([
+          activeFilters.hasBuildingPermit 
+            ? supabase.from('cadastral_building_permits').select('parcel_id').in('parcel_id', parcelIds)
+            : Promise.resolve({ data: [] }),
+          activeFilters.hasMortgage
+            ? supabase.from('cadastral_mortgages').select('parcel_id').in('parcel_id', parcelIds)
+            : Promise.resolve({ data: [] }),
+          activeFilters.hasTaxArrears
+            ? supabase.from('cadastral_tax_history').select('parcel_id').eq('payment_status', 'overdue').in('parcel_id', parcelIds)
+            : Promise.resolve({ data: [] })
+        ]);
+
+        const parcelsWithPermits = new Set(permitsData.data?.map(p => p.parcel_id) || []);
+        const parcelsWithMortgages = new Set(mortgagesData.data?.map(p => p.parcel_id) || []);
+        const parcelsWithTaxArrears = new Set(taxData.data?.map(p => p.parcel_id) || []);
+
+        const enrichedData = filteredData.map(parcel => ({
+          ...parcel,
+          has_building_permit: parcelsWithPermits.has(parcel.id),
+          has_mortgage: parcelsWithMortgages.has(parcel.id),
+          has_tax_arrears: parcelsWithTaxArrears.has(parcel.id)
+        })) as ParcelSearchResult[];
+
+        if (activeFilters.hasBuildingPermit) {
+          filteredData = enrichedData.filter(p => p.has_building_permit);
+        } else if (activeFilters.hasMortgage) {
+          filteredData = enrichedData.filter(p => p.has_mortgage);
+        } else if (activeFilters.hasTaxArrears) {
+          filteredData = enrichedData.filter(p => p.has_tax_arrears);
+        } else {
+          filteredData = enrichedData;
+        }
+      }
+
+      setResults(filteredData);
+      setTotalCount(filteredData.length);
+    } catch (error) {
+      console.error('Erreur recherche avancée:', error);
+      setResults([]);
+      setTotalCount(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateFilters = (newFilters: Partial<SearchFilters>) => {
+    setFilters(prev => ({ ...prev, ...newFilters }));
+  };
+
+  const clearFilters = () => {
+    setFilters({});
+    setResults([]);
+    setTotalCount(0);
+  };
+
+  return {
+    filters,
+    results,
+    loading,
+    totalCount,
+    updateFilters,
+    clearFilters,
+    searchParcels
+  };
+};
