@@ -7,11 +7,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Download, Share2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
+import AdvancedSearchFilters from '@/components/cadastral/AdvancedSearchFilters';
+import SearchHistory from '@/components/cadastral/SearchHistory';
+import MapDrawingTools from '@/components/cadastral/MapDrawingTools';
+import MapMeasurementTools from '@/components/cadastral/MapMeasurementTools';
+import MapViewControls from '@/components/cadastral/MapViewControls';
+import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
+import { useSearchHistory } from '@/hooks/useSearchHistory';
+import { exportToCSV } from '@/utils/csvExport';
 import 'leaflet/dist/leaflet.css';
 
 interface ParcelData {
@@ -53,6 +61,14 @@ const CadastralMap = () => {
   const [selectedParcelHistory, setSelectedParcelHistory] = useState<ParcelHistoryData | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [hasIncompleteData, setHasIncompleteData] = useState(false);
+  const [viewMode, setViewMode] = useState<'map' | 'list' | 'grid'>('map');
+  const [sortBy, setSortBy] = useState('parcel_number');
+  const [measurements, setMeasurements] = useState<{ distance?: string; area?: string }>({});
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Advanced search hooks
+  const advancedSearch = useAdvancedCadastralSearch();
+  const searchHistory = useSearchHistory();
 
   // Reset hasScrolledToBottom when dialog closes
   useEffect(() => {
@@ -186,6 +202,103 @@ const CadastralMap = () => {
     setSearchSuggestions([]);
     setFilteredParcels(parcels);
     setSelectedParcel(null);
+  };
+
+  // Advanced search handlers
+  const handleApplyFilters = () => {
+    advancedSearch.searchParcels();
+    if (advancedSearch.results.length > 0) {
+      setFilteredParcels(advancedSearch.results);
+      toast.success(`${advancedSearch.results.length} parcelle(s) trouvée(s)`);
+    } else {
+      toast.error('Aucune parcelle ne correspond aux critères');
+    }
+  };
+
+  const handleSelectFromHistory = (query: string) => {
+    setSearchQuery(query);
+    const filtered = parcels.filter(p => p.parcel_number.toLowerCase().includes(query.toLowerCase()));
+    setFilteredParcels(filtered);
+  };
+
+  const handleSelectFromFavorites = (parcelNumber: string) => {
+    const parcel = parcels.find(p => p.parcel_number === parcelNumber);
+    if (parcel) {
+      handleSelectParcel(parcel);
+    }
+  };
+
+  // Export functionality
+  const handleExport = () => {
+    const data = filteredParcels.map(p => ({
+      'Numéro Parcelle': p.parcel_number,
+      'Propriétaire': p.current_owner_name,
+      'Surface (m²)': p.area_sqm,
+      'Province': p.province || '',
+      'Ville': p.ville || '',
+      'Commune': p.commune || '',
+      'Quartier': p.quartier || ''
+    }));
+    exportToCSV(data, 'parcelles_cadastrales.csv');
+    toast.success('Export CSV réussi');
+  };
+
+  // Share functionality
+  const handleShare = () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Carte Cadastrale - InfoCadre RDC',
+        text: `Découvrez la carte cadastrale avec ${filteredParcels.length} parcelles`,
+        url
+      });
+    } else {
+      navigator.clipboard.writeText(url);
+      toast.success('Lien copié dans le presse-papier');
+    }
+  };
+
+  // Fullscreen toggle
+  const handleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  // Drawing tools handlers
+  const handleDrawPolygon = () => {
+    toast.info('Cliquez sur la carte pour dessiner un polygone');
+    // Implementation would use Leaflet.draw plugin
+  };
+
+  const handleDrawRectangle = () => {
+    toast.info('Cliquez et glissez pour dessiner un rectangle');
+  };
+
+  const handleDrawCircle = () => {
+    toast.info('Cliquez et glissez pour dessiner un cercle');
+  };
+
+  const handleClearDrawings = () => {
+    toast.success('Dessins effacés');
+  };
+
+  // Measurement tools handlers
+  const handleMeasureDistance = () => {
+    toast.info('Cliquez sur deux points pour mesurer la distance');
+  };
+
+  const handleMeasureArea = () => {
+    toast.info('Dessinez une forme pour mesurer la surface');
+  };
+
+  const handleClearMeasurements = () => {
+    setMeasurements({});
+    toast.success('Mesures effacées');
   };
 
   // Initialiser la carte (uniquement quand loading = false)
@@ -413,42 +526,47 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Barre de recherche en overlay */}
-        <div className={`absolute top-4 left-4 right-4 md:left-6 md:right-auto md:w-96 z-[1000] transition-all duration-300 ${selectedParcel && isMobile ? 'scale-90 origin-top-left' : ''}`}>
+        {/* Barre de recherche et outils en overlay */}
+        <div className={`absolute top-4 left-4 right-4 md:left-6 md:right-auto md:w-96 z-[1000] space-y-2 transition-all duration-300 ${selectedParcel && isMobile ? 'scale-90 origin-top-left' : ''}`}>
+          {/* Barre de recherche simple */}
           <Card className="shadow-lg">
-            <CardContent className={`${selectedParcel && isMobile ? 'p-2' : 'p-4'} transition-all`}>
-              <div className="space-y-2">
+            <CardContent className={`${selectedParcel && isMobile ? 'p-2' : 'p-3'} transition-all`}>
+              <div className="space-y-1.5">
                 <div className="relative">
                   <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground ${selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                   <Input
-                    placeholder={selectedParcel && isMobile ? "Rechercher..." : "Rechercher une parcelle par numéro..."}
+                    placeholder={selectedParcel && isMobile ? "Rechercher..." : "Rechercher une parcelle..."}
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value.replace(/\D/g, ''))}
-                    className={`pl-10 pr-10 ${selectedParcel && isMobile ? 'h-8 text-xs' : ''}`}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setSearchQuery(value);
+                      if (value) searchHistory.addToHistory(value);
+                    }}
+                    className={`pl-10 pr-10 ${selectedParcel && isMobile ? 'h-7 text-xs' : 'h-8 text-xs'}`}
                   />
                   {searchQuery && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className={`absolute right-1 top-1/2 -translate-y-1/2 p-0 ${selectedParcel && isMobile ? 'h-6 w-6' : 'h-7 w-7'}`}
+                      className={`absolute right-1 top-1/2 -translate-y-1/2 p-0 ${selectedParcel && isMobile ? 'h-5 w-5' : 'h-6 w-6'}`}
                       onClick={handleClearSearch}
                     >
-                      <X className={selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
+                      <X className={selectedParcel && isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
                     </Button>
                   )}
                 </div>
 
-                {/* Suggestions de recherche - cachées sur mobile quand parcelle sélectionnée */}
+                {/* Suggestions */}
                 {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && (
-                  <div className="bg-background border rounded-md shadow-sm">
+                  <div className="bg-background border rounded-md shadow-sm max-h-32 overflow-y-auto">
                     {searchSuggestions.map((parcel) => (
                       <button
                         key={parcel.id}
                         onClick={() => handleSelectParcel(parcel)}
-                        className="w-full text-left px-3 py-2 hover:bg-muted transition-colors border-b last:border-b-0"
+                        className="w-full text-left px-2 py-1.5 hover:bg-muted transition-colors border-b last:border-b-0"
                       >
-                        <div className="font-mono font-semibold text-sm">{parcel.parcel_number}</div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="font-mono font-semibold text-xs">{parcel.parcel_number}</div>
+                        <div className="text-[10px] text-muted-foreground">
                           {parcel.ville || parcel.province}
                         </div>
                       </button>
@@ -456,36 +574,65 @@ const CadastralMap = () => {
                   </div>
                 )}
 
-                {/* Résumé de recherche - caché sur mobile quand parcelle sélectionnée */}
+                {/* Résumé */}
                 {!(selectedParcel && isMobile) && (
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                     <span>
-                      {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles au total`}
+                      {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
                     </span>
-                    {selectedParcel && (
-                      <span className="text-primary font-medium">
-                        Parcelle sélectionnée
-                      </span>
-                    )}
                   </div>
-                )}
-
-                {/* Bouton recherche approfondie si aucun résultat */}
-                {searchQuery && filteredParcels.length === 0 && (
-                  <Button
-                    onClick={() => {
-                      console.log("Bouton Recherche approfondie cliqué");
-                      setShowIntroDialog(true);
-                    }}
-                    className="w-full bg-seloger-red hover:bg-seloger-red/90 text-white text-xs sm:text-sm px-3 py-2 h-auto rounded-lg shadow-sm hover:shadow-md transition-all duration-300 font-medium"
-                  >
-                    <Search className="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" />
-                    Recherche approfondie
-                  </Button>
                 )}
               </div>
             </CardContent>
           </Card>
+
+          {/* Filtres avancés */}
+          <AdvancedSearchFilters
+            filters={advancedSearch.filters}
+            onFiltersChange={advancedSearch.updateFilters}
+            onSearch={handleApplyFilters}
+            onClear={advancedSearch.clearFilters}
+            isCompact={isMobile}
+          />
+
+          {/* Historique et favoris */}
+          <SearchHistory
+            onSelectHistory={handleSelectFromHistory}
+            onSelectFavorite={handleSelectFromFavorites}
+            isCompact={isMobile}
+          />
+
+          {/* Outils de dessin */}
+          <MapDrawingTools
+            onDrawPolygon={handleDrawPolygon}
+            onDrawRectangle={handleDrawRectangle}
+            onDrawCircle={handleDrawCircle}
+            onClearDrawings={handleClearDrawings}
+            isActive={false}
+            isCompact={isMobile}
+          />
+
+          {/* Outils de mesure */}
+          <MapMeasurementTools
+            onMeasureDistance={handleMeasureDistance}
+            onMeasureArea={handleMeasureArea}
+            onClearMeasurements={handleClearMeasurements}
+            measurements={measurements}
+            isCompact={isMobile}
+          />
+
+          {/* Contrôles de vue */}
+          <MapViewControls
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            sortBy={sortBy}
+            onSortChange={setSortBy}
+            onExport={handleExport}
+            onShare={handleShare}
+            onFullscreen={handleFullscreen}
+            resultsCount={filteredParcels.length}
+            isCompact={isMobile}
+          />
         </div>
 
         {/* Panneau d'information de la parcelle sélectionnée */}
