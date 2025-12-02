@@ -6,8 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Download, Share2 } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Download, Share2, Settings2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -65,6 +66,7 @@ const CadastralMap = () => {
   const [sortBy, setSortBy] = useState('parcel_number');
   const [measurements, setMeasurements] = useState<{ distance?: string; area?: string }>({});
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   // Advanced search hooks
   const advancedSearch = useAdvancedCadastralSearch();
@@ -230,16 +232,17 @@ const CadastralMap = () => {
 
   // Export functionality
   const handleExport = () => {
-    const data = filteredParcels.map(p => ({
-      'Numéro Parcelle': p.parcel_number,
-      'Propriétaire': p.current_owner_name,
-      'Surface (m²)': p.area_sqm,
-      'Province': p.province || '',
-      'Ville': p.ville || '',
-      'Commune': p.commune || '',
-      'Quartier': p.quartier || ''
-    }));
-    exportToCSV(data, 'parcelles_cadastrales.csv');
+    const headers = ['Numéro Parcelle', 'Propriétaire', 'Surface (m²)', 'Province', 'Ville', 'Commune', 'Quartier'];
+    const data = filteredParcels.map(p => [
+      p.parcel_number,
+      p.current_owner_name,
+      p.area_sqm.toString(),
+      p.province || '',
+      p.ville || '',
+      p.commune || '',
+      p.quartier || ''
+    ]);
+    exportToCSV({ filename: 'parcelles_cadastrales.csv', headers, data });
     toast.success('Export CSV réussi');
   };
 
@@ -526,34 +529,122 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Barre de recherche et outils en overlay */}
-        <div className={`absolute top-4 left-4 right-4 md:left-6 md:right-auto md:w-96 z-[1000] space-y-2 transition-all duration-300 ${selectedParcel && isMobile ? 'scale-90 origin-top-left' : ''}`}>
-          {/* Barre de recherche simple */}
+        {/* Barre de recherche simple en overlay */}
+        <div className={`absolute top-4 left-4 right-4 md:left-6 md:right-auto md:w-96 z-[1000] transition-all duration-300 ${selectedParcel && isMobile ? 'scale-90 origin-top-left' : ''}`}>
           <Card className="shadow-lg">
             <CardContent className={`${selectedParcel && isMobile ? 'p-2' : 'p-3'} transition-all`}>
               <div className="space-y-1.5">
-                <div className="relative">
-                  <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground ${selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                  <Input
-                    placeholder={selectedParcel && isMobile ? "Rechercher..." : "Rechercher une parcelle..."}
-                    value={searchQuery}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      setSearchQuery(value);
-                      if (value) searchHistory.addToHistory(value);
-                    }}
-                    className={`pl-10 pr-10 ${selectedParcel && isMobile ? 'h-7 text-xs' : 'h-8 text-xs'}`}
-                  />
-                  {searchQuery && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`absolute right-1 top-1/2 -translate-y-1/2 p-0 ${selectedParcel && isMobile ? 'h-5 w-5' : 'h-6 w-6'}`}
-                      onClick={handleClearSearch}
-                    >
-                      <X className={selectedParcel && isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
-                    </Button>
-                  )}
+                <div className="flex gap-1.5">
+                  <div className="relative flex-1">
+                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground ${selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
+                    <Input
+                      placeholder={selectedParcel && isMobile ? "Rechercher..." : "Rechercher une parcelle..."}
+                      value={searchQuery}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        setSearchQuery(value);
+                        if (value) searchHistory.addToHistory(value);
+                      }}
+                      className={`pl-10 pr-10 ${selectedParcel && isMobile ? 'h-7 text-xs' : 'h-8 text-xs'}`}
+                    />
+                    {searchQuery && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className={`absolute right-1 top-1/2 -translate-y-1/2 p-0 ${selectedParcel && isMobile ? 'h-5 w-5' : 'h-6 w-6'}`}
+                        onClick={handleClearSearch}
+                      >
+                        <X className={selectedParcel && isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {/* Bouton Recherche Avancée */}
+                  <Sheet open={showAdvancedSearch} onOpenChange={setShowAdvancedSearch}>
+                    <SheetTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className={`${selectedParcel && isMobile ? 'h-7 px-2' : 'h-8 px-3'} shrink-0`}
+                      >
+                        <Settings2 className={selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
+                        {!(selectedParcel && isMobile) && <span className="ml-1.5 text-xs">Avancée</span>}
+                      </Button>
+                    </SheetTrigger>
+                    <SheetContent side={isMobile ? "bottom" : "left"} className="w-full sm:max-w-md overflow-y-auto">
+                      <SheetHeader>
+                        <SheetTitle className="text-base">Recherche Avancée</SheetTitle>
+                        <SheetDescription className="text-xs">
+                          Utilisez les filtres et outils ci-dessous pour affiner votre recherche
+                        </SheetDescription>
+                      </SheetHeader>
+                      
+                      <div className="mt-4 space-y-3">
+                        {/* Filtres avancés */}
+                        <div>
+                          <h3 className="text-sm font-semibold mb-2">Filtres de recherche</h3>
+                          <AdvancedSearchFilters
+                            filters={advancedSearch.filters}
+                            onFiltersChange={advancedSearch.updateFilters}
+                            onSearch={handleApplyFilters}
+                            onClear={advancedSearch.clearFilters}
+                            isCompact={true}
+                          />
+                        </div>
+
+                        {/* Historique et favoris */}
+                        <div>
+                          <h3 className="text-sm font-semibold mb-2">Historique & Favoris</h3>
+                          <SearchHistory
+                            onSelectHistory={handleSelectFromHistory}
+                            onSelectFavorite={handleSelectFromFavorites}
+                            isCompact={true}
+                          />
+                        </div>
+
+                        {/* Outils de dessin */}
+                        <div>
+                          <h3 className="text-sm font-semibold mb-2">Outils de dessin</h3>
+                          <MapDrawingTools
+                            onDrawPolygon={handleDrawPolygon}
+                            onDrawRectangle={handleDrawRectangle}
+                            onDrawCircle={handleDrawCircle}
+                            onClearDrawings={handleClearDrawings}
+                            isActive={false}
+                            isCompact={true}
+                          />
+                        </div>
+
+                        {/* Outils de mesure */}
+                        <div>
+                          <h3 className="text-sm font-semibold mb-2">Outils de mesure</h3>
+                          <MapMeasurementTools
+                            onMeasureDistance={handleMeasureDistance}
+                            onMeasureArea={handleMeasureArea}
+                            onClearMeasurements={handleClearMeasurements}
+                            measurements={measurements}
+                            isCompact={true}
+                          />
+                        </div>
+
+                        {/* Contrôles de vue */}
+                        <div>
+                          <h3 className="text-sm font-semibold mb-2">Options d'affichage</h3>
+                          <MapViewControls
+                            viewMode={viewMode}
+                            onViewModeChange={setViewMode}
+                            sortBy={sortBy}
+                            onSortChange={setSortBy}
+                            onExport={handleExport}
+                            onShare={handleShare}
+                            onFullscreen={handleFullscreen}
+                            resultsCount={filteredParcels.length}
+                            isCompact={true}
+                          />
+                        </div>
+                      </div>
+                    </SheetContent>
+                  </Sheet>
                 </div>
 
                 {/* Suggestions */}
@@ -585,54 +676,6 @@ const CadastralMap = () => {
               </div>
             </CardContent>
           </Card>
-
-          {/* Filtres avancés */}
-          <AdvancedSearchFilters
-            filters={advancedSearch.filters}
-            onFiltersChange={advancedSearch.updateFilters}
-            onSearch={handleApplyFilters}
-            onClear={advancedSearch.clearFilters}
-            isCompact={isMobile}
-          />
-
-          {/* Historique et favoris */}
-          <SearchHistory
-            onSelectHistory={handleSelectFromHistory}
-            onSelectFavorite={handleSelectFromFavorites}
-            isCompact={isMobile}
-          />
-
-          {/* Outils de dessin */}
-          <MapDrawingTools
-            onDrawPolygon={handleDrawPolygon}
-            onDrawRectangle={handleDrawRectangle}
-            onDrawCircle={handleDrawCircle}
-            onClearDrawings={handleClearDrawings}
-            isActive={false}
-            isCompact={isMobile}
-          />
-
-          {/* Outils de mesure */}
-          <MapMeasurementTools
-            onMeasureDistance={handleMeasureDistance}
-            onMeasureArea={handleMeasureArea}
-            onClearMeasurements={handleClearMeasurements}
-            measurements={measurements}
-            isCompact={isMobile}
-          />
-
-          {/* Contrôles de vue */}
-          <MapViewControls
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            sortBy={sortBy}
-            onSortChange={setSortBy}
-            onExport={handleExport}
-            onShare={handleShare}
-            onFullscreen={handleFullscreen}
-            resultsCount={filteredParcels.length}
-            isCompact={isMobile}
-          />
         </div>
 
         {/* Panneau d'information de la parcelle sélectionnée */}
