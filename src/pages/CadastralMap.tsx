@@ -571,77 +571,55 @@ const CadastralMap = () => {
                         {!(selectedParcel && isMobile) && <span className="ml-1.5 text-xs">Avancée</span>}
                       </Button>
                     </SheetTrigger>
-                    <SheetContent side={isMobile ? "bottom" : "left"} className="w-full sm:max-w-md overflow-y-auto">
-                      <SheetHeader>
-                        <SheetTitle className="text-base">Recherche Avancée</SheetTitle>
-                        <SheetDescription className="text-xs">
-                          Utilisez les filtres et outils ci-dessous pour affiner votre recherche
-                        </SheetDescription>
+                    <SheetContent side={isMobile ? "bottom" : "left"} className={`${isMobile ? 'max-h-[65vh] p-3' : 'w-full sm:max-w-md p-4'} overflow-y-auto`}>
+                      <SheetHeader className="pb-1.5">
+                        <SheetTitle className="text-sm">Recherche avancée</SheetTitle>
                       </SheetHeader>
                       
-                      <div className="mt-4 space-y-3">
-                        {/* Filtres avancés */}
-                        <div>
-                          <h3 className="text-sm font-semibold mb-2">Filtres de recherche</h3>
-                          <AdvancedSearchFilters
-                            filters={advancedSearch.filters}
-                            onFiltersChange={advancedSearch.updateFilters}
-                            onSearch={handleApplyFilters}
-                            onClear={advancedSearch.clearFilters}
-                            isCompact={true}
-                          />
-                        </div>
+                      <div className="space-y-1.5">
+                        <AdvancedSearchFilters
+                          filters={advancedSearch.filters}
+                          onFiltersChange={advancedSearch.updateFilters}
+                          onSearch={handleApplyFilters}
+                          onClear={advancedSearch.clearFilters}
+                          isCompact={isMobile}
+                        />
 
-                        {/* Historique et favoris */}
-                        <div>
-                          <h3 className="text-sm font-semibold mb-2">Historique & Favoris</h3>
-                          <SearchHistory
-                            onSelectHistory={handleSelectFromHistory}
-                            onSelectFavorite={handleSelectFromFavorites}
-                            isCompact={true}
-                          />
-                        </div>
+                        <SearchHistory
+                          onSelectHistory={handleSelectFromHistory}
+                          onSelectFavorite={handleSelectFromFavorites}
+                          isCompact={isMobile}
+                        />
 
-                        {/* Outils de dessin */}
-                        <div>
-                          <h3 className="text-sm font-semibold mb-2">Outils de dessin</h3>
+                        <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5`}>
                           <MapDrawingTools
                             onDrawPolygon={handleDrawPolygon}
                             onDrawRectangle={handleDrawRectangle}
                             onDrawCircle={handleDrawCircle}
                             onClearDrawings={handleClearDrawings}
                             isActive={false}
-                            isCompact={true}
+                            isCompact={isMobile}
                           />
-                        </div>
-
-                        {/* Outils de mesure */}
-                        <div>
-                          <h3 className="text-sm font-semibold mb-2">Outils de mesure</h3>
                           <MapMeasurementTools
                             onMeasureDistance={handleMeasureDistance}
                             onMeasureArea={handleMeasureArea}
                             onClearMeasurements={handleClearMeasurements}
                             measurements={measurements}
-                            isCompact={true}
+                            isCompact={isMobile}
                           />
                         </div>
 
-                        {/* Contrôles de vue */}
-                        <div>
-                          <h3 className="text-sm font-semibold mb-2">Options d'affichage</h3>
-                          <MapViewControls
-                            viewMode={viewMode}
-                            onViewModeChange={setViewMode}
-                            sortBy={sortBy}
-                            onSortChange={setSortBy}
-                            onExport={handleExport}
-                            onShare={handleShare}
-                            onFullscreen={handleFullscreen}
-                            resultsCount={filteredParcels.length}
-                            isCompact={true}
-                          />
-                        </div>
+                        <MapViewControls
+                          viewMode={viewMode}
+                          onViewModeChange={setViewMode}
+                          sortBy={sortBy}
+                          onSortChange={setSortBy}
+                          onExport={handleExport}
+                          onShare={handleShare}
+                          onFullscreen={handleFullscreen}
+                          resultsCount={filteredParcels.length}
+                          isCompact={isMobile}
+                        />
                       </div>
                     </SheetContent>
                   </Sheet>
