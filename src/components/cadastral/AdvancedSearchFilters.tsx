@@ -149,12 +149,12 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
             <div className={`grid grid-cols-2 ${gap}`}>
               <div>
                 <Label className={`${textSize} text-muted-foreground`}>Province</Label>
-                <Select value={filters.province || ''} onValueChange={(v) => onFiltersChange({ province: v })}>
+                <Select value={filters.province || '_all'} onValueChange={(v) => onFiltersChange({ province: v === '_all' ? undefined : v })}>
                   <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Toutes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Toutes</SelectItem>
+                    <SelectItem value="_all">Toutes</SelectItem>
                     {provinces.map(p => (
                       <SelectItem key={p} value={p}>{p}</SelectItem>
                     ))}
@@ -163,12 +163,12 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
               </div>
               <div>
                 <Label className={`${textSize} text-muted-foreground`}>Ville</Label>
-                <Select value={filters.ville || ''} onValueChange={(v) => onFiltersChange({ ville: v })} disabled={!filters.province}>
+                <Select value={filters.ville || '_all'} onValueChange={(v) => onFiltersChange({ ville: v === '_all' ? undefined : v })} disabled={!filters.province}>
                   <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Toutes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Toutes</SelectItem>
+                    <SelectItem value="_all">Toutes</SelectItem>
                     {villes.map(v => (
                       <SelectItem key={v} value={v}>{v}</SelectItem>
                     ))}
@@ -177,12 +177,12 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
               </div>
               <div>
                 <Label className={`${textSize} text-muted-foreground`}>Commune</Label>
-                <Select value={filters.commune || ''} onValueChange={(v) => onFiltersChange({ commune: v })} disabled={!filters.ville}>
+                <Select value={filters.commune || '_all'} onValueChange={(v) => onFiltersChange({ commune: v === '_all' ? undefined : v })} disabled={!filters.ville}>
                   <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Toutes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Toutes</SelectItem>
+                    <SelectItem value="_all">Toutes</SelectItem>
                     {communes.map(c => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
@@ -191,12 +191,12 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
               </div>
               <div>
                 <Label className={`${textSize} text-muted-foreground`}>Quartier</Label>
-                <Select value={filters.quartier || ''} onValueChange={(v) => onFiltersChange({ quartier: v })} disabled={!filters.commune}>
+                <Select value={filters.quartier || '_all'} onValueChange={(v) => onFiltersChange({ quartier: v === '_all' ? undefined : v })} disabled={!filters.commune}>
                   <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Tous" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous</SelectItem>
+                    <SelectItem value="_all">Tous</SelectItem>
                     {quartiers.map(q => (
                       <SelectItem key={q} value={q}>{q}</SelectItem>
                     ))}
@@ -246,12 +246,12 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
             <div className={`grid grid-cols-2 ${gap}`}>
               <div>
                 <Label className={`${textSize} text-muted-foreground`}>Type de parcelle</Label>
-                <Select value={filters.parcelType || ''} onValueChange={(v) => onFiltersChange({ parcelType: v })}>
+                <Select value={filters.parcelType || '_all'} onValueChange={(v) => onFiltersChange({ parcelType: v === '_all' ? undefined : v })}>
                   <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Tous" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous</SelectItem>
+                    <SelectItem value="_all">Tous</SelectItem>
                     <SelectItem value="Terrain nu">Terrain nu</SelectItem>
                     <SelectItem value="Terrain bâti">Terrain bâti</SelectItem>
                   </SelectContent>
@@ -259,12 +259,12 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
               </div>
               <div>
                 <Label className={`${textSize} text-muted-foreground`}>Type de titre</Label>
-                <Select value={filters.titleType || ''} onValueChange={(v) => onFiltersChange({ titleType: v })}>
+                <Select value={filters.titleType || '_all'} onValueChange={(v) => onFiltersChange({ titleType: v === '_all' ? undefined : v })}>
                   <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Tous" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous</SelectItem>
+                    <SelectItem value="_all">Tous</SelectItem>
                     <SelectItem value="Certificat d'enregistrement">Certificat d'enregistrement</SelectItem>
                     <SelectItem value="Titre foncier">Titre foncier</SelectItem>
                     <SelectItem value="Concession">Concession</SelectItem>
