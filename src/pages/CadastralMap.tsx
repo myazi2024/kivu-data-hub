@@ -665,12 +665,22 @@ const CadastralMap = () => {
                   </div>
                 )}
 
-                {/* Résumé */}
+                {/* Résumé et bouton recherche approfondie */}
                 {!(selectedParcel && isMobile) && (
                   <div className="flex items-center justify-between text-[10px] text-muted-foreground">
                     <span>
                       {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
                     </span>
+                    {searchQuery && filteredParcels.length === 0 && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="h-5 text-[10px] text-primary p-0"
+                        onClick={() => setShowIntroDialog(true)}
+                      >
+                        Contribuer cette parcelle
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
