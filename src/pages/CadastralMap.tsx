@@ -8,19 +8,15 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Download, Share2, Settings2 } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import AdvancedSearchFilters from '@/components/cadastral/AdvancedSearchFilters';
 import SearchHistory from '@/components/cadastral/SearchHistory';
-import MapDrawingTools from '@/components/cadastral/MapDrawingTools';
-import MapMeasurementTools from '@/components/cadastral/MapMeasurementTools';
-import MapViewControls from '@/components/cadastral/MapViewControls';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
-import { exportToCSV } from '@/utils/csvExport';
 import 'leaflet/dist/leaflet.css';
 
 interface ParcelData {
@@ -62,10 +58,6 @@ const CadastralMap = () => {
   const [selectedParcelHistory, setSelectedParcelHistory] = useState<ParcelHistoryData | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [hasIncompleteData, setHasIncompleteData] = useState(false);
-  const [viewMode, setViewMode] = useState<'map' | 'list' | 'grid'>('map');
-  const [sortBy, setSortBy] = useState('parcel_number');
-  const [measurements, setMeasurements] = useState<{ distance?: string; area?: string }>({});
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
 
   // Advanced search hooks
@@ -228,80 +220,6 @@ const CadastralMap = () => {
     if (parcel) {
       handleSelectParcel(parcel);
     }
-  };
-
-  // Export functionality
-  const handleExport = () => {
-    const headers = ['Numéro Parcelle', 'Propriétaire', 'Surface (m²)', 'Province', 'Ville', 'Commune', 'Quartier'];
-    const data = filteredParcels.map(p => [
-      p.parcel_number,
-      p.current_owner_name,
-      p.area_sqm.toString(),
-      p.province || '',
-      p.ville || '',
-      p.commune || '',
-      p.quartier || ''
-    ]);
-    exportToCSV({ filename: 'parcelles_cadastrales.csv', headers, data });
-    toast.success('Export CSV réussi');
-  };
-
-  // Share functionality
-  const handleShare = () => {
-    const url = window.location.href;
-    if (navigator.share) {
-      navigator.share({
-        title: 'Carte Cadastrale - InfoCadre RDC',
-        text: `Découvrez la carte cadastrale avec ${filteredParcels.length} parcelles`,
-        url
-      });
-    } else {
-      navigator.clipboard.writeText(url);
-      toast.success('Lien copié dans le presse-papier');
-    }
-  };
-
-  // Fullscreen toggle
-  const handleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
-    }
-  };
-
-  // Drawing tools handlers
-  const handleDrawPolygon = () => {
-    toast.info('Cliquez sur la carte pour dessiner un polygone');
-    // Implementation would use Leaflet.draw plugin
-  };
-
-  const handleDrawRectangle = () => {
-    toast.info('Cliquez et glissez pour dessiner un rectangle');
-  };
-
-  const handleDrawCircle = () => {
-    toast.info('Cliquez et glissez pour dessiner un cercle');
-  };
-
-  const handleClearDrawings = () => {
-    toast.success('Dessins effacés');
-  };
-
-  // Measurement tools handlers
-  const handleMeasureDistance = () => {
-    toast.info('Cliquez sur deux points pour mesurer la distance');
-  };
-
-  const handleMeasureArea = () => {
-    toast.info('Dessinez une forme pour mesurer la surface');
-  };
-
-  const handleClearMeasurements = () => {
-    setMeasurements({});
-    toast.success('Mesures effacées');
   };
 
   // Initialiser la carte (uniquement quand loading = false)
@@ -588,36 +506,6 @@ const CadastralMap = () => {
                         <SearchHistory
                           onSelectHistory={handleSelectFromHistory}
                           onSelectFavorite={handleSelectFromFavorites}
-                          isCompact={isMobile}
-                        />
-
-                        <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5`}>
-                          <MapDrawingTools
-                            onDrawPolygon={handleDrawPolygon}
-                            onDrawRectangle={handleDrawRectangle}
-                            onDrawCircle={handleDrawCircle}
-                            onClearDrawings={handleClearDrawings}
-                            isActive={false}
-                            isCompact={isMobile}
-                          />
-                          <MapMeasurementTools
-                            onMeasureDistance={handleMeasureDistance}
-                            onMeasureArea={handleMeasureArea}
-                            onClearMeasurements={handleClearMeasurements}
-                            measurements={measurements}
-                            isCompact={isMobile}
-                          />
-                        </div>
-
-                        <MapViewControls
-                          viewMode={viewMode}
-                          onViewModeChange={setViewMode}
-                          sortBy={sortBy}
-                          onSortChange={setSortBy}
-                          onExport={handleExport}
-                          onShare={handleShare}
-                          onFullscreen={handleFullscreen}
-                          resultsCount={filteredParcels.length}
                           isCompact={isMobile}
                         />
                       </div>
