@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2 } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -199,27 +199,57 @@ const CadastralMap = () => {
   };
 
   // Advanced search handlers
-  const handleApplyFilters = () => {
-    advancedSearch.searchParcels();
-    if (advancedSearch.results.length > 0) {
-      setFilteredParcels(advancedSearch.results);
-      toast.success(`${advancedSearch.results.length} parcelle(s) trouvée(s)`);
+  const handleApplyFilters = async () => {
+    const results = await advancedSearch.searchParcels();
+    if (results.length > 0) {
+      setFilteredParcels(results);
+      toast.success(`${results.length} parcelle(s) trouvée(s)`);
+      // Fermer le sheet après application
+      setShowAdvancedSearch(false);
     } else {
       toast.error('Aucune parcelle ne correspond aux critères');
+    }
+    // Sauvegarder dans l'historique avec les filtres
+    const filterSummary = Object.entries(advancedSearch.filters)
+      .filter(([_, v]) => v !== undefined && v !== '')
+      .map(([k, v]) => `${k}:${v}`)
+      .join(', ');
+    if (filterSummary) {
+      searchHistory.addToHistory(`Filtres: ${filterSummary}`, advancedSearch.filters);
     }
   };
 
   const handleSelectFromHistory = (query: string) => {
     setSearchQuery(query);
+    setShowAdvancedSearch(false);
     const filtered = parcels.filter(p => p.parcel_number.toLowerCase().includes(query.toLowerCase()));
     setFilteredParcels(filtered);
   };
 
   const handleSelectFromFavorites = (parcelNumber: string) => {
+    setShowAdvancedSearch(false);
     const parcel = parcels.find(p => p.parcel_number === parcelNumber);
     if (parcel) {
       handleSelectParcel(parcel);
     }
+  };
+
+  const handleAddToFavorites = () => {
+    if (selectedParcel) {
+      searchHistory.addToFavorites({
+        parcel_number: selectedParcel.parcel_number,
+        parcel_id: selectedParcel.id,
+        owner_name: selectedParcel.current_owner_name,
+        location: `${selectedParcel.province || ''} ${selectedParcel.ville || ''} ${selectedParcel.commune || ''}`.trim()
+      });
+      toast.success('Parcelle ajoutée aux favoris');
+    }
+  };
+
+  const handleClearFiltersAndReset = () => {
+    advancedSearch.clearFilters();
+    setFilteredParcels(parcels);
+    toast.success('Filtres réinitialisés');
   };
 
   // Initialiser la carte (uniquement quand loading = false)
@@ -458,10 +488,11 @@ const CadastralMap = () => {
                     <Input
                       placeholder={selectedParcel && isMobile ? "Rechercher..." : "Rechercher une parcelle..."}
                       value={searchQuery}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        setSearchQuery(value);
-                        if (value) searchHistory.addToHistory(value);
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && searchQuery.trim()) {
+                          searchHistory.addToHistory(searchQuery);
+                        }
                       }}
                       className={`pl-10 pr-10 ${selectedParcel && isMobile ? 'h-7 text-xs' : 'h-8 text-xs'}`}
                     />
@@ -495,11 +526,18 @@ const CadastralMap = () => {
                       </SheetHeader>
                       
                       <div className="space-y-1.5">
+                        {advancedSearch.loading && (
+                          <div className="flex items-center justify-center py-4">
+                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                            <span className="ml-2 text-sm text-muted-foreground">Recherche en cours...</span>
+                          </div>
+                        )}
+                        
                         <AdvancedSearchFilters
                           filters={advancedSearch.filters}
                           onFiltersChange={advancedSearch.updateFilters}
                           onSearch={handleApplyFilters}
-                          onClear={advancedSearch.clearFilters}
+                          onClear={handleClearFiltersAndReset}
                           isCompact={isMobile}
                         />
 
@@ -566,14 +604,25 @@ const CadastralMap = () => {
                       Parcelle sélectionnée
                     </CardTitle>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 w-5 sm:h-6 sm:w-6 p-0 -mt-1"
-                    onClick={() => setSelectedParcel(null)}
-                  >
-                    <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-5 w-5 sm:h-6 sm:w-6 p-0 -mt-1 ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500' : 'text-muted-foreground'}`}
+                      onClick={handleAddToFavorites}
+                      title={searchHistory.isFavorite(selectedParcel.id) ? 'Déjà en favoris' : 'Ajouter aux favoris'}
+                    >
+                      <Star className={`h-3 w-3 sm:h-4 sm:w-4 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-5 w-5 sm:h-6 sm:w-6 p-0 -mt-1"
+                      onClick={() => setSelectedParcel(null)}
+                    >
+                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-2 sm:space-y-3 text-xs sm:text-sm px-3 sm:px-6 pb-3 sm:pb-6">

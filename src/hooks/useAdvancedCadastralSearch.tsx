@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface SearchFilters {
@@ -60,7 +60,7 @@ export const useAdvancedCadastralSearch = () => {
     return R * c;
   };
 
-  const searchParcels = async (customFilters?: SearchFilters) => {
+  const searchParcels = async (customFilters?: SearchFilters): Promise<ParcelSearchResult[]> => {
     setLoading(true);
     const activeFilters = customFilters || filters;
 
@@ -90,10 +90,10 @@ export const useAdvancedCadastralSearch = () => {
       }
 
       // Filtres de superficie
-      if (activeFilters.areaSqmMin !== undefined) {
+      if (activeFilters.areaSqmMin !== undefined && activeFilters.areaSqmMin > 0) {
         query = query.gte('area_sqm', activeFilters.areaSqmMin);
       }
-      if (activeFilters.areaSqmMax !== undefined) {
+      if (activeFilters.areaSqmMax !== undefined && activeFilters.areaSqmMax > 0) {
         query = query.lte('area_sqm', activeFilters.areaSqmMax);
       }
 
@@ -125,8 +125,10 @@ export const useAdvancedCadastralSearch = () => {
         });
       }
 
-      // Filtres de statut (nécessite des requêtes supplémentaires)
-      if (activeFilters.hasBuildingPermit || activeFilters.hasMortgage || activeFilters.hasTaxArrears) {
+      // Filtres de statut (nécessite des requêtes supplémentaires) - Mode ET
+      const hasStatusFilters = activeFilters.hasBuildingPermit || activeFilters.hasMortgage || activeFilters.hasTaxArrears;
+      
+      if (hasStatusFilters && filteredData.length > 0) {
         const parcelIds = filteredData.map(p => p.id);
         
         const [permitsData, mortgagesData, taxData] = await Promise.all([
@@ -145,30 +147,36 @@ export const useAdvancedCadastralSearch = () => {
         const parcelsWithMortgages = new Set(mortgagesData.data?.map(p => p.parcel_id) || []);
         const parcelsWithTaxArrears = new Set(taxData.data?.map(p => p.parcel_id) || []);
 
-        const enrichedData = filteredData.map(parcel => ({
+        // Enrichir les données
+        let enrichedData = filteredData.map(parcel => ({
           ...parcel,
           has_building_permit: parcelsWithPermits.has(parcel.id),
           has_mortgage: parcelsWithMortgages.has(parcel.id),
           has_tax_arrears: parcelsWithTaxArrears.has(parcel.id)
         })) as ParcelSearchResult[];
 
+        // Appliquer les filtres de statut en mode ET (tous les critères doivent être satisfaits)
         if (activeFilters.hasBuildingPermit) {
-          filteredData = enrichedData.filter(p => p.has_building_permit);
-        } else if (activeFilters.hasMortgage) {
-          filteredData = enrichedData.filter(p => p.has_mortgage);
-        } else if (activeFilters.hasTaxArrears) {
-          filteredData = enrichedData.filter(p => p.has_tax_arrears);
-        } else {
-          filteredData = enrichedData;
+          enrichedData = enrichedData.filter(p => p.has_building_permit);
         }
+        if (activeFilters.hasMortgage) {
+          enrichedData = enrichedData.filter(p => p.has_mortgage);
+        }
+        if (activeFilters.hasTaxArrears) {
+          enrichedData = enrichedData.filter(p => p.has_tax_arrears);
+        }
+
+        filteredData = enrichedData;
       }
 
       setResults(filteredData);
       setTotalCount(filteredData.length);
+      return filteredData;
     } catch (error) {
       console.error('Erreur recherche avancée:', error);
       setResults([]);
       setTotalCount(0);
+      return [];
     } finally {
       setLoading(false);
     }
