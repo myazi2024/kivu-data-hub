@@ -607,10 +607,10 @@ const CadastralMap = () => {
                       <div className="relative">
                         {/* Notification animée */}
                         {showManualSearchNotification && (
-                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap animate-bounce">
-                            <div className="bg-primary text-primary-foreground text-[9px] px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
-                              <Sparkles className="h-2.5 w-2.5" />
-                              <span>Essayez ici !</span>
+                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 max-w-[200px] animate-bounce">
+                            <div className="bg-primary text-primary-foreground text-[9px] px-2.5 py-1.5 rounded-lg shadow-lg flex items-start gap-1.5">
+                              <Sparkles className="h-3 w-3 shrink-0 mt-0.5" />
+                              <span className="leading-tight">Cliquez ici pour obtenir plus de possibilités pour la référence cadastrale n° <strong>{searchQuery}</strong></span>
                             </div>
                             <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-primary" />
                           </div>
@@ -618,11 +618,7 @@ const CadastralMap = () => {
                         <Button
                           variant="default"
                           size="sm"
-                          className={`h-6 text-[10px] px-2.5 rounded-full font-medium shadow-sm transition-all duration-300 ${
-                            showManualSearchNotification 
-                              ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-background animate-pulse' 
-                              : ''
-                          }`}
+                          className="h-6 text-[10px] px-2.5 rounded-full font-medium shadow-sm transition-all duration-300"
                           onClick={handleManualSearchClick}
                         >
                           <Search className="h-3 w-3 mr-1" />
