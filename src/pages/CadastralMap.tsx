@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -59,6 +59,8 @@ const CadastralMap = () => {
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [hasIncompleteData, setHasIncompleteData] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showManualSearchNotification, setShowManualSearchNotification] = useState(false);
+  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Advanced search hooks
   const advancedSearch = useAdvancedCadastralSearch();
@@ -68,8 +70,34 @@ const CadastralMap = () => {
   useEffect(() => {
     if (!showIntroDialog) {
       // Reset any state if needed
+      setShowManualSearchNotification(false);
     }
   }, [showIntroDialog]);
+
+  // Timer d'inactivité pour afficher la notification sur le bouton "Recherche manuelle"
+  useEffect(() => {
+    // Afficher la notification après 5 secondes d'inactivité quand aucun résultat
+    if (searchQuery && filteredParcels.length === 0 && !showManualSearchNotification) {
+      inactivityTimerRef.current = setTimeout(() => {
+        setShowManualSearchNotification(true);
+      }, 5000);
+    }
+
+    return () => {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+    };
+  }, [searchQuery, filteredParcels.length, showManualSearchNotification]);
+
+  // Réinitialiser le timer quand l'utilisateur interagit
+  const handleManualSearchClick = useCallback(() => {
+    setShowManualSearchNotification(false);
+    if (inactivityTimerRef.current) {
+      clearTimeout(inactivityTimerRef.current);
+    }
+    setShowIntroDialog(true);
+  }, []);
 
   // Charger les parcelles depuis cadastral_parcels (accès public)
   useEffect(() => {
@@ -576,14 +604,31 @@ const CadastralMap = () => {
                       {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
                     </span>
                     {searchQuery && filteredParcels.length === 0 && (
-                      <Button
-                        variant="link"
-                        size="sm"
-                        className="h-5 text-[10px] text-primary p-0"
-                        onClick={() => setShowIntroDialog(true)}
-                      >
-                        Contribuer cette parcelle
-                      </Button>
+                      <div className="relative">
+                        {/* Notification animée */}
+                        {showManualSearchNotification && (
+                          <div className="absolute -top-8 left-1/2 -translate-x-1/2 whitespace-nowrap animate-bounce">
+                            <div className="bg-primary text-primary-foreground text-[9px] px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                              <Sparkles className="h-2.5 w-2.5" />
+                              <span>Essayez ici !</span>
+                            </div>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-primary" />
+                          </div>
+                        )}
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className={`h-6 text-[10px] px-2.5 rounded-full font-medium shadow-sm transition-all duration-300 ${
+                            showManualSearchNotification 
+                              ? 'ring-2 ring-primary/50 ring-offset-1 ring-offset-background animate-pulse' 
+                              : ''
+                          }`}
+                          onClick={handleManualSearchClick}
+                        >
+                          <Search className="h-3 w-3 mr-1" />
+                          Recherche manuelle
+                        </Button>
+                      </div>
                     )}
                   </div>
                 )}
