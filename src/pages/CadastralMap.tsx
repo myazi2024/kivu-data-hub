@@ -605,14 +605,14 @@ const CadastralMap = () => {
                     </span>
                     {searchQuery && filteredParcels.length === 0 && (
                       <div className="relative">
-                        {/* Notification animée */}
+                        {/* Notification informative */}
                         {showManualSearchNotification && (
-                          <div className="absolute -top-12 left-1/2 -translate-x-1/2 max-w-[200px] animate-bounce">
-                            <div className="bg-primary text-primary-foreground text-[9px] px-2.5 py-1.5 rounded-lg shadow-lg flex items-start gap-1.5">
-                              <Sparkles className="h-3 w-3 shrink-0 mt-0.5" />
-                              <span className="leading-tight">Cliquez ici pour obtenir plus de possibilités pour la référence cadastrale n° <strong>{searchQuery}</strong></span>
+                          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[280px] sm:w-[320px]">
+                            <div className="bg-primary text-primary-foreground text-xs sm:text-sm px-4 py-3 rounded-xl shadow-xl flex items-start gap-2.5">
+                              <Sparkles className="h-4 w-4 shrink-0 mt-0.5" />
+                              <span className="leading-relaxed">Cliquez ici pour obtenir plus de possibilités pour la référence cadastrale n° <strong className="font-semibold">{searchQuery}</strong></span>
                             </div>
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-primary" />
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-l-transparent border-r-transparent border-t-primary" />
                           </div>
                         )}
                         <Button
