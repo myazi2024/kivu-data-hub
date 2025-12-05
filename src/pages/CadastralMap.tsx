@@ -74,10 +74,13 @@ const CadastralMap = () => {
     }
   }, [showIntroDialog]);
 
+  // Ref pour tracker si l'utilisateur a cliqué sur le bouton (empêche réapparition)
+  const notificationDismissedRef = useRef(false);
+
   // Timer d'inactivité pour afficher la notification sur le bouton "Recherche manuelle"
   useEffect(() => {
     // Afficher la notification après 5 secondes d'inactivité quand aucun résultat
-    if (searchQuery && filteredParcels.length === 0 && !showManualSearchNotification) {
+    if (searchQuery && filteredParcels.length === 0 && !showManualSearchNotification && !notificationDismissedRef.current) {
       inactivityTimerRef.current = setTimeout(() => {
         setShowManualSearchNotification(true);
       }, 5000);
@@ -90,8 +93,14 @@ const CadastralMap = () => {
     };
   }, [searchQuery, filteredParcels.length, showManualSearchNotification]);
 
+  // Reset le flag quand la recherche change
+  useEffect(() => {
+    notificationDismissedRef.current = false;
+  }, [searchQuery]);
+
   // Réinitialiser le timer quand l'utilisateur interagit
   const handleManualSearchClick = useCallback(() => {
+    notificationDismissedRef.current = true;
     setShowManualSearchNotification(false);
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current);
