@@ -1318,6 +1318,149 @@ export type Database = {
           },
         ]
       }
+      mutation_fees_config: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          description: string | null
+          display_order: number
+          fee_name: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          updated_at: string
+        }
+        Insert: {
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          updated_at?: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mutation_requests: {
+        Row: {
+          beneficiary_id_document_url: string | null
+          beneficiary_name: string | null
+          beneficiary_phone: string | null
+          created_at: string
+          estimated_processing_days: number | null
+          fee_items: Json
+          id: string
+          justification: string | null
+          mutation_type: string
+          paid_at: string | null
+          parcel_id: string | null
+          parcel_number: string
+          payment_id: string | null
+          payment_status: string
+          processing_notes: string | null
+          proposed_changes: Json
+          reference_number: string
+          rejection_reason: string | null
+          requester_email: string | null
+          requester_id_document_url: string | null
+          requester_name: string
+          requester_phone: string | null
+          requester_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          supporting_documents: Json | null
+          total_amount_usd: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          beneficiary_id_document_url?: string | null
+          beneficiary_name?: string | null
+          beneficiary_phone?: string | null
+          created_at?: string
+          estimated_processing_days?: number | null
+          fee_items?: Json
+          id?: string
+          justification?: string | null
+          mutation_type?: string
+          paid_at?: string | null
+          parcel_id?: string | null
+          parcel_number: string
+          payment_id?: string | null
+          payment_status?: string
+          processing_notes?: string | null
+          proposed_changes?: Json
+          reference_number: string
+          rejection_reason?: string | null
+          requester_email?: string | null
+          requester_id_document_url?: string | null
+          requester_name: string
+          requester_phone?: string | null
+          requester_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          supporting_documents?: Json | null
+          total_amount_usd?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          beneficiary_id_document_url?: string | null
+          beneficiary_name?: string | null
+          beneficiary_phone?: string | null
+          created_at?: string
+          estimated_processing_days?: number | null
+          fee_items?: Json
+          id?: string
+          justification?: string | null
+          mutation_type?: string
+          paid_at?: string | null
+          parcel_id?: string | null
+          parcel_number?: string
+          payment_id?: string | null
+          payment_status?: string
+          processing_notes?: string | null
+          proposed_changes?: Json
+          reference_number?: string
+          rejection_reason?: string | null
+          requester_email?: string | null
+          requester_id_document_url?: string | null
+          requester_name?: string
+          requester_phone?: string | null
+          requester_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          supporting_documents?: Json | null
+          total_amount_usd?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mutation_requests_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           action_url: string | null
@@ -2404,6 +2547,7 @@ export type Database = {
       }
       generate_ccc_code: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
+      generate_mutation_reference: { Args: never; Returns: string }
       generate_permit_number: {
         Args: { permit_type: string; province: string }
         Returns: string
