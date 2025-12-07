@@ -10,11 +10,16 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ResponsiveTable } from '@/components/ui/responsive-table';
-import { PaginationControls } from '@/components/shared/PaginationControls';
+import { 
+  ResponsiveTable, 
+  ResponsiveTableHeader, 
+  ResponsiveTableBody, 
+  ResponsiveTableRow, 
+  ResponsiveTableCell, 
+  ResponsiveTableHead 
+} from '@/components/ui/responsive-table';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { toast } from 'sonner';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -479,18 +484,64 @@ const AdminMutationRequests: React.FC = () => {
             </div>
           ) : (
             <>
-              <ResponsiveTable
-                data={paginatedRequests}
-                columns={columns}
-                keyExtractor={(r) => r.id}
-              />
-              <PaginationControls
-                currentPage={currentPage}
-                totalPages={totalPages}
-                onPageChange={setCurrentPage}
-                totalItems={filteredRequests.length}
-                itemsPerPage={itemsPerPage}
-              />
+              <ResponsiveTable>
+                <ResponsiveTableHeader>
+                  <ResponsiveTableRow>
+                    {columns.map(col => (
+                      <ResponsiveTableHead key={col.key} priority={col.priority === 1 ? 'high' : col.priority <= 3 ? 'medium' : 'low'}>
+                        {col.header}
+                      </ResponsiveTableHead>
+                    ))}
+                  </ResponsiveTableRow>
+                </ResponsiveTableHeader>
+                <ResponsiveTableBody>
+                  {paginatedRequests.map(request => (
+                    <ResponsiveTableRow key={request.id}>
+                      {columns.map(col => (
+                        <ResponsiveTableCell 
+                          key={col.key} 
+                          priority={col.priority === 1 ? 'high' : col.priority <= 3 ? 'medium' : 'low'}
+                          label={col.header}
+                        >
+                          {col.render(request)}
+                        </ResponsiveTableCell>
+                      ))}
+                    </ResponsiveTableRow>
+                  ))}
+                </ResponsiveTableBody>
+              </ResponsiveTable>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-2 py-3">
+                <span className="text-xs text-muted-foreground">
+                  {filteredRequests.length > 0 
+                    ? `${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, filteredRequests.length)} sur ${filteredRequests.length}`
+                    : 'Aucun résultat'}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="h-7 w-7 p-0"
+                  >
+                    ‹
+                  </Button>
+                  <span className="text-xs px-2 py-1">
+                    {currentPage} / {totalPages || 1}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage >= totalPages}
+                    className="h-7 w-7 p-0"
+                  >
+                    ›
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </TabsContent>

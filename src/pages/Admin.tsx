@@ -41,7 +41,7 @@ import AdminBillingConfig from '@/components/admin/AdminBillingConfig';
 import { AdminPaymentMonitoring } from '@/components/admin/AdminPaymentMonitoring';
 import AdminPaymentServiceIntegration from '@/components/admin/AdminPaymentServiceIntegration';
 import AdminTestMode from '@/components/admin/AdminTestMode';
-
+import AdminMutationRequests from '@/components/admin/AdminMutationRequests';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -182,6 +182,8 @@ const Admin = () => {
         return <AdminTerritorialZones />;
       case 'permits':
         return <AdminBuildingPermits />;
+      case 'mutations':
+        return <AdminMutationRequests />;
       case 'publications':
         return <AdminPublications onRefresh={fetchPendingCount} />;
       case 'articles':

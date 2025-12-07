@@ -700,15 +700,28 @@ const CadastralMap = () => {
                   </div>
                 </div>
                 <div className="space-y-1.5 sm:space-y-2">
-                  <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                     <Button
                       onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
-                      className="w-full text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-4"
+                      className="w-full text-xs h-8 sm:h-9 px-1.5 sm:px-3"
                       size="sm"
                       disabled={loadingHistory}
                     >
-                      {isMobile ? "Plus de données" : "Afficher plus de données"}
+                      {isMobile ? "Plus" : "Plus de données"}
                     </Button>
+                    <MutationRequestDialog
+                      parcelNumber={selectedParcel.parcel_number}
+                      trigger={
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full text-xs h-8 sm:h-9 px-1.5 sm:px-3"
+                        >
+                          <FileEdit className="h-3 w-3 sm:mr-1" />
+                          <span className="hidden sm:inline">Mutation</span>
+                        </Button>
+                      }
+                    />
                     <Button
                       onClick={() => {
                         const phoneNumber = '243816996077';
@@ -719,10 +732,10 @@ const CadastralMap = () => {
                       }}
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-4"
+                      className="w-full text-xs h-8 sm:h-9 px-1.5 sm:px-3"
                     >
-                      <MessageCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                      Besoin d'aide ?
+                      <HelpCircle className="h-3 w-3 sm:mr-1" />
+                      <span className="hidden sm:inline">Aide</span>
                     </Button>
                   </div>
                   

@@ -89,6 +89,7 @@ const menuItems = [
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
       { icon: MapPin, label: 'Zones Territoriales', value: 'zones', badge: null },
       { icon: Building2, label: 'Permis de Construire', value: 'permits', badge: null },
+      { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: null },
     ]
   },
   {
