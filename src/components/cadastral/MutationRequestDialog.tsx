@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,8 +19,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface MutationRequestDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   parcelNumber: string;
   parcelId?: string;
   parcelData?: {
@@ -30,17 +28,26 @@ interface MutationRequestDialogProps {
     quartier?: string;
     current_owner_name?: string;
   };
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 type Step = 'form' | 'payment' | 'confirmation';
 
 const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
-  open,
-  onOpenChange,
   parcelNumber,
   parcelId,
-  parcelData
+  parcelData,
+  trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange
 }) => {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const onOpenChange = isControlled ? controlledOnOpenChange! : setInternalOpen;
+  
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
   const { loading, fees, createMutationRequest, updatePaymentStatus } = useMutationRequest();
@@ -537,7 +544,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   );
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className={`${isMobile ? 'max-w-full h-[90vh] m-0' : 'max-w-lg'} p-4`}>
         <DialogHeader className="pb-2">
           <DialogTitle className="flex items-center gap-2 text-base">
