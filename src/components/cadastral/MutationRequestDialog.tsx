@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -546,23 +546,26 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={`${isMobile ? 'max-w-full h-[90vh] m-0' : 'max-w-lg'} p-4`}>
-        <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <FileEdit className="h-5 w-5 text-primary" />
-            {step === 'confirmation' ? 'Confirmation' : 'Demande de mutation'}
-          </DialogTitle>
-          {step === 'form' && (
-            <DialogDescription className="text-xs">
-              Remplissez le formulaire pour demander une mise à jour des données cadastrales
-            </DialogDescription>
-          )}
-        </DialogHeader>
+      <DialogPortal>
+        <DialogOverlay className="z-[1100]" />
+        <DialogContent className={`z-[1100] ${isMobile ? 'max-w-full h-[90vh] m-0' : 'max-w-lg'} p-4`}>
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base">
+              <FileEdit className="h-5 w-5 text-primary" />
+              {step === 'confirmation' ? 'Confirmation' : 'Demande de mutation'}
+            </DialogTitle>
+            {step === 'form' && (
+              <DialogDescription className="text-xs">
+                Remplissez le formulaire pour demander une mise à jour des données cadastrales
+              </DialogDescription>
+            )}
+          </DialogHeader>
 
-        {step === 'form' && renderFormStep()}
-        {step === 'payment' && renderPaymentStep()}
-        {step === 'confirmation' && renderConfirmationStep()}
-      </DialogContent>
+          {step === 'form' && renderFormStep()}
+          {step === 'payment' && renderPaymentStep()}
+          {step === 'confirmation' && renderConfirmationStep()}
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
   );
 };
