@@ -184,12 +184,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         const filePath = `mutation-documents/${user?.id}/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
-          .from('documents')
+          .from('cadastral-documents')
           .upload(filePath, file);
         
         if (uploadError) throw uploadError;
         
-        const { data } = supabase.storage.from('documents').getPublicUrl(filePath);
+        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         urls.push(data.publicUrl);
       }
       
