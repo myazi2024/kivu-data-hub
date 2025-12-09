@@ -304,16 +304,16 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   };
 
   const renderFormStep = () => (
-    <ScrollArea className={isMobile ? 'h-[65vh]' : 'h-[70vh]'}>
-      <div className="space-y-3 pr-2">
+    <ScrollArea className={isMobile ? 'h-[70vh]' : 'h-[70vh]'}>
+      <div className="space-y-2.5 pr-1.5">
         {/* Info parcelle - compact */}
-        <Card className="bg-muted/50 border-0">
+        <Card className="bg-muted/50 border-0 rounded-lg">
           <CardContent className="p-2">
             <div className="flex items-center gap-2 text-xs">
               <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-              <span className="font-mono font-bold text-sm">{parcelNumber}</span>
+              <span className="font-mono font-bold text-xs sm:text-sm truncate">{parcelNumber}</span>
               {parcelData?.province && (
-                <span className="text-muted-foreground truncate">
+                <span className="text-muted-foreground truncate text-[10px] sm:text-xs">
                   - {parcelData.province} {parcelData.ville}
                 </span>
               )}
@@ -322,10 +322,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </Card>
 
         {/* Type de mutation - aligné CCC */}
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <Label className="text-xs font-medium">Type de mutation *</Label>
           <Select value={mutationType} onValueChange={setMutationType}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-7 sm:h-8 text-xs rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -339,10 +339,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </div>
 
         {/* Type de demandeur */}
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           <Label className="text-xs font-medium">Vous êtes</Label>
           <Select value={requesterType} onValueChange={setRequesterType}>
-            <SelectTrigger className="h-8 text-xs">
+            <SelectTrigger className="h-7 sm:h-8 text-xs rounded-lg">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -355,17 +355,17 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Select>
         </div>
 
-        <Separator className="my-2" />
+        <Separator className="my-1.5" />
 
         {/* Informations du demandeur - structure alignée CCC */}
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase">Vos informations</h4>
+        <div className="space-y-1.5">
+          <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">Vos informations</h4>
           
           {/* Statut juridique */}
-          <div className="space-y-1">
-            <Label className="text-xs">Statut juridique</Label>
+          <div className="space-y-0.5">
+            <Label className="text-[10px] sm:text-xs">Statut juridique</Label>
             <Select value={requesterLegalStatus} onValueChange={setRequesterLegalStatus}>
-              <SelectTrigger className="h-8 text-xs">
+              <SelectTrigger className="h-7 sm:h-8 text-xs rounded-lg">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -379,14 +379,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </div>
           
           {requesterLegalStatus === 'personne_physique' ? (
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
               <div className="space-y-0.5">
                 <Label className="text-[10px]">Nom *</Label>
                 <Input
                   value={requesterLastName}
                   onChange={(e) => setRequesterLastName(e.target.value)}
                   placeholder="Nom"
-                  className="h-8 text-xs"
+                  className="h-7 sm:h-8 text-xs rounded-lg"
                 />
               </div>
               <div className="space-y-0.5">
@@ -395,7 +395,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   value={requesterMiddleName}
                   onChange={(e) => setRequesterMiddleName(e.target.value)}
                   placeholder="Post-nom"
-                  className="h-8 text-xs"
+                  className="h-7 sm:h-8 text-xs rounded-lg"
                 />
               </div>
               <div className="space-y-0.5">
@@ -404,7 +404,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   value={requesterFirstName}
                   onChange={(e) => setRequesterFirstName(e.target.value)}
                   placeholder="Prénom"
-                  className="h-8 text-xs"
+                  className="h-7 sm:h-8 text-xs rounded-lg"
                 />
               </div>
             </div>
@@ -415,19 +415,19 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 value={requesterLastName}
                 onChange={(e) => setRequesterLastName(e.target.value)}
                 placeholder="Nom de l'entreprise"
-                className="h-8 text-xs"
+                className="h-7 sm:h-8 text-xs rounded-lg"
               />
             </div>
           )}
           
-          <div className="grid grid-cols-2 gap-1.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
             <div className="space-y-0.5">
               <Label className="text-[10px]">Téléphone</Label>
               <Input
                 value={requesterPhone}
                 onChange={(e) => setRequesterPhone(e.target.value)}
                 placeholder="+243..."
-                className="h-8 text-xs"
+                className="h-7 sm:h-8 text-xs rounded-lg"
               />
             </div>
             <div className="space-y-0.5">
@@ -437,7 +437,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 value={requesterEmail}
                 onChange={(e) => setRequesterEmail(e.target.value)}
                 placeholder="email@exemple.com"
-                className="h-8 text-xs"
+                className="h-7 sm:h-8 text-xs rounded-lg"
               />
             </div>
           </div>
@@ -446,16 +446,16 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         {/* Bénéficiaire (nouveau propriétaire) - pour mutations de transfert */}
         {isTransferMutation && (
           <>
-            <Separator className="my-2" />
-            <div className="space-y-2">
-              <h4 className="text-xs font-semibold text-muted-foreground uppercase">
+            <Separator className="my-1.5" />
+            <div className="space-y-1.5">
+              <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">
                 Nouveau propriétaire
               </h4>
               
-              <div className="space-y-1">
-                <Label className="text-xs">Statut juridique</Label>
+              <div className="space-y-0.5">
+                <Label className="text-[10px] sm:text-xs">Statut juridique</Label>
                 <Select value={beneficiaryLegalStatus} onValueChange={setBeneficiaryLegalStatus}>
-                  <SelectTrigger className="h-8 text-xs">
+                  <SelectTrigger className="h-7 sm:h-8 text-xs rounded-lg">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -469,14 +469,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               </div>
               
               {beneficiaryLegalStatus === 'personne_physique' ? (
-                <div className="grid grid-cols-3 gap-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                   <div className="space-y-0.5">
                     <Label className="text-[10px]">Nom *</Label>
                     <Input
                       value={beneficiaryLastName}
                       onChange={(e) => setBeneficiaryLastName(e.target.value)}
                       placeholder="Nom"
-                      className="h-8 text-xs"
+                      className="h-7 sm:h-8 text-xs rounded-lg"
                     />
                   </div>
                   <div className="space-y-0.5">
@@ -485,7 +485,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                       value={beneficiaryMiddleName}
                       onChange={(e) => setBeneficiaryMiddleName(e.target.value)}
                       placeholder="Post-nom"
-                      className="h-8 text-xs"
+                      className="h-7 sm:h-8 text-xs rounded-lg"
                     />
                   </div>
                   <div className="space-y-0.5">
@@ -494,7 +494,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                       value={beneficiaryFirstName}
                       onChange={(e) => setBeneficiaryFirstName(e.target.value)}
                       placeholder="Prénom"
-                      className="h-8 text-xs"
+                      className="h-7 sm:h-8 text-xs rounded-lg"
                     />
                   </div>
                 </div>
@@ -505,7 +505,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                     value={beneficiaryLastName}
                     onChange={(e) => setBeneficiaryLastName(e.target.value)}
                     placeholder="Nom de l'entreprise"
-                    className="h-8 text-xs"
+                    className="h-7 sm:h-8 text-xs rounded-lg"
                   />
                 </div>
               )}
@@ -516,18 +516,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   value={beneficiaryPhone}
                   onChange={(e) => setBeneficiaryPhone(e.target.value)}
                   placeholder="+243..."
-                  className="h-8 text-xs"
+                  className="h-7 sm:h-8 text-xs rounded-lg"
                 />
               </div>
             </div>
           </>
         )}
 
-        <Separator className="my-2" />
+        <Separator className="my-1.5" />
 
         {/* Modifications souhaitées */}
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase">Modifications demandées</h4>
+        <div className="space-y-1.5">
+          <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">Modifications demandées</h4>
           
           <div className="space-y-0.5">
             <Label className="text-[10px]">Description des modifications *</Label>
@@ -535,7 +535,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               value={proposedChanges}
               onChange={(e) => setProposedChanges(e.target.value)}
               placeholder="Décrivez les modifications que vous souhaitez apporter..."
-              className="min-h-[60px] text-xs resize-none"
+              className="min-h-[50px] sm:min-h-[60px] text-xs resize-none rounded-lg"
             />
           </div>
 
@@ -545,20 +545,20 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
               placeholder="Motifs de votre demande..."
-              className="min-h-[50px] text-xs resize-none"
+              className="min-h-[40px] sm:min-h-[50px] text-xs resize-none rounded-lg"
             />
           </div>
         </div>
 
-        <Separator className="my-2" />
+        <Separator className="my-1.5" />
 
         {/* Pièces jointes */}
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase">
+        <div className="space-y-1.5">
+          <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">
             Documents justificatifs
           </h4>
-          <p className="text-[10px] text-muted-foreground">
-            Joignez les documents prouvant l'authenticité de la demande (acte de vente, certificat d'héritage, etc.)
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground">
+            Joignez les documents prouvant l'authenticité (acte de vente, certificat, etc.)
           </p>
           
           <input
@@ -575,29 +575,29 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             variant="outline"
             size="sm"
             onClick={() => fileInputRef.current?.click()}
-            className="w-full h-8 text-xs"
+            className="w-full h-7 sm:h-8 text-xs rounded-lg"
           >
-            <Upload className="h-3.5 w-3.5 mr-1.5" />
+            <Upload className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
             Ajouter des fichiers
           </Button>
           
           {attachedFiles.length > 0 && (
             <div className="space-y-1">
               {attachedFiles.map((file, index) => (
-                <div key={index} className="flex items-center gap-2 p-1.5 bg-muted/50 rounded text-xs">
+                <div key={index} className="flex items-center gap-1.5 p-1.5 bg-muted/50 rounded-lg text-xs">
                   {file.type.startsWith('image/') ? (
-                    <Image className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    <Image className="h-3 w-3 text-primary flex-shrink-0" />
                   ) : (
-                    <FileText className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+                    <FileText className="h-3 w-3 text-primary flex-shrink-0" />
                   )}
-                  <span className="flex-1 truncate">{file.name}</span>
+                  <span className="flex-1 truncate text-[10px] sm:text-xs">{file.name}</span>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => removeFile(index)}
                     className="h-5 w-5"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-2.5 w-2.5" />
                   </Button>
                 </div>
               ))}
@@ -605,17 +605,17 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           )}
         </div>
 
-        <Separator className="my-2" />
+        <Separator className="my-1.5" />
 
         {/* Frais - compact */}
-        <div className="space-y-2">
-          <h4 className="text-xs font-semibold text-muted-foreground uppercase">Frais de mutation</h4>
+        <div className="space-y-1.5">
+          <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">Frais de mutation</h4>
           
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             {fees.map((fee) => (
               <div 
                 key={fee.id}
-                className="flex items-start gap-2 p-2 border rounded bg-background"
+                className="flex items-start gap-1.5 p-1.5 sm:p-2 border rounded-lg bg-background"
               >
                 <Checkbox
                   id={fee.id}
@@ -626,48 +626,48 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-1">
-                    <label htmlFor={fee.id} className="text-xs font-medium cursor-pointer">
+                    <label htmlFor={fee.id} className="text-[10px] sm:text-xs font-medium cursor-pointer">
                       {fee.fee_name}
                       {fee.is_mandatory && (
-                        <span className="ml-1 text-[9px] text-muted-foreground">(obligatoire)</span>
+                        <span className="ml-1 text-[8px] sm:text-[9px] text-muted-foreground">(obligatoire)</span>
                       )}
                     </label>
-                    <span className="text-xs font-bold text-primary">${fee.amount_usd}</span>
+                    <span className="text-[10px] sm:text-xs font-bold text-primary">${fee.amount_usd}</span>
                   </div>
                   {fee.description && (
-                    <p className="text-[10px] text-muted-foreground">{fee.description}</p>
+                    <p className="text-[9px] sm:text-[10px] text-muted-foreground">{fee.description}</p>
                   )}
                 </div>
               </div>
             ))}
           </div>
 
-          <div className="flex items-center justify-between p-2 bg-primary/10 rounded">
-            <span className="font-semibold text-xs">Total à payer</span>
-            <span className="text-lg font-bold text-primary">${getTotalAmount()}</span>
+          <div className="flex items-center justify-between p-1.5 sm:p-2 bg-primary/10 rounded-lg">
+            <span className="font-semibold text-[10px] sm:text-xs">Total à payer</span>
+            <span className="text-sm sm:text-lg font-bold text-primary">${getTotalAmount()}</span>
           </div>
         </div>
 
-        <Alert className="py-2">
-          <AlertTriangle className="h-3.5 w-3.5" />
-          <AlertDescription className="text-[10px]">
-            Le paiement est requis avant la soumission. Délai de traitement: 14 jours ouvrables.
+        <Alert className="py-1.5 rounded-lg">
+          <AlertTriangle className="h-3 w-3" />
+          <AlertDescription className="text-[9px] sm:text-[10px]">
+            Paiement requis avant soumission. Délai: 14 jours ouvrables.
           </AlertDescription>
         </Alert>
 
         <Button 
           onClick={handleSubmitForm} 
-          className="w-full h-9 text-xs"
+          className="w-full h-8 sm:h-9 text-xs rounded-lg"
           disabled={loading || selectedFees.length === 0 || uploadingFiles}
         >
           {loading || uploadingFiles ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
+              <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin mr-1.5" />
               {uploadingFiles ? 'Téléchargement...' : 'Création...'}
             </>
           ) : (
             <>
-              <CreditCard className="h-3.5 w-3.5 mr-1.5" />
+              <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
               Passer au paiement (${getTotalAmount()})
             </>
           )}
@@ -843,7 +843,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogPortal>
         <DialogOverlay className="z-[1100]" />
-        <DialogContent className={`z-[1100] ${isMobile ? 'max-w-[95vw] max-h-[85vh] m-2' : 'max-w-md'} p-3`}>
+        <DialogContent className={`z-[1100] ${isMobile ? 'w-[calc(100vw-16px)] max-w-[calc(100vw-16px)] max-h-[90vh] mx-2 my-2 rounded-xl' : 'max-w-md'} p-3 overflow-hidden`}>
           <DialogHeader className="pb-1">
             <DialogTitle className="flex items-center gap-1.5 text-sm">
               <FileEdit className="h-4 w-4 text-primary" />
