@@ -700,10 +700,10 @@ const CadastralMap = () => {
                   </div>
                 </div>
                 <div className="space-y-1.5 sm:space-y-2">
-                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                  <div className="flex gap-1.5 sm:gap-2">
                     <Button
                       onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
-                      className="w-full text-xs h-8 sm:h-9 px-1.5 sm:px-3"
+                      className="flex-1 text-xs h-8 sm:h-9 px-1.5 sm:px-3"
                       size="sm"
                       disabled={loadingHistory}
                     >
@@ -715,10 +715,10 @@ const CadastralMap = () => {
                         <Button
                           variant="secondary"
                           size="sm"
-                          className="w-full text-xs h-8 sm:h-9 px-1.5 sm:px-3"
+                          className="flex-1 text-xs h-8 sm:h-9 px-1.5 sm:px-3"
                         >
-                          <FileEdit className="h-3 w-3 sm:mr-1" />
-                          <span className="hidden sm:inline">Mutation</span>
+                          <FileEdit className="h-3 w-3 mr-1 sm:mr-1.5" />
+                          Mutation
                         </Button>
                       }
                     />
@@ -732,10 +732,11 @@ const CadastralMap = () => {
                       }}
                       variant="outline"
                       size="sm"
-                      className="w-full text-xs h-8 sm:h-9 px-1.5 sm:px-3"
+                      className="h-8 sm:h-9 px-2 sm:px-3 shrink-0"
+                      title="Besoin d'aide ?"
                     >
                       <HelpCircle className="h-3 w-3 sm:mr-1" />
-                      <span className="hidden sm:inline">Aide</span>
+                      <span className="hidden sm:inline text-xs">Aide</span>
                     </Button>
                   </div>
                   
