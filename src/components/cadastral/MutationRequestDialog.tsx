@@ -55,8 +55,7 @@ const LEGAL_STATUS_OPTIONS = [
 
 const REQUESTER_TYPES = [
   { value: 'proprietaire', label: 'Propriétaire actuel' },
-  { value: 'mandataire', label: 'Mandataire/Représentant' },
-  { value: 'tiers', label: 'Tiers' }
+  { value: 'mandataire', label: 'Mandataire/Représentant' }
 ];
 
 const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
@@ -83,12 +82,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   // Form state - aligné avec CCC
   const [mutationType, setMutationType] = useState('vente');
   const [requesterType, setRequesterType] = useState('proprietaire');
-  const [requesterLegalStatus, setRequesterLegalStatus] = useState('personne_physique');
-  const [requesterLastName, setRequesterLastName] = useState('');
-  const [requesterFirstName, setRequesterFirstName] = useState('');
-  const [requesterMiddleName, setRequesterMiddleName] = useState('');
-  const [requesterPhone, setRequesterPhone] = useState('');
-  const [requesterEmail, setRequesterEmail] = useState('');
   
   // Bénéficiaire (nouveau propriétaire pour transferts)
   const [beneficiaryLegalStatus, setBeneficiaryLegalStatus] = useState('personne_physique');
@@ -115,22 +108,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   // Vérifier si c'est un type de mutation avec transfert
   const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
 
-  // Initialize form with user data
+  // Initialize form with mandatory fees
   useEffect(() => {
-    if (profile) {
-      const nameParts = (profile.full_name || '').split(' ');
-      if (nameParts.length >= 2) {
-        setRequesterLastName(nameParts[0]);
-        setRequesterFirstName(nameParts.slice(1).join(' '));
-      } else if (nameParts.length === 1) {
-        setRequesterLastName(nameParts[0]);
-      }
-      setRequesterEmail(profile.email || '');
-    }
-    // Select mandatory fees by default
     const mandatoryFeeIds = fees.filter(f => f.is_mandatory).map(f => f.id);
     setSelectedFees(mandatoryFeeIds);
-  }, [profile, fees]);
+  }, [fees]);
 
   const handleFeeToggle = (feeId: string, isMandatory: boolean) => {
     if (isMandatory) return;
@@ -205,11 +187,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   };
 
   const handleSubmitForm = async () => {
-    if (!requesterLastName.trim() || !requesterFirstName.trim()) {
-      toast.error('Veuillez renseigner votre nom et prénom');
-      return;
-    }
-
     if (!proposedChanges.trim()) {
       toast.error('Veuillez décrire les modifications souhaitées');
       return;
@@ -229,27 +206,26 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       }
     }
 
-    const fullRequesterName = requesterLegalStatus === 'personne_morale' 
-      ? requesterLastName 
-      : [requesterLastName, requesterMiddleName, requesterFirstName].filter(Boolean).join(' ');
-    
     const fullBeneficiaryName = beneficiaryLegalStatus === 'personne_morale'
       ? beneficiaryLastName
       : [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
+
+    // Récupérer automatiquement les infos du profil utilisateur connecté
+    const requesterName = profile?.full_name || user?.email || 'Utilisateur';
+    const requesterEmail = profile?.email || user?.email || '';
 
     const request = await createMutationRequest({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
       mutation_type: mutationType as any,
       requester_type: requesterType as any,
-      requester_name: fullRequesterName,
-      requester_phone: requesterPhone,
+      requester_name: requesterName,
+      requester_phone: '', // Non nécessaire, récupérable depuis le profil si besoin
       requester_email: requesterEmail,
       beneficiary_name: isTransferMutation ? fullBeneficiaryName : undefined,
       beneficiary_phone: isTransferMutation ? beneficiaryPhone : undefined,
       proposed_changes: { 
         description: proposedChanges,
-        requester_legal_status: requesterLegalStatus,
         beneficiary_legal_status: isTransferMutation ? beneficiaryLegalStatus : undefined,
         supporting_documents: documentUrls
       },
@@ -355,93 +331,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Select>
         </div>
 
-        <Separator className="my-1.5" />
-
-        {/* Informations du demandeur - structure alignée CCC */}
-        <div className="space-y-1.5">
-          <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">Vos informations</h4>
-          
-          {/* Statut juridique */}
-          <div className="space-y-0.5">
-            <Label className="text-[10px] sm:text-xs">Statut juridique</Label>
-            <Select value={requesterLegalStatus} onValueChange={setRequesterLegalStatus}>
-              <SelectTrigger className="h-7 sm:h-8 text-xs rounded-lg">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LEGAL_STATUS_OPTIONS.map(status => (
-                  <SelectItem key={status.value} value={status.value} className="text-xs">
-                    {status.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          {requesterLegalStatus === 'personne_physique' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-              <div className="space-y-0.5">
-                <Label className="text-[10px]">Nom *</Label>
-                <Input
-                  value={requesterLastName}
-                  onChange={(e) => setRequesterLastName(e.target.value)}
-                  placeholder="Nom"
-                  className="h-7 sm:h-8 text-xs rounded-lg"
-                />
-              </div>
-              <div className="space-y-0.5">
-                <Label className="text-[10px]">Post-nom</Label>
-                <Input
-                  value={requesterMiddleName}
-                  onChange={(e) => setRequesterMiddleName(e.target.value)}
-                  placeholder="Post-nom"
-                  className="h-7 sm:h-8 text-xs rounded-lg"
-                />
-              </div>
-              <div className="space-y-0.5">
-                <Label className="text-[10px]">Prénom *</Label>
-                <Input
-                  value={requesterFirstName}
-                  onChange={(e) => setRequesterFirstName(e.target.value)}
-                  placeholder="Prénom"
-                  className="h-7 sm:h-8 text-xs rounded-lg"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-0.5">
-              <Label className="text-[10px]">Dénomination sociale *</Label>
-              <Input
-                value={requesterLastName}
-                onChange={(e) => setRequesterLastName(e.target.value)}
-                placeholder="Nom de l'entreprise"
-                className="h-7 sm:h-8 text-xs rounded-lg"
-              />
-            </div>
-          )}
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
-            <div className="space-y-0.5">
-              <Label className="text-[10px]">Téléphone</Label>
-              <Input
-                value={requesterPhone}
-                onChange={(e) => setRequesterPhone(e.target.value)}
-                placeholder="+243..."
-                className="h-7 sm:h-8 text-xs rounded-lg"
-              />
-            </div>
-            <div className="space-y-0.5">
-              <Label className="text-[10px]">Email</Label>
-              <Input
-                type="email"
-                value={requesterEmail}
-                onChange={(e) => setRequesterEmail(e.target.value)}
-                placeholder="email@exemple.com"
-                className="h-7 sm:h-8 text-xs rounded-lg"
-              />
-            </div>
-          </div>
-        </div>
 
         {/* Bénéficiaire (nouveau propriétaire) - pour mutations de transfert */}
         {isTransferMutation && (
