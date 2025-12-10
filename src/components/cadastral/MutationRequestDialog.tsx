@@ -3,14 +3,13 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image } from 'lucide-react';
+import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest, MutationFee, MutationRequest } from '@/hooks/useMutationRequest';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -34,17 +33,17 @@ interface MutationRequestDialogProps {
   onOpenChange?: (open: boolean) => void;
 }
 
-type Step = 'form' | 'payment' | 'confirmation';
+type Step = 'form' | 'preview' | 'payment' | 'confirmation';
 
 // Types de mutation alignés avec le formulaire CCC
 const MUTATION_TYPES = [
-  { value: 'vente', label: 'Vente' },
-  { value: 'donation', label: 'Donation' },
-  { value: 'succession', label: 'Succession' },
-  { value: 'expropriation', label: 'Expropriation' },
-  { value: 'echange', label: 'Échange' },
-  { value: 'correction', label: 'Correction d\'erreur' },
-  { value: 'mise_a_jour', label: 'Mise à jour des données' }
+  { value: 'vente', label: 'Vente', description: 'Transfert de propriété suite à une vente' },
+  { value: 'donation', label: 'Donation', description: 'Transfert gratuit de propriété' },
+  { value: 'succession', label: 'Succession', description: 'Transfert suite à un héritage' },
+  { value: 'expropriation', label: 'Expropriation', description: 'Transfert par décision administrative' },
+  { value: 'echange', label: 'Échange', description: 'Échange de propriétés' },
+  { value: 'correction', label: 'Correction d\'erreur', description: 'Correction des données existantes' },
+  { value: 'mise_a_jour', label: 'Mise à jour', description: 'Actualisation des informations' }
 ];
 
 // Statut juridique aligné avec le formulaire CCC
@@ -90,8 +89,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [beneficiaryMiddleName, setBeneficiaryMiddleName] = useState('');
   const [beneficiaryPhone, setBeneficiaryPhone] = useState('');
   
-  const [proposedChanges, setProposedChanges] = useState('');
-  const [justification, setJustification] = useState('');
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
   
   // Pièces jointes
@@ -107,6 +104,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   // Vérifier si c'est un type de mutation avec transfert
   const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
+
+  // Get current mutation type details
+  const getMutationTypeDetails = () => {
+    return MUTATION_TYPES.find(t => t.value === mutationType);
+  };
 
   // Initialize form with mandatory fees
   useEffect(() => {
@@ -186,17 +188,20 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  const handleSubmitForm = async () => {
-    if (!proposedChanges.trim()) {
-      toast.error('Veuillez décrire les modifications souhaitées');
-      return;
-    }
-
-    if (isTransferMutation && (!beneficiaryLastName.trim() || !beneficiaryFirstName.trim())) {
+  const validateForm = (): boolean => {
+    if (isTransferMutation && (!beneficiaryLastName.trim() || (beneficiaryLegalStatus === 'personne_physique' && !beneficiaryFirstName.trim()))) {
       toast.error('Veuillez renseigner le nom du nouveau propriétaire');
-      return;
+      return false;
     }
+    return true;
+  };
 
+  const handlePreview = () => {
+    if (!validateForm()) return;
+    setStep('preview');
+  };
+
+  const handleSubmitForm = async () => {
     // Upload des fichiers avant création
     let documentUrls: string[] = [];
     if (attachedFiles.length > 0) {
@@ -214,22 +219,28 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     const requesterName = profile?.full_name || user?.email || 'Utilisateur';
     const requesterEmail = profile?.email || user?.email || '';
 
+    // Description auto-générée basée sur le type de mutation
+    const mutationDetails = getMutationTypeDetails();
+    const autoDescription = isTransferMutation 
+      ? `${mutationDetails?.label} - Transfert à ${fullBeneficiaryName}`
+      : `${mutationDetails?.label} - ${mutationDetails?.description}`;
+
     const request = await createMutationRequest({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
       mutation_type: mutationType as any,
       requester_type: requesterType as any,
       requester_name: requesterName,
-      requester_phone: '', // Non nécessaire, récupérable depuis le profil si besoin
+      requester_phone: '',
       requester_email: requesterEmail,
       beneficiary_name: isTransferMutation ? fullBeneficiaryName : undefined,
       beneficiary_phone: isTransferMutation ? beneficiaryPhone : undefined,
       proposed_changes: { 
-        description: proposedChanges,
+        description: autoDescription,
         beneficiary_legal_status: isTransferMutation ? beneficiaryLegalStatus : undefined,
         supporting_documents: documentUrls
       },
-      justification,
+      justification: '',
       selected_fees: getSelectedFeesDetails()
     });
 
@@ -272,11 +283,21 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setCreatedRequest(null);
     setMutationType('vente');
     setRequesterType('proprietaire');
-    setProposedChanges('');
-    setJustification('');
+    setBeneficiaryLastName('');
+    setBeneficiaryFirstName('');
+    setBeneficiaryMiddleName('');
+    setBeneficiaryPhone('');
     setAttachedFiles([]);
     setUploadedFileUrls([]);
     onOpenChange(false);
+  };
+
+  // Get beneficiary full name for display
+  const getBeneficiaryFullName = () => {
+    if (beneficiaryLegalStatus === 'personne_morale') {
+      return beneficiaryLastName;
+    }
+    return [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
   };
 
   const renderFormStep = () => (
@@ -312,6 +333,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               ))}
             </SelectContent>
           </Select>
+          <p className="text-[9px] sm:text-[10px] text-muted-foreground">
+            {getMutationTypeDetails()?.description}
+          </p>
         </div>
 
         {/* Type de demandeur */}
@@ -330,7 +354,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             </SelectContent>
           </Select>
         </div>
-
 
         {/* Bénéficiaire (nouveau propriétaire) - pour mutations de transfert */}
         {isTransferMutation && (
@@ -411,33 +434,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             </div>
           </>
         )}
-
-        <Separator className="my-1.5" />
-
-        {/* Modifications souhaitées */}
-        <div className="space-y-1.5">
-          <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">Modifications demandées</h4>
-          
-          <div className="space-y-0.5">
-            <Label className="text-[10px]">Description des modifications *</Label>
-            <Textarea
-              value={proposedChanges}
-              onChange={(e) => setProposedChanges(e.target.value)}
-              placeholder="Décrivez les modifications que vous souhaitez apporter..."
-              className="min-h-[50px] sm:min-h-[60px] text-xs resize-none rounded-lg"
-            />
-          </div>
-
-          <div className="space-y-0.5">
-            <Label className="text-[10px]">Justification (optionnel)</Label>
-            <Textarea
-              value={justification}
-              onChange={(e) => setJustification(e.target.value)}
-              placeholder="Motifs de votre demande..."
-              className="min-h-[40px] sm:min-h-[50px] text-xs resize-none rounded-lg"
-            />
-          </div>
-        </div>
 
         <Separator className="my-1.5" />
 
@@ -537,37 +533,169 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </div>
         </div>
 
-        <Alert className="py-1.5 rounded-lg">
-          <AlertTriangle className="h-3 w-3" />
-          <AlertDescription className="text-[9px] sm:text-[10px]">
-            Paiement requis avant soumission. Délai: 14 jours ouvrables.
+        <Button 
+          onClick={handlePreview} 
+          className="w-full h-8 sm:h-9 text-xs rounded-lg"
+          disabled={selectedFees.length === 0}
+        >
+          <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+          Aperçu avant soumission
+        </Button>
+      </div>
+    </ScrollArea>
+  );
+
+  const renderPreviewStep = () => (
+    <ScrollArea className={isMobile ? 'h-[70vh]' : 'h-[70vh]'}>
+      <div className="space-y-2.5 pr-1.5">
+        {/* Avertissement important */}
+        <Alert className="border-destructive/50 bg-destructive/10 py-2 rounded-lg">
+          <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+          <AlertDescription className="text-[10px] sm:text-xs text-destructive font-medium">
+            Vérifiez attentivement les informations ci-dessous. Une fois soumise, cette demande ne pourra plus être modifiée. Pour toute correction, une nouvelle demande de mutation sera nécessaire.
           </AlertDescription>
         </Alert>
 
-        <Button 
-          onClick={handleSubmitForm} 
-          className="w-full h-8 sm:h-9 text-xs rounded-lg"
-          disabled={loading || selectedFees.length === 0 || uploadingFiles}
-        >
-          {loading || uploadingFiles ? (
-            <>
-              <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin mr-1.5" />
-              {uploadingFiles ? 'Téléchargement...' : 'Création...'}
-            </>
-          ) : (
-            <>
-              <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-              Passer au paiement (${getTotalAmount()})
-            </>
-          )}
-        </Button>
+        {/* Récapitulatif */}
+        <Card className="border rounded-lg">
+          <CardContent className="p-2.5 space-y-2">
+            {/* Parcelle */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">Parcelle</span>
+              <span className="font-mono font-bold text-xs">{parcelNumber}</span>
+            </div>
+            
+            {parcelData?.province && (
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground">Localisation</span>
+                <span className="text-xs text-right">
+                  {[parcelData.province, parcelData.ville, parcelData.commune].filter(Boolean).join(', ')}
+                </span>
+              </div>
+            )}
+
+            <Separator className="my-1" />
+            
+            {/* Type de mutation */}
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">Type de mutation</span>
+              <span className="text-xs font-medium">{getMutationTypeDetails()?.label}</span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">Demandeur</span>
+              <span className="text-xs">
+                {REQUESTER_TYPES.find(t => t.value === requesterType)?.label}
+              </span>
+            </div>
+
+            {/* Nouveau propriétaire si transfert */}
+            {isTransferMutation && (
+              <>
+                <Separator className="my-1" />
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase">Nouveau propriétaire</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Nom</span>
+                    <span className="text-xs font-medium">{getBeneficiaryFullName()}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">Statut</span>
+                    <span className="text-xs">
+                      {LEGAL_STATUS_OPTIONS.find(s => s.value === beneficiaryLegalStatus)?.label}
+                    </span>
+                  </div>
+                  {beneficiaryPhone && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-muted-foreground">Téléphone</span>
+                      <span className="text-xs">{beneficiaryPhone}</span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* Documents */}
+            {attachedFiles.length > 0 && (
+              <>
+                <Separator className="my-1" />
+                <div className="space-y-1">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase">Documents joints</span>
+                  <div className="space-y-0.5">
+                    {attachedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center gap-1 text-xs">
+                        {file.type.startsWith('image/') ? (
+                          <Image className="h-3 w-3 text-primary" />
+                        ) : (
+                          <FileText className="h-3 w-3 text-primary" />
+                        )}
+                        <span className="truncate text-[10px]">{file.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Frais */}
+            <Separator className="my-1" />
+            <div className="space-y-1">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase">Frais sélectionnés</span>
+              {getSelectedFeesDetails().map(fee => (
+                <div key={fee.id} className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">{fee.fee_name}</span>
+                  <span className="text-xs font-medium">${fee.amount_usd}</span>
+                </div>
+              ))}
+              <div className="flex items-center justify-between pt-1 border-t">
+                <span className="text-xs font-semibold">Total</span>
+                <span className="text-sm font-bold text-primary">${getTotalAmount()}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Alert className="py-1.5 rounded-lg">
+          <Clock className="h-3 w-3" />
+          <AlertDescription className="text-[9px] sm:text-[10px]">
+            Délai de traitement estimé: 14 jours ouvrables après paiement.
+          </AlertDescription>
+        </Alert>
+
+        <div className="flex gap-1.5">
+          <Button 
+            variant="outline"
+            onClick={() => setStep('form')} 
+            className="flex-1 h-8 sm:h-9 text-xs rounded-lg"
+          >
+            <ArrowLeft className="h-3 w-3 mr-1" />
+            Modifier
+          </Button>
+          <Button 
+            onClick={handleSubmitForm} 
+            className="flex-1 h-8 sm:h-9 text-xs rounded-lg"
+            disabled={loading || uploadingFiles}
+          >
+            {loading || uploadingFiles ? (
+              <>
+                <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin mr-1.5" />
+                {uploadingFiles ? 'Envoi...' : 'Création...'}
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+                Payer ${getTotalAmount()}
+              </>
+            )}
+          </Button>
+        </div>
       </div>
     </ScrollArea>
   );
 
   const renderPaymentStep = () => (
     <div className="space-y-3">
-      <Card className="bg-muted/50 border-0">
+      <Card className="bg-muted/50 border-0 rounded-lg">
         <CardContent className="p-2">
           <div className="flex items-center justify-between">
             <div>
@@ -589,7 +717,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setPaymentMethod('mobile_money')}
-            className="h-8 text-xs"
+            className="h-8 text-xs rounded-lg"
           >
             Mobile Money
           </Button>
@@ -597,7 +725,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             variant={paymentMethod === 'bank_card' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setPaymentMethod('bank_card')}
-            className="h-8 text-xs"
+            className="h-8 text-xs rounded-lg"
           >
             Carte bancaire
           </Button>
@@ -609,7 +737,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           <div className="space-y-1">
             <Label className="text-[10px]">Opérateur</Label>
             <Select value={paymentProvider} onValueChange={setPaymentProvider}>
-              <SelectTrigger className="h-8 text-xs">
+              <SelectTrigger className="h-8 text-xs rounded-lg">
                 <SelectValue placeholder="Sélectionner..." />
               </SelectTrigger>
               <SelectContent>
@@ -625,7 +753,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               value={paymentPhone}
               onChange={(e) => setPaymentPhone(e.target.value)}
               placeholder="+243..."
-              className="h-8 text-xs"
+              className="h-8 text-xs rounded-lg"
             />
           </div>
         </div>
@@ -634,16 +762,16 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       <div className="flex gap-1.5 pt-2">
         <Button 
           variant="outline" 
-          onClick={() => setStep('form')}
+          onClick={() => setStep('preview')}
           disabled={processingPayment}
-          className="flex-1 h-8 text-xs"
+          className="flex-1 h-8 text-xs rounded-lg"
         >
           Retour
         </Button>
         <Button 
           onClick={handlePayment}
           disabled={processingPayment}
-          className="flex-1 h-8 text-xs"
+          className="flex-1 h-8 text-xs rounded-lg"
         >
           {processingPayment ? (
             <>
@@ -671,7 +799,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </p>
       </div>
 
-      <Card className="bg-muted/50 border-0 text-left">
+      <Card className="bg-muted/50 border-0 text-left rounded-lg">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -715,17 +843,26 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </CardContent>
       </Card>
 
-      <Alert className="text-left py-2">
+      <Alert className="text-left py-2 rounded-lg">
         <AlertDescription className="text-[10px]">
           Conservez votre numéro de référence. Vous recevrez une notification lors du traitement.
         </AlertDescription>
       </Alert>
 
-      <Button onClick={handleClose} className="w-full h-8 text-xs">
+      <Button onClick={handleClose} className="w-full h-8 text-xs rounded-lg">
         Fermer
       </Button>
     </div>
   );
+
+  const getStepTitle = () => {
+    switch (step) {
+      case 'preview': return 'Aperçu de la demande';
+      case 'payment': return 'Paiement';
+      case 'confirmation': return 'Confirmation';
+      default: return 'Demande de mutation';
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -736,7 +873,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           <DialogHeader className="pb-1">
             <DialogTitle className="flex items-center gap-1.5 text-sm">
               <FileEdit className="h-4 w-4 text-primary" />
-              {step === 'confirmation' ? 'Confirmation' : 'Demande de mutation'}
+              {getStepTitle()}
             </DialogTitle>
             {step === 'form' && (
               <DialogDescription className="text-[10px]">
@@ -746,6 +883,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </DialogHeader>
 
           {step === 'form' && renderFormStep()}
+          {step === 'preview' && renderPreviewStep()}
           {step === 'payment' && renderPaymentStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
