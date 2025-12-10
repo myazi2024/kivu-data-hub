@@ -301,53 +301,57 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   };
 
   const renderFormStep = () => (
-    <ScrollArea className={isMobile ? 'h-[70vh]' : 'h-[70vh]'}>
-      <div className="space-y-2.5 pr-1.5">
-        {/* Info parcelle - compact */}
-        <Card className="bg-muted/50 border-0 rounded-lg">
-          <CardContent className="p-2">
-            <div className="flex items-center gap-2 text-xs">
-              <MapPin className="h-3.5 w-3.5 text-primary flex-shrink-0" />
-              <span className="font-mono font-bold text-xs sm:text-sm truncate">{parcelNumber}</span>
-              {parcelData?.province && (
-                <span className="text-muted-foreground truncate text-[10px] sm:text-xs">
-                  - {parcelData.province} {parcelData.ville}
-                </span>
-              )}
+    <ScrollArea className="h-[65vh] sm:h-[70vh]">
+      <div className="space-y-4 pr-2">
+        {/* Info parcelle */}
+        <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <MapPin className="h-4 w-4 text-primary" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-mono font-bold text-sm truncate">{parcelNumber}</p>
+                {parcelData?.province && (
+                  <p className="text-xs text-muted-foreground truncate">
+                    {parcelData.province} {parcelData.ville && `• ${parcelData.ville}`}
+                  </p>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Type de mutation - aligné CCC */}
-        <div className="space-y-0.5">
-          <Label className="text-xs font-medium">Type de mutation *</Label>
+        {/* Type de mutation */}
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">Type de mutation *</Label>
           <Select value={mutationType} onValueChange={setMutationType}>
-            <SelectTrigger className="h-7 sm:h-8 text-xs rounded-lg">
+            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl">
               {MUTATION_TYPES.map(type => (
-                <SelectItem key={type.value} value={type.value} className="text-xs">
+                <SelectItem key={type.value} value={type.value} className="text-sm py-2">
                   {type.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="text-[9px] sm:text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             {getMutationTypeDetails()?.description}
           </p>
         </div>
 
         {/* Type de demandeur */}
-        <div className="space-y-0.5">
-          <Label className="text-xs font-medium">Vous êtes</Label>
+        <div className="space-y-2">
+          <Label className="text-sm font-semibold">Vous êtes</Label>
           <Select value={requesterType} onValueChange={setRequesterType}>
-            <SelectTrigger className="h-7 sm:h-8 text-xs rounded-lg">
+            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl">
               {REQUESTER_TYPES.map(type => (
-                <SelectItem key={type.value} value={type.value} className="text-xs">
+                <SelectItem key={type.value} value={type.value} className="text-sm py-2">
                   {type.label}
                 </SelectItem>
               ))}
@@ -355,24 +359,24 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Select>
         </div>
 
-        {/* Bénéficiaire (nouveau propriétaire) - pour mutations de transfert */}
+        {/* Bénéficiaire (nouveau propriétaire) */}
         {isTransferMutation && (
-          <>
-            <Separator className="my-1.5" />
-            <div className="space-y-1.5">
-              <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">
+          <Card className="border-2 border-dashed rounded-xl">
+            <CardContent className="p-3 space-y-3">
+              <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                 Nouveau propriétaire
               </h4>
               
-              <div className="space-y-0.5">
-                <Label className="text-[10px] sm:text-xs">Statut juridique</Label>
+              <div className="space-y-2">
+                <Label className="text-sm">Statut juridique</Label>
                 <Select value={beneficiaryLegalStatus} onValueChange={setBeneficiaryLegalStatus}>
-                  <SelectTrigger className="h-7 sm:h-8 text-xs rounded-lg">
+                  <SelectTrigger className="h-11 text-sm rounded-xl border-2">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="rounded-xl">
                     {LEGAL_STATUS_OPTIONS.map(status => (
-                      <SelectItem key={status.value} value={status.value} className="text-xs">
+                      <SelectItem key={status.value} value={status.value} className="text-sm py-2">
                         {status.label}
                       </SelectItem>
                     ))}
@@ -381,164 +385,170 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               </div>
               
               {beneficiaryLegalStatus === 'personne_physique' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                  <div className="space-y-0.5">
-                    <Label className="text-[10px]">Nom *</Label>
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Nom de famille *</Label>
                     <Input
                       value={beneficiaryLastName}
                       onChange={(e) => setBeneficiaryLastName(e.target.value)}
-                      placeholder="Nom"
-                      className="h-7 sm:h-8 text-xs rounded-lg"
+                      placeholder="Entrez le nom"
+                      className="h-11 text-sm rounded-xl border-2"
                     />
                   </div>
-                  <div className="space-y-0.5">
-                    <Label className="text-[10px]">Post-nom</Label>
-                    <Input
-                      value={beneficiaryMiddleName}
-                      onChange={(e) => setBeneficiaryMiddleName(e.target.value)}
-                      placeholder="Post-nom"
-                      className="h-7 sm:h-8 text-xs rounded-lg"
-                    />
-                  </div>
-                  <div className="space-y-0.5">
-                    <Label className="text-[10px]">Prénom *</Label>
-                    <Input
-                      value={beneficiaryFirstName}
-                      onChange={(e) => setBeneficiaryFirstName(e.target.value)}
-                      placeholder="Prénom"
-                      className="h-7 sm:h-8 text-xs rounded-lg"
-                    />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Post-nom</Label>
+                      <Input
+                        value={beneficiaryMiddleName}
+                        onChange={(e) => setBeneficiaryMiddleName(e.target.value)}
+                        placeholder="Post-nom"
+                        className="h-11 text-sm rounded-xl border-2"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-sm">Prénom *</Label>
+                      <Input
+                        value={beneficiaryFirstName}
+                        onChange={(e) => setBeneficiaryFirstName(e.target.value)}
+                        placeholder="Prénom"
+                        className="h-11 text-sm rounded-xl border-2"
+                      />
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="space-y-0.5">
-                  <Label className="text-[10px]">Dénomination sociale *</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-sm">Dénomination sociale *</Label>
                   <Input
                     value={beneficiaryLastName}
                     onChange={(e) => setBeneficiaryLastName(e.target.value)}
                     placeholder="Nom de l'entreprise"
-                    className="h-7 sm:h-8 text-xs rounded-lg"
+                    className="h-11 text-sm rounded-xl border-2"
                   />
                 </div>
               )}
               
-              <div className="space-y-0.5">
-                <Label className="text-[10px]">Téléphone bénéficiaire</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Téléphone (optionnel)</Label>
                 <Input
                   value={beneficiaryPhone}
                   onChange={(e) => setBeneficiaryPhone(e.target.value)}
-                  placeholder="+243..."
-                  className="h-7 sm:h-8 text-xs rounded-lg"
+                  placeholder="+243 XXX XXX XXX"
+                  className="h-11 text-sm rounded-xl border-2"
                 />
               </div>
-            </div>
-          </>
+            </CardContent>
+          </Card>
         )}
 
-        <Separator className="my-1.5" />
-
         {/* Pièces jointes */}
-        <div className="space-y-1.5">
-          <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">
-            Documents justificatifs
-          </h4>
-          <p className="text-[9px] sm:text-[10px] text-muted-foreground">
-            Joignez les documents prouvant l'authenticité (acte de vente, certificat, etc.)
-          </p>
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            multiple
-            onChange={handleFileSelect}
-            className="hidden"
-          />
-          
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => fileInputRef.current?.click()}
-            className="w-full h-7 sm:h-8 text-xs rounded-lg"
-          >
-            <Upload className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
-            Ajouter des fichiers
-          </Button>
-          
-          {attachedFiles.length > 0 && (
-            <div className="space-y-1">
-              {attachedFiles.map((file, index) => (
-                <div key={index} className="flex items-center gap-1.5 p-1.5 bg-muted/50 rounded-lg text-xs">
-                  {file.type.startsWith('image/') ? (
-                    <Image className="h-3 w-3 text-primary flex-shrink-0" />
-                  ) : (
-                    <FileText className="h-3 w-3 text-primary flex-shrink-0" />
-                  )}
-                  <span className="flex-1 truncate text-[10px] sm:text-xs">{file.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeFile(index)}
-                    className="h-5 w-5"
-                  >
-                    <X className="h-2.5 w-2.5" />
-                  </Button>
+        <Card className="border rounded-xl">
+          <CardContent className="p-3 space-y-3">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Upload className="h-4 w-4 text-muted-foreground" />
+              Documents justificatifs
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Acte de vente, certificat, attestation... (max 10MB/fichier)
+            </p>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Ajouter des fichiers
+            </Button>
+            
+            {attachedFiles.length > 0 && (
+              <div className="space-y-2">
+                {attachedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                    {file.type.startsWith('image/') ? (
+                      <Image className="h-4 w-4 text-primary flex-shrink-0" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                    )}
+                    <span className="flex-1 truncate text-sm">{file.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeFile(index)}
+                      className="h-7 w-7 rounded-lg hover:bg-destructive/10"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Frais */}
+        <Card className="border rounded-xl">
+          <CardContent className="p-3 space-y-3">
+            <h4 className="text-sm font-semibold">Frais de mutation</h4>
+            
+            <div className="space-y-2">
+              {fees.map((fee) => (
+                <div 
+                  key={fee.id}
+                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                    selectedFees.includes(fee.id) ? 'bg-primary/5 border-2 border-primary/30' : 'bg-muted/30 border-2 border-transparent'
+                  }`}
+                >
+                  <Checkbox
+                    id={fee.id}
+                    checked={selectedFees.includes(fee.id)}
+                    onCheckedChange={() => handleFeeToggle(fee.id, fee.is_mandatory)}
+                    disabled={fee.is_mandatory}
+                    className="mt-0.5"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
+                        {fee.fee_name}
+                        {fee.is_mandatory && (
+                          <span className="ml-1.5 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            obligatoire
+                          </span>
+                        )}
+                      </label>
+                      <span className="text-sm font-bold text-primary whitespace-nowrap">${fee.amount_usd}</span>
+                    </div>
+                    {fee.description && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
 
-        <Separator className="my-1.5" />
-
-        {/* Frais - compact */}
-        <div className="space-y-1.5">
-          <h4 className="text-[10px] sm:text-xs font-semibold text-muted-foreground uppercase">Frais de mutation</h4>
-          
-          <div className="space-y-1">
-            {fees.map((fee) => (
-              <div 
-                key={fee.id}
-                className="flex items-start gap-1.5 p-1.5 sm:p-2 border rounded-lg bg-background"
-              >
-                <Checkbox
-                  id={fee.id}
-                  checked={selectedFees.includes(fee.id)}
-                  onCheckedChange={() => handleFeeToggle(fee.id, fee.is_mandatory)}
-                  disabled={fee.is_mandatory}
-                  className="mt-0.5"
-                />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-1">
-                    <label htmlFor={fee.id} className="text-[10px] sm:text-xs font-medium cursor-pointer">
-                      {fee.fee_name}
-                      {fee.is_mandatory && (
-                        <span className="ml-1 text-[8px] sm:text-[9px] text-muted-foreground">(obligatoire)</span>
-                      )}
-                    </label>
-                    <span className="text-[10px] sm:text-xs font-bold text-primary">${fee.amount_usd}</span>
-                  </div>
-                  {fee.description && (
-                    <p className="text-[9px] sm:text-[10px] text-muted-foreground">{fee.description}</p>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-between p-1.5 sm:p-2 bg-primary/10 rounded-lg">
-            <span className="font-semibold text-[10px] sm:text-xs">Total à payer</span>
-            <span className="text-sm sm:text-lg font-bold text-primary">${getTotalAmount()}</span>
-          </div>
-        </div>
+            <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
+              <span className="font-semibold text-sm">Total à payer</span>
+              <span className="text-xl font-bold text-primary">${getTotalAmount()}</span>
+            </div>
+          </CardContent>
+        </Card>
 
         <Button 
           onClick={handlePreview} 
-          className="w-full h-8 sm:h-9 text-xs rounded-lg"
+          className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
           disabled={selectedFees.length === 0}
         >
-          <Eye className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+          <Eye className="h-4 w-4 mr-2" />
           Aperçu avant soumission
         </Button>
       </div>
@@ -546,45 +556,45 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   );
 
   const renderPreviewStep = () => (
-    <ScrollArea className={isMobile ? 'h-[70vh]' : 'h-[70vh]'}>
-      <div className="space-y-2.5 pr-1.5">
+    <ScrollArea className="h-[65vh] sm:h-[70vh]">
+      <div className="space-y-4 pr-2">
         {/* Avertissement important */}
-        <Alert className="border-destructive/50 bg-destructive/10 py-2 rounded-lg">
-          <AlertCircle className="h-3.5 w-3.5 text-destructive" />
-          <AlertDescription className="text-[10px] sm:text-xs text-destructive font-medium">
-            Vérifiez attentivement les informations ci-dessous. Une fois soumise, cette demande ne pourra plus être modifiée. Pour toute correction, une nouvelle demande de mutation sera nécessaire.
+        <Alert className="border-destructive bg-destructive/10 rounded-xl">
+          <AlertCircle className="h-4 w-4 text-destructive" />
+          <AlertDescription className="text-sm text-destructive font-medium leading-relaxed">
+            Vérifiez attentivement les informations. Une fois soumise, cette demande ne pourra plus être modifiée.
           </AlertDescription>
         </Alert>
 
         {/* Récapitulatif */}
-        <Card className="border rounded-lg">
-          <CardContent className="p-2.5 space-y-2">
+        <Card className="border-2 rounded-xl shadow-sm">
+          <CardContent className="p-4 space-y-3">
             {/* Parcelle */}
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">Parcelle</span>
-              <span className="font-mono font-bold text-xs">{parcelNumber}</span>
+              <span className="text-sm text-muted-foreground">Parcelle</span>
+              <span className="font-mono font-bold text-sm">{parcelNumber}</span>
             </div>
             
             {parcelData?.province && (
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground">Localisation</span>
-                <span className="text-xs text-right">
+                <span className="text-sm text-muted-foreground">Localisation</span>
+                <span className="text-sm text-right max-w-[60%]">
                   {[parcelData.province, parcelData.ville, parcelData.commune].filter(Boolean).join(', ')}
                 </span>
               </div>
             )}
 
-            <Separator className="my-1" />
+            <Separator />
             
             {/* Type de mutation */}
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">Type de mutation</span>
-              <span className="text-xs font-medium">{getMutationTypeDetails()?.label}</span>
+              <span className="text-sm text-muted-foreground">Type de mutation</span>
+              <span className="text-sm font-semibold">{getMutationTypeDetails()?.label}</span>
             </div>
 
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">Demandeur</span>
-              <span className="text-xs">
+              <span className="text-sm text-muted-foreground">Demandeur</span>
+              <span className="text-sm">
                 {REQUESTER_TYPES.find(t => t.value === requesterType)?.label}
               </span>
             </div>
@@ -592,23 +602,23 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             {/* Nouveau propriétaire si transfert */}
             {isTransferMutation && (
               <>
-                <Separator className="my-1" />
-                <div className="space-y-1">
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase">Nouveau propriétaire</span>
+                <Separator />
+                <div className="space-y-2 bg-primary/5 p-3 rounded-xl -mx-1">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">Nouveau propriétaire</span>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">Nom</span>
-                    <span className="text-xs font-medium">{getBeneficiaryFullName()}</span>
+                    <span className="text-sm text-muted-foreground">Nom complet</span>
+                    <span className="text-sm font-medium max-w-[60%] text-right">{getBeneficiaryFullName()}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] text-muted-foreground">Statut</span>
-                    <span className="text-xs">
+                    <span className="text-sm text-muted-foreground">Statut</span>
+                    <span className="text-sm">
                       {LEGAL_STATUS_OPTIONS.find(s => s.value === beneficiaryLegalStatus)?.label}
                     </span>
                   </div>
                   {beneficiaryPhone && (
                     <div className="flex items-center justify-between">
-                      <span className="text-[10px] text-muted-foreground">Téléphone</span>
-                      <span className="text-xs">{beneficiaryPhone}</span>
+                      <span className="text-sm text-muted-foreground">Téléphone</span>
+                      <span className="text-sm">{beneficiaryPhone}</span>
                     </div>
                   )}
                 </div>
@@ -618,18 +628,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             {/* Documents */}
             {attachedFiles.length > 0 && (
               <>
-                <Separator className="my-1" />
-                <div className="space-y-1">
-                  <span className="text-[10px] font-semibold text-muted-foreground uppercase">Documents joints</span>
-                  <div className="space-y-0.5">
+                <Separator />
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Documents joints</span>
+                  <div className="space-y-1.5">
                     {attachedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center gap-1 text-xs">
+                      <div key={index} className="flex items-center gap-2 text-sm">
                         {file.type.startsWith('image/') ? (
-                          <Image className="h-3 w-3 text-primary" />
+                          <Image className="h-4 w-4 text-primary" />
                         ) : (
-                          <FileText className="h-3 w-3 text-primary" />
+                          <FileText className="h-4 w-4 text-primary" />
                         )}
-                        <span className="truncate text-[10px]">{file.name}</span>
+                        <span className="truncate">{file.name}</span>
                       </div>
                     ))}
                   </div>
@@ -638,52 +648,52 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             )}
 
             {/* Frais */}
-            <Separator className="my-1" />
-            <div className="space-y-1">
-              <span className="text-[10px] font-semibold text-muted-foreground uppercase">Frais sélectionnés</span>
+            <Separator />
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Frais sélectionnés</span>
               {getSelectedFeesDetails().map(fee => (
                 <div key={fee.id} className="flex items-center justify-between">
-                  <span className="text-[10px] text-muted-foreground">{fee.fee_name}</span>
-                  <span className="text-xs font-medium">${fee.amount_usd}</span>
+                  <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
+                  <span className="text-sm font-medium">${fee.amount_usd}</span>
                 </div>
               ))}
-              <div className="flex items-center justify-between pt-1 border-t">
-                <span className="text-xs font-semibold">Total</span>
-                <span className="text-sm font-bold text-primary">${getTotalAmount()}</span>
+              <div className="flex items-center justify-between pt-2 border-t-2">
+                <span className="text-sm font-bold">Total</span>
+                <span className="text-lg font-bold text-primary">${getTotalAmount()}</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        <Alert className="py-1.5 rounded-lg">
-          <Clock className="h-3 w-3" />
-          <AlertDescription className="text-[9px] sm:text-[10px]">
-            Délai de traitement estimé: 14 jours ouvrables après paiement.
+        <Alert className="rounded-xl bg-muted/50">
+          <Clock className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            Délai de traitement estimé: <strong>14 jours ouvrables</strong> après paiement.
           </AlertDescription>
         </Alert>
 
-        <div className="flex gap-1.5">
+        <div className="flex gap-2">
           <Button 
             variant="outline"
             onClick={() => setStep('form')} 
-            className="flex-1 h-8 sm:h-9 text-xs rounded-lg"
+            className="flex-1 h-12 text-sm font-semibold rounded-xl"
           >
-            <ArrowLeft className="h-3 w-3 mr-1" />
+            <ArrowLeft className="h-4 w-4 mr-2" />
             Modifier
           </Button>
           <Button 
             onClick={handleSubmitForm} 
-            className="flex-1 h-8 sm:h-9 text-xs rounded-lg"
+            className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg"
             disabled={loading || uploadingFiles}
           >
             {loading || uploadingFiles ? (
               <>
-                <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin mr-1.5" />
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
                 {uploadingFiles ? 'Envoi...' : 'Création...'}
               </>
             ) : (
               <>
-                <CreditCard className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-1.5" />
+                <CreditCard className="h-4 w-4 mr-2" />
                 Payer ${getTotalAmount()}
               </>
             )}
@@ -869,14 +879,16 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogPortal>
         <DialogOverlay className="z-[1100]" />
-        <DialogContent className={`z-[1100] ${isMobile ? 'w-[calc(100vw-16px)] max-w-[calc(100vw-16px)] max-h-[90vh] mx-2 my-2 rounded-xl' : 'max-w-md'} p-3 overflow-hidden`}>
-          <DialogHeader className="pb-1">
-            <DialogTitle className="flex items-center gap-1.5 text-sm">
-              <FileEdit className="h-4 w-4 text-primary" />
+        <DialogContent className={`z-[1100] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <FileEdit className="h-4 w-4 text-primary" />
+              </div>
               {getStepTitle()}
             </DialogTitle>
             {step === 'form' && (
-              <DialogDescription className="text-[10px]">
+              <DialogDescription className="text-sm text-muted-foreground">
                 Remplissez le formulaire pour demander une mise à jour cadastrale
               </DialogDescription>
             )}
