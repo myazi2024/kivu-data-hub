@@ -2336,7 +2336,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent 
         ref={dialogContentRef} 
-        className="sm:max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-xl z-[9999]"
+        className="sm:max-w-3xl w-[calc(100%-1rem)] max-w-[380px] sm:max-w-3xl max-h-[92vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-2xl z-[9999]"
         onInteractOutside={(e) => {
           // Empêcher la fermeture si le clic est sur le bouton WhatsApp
           const target = e.target as HTMLElement;
@@ -2345,80 +2345,80 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           }
         }}
       >
-        <DialogHeader className="px-4 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent text-center sm:text-left">
-          <DialogTitle className="text-base sm:text-2xl font-semibold leading-tight">
+        <DialogHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent text-center sm:text-left rounded-t-2xl">
+          <DialogTitle className="text-sm sm:text-2xl font-semibold leading-tight">
             <span className="hidden sm:inline">Contribuer aux informations cadastrales</span>
             <span className="sm:hidden">Contribution cadastrale</span>
           </DialogTitle>
-          <DialogDescription className="text-xs sm:text-base mt-1 sm:mt-2 space-y-0.5 sm:space-y-0">
-            <div className="flex items-center gap-1 flex-wrap justify-center sm:justify-start">
+          <DialogDescription className="text-sm sm:text-base mt-1 sm:mt-2 space-y-0.5 sm:space-y-0">
+            <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
               <span className="text-muted-foreground">Parcelle :</span>
               <strong className="text-foreground font-semibold">{parcelNumber}</strong>
             </div>
-            <p className="text-[10px] sm:text-sm text-muted-foreground leading-tight sm:leading-normal">
+            <p className="text-xs sm:text-sm text-muted-foreground leading-tight sm:leading-normal">
               Renseignez les informations que vous possédez
             </p>
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
-          <div className="sticky top-0 z-20 bg-background px-4 sm:px-6 pt-4 pb-3 border-b shadow-sm">
-            <TabsList className="grid w-full grid-cols-5 h-auto sm:h-12 bg-muted/50 p-1 rounded-lg shadow-inner mb-3 gap-1">
+          <div className="sticky top-0 z-20 bg-background px-3 sm:px-6 pt-3 pb-2 border-b shadow-sm">
+            <TabsList className="grid w-full grid-cols-5 h-auto sm:h-12 bg-muted/50 p-0.5 sm:p-1 rounded-xl shadow-inner mb-2 gap-0.5">
               <TabsTrigger 
                 value="general" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdDashboard className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdDashboard className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "general") && <span className="hidden sm:inline">Général</span>}
-                {isMobile && activeTab === "general" && <span className="text-xs">Général</span>}
+                {isMobile && activeTab === "general" && <span className="text-[10px]">Général</span>}
               </TabsTrigger>
               <TabsTrigger 
                 value="location" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdLocationOn className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdLocationOn className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "location") && <span className="hidden sm:inline">Localisation</span>}
-                {isMobile && activeTab === "location" && <span className="text-xs">Lieu</span>}
+                {isMobile && activeTab === "location" && <span className="text-[10px]">Lieu</span>}
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdEventNote className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdEventNote className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "history") && <span className="hidden sm:inline">Historiques</span>}
-                {isMobile && activeTab === "history" && <span className="text-xs">Historique</span>}
+                {isMobile && activeTab === "history" && <span className="text-[10px]">Hist.</span>}
               </TabsTrigger>
               <TabsTrigger 
                 value="obligations" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdAccountBalance className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <MdAccountBalance className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
                 {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline">Obligations</span>}
-                {isMobile && activeTab === "obligations" && <span className="text-xs">Taxes</span>}
+                {isMobile && activeTab === "obligations" && <span className="text-[10px]">Taxes</span>}
               </TabsTrigger>
               <TabsTrigger 
                 value="review" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-2 sm:py-0 min-h-[44px] sm:min-h-0 flex items-center justify-center gap-1"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdRateReview className="h-5 w-5 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
+                <MdRateReview className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
                 {(!isMobile || activeTab === "review") && <span className="hidden sm:inline">Révision</span>}
-                {isMobile && activeTab === "review" && <span className="text-xs">Révision</span>}
+                {isMobile && activeTab === "review" && <span className="text-[10px]">Révision</span>}
               </TabsTrigger>
             </TabsList>
             
-            <div className="space-y-3">
+            <div className="space-y-2">
               {/* Message motivant avec animation */}
-              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-3 rounded-lg border border-primary/20 animate-fade-in">
-                <p className="text-sm font-medium text-foreground">
+              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-2 sm:p-3 rounded-xl border border-primary/20 animate-fade-in">
+                <p className="text-xs sm:text-sm font-medium text-foreground">
                   {getMotivationalMessage(calculateProgress())}
                 </p>
               </div>
             </div>
           </div>
           
-          <div className="px-4 sm:px-6 pb-6">
+          <div className="px-3 sm:px-6 pb-4 sm:pb-6">
 
-          <TabsContent value="general" className="space-y-6 mt-6 animate-fade-in">
+          <TabsContent value="general" className="space-y-4 sm:space-y-6 mt-4 sm:mt-6 animate-fade-in">
             <PropertyTitleTypeSelect 
               value={formData.propertyTitleType || ''}
               onValueChange={(value) => handleInputChange('propertyTitleType', value)}
@@ -2428,7 +2428,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             {formData.propertyTitleType && (
               <div className="space-y-2 animate-fade-in">
-                <Label htmlFor="titleReference">
+                <Label htmlFor="titleReference" className="text-sm">
                   Numéro de référence du {formData.propertyTitleType.toLowerCase()}
                 </Label>
                 <InputWithPopover
@@ -2444,9 +2444,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </p>
 
                 {/* Title document attachment */}
-                <div className="space-y-2 mt-4">
+                <div className="space-y-2 mt-3 sm:mt-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="titleDoc">Document du titre de propriété (optionnel)</Label>
+                    <Label htmlFor="titleDoc" className="text-sm">Document du titre (optionnel)</Label>
                     <span className="text-xs text-muted-foreground">
                       {titleDocFiles.length}/5 fichiers
                     </span>
@@ -2456,14 +2456,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   {titleDocFiles.length > 0 && (
                     <div className="space-y-2">
                       {titleDocFiles.map((file, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                          <MdInsertDriveFile className="h-4 w-4 text-primary" />
-                          <span className="text-sm flex-1 truncate">{file.name}</span>
+                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-xl">
+                          <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-xs sm:text-sm flex-1 truncate">{file.name}</span>
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
                             onClick={() => removeFile('title', index)}
+                            className="h-7 w-7 p-0"
                           >
                             <X className="h-4 w-4" />
                           </Button>
@@ -2479,7 +2480,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       variant="outline"
                       size="sm"
                       onClick={() => document.getElementById('titleDoc')?.click()}
-                      className="gap-2 hover:bg-primary/5 transition-all w-full"
+                      className="gap-2 hover:bg-primary/5 transition-all w-full text-xs sm:text-sm h-9 rounded-xl"
                     >
                       <Plus className="h-4 w-4" />
                       Ajouter le titre de propriété
@@ -2501,7 +2502,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             )}
 
             {/* Section Propriétaire(s) actuel(s) */}
-            <div className="space-y-4 pt-4 border-t">
+            <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t">
               <div>
                 <div className="flex items-center gap-2">
                   <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
@@ -2557,7 +2558,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
 
               {currentOwners.map((owner, index) => (
-                <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
+                <div key={index} className={`border rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
                   highlightIncompleteOwner && index === currentOwners.length - 1 && (!owner.lastName || !owner.firstName) 
                     ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
                     : ''
@@ -2577,41 +2578,44 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 gap-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Nom *</Label>
+                  <div className="grid grid-cols-1 gap-2 sm:gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs sm:text-sm">Nom *</Label>
                       <Input
                         placeholder="Nom de famille"
                         value={owner.lastName}
                         onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
+                        className="h-9 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Post-nom</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs sm:text-sm">Post-nom</Label>
                       <Input
                         placeholder="Post-nom (optionnel)"
                         value={owner.middleName}
                         onChange={(e) => updateCurrentOwner(index, 'middleName', e.target.value)}
+                        className="h-9 text-sm"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Prénom *</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs sm:text-sm">Prénom *</Label>
                       <Input
                         placeholder="Prénom"
                         value={owner.firstName}
                         onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
+                        className="h-9 text-sm"
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label className="text-xs">Statut juridique</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs sm:text-sm">Statut juridique</Label>
                       <Select 
                         value={owner.legalStatus}
                         onValueChange={(value) => updateCurrentOwner(index, 'legalStatus', value)}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-9 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -2621,28 +2625,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs">Propriétaire depuis</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs sm:text-sm">Propriétaire depuis</Label>
                       <Input
                         type="date"
                         max={new Date().toISOString().split('T')[0]}
                         value={owner.since}
                         onChange={(e) => updateCurrentOwner(index, 'since', e.target.value)}
+                        className="h-9 text-sm"
                       />
                     </div>
                   </div>
 
                   {/* Owner document attachment */}
-                  <div className="space-y-2 mt-3 pt-3 border-t">
+                  <div className="space-y-1.5 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
                     <div className="flex items-center gap-2">
-                      <Label className="text-xs">Pièce d'identité du propriétaire (optionnel)</Label>
+                      <Label className="text-xs sm:text-sm">Pièce d'identité (optionnel)</Label>
                       <Popover>
                         <PopoverTrigger asChild>
                           <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
                             <Info className="h-3.5 w-3.5 text-muted-foreground" />
                           </Button>
                         </PopoverTrigger>
-                        <PopoverContent className="w-80">
+                        <PopoverContent className="w-72 sm:w-80">
                           <p className="text-xs text-muted-foreground">
                             La pièce d'identité du propriétaire va aider à valider votre identité en tant que propriétaire de la parcelle. 
                             Cela renforce la crédibilité de votre contribution cadastrale.
@@ -2656,20 +2661,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         variant="outline"
                         size="sm"
                         onClick={() => document.getElementById('ownerDoc')?.click()}
-                        className="gap-2 hover:bg-primary/5 transition-all w-full"
+                        className="gap-2 hover:bg-primary/5 transition-all w-full text-xs sm:text-sm h-9 rounded-xl"
                       >
                         <Plus className="h-4 w-4" />
                         Ajouter la pièce d'identité
                       </Button>
                     ) : (
-                      <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                        <MdInsertDriveFile className="h-4 w-4 text-primary" />
-                        <span className="text-sm flex-1 truncate">{ownerDocFile.name}</span>
+                      <div className="flex items-center gap-2 p-2 bg-muted rounded-xl">
+                        <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                        <span className="text-xs sm:text-sm flex-1 truncate">{ownerDocFile.name}</span>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeFile('owner')}
+                          className="h-7 w-7 p-0"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -5507,11 +5513,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             )}
             
             {/* Bouton Suivant */}
-            <div className="flex justify-end pt-6 mt-6 border-t">
+            <div className="flex justify-end pt-4 sm:pt-6 mt-4 sm:mt-6 border-t">
               <Button
                 type="button"
                 onClick={() => handleTabChange('review')}
-                className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white"
+                className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white text-sm sm:text-base h-10 sm:h-11 rounded-xl"
               >
                 Réviser ma contribution
                 <ChevronRight className="h-4 w-4" />
@@ -5521,25 +5527,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
           {/* Onglet Révision & Soumission */}
           <TabsContent value="review" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-            <div className="space-y-6 py-6">
+            <div className="space-y-4 sm:space-y-6 py-4 sm:py-6">
               {/* En-tête avec estimation CCC */}
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-4 sm:p-6 shadow-lg">
-                <div className="flex items-start gap-3 sm:gap-4">
-                  <div className="h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Info className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-3 sm:p-6 shadow-lg">
+                <div className="flex items-start gap-2 sm:gap-4">
+                  <div className="h-10 w-10 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0">
+                    <Info className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-lg sm:text-2xl font-bold text-amber-900 dark:text-amber-100 mb-2">
+                    <h3 className="text-base sm:text-2xl font-bold text-amber-900 dark:text-amber-100 mb-1 sm:mb-2">
                       Votre contribution CCC
                     </h3>
-                    <div className="flex items-baseline gap-2 mb-3">
-                      <span className="text-2xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400">
+                    <div className="flex items-baseline gap-1 sm:gap-2 mb-2 sm:mb-3">
+                      <span className="text-xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400">
                         ${calculateCCCValue().value.toFixed(2)}
                       </span>
-                      <span className="text-sm sm:text-lg text-amber-700 dark:text-amber-300">/ $5.00</span>
+                      <span className="text-xs sm:text-lg text-amber-700 dark:text-amber-300">/ $5.00</span>
                     </div>
                     {calculateCCCValue().value < 5 && (
-                      <p className="text-xs text-amber-700 dark:text-amber-300 mt-2 flex items-start gap-1">
+                      <p className="text-[10px] sm:text-xs text-amber-700 dark:text-amber-300 mt-1 sm:mt-2 flex items-start gap-1">
                         <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
                         <span>Complétez davantage de champs pour maximiser votre code CCC !</span>
                       </p>
@@ -5549,22 +5555,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
 
               {/* Récapitulatif des sections */}
-              <div className="space-y-3 sm:space-y-4">
-                <h3 className="text-base sm:text-lg font-semibold flex items-center gap-2">
+              <div className="space-y-2 sm:space-y-4">
+                <h3 className="text-sm sm:text-lg font-semibold flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                   Récapitulatif de votre contribution
                 </h3>
 
                 {/* Section Informations Générales */}
-                <div className="border rounded-lg p-3 sm:p-4 space-y-3 bg-muted/30">
+                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-sm">📋 Informations générales</h4>
+                    <h4 className="font-semibold text-xs sm:text-sm">📋 Informations générales</h4>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTabChange('general')}
-                      className="text-xs h-7 px-2 sm:px-3"
+                      className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3"
                     >
                       Modifier
                     </Button>
@@ -5619,15 +5625,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Section Localisation */}
-                <div className="border rounded-lg p-3 sm:p-4 space-y-3 bg-muted/30">
+                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-sm">📍 Localisation</h4>
+                    <h4 className="font-semibold text-xs sm:text-sm">📍 Localisation</h4>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTabChange('location')}
-                      className="text-xs h-7 px-2 sm:px-3"
+                      className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3"
                     >
                       Modifier
                     </Button>
@@ -5683,15 +5689,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Section Historique des propriétaires */}
-                <div className="border rounded-lg p-3 sm:p-4 space-y-3 bg-muted/30">
+                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-sm">📜 Historique des propriétaires</h4>
+                    <h4 className="font-semibold text-xs sm:text-sm">📜 Historique des propriétaires</h4>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTabChange('history')}
-                      className="text-xs h-7 px-2 sm:px-3"
+                      className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3"
                     >
                       Modifier
                     </Button>
@@ -5717,15 +5723,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Section Obligations (Taxes et Hypothèques) */}
-                <div className="border rounded-lg p-3 sm:p-4 space-y-3 bg-muted/30">
+                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
                   <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-sm">💼 Obligations (Taxes et Hypothèques)</h4>
+                    <h4 className="font-semibold text-xs sm:text-sm">💼 Obligations (Taxes et Hypothèques)</h4>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTabChange('obligations')}
-                      className="text-xs h-7 px-2 sm:px-3"
+                      className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3"
                     >
                       Modifier
                     </Button>
@@ -5774,9 +5780,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
 
                 {/* Pièces jointes */}
-                <div className="border rounded-lg p-3 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
-                  <h4 className="font-semibold text-xs sm:text-sm">Pièces jointes</h4>
-                  <div className="grid grid-cols-1 gap-2 text-xs sm:text-sm">
+                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
+                  <h4 className="font-semibold text-xs sm:text-sm">📎 Pièces jointes</h4>
+                  <div className="grid grid-cols-1 gap-1.5 sm:gap-2 text-xs sm:text-sm">
                     <div className={ownerDocFile ? "text-foreground flex items-start gap-2" : "text-muted-foreground italic flex items-start gap-2"}>
                       {ownerDocFile ? <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> : <span className="text-base">⭕</span>}
                       <span className="break-words">Pièce d'identité : {ownerDocFile ? ownerDocFile.name : "Non fournie"}</span>
@@ -5848,12 +5854,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
               {/* Message de motivation */}
               {calculateCCCValue().value < 5 && (
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-2.5 sm:p-4">
                   <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-200 flex items-start gap-2">
                     <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                     <span>
-                      <strong>Conseil :</strong> Pour maximiser votre code CCC (5$), complétez les sections manquantes ci-dessus. 
-                      Plus vous fournissez d'informations précises, plus votre contribution est valorisée !
+                      <strong>Conseil :</strong> Pour maximiser votre code CCC (5$), complétez les sections manquantes. 
+                      Plus vous fournissez d'informations, plus votre contribution est valorisée !
                     </span>
                   </p>
                 </div>
@@ -5861,46 +5867,46 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
               {/* Bouton de soumission */}
               {user ? (
-                <div className="sticky bottom-0 left-0 right-0 mt-8 -mx-4 sm:-mx-6 -mb-6 bg-background/95 backdrop-blur-sm border-t p-4 sm:p-6 z-10">
+                <div className="sticky bottom-0 left-0 right-0 mt-6 sm:mt-8 -mx-3 sm:-mx-6 -mb-4 sm:-mb-6 bg-background/95 backdrop-blur-sm border-t p-3 sm:p-6 z-10 rounded-b-2xl">
                   <div className="max-w-2xl mx-auto">
                     <Button
                       type="button"
                       size="lg"
                       onClick={handleSubmit}
                       disabled={loading || uploading || !isFormValidForSubmission()}
-                      className="w-full h-14 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80"
+                      className="w-full h-11 sm:h-14 text-sm sm:text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80 rounded-xl"
                     >
                       {loading || uploading ? (
                         <>
-                          <Loader2 className="h-5 w-5 animate-spin" />
+                          <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
                           {uploading ? "Téléchargement..." : "Envoi en cours..."}
                         </>
                       ) : (
                         <>
-                          <CheckCircle2 className="h-5 w-5" />
+                          <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
                           Soumettre ma contribution
                         </>
                       )}
                     </Button>
                     {!isFormValidForSubmission() && (
-                      <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
-                        Veuillez compléter les champs obligatoires : Type de titre de propriété, Propriétaire(s) actuel(s), et toutes les informations de localisation
+                      <p className="text-[10px] sm:text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
+                        Complétez : Type de titre, Propriétaire(s), et localisation
                       </p>
                     )}
-                    <p className="text-xs text-center text-muted-foreground mt-3">
-                      En soumettant, vous acceptez que vos données soient vérifiées par notre équipe
+                    <p className="text-[10px] sm:text-xs text-center text-muted-foreground mt-2 sm:mt-3">
+                      En soumettant, vous acceptez que vos données soient vérifiées
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="sticky bottom-0 left-0 right-0 mt-8 -mx-4 sm:-mx-6 -mb-6 bg-background/95 backdrop-blur-sm border-t p-4 sm:p-6 z-10">
+                <div className="sticky bottom-0 left-0 right-0 mt-6 sm:mt-8 -mx-3 sm:-mx-6 -mb-4 sm:-mb-6 bg-background/95 backdrop-blur-sm border-t p-3 sm:p-6 z-10 rounded-b-2xl">
                   <div className="max-w-2xl mx-auto">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
                       <div className="flex-1 text-center sm:text-left">
-                        <p className="text-sm font-medium text-foreground mb-1">
+                        <p className="text-xs sm:text-sm font-medium text-foreground mb-0.5 sm:mb-1">
                           Formulaire complété
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">
                           Connectez-vous pour soumettre et obtenir votre code CCC
                         </p>
                       </div>
@@ -5913,16 +5919,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           setPendingSubmission(true);
                         }}
                         disabled={!isFormValidForSubmission()}
-                        className="w-full sm:w-auto px-6 sm:px-8 h-12 sm:h-14 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
+                        className="w-full sm:w-auto px-4 sm:px-8 h-10 sm:h-14 text-sm sm:text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all rounded-xl"
                       >
-                        <CheckCircle2 className="h-5 w-5" />
+                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
                         <span className="hidden sm:inline">Soumettre ma contribution</span>
                         <span className="sm:hidden">Soumettre</span>
                       </Button>
                     </div>
                     {!isFormValidForSubmission() && (
-                      <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
-                        Veuillez compléter les champs obligatoires : Type de titre de propriété, Propriétaire(s) actuel(s), et toutes les informations de localisation
+                      <p className="text-[10px] sm:text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
+                        Complétez : Type de titre, Propriétaire(s), et localisation
                       </p>
                     )}
                   </div>
