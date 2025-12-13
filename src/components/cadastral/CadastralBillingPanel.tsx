@@ -203,105 +203,39 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
   return (
     <TooltipProvider>
-      <Card className="w-full border-primary/20 bg-gradient-to-br from-background to-secondary/5 relative">
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="absolute top-2 right-2 z-10 p-1.5 rounded-md border bg-background/95 backdrop-blur-sm text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors"
-            aria-label="Fermer le catalogue"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        )}
-        
-        <CardHeader className="pb-3 p-3 md:p-4 pr-8">
+      <Card className="w-full max-w-[380px] sm:max-w-none mx-auto border-primary/20 bg-gradient-to-br from-background to-secondary/5 rounded-2xl overflow-hidden shadow-sm">
+        <CardHeader className="pb-2 p-3 border-b border-border/50">
           <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded bg-primary/10">
-              <FileText className="h-4 w-4 text-primary" />
+            <div className="p-1.5 rounded-xl bg-primary/10 shadow-sm">
+              <FileText className="h-3.5 w-3.5 text-primary" />
             </div>
-            <div className="min-w-0">
-              <CardTitle className="text-sm md:text-base truncate">
-                Parcelle {searchResult.parcel.parcel_number}
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-sm font-semibold truncate">
+                {searchResult.parcel.parcel_number}
               </CardTitle>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate">
                 {searchResult.parcel.location} • {searchResult.parcel.parcel_type === 'SU' ? 'Urbaine' : 'Rurale'}
               </p>
             </div>
+            <Badge variant="outline" className="text-xs px-1.5 py-0.5 shrink-0">
+              {catalogServices.length} services
+            </Badge>
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-3 md:space-y-4 p-3 md:p-4">
-          <div 
-            className={`
-              flex items-start gap-3 p-3 rounded-lg border transition-all duration-300 cursor-pointer
-              hover:scale-[1.01] active:scale-[0.99] active:transition-transform active:duration-75
-              ${(() => {
-                const availableServices = catalogServices.length;
-                if (availableServices === 4) {
-                  return 'bg-emerald-100/80 border-emerald-300/60 dark:bg-emerald-900/30 dark:border-emerald-700/50';
-                } else if (availableServices === 3) {
-                  return 'bg-blue-100/80 border-blue-300/60 dark:bg-blue-900/30 dark:border-blue-700/50';
-                } else if (availableServices === 2) {
-                  return 'bg-amber-100/80 border-amber-300/60 dark:bg-amber-900/30 dark:border-amber-700/50';
-                } else {
-                  return 'bg-slate-100/80 border-slate-300/60 dark:bg-slate-900/30 dark:border-slate-700/50';
-                }
-              })()}
-            `}
-          >
-            <div className="flex-shrink-0 mt-0.5">
-              <CheckCircle className={`
-                h-4 w-4 transition-colors duration-300
-                ${(() => {
-                  const availableServices = catalogServices.length;
-                  if (availableServices === 4) {
-                    return 'text-emerald-700 dark:text-emerald-300';
-                  } else if (availableServices === 3) {
-                    return 'text-blue-700 dark:text-blue-300';
-                  } else if (availableServices === 2) {
-                    return 'text-amber-700 dark:text-amber-300';
-                  } else {
-                    return 'text-slate-700 dark:text-slate-300';
-                  }
-                })()}
-              `} />
-            </div>
-            <div>
-              <p className={`
-                text-[10px] md:text-sm leading-relaxed transition-colors duration-300
-                ${(() => {
-                  const availableServices = catalogServices.length;
-                  if (availableServices === 4) {
-                    return 'text-emerald-900 dark:text-emerald-100';
-                  } else if (availableServices === 3) {
-                    return 'text-blue-900 dark:text-blue-100';
-                  } else if (availableServices === 2) {
-                    return 'text-amber-900 dark:text-amber-100';
-                  } else {
-                    return 'text-slate-900 dark:text-slate-100';
-                  }
-                })()}
-              `}>
-                Bonne nouvelle : cette parcelle dispose d'informations cadastrales détaillées. Parcourez la liste ci-dessus et sélectionnez les données que vous souhaitez consulter.
-              </p>
-            </div>
+        <CardContent className="space-y-2.5 p-3">
+          {/* Message info compact */}
+          <div className="flex items-start gap-2 p-2 rounded-xl bg-emerald-50/80 border border-emerald-200/60 dark:bg-emerald-900/20 dark:border-emerald-700/40">
+            <CheckCircle className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-emerald-800 dark:text-emerald-200 leading-relaxed">
+              Cette parcelle dispose de données cadastrales. Sélectionnez les services souhaités.
+            </p>
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-base md:text-lg flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 text-primary" />
-                Catalogue de Services
-              </h3>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  {catalogServices.length} services
-                </Badge>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg border border-dashed">
+          {/* Header catalogue compact */}
+          <div className="space-y-2">
+            {/* Tout sélectionner - compact */}
+            <div className="flex items-center justify-between p-2 bg-muted/30 rounded-xl border border-dashed">
               <div className="flex items-center gap-2">
                 <Checkbox 
                   checked={selectedServiceIds.length === catalogServices.filter(s => serviceAvailability[s.id] ?? true).length && selectedServiceIds.length > 0}
@@ -319,16 +253,17 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       });
                     }
                   }}
-                  className="h-4 w-4"
+                  className="h-3.5 w-3.5"
                 />
-                <span className="text-sm font-medium">Tout sélectionner</span>
+                <span className="text-xs font-medium">Tout sélectionner</span>
               </div>
-              <Badge variant="secondary" className="text-xs">
-                {catalogServices.filter(s => serviceAvailability[s.id] ?? true).length} disponible(s)
+              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
+                {catalogServices.filter(s => serviceAvailability[s.id] ?? true).length} dispo.
               </Badge>
             </div>
             
-            <div className="space-y-3">
+            {/* Liste des services - compact */}
+            <div className="space-y-2">
               {catalogServices.map((service) => {
                 const IconComponent = getServiceIcon(service.id);
                 const isSelected = selectedServiceIds.includes(service.id);
@@ -340,94 +275,77 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                   <div 
                     key={service.id}
                     className={`
-                      rounded-lg border transition-all duration-200
+                      rounded-xl border transition-all duration-200
                       ${isSelected 
-                        ? 'border-primary bg-primary/5' 
+                        ? 'border-primary bg-primary/5 shadow-sm' 
                         : 'border-border bg-background hover:border-primary/30'
                       }
                       ${isDisabled ? 'opacity-60 bg-muted/30' : ''}
                     `}
                   >
-                    <div className="flex items-start gap-3 p-4">
+                    <div className="flex items-center gap-2 p-2.5">
                       <div className={`
-                        p-2 rounded-lg shrink-0 transition-colors
+                        p-1.5 rounded-lg shrink-0 transition-colors
                         ${isSelected 
                           ? 'bg-primary text-primary-foreground' 
                           : 'bg-muted text-muted-foreground'
                         }
                         ${isDisabled ? 'opacity-50' : ''}
                       `}>
-                        <IconComponent className="h-4 w-4" />
+                        <IconComponent className="h-3.5 w-3.5" />
                       </div>
 
-                      <div className="flex-1 min-w-0 text-left">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h4 className="font-medium text-xs sm:text-sm leading-tight mb-1 text-left">
-                            {service.name}
-                          </h4>
-                          {isDisabled && (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0.5 shrink-0">
-                              Données manquantes
-                            </Badge>
-                          )}
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-xs leading-tight truncate">
+                          {service.name}
+                        </h4>
+                        {isDisabled && (
+                          <span className="text-[10px] text-muted-foreground">Données manquantes</span>
+                        )}
                       </div>
 
-                      <Collapsible>
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleServiceExpansion(service.id);
-                            }}
-                            className="h-8 w-8 p-0"
-                          >
-                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                          </Button>
-                        </CollapsibleTrigger>
-                      </Collapsible>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleServiceExpansion(service.id);
+                        }}
+                        className="h-6 w-6 p-0 rounded-lg"
+                      >
+                        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                      </Button>
 
-                      <div className="flex flex-col items-center gap-1">
-                        <Badge variant="secondary" className="text-xs">
-                          ${service.price}
-                        </Badge>
-                        <Checkbox 
-                          checked={isSelected}
-                          onCheckedChange={() => !isDisabled && handleServiceToggle(service.id)}
-                          disabled={isDisabled}
-                          className="h-4 w-4"
-                        />
-                      </div>
+                      <Badge variant="secondary" className="text-xs px-1.5 py-0.5 shrink-0">
+                        ${service.price}
+                      </Badge>
+                      
+                      <Checkbox 
+                        checked={isSelected}
+                        onCheckedChange={() => !isDisabled && handleServiceToggle(service.id)}
+                        disabled={isDisabled}
+                        className="h-4 w-4"
+                      />
                     </div>
 
                     <Collapsible open={isExpanded}>
-                      <CollapsibleContent className="px-4 pb-4">
-                        <div className="space-y-2 text-left">
-                          <p className="text-xs md:text-sm text-foreground/80 leading-relaxed text-left">
+                      <CollapsibleContent className="px-2.5 pb-2.5">
+                        <div className="space-y-1.5 text-left pt-1 border-t border-border/50">
+                          <p className="text-xs text-muted-foreground leading-relaxed">
                             {service.description}
                           </p>
-                          {isDisabled && (
-                            <Alert className="mt-3">
-                              <Info className="h-4 w-4" />
-                              <AlertDescription className="text-xs space-y-2">
-                                <p>Ces données n'ont pas encore été ajoutées pour cette parcelle.</p>
-                                {onRequestContribution && (
-                                  <Button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      onRequestContribution();
-                                    }}
-                                    size="sm"
-                                    variant="outline"
-                                    className="w-full mt-2"
-                                  >
-                                    Compléter les données
-                                  </Button>
-                                )}
-                              </AlertDescription>
-                            </Alert>
+                          {isDisabled && onRequestContribution && (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onRequestContribution();
+                              }}
+                              size="sm"
+                              variant="outline"
+                              className="w-full h-7 text-xs rounded-lg"
+                            >
+                              Compléter les données
+                            </Button>
                           )}
                         </div>
                       </CollapsibleContent>
@@ -439,50 +357,45 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
           </div>
 
           {selectedServiceIds.length > 0 && (
-            <div className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-background via-background to-secondary/10">
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-transparent to-primary/5 opacity-50" />
-              <div className="relative p-4">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-1.5 rounded-lg bg-primary/10">
-                    <Receipt className="h-3 w-3 text-primary" />
-                  </div>
-                  <span className="text-sm font-medium text-foreground/80">Code de remise</span>
-                  <Badge variant="outline" className="text-xs px-2">Optionnel</Badge>
-                </div>
-                <DiscountCodeInput
-                  invoiceAmount={totalAmount}
-                  onDiscountApplied={setAppliedDiscount}
-                  className="bg-background/50 backdrop-blur-sm border-border/50 focus-within:border-primary/50 transition-all duration-200"
-                />
+            <div className="rounded-xl border bg-muted/20 p-2.5">
+              <div className="flex items-center gap-2 mb-2">
+                <Receipt className="h-3 w-3 text-primary" />
+                <span className="text-xs font-medium">Code de remise</span>
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Optionnel</Badge>
               </div>
+              <DiscountCodeInput
+                invoiceAmount={totalAmount}
+                onDiscountApplied={setAppliedDiscount}
+                className="bg-background/50 border-border/50"
+              />
             </div>
           )}
 
           {selectedServiceIds.length > 0 && (
-            <div className="space-y-3">
-              <div className="space-y-2 px-4 py-3 bg-muted/20 rounded-lg">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Sous-total services</span>
+            <div className="space-y-2">
+              <div className="space-y-1 px-2.5 py-2 bg-muted/20 rounded-xl text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Sous-total</span>
                   <span className="font-medium">
-                    ${(appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount).toFixed(2)} USD
+                    ${(appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount).toFixed(2)}
                   </span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <div className="flex items-center justify-between text-muted-foreground">
                   <span>TVA (16%)</span>
                   <span>
-                    ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 0.16).toFixed(2)} USD
+                    ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 0.16).toFixed(2)}
                   </span>
                 </div>
               </div>
               
-              <div className="flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20">
-                <span className="font-semibold">Total à payer</span>
+              <div className="flex items-center justify-between p-2.5 bg-primary/5 rounded-xl border border-primary/20">
+                <span className="text-sm font-semibold">Total</span>
                 <div className="text-right">
-                  <div className="text-xl font-bold text-primary">
+                  <div className="text-lg font-bold text-primary">
                     ${((appliedDiscount ? Math.max(0, totalAmount - appliedDiscount.amount) : totalAmount) * 1.16).toFixed(2)} USD
                   </div>
                   {appliedDiscount && (
-                    <div className="text-xs text-green-600 dark:text-green-400">
+                    <div className="text-[10px] text-green-600 dark:text-green-400">
                       Économie: ${appliedDiscount.amount.toFixed(2)}
                     </div>
                   )}
@@ -493,133 +406,88 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
 
           {selectedServiceIds.length > 0 && (
             <div className={`
-              p-4 rounded-xl border-2 transition-all duration-500
+              p-2.5 rounded-xl border transition-all duration-300
               ${highlightTerms 
-                ? 'border-destructive bg-destructive/5 ring-4 ring-destructive/20 animate-pulse' 
-                : 'border-border bg-gradient-to-br from-muted/30 to-background hover:border-primary/30'
+                ? 'border-destructive bg-destructive/5' 
+                : 'border-border bg-muted/20'
               }
             `}>
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-2">
                 <Checkbox 
                   id="terms"
                   checked={acceptedTerms}
                   onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
-                  className={`
-                    mt-1 h-5 w-5 transition-all duration-300
-                    ${highlightTerms ? 'ring-2 ring-destructive ring-offset-2' : 'hover:ring-2 hover:ring-primary/20'}
-                  `}
+                  className="mt-0.5 h-4 w-4"
                 />
-                <div className="flex-1">
-                  <label 
-                    htmlFor="terms" 
-                    className={`
-                      text-sm leading-relaxed cursor-pointer block
-                      ${highlightTerms ? 'text-destructive font-medium' : 'text-foreground'}
-                    `}
-                  >
-                    J'accepte les{" "}
-                    <a 
-                      href="/legal" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:text-primary/80 underline font-medium transition-colors"
-                    >
-                      conditions d'utilisation BIC
-                    </a>
-                    {" "}et confirme la commande des services sélectionnés.
-                  </label>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    En cochant cette case, vous autorisez le traitement de vos données cadastrales conformément à notre politique de confidentialité.
-                  </p>
-                </div>
+                <label 
+                  htmlFor="terms" 
+                  className={`text-xs leading-relaxed cursor-pointer ${highlightTerms ? 'text-destructive' : ''}`}
+                >
+                  J'accepte les{" "}
+                  <a href="/legal" target="_blank" className="text-primary underline">
+                    conditions BIC
+                  </a>
+                  {" "}et confirme la commande.
+                </label>
               </div>
             </div>
           )}
 
-          <div className="space-y-4">
-            <Button 
-              onClick={handleProceedToPayment}
-              disabled={selectedServiceIds.length === 0 || loading}
-              className={`
-                w-full h-12 md:h-14 text-base md:text-lg font-semibold
-                rounded-xl transition-all duration-300 ease-out touch-target
-                ${selectedServiceIds.length > 0 && acceptedTerms 
-                  ? `
-                    bg-gradient-to-r from-primary via-primary to-primary/90 
-                    hover:from-primary/90 hover:via-primary hover:to-primary 
-                    shadow-elegant hover:shadow-hover hover:scale-[1.02] 
-                    active:scale-[0.98] ring-2 ring-primary/20 ring-offset-2
-                  ` 
-                  : selectedServiceIds.length > 0 
-                  ? `
-                    bg-gradient-to-r from-muted-foreground to-muted-foreground/80 
-                    hover:from-muted-foreground/90 hover:to-muted-foreground/70
-                  `
-                  : 'opacity-50 cursor-not-allowed bg-muted'
-                }
-                focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-primary/30
-              `}
-            >
-              {loading ? (
-                <div className="flex items-center gap-3">
-                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-background border-t-transparent" />
-                  <span>Traitement en cours...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3">
-                  {paymentMode.bypass_payment ? (
-                    <CheckCircle className="h-5 w-5" />
-                  ) : (
-                    <CreditCard className="h-5 w-5" />
-                  )}
-                  <span>
-                    {selectedServiceIds.length === 0 
-                      ? 'Sélectionner des services' 
-                      : !acceptedTerms 
-                      ? 'Accepter les conditions'
-                      : paymentMode.bypass_payment
-                      ? 'Accéder aux services'
-                      : 'Payer'
-                    }
-                  </span>
-                  {selectedServiceIds.length > 0 && acceptedTerms && (
-                    <div className="ml-auto flex items-center gap-1 text-sm opacity-90">
-                      <Lock className="h-3 w-3" />
-                      <span className="hidden sm:inline">Sécurisé</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </Button>
-            
-            <div className="text-center space-y-2">
-              {selectedServiceIds.length === 0 && (
-                <div className="flex items-center justify-center gap-2 text-muted-foreground">
+          {/* Bouton de paiement compact */}
+          <Button 
+            onClick={handleProceedToPayment}
+            disabled={selectedServiceIds.length === 0 || loading}
+            className={`
+              w-full h-10 text-sm font-semibold rounded-xl
+              ${selectedServiceIds.length > 0 && acceptedTerms 
+                ? 'bg-primary hover:bg-primary/90 shadow-sm' 
+                : selectedServiceIds.length > 0 
+                ? 'bg-muted-foreground/80'
+                : 'opacity-50 cursor-not-allowed bg-muted'
+              }
+            `}
+          >
+            {loading ? (
+              <div className="flex items-center gap-2">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-background border-t-transparent" />
+                <span>Traitement...</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                {paymentMode.bypass_payment ? (
                   <CheckCircle className="h-4 w-4" />
-                  <p className="text-sm">Choisissez les services qui vous intéressent ci-dessus</p>
-                </div>
-              )}
-              
-              {selectedServiceIds.length > 0 && !acceptedTerms && (
-                <div className="flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400">
-                  <Shield className="h-4 w-4" />
-                  <p className="text-sm">Validation des conditions requise pour continuer</p>
-                </div>
-              )}
-              
-              {selectedServiceIds.length > 0 && acceptedTerms && (
-                <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400">
-                  <CheckCircle className="h-4 w-4" />
-                  <p className="text-sm">
-                    {paymentMode.bypass_payment 
-                      ? 'Accès gratuit en mode développement' 
-                      : 'Prêt pour le paiement sécurisé'
-                    }
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
+                ) : (
+                  <CreditCard className="h-4 w-4" />
+                )}
+                <span>
+                  {selectedServiceIds.length === 0 
+                    ? 'Sélectionner des services' 
+                    : !acceptedTerms 
+                    ? 'Accepter les conditions'
+                    : paymentMode.bypass_payment
+                    ? 'Accéder aux services'
+                    : 'Payer'
+                  }
+                </span>
+                {selectedServiceIds.length > 0 && acceptedTerms && (
+                  <Lock className="h-3 w-3 ml-auto opacity-70" />
+                )}
+              </div>
+            )}
+          </Button>
+          
+          {/* Status messages compact */}
+          {selectedServiceIds.length === 0 && (
+            <p className="text-center text-xs text-muted-foreground">
+              Sélectionnez les services souhaités
+            </p>
+          )}
+          
+          {selectedServiceIds.length > 0 && !acceptedTerms && (
+            <p className="text-center text-xs text-amber-600 dark:text-amber-400">
+              Validation des conditions requise
+            </p>
+          )}
         </CardContent>
       </Card>
 
