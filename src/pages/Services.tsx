@@ -81,26 +81,28 @@ const Services = () => {
   return (
     <div className="min-h-screen">
       <Navigation />
-      <main className="pt-20 pb-16">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main className="pt-16 sm:pt-20 pb-12 sm:pb-16">
+        <div className="max-w-[360px] sm:max-w-2xl lg:max-w-5xl mx-auto px-3 sm:px-6 lg:px-8">
           {/* Afficher la barre de recherche cadastrale si paramètre search présent */}
           {showSearchBar && (
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <CadastralSearchBar />
             </div>
           )}
           
           {!showSearchBar && (
-            <div className="text-center mb-16">
-              <h1 className="text-4xl font-bold text-foreground mb-6">Nos Services</h1>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
+            <div className="text-center mb-8 sm:mb-12">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-foreground mb-3 sm:mb-4">
+                Nos Services
+              </h1>
+              <p className="text-sm sm:text-base text-muted-foreground max-w-3xl mx-auto leading-relaxed">
                 Nos outils et livrables sont conçus pour répondre aux enjeux urbains concrets. 
                 Nous proposons des solutions adaptées aux besoins des territoires congolais.
               </p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
             {services.map((service, index) => {
               const IconComponent = service.icon;
               const getIconColor = (variant: string) => {
@@ -119,19 +121,22 @@ const Services = () => {
               };
               
               return (
-                <Card key={index} className="group hover:shadow-card transition-all duration-300 border-border hover:border-primary/20">
-                  <CardHeader className="text-center pb-4">
-                    <div className="flex justify-center mb-4">
-                      <div className="p-4 rounded-full bg-secondary group-hover:bg-primary/10 transition-colors duration-300">
-                        <IconComponent className={`h-8 w-8 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
+                <Card 
+                  key={index} 
+                  className="group hover:shadow-lg transition-all duration-300 border-border hover:border-primary/20 rounded-2xl overflow-hidden"
+                >
+                  <CardHeader className="text-center pb-2 sm:pb-3 pt-4 sm:pt-5 px-3 sm:px-4">
+                    <div className="flex justify-center mb-2 sm:mb-3">
+                      <div className="p-2.5 sm:p-3 rounded-xl bg-secondary group-hover:bg-primary/10 transition-colors duration-300 shadow-sm">
+                        <IconComponent className={`h-5 w-5 sm:h-6 sm:w-6 ${getIconColor(service.variant)} group-hover:text-primary transition-colors duration-300`} />
                       </div>
                     </div>
-                    <CardTitle className="text-xl font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
+                    <CardTitle className="text-sm sm:text-base font-semibold text-foreground group-hover:text-primary transition-colors duration-300">
                       {service.title}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <CardDescription className="text-center text-muted-foreground leading-relaxed">
+                  <CardContent className="pb-4 sm:pb-5 px-3 sm:px-4">
+                    <CardDescription className="text-center text-xs sm:text-sm text-muted-foreground leading-relaxed">
                       {service.description}
                     </CardDescription>
                   </CardContent>
