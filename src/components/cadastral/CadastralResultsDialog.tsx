@@ -90,52 +90,44 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
       onClick={handleOverlayClick}
     >
-      <Card className="relative w-full h-full overflow-hidden bg-background flex flex-col md:m-4 md:max-w-6xl md:mx-auto md:max-h-[90vh] md:rounded-lg md:shadow-2xl">
+      <Card className="relative w-full h-full overflow-hidden bg-background flex flex-col md:m-4 md:max-w-4xl md:mx-auto md:max-h-[90vh] md:rounded-2xl md:shadow-2xl">
+        {/* Bouton fermer unique en haut à droite */}
         <button
           type="button"
           aria-label="Fermer"
           onClick={handleClose}
-          className="absolute inline-flex items-center justify-center h-10 w-10 rounded-md border bg-background text-foreground shadow hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 z-50 top-[calc(env(safe-area-inset-top)+0.5rem)] right-[calc(env(safe-area-inset-right)+0.5rem)]"
+          className="absolute inline-flex items-center justify-center h-8 w-8 rounded-xl border bg-background/95 backdrop-blur-sm text-foreground shadow-sm hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring z-50 top-3 right-3"
         >
           <X className="h-4 w-4" />
         </button>
-        {/* Header fixe avec bouton fermer - Mobile optimized */}
-        <div className="sticky top-0 z-40 flex items-center justify-between px-3 pb-3 md:p-4 border-b bg-background/95 backdrop-blur shrink-0 pt-[calc(env(safe-area-inset-top)+0.25rem)] pr-[calc(env(safe-area-inset-right)+0.25rem)]">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg md:text-xl font-semibold truncate">
-              Résultats cadastraux
-            </h2>
-            <p className="text-xs md:text-sm text-muted-foreground truncate">
-              <span className="font-mono">{result.parcel.parcel_number}</span>
-            </p>
-          </div>
-          <div className="flex gap-2 shrink-0 ml-2">
-            {fromMap && (
-              <Button 
-                variant="outline"
-                onClick={handleBackToMap}
-                className="h-9 w-9 p-0 md:w-auto md:px-3 md:gap-2 border-2"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden md:inline">Retour carte</span>
-              </Button>
-            )}
+        
+        {/* Header compact */}
+        <div className="sticky top-0 z-40 flex items-center gap-2 px-3 py-2.5 border-b bg-background/95 backdrop-blur-sm shrink-0">
+          {fromMap && (
             <Button 
-              variant="outline"
-              onClick={handleClose}
-              className="h-9 w-9 p-0 md:w-auto md:px-3 md:gap-2 border-2"
+              variant="ghost"
+              size="sm"
+              onClick={handleBackToMap}
+              className="h-8 w-8 p-0 rounded-xl"
             >
-              <X className="h-4 w-4" />
-              <span className="hidden md:inline">Fermer</span>
+              <ArrowLeft className="h-4 w-4" />
             </Button>
+          )}
+          <div className="flex-1 min-w-0 pr-8">
+            <h2 className="text-sm font-semibold truncate">
+              Catalogue de services
+            </h2>
+            <p className="text-xs text-muted-foreground truncate">
+              Parcelle <span className="font-mono">{result.parcel.parcel_number}</span>
+            </p>
           </div>
         </div>
         
-        {/* Contenu scrollable - Mobile optimized */}
-        <div className="flex-1 overflow-auto p-3 md:p-4">
+        {/* Contenu scrollable optimisé mobile */}
+        <div className="flex-1 overflow-auto p-2.5 sm:p-3">
           <CadastralResultCard 
             result={result}
             onClose={handleClose}
