@@ -267,7 +267,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
               </Badge>
             </div>
             
-            {/* Liste des services - compact */}
+            {/* Liste des services - compact avec mise en avant des données disponibles */}
             <div className="space-y-2">
               {catalogServices.map((service) => {
                 const IconComponent = getServiceIcon(service.id);
@@ -280,32 +280,45 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                   <div 
                     key={service.id}
                     className={`
-                      rounded-xl border transition-all duration-200
-                      ${isSelected 
-                        ? 'border-primary bg-primary/5 shadow-sm' 
-                        : 'border-border bg-background hover:border-primary/30'
+                      transition-all duration-200
+                      ${hasData 
+                        ? 'rounded-2xl border-2 shadow-md hover:shadow-lg' 
+                        : 'rounded-xl border'
                       }
-                      ${isDisabled ? 'opacity-60 bg-muted/30' : ''}
+                      ${isSelected 
+                        ? 'border-primary bg-primary/5' 
+                        : hasData 
+                          ? 'border-primary/40 bg-background hover:border-primary/60' 
+                          : 'border-border/50 bg-muted/20'
+                      }
                     `}
                   >
-                    <div className="flex items-center gap-2 p-2.5">
+                    <div className={`flex items-center gap-2 ${hasData ? 'p-3' : 'p-2'}`}>
                       <div className={`
-                        p-1.5 rounded-lg shrink-0 transition-colors
+                        shrink-0 transition-colors
+                        ${hasData ? 'p-2 rounded-xl' : 'p-1.5 rounded-lg'}
                         ${isSelected 
                           ? 'bg-primary text-primary-foreground' 
-                          : 'bg-muted text-muted-foreground'
+                          : hasData 
+                            ? 'bg-primary/10 text-primary' 
+                            : 'bg-muted text-muted-foreground/50'
                         }
-                        ${isDisabled ? 'opacity-50' : ''}
                       `}>
-                        <IconComponent className="h-3.5 w-3.5" />
+                        <IconComponent className={hasData ? 'h-4 w-4' : 'h-3.5 w-3.5'} />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-xs leading-tight truncate">
+                        <h4 className={`
+                          font-medium leading-tight truncate
+                          ${hasData 
+                            ? 'text-sm text-foreground' 
+                            : 'text-xs text-muted-foreground'
+                          }
+                        `}>
                           {service.name}
                         </h4>
                         {isDisabled && (
-                          <span className="text-[10px] text-muted-foreground">Données manquantes</span>
+                          <span className="text-[10px] text-muted-foreground/60">Données manquantes</span>
                         )}
                       </div>
 
@@ -316,12 +329,15 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                           e.stopPropagation();
                           toggleServiceExpansion(service.id);
                         }}
-                        className="h-6 w-6 p-0 rounded-lg"
+                        className={`p-0 rounded-lg ${hasData ? 'h-7 w-7' : 'h-6 w-6'}`}
                       >
-                        <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                        <ChevronDown className={`transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''} ${hasData ? 'h-4 w-4' : 'h-3.5 w-3.5'}`} />
                       </Button>
 
-                      <Badge variant="secondary" className="text-xs px-1.5 py-0.5 shrink-0">
+                      <Badge 
+                        variant={hasData ? "default" : "secondary"} 
+                        className={`shrink-0 ${hasData ? 'text-sm px-2 py-0.5 font-semibold' : 'text-xs px-1.5 py-0.5 opacity-60'}`}
+                      >
                         ${service.price}
                       </Badge>
                       
@@ -329,14 +345,14 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                         checked={isSelected}
                         onCheckedChange={() => !isDisabled && handleServiceToggle(service.id)}
                         disabled={isDisabled}
-                        className="h-4 w-4"
+                        className={hasData ? 'h-5 w-5' : 'h-4 w-4 opacity-50'}
                       />
                     </div>
 
                     <Collapsible open={isExpanded}>
-                      <CollapsibleContent className="px-2.5 pb-2.5">
+                      <CollapsibleContent className={hasData ? 'px-3 pb-3' : 'px-2.5 pb-2.5'}>
                         <div className="space-y-1.5 text-left pt-1 border-t border-border/50">
-                          <p className="text-xs text-muted-foreground leading-relaxed">
+                          <p className={`leading-relaxed ${hasData ? 'text-sm text-muted-foreground' : 'text-xs text-muted-foreground/70'}`}>
                             {service.description}
                           </p>
                           {isDisabled && onRequestContribution && (
