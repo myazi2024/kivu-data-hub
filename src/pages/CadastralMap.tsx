@@ -515,265 +515,275 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Barre de recherche simple en overlay */}
-        <div className={`absolute top-4 left-4 right-4 md:left-6 md:right-auto md:w-96 z-[1000] transition-all duration-300 ${selectedParcel && isMobile ? 'scale-90 origin-top-left' : ''}`}>
-          <Card className="shadow-lg">
-            <CardContent className={`${selectedParcel && isMobile ? 'p-2' : 'p-3'} transition-all`}>
-              <div className="space-y-1.5">
-                <div className="flex gap-1.5">
-                  <div className="relative flex-1">
-                    <Search className={`absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground ${selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                    <Input
-                      placeholder={selectedParcel && isMobile ? "Rechercher..." : "Rechercher une parcelle..."}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && searchQuery.trim()) {
-                          searchHistory.addToHistory(searchQuery);
-                        }
-                      }}
-                      className={`pl-10 pr-10 ${selectedParcel && isMobile ? 'h-7 text-xs' : 'h-8 text-xs'}`}
-                    />
-                    {searchQuery && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className={`absolute right-1 top-1/2 -translate-y-1/2 p-0 ${selectedParcel && isMobile ? 'h-5 w-5' : 'h-6 w-6'}`}
-                        onClick={handleClearSearch}
-                      >
-                        <X className={selectedParcel && isMobile ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
-                      </Button>
-                    )}
+        {/* Overlay de recherche - Design moderne compact */}
+        <div className={`absolute top-3 left-3 z-[1000] ${isMobile ? 'right-3' : 'w-80'}`}>
+          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+            <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
+              {/* Barre de recherche */}
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground`}>
+                    <Search className="h-full w-full" />
                   </div>
-                  
-                  {/* Bouton Recherche Avancée */}
-                  <Sheet open={showAdvancedSearch} onOpenChange={setShowAdvancedSearch}>
-                    <SheetTrigger asChild>
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className={`${selectedParcel && isMobile ? 'h-7 px-2' : 'h-8 px-3'} shrink-0`}
-                      >
-                        <Settings2 className={selectedParcel && isMobile ? 'h-3 w-3' : 'h-4 w-4'} />
-                        {!(selectedParcel && isMobile) && <span className="ml-1.5 text-xs">Avancée</span>}
-                      </Button>
-                    </SheetTrigger>
-                    <SheetContent side={isMobile ? "bottom" : "left"} className={`${isMobile ? 'max-h-[65vh] p-3' : 'w-full sm:max-w-md p-4'} overflow-y-auto`}>
-                      <SheetHeader className="pb-1.5">
-                        <SheetTitle className="text-sm">Recherche avancée</SheetTitle>
-                      </SheetHeader>
-                      
-                      <div className="space-y-1.5">
-                        {advancedSearch.loading && (
-                          <div className="flex items-center justify-center py-4">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                            <span className="ml-2 text-sm text-muted-foreground">Recherche en cours...</span>
-                          </div>
-                        )}
-                        
-                        <AdvancedSearchFilters
-                          filters={advancedSearch.filters}
-                          onFiltersChange={advancedSearch.updateFilters}
-                          onSearch={handleApplyFilters}
-                          onClear={handleClearFiltersAndReset}
-                          isCompact={isMobile}
-                        />
-
-                        <SearchHistory
-                          onSelectHistory={handleSelectFromHistory}
-                          onSelectFavorite={handleSelectFromFavorites}
-                          isCompact={isMobile}
-                        />
-                      </div>
-                    </SheetContent>
-                  </Sheet>
-                </div>
-
-                {/* Suggestions */}
-                {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && (
-                  <div className="bg-background border rounded-md shadow-sm max-h-32 overflow-y-auto">
-                    {searchSuggestions.map((parcel) => (
-                      <button
-                        key={parcel.id}
-                        onClick={() => handleSelectParcel(parcel)}
-                        className="w-full text-left px-2 py-1.5 hover:bg-muted transition-colors border-b last:border-b-0"
-                      >
-                        <div className="font-mono font-semibold text-xs">{parcel.parcel_number}</div>
-                        <div className="text-[10px] text-muted-foreground">
-                          {parcel.ville || parcel.province}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Résumé et bouton recherche approfondie */}
-                {!(selectedParcel && isMobile) && (
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span>
-                      {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
-                    </span>
-                    {searchQuery && filteredParcels.length === 0 && (
-                      <div className="relative">
-                        {/* Notification informative */}
-                        {showManualSearchNotification && (
-                          <div className="absolute -top-20 left-1/2 -translate-x-1/2 w-[280px] sm:w-[320px]">
-                            <div className="bg-primary text-primary-foreground text-xs sm:text-sm px-4 py-3 rounded-xl shadow-xl flex items-start gap-2.5">
-                              <Sparkles className="h-4 w-4 shrink-0 mt-0.5" />
-                              <span className="leading-relaxed">Cliquez ici pour obtenir plus de possibilités pour la référence cadastrale n° <strong className="font-semibold">{searchQuery}</strong></span>
-                            </div>
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-l-transparent border-r-transparent border-t-primary" />
-                          </div>
-                        )}
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="h-6 text-[10px] px-2.5 rounded-full font-medium shadow-sm transition-all duration-300"
-                          onClick={handleManualSearchClick}
-                        >
-                          <Search className="h-3 w-3 mr-1" />
-                          Recherche manuelle
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Panneau d'information de la parcelle sélectionnée */}
-        {selectedParcel && (
-          <div className="absolute bottom-4 right-4 z-[1000] w-80 max-w-[calc(100vw-2rem)]">
-            <Card className="shadow-lg">
-              <CardHeader className="pb-2 sm:pb-3 pt-3 sm:pt-6 px-3 sm:px-6">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <CardTitle className="text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
-                      <MapPin className="h-3 w-3 sm:h-4 sm:w-4 text-primary" />
-                      Parcelle sélectionnée
-                    </CardTitle>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-5 w-5 sm:h-6 sm:w-6 p-0 -mt-1 ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500' : 'text-muted-foreground'}`}
-                      onClick={handleAddToFavorites}
-                      title={searchHistory.isFavorite(selectedParcel.id) ? 'Déjà en favoris' : 'Ajouter aux favoris'}
-                    >
-                      <Star className={`h-3 w-3 sm:h-4 sm:w-4 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-5 w-5 sm:h-6 sm:w-6 p-0 -mt-1"
-                      onClick={() => setSelectedParcel(null)}
-                    >
-                      <X className="h-3 w-3 sm:h-4 sm:w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2 sm:space-y-3 text-xs sm:text-sm px-3 sm:px-6 pb-3 sm:pb-6">
-                <div>
-                  <p className="font-mono font-bold text-primary text-xs sm:text-sm">{selectedParcel.parcel_number}</p>
-                </div>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div>
-                    <span className="text-muted-foreground text-xs">Surface:</span>
-                    <p className="font-medium text-xs sm:text-sm">
-                      {selectedParcel.gps_coordinates && selectedParcel.gps_coordinates.length >= 3
-                        ? calculateAreaFromCoordinates(selectedParcel.gps_coordinates).toLocaleString(undefined, { maximumFractionDigits: 2 })
-                        : selectedParcel.area_sqm?.toLocaleString()
-                      } m²
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground text-xs">Localisation:</span>
-                    <p className="font-medium text-xs sm:text-sm leading-tight">
-                      {selectedParcel.province} - {selectedParcel.ville}
-                      {selectedParcel.commune && <><br />{selectedParcel.commune}</>}
-                      {selectedParcel.quartier && ` ${selectedParcel.quartier}`}
-                    </p>
-                  </div>
-                </div>
-                <div className="space-y-1.5 sm:space-y-2">
-                  <div className="flex gap-1.5 sm:gap-2">
-                    <Button
-                      onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
-                      className="flex-1 text-xs h-8 sm:h-9 px-1.5 sm:px-3"
-                      size="sm"
-                      disabled={loadingHistory}
-                    >
-                      {isMobile ? "Plus" : "Plus de données"}
-                    </Button>
-                    <MutationRequestDialog
-                      parcelNumber={selectedParcel.parcel_number}
-                      trigger={
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="flex-1 text-xs h-8 sm:h-9 px-1.5 sm:px-3"
-                        >
-                          <FileEdit className="h-3 w-3 mr-1 sm:mr-1.5" />
-                          Mutation
-                        </Button>
+                  <Input
+                    placeholder={selectedParcel && isMobile ? "Rechercher..." : "Référence cadastrale..."}
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim()) {
+                        searchHistory.addToHistory(searchQuery);
                       }
-                    />
+                    }}
+                    className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all`}
+                  />
+                  {searchQuery && (
                     <Button
-                      onClick={() => {
-                        const phoneNumber = '243816996077';
-                        const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
-                        const encodedMessage = encodeURIComponent(message);
-                        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
-                        window.open(whatsappUrl, '_blank');
-                      }}
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="h-8 sm:h-9 px-2 sm:px-3 shrink-0"
-                      title="Besoin d'aide ?"
+                      className={`absolute right-1 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-6 w-6' : 'h-7 w-7'} p-0 rounded-full hover:bg-destructive/10`}
+                      onClick={handleClearSearch}
                     >
-                      <HelpCircle className="h-3 w-3 sm:mr-1" />
-                      <span className="hidden sm:inline text-xs">Aide</span>
+                      <X className={`${selectedParcel && isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-muted-foreground`} />
                     </Button>
-                  </div>
-                  
-                  {hasIncompleteData && (
-                    <Alert 
-                      className="bg-orange-50 border-orange-200 cursor-pointer hover:bg-orange-100 transition-colors py-2 sm:py-3"
-                      onClick={() => setShowContributionDialog(true)}
-                    >
-                      <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-orange-600" />
-                      <AlertDescription className="text-orange-800 text-[10px] sm:text-xs leading-tight">
-                        Cette parcelle a des données incomplètes, cliquez ici pour compléter les données manquantes.
-                      </AlertDescription>
-                    </Alert>
                   )}
                 </div>
-              </CardContent>
-            </Card>
+                
+                {/* Bouton Recherche Avancée - Design compact */}
+                <Sheet open={showAdvancedSearch} onOpenChange={setShowAdvancedSearch}>
+                  <SheetTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 px-3'} shrink-0 rounded-xl bg-muted/50 hover:bg-muted transition-colors`}
+                    >
+                      <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                      {!(selectedParcel && isMobile) && !isMobile && <span className="ml-1.5 text-xs font-medium">Filtres</span>}
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side={isMobile ? "bottom" : "left"} className={`${isMobile ? 'max-h-[65vh] p-3 rounded-t-2xl' : 'w-full sm:max-w-md p-4'} overflow-y-auto z-[1100]`}>
+                    <SheetHeader className="pb-2">
+                      <SheetTitle className="text-sm font-semibold">Recherche avancée</SheetTitle>
+                    </SheetHeader>
+                    
+                    <div className="space-y-3">
+                      {advancedSearch.loading && (
+                        <div className="flex items-center justify-center py-4">
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                          <span className="ml-2 text-xs text-muted-foreground">Recherche en cours...</span>
+                        </div>
+                      )}
+                      
+                      <AdvancedSearchFilters
+                        filters={advancedSearch.filters}
+                        onFiltersChange={advancedSearch.updateFilters}
+                        onSearch={handleApplyFilters}
+                        onClear={handleClearFiltersAndReset}
+                        isCompact={isMobile}
+                      />
+
+                      <SearchHistory
+                        onSelectHistory={handleSelectFromHistory}
+                        onSelectFavorite={handleSelectFromFavorites}
+                        isCompact={isMobile}
+                      />
+                    </div>
+                  </SheetContent>
+                </Sheet>
+              </div>
+
+              {/* Suggestions - Design moderne */}
+              {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && (
+                <div className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto">
+                  {searchSuggestions.map((parcel, index) => (
+                    <button
+                      key={parcel.id}
+                      onClick={() => handleSelectParcel(parcel)}
+                      className={`w-full text-left px-3 py-2 hover:bg-primary/5 transition-colors flex items-center justify-between ${index !== searchSuggestions.length - 1 ? 'border-b border-border/30' : ''}`}
+                    >
+                      <div>
+                        <div className="font-mono font-bold text-xs text-primary">{parcel.parcel_number}</div>
+                        <div className="text-[10px] text-muted-foreground">{parcel.ville || parcel.province}</div>
+                      </div>
+                      <MapPin className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Footer - Résumé et actions */}
+              {!(selectedParcel && isMobile) && (
+                <div className="mt-2 flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
+                  </span>
+                  {searchQuery && filteredParcels.length === 0 && (
+                    <div className="relative">
+                      {/* Notification tooltip */}
+                      {showManualSearchNotification && (
+                        <div className="absolute -top-14 right-0 w-52">
+                          <div className="bg-primary text-primary-foreground text-[10px] px-3 py-2 rounded-xl shadow-lg">
+                            <div className="flex items-start gap-2">
+                              <Sparkles className="h-3 w-3 shrink-0 mt-0.5" />
+                              <span>Plus de possibilités pour <strong>{searchQuery}</strong></span>
+                            </div>
+                          </div>
+                          <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-primary" />
+                        </div>
+                      )}
+                      <Button
+                        variant="default"
+                        size="sm"
+                        className="h-6 text-[10px] px-2.5 rounded-full font-medium shadow-sm"
+                        onClick={handleManualSearchClick}
+                      >
+                        <Sparkles className="h-2.5 w-2.5 mr-1" />
+                        Contribuer
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Panneau d'information de la parcelle sélectionnée - Design moderne */}
+        {selectedParcel && (
+          <div className={`absolute ${isMobile ? 'bottom-2 left-2 right-2' : 'bottom-4 right-4 w-80'} z-[1000]`}>
+            <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+              {/* Header compact */}
+              <div className="px-3 py-2.5 border-b border-border/30 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <MapPin className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-mono font-bold text-sm text-primary leading-none">{selectedParcel.parcel_number}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{selectedParcel.ville || selectedParcel.province}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 w-7 p-0 rounded-full ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-muted-foreground hover:bg-muted'}`}
+                    onClick={handleAddToFavorites}
+                  >
+                    <Star className={`h-3.5 w-3.5 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => setSelectedParcel(null)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Contenu */}
+              <div className="px-3 py-2.5">
+                {/* Infos rapides en badges */}
+                <div className="flex flex-wrap gap-1.5 mb-3">
+                  <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
+                    <span className="text-muted-foreground">Surface:</span>
+                    <span className="font-semibold">
+                      {selectedParcel.gps_coordinates && selectedParcel.gps_coordinates.length >= 3
+                        ? calculateAreaFromCoordinates(selectedParcel.gps_coordinates).toLocaleString(undefined, { maximumFractionDigits: 0 })
+                        : selectedParcel.area_sqm?.toLocaleString()
+                      } m²
+                    </span>
+                  </div>
+                  {selectedParcel.commune && (
+                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
+                      <span className="font-medium">{selectedParcel.commune}</span>
+                    </div>
+                  )}
+                  {selectedParcel.quartier && (
+                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
+                      <span className="font-medium">{selectedParcel.quartier}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Boutons d'action - Design moderne */}
+                <div className="flex gap-1.5">
+                  <Button
+                    onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
+                    className="flex-1 h-9 text-xs rounded-xl font-medium"
+                    size="sm"
+                    disabled={loadingHistory}
+                  >
+                    {loadingHistory ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <>
+                        <Search className="h-3 w-3 mr-1.5" />
+                        {isMobile ? "Données" : "Plus de données"}
+                      </>
+                    )}
+                  </Button>
+                  <MutationRequestDialog
+                    parcelNumber={selectedParcel.parcel_number}
+                    trigger={
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        className="flex-1 h-9 text-xs rounded-xl font-medium"
+                      >
+                        <FileEdit className="h-3 w-3 mr-1.5" />
+                        Mutation
+                      </Button>
+                    }
+                  />
+                  <Button
+                    onClick={() => {
+                      const phoneNumber = '243816996077';
+                      const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
+                      window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="h-9 w-9 p-0 rounded-xl shrink-0"
+                    title="Aide WhatsApp"
+                  >
+                    <MessageCircle className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                
+                {/* Alerte données incomplètes */}
+                {hasIncompleteData && (
+                  <button 
+                    onClick={() => setShowContributionDialog(true)}
+                    className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 transition-colors text-left"
+                  >
+                    <AlertTriangle className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                    <span className="text-[10px] text-orange-700 leading-tight">
+                      Données incomplètes - Cliquez pour contribuer
+                    </span>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Légende */}
-        <div className="absolute top-4 right-4 z-[1000] hidden md:block">
-          <Card className="shadow-lg w-64">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">Légende</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 bg-red-500/20 border-2 border-red-500 rounded"></div>
-                <span>Parcelle avec bornage</span>
+        {/* Légende - Design moderne compact */}
+        <div className="absolute top-3 right-3 z-[1000] hidden md:block">
+          <div className="bg-background/95 backdrop-blur-md rounded-xl shadow-lg border border-border/50 p-3">
+            <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Légende</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3.5 h-3.5 bg-red-500/20 border-2 border-red-500 rounded" />
+                <span className="text-muted-foreground">Avec bornage</span>
               </div>
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-blue-500" />
-                <span>Parcelle sans bornage</span>
+              <div className="flex items-center gap-2 text-xs">
+                <MapPin className="h-3.5 w-3.5 text-blue-500" />
+                <span className="text-muted-foreground">Sans bornage</span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </main>
 
