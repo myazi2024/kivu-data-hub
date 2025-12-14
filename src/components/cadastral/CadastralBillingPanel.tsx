@@ -279,8 +279,9 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                 return (
                   <div 
                     key={service.id}
+                    onClick={() => !isDisabled && handleServiceToggle(service.id)}
                     className={`
-                      transition-all duration-200
+                      transition-all duration-200 cursor-pointer
                       ${hasData 
                         ? 'rounded-2xl border-2 shadow-md hover:shadow-lg' 
                         : 'rounded-xl border'
@@ -291,6 +292,7 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                           ? 'border-primary/40 bg-background hover:border-primary/60' 
                           : 'border-border/50 bg-muted/20'
                       }
+                      ${isDisabled ? 'cursor-not-allowed' : ''}
                     `}
                   >
                     <div className={`flex items-center gap-2 ${hasData ? 'p-3' : 'p-2'}`}>
@@ -343,9 +345,8 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
                       
                       <Checkbox 
                         checked={isSelected}
-                        onCheckedChange={() => !isDisabled && handleServiceToggle(service.id)}
                         disabled={isDisabled}
-                        className={hasData ? 'h-5 w-5' : 'h-4 w-4 opacity-50'}
+                        className={`pointer-events-none ${hasData ? 'h-5 w-5' : 'h-4 w-4 opacity-50'}`}
                       />
                     </div>
 
