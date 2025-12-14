@@ -95,12 +95,17 @@ const CadastralBillingPanel: React.FC<CadastralBillingPanelProps> = ({
     setParcelNumber(searchResult.parcel.parcel_number);
   }, [searchResult.parcel.parcel_number, setParcelNumber]);
 
+  // Par défaut, seuls les services avec données disponibles sont déroulés
   React.useEffect(() => {
     if (catalogServices.length > 0 && expandedServices.size === 0) {
-      const allServiceIds = new Set(catalogServices.map(s => s.id));
-      setExpandedServices(allServiceIds);
+      const servicesWithData = new Set(
+        catalogServices
+          .filter(s => serviceAvailability[s.id] ?? true)
+          .map(s => s.id)
+      );
+      setExpandedServices(servicesWithData);
     }
-  }, [catalogServices]);
+  }, [catalogServices, serviceAvailability]);
 
   React.useEffect(() => {
     if (preselectServiceId && !selectedServices.some(s => s.id === preselectServiceId)) {
