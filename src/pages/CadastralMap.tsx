@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -61,6 +61,7 @@ const CadastralMap = () => {
   const [hasIncompleteData, setHasIncompleteData] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showManualSearchNotification, setShowManualSearchNotification] = useState(false);
+  const [isSearchBarActive, setIsSearchBarActive] = useState(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Advanced search hooks
@@ -515,8 +516,14 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Overlay de recherche - Design moderne compact */}
-        <div className={`absolute top-3 left-3 z-[1000] ${isMobile ? 'right-3' : 'w-80'}`}>
+        {/* Overlay de recherche - Design moderne avec animation */}
+        <div 
+          className={`absolute left-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} transition-all duration-500 ease-out ${
+            isSearchBarActive || selectedParcel 
+              ? 'top-3' 
+              : 'bottom-24'
+          }`}
+        >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
               {/* Barre de recherche */}
@@ -529,6 +536,7 @@ const CadastralMap = () => {
                     placeholder={selectedParcel && isMobile ? "Rechercher..." : "Référence cadastrale..."}
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onFocus={() => setIsSearchBarActive(true)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && searchQuery.trim()) {
                         searchHistory.addToHistory(searchQuery);
@@ -549,50 +557,48 @@ const CadastralMap = () => {
                 </div>
                 
                 {/* Bouton Recherche Avancée - Design compact */}
-                <Sheet open={showAdvancedSearch} onOpenChange={setShowAdvancedSearch}>
-                  <SheetTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 px-3'} shrink-0 rounded-xl bg-muted/50 hover:bg-muted transition-colors`}
-                    >
-                      <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                      {!(selectedParcel && isMobile) && !isMobile && <span className="ml-1.5 text-xs font-medium">Filtres</span>}
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent side={isMobile ? "bottom" : "left"} className={`${isMobile ? 'max-h-[65vh] p-3 rounded-t-2xl' : 'w-full sm:max-w-md p-4'} overflow-y-auto z-[1100]`}>
-                    <SheetHeader className="pb-2">
-                      <SheetTitle className="text-sm font-semibold">Recherche avancée</SheetTitle>
-                    </SheetHeader>
-                    
-                    <div className="space-y-3">
-                      {advancedSearch.loading && (
-                        <div className="flex items-center justify-center py-4">
-                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                          <span className="ml-2 text-xs text-muted-foreground">Recherche en cours...</span>
-                        </div>
-                      )}
-                      
-                      <AdvancedSearchFilters
-                        filters={advancedSearch.filters}
-                        onFiltersChange={advancedSearch.updateFilters}
-                        onSearch={handleApplyFilters}
-                        onClear={handleClearFiltersAndReset}
-                        isCompact={isMobile}
-                      />
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setIsSearchBarActive(true);
+                    setShowAdvancedSearch(!showAdvancedSearch);
+                  }}
+                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 px-3'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                >
+                  <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
+                  {!(selectedParcel && isMobile) && !isMobile && <span className="ml-1.5 text-xs font-medium">Filtres</span>}
+                </Button>
+              </div>
 
-                      <SearchHistory
-                        onSelectHistory={handleSelectFromHistory}
-                        onSelectFavorite={handleSelectFromFavorites}
-                        isCompact={isMobile}
-                      />
+              {/* Section Recherche Avancée - Déroulée dans la barre */}
+              <div className={`overflow-hidden transition-all duration-300 ease-out ${showAdvancedSearch ? 'max-h-[500px] opacity-100 mt-3' : 'max-h-0 opacity-0'}`}>
+                <div className="border-t border-border/30 pt-3 space-y-3">
+                  {advancedSearch.loading && (
+                    <div className="flex items-center justify-center py-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                      <span className="ml-2 text-xs text-muted-foreground">Recherche...</span>
                     </div>
-                  </SheetContent>
-                </Sheet>
+                  )}
+                  
+                  <AdvancedSearchFilters
+                    filters={advancedSearch.filters}
+                    onFiltersChange={advancedSearch.updateFilters}
+                    onSearch={handleApplyFilters}
+                    onClear={handleClearFiltersAndReset}
+                    isCompact={true}
+                  />
+
+                  <SearchHistory
+                    onSelectHistory={handleSelectFromHistory}
+                    onSelectFavorite={handleSelectFromFavorites}
+                    isCompact={true}
+                  />
+                </div>
               </div>
 
               {/* Suggestions - Design moderne */}
-              {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && (
+              {searchSuggestions.length > 0 && !(selectedParcel && isMobile) && !showAdvancedSearch && (
                 <div className="mt-2 rounded-xl bg-muted/30 overflow-hidden max-h-36 overflow-y-auto">
                   {searchSuggestions.map((parcel, index) => (
                     <button
@@ -611,7 +617,7 @@ const CadastralMap = () => {
               )}
 
               {/* Footer - Résumé et actions */}
-              {!(selectedParcel && isMobile) && (
+              {!(selectedParcel && isMobile) && !showAdvancedSearch && (
                 <div className="mt-2 flex items-center justify-between">
                   <span className="text-[10px] text-muted-foreground font-medium">
                     {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
