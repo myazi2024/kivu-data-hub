@@ -170,7 +170,7 @@ export default {
 						opacity: '0'
 					}
 				},
-				'pulse-success': {
+			'pulse-success': {
 					'0%, 100%': {
 						transform: 'scale(1)',
 						opacity: '1'
@@ -178,6 +178,25 @@ export default {
 					'50%': {
 						transform: 'scale(1.05)',
 						opacity: '0.9'
+					}
+				},
+				'slide-up-bounce': {
+					'0%': {
+						transform: 'translateY(0)',
+						opacity: '0.8'
+					},
+					'60%': {
+						transform: 'translateY(calc(-100vh + 6rem))',
+						opacity: '1'
+					},
+					'75%': {
+						transform: 'translateY(calc(-100vh + 6.5rem))'
+					},
+					'85%': {
+						transform: 'translateY(calc(-100vh + 5.8rem))'
+					},
+					'100%': {
+						transform: 'translateY(calc(-100vh + 6rem))'
 					}
 				}
 			},
@@ -188,7 +207,8 @@ export default {
 				'scale-in': 'scale-in 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
 				'slide-up': 'slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
 				'ripple': 'ripple 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
-				'pulse-success': 'pulse-success 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+				'pulse-success': 'pulse-success 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+				'slide-up-bounce': 'slide-up-bounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
 			}
 		}
 	},

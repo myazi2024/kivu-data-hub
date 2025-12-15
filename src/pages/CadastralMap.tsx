@@ -516,12 +516,12 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Overlay de recherche - Design moderne avec animation */}
+        {/* Overlay de recherche - Design moderne avec animation de rebond */}
         <div 
-          className={`absolute left-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} transition-all duration-500 ease-out ${
+          className={`absolute left-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} ${
             isSearchBarActive || selectedParcel 
-              ? 'top-3' 
-              : 'bottom-24'
+              ? 'top-3 animate-slide-up-bounce' 
+              : 'bottom-24 transition-all duration-300'
           }`}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
