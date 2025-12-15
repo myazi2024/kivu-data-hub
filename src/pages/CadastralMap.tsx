@@ -518,10 +518,10 @@ const CadastralMap = () => {
 
         {/* Overlay de recherche - Design moderne avec animation de rebond */}
         <div 
-          className={`absolute left-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} ${
+          className={`absolute left-3 top-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} transform-gpu ${
             isSearchBarActive || selectedParcel 
-              ? 'top-3 animate-slide-up-bounce' 
-              : 'bottom-24 transition-all duration-300'
+              ? 'animate-search-rise' 
+              : 'translate-y-[calc(100dvh-12rem)]'
           }`}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">

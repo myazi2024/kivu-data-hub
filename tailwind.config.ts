@@ -115,89 +115,47 @@ export default {
 			},
 			keyframes: {
 				'accordion-down': {
-					from: {
-						height: '0'
-					},
-					to: {
-						height: 'var(--radix-accordion-content-height)'
-					}
+					from: { height: '0' },
+					to: { height: 'var(--radix-accordion-content-height)' }
 				},
 				'accordion-up': {
-					from: {
-						height: 'var(--radix-accordion-content-height)'
-					},
-					to: {
-						height: '0'
-					}
+					from: { height: 'var(--radix-accordion-content-height)' },
+					to: { height: '0' }
 				},
 				'fade-in': {
-					'0%': {
-						opacity: '0',
-						transform: 'translateY(10px)'
-					},
-					'100%': {
-						opacity: '1',
-						transform: 'translateY(0)'
-					}
+					'0%': { opacity: '0', transform: 'translateY(10px)' },
+					'100%': { opacity: '1', transform: 'translateY(0)' }
 				},
 				'scale-in': {
-					'0%': {
-						transform: 'scale(0.95)',
-						opacity: '0'
-					},
-					'100%': {
-						transform: 'scale(1)',
-						opacity: '1'
-					}
+					'0%': { transform: 'scale(0.95)', opacity: '0' },
+					'100%': { transform: 'scale(1)', opacity: '1' }
 				},
 				'slide-up': {
-					'0%': {
-						transform: 'translateY(20px)',
-						opacity: '0'
-					},
-					'100%': {
-						transform: 'translateY(0)',
-						opacity: '1'
-					}
+					'0%': { transform: 'translateY(20px)', opacity: '0' },
+					'100%': { transform: 'translateY(0)', opacity: '1' }
 				},
 				'ripple': {
-					'0%': {
-						transform: 'scale(0)',
-						opacity: '1'
-					},
-					'100%': {
-						transform: 'scale(4)',
-						opacity: '0'
-					}
+					'0%': { transform: 'scale(0)', opacity: '1' },
+					'100%': { transform: 'scale(4)', opacity: '0' }
 				},
-			'pulse-success': {
-					'0%, 100%': {
-						transform: 'scale(1)',
-						opacity: '1'
-					},
-					'50%': {
-						transform: 'scale(1.05)',
-						opacity: '0.9'
-					}
+				'pulse-success': {
+					'0%, 100%': { transform: 'scale(1)', opacity: '1' },
+					'50%': { transform: 'scale(1.05)', opacity: '0.9' }
 				},
-				'slide-up-bounce': {
+
+				// Cadastral map search bar: slow, subtle, natural rise + micro-bounce
+				'search-rise': {
 					'0%': {
-						transform: 'translateY(0)',
-						opacity: '0.8'
+						transform: 'translate3d(0, calc(100dvh - 12rem), 0)',
+						opacity: '0.92'
 					},
-					'60%': {
-						transform: 'translateY(calc(-100vh + 6rem))',
+					'65%': {
+						transform: 'translate3d(0, 0, 0)',
 						opacity: '1'
 					},
-					'75%': {
-						transform: 'translateY(calc(-100vh + 6.5rem))'
-					},
-					'85%': {
-						transform: 'translateY(calc(-100vh + 5.8rem))'
-					},
-					'100%': {
-						transform: 'translateY(calc(-100vh + 6rem))'
-					}
+					'78%': { transform: 'translate3d(0, -8px, 0)' },
+					'90%': { transform: 'translate3d(0, 4px, 0)' },
+					'100%': { transform: 'translate3d(0, 0, 0)' }
 				}
 			},
 			animation: {
@@ -208,7 +166,7 @@ export default {
 				'slide-up': 'slide-up 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
 				'ripple': 'ripple 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
 				'pulse-success': 'pulse-success 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-				'slide-up-bounce': 'slide-up-bounce 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+				'search-rise': 'search-rise 2.6s cubic-bezier(0.22, 1, 0.36, 1) both'
 			}
 		}
 	},
