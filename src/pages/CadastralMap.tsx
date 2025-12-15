@@ -524,7 +524,7 @@ const CadastralMap = () => {
               : 'top-auto bottom-24 translate-y-0'
           }`}
           style={{
-            transition: 'top 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), bottom 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            transition: 'top 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), bottom 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
           }}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
