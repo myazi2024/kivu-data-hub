@@ -516,16 +516,13 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Overlay de recherche - Design moderne avec animation fluide */}
+        {/* Overlay de recherche - Design moderne avec animation */}
         <div 
-          className={`absolute left-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} transform-gpu ${
+          className={`absolute left-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} transition-all duration-500 ease-out ${
             isSearchBarActive || selectedParcel 
-              ? 'top-3 bottom-auto translate-y-0' 
-              : 'top-auto bottom-24 translate-y-0'
+              ? 'top-3' 
+              : 'bottom-24'
           }`}
-          style={{
-            transition: 'top 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), bottom 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), transform 1.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-          }}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
