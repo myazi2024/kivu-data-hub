@@ -4,8 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Filter, X, ChevronDown, MapPin, Home, AlertCircle } from 'lucide-react';
+import { Filter, X, ChevronDown, MapPin, Home, FileText, AlertCircle } from 'lucide-react';
 import { SearchFilters } from '@/hooks/useAdvancedCadastralSearch';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -24,7 +25,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
   onClear,
   isCompact = false
 }) => {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [provinces, setProvinces] = useState<string[]>([]);
   const [villes, setVilles] = useState<string[]>([]);
   const [communes, setCommunes] = useState<string[]>([]);
@@ -112,41 +113,44 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
 
   const activeFiltersCount = Object.values(filters).filter(v => v !== undefined && v !== '').length;
 
+  const padding = isCompact ? 'p-1.5' : 'p-3';
+  const textSize = isCompact ? 'text-[10px]' : 'text-xs';
+  const inputHeight = isCompact ? 'h-7' : 'h-8';
+  const gap = isCompact ? 'gap-1' : 'gap-1.5';
+
   return (
-    <div className="max-w-[360px] mx-auto">
+    <Card className={`${padding} bg-white/95 backdrop-blur-sm shadow-lg`}>
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <Button 
             variant="ghost" 
-            className="w-full justify-between h-10 text-sm font-semibold px-3 rounded-xl bg-muted/30 hover:bg-muted/50 transition-colors"
+            className={`w-full justify-between ${inputHeight} ${textSize} font-semibold px-2`}
           >
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-primary" />
+            <div className="flex items-center gap-1.5">
+              <Filter className={isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5'} />
               <span>Filtres avancés</span>
               {activeFiltersCount > 0 && (
-                <span className="bg-primary text-primary-foreground rounded-full px-2 py-0.5 text-xs font-bold">
+                <span className="bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 text-[9px] font-bold">
                   {activeFiltersCount}
                 </span>
               )}
             </div>
-            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`${isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5'} transition-transform ${isOpen ? 'rotate-180' : ''}`} />
           </Button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="space-y-4 pt-4">
+        <CollapsibleContent className={`space-y-2 pt-2 ${isCompact ? 'mt-1' : 'mt-1.5'}`}>
           {/* Filtres géographiques */}
-          <div className="bg-muted/20 rounded-2xl p-3 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
-                <MapPin className="h-4 w-4 text-primary" />
-              </div>
-              <Label className="text-sm font-semibold">Localisation</Label>
+          <div className={`space-y-${isCompact ? '1' : '1.5'}`}>
+            <div className="flex items-center gap-1">
+              <MapPin className={isCompact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+              <Label className={`${textSize} font-semibold`}>Localisation</Label>
             </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Province</Label>
+            <div className={`grid grid-cols-2 ${gap}`}>
+              <div>
+                <Label className={`${textSize} text-muted-foreground`}>Province</Label>
                 <Select value={filters.province || '_all'} onValueChange={(v) => onFiltersChange({ province: v === '_all' ? undefined : v })}>
-                  <SelectTrigger className="h-10 text-sm rounded-xl border-border/50 bg-background/80">
+                  <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Toutes" />
                   </SelectTrigger>
                   <SelectContent>
@@ -157,10 +161,10 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Ville</Label>
+              <div>
+                <Label className={`${textSize} text-muted-foreground`}>Ville</Label>
                 <Select value={filters.ville || '_all'} onValueChange={(v) => onFiltersChange({ ville: v === '_all' ? undefined : v })} disabled={!filters.province}>
-                  <SelectTrigger className="h-10 text-sm rounded-xl border-border/50 bg-background/80 disabled:opacity-50">
+                  <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Toutes" />
                   </SelectTrigger>
                   <SelectContent>
@@ -171,10 +175,10 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Commune</Label>
+              <div>
+                <Label className={`${textSize} text-muted-foreground`}>Commune</Label>
                 <Select value={filters.commune || '_all'} onValueChange={(v) => onFiltersChange({ commune: v === '_all' ? undefined : v })} disabled={!filters.ville}>
-                  <SelectTrigger className="h-10 text-sm rounded-xl border-border/50 bg-background/80 disabled:opacity-50">
+                  <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Toutes" />
                   </SelectTrigger>
                   <SelectContent>
@@ -185,10 +189,10 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Quartier</Label>
+              <div>
+                <Label className={`${textSize} text-muted-foreground`}>Quartier</Label>
                 <Select value={filters.quartier || '_all'} onValueChange={(v) => onFiltersChange({ quartier: v === '_all' ? undefined : v })} disabled={!filters.commune}>
-                  <SelectTrigger className="h-10 text-sm rounded-xl border-border/50 bg-background/80 disabled:opacity-50">
+                  <SelectTrigger className={`${inputHeight} ${textSize}`}>
                     <SelectValue placeholder="Tous" />
                   </SelectTrigger>
                   <SelectContent>
@@ -203,130 +207,124 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
           </div>
 
           {/* Critères de recherche */}
-          <div className="bg-muted/20 rounded-2xl p-3 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Home className="h-4 w-4 text-primary" />
-              </div>
-              <Label className="text-sm font-semibold">Critères</Label>
+          <div className={`space-y-${isCompact ? '1' : '1.5'}`}>
+            <div className="flex items-center gap-1">
+              <Home className={isCompact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+              <Label className={`${textSize} font-semibold`}>Critères</Label>
             </div>
-            <div className="space-y-2.5">
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">Propriétaire</Label>
+            <div>
+              <Label className={`${textSize} text-muted-foreground`}>Propriétaire</Label>
+              <Input
+                placeholder="Nom du propriétaire..."
+                value={filters.ownerName || ''}
+                onChange={(e) => onFiltersChange({ ownerName: e.target.value })}
+                className={`${inputHeight} ${textSize}`}
+              />
+            </div>
+            <div className={`grid grid-cols-2 ${gap}`}>
+              <div>
+                <Label className={`${textSize} text-muted-foreground`}>Surface min (m²)</Label>
                 <Input
-                  placeholder="Nom du propriétaire..."
-                  value={filters.ownerName || ''}
-                  onChange={(e) => onFiltersChange({ ownerName: e.target.value })}
-                  className="h-10 text-sm rounded-xl border-border/50 bg-background/80"
+                  type="number"
+                  placeholder="0"
+                  value={filters.areaSqmMin || ''}
+                  onChange={(e) => onFiltersChange({ areaSqmMin: Number(e.target.value) })}
+                  className={`${inputHeight} ${textSize}`}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Surface min (m²)</Label>
-                  <Input
-                    type="number"
-                    placeholder="0"
-                    value={filters.areaSqmMin || ''}
-                    onChange={(e) => onFiltersChange({ areaSqmMin: Number(e.target.value) })}
-                    className="h-10 text-sm rounded-xl border-border/50 bg-background/80"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Surface max (m²)</Label>
-                  <Input
-                    type="number"
-                    placeholder="∞"
-                    value={filters.areaSqmMax || ''}
-                    onChange={(e) => onFiltersChange({ areaSqmMax: Number(e.target.value) })}
-                    className="h-10 text-sm rounded-xl border-border/50 bg-background/80"
-                  />
-                </div>
+              <div>
+                <Label className={`${textSize} text-muted-foreground`}>Surface max (m²)</Label>
+                <Input
+                  type="number"
+                  placeholder="∞"
+                  value={filters.areaSqmMax || ''}
+                  onChange={(e) => onFiltersChange({ areaSqmMax: Number(e.target.value) })}
+                  className={`${inputHeight} ${textSize}`}
+                />
               </div>
-              <div className="grid grid-cols-2 gap-2.5">
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Type parcelle</Label>
-                  <Select value={filters.parcelType || '_all'} onValueChange={(v) => onFiltersChange({ parcelType: v === '_all' ? undefined : v })}>
-                    <SelectTrigger className="h-10 text-sm rounded-xl border-border/50 bg-background/80">
-                      <SelectValue placeholder="Tous" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_all">Tous</SelectItem>
-                      <SelectItem value="Terrain nu">Terrain nu</SelectItem>
-                      <SelectItem value="Terrain bâti">Terrain bâti</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">Type titre</Label>
-                  <Select value={filters.titleType || '_all'} onValueChange={(v) => onFiltersChange({ titleType: v === '_all' ? undefined : v })}>
-                    <SelectTrigger className="h-10 text-sm rounded-xl border-border/50 bg-background/80">
-                      <SelectValue placeholder="Tous" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="_all">Tous</SelectItem>
-                      <SelectItem value="Certificat d'enregistrement">Certificat</SelectItem>
-                      <SelectItem value="Titre foncier">Titre foncier</SelectItem>
-                      <SelectItem value="Concession">Concession</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            </div>
+            <div className={`grid grid-cols-2 ${gap}`}>
+              <div>
+                <Label className={`${textSize} text-muted-foreground`}>Type de parcelle</Label>
+                <Select value={filters.parcelType || '_all'} onValueChange={(v) => onFiltersChange({ parcelType: v === '_all' ? undefined : v })}>
+                  <SelectTrigger className={`${inputHeight} ${textSize}`}>
+                    <SelectValue placeholder="Tous" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all">Tous</SelectItem>
+                    <SelectItem value="Terrain nu">Terrain nu</SelectItem>
+                    <SelectItem value="Terrain bâti">Terrain bâti</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className={`${textSize} text-muted-foreground`}>Type de titre</Label>
+                <Select value={filters.titleType || '_all'} onValueChange={(v) => onFiltersChange({ titleType: v === '_all' ? undefined : v })}>
+                  <SelectTrigger className={`${inputHeight} ${textSize}`}>
+                    <SelectValue placeholder="Tous" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_all">Tous</SelectItem>
+                    <SelectItem value="Certificat d'enregistrement">Certificat d'enregistrement</SelectItem>
+                    <SelectItem value="Titre foncier">Titre foncier</SelectItem>
+                    <SelectItem value="Concession">Concession</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
 
           {/* Filtres de statut */}
-          <div className="bg-muted/20 rounded-2xl p-3 space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
-                <AlertCircle className="h-4 w-4 text-primary" />
-              </div>
-              <Label className="text-sm font-semibold">Statut</Label>
+          <div className={`space-y-${isCompact ? '1' : '1.5'}`}>
+            <div className="flex items-center gap-1">
+              <AlertCircle className={isCompact ? 'h-2.5 w-2.5' : 'h-3 w-3'} />
+              <Label className={`${textSize} font-semibold`}>Statut</Label>
             </div>
-            <div className="space-y-2.5">
-              <label className="flex items-center gap-3 p-2.5 rounded-xl bg-background/50 hover:bg-background/80 transition-colors cursor-pointer">
+            <div className={`space-y-${isCompact ? '0.5' : '1'}`}>
+              <div className="flex items-center gap-1.5">
                 <Checkbox 
                   id="permit" 
                   checked={filters.hasBuildingPermit || false}
                   onCheckedChange={(checked) => onFiltersChange({ hasBuildingPermit: checked as boolean })}
-                  className="h-5 w-5 rounded-md"
+                  className={isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5'}
                 />
-                <span className="text-sm">Avec permis de construire</span>
-              </label>
-              <label className="flex items-center gap-3 p-2.5 rounded-xl bg-background/50 hover:bg-background/80 transition-colors cursor-pointer">
+                <Label htmlFor="permit" className={`${textSize} cursor-pointer`}>Avec permis de construire</Label>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <Checkbox 
                   id="mortgage" 
                   checked={filters.hasMortgage || false}
                   onCheckedChange={(checked) => onFiltersChange({ hasMortgage: checked as boolean })}
-                  className="h-5 w-5 rounded-md"
+                  className={isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5'}
                 />
-                <span className="text-sm">Avec hypothèque</span>
-              </label>
-              <label className="flex items-center gap-3 p-2.5 rounded-xl bg-background/50 hover:bg-background/80 transition-colors cursor-pointer">
+                <Label htmlFor="mortgage" className={`${textSize} cursor-pointer`}>Avec hypothèque</Label>
+              </div>
+              <div className="flex items-center gap-1.5">
                 <Checkbox 
                   id="tax" 
                   checked={filters.hasTaxArrears || false}
                   onCheckedChange={(checked) => onFiltersChange({ hasTaxArrears: checked as boolean })}
-                  className="h-5 w-5 rounded-md"
+                  className={isCompact ? 'h-3 w-3' : 'h-3.5 w-3.5'}
                 />
-                <span className="text-sm">Avec arriérés fiscaux</span>
-              </label>
+                <Label htmlFor="tax" className={`${textSize} cursor-pointer`}>Avec arriérés fiscaux</Label>
+              </div>
             </div>
           </div>
 
           {/* Boutons d'action */}
-          <div className="flex gap-2.5 pt-1">
-            <Button onClick={onSearch} className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transition-all" size="sm">
-              <Filter className="h-4 w-4 mr-2" />
+          <div className={`flex ${gap} pt-1`}>
+            <Button onClick={onSearch} className={`flex-1 ${inputHeight} ${textSize} font-semibold`} size="sm">
+              <Filter className={`${isCompact ? 'h-2.5 w-2.5' : 'h-3 w-3'} mr-1`} />
               Appliquer
             </Button>
-            <Button onClick={onClear} variant="outline" className="flex-1 h-11 text-sm font-semibold rounded-xl border-border/50 hover:bg-muted/50 transition-all" size="sm">
-              <X className="h-4 w-4 mr-2" />
+            <Button onClick={onClear} variant="outline" className={`flex-1 ${inputHeight} ${textSize} font-semibold`} size="sm">
+              <X className={`${isCompact ? 'h-2.5 w-2.5' : 'h-3 w-3'} mr-1`} />
               Réinitialiser
             </Button>
           </div>
         </CollapsibleContent>
       </Collapsible>
-    </div>
+    </Card>
   );
 };
 
