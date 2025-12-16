@@ -518,18 +518,18 @@ const CadastralMap = () => {
 
         {/* Overlay de recherche - Design moderne avec animation de rebond */}
         <div 
-          className={`absolute left-3 top-3 z-[1000] ${isMobile ? 'right-3 max-w-[360px] mx-auto' : 'w-96'} transform-gpu ${
+          className={`absolute left-3 top-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} transform-gpu ${
             isSearchBarActive || selectedParcel 
               ? 'animate-search-rise' 
               : 'translate-y-[calc(100dvh-12rem)]'
           }`}
         >
-          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-2xl border border-border/40 overflow-hidden">
-            <div className="p-3">
+          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+            <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
               {/* Barre de recherche */}
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <div className="relative flex-1">
-                  <div className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground">
+                  <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground`}>
                     <Search className="h-full w-full" />
                   </div>
                   <Input
@@ -542,16 +542,16 @@ const CadastralMap = () => {
                         searchHistory.addToHistory(searchQuery);
                       }
                     }}
-                    className="h-10 text-sm pl-10 pr-9 rounded-xl border-0 bg-muted/40 focus-visible:ring-2 focus-visible:ring-primary/40 transition-all placeholder:text-muted-foreground/60"
+                    className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all`}
                   />
                   {searchQuery && (
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 h-7 w-7 p-0 rounded-lg hover:bg-destructive/10"
+                      className={`absolute right-1 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-6 w-6' : 'h-7 w-7'} p-0 rounded-full hover:bg-destructive/10`}
                       onClick={handleClearSearch}
                     >
-                      <X className="h-4 w-4 text-muted-foreground" />
+                      <X className={`${selectedParcel && isMobile ? 'h-3 w-3' : 'h-3.5 w-3.5'} text-muted-foreground`} />
                     </Button>
                   )}
                 </div>
@@ -564,9 +564,10 @@ const CadastralMap = () => {
                     setIsSearchBarActive(true);
                     setShowAdvancedSearch(!showAdvancedSearch);
                   }}
-                  className={`h-10 w-10 shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/15 text-primary shadow-sm' : 'bg-muted/40'} hover:bg-muted/60 transition-all`}
+                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 px-3'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
                 >
-                  <Settings2 className={`h-4 w-4 transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
+                  <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
+                  {!(selectedParcel && isMobile) && !isMobile && <span className="ml-1.5 text-xs font-medium">Filtres</span>}
                 </Button>
               </div>
 
