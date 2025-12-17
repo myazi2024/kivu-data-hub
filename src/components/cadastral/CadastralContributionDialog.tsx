@@ -18,6 +18,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
+import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { 
   getAllProvinces, 
   getVillesForProvince, 
@@ -4343,349 +4345,43 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
             )}
 
-            {/* Dimensions de la parcelle et calcul de la superficie */}
+            {/* Aperçu de la carte - collecte GPS et dimensions via dessin */}
             {sectionType && (
-              <div className="space-y-2 pt-4 border-t">
-                <div 
-                  className={`space-y-4 p-4 rounded-xl bg-gradient-to-br from-muted/50 to-transparent border transition-all duration-500 ${
-                    highlightSuperficie 
-                      ? 'border-amber-500 shadow-lg shadow-amber-500/20 ring-2 ring-amber-500/30' 
-                      : 'border-border/50'
-                  }`}
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm font-medium">Dimensions de chaque côté (en mètres)</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                            <Info className="h-4 w-4 text-muted-foreground" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80 text-sm">
-                          <h4 className="font-semibold mb-2">Dimensions de la parcelle</h4>
-                          <p className="text-muted-foreground">
-                            Indiquez la longueur en mètres de chaque côté de votre parcelle. Ces mesures permettent de calculer automatiquement la superficie cadastrale.
-                          </p>
-                          <p className="mt-2 text-xs text-muted-foreground">
-                            Les dimensions doivent être mesurées sur le terrain ou extraites de documents cadastraux officiels pour garantir leur précision.
-                          </p>
-                        </PopoverContent>
-                      </Popover>
+              <div className="space-y-3 pt-4 border-t">
+                <ParcelMapPreview 
+                  coordinates={gpsCoordinates}
+                  onCoordinatesUpdate={(updatedCoords) => {
+                    setGpsCoordinates(updatedCoords);
+                  }}
+                  config={mapConfig}
+                  currentParcelNumber={parcelNumber}
+                  enableConflictDetection={true}
+                  roadSides={roadSides}
+                  onRoadSidesChange={setRoadSides}
+                  parcelSides={parcelSides}
+                  onParcelSidesUpdate={setParcelSides}
+                  enableDrawingMode={true}
+                  onSurfaceChange={(surface) => {
+                    handleInputChange('areaSqm', String(surface));
+                  }}
+                />
+                
+                {/* Superficie calculée */}
+                {formData.areaSqm && parseFloat(String(formData.areaSqm)) > 0 && (
+                  <Card className="p-3 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl border-primary/20">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1">
+                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
+                          Superficie calculée
+                        </p>
+                        <p className="text-2xl font-bold text-primary">{parseFloat(String(formData.areaSqm)).toLocaleString()} m²</p>
+                      </div>
+                      <Badge variant="secondary" className="text-xs px-2 py-1 rounded-xl">
+                        {gpsCoordinates.filter(c => c.lat && c.lng).length} bornes
+                      </Badge>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Ajoutez les dimensions de chaque côté de la parcelle
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    {parcelSides.map((side, index) => (
-                      <div key={index} className="flex items-center gap-1.5 md:gap-2 animate-fade-in">
-                        <Input
-                          placeholder="Nom du côté"
-                          value={side.name}
-                          onChange={(e) => updateParcelSide(index, 'name', e.target.value)}
-                          className="flex-1 transition-all focus:scale-[1.01] h-9 text-sm"
-                        />
-                        <Input
-                          type="number"
-                          placeholder="Longueur"
-                          value={side.length}
-                          onChange={(e) => updateParcelSide(index, 'length', e.target.value)}
-                          className="w-20 md:w-32 transition-all focus:scale-[1.01] h-9 text-sm"
-                        />
-                        <span className="text-xs text-muted-foreground w-4 md:w-6">m</span>
-                        {parcelSides.length > 2 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeParcelSide(index)}
-                            className="hover:bg-destructive/10 transition-all hover:scale-105 h-9 w-9 p-0 animate-fade-in"
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addParcelSide}
-                    className="w-full hover:bg-primary/5 transition-all hover:scale-[1.02] animate-fade-in h-9"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Ajouter un côté
-                  </Button>
-
-                  {formData.areaSqm && (
-                    <>
-                      <div className={`p-2.5 md:p-4 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-lg md:rounded-xl border border-primary/20 animate-scale-in ${
-                        shouldBlinkSuperficie ? 'blink-red' : ''
-                      }`}>
-                        <div className="flex items-center justify-between gap-3 md:block">
-                          <div className="flex-1 md:mb-1">
-                            <p className="text-xs md:text-sm font-medium text-muted-foreground mb-0.5 md:mb-1">
-                              Superficie calculée
-                            </p>
-                            <p className="text-xl md:text-3xl font-bold text-primary">{formData.areaSqm} m²</p>
-                          </div>
-                          <p className="text-[10px] md:text-xs text-muted-foreground bg-background/50 px-1.5 md:px-2 py-0.5 md:py-1 rounded-md whitespace-nowrap md:inline-block md:mt-2">
-                            {parcelSides.length === 2 && "Calcul rectangulaire simple"}
-                            {parcelSides.length === 4 && "Calcul rectangulaire (4 côtés)"}
-                            {parcelSides.length > 4 && "Approximation basée sur les dimensions"}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Notification d'erreur de validation superficie */}
-                      {showAreaMismatchWarning && (
-                        <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 animate-fade-in">
-                          <div className="flex items-start gap-3">
-                            <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                            <div className="flex-1">
-                              <p className="text-sm font-medium text-destructive mb-1">
-                                Incohérence détectée
-                              </p>
-                              <p className="text-xs text-destructive/90 leading-relaxed">
-                                {areaMismatchMessage}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* Coordonnées GPS des bornes */}
-            {sectionType && (
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-semibold">Coordonnées GPS des bornes (optionnel)</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 rounded-full hover:bg-primary/10"
-                      >
-                        <Info className="h-4 w-4 text-primary" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80" align="start">
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-semibold text-sm mb-2 text-foreground">
-                            Comment ajouter les coordonnées GPS ?
-                          </h4>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            Choisissez entre le mode automatique (détection GPS) ou le mode manuel (saisie des coordonnées).
-                          </p>
-                        </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Ajoutez les coordonnées GPS de chaque borne du terrain
-                </p>
-                {(() => {
-                  const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                  const isSuperficieCompleted = filledSides.length >= 3;
-                  
-                  if (!isSuperficieCompleted) {
-                    return (
-                      <p className="text-xs text-amber-600 dark:text-amber-500 mt-2 flex items-center gap-1">
-                        <Info className="h-3 w-3" />
-                        Complétez d'abord le bloc "Dimensions de chaque côté" (au moins 3 côtés)
-                      </p>
-                    );
-                  }
-                  
-                  return null;
-                })()}
-
-                <div className="grid grid-cols-2 md:grid-cols-1 gap-1.5 md:gap-3">
-                  {gpsCoordinates.map((coord, index) => (
-                    <div key={index} className="border rounded-md md:rounded-lg p-1.5 md:p-3 space-y-1.5 md:space-y-3 bg-gradient-to-br from-muted/20 to-transparent animate-fade-in">
-                      {/* Header compact */}
-                      <div className="flex items-center justify-between gap-1.5">
-                        <span className="text-[10px] md:text-xs font-medium text-muted-foreground">Borne {index + 1}</span>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeGPSCoordinate(index)}
-                          className="text-destructive hover:bg-destructive/10 h-6 w-6 md:h-8 md:w-8 p-0 flex-shrink-0"
-                        >
-                          <Trash2 className="h-3 md:h-4 w-3 md:w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Switch mode moderne */}
-                      <div className="flex items-center justify-between gap-2 bg-muted/30 rounded-lg p-2">
-                        <span className="text-[10px] md:text-xs font-medium text-muted-foreground">
-                          {coord.mode === 'auto' ? 'Automatique' : 'Manuel'}
-                        </span>
-                        <Switch
-                          checked={coord.mode === 'auto'}
-                          onCheckedChange={(checked) => updateGPSCoordinate(index, 'mode', checked ? 'auto' : 'manual')}
-                          className="data-[state=checked]:bg-primary"
-                        />
-                      </div>
-
-                      {/* Mode automatique */}
-                      {coord.mode === 'auto' && (
-                        <div className="space-y-1.5">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => captureCurrentLocation(index)}
-                            disabled={coord.detecting}
-                            className="w-full h-7 md:h-9 text-[10px] md:text-xs"
-                          >
-                            <MdLocationOn className="h-3 md:h-4 w-3 md:w-4 mr-1 flex-shrink-0" />
-                            {coord.detecting ? 'Détection...' : 'Détecter'}
-                          </Button>
-                          
-                          {coord.detected && coord.lat && coord.lng && (
-                            <div className="text-[10px] md:text-xs p-1.5 md:p-2 bg-muted/50 rounded space-y-0.5">
-                              <div className="flex items-center gap-1 flex-wrap">
-                                <span className="font-medium">Lat:</span>
-                                <span className="truncate">{parseFloat(coord.lat).toFixed(6)}</span>
-                              </div>
-                              <div className="flex items-center gap-1 flex-wrap">
-                                <span className="font-medium">Lng:</span>
-                                <span className="truncate">{parseFloat(coord.lng).toFixed(6)}</span>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => {
-                                  updateGPSCoordinate(index, 'lat', '');
-                                  updateGPSCoordinate(index, 'lng', '');
-                                  updateGPSCoordinate(index, 'detected', false);
-                                }}
-                                className="w-full mt-1 h-6 md:h-7 text-[9px] md:text-xs"
-                              >
-                                <RotateCcw className="h-3 w-3 mr-1" />
-                                Réinit.
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Mode manuel */}
-                      {coord.mode === 'manual' && (
-                        <div className="space-y-1.5">
-                          <div className="space-y-1.5">
-                            <Label htmlFor={`lat-${index}`} className="text-[10px] md:text-xs">
-                              Latitude
-                            </Label>
-                            <Input
-                              id={`lat-${index}`}
-                              type="number"
-                              step="0.000001"
-                              placeholder="Ex: -1.234567"
-                              value={coord.lat}
-                              onChange={(e) => updateGPSCoordinate(index, 'lat', e.target.value)}
-                              className="h-7 md:h-9 text-[10px] md:text-sm px-1.5 md:px-2"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <Label htmlFor={`lng-${index}`} className="text-[10px] md:text-xs">
-                              Longitude
-                            </Label>
-                            <Input
-                              id={`lng-${index}`}
-                              type="number"
-                              step="0.000001"
-                              placeholder="Ex: 29.123456"
-                              value={coord.lng}
-                              onChange={(e) => updateGPSCoordinate(index, 'lng', e.target.value)}
-                              className="h-7 md:h-9 text-[10px] md:text-sm px-1.5 md:px-2"
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                  
-                 {/* Aperçu de la parcelle sur la carte - Toujours afficher */}
-                <div className="pt-4 animate-fade-in">
-                  <ParcelMapPreview 
-                     coordinates={gpsCoordinates}
-                    onCoordinatesUpdate={(updatedCoords) => {
-                      setGpsCoordinates(updatedCoords);
-                    }}
-                    config={mapConfig}
-                    currentParcelNumber={parcelNumber}
-                    enableConflictDetection={true}
-                    roadSides={roadSides}
-                    onRoadSidesChange={setRoadSides}
-                    parcelSides={parcelSides}
-                    onParcelSidesUpdate={setParcelSides}
-                  />
-                </div>
-
-                {/* Bouton Ajouter */}
-                <div className="space-y-2">
-                  {showGPSWarning && (
-                    <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
-                      <div className="flex items-start gap-2">
-                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                            Limite de coordonnées GPS atteinte
-                          </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                            Vous avez atteint la limite de {parcelSides.filter(s => s.length && parseFloat(s.length) > 0).length} borne(s). Ajoutez un nouveau côté dans "Dimensions de chaque côté" pour ajouter plus de bornes.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                      const isSuperficieCompleted = filledSides.length >= 3;
-                      const canAddMore = gpsCoordinates.length < filledSides.length;
-                      
-                      if (isSuperficieCompleted && !canAddMore) {
-                        setShowGPSWarning(true);
-                        setHighlightSuperficie(true);
-                        setTimeout(() => setShowGPSWarning(false), 5000);
-                        setTimeout(() => setHighlightSuperficie(false), 3000);
-                        return;
-                      }
-                      
-                      addGPSCoordinate();
-                    }}
-                    disabled={(() => {
-                      const filledSides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
-                      return filledSides.length < 3;
-                    })()}
-                    className="w-full gap-2 hover:bg-primary/5 transition-all"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter une borne
-                  </Button>
-                </div>
+                  </Card>
+                )}
               </div>
             )}
             
