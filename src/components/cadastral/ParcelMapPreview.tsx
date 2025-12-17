@@ -495,30 +495,86 @@ export const ParcelMapPreview = ({
       if (enableDrawingMode) {
         let longPressTimer: NodeJS.Timeout | null = null;
         let touchStartPos: { lat: number; lng: number } | null = null;
+        let tempMarkerLocal: any = null;
+        
+        // Référence locale pour addMarkerAtPosition qui sera mise à jour
+        const addMarkerRef = { current: addMarkerAtPosition };
         
         const startLongPress = (latlng: any) => {
           touchStartPos = { lat: latlng.lat, lng: latlng.lng };
           setShowLongPressHint(true);
           
-          // Afficher un indicateur temporaire
+          // Supprimer l'ancien marqueur temporaire s'il existe
+          if (tempMarkerLocal) {
+            tempMarkerLocal.remove();
+            tempMarkerLocal = null;
+          }
           if (longPressMarkerRef.current) {
             longPressMarkerRef.current.remove();
+            longPressMarkerRef.current = null;
           }
           
-          const tempMarker = L.circleMarker([latlng.lat, latlng.lng], {
-            radius: 12,
-            color: 'hsl(var(--primary))',
-            fillColor: 'hsl(var(--primary))',
-            fillOpacity: 0.3,
-            weight: 2,
-            className: 'pulse-marker'
+          // Créer un marqueur temporaire avec couleur directe (pas de CSS variable)
+          const primaryColor = '#3b82f6'; // Bleu primaire
+          
+          // Créer un cercle pulsant avec animation CSS inline
+          const pulseIcon = L.divIcon({
+            className: 'long-press-indicator',
+            html: `
+              <div style="
+                width: 40px;
+                height: 40px;
+                background-color: ${primaryColor};
+                opacity: 0.4;
+                border-radius: 50%;
+                border: 3px solid ${primaryColor};
+                animation: pulse-ring 0.8s ease-out infinite;
+                position: relative;
+                z-index: 1000;
+              ">
+                <div style="
+                  position: absolute;
+                  top: 50%;
+                  left: 50%;
+                  transform: translate(-50%, -50%);
+                  width: 16px;
+                  height: 16px;
+                  background-color: ${primaryColor};
+                  border-radius: 50%;
+                  border: 2px solid white;
+                  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+                "></div>
+              </div>
+              <style>
+                @keyframes pulse-ring {
+                  0% { transform: scale(0.8); opacity: 0.6; }
+                  50% { transform: scale(1.2); opacity: 0.3; }
+                  100% { transform: scale(0.8); opacity: 0.6; }
+                }
+              </style>
+            `,
+            iconSize: [40, 40],
+            iconAnchor: [20, 20],
+          });
+          
+          tempMarkerLocal = L.marker([latlng.lat, latlng.lng], {
+            icon: pulseIcon,
+            interactive: false,
+            zIndexOffset: 1000,
           }).addTo(map);
           
-          longPressMarkerRef.current = tempMarker;
+          longPressMarkerRef.current = tempMarkerLocal;
           
           longPressTimer = setTimeout(() => {
             if (touchStartPos) {
-              addMarkerAtPosition(touchStartPos.lat, touchStartPos.lng);
+              // Appeler la fonction d'ajout de marqueur
+              addMarkerRef.current(touchStartPos.lat, touchStartPos.lng);
+              
+              // Supprimer le marqueur temporaire
+              if (tempMarkerLocal) {
+                tempMarkerLocal.remove();
+                tempMarkerLocal = null;
+              }
               if (longPressMarkerRef.current) {
                 longPressMarkerRef.current.remove();
                 longPressMarkerRef.current = null;
@@ -536,6 +592,10 @@ export const ParcelMapPreview = ({
           touchStartPos = null;
           setShowLongPressHint(false);
           
+          if (tempMarkerLocal) {
+            tempMarkerLocal.remove();
+            tempMarkerLocal = null;
+          }
           if (longPressMarkerRef.current) {
             longPressMarkerRef.current.remove();
             longPressMarkerRef.current = null;
@@ -577,6 +637,9 @@ export const ParcelMapPreview = ({
             cancelLongPress();
           }
         }, { passive: true });
+        
+        // Stocker la référence pour mise à jour
+        (map as any)._addMarkerRef = addMarkerRef;
       }
 
       mapInstanceRef.current = map;
@@ -613,7 +676,14 @@ export const ParcelMapPreview = ({
         setIsMapReady(false);
       }
     };
-  }, [mapCenter, mapConfig.defaultZoom, enableDrawingMode, addMarkerAtPosition]);
+  }, [mapCenter, mapConfig.defaultZoom, enableDrawingMode]);
+
+  // Mettre à jour la référence addMarkerAtPosition quand elle change
+  useEffect(() => {
+    if (mapInstanceRef.current && (mapInstanceRef.current as any)._addMarkerRef) {
+      (mapInstanceRef.current as any)._addMarkerRef.current = addMarkerAtPosition;
+    }
+  }, [addMarkerAtPosition]);
 
   // Mettre à jour les marqueurs et le polygone quand les coordonnées changent
   useEffect(() => {
