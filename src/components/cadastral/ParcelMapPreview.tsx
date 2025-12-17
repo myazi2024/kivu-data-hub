@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
@@ -39,6 +39,8 @@ interface ParcelMapPreviewProps {
   onRoadSidesChange?: (roadSides: RoadSideInfo[]) => void;
   parcelSides?: ParcelSide[];
   onParcelSidesUpdate?: (sides: ParcelSide[]) => void;
+  enableDrawingMode?: boolean;
+  onSurfaceChange?: (surface: number) => void;
 }
 
 export const ParcelMapPreview = ({ 
@@ -50,7 +52,9 @@ export const ParcelMapPreview = ({
   roadSides = [],
   onRoadSidesChange,
   parcelSides = [],
-  onParcelSidesUpdate
+  onParcelSidesUpdate,
+  enableDrawingMode = true,
+  onSurfaceChange
 }: ParcelMapPreviewProps) => {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -60,12 +64,16 @@ export const ParcelMapPreview = ({
   const conflictLayersRef = useRef<any[]>([]);
   const segmentLayersRef = useRef<any[]>([]);
   const groupDragControlRef = useRef<any>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressMarkerRef = useRef<any>(null);
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [loadingConflicts, setLoadingConflicts] = useState(false);
   const [groupDragMode, setGroupDragMode] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [showLongPressHint, setShowLongPressHint] = useState(false);
   const groupDragStartRef = useRef<{ lat: number; lng: number } | null>(null);
   
   // Charger la configuration depuis Supabase
@@ -118,6 +126,98 @@ export const ParcelMapPreview = ({
     }).filter(Boolean) as typeof coordinates,
     [coordinates]
   );
+
+  // Ajouter un nouveau marqueur via appui prolongé
+  const addMarkerAtPosition = useCallback((lat: number, lng: number) => {
+    const newBorneNumber = coordinates.length + 1;
+    const newCoordinate: Coordinate = {
+      borne: `${newBorneNumber}`,
+      lat: lat.toFixed(6),
+      lng: lng.toFixed(6)
+    };
+    
+    const updatedCoords = [...coordinates, newCoordinate];
+    onCoordinatesUpdate(updatedCoords);
+    
+    // Mettre à jour les côtés de la parcelle
+    if (onParcelSidesUpdate && updatedCoords.length >= 2) {
+      const validUpdated = updatedCoords.filter(
+        c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
+      );
+      
+      if (validUpdated.length >= 2) {
+        const newSides: ParcelSide[] = [];
+        for (let i = 0; i < validUpdated.length; i++) {
+          const nextIndex = (i + 1) % validUpdated.length;
+          const current = validUpdated[i];
+          const next = validUpdated[nextIndex];
+          
+          const distance = calculateDistance(
+            parseFloat(current.lat),
+            parseFloat(current.lng),
+            parseFloat(next.lat),
+            parseFloat(next.lng)
+          );
+          
+          newSides.push({
+            name: `Côté ${i + 1}`,
+            length: distance.toFixed(2)
+          });
+        }
+        onParcelSidesUpdate(newSides);
+      }
+    }
+  }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
+
+  // Supprimer le dernier marqueur
+  const removeLastMarker = useCallback(() => {
+    if (coordinates.length === 0) return;
+    
+    const updatedCoords = coordinates.slice(0, -1);
+    onCoordinatesUpdate(updatedCoords);
+    
+    // Mettre à jour les côtés de la parcelle
+    if (onParcelSidesUpdate) {
+      const validUpdated = updatedCoords.filter(
+        c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
+      );
+      
+      if (validUpdated.length >= 2) {
+        const newSides: ParcelSide[] = [];
+        for (let i = 0; i < validUpdated.length; i++) {
+          const nextIndex = (i + 1) % validUpdated.length;
+          const current = validUpdated[i];
+          const next = validUpdated[nextIndex];
+          
+          const distance = calculateDistance(
+            parseFloat(current.lat),
+            parseFloat(current.lng),
+            parseFloat(next.lat),
+            parseFloat(next.lng)
+          );
+          
+          newSides.push({
+            name: `Côté ${i + 1}`,
+            length: distance.toFixed(2)
+          });
+        }
+        onParcelSidesUpdate(newSides);
+      } else {
+        onParcelSidesUpdate([]);
+      }
+    }
+  }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
+
+  // Réinitialiser tous les marqueurs
+  const clearAllMarkers = useCallback(() => {
+    onCoordinatesUpdate([]);
+    if (onParcelSidesUpdate) {
+      onParcelSidesUpdate([]);
+    }
+    if (onRoadSidesChange) {
+      onRoadSidesChange([]);
+    }
+  }, [onCoordinatesUpdate, onParcelSidesUpdate, onRoadSidesChange]);
 
   // Calculer l'orientation d'un côté basé sur le bearing
   const calculateOrientation = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
@@ -391,6 +491,94 @@ export const ParcelMapPreview = ({
         groupDragControlRef.current = groupControl;
       }
 
+      // Ajouter le support de l'appui prolongé pour ajouter des marqueurs
+      if (enableDrawingMode) {
+        let longPressTimer: NodeJS.Timeout | null = null;
+        let touchStartPos: { lat: number; lng: number } | null = null;
+        
+        const startLongPress = (latlng: any) => {
+          touchStartPos = { lat: latlng.lat, lng: latlng.lng };
+          setShowLongPressHint(true);
+          
+          // Afficher un indicateur temporaire
+          if (longPressMarkerRef.current) {
+            longPressMarkerRef.current.remove();
+          }
+          
+          const tempMarker = L.circleMarker([latlng.lat, latlng.lng], {
+            radius: 12,
+            color: 'hsl(var(--primary))',
+            fillColor: 'hsl(var(--primary))',
+            fillOpacity: 0.3,
+            weight: 2,
+            className: 'pulse-marker'
+          }).addTo(map);
+          
+          longPressMarkerRef.current = tempMarker;
+          
+          longPressTimer = setTimeout(() => {
+            if (touchStartPos) {
+              addMarkerAtPosition(touchStartPos.lat, touchStartPos.lng);
+              if (longPressMarkerRef.current) {
+                longPressMarkerRef.current.remove();
+                longPressMarkerRef.current = null;
+              }
+            }
+            setShowLongPressHint(false);
+          }, 600); // 600ms pour l'appui prolongé
+        };
+        
+        const cancelLongPress = () => {
+          if (longPressTimer) {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+          }
+          touchStartPos = null;
+          setShowLongPressHint(false);
+          
+          if (longPressMarkerRef.current) {
+            longPressMarkerRef.current.remove();
+            longPressMarkerRef.current = null;
+          }
+        };
+        
+        // Events pour desktop (mousedown/mouseup)
+        map.on('mousedown', (e: any) => {
+          if (e.originalEvent.button === 0) { // Bouton gauche
+            startLongPress(e.latlng);
+          }
+        });
+        
+        map.on('mouseup', cancelLongPress);
+        map.on('mousemove', (e: any) => {
+          if (touchStartPos) {
+            const distance = map.distance([touchStartPos.lat, touchStartPos.lng], [e.latlng.lat, e.latlng.lng]);
+            if (distance > 10) { // Si l'utilisateur bouge trop, annuler
+              cancelLongPress();
+            }
+          }
+        });
+        
+        // Events pour mobile (touchstart/touchend)
+        const mapContainer = map.getContainer();
+        mapContainer.addEventListener('touchstart', (e: TouchEvent) => {
+          if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            const rect = mapContainer.getBoundingClientRect();
+            const point = L.point(touch.clientX - rect.left, touch.clientY - rect.top);
+            const latlng = map.containerPointToLatLng(point);
+            startLongPress(latlng);
+          }
+        }, { passive: true });
+        
+        mapContainer.addEventListener('touchend', cancelLongPress, { passive: true });
+        mapContainer.addEventListener('touchmove', (e: TouchEvent) => {
+          if (touchStartPos && e.touches.length === 1) {
+            cancelLongPress();
+          }
+        }, { passive: true });
+      }
+
       mapInstanceRef.current = map;
       
       // S'assurer que la carte se redessine correctement
@@ -406,6 +594,13 @@ export const ParcelMapPreview = ({
     initMap();
 
     return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+      if (longPressMarkerRef.current) {
+        longPressMarkerRef.current.remove();
+        longPressMarkerRef.current = null;
+      }
       if (mapInstanceRef.current) {
         // Supprimer les contrôles personnalisés
         if (groupDragControlRef.current) {
@@ -418,7 +613,7 @@ export const ParcelMapPreview = ({
         setIsMapReady(false);
       }
     };
-  }, [mapCenter, mapConfig.defaultZoom]);
+  }, [mapCenter, mapConfig.defaultZoom, enableDrawingMode, addMarkerAtPosition]);
 
   // Mettre à jour les marqueurs et le polygone quand les coordonnées changent
   useEffect(() => {
@@ -1044,68 +1239,84 @@ export const ParcelMapPreview = ({
     }
   };
 
-  if (coordinates.length === 0) {
-    return (
-      <Card className="p-4 bg-muted/30">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <Info className="h-4 w-4" />
-          <p className="text-sm">
-            Ajoutez des coordonnées GPS pour voir l'aperçu de la parcelle sur la carte.
-          </p>
-        </div>
-      </Card>
-    );
-  }
-
-  if (validCoords.length === 0) {
-    return (
-      <Card className="p-4 bg-warning/10 border-warning/30">
-        <div className="flex items-center gap-2 text-warning">
-          <AlertTriangle className="h-4 w-4" />
-          <p className="text-sm">
-            {coordinates.length} {coordinates.length > 1 ? 'bornes ont été ajoutées' : 'borne a été ajoutée'} mais {coordinates.length > 1 ? 'leurs' : 'sa'} coordonnées GPS ne sont pas encore renseignées. 
-            Remplissez les latitude et longitude pour voir la parcelle sur la carte.
-          </p>
-        </div>
-      </Card>
-    );
-  }
+  // Propager la surface calculée
+  useEffect(() => {
+    if (onSurfaceChange && surfaceArea > 0) {
+      onSurfaceChange(surfaceArea);
+    }
+  }, [surfaceArea, onSurfaceChange]);
 
   return (
-    <div className="space-y-2 md:space-y-3">
+    <div className="space-y-3">
+      {/* Header avec titre et badges */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <Label className="text-xs md:text-sm font-medium flex items-center gap-1.5 md:gap-2">
-          <MapPin className="h-3.5 w-3.5 md:h-4 md:w-4 text-primary flex-shrink-0" />
-          Aperçu de la parcelle
+        <Label className="text-sm font-semibold flex items-center gap-2">
+          <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+          Aperçu de la carte
         </Label>
-        <div className="flex items-center gap-1.5 md:gap-2 flex-wrap">
+        <div className="flex items-center gap-2 flex-wrap">
           {coordinates.length > 0 && (
-            <Badge variant="outline" className="gap-1 text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
-              <span className="font-medium">{validCoords.length}/{coordinates.length}</span>
-              <span className="hidden sm:inline">bornes</span>
-              <span className="sm:hidden">b.</span>
+            <Badge variant="outline" className="gap-1 text-xs h-6 px-2 rounded-xl">
+              <span className="font-medium">{validCoords.length}</span>
+              <span>bornes</span>
             </Badge>
           )}
           {surfaceArea > 0 && (
-            <Badge variant="secondary" className="font-mono text-[10px] md:text-xs h-5 md:h-6 px-1.5 md:px-2">
+            <Badge variant="secondary" className="font-mono text-xs h-6 px-2 rounded-xl bg-primary/10 text-primary">
               {surfaceArea.toLocaleString()} m²
             </Badge>
           )}
         </div>
       </div>
 
+      {/* Instructions de dessin */}
+      {enableDrawingMode && (
+        <Card className="p-3 bg-gradient-to-br from-primary/5 to-transparent border-primary/20 rounded-2xl">
+          <div className="flex items-start gap-3">
+            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <Target className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <p className="text-sm font-medium text-foreground">
+                {coordinates.length === 0 
+                  ? "Dessinez votre parcelle" 
+                  : `${coordinates.length} borne${coordinates.length > 1 ? 's' : ''} ajoutée${coordinates.length > 1 ? 's' : ''}`
+                }
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {coordinates.length === 0 
+                  ? "Faites un appui prolongé sur la carte pour placer la première borne de votre parcelle."
+                  : coordinates.length < 3
+                    ? "Continuez à ajouter des bornes par appui prolongé pour dessiner la parcelle."
+                    : "Parcelle tracée. Vous pouvez déplacer les bornes ou en ajouter d'autres."
+                }
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Indicateur d'appui prolongé */}
+      {showLongPressHint && (
+        <Alert className="py-2 bg-primary/10 border-primary/30 rounded-xl animate-pulse">
+          <Target className="h-4 w-4 text-primary" />
+          <AlertDescription className="text-xs text-primary font-medium">
+            Maintenez appuyé pour ajouter une borne...
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Alertes de conflit */}
       {conflictingParcels.length > 0 && (
-        <Alert variant="destructive" className="py-2 md:py-3">
-          <AlertTriangle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs md:text-sm">
-            <span>
-              {conflictingParcels.length} conflit(s) détecté(s)
-            </span>
+        <Alert variant="destructive" className="py-2 rounded-xl">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+            <span>{conflictingParcels.length} conflit(s) détecté(s)</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowConflictDialog(true)}
-              className="h-7 text-xs w-full sm:w-auto"
+              className="h-7 text-xs rounded-lg"
             >
               Signaler
             </Button>
@@ -1115,20 +1326,10 @@ export const ParcelMapPreview = ({
 
       {/* Validation du nombre minimum de marqueurs */}
       {mapConfig.minMarkers && validCoords.length > 0 && validCoords.length < mapConfig.minMarkers && (
-        <Alert variant="destructive" className="py-2 md:py-3">
-          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <AlertDescription className="text-xs md:text-sm">
-            Nombre de bornes insuffisant: {validCoords.length} sur {mapConfig.minMarkers} minimum requis pour une parcelle valide.
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Validation du nombre maximum de marqueurs */}
-      {mapConfig.maxMarkers && validCoords.length > mapConfig.maxMarkers && (
-        <Alert variant="destructive" className="py-2 md:py-3">
-          <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <AlertDescription className="text-xs md:text-sm">
-            Dépassement: {validCoords.length - mapConfig.maxMarkers} borne(s) en trop (max: {mapConfig.maxMarkers}).
+        <Alert variant="destructive" className="py-2 rounded-xl">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-xs">
+            Minimum {mapConfig.minMarkers} bornes requises ({validCoords.length} actuellement).
           </AlertDescription>
         </Alert>
       )}
@@ -1137,17 +1338,17 @@ export const ParcelMapPreview = ({
       {surfaceArea > 0 && (
         <>
           {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
-            <Alert variant="destructive" className="py-2 md:py-3">
-              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              <AlertDescription className="text-xs md:text-sm">
+            <Alert variant="destructive" className="py-2 rounded-xl">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
                 Surface trop petite: {surfaceArea.toLocaleString()} m² (min: {mapConfig.minSurfaceSqm.toLocaleString()} m²).
               </AlertDescription>
             </Alert>
           )}
           {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
-            <Alert variant="destructive" className="py-2 md:py-3">
-              <AlertCircle className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              <AlertDescription className="text-xs md:text-sm">
+            <Alert variant="destructive" className="py-2 rounded-xl">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">
                 Surface trop grande: {surfaceArea.toLocaleString()} m² (max: {mapConfig.maxSurfaceSqm.toLocaleString()} m²).
               </AlertDescription>
             </Alert>
@@ -1156,29 +1357,78 @@ export const ParcelMapPreview = ({
       )}
 
       {loadingConflicts && (
-        <Alert className="py-2 md:py-3">
-          <Info className="h-3.5 w-3.5 md:h-4 md:w-4" />
-          <AlertDescription className="text-xs md:text-sm">
+        <Alert className="py-2 rounded-xl">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-xs">
             Vérification des parcelles voisines...
           </AlertDescription>
         </Alert>
       )}
 
-      <Card className="overflow-hidden border-2 border-primary/20 relative z-0">
+      {/* Carte */}
+      <Card className="overflow-hidden border-2 border-primary/20 relative z-0 rounded-2xl shadow-lg">
         <div 
           ref={mapRef} 
-          className="h-[250px] md:h-[350px] lg:h-[400px] w-full rounded-lg relative z-0"
+          className="h-[280px] md:h-[350px] lg:h-[400px] w-full relative z-0"
         />
       </Card>
+
+      {/* Contrôles de dessin */}
+      {enableDrawingMode && coordinates.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={removeLastMarker}
+            className="gap-1.5 text-xs h-8 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Supprimer dernière
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={clearAllMarkers}
+            className="gap-1.5 text-xs h-8 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Tout effacer
+          </Button>
+        </div>
+      )}
+
+      {/* Résumé des dimensions */}
+      {validCoords.length >= 3 && parcelSides.length > 0 && (
+        <Card className="p-3 bg-muted/30 rounded-2xl">
+          <div className="space-y-2">
+            <Label className="text-xs font-medium text-muted-foreground">Dimensions calculées</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {parcelSides.map((side, index) => (
+                <div key={index} className="flex items-center justify-between bg-background/50 p-2 rounded-xl text-xs">
+                  <span className="text-muted-foreground">{side.name}</span>
+                  <span className="font-mono font-medium">{side.length} m</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
       
-      <div className="text-[10px] md:text-xs text-muted-foreground flex items-start gap-1 md:gap-1.5">
+      {/* Info */}
+      <div className="text-xs text-muted-foreground flex items-start gap-1.5">
         <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
         <span>
-          Utilisez les contrôles sur la carte pour choisir entre déplacement groupé ou individuel.
+          {enableDrawingMode 
+            ? "Appui prolongé pour ajouter une borne. Déplacez les marqueurs pour ajuster."
+            : "Utilisez les contrôles sur la carte pour choisir entre déplacement groupé ou individuel."
+          }
           {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
         </span>
       </div>
 
+      {/* Panel côtés bordant route */}
       {validCoords.length >= 3 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
         <RoadBorderingSidesPanel
           sides={roadSides}
@@ -1187,6 +1437,7 @@ export const ParcelMapPreview = ({
         />
       )}
 
+      {/* Dialog conflit */}
       <BoundaryConflictDialog
         open={showConflictDialog}
         onOpenChange={setShowConflictDialog}
