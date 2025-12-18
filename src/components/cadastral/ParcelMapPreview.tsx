@@ -1185,66 +1185,76 @@ export const ParcelMapPreview = ({
   }, [surfaceArea, onSurfaceChange]);
 
   return (
-    <div className="space-y-3">
-      {/* Header avec titre et badges */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <Label className="text-sm font-semibold flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-          Aperçu de la carte
-        </Label>
-        <div className="flex items-center gap-2 flex-wrap">
-          {coordinates.length > 0 && (
-            <Badge variant="outline" className="gap-1 text-xs h-6 px-2 rounded-xl">
-              <span className="font-medium">{validCoords.length}</span>
-              <span>bornes</span>
-            </Badge>
-          )}
-          {surfaceArea > 0 && (
-            <Badge variant="secondary" className="font-mono text-xs h-6 px-2 rounded-xl bg-primary/10 text-primary">
-              {surfaceArea.toLocaleString()} m²
-            </Badge>
-          )}
+    <div className="space-y-4 max-w-[360px] mx-auto">
+      {/* Header compact avec titre et badges */}
+      <Card className="p-3 rounded-2xl shadow-sm bg-card/80 backdrop-blur-sm border-border/50">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+              <MapPin className="h-4 w-4 text-primary" />
+            </div>
+            <span className="text-sm font-semibold text-foreground">Aperçu parcelle</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {coordinates.length > 0 && (
+              <Badge variant="outline" className="gap-1 text-xs h-6 px-2 rounded-xl border-border/60">
+                <span className="font-semibold">{validCoords.length}</span>
+                <span className="text-muted-foreground">pts</span>
+              </Badge>
+            )}
+            {surfaceArea > 0 && (
+              <Badge className="font-mono text-xs h-6 px-2 rounded-xl bg-primary/15 text-primary border-0">
+                {surfaceArea.toLocaleString()} m²
+              </Badge>
+            )}
+          </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Mode Navigation/Dessin Toggle */}
+      {/* Mode Navigation/Dessin Toggle - Design compact mobile */}
       {enableDrawingMode && (
-        <Card className={`p-3 rounded-2xl transition-all ${
+        <Card className={`p-3 rounded-2xl shadow-md transition-all duration-200 ${
           isDrawingMode 
-            ? 'bg-orange-500/10 border-orange-500/30 border-2' 
-            : 'bg-muted/30 border-border/50'
+            ? 'bg-orange-50 dark:bg-orange-950/30 border-orange-400/40 border-2 shadow-orange-500/10' 
+            : 'bg-card border-border/50'
         }`}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              {isDrawingMode ? (
-                <>
-                  <div className="h-9 w-9 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
-                    <Pencil className="h-4 w-4 text-orange-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-orange-700">Mode Dessin actif</p>
-                    <p className="text-xs text-orange-600/80">Cliquez sur la carte pour ajouter des bornes</p>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Navigation className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium">Mode Navigation</p>
-                    <p className="text-xs text-muted-foreground">
-                      {coordinates.length === 0 
-                        ? "Naviguez vers l'emplacement de votre parcelle"
-                        : `${coordinates.length} borne${coordinates.length > 1 ? 's' : ''} - Zoomez ou déplacez la carte`
-                      }
-                    </p>
-                  </div>
-                </>
-              )}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                isDrawingMode 
+                  ? 'bg-orange-500/20' 
+                  : 'bg-primary/10'
+              }`}>
+                {isDrawingMode ? (
+                  <Pencil className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                ) : (
+                  <Navigation className="h-4 w-4 text-primary" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-semibold truncate ${
+                  isDrawingMode 
+                    ? 'text-orange-700 dark:text-orange-300' 
+                    : 'text-foreground'
+                }`}>
+                  {isDrawingMode ? 'Mode Dessin' : 'Mode Navigation'}
+                </p>
+                <p className={`text-xs truncate ${
+                  isDrawingMode 
+                    ? 'text-orange-600/80 dark:text-orange-400/80' 
+                    : 'text-muted-foreground'
+                }`}>
+                  {isDrawingMode 
+                    ? 'Touchez pour ajouter' 
+                    : coordinates.length === 0 
+                      ? 'Naviguez vers la parcelle'
+                      : `${coordinates.length} borne${coordinates.length > 1 ? 's' : ''}`
+                  }
+                </p>
+              </div>
             </div>
             
-            {/* Toggle button */}
+            {/* Toggle button compact */}
             {!isDrawingMode ? (
               <Button 
                 type="button"
@@ -1261,10 +1271,10 @@ export const ParcelMapPreview = ({
                     map.getContainer().style.cursor = 'crosshair';
                   }
                 }}
-                className="h-9 rounded-xl bg-primary hover:bg-primary/90 gap-2 px-4"
+                className="h-9 rounded-xl bg-primary hover:bg-primary/90 gap-1.5 px-3 shadow-sm text-primary-foreground flex-shrink-0"
               >
-                <Pencil className="h-4 w-4" />
-                <span className="text-sm">Commencer le tracé</span>
+                <Pencil className="h-3.5 w-3.5" />
+                <span className="text-sm font-medium">Tracer</span>
               </Button>
             ) : (
               <Button 
@@ -1283,27 +1293,27 @@ export const ParcelMapPreview = ({
                   }
                 }}
                 variant="outline"
-                className="h-9 rounded-xl border-orange-500/50 text-orange-700 hover:bg-orange-500/10 gap-2 px-4"
+                className="h-9 rounded-xl border-orange-400/60 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/30 gap-1.5 px-3 flex-shrink-0"
               >
-                <Check className="h-4 w-4" />
-                <span className="text-sm">Terminer</span>
+                <Check className="h-3.5 w-3.5" />
+                <span className="text-sm font-medium">Terminer</span>
               </Button>
             )}
           </div>
         </Card>
       )}
 
-      {/* Alertes de conflit */}
+      {/* Alertes de conflit - Design compact */}
       {conflictingParcels.length > 0 && (
-        <Alert variant="destructive" className="py-2 rounded-xl">
+        <Alert variant="destructive" className="py-2.5 px-3 rounded-2xl shadow-sm">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-            <span>{conflictingParcels.length} conflit(s) détecté(s)</span>
+          <AlertDescription className="flex items-center justify-between gap-2 text-sm">
+            <span className="font-medium">{conflictingParcels.length} conflit(s)</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowConflictDialog(true)}
-              className="h-7 text-xs rounded-lg"
+              className="h-7 text-xs rounded-xl px-2.5"
             >
               Signaler
             </Button>
@@ -1313,10 +1323,10 @@ export const ParcelMapPreview = ({
 
       {/* Validation du nombre minimum de marqueurs */}
       {mapConfig.minMarkers && validCoords.length > 0 && validCoords.length < mapConfig.minMarkers && (
-        <Alert variant="destructive" className="py-2 rounded-xl">
+        <Alert variant="destructive" className="py-2.5 px-3 rounded-2xl shadow-sm">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="text-xs">
-            Minimum {mapConfig.minMarkers} bornes requises ({validCoords.length} actuellement).
+          <AlertDescription className="text-sm">
+            Min. {mapConfig.minMarkers} bornes ({validCoords.length} actuel)
           </AlertDescription>
         </Alert>
       )}
@@ -1325,18 +1335,18 @@ export const ParcelMapPreview = ({
       {surfaceArea > 0 && (
         <>
           {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
-            <Alert variant="destructive" className="py-2 rounded-xl">
+            <Alert variant="destructive" className="py-2.5 px-3 rounded-2xl shadow-sm">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Surface trop petite: {surfaceArea.toLocaleString()} m² (min: {mapConfig.minSurfaceSqm.toLocaleString()} m²).
+              <AlertDescription className="text-sm">
+                Surface trop petite: {surfaceArea.toLocaleString()} m²
               </AlertDescription>
             </Alert>
           )}
           {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
-            <Alert variant="destructive" className="py-2 rounded-xl">
+            <Alert variant="destructive" className="py-2.5 px-3 rounded-2xl shadow-sm">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">
-                Surface trop grande: {surfaceArea.toLocaleString()} m² (max: {mapConfig.maxSurfaceSqm.toLocaleString()} m²).
+              <AlertDescription className="text-sm">
+                Surface trop grande: {surfaceArea.toLocaleString()} m²
               </AlertDescription>
             </Alert>
           )}
@@ -1344,36 +1354,45 @@ export const ParcelMapPreview = ({
       )}
 
       {loadingConflicts && (
-        <Alert className="py-2 rounded-xl">
+        <Alert className="py-2.5 px-3 rounded-2xl shadow-sm">
           <Info className="h-4 w-4" />
-          <AlertDescription className="text-xs">
-            Vérification des parcelles voisines...
+          <AlertDescription className="text-sm">
+            Vérification parcelles voisines...
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Carte */}
-      <Card className={`overflow-hidden relative z-0 rounded-2xl shadow-lg transition-all ${
+      {/* Carte - Design amélioré */}
+      <Card className={`overflow-hidden relative z-0 rounded-2xl shadow-lg transition-all duration-200 ${
         isDrawingMode 
-          ? 'border-2 border-orange-500/50 ring-2 ring-orange-500/20' 
-          : 'border-2 border-primary/20'
+          ? 'border-2 border-orange-400/60 ring-4 ring-orange-500/15' 
+          : 'border-2 border-primary/25 ring-2 ring-primary/5'
       }`}>
         <div 
           ref={mapRef} 
-          className="h-[280px] md:h-[350px] lg:h-[400px] w-full relative z-0"
+          className="h-[260px] w-full relative z-0"
           style={{ cursor: isDrawingMode ? 'crosshair' : 'grab' }}
         />
+        {/* Indicateur mode actif sur la carte */}
+        {isDrawingMode && (
+          <div className="absolute top-2 left-2 z-10">
+            <Badge className="bg-orange-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
+              <Pencil className="h-3 w-3 mr-1" />
+              Dessin actif
+            </Badge>
+          </div>
+        )}
       </Card>
 
-      {/* Contrôles de dessin */}
+      {/* Contrôles de dessin - Boutons compacts */}
       {enableDrawingMode && coordinates.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="outline"
             size="sm"
             onClick={removeLastMarker}
-            className="gap-1.5 text-xs h-8 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+            className="flex-1 gap-1.5 text-sm h-9 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 transition-colors"
           >
             <Trash2 className="h-3.5 w-3.5" />
             Supprimer dernière
@@ -1383,24 +1402,27 @@ export const ParcelMapPreview = ({
             variant="outline"
             size="sm"
             onClick={clearAllMarkers}
-            className="gap-1.5 text-xs h-8 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30"
+            className="gap-1.5 text-sm h-9 px-3 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 transition-colors"
           >
             <Trash2 className="h-3.5 w-3.5" />
-            Tout effacer
+            Tout
           </Button>
         </div>
       )}
 
-      {/* Résumé des dimensions */}
+      {/* Résumé des dimensions - Design compact */}
       {validCoords.length >= 3 && parcelSides.length > 0 && (
-        <Card className="p-3 bg-muted/30 rounded-2xl">
-          <div className="space-y-2">
-            <Label className="text-xs font-medium text-muted-foreground">Dimensions calculées</Label>
+        <Card className="p-3 bg-muted/40 rounded-2xl shadow-sm border-border/50">
+          <div className="space-y-2.5">
+            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
+              Dimensions calculées
+            </Label>
             <div className="grid grid-cols-2 gap-2">
               {parcelSides.map((side, index) => (
-                <div key={index} className="flex items-center justify-between bg-background/50 p-2 rounded-xl text-xs">
-                  <span className="text-muted-foreground">{side.name}</span>
-                  <span className="font-mono font-medium">{side.length} m</span>
+                <div key={index} className="flex items-center justify-between bg-background/70 p-2.5 rounded-xl text-sm border border-border/30">
+                  <span className="text-muted-foreground font-medium">{side.name}</span>
+                  <span className="font-mono font-semibold text-foreground">{side.length} m</span>
                 </div>
               ))}
             </div>
@@ -1408,19 +1430,20 @@ export const ParcelMapPreview = ({
         </Card>
       )}
       
-      {/* Info */}
-      <div className="text-xs text-muted-foreground flex items-start gap-1.5">
-        <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
-        <span>
-          {enableDrawingMode 
-            ? isDrawingMode 
-              ? "Cliquez sur la carte pour ajouter des bornes. Cliquez 'Terminer' pour revenir en navigation."
-              : "Cliquez 'Commencer le tracé' puis cliquez sur la carte pour placer les bornes."
-            : "Utilisez les contrôles sur la carte pour choisir entre déplacement groupé ou individuel."
-          }
-          {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
-        </span>
-      </div>
+      {/* Info - Design compact lisible */}
+      <Card className="p-2.5 rounded-xl bg-muted/30 border-border/40">
+        <div className="flex items-start gap-2">
+          <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {enableDrawingMode 
+              ? isDrawingMode 
+                ? "Touchez la carte pour ajouter des bornes. Appuyez sur 'Terminer' pour naviguer."
+                : "Appuyez sur 'Tracer' puis touchez la carte pour placer les bornes."
+              : "Utilisez les contrôles pour déplacer les bornes."
+            }
+          </p>
+        </div>
+      </Card>
 
       {/* Panel côtés bordant route */}
       {validCoords.length >= 3 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
