@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
@@ -74,6 +74,7 @@ export const ParcelMapPreview = ({
   const [groupDragMode, setGroupDragMode] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [showLongPressHint, setShowLongPressHint] = useState(false);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
   const groupDragStartRef = useRef<{ lat: number; lng: number } | null>(null);
   
   // Charger la configuration depuis Supabase
@@ -491,152 +492,19 @@ export const ParcelMapPreview = ({
         groupDragControlRef.current = groupControl;
       }
 
-      // Ajouter le support de l'appui prolongé pour ajouter des marqueurs
+      // Mode Navigation/Dessin - Simple clic pour ajouter des marqueurs en mode dessin
       if (enableDrawingMode) {
-        let longPressTimer: NodeJS.Timeout | null = null;
-        let touchStartPos: { lat: number; lng: number } | null = null;
-        let tempMarkerLocal: any = null;
-        
         // Référence locale pour addMarkerAtPosition qui sera mise à jour
         const addMarkerRef = { current: addMarkerAtPosition };
         
-        const startLongPress = (latlng: any) => {
-          touchStartPos = { lat: latlng.lat, lng: latlng.lng };
-          setShowLongPressHint(true);
-          
-          // Supprimer l'ancien marqueur temporaire s'il existe
-          if (tempMarkerLocal) {
-            tempMarkerLocal.remove();
-            tempMarkerLocal = null;
-          }
-          if (longPressMarkerRef.current) {
-            longPressMarkerRef.current.remove();
-            longPressMarkerRef.current = null;
-          }
-          
-          // Créer un marqueur temporaire avec couleur directe (pas de CSS variable)
-          const primaryColor = '#3b82f6'; // Bleu primaire
-          
-          // Créer un cercle pulsant avec animation CSS inline
-          const pulseIcon = L.divIcon({
-            className: 'long-press-indicator',
-            html: `
-              <div style="
-                width: 40px;
-                height: 40px;
-                background-color: ${primaryColor};
-                opacity: 0.4;
-                border-radius: 50%;
-                border: 3px solid ${primaryColor};
-                animation: pulse-ring 0.8s ease-out infinite;
-                position: relative;
-                z-index: 1000;
-              ">
-                <div style="
-                  position: absolute;
-                  top: 50%;
-                  left: 50%;
-                  transform: translate(-50%, -50%);
-                  width: 16px;
-                  height: 16px;
-                  background-color: ${primaryColor};
-                  border-radius: 50%;
-                  border: 2px solid white;
-                  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-                "></div>
-              </div>
-              <style>
-                @keyframes pulse-ring {
-                  0% { transform: scale(0.8); opacity: 0.6; }
-                  50% { transform: scale(1.2); opacity: 0.3; }
-                  100% { transform: scale(0.8); opacity: 0.6; }
-                }
-              </style>
-            `,
-            iconSize: [40, 40],
-            iconAnchor: [20, 20],
-          });
-          
-          tempMarkerLocal = L.marker([latlng.lat, latlng.lng], {
-            icon: pulseIcon,
-            interactive: false,
-            zIndexOffset: 1000,
-          }).addTo(map);
-          
-          longPressMarkerRef.current = tempMarkerLocal;
-          
-          longPressTimer = setTimeout(() => {
-            if (touchStartPos) {
-              // Appeler la fonction d'ajout de marqueur
-              addMarkerRef.current(touchStartPos.lat, touchStartPos.lng);
-              
-              // Supprimer le marqueur temporaire
-              if (tempMarkerLocal) {
-                tempMarkerLocal.remove();
-                tempMarkerLocal = null;
-              }
-              if (longPressMarkerRef.current) {
-                longPressMarkerRef.current.remove();
-                longPressMarkerRef.current = null;
-              }
-            }
-            setShowLongPressHint(false);
-          }, 600); // 600ms pour l'appui prolongé
-        };
-        
-        const cancelLongPress = () => {
-          if (longPressTimer) {
-            clearTimeout(longPressTimer);
-            longPressTimer = null;
-          }
-          touchStartPos = null;
-          setShowLongPressHint(false);
-          
-          if (tempMarkerLocal) {
-            tempMarkerLocal.remove();
-            tempMarkerLocal = null;
-          }
-          if (longPressMarkerRef.current) {
-            longPressMarkerRef.current.remove();
-            longPressMarkerRef.current = null;
-          }
-        };
-        
-        // Events pour desktop (mousedown/mouseup)
-        map.on('mousedown', (e: any) => {
-          if (e.originalEvent.button === 0) { // Bouton gauche
-            startLongPress(e.latlng);
+        // Ajouter un handler de clic qui vérifie le mode
+        map.on('click', (e: any) => {
+          // Vérifier si on est en mode dessin via l'attribut data
+          const container = map.getContainer();
+          if (container.dataset.drawingMode === 'true') {
+            addMarkerRef.current(e.latlng.lat, e.latlng.lng);
           }
         });
-        
-        map.on('mouseup', cancelLongPress);
-        map.on('mousemove', (e: any) => {
-          if (touchStartPos) {
-            const distance = map.distance([touchStartPos.lat, touchStartPos.lng], [e.latlng.lat, e.latlng.lng]);
-            if (distance > 10) { // Si l'utilisateur bouge trop, annuler
-              cancelLongPress();
-            }
-          }
-        });
-        
-        // Events pour mobile (touchstart/touchend)
-        const mapContainer = map.getContainer();
-        mapContainer.addEventListener('touchstart', (e: TouchEvent) => {
-          if (e.touches.length === 1) {
-            const touch = e.touches[0];
-            const rect = mapContainer.getBoundingClientRect();
-            const point = L.point(touch.clientX - rect.left, touch.clientY - rect.top);
-            const latlng = map.containerPointToLatLng(point);
-            startLongPress(latlng);
-          }
-        }, { passive: true });
-        
-        mapContainer.addEventListener('touchend', cancelLongPress, { passive: true });
-        mapContainer.addEventListener('touchmove', (e: TouchEvent) => {
-          if (touchStartPos && e.touches.length === 1) {
-            cancelLongPress();
-          }
-        }, { passive: true });
         
         // Stocker la référence pour mise à jour
         (map as any)._addMarkerRef = addMarkerRef;
@@ -1339,41 +1207,90 @@ export const ParcelMapPreview = ({
         </div>
       </div>
 
-      {/* Instructions de dessin */}
+      {/* Mode Navigation/Dessin Toggle */}
       {enableDrawingMode && (
-        <Card className="p-3 bg-gradient-to-br from-primary/5 to-transparent border-primary/20 rounded-2xl">
-          <div className="flex items-start gap-3">
-            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
-              <Target className="h-4 w-4 text-primary" />
+        <Card className={`p-3 rounded-2xl transition-all ${
+          isDrawingMode 
+            ? 'bg-orange-500/10 border-orange-500/30 border-2' 
+            : 'bg-muted/30 border-border/50'
+        }`}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              {isDrawingMode ? (
+                <>
+                  <div className="h-9 w-9 rounded-xl bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+                    <Pencil className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-orange-700">Mode Dessin actif</p>
+                    <p className="text-xs text-orange-600/80">Cliquez sur la carte pour ajouter des bornes</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Navigation className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Mode Navigation</p>
+                    <p className="text-xs text-muted-foreground">
+                      {coordinates.length === 0 
+                        ? "Naviguez vers l'emplacement de votre parcelle"
+                        : `${coordinates.length} borne${coordinates.length > 1 ? 's' : ''} - Zoomez ou déplacez la carte`
+                      }
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
-            <div className="flex-1 space-y-1">
-              <p className="text-sm font-medium text-foreground">
-                {coordinates.length === 0 
-                  ? "Dessinez votre parcelle" 
-                  : `${coordinates.length} borne${coordinates.length > 1 ? 's' : ''} ajoutée${coordinates.length > 1 ? 's' : ''}`
-                }
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {coordinates.length === 0 
-                  ? "Faites un appui prolongé sur la carte pour placer la première borne de votre parcelle."
-                  : coordinates.length < 3
-                    ? "Continuez à ajouter des bornes par appui prolongé pour dessiner la parcelle."
-                    : "Parcelle tracée. Vous pouvez déplacer les bornes ou en ajouter d'autres."
-                }
-              </p>
-            </div>
+            
+            {/* Toggle button */}
+            {!isDrawingMode ? (
+              <Button 
+                type="button"
+                size="sm" 
+                onClick={() => {
+                  setIsDrawingMode(true);
+                  const map = mapInstanceRef.current;
+                  if (map) {
+                    map.dragging.disable();
+                    map.scrollWheelZoom.disable();
+                    map.doubleClickZoom.disable();
+                    map.touchZoom.disable();
+                    map.getContainer().dataset.drawingMode = 'true';
+                    map.getContainer().style.cursor = 'crosshair';
+                  }
+                }}
+                className="h-9 rounded-xl bg-primary hover:bg-primary/90 gap-2 px-4"
+              >
+                <Pencil className="h-4 w-4" />
+                <span className="text-sm">Commencer le tracé</span>
+              </Button>
+            ) : (
+              <Button 
+                type="button"
+                size="sm" 
+                onClick={() => {
+                  setIsDrawingMode(false);
+                  const map = mapInstanceRef.current;
+                  if (map) {
+                    map.dragging.enable();
+                    map.scrollWheelZoom.enable();
+                    map.doubleClickZoom.enable();
+                    map.touchZoom.enable();
+                    map.getContainer().dataset.drawingMode = 'false';
+                    map.getContainer().style.cursor = 'grab';
+                  }
+                }}
+                variant="outline"
+                className="h-9 rounded-xl border-orange-500/50 text-orange-700 hover:bg-orange-500/10 gap-2 px-4"
+              >
+                <Check className="h-4 w-4" />
+                <span className="text-sm">Terminer</span>
+              </Button>
+            )}
           </div>
         </Card>
-      )}
-
-      {/* Indicateur d'appui prolongé */}
-      {showLongPressHint && (
-        <Alert className="py-2 bg-primary/10 border-primary/30 rounded-xl animate-pulse">
-          <Target className="h-4 w-4 text-primary" />
-          <AlertDescription className="text-xs text-primary font-medium">
-            Maintenez appuyé pour ajouter une borne...
-          </AlertDescription>
-        </Alert>
       )}
 
       {/* Alertes de conflit */}
@@ -1436,10 +1353,15 @@ export const ParcelMapPreview = ({
       )}
 
       {/* Carte */}
-      <Card className="overflow-hidden border-2 border-primary/20 relative z-0 rounded-2xl shadow-lg">
+      <Card className={`overflow-hidden relative z-0 rounded-2xl shadow-lg transition-all ${
+        isDrawingMode 
+          ? 'border-2 border-orange-500/50 ring-2 ring-orange-500/20' 
+          : 'border-2 border-primary/20'
+      }`}>
         <div 
           ref={mapRef} 
           className="h-[280px] md:h-[350px] lg:h-[400px] w-full relative z-0"
+          style={{ cursor: isDrawingMode ? 'crosshair' : 'grab' }}
         />
       </Card>
 
@@ -1491,7 +1413,9 @@ export const ParcelMapPreview = ({
         <Info className="h-3 w-3 flex-shrink-0 mt-0.5" />
         <span>
           {enableDrawingMode 
-            ? "Appui prolongé pour ajouter une borne. Déplacez les marqueurs pour ajuster."
+            ? isDrawingMode 
+              ? "Cliquez sur la carte pour ajouter des bornes. Cliquez 'Terminer' pour revenir en navigation."
+              : "Cliquez 'Commencer le tracé' puis cliquez sur la carte pour placer les bornes."
             : "Utilisez les contrôles sur la carte pour choisir entre déplacement groupé ou individuel."
           }
           {mapConfig.enableRoadBorderingFeature !== false && ' Cliquez sur un segment pour indiquer une route.'}
