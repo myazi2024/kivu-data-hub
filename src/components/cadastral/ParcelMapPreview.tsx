@@ -4,17 +4,11 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, MapPin, AlertTriangle, Info, Trash2, Pencil, Check, Navigation, Search, Square, Circle, Triangle, Hexagon, Plus, GripVertical, Move } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
 import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 interface Coordinate {
   borne: string;
@@ -33,15 +27,6 @@ interface ConflictingParcel {
 interface ParcelSide {
   name: string;
   length: string;
-}
-
-interface ConstructionShape {
-  id: string;
-  type: 'circle' | 'square' | 'rectangle' | 'polygon';
-  lat: number;
-  lng: number;
-  size: number;
-  label?: string;
 }
 
 interface ParcelMapPreviewProps {
@@ -78,74 +63,72 @@ export const ParcelMapPreview = ({
   const dimensionLayersRef = useRef<any[]>([]);
   const conflictLayersRef = useRef<any[]>([]);
   const segmentLayersRef = useRef<any[]>([]);
-  const neighborParcelsRef = useRef<any[]>([]);
-  const constructionLayersRef = useRef<any[]>([]);
-  
+  const groupDragControlRef = useRef<any>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const longPressMarkerRef = useRef<any>(null);
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
   const [loadingConflicts, setLoadingConflicts] = useState(false);
+  const [groupDragMode, setGroupDragMode] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [showLongPressHint, setShowLongPressHint] = useState(false);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
-  const [constructions, setConstructions] = useState<ConstructionShape[]>([]);
-  const [isAddingConstruction, setIsAddingConstruction] = useState<string | null>(null);
-  const [showNeighborParcels, setShowNeighborParcels] = useState(false);
-  const [loadingNeighbors, setLoadingNeighbors] = useState(false);
-  const [selectedMarkerId, setSelectedMarkerId] = useState<number | null>(null);
+  const groupDragStartRef = useRef<{ lat: number; lng: number } | null>(null);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
   
-  // Fusionner propConfig avec dbConfig
+  // Fusionner propConfig avec dbConfig (propConfig prioritaire si fourni)
   const mapConfig = useMemo(() => {
     const baseConfig = { ...dbConfig };
     const finalConfig = { ...baseConfig, ...propConfig };
+    
     return finalConfig;
   }, [dbConfig, propConfig]);
 
-  // Calculer le centre de la carte
+  // Calculer le centre de la carte basé sur la borne 1
   const mapCenter = useMemo(() => {
-    if (coordinates.length > 0) {
-      const validCoords = coordinates.filter(
-        coord => coord.lat && coord.lng && !isNaN(parseFloat(coord.lat)) && !isNaN(parseFloat(coord.lng))
-      );
-      if (validCoords.length > 0) {
-        const lat = parseFloat(validCoords[0].lat);
-        const lng = parseFloat(validCoords[0].lng);
-        if (!isNaN(lat) && !isNaN(lng)) {
-          return [lat, lng] as [number, number];
-        }
+    const borne1 = coordinates.find(coord => coord.borne === '1' || coord.borne === 'Borne 1');
+    if (borne1 && borne1.lat && borne1.lng) {
+      const lat = parseFloat(borne1.lat);
+      const lng = parseFloat(borne1.lng);
+      if (!isNaN(lat) && !isNaN(lng)) {
+        return [lat, lng] as [number, number];
       }
     }
+    // Utiliser le defaultCenter de la config
     const center = mapConfig.defaultCenter;
-    if (center && 'lat' in center && 'lng' in center) {
-      return [center.lat, center.lng] as [number, number];
+    if (center) {
+      if ('lat' in center && 'lng' in center) {
+        return [center.lat, center.lng] as [number, number];
+      }
     }
     return [0, 0] as [number, number];
   }, [coordinates, mapConfig.defaultCenter]);
 
-  // Coordonnées valides
+  // Mémoriser les coordonnées valides pour éviter les re-renders inutiles
   const validCoords = useMemo(() => 
     coordinates.filter(
       coord => coord.lat && coord.lng && !isNaN(parseFloat(coord.lat)) && !isNaN(parseFloat(coord.lng))
     ),
     [coordinates]
   );
+  
+  // Coordonnées avec valeurs par défaut pour affichage visuel des bornes non remplies
+  const displayCoords = useMemo(() => 
+    coordinates.map((coord, index) => {
+      if (coord.lat && coord.lng && !isNaN(parseFloat(coord.lat)) && !isNaN(parseFloat(coord.lng))) {
+        return coord;
+      }
+      // Pour les bornes sans coordonnées, on retourne null pour ne pas les afficher
+      return null;
+    }).filter(Boolean) as typeof coordinates,
+    [coordinates]
+  );
 
-  // Calculer la distance entre 2 points GPS
-  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
-    const R = 6371000;
-    const toRad = (deg: number) => (deg * Math.PI) / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLng = toRad(lng2 - lng1);
-    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-      Math.sin(dLng / 2) * Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c * 100) / 100;
-  };
-
-  // Ajouter un nouveau marqueur
+  // Ajouter un nouveau marqueur via appui prolongé
   const addMarkerAtPosition = useCallback((lat: number, lng: number) => {
     const newBorneNumber = coordinates.length + 1;
     const newCoordinate: Coordinate = {
@@ -157,40 +140,78 @@ export const ParcelMapPreview = ({
     const updatedCoords = [...coordinates, newCoordinate];
     onCoordinatesUpdate(updatedCoords);
     
-    // Mettre à jour les côtés
+    // Mettre à jour les côtés de la parcelle
     if (onParcelSidesUpdate && updatedCoords.length >= 2) {
-      updateParcelSides(updatedCoords);
+      const validUpdated = updatedCoords.filter(
+        c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
+      );
+      
+      if (validUpdated.length >= 2) {
+        const newSides: ParcelSide[] = [];
+        for (let i = 0; i < validUpdated.length; i++) {
+          const nextIndex = (i + 1) % validUpdated.length;
+          const current = validUpdated[i];
+          const next = validUpdated[nextIndex];
+          
+          const distance = calculateDistance(
+            parseFloat(current.lat),
+            parseFloat(current.lng),
+            parseFloat(next.lat),
+            parseFloat(next.lng)
+          );
+          
+          newSides.push({
+            name: `Côté ${i + 1}`,
+            length: distance.toFixed(2)
+          });
+        }
+        onParcelSidesUpdate(newSides);
+      }
     }
   }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
-
-  // Ajouter une construction
-  const addConstructionAtPosition = useCallback((lat: number, lng: number, type: string) => {
-    const newConstruction: ConstructionShape = {
-      id: `const_${Date.now()}`,
-      type: type as ConstructionShape['type'],
-      lat,
-      lng,
-      size: 10,
-      label: `Bâtiment ${constructions.length + 1}`
-    };
-    setConstructions(prev => [...prev, newConstruction]);
-    setIsAddingConstruction(null);
-  }, [constructions]);
 
   // Supprimer le dernier marqueur
   const removeLastMarker = useCallback(() => {
     if (coordinates.length === 0) return;
+    
     const updatedCoords = coordinates.slice(0, -1);
     onCoordinatesUpdate(updatedCoords);
+    
+    // Mettre à jour les côtés de la parcelle
     if (onParcelSidesUpdate) {
-      updateParcelSides(updatedCoords);
+      const validUpdated = updatedCoords.filter(
+        c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
+      );
+      
+      if (validUpdated.length >= 2) {
+        const newSides: ParcelSide[] = [];
+        for (let i = 0; i < validUpdated.length; i++) {
+          const nextIndex = (i + 1) % validUpdated.length;
+          const current = validUpdated[i];
+          const next = validUpdated[nextIndex];
+          
+          const distance = calculateDistance(
+            parseFloat(current.lat),
+            parseFloat(current.lng),
+            parseFloat(next.lat),
+            parseFloat(next.lng)
+          );
+          
+          newSides.push({
+            name: `Côté ${i + 1}`,
+            length: distance.toFixed(2)
+          });
+        }
+        onParcelSidesUpdate(newSides);
+      } else {
+        onParcelSidesUpdate([]);
+      }
     }
   }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
 
   // Réinitialiser tous les marqueurs
   const clearAllMarkers = useCallback(() => {
     onCoordinatesUpdate([]);
-    setConstructions([]);
     if (onParcelSidesUpdate) {
       onParcelSidesUpdate([]);
     }
@@ -199,20 +220,29 @@ export const ParcelMapPreview = ({
     }
   }, [onCoordinatesUpdate, onParcelSidesUpdate, onRoadSidesChange]);
 
-  // Mettre à jour les côtés de la parcelle
-  const updateParcelSides = useCallback((coords: Coordinate[]) => {
+  // Calculer l'orientation d'un côté basé sur le bearing
+  const calculateOrientation = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
+    const bearing = Math.atan2(lng2 - lng1, lat2 - lat1) * (180 / Math.PI);
+    const normalized = (bearing + 360) % 360;
+    
+    if (normalized >= 315 || normalized < 45) return 'Nord';
+    if (normalized >= 45 && normalized < 135) return 'Est';
+    if (normalized >= 135 && normalized < 225) return 'Sud';
+    return 'Ouest';
+  };
+
+  // Mettre à jour parcelSides quand les coordonnées changent
+  const updateParcelSidesFromCoordinates = useCallback((coords: Coordinate[]) => {
     if (!onParcelSidesUpdate) return;
     
     const validCoords = coords.filter(
-      c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
+      coord => coord.lat && coord.lng && !isNaN(parseFloat(coord.lat)) && !isNaN(parseFloat(coord.lng))
     );
     
-    if (validCoords.length < 2) {
-      onParcelSidesUpdate([]);
-      return;
-    }
+    if (validCoords.length < 2) return;
     
-    const newSides: ParcelSide[] = [];
+    const updatedSides: ParcelSide[] = [];
+    
     for (let i = 0; i < validCoords.length; i++) {
       const nextIndex = (i + 1) % validCoords.length;
       const current = validCoords[i];
@@ -225,485 +255,23 @@ export const ParcelMapPreview = ({
         parseFloat(next.lng)
       );
       
-      newSides.push({
-        name: `Côté ${i + 1}`,
+      // Trouver le côté correspondant en se basant sur le numéro de borne
+      const currentBorneNum = parseInt(current.borne);
+      const existingSide = parcelSides.find(side => {
+        const match = side.name.match(/Côté (\d+)/);
+        return match && parseInt(match[1]) === currentBorneNum;
+      }) || parcelSides[i];
+      
+      updatedSides.push({
+        name: existingSide?.name || `Côté ${currentBorneNum}`,
         length: distance.toFixed(2)
       });
     }
-    onParcelSidesUpdate(newSides);
-  }, [onParcelSidesUpdate]);
-
-  // Calculer l'orientation d'un côté
-  const calculateOrientation = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
-    const bearing = Math.atan2(lng2 - lng1, lat2 - lat1) * (180 / Math.PI);
-    const normalized = (bearing + 360) % 360;
     
-    if (normalized >= 315 || normalized < 45) return 'Nord';
-    if (normalized >= 45 && normalized < 135) return 'Est';
-    if (normalized >= 135 && normalized < 225) return 'Sud';
-    return 'Ouest';
-  };
+    onParcelSidesUpdate(updatedSides);
+  }, [onParcelSidesUpdate, parcelSides]);
 
-  // Calculer la surface d'un polygone
-  const calculatePolygonArea = (coords: [number, number][]): number => {
-    if (coords.length < 3) return 0;
-    const R = 6371000;
-    const toRad = (deg: number) => (deg * Math.PI) / 180;
-    
-    let area = 0;
-    for (let i = 0; i < coords.length; i++) {
-      const j = (i + 1) % coords.length;
-      const lat1 = toRad(coords[i][0]);
-      const lat2 = toRad(coords[j][0]);
-      const lng1 = toRad(coords[i][1]);
-      const lng2 = toRad(coords[j][1]);
-      
-      area += (lng2 - lng1) * (2 + Math.sin(lat1) + Math.sin(lat2));
-    }
-    
-    area = Math.abs(area * R * R / 2);
-    return Math.round(area * 100) / 100;
-  };
-
-  // Vérifier manuellement les parcelles voisines
-  const checkNeighborParcels = useCallback(async () => {
-    if (validCoords.length < 3) return;
-    
-    setLoadingNeighbors(true);
-    setShowNeighborParcels(true);
-    
-    try {
-      const latLngs: [number, number][] = validCoords.map(c => [parseFloat(c.lat), parseFloat(c.lng)]);
-      const bounds = calculateBounds(latLngs);
-      
-      const { data: parcels, error } = await supabase
-        .from('cadastral_parcels')
-        .select('id, parcel_number, current_owner_name, location, gps_coordinates')
-        .not('gps_coordinates', 'is', null);
-      
-      if (error) throw error;
-      
-      const L = await import('leaflet');
-      const map = mapInstanceRef.current;
-      
-      // Supprimer les anciennes couches voisines
-      neighborParcelsRef.current.forEach(layer => layer.remove());
-      neighborParcelsRef.current = [];
-      
-      parcels?.forEach(parcel => {
-        if (parcel.parcel_number === currentParcelNumber) return;
-        
-        try {
-          let parcelCoords: [number, number][] = [];
-          
-          if (parcel.gps_coordinates) {
-            const gpsData = parcel.gps_coordinates as any;
-            if (Array.isArray(gpsData)) {
-              parcelCoords = gpsData
-                .map((coord: any) => {
-                  if (coord.lat && coord.lng) {
-                    return [parseFloat(coord.lat), parseFloat(coord.lng)] as [number, number];
-                  }
-                  return null;
-                })
-                .filter(Boolean) as [number, number][];
-            }
-          }
-          
-          if (parcelCoords.length >= 3) {
-            // Vérifier si cette parcelle est proche de la nouvelle
-            const parcelBounds = calculateBounds(parcelCoords);
-            const isNearby = !(parcelBounds.maxLat < bounds.minLat || parcelBounds.minLat > bounds.maxLat ||
-                              parcelBounds.maxLng < bounds.minLng || parcelBounds.minLng > bounds.maxLng);
-            
-            if (isNearby) {
-              // Afficher la parcelle voisine
-              const neighborPolygon = L.polygon(parcelCoords, {
-                color: '#6366f1',
-                fillColor: '#6366f1',
-                fillOpacity: 0.15,
-                weight: 2,
-                dashArray: '8, 4'
-              }).addTo(map);
-              
-              neighborPolygon.bindPopup(`
-                <div style="font-size: 12px; padding: 4px;">
-                  <strong>${parcel.parcel_number}</strong><br/>
-                  <span style="color: #666;">${parcel.current_owner_name}</span>
-                </div>
-              `);
-              
-              neighborParcelsRef.current.push(neighborPolygon);
-            }
-          }
-        } catch (err) {
-          console.error('Error processing parcel:', err);
-        }
-      });
-      
-    } catch (error) {
-      console.error('Error checking neighbors:', error);
-    } finally {
-      setLoadingNeighbors(false);
-    }
-  }, [validCoords, currentParcelNumber]);
-
-  // Masquer les parcelles voisines
-  const hideNeighborParcels = useCallback(() => {
-    neighborParcelsRef.current.forEach(layer => layer.remove());
-    neighborParcelsRef.current = [];
-    setShowNeighborParcels(false);
-  }, []);
-
-  // Calculer les limites géographiques
-  const calculateBounds = (coords: [number, number][]) => {
-    const lats = coords.map(c => c[0]);
-    const lngs = coords.map(c => c[1]);
-    return {
-      minLat: Math.min(...lats) - 0.001,
-      maxLat: Math.max(...lats) + 0.001,
-      minLng: Math.min(...lngs) - 0.001,
-      maxLng: Math.max(...lngs) + 0.001
-    };
-  };
-
-  // Initialiser la carte
-  useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
-
-    const initMap = async () => {
-      const L = await import('leaflet');
-      await import('leaflet/dist/leaflet.css');
-
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-      });
-
-      const map = L.map(mapRef.current, {
-        zoomControl: true,
-        attributionControl: true,
-        center: mapCenter,
-        zoom: mapConfig.defaultZoom || 15,
-      });
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 19,
-      }).addTo(map);
-
-      // Échelle
-      L.control.scale({
-        position: 'bottomleft',
-        metric: true,
-        imperial: false,
-        maxWidth: 150,
-      }).addTo(map);
-
-      // Boussole
-      const CompassControl = L.Control.extend({
-        options: { position: 'topright' },
-        onAdd: function() {
-          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-          container.style.cssText = 'background:white;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,0.2);';
-          container.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L15 10H9L12 2Z" fill="#dc2626"/><path d="M12 22L9 14H15L12 22Z" fill="#6b7280"/><circle cx="12" cy="12" r="2" fill="#374151"/></svg>`;
-          container.title = 'Nord';
-          return container;
-        }
-      });
-      new CompassControl().addTo(map);
-
-      // Gestionnaire de clic pour le mode dessin ou ajout de construction
-      map.on('click', (e: any) => {
-        const container = map.getContainer();
-        if (container.dataset.drawingMode === 'true') {
-          addMarkerAtPosition(e.latlng.lat, e.latlng.lng);
-        } else if (container.dataset.addingConstruction) {
-          addConstructionAtPosition(e.latlng.lat, e.latlng.lng, container.dataset.addingConstruction);
-          container.dataset.addingConstruction = '';
-        }
-      });
-
-      mapInstanceRef.current = map;
-      
-      map.whenReady(() => {
-        setTimeout(() => {
-          map.invalidateSize();
-          setIsMapReady(true);
-        }, 100);
-      });
-    };
-
-    initMap();
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        setIsMapReady(false);
-      }
-    };
-  }, [mapCenter, mapConfig.defaultZoom]);
-
-  // Mettre à jour les markers et polygone
-  useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current) return;
-
-    const updateMap = async () => {
-      const L = await import('leaflet');
-      const map = mapInstanceRef.current;
-
-      // Nettoyer
-      markersRef.current.forEach(marker => marker.remove());
-      markersRef.current = [];
-      if (polygonRef.current) {
-        polygonRef.current.remove();
-        polygonRef.current = null;
-      }
-      dimensionLayersRef.current.forEach(layer => layer.remove());
-      dimensionLayersRef.current = [];
-      segmentLayersRef.current.forEach(layer => layer.remove());
-      segmentLayersRef.current = [];
-
-      if (validCoords.length === 0) {
-        map.setView(mapConfig.defaultCenter || [0, 0], mapConfig.defaultZoom || 2);
-        setSurfaceArea(0);
-        return;
-      }
-
-      const latLngs: [number, number][] = [];
-      
-      // Créer les marqueurs draggables
-      validCoords.forEach((coord, index) => {
-        const lat = parseFloat(coord.lat);
-        const lng = parseFloat(coord.lng);
-        latLngs.push([lat, lng]);
-
-        if (mapConfig.showMarkers) {
-          const markerColor = mapConfig.markerColor || '#3b82f6';
-          const isSelected = selectedMarkerId === index;
-          
-          const marker = L.marker([lat, lng], {
-            draggable: true,
-            icon: L.divIcon({
-              className: 'custom-marker',
-              html: `<div style="
-                background-color: ${isSelected ? '#f97316' : markerColor};
-                color: white;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border: 3px solid white;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.35);
-                font-weight: bold;
-                font-size: 13px;
-                cursor: grab;
-                transition: transform 0.15s ease;
-              ">
-                <span>${index + 1}</span>
-              </div>`,
-              iconSize: [32, 32],
-              iconAnchor: [16, 16],
-            }),
-          }).addTo(map);
-
-          // Drag handler - tous les marqueurs sont draggables
-          marker.on('dragstart', () => {
-            setSelectedMarkerId(index);
-            marker.getElement()?.style.setProperty('z-index', '1000');
-          });
-
-          marker.on('drag', () => {
-            // Redessiner le polygone en temps réel
-            const newLatLngs: [number, number][] = markersRef.current.map(m => {
-              const pos = m.getLatLng();
-              return [pos.lat, pos.lng];
-            });
-            if (polygonRef.current && newLatLngs.length >= 3) {
-              polygonRef.current.setLatLngs(newLatLngs);
-            }
-            // Redessiner les segments
-            segmentLayersRef.current.forEach((segment, sIndex) => {
-              const nextIndex = (sIndex + 1) % markersRef.current.length;
-              const marker1 = markersRef.current[sIndex];
-              const marker2 = markersRef.current[nextIndex];
-              if (marker1 && marker2) {
-                const pos1 = marker1.getLatLng();
-                const pos2 = marker2.getLatLng();
-                segment.setLatLngs([[pos1.lat, pos1.lng], [pos2.lat, pos2.lng]]);
-              }
-            });
-          });
-
-          marker.on('dragend', () => {
-            const newPos = marker.getLatLng();
-            const originalIndex = coordinates.findIndex(c => c.borne === coord.borne);
-            if (originalIndex !== -1) {
-              const updatedCoords = [...coordinates];
-              updatedCoords[originalIndex] = {
-                ...updatedCoords[originalIndex],
-                lat: newPos.lat.toFixed(6),
-                lng: newPos.lng.toFixed(6),
-              };
-              onCoordinatesUpdate(updatedCoords);
-              updateParcelSides(updatedCoords);
-            }
-          });
-
-          markersRef.current.push(marker);
-        }
-      });
-
-      // Dessiner les segments et le polygone
-      const minMarkers = mapConfig.minMarkers || 3;
-      if (latLngs.length >= minMarkers) {
-        // Segments avec interaction
-        validCoords.forEach((coord, index) => {
-          const nextIndex = (index + 1) % validCoords.length;
-          const nextCoord = validCoords[nextIndex];
-          
-          const roadSide = roadSides.find(s => s.sideIndex === index);
-          const isRoadBordering = roadSide?.bordersRoad || false;
-          const lineColor = mapConfig.lineColor || '#3b82f6';
-          
-          const segment = L.polyline(
-            [[parseFloat(coord.lat), parseFloat(coord.lng)], [parseFloat(nextCoord.lat), parseFloat(nextCoord.lng)]],
-            {
-              color: isRoadBordering ? '#f59e0b' : lineColor,
-              weight: isRoadBordering ? 5 : (mapConfig.lineWidth || 3),
-              opacity: 0.9,
-              dashArray: mapConfig.lineStyle === 'dashed' ? '10, 10' : undefined,
-            }
-          ).addTo(map);
-          
-          if (mapConfig.enableRoadBorderingFeature !== false && onRoadSidesChange) {
-            segment.on('click', () => {
-              const updatedSides = [...roadSides];
-              const sideIndex = updatedSides.findIndex(s => s.sideIndex === index);
-              if (sideIndex !== -1) {
-                updatedSides[sideIndex] = {
-                  ...updatedSides[sideIndex],
-                  bordersRoad: !updatedSides[sideIndex].bordersRoad,
-                };
-                onRoadSidesChange(updatedSides);
-              }
-            });
-          }
-          
-          segmentLayersRef.current.push(segment);
-        });
-        
-        // Polygone rempli
-        const fillColor = mapConfig.fillColor || '#3b82f6';
-        const polygon = L.polygon(latLngs, {
-          color: 'transparent',
-          fillColor: fillColor,
-          fillOpacity: mapConfig.fillOpacity || 0.2,
-          weight: 0,
-          interactive: false,
-        }).addTo(map);
-
-        polygonRef.current = polygon;
-
-        // Surface
-        if (mapConfig.autoCalculateSurface) {
-          const area = calculatePolygonArea(latLngs);
-          setSurfaceArea(area);
-        }
-        
-        // Dimensions
-        if (mapConfig.showSideDimensions) {
-          displaySideDimensions(L, map, latLngs);
-        }
-
-        map.fitBounds(polygon.getBounds(), { padding: [40, 40] });
-      } else if (latLngs.length > 0) {
-        map.setView(latLngs[0], mapConfig.defaultZoom || 15);
-        setSurfaceArea(0);
-      }
-    };
-
-    updateMap();
-  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, selectedMarkerId]);
-
-  // Afficher les constructions
-  useEffect(() => {
-    if (!isMapReady || !mapInstanceRef.current) return;
-
-    const displayConstructions = async () => {
-      const L = await import('leaflet');
-      const map = mapInstanceRef.current;
-
-      // Nettoyer les anciennes constructions
-      constructionLayersRef.current.forEach(layer => layer.remove());
-      constructionLayersRef.current = [];
-
-      constructions.forEach(construction => {
-        let shape: any;
-        const shapeColor = '#ef4444';
-        
-        switch (construction.type) {
-          case 'circle':
-            shape = L.circle([construction.lat, construction.lng], {
-              radius: construction.size,
-              color: shapeColor,
-              fillColor: shapeColor,
-              fillOpacity: 0.4,
-              weight: 2,
-            });
-            break;
-          case 'square':
-          case 'rectangle':
-            const sizeLat = construction.size / 111000;
-            const sizeLng = construction.size / (111000 * Math.cos(construction.lat * Math.PI / 180));
-            const bounds = [
-              [construction.lat - sizeLat / 2, construction.lng - sizeLng / 2],
-              [construction.lat + sizeLat / 2, construction.lng + sizeLng / 2]
-            ];
-            shape = L.rectangle(bounds as any, {
-              color: shapeColor,
-              fillColor: shapeColor,
-              fillOpacity: 0.4,
-              weight: 2,
-            });
-            break;
-          case 'polygon':
-            const numSides = 6;
-            const radius = construction.size / 111000;
-            const points: [number, number][] = [];
-            for (let i = 0; i < numSides; i++) {
-              const angle = (i / numSides) * 2 * Math.PI - Math.PI / 2;
-              points.push([
-                construction.lat + radius * Math.cos(angle),
-                construction.lng + radius * Math.sin(angle) / Math.cos(construction.lat * Math.PI / 180)
-              ]);
-            }
-            shape = L.polygon(points, {
-              color: shapeColor,
-              fillColor: shapeColor,
-              fillOpacity: 0.4,
-              weight: 2,
-            });
-            break;
-        }
-
-        if (shape) {
-          shape.addTo(map);
-          shape.bindPopup(`<div style="font-size:12px;"><strong>${construction.label || 'Construction'}</strong></div>`);
-          constructionLayersRef.current.push(shape);
-        }
-      });
-    };
-
-    displayConstructions();
-  }, [isMapReady, constructions]);
-
-  // Initialiser/mettre à jour les roadSides
+  // Initialiser/mettre à jour les roadSides quand les coordonnées changent
   useEffect(() => {
     if (validCoords.length >= 3 && onRoadSidesChange) {
       const newSides: RoadSideInfo[] = validCoords.map((coord, index) => {
@@ -735,19 +303,790 @@ export const ParcelMapPreview = ({
         };
       });
       
+      // Ne mettre à jour que si la structure a changé (nombre de côtés différent)
       if (roadSides.length !== newSides.length) {
         onRoadSidesChange(newSides);
       }
     }
   }, [validCoords.length]);
 
-  // Afficher les dimensions
+  // Calculer la distance entre 2 points GPS
+  const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
+    const R = 6371000; // Rayon de la Terre en mètres
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    
+    const a = 
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
+    
+    return Math.round(distance * 100) / 100;
+  };
+
+  // Initialiser la carte une seule fois
+  useEffect(() => {
+    if (!mapRef.current || mapInstanceRef.current) return;
+
+    const initMap = async () => {
+      const L = await import('leaflet');
+      await import('leaflet/dist/leaflet.css');
+
+      // Fix for default marker icons
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+        iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+      });
+
+      const map = L.map(mapRef.current, {
+        zoomControl: true,
+        attributionControl: true,
+        center: mapCenter,
+        zoom: mapConfig.defaultZoom || 15,
+      });
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors',
+        maxZoom: 19,
+      }).addTo(map);
+
+      // Ajouter le contrôle d'échelle
+      L.control.scale({
+        position: 'bottomleft',
+        metric: true,
+        imperial: false,
+        maxWidth: 200,
+      }).addTo(map);
+
+      // Ajouter une boussole (indicateur du nord)
+      const CompassControl = L.Control.extend({
+        options: {
+          position: 'topright'
+        },
+        onAdd: function() {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control leaflet-control-compass');
+          container.style.backgroundColor = 'white';
+          container.style.width = '40px';
+          container.style.height = '40px';
+          container.style.display = 'flex';
+          container.style.alignItems = 'center';
+          container.style.justifyContent = 'center';
+          container.style.cursor = 'default';
+          container.style.borderRadius = '4px';
+          container.style.boxShadow = '0 1px 5px rgba(0,0,0,0.4)';
+          container.innerHTML = `
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L15 10H9L12 2Z" fill="#dc2626"/>
+              <path d="M12 22L9 14H15L12 22Z" fill="#6b7280"/>
+              <circle cx="12" cy="12" r="2" fill="#374151"/>
+            </svg>
+          `;
+          container.title = 'Nord';
+          return container;
+        }
+      });
+      new CompassControl().addTo(map);
+
+      // Ajouter les contrôles de déplacement groupé
+      const GroupDragControl = L.Control.extend({
+        options: {
+          position: 'topleft'
+        },
+        onAdd: function() {
+          const container = L.DomUtil.create('div', 'leaflet-bar leaflet-control group-drag-controls');
+          container.style.display = 'flex';
+          container.style.flexDirection = 'column';
+          container.style.gap = '2px';
+          
+          // Bouton Mode Groupé
+          const groupBtn = L.DomUtil.create('a', 'leaflet-control-group-drag', container);
+          groupBtn.href = '#';
+          groupBtn.title = 'Mode déplacement groupé';
+          groupBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/>
+            </svg>
+          `;
+          groupBtn.style.width = '34px';
+          groupBtn.style.height = '34px';
+          groupBtn.style.display = 'flex';
+          groupBtn.style.alignItems = 'center';
+          groupBtn.style.justifyContent = 'center';
+          groupBtn.style.backgroundColor = 'white';
+          groupBtn.style.color = '#666';
+          groupBtn.style.borderRadius = '4px';
+          groupBtn.style.cursor = 'pointer';
+          groupBtn.style.transition = 'all 0.2s';
+          
+          // Bouton Mode Individuel
+          const individualBtn = L.DomUtil.create('a', 'leaflet-control-individual-drag', container);
+          individualBtn.href = '#';
+          individualBtn.title = 'Mode déplacement individuel';
+          individualBtn.innerHTML = `
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 3L5 7l4 4M15 3l4 4-4 4M9 21l-4-4 4-4M15 21l4-4-4-4"/>
+            </svg>
+          `;
+          individualBtn.style.width = '34px';
+          individualBtn.style.height = '34px';
+          individualBtn.style.display = 'flex';
+          individualBtn.style.alignItems = 'center';
+          individualBtn.style.justifyContent = 'center';
+          individualBtn.style.backgroundColor = 'white';
+          individualBtn.style.color = '#666';
+          individualBtn.style.borderRadius = '4px';
+          individualBtn.style.cursor = 'pointer';
+          individualBtn.style.transition = 'all 0.2s';
+          
+          // Fonction pour mettre à jour l'état visuel
+          const updateButtonStates = (isGroupMode: boolean) => {
+            if (isGroupMode) {
+              groupBtn.style.backgroundColor = 'hsl(var(--primary))';
+              groupBtn.style.color = 'white';
+              individualBtn.style.backgroundColor = 'white';
+              individualBtn.style.color = '#666';
+            } else {
+              groupBtn.style.backgroundColor = 'white';
+              groupBtn.style.color = '#666';
+              individualBtn.style.backgroundColor = 'hsl(var(--primary))';
+              individualBtn.style.color = 'white';
+            }
+          };
+          
+          // État initial (mode individuel par défaut)
+          updateButtonStates(false);
+          
+          // Event handlers
+          L.DomEvent.on(groupBtn, 'click', function(e: Event) {
+            L.DomEvent.preventDefault(e);
+            L.DomEvent.stopPropagation(e);
+            setGroupDragMode(true);
+            updateButtonStates(true);
+          });
+          
+          L.DomEvent.on(individualBtn, 'click', function(e: Event) {
+            L.DomEvent.preventDefault(e);
+            L.DomEvent.stopPropagation(e);
+            setGroupDragMode(false);
+            updateButtonStates(false);
+          });
+          
+          // Empêcher la propagation des événements de la souris
+          L.DomEvent.disableClickPropagation(container);
+          L.DomEvent.disableScrollPropagation(container);
+          
+          return container;
+        }
+      });
+      
+      if (mapConfig.enableDragging !== false) {
+        const groupControl = new GroupDragControl();
+        groupControl.addTo(map);
+        groupDragControlRef.current = groupControl;
+      }
+
+      // Mode Navigation/Dessin - Simple clic pour ajouter des marqueurs en mode dessin
+      if (enableDrawingMode) {
+        // Référence locale pour addMarkerAtPosition qui sera mise à jour
+        const addMarkerRef = { current: addMarkerAtPosition };
+        
+        // Ajouter un handler de clic qui vérifie le mode
+        map.on('click', (e: any) => {
+          // Vérifier si on est en mode dessin via l'attribut data
+          const container = map.getContainer();
+          if (container.dataset.drawingMode === 'true') {
+            addMarkerRef.current(e.latlng.lat, e.latlng.lng);
+          }
+        });
+        
+        // Stocker la référence pour mise à jour
+        (map as any)._addMarkerRef = addMarkerRef;
+      }
+
+      mapInstanceRef.current = map;
+      
+      // S'assurer que la carte se redessine correctement
+      map.whenReady(() => {
+        setTimeout(() => {
+          map.invalidateSize();
+          setIsMapReady(true);
+          console.log('Carte Leaflet initialisée et prête');
+        }, 100);
+      });
+    };
+
+    initMap();
+
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+      if (longPressMarkerRef.current) {
+        longPressMarkerRef.current.remove();
+        longPressMarkerRef.current = null;
+      }
+      if (mapInstanceRef.current) {
+        // Supprimer les contrôles personnalisés
+        if (groupDragControlRef.current) {
+          groupDragControlRef.current.remove();
+          groupDragControlRef.current = null;
+        }
+        
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        setIsMapReady(false);
+      }
+    };
+  }, [mapCenter, mapConfig.defaultZoom, enableDrawingMode]);
+
+  // Mettre à jour la référence addMarkerAtPosition quand elle change
+  useEffect(() => {
+    if (mapInstanceRef.current && (mapInstanceRef.current as any)._addMarkerRef) {
+      (mapInstanceRef.current as any)._addMarkerRef.current = addMarkerAtPosition;
+    }
+  }, [addMarkerAtPosition]);
+
+  // Mettre à jour les marqueurs et le polygone quand les coordonnées changent
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return;
+
+    const updateMap = async () => {
+      const L = await import('leaflet');
+      const map = mapInstanceRef.current;
+      
+      console.log('Mise à jour de la carte avec', validCoords.length, 'coordonnées valides sur', coordinates.length, 'bornes totales');
+
+      // Supprimer les anciens marqueurs, polygone, dimensions et conflits
+      markersRef.current.forEach(marker => marker.remove());
+      markersRef.current = [];
+      if (polygonRef.current) {
+        polygonRef.current.remove();
+        polygonRef.current = null;
+      }
+      dimensionLayersRef.current.forEach(layer => layer.remove());
+      dimensionLayersRef.current = [];
+      conflictLayersRef.current.forEach(layer => layer.remove());
+      conflictLayersRef.current = [];
+
+      // Si pas de coordonnées valides, afficher message mais garder la carte visible
+      if (validCoords.length === 0) {
+        map.setView(mapConfig.defaultCenter || [0, 0], mapConfig.defaultZoom || 2);
+        setSurfaceArea(0);
+        console.log('Aucune coordonnée GPS valide - Carte centrée par défaut');
+        return;
+      }
+
+      // Créer des marqueurs draggables si activé
+      const latLngs: [number, number][] = [];
+      
+      validCoords.forEach((coord, index) => {
+        const lat = parseFloat(coord.lat);
+        const lng = parseFloat(coord.lng);
+        latLngs.push([lat, lng]);
+
+        if (mapConfig.showMarkers) {
+          const markerColor = mapConfig.markerColor || '#3b82f6';
+          // En mode de déplacement groupé, désactiver le dragging individuel
+          const isDraggable = (mapConfig.enableDragging !== false) && !groupDragMode;
+          const marker = L.marker([lat, lng], {
+            draggable: isDraggable,
+            icon: L.divIcon({
+              className: 'custom-marker',
+            html: `<div style="
+              background-color: ${markerColor};
+              color: white;
+              width: 30px;
+              height: 30px;
+              border-radius: 50% 50% 50% 0;
+              transform: rotate(-45deg);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              border: 2px solid white;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              position: relative;
+            ">
+              <span style="transform: rotate(45deg); font-weight: bold; font-size: 12px;">${index + 1}</span>
+            </div>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 30],
+            pane: 'markerPane', // Utiliser le pane dédié aux marqueurs (z-index 600)
+          }),
+        }).addTo(map);
+
+          marker.on('dragend', () => {
+            const newPos = marker.getLatLng();
+            // Trouver l'index original dans le tableau complet
+            const originalIndex = coordinates.findIndex(c => c.borne === coord.borne);
+            if (originalIndex !== -1) {
+              const updatedCoords = [...coordinates];
+              updatedCoords[originalIndex] = {
+                ...updatedCoords[originalIndex],
+                lat: newPos.lat.toFixed(6),
+                lng: newPos.lng.toFixed(6),
+              };
+              onCoordinatesUpdate(updatedCoords);
+              // Mettre à jour les dimensions après déplacement
+              updateParcelSidesFromCoordinates(updatedCoords);
+            }
+          });
+
+          markersRef.current.push(marker);
+        }
+      });
+
+      // Dessiner le polygone si au moins minMarkers points
+      const minMarkers = mapConfig.minMarkers || 3;
+      if (latLngs.length >= minMarkers) {
+        console.log('Dessin du polygone avec', latLngs.length, 'points');
+        
+        // Dessiner les segments individuels avec interaction
+        validCoords.forEach((coord, index) => {
+          const nextIndex = (index + 1) % validCoords.length;
+          const nextCoord = validCoords[nextIndex];
+          
+          const roadSide = roadSides.find(s => s.sideIndex === index);
+          const isRoadBordering = roadSide?.bordersRoad || false;
+          const lineColor = mapConfig.lineColor || '#3b82f6';
+          
+          const segment = L.polyline(
+            [
+              [parseFloat(coord.lat), parseFloat(coord.lng)],
+              [parseFloat(nextCoord.lat), parseFloat(nextCoord.lng)]
+            ],
+            {
+              color: isRoadBordering ? '#f59e0b' : lineColor,
+              weight: isRoadBordering ? 5 : (mapConfig.lineWidth || 3),
+              opacity: 0.9,
+              dashArray: mapConfig.lineStyle === 'dashed' ? '10, 10' : undefined,
+            }
+          ).addTo(map);
+          
+          // Ajouter le click handler seulement si la fonctionnalité est activée
+          if (mapConfig.enableRoadBorderingFeature !== false) {
+            segment.on('click', () => {
+              if (onRoadSidesChange) {
+                const updatedSides = [...roadSides];
+                const sideIndex = updatedSides.findIndex(s => s.sideIndex === index);
+                
+                if (sideIndex !== -1) {
+                  updatedSides[sideIndex] = {
+                    ...updatedSides[sideIndex],
+                    bordersRoad: !updatedSides[sideIndex].bordersRoad,
+                  };
+                }
+                
+                onRoadSidesChange(updatedSides);
+              }
+            });
+            
+            segment.on('mouseover', () => {
+              segment.setStyle({ weight: isRoadBordering ? 7 : 5, opacity: 1 });
+            });
+            
+            segment.on('mouseout', () => {
+              segment.setStyle({ weight: isRoadBordering ? 5 : 3, opacity: 0.9 });
+            });
+          }
+          
+          segmentLayersRef.current.push(segment);
+        });
+        
+        // Dessiner le polygone rempli (non-interactif, derrière les segments)
+        const fillColor = mapConfig.fillColor || '#3b82f6';
+        const polygon = L.polygon(latLngs, {
+          color: 'transparent',
+          fillColor: fillColor,
+          fillOpacity: mapConfig.fillOpacity || 0.2,
+          weight: 0,
+          interactive: false,
+        }).addTo(map);
+
+        polygonRef.current = polygon;
+
+        // Calculer la surface en m² si activé
+        if (mapConfig.autoCalculateSurface) {
+          const area = calculatePolygonArea(latLngs);
+          setSurfaceArea(area);
+          console.log('Surface calculée:', area, 'm²');
+        }
+        
+        // Afficher les dimensions des côtés si activé
+        if (mapConfig.showSideDimensions) {
+          displaySideDimensions(L, map, latLngs);
+        }
+
+        // Ajuster la vue pour inclure tous les points
+        map.fitBounds(polygon.getBounds(), { padding: [50, 50] });
+
+        // Détecter les conflits avec d'autres parcelles si activé
+        if (mapConfig.enableConflictDetection !== false && currentParcelNumber) {
+          detectBoundaryConflicts(latLngs);
+        }
+      } else if (latLngs.length > 0) {
+        // Centrer sur le premier point
+        map.setView(latLngs[0], mapConfig.defaultZoom || 15);
+        setSurfaceArea(0);
+      }
+    };
+
+    updateMap();
+  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, groupDragMode]);
+
+  // Synchroniser l'état visuel des boutons de contrôle avec groupDragMode
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current || !groupDragControlRef.current) return;
+    
+    const container = groupDragControlRef.current.getContainer();
+    if (!container) return;
+    
+    const groupBtn = container.querySelector('.leaflet-control-group-drag');
+    const individualBtn = container.querySelector('.leaflet-control-individual-drag');
+    
+    if (groupBtn && individualBtn) {
+      if (groupDragMode) {
+        groupBtn.style.backgroundColor = 'hsl(var(--primary))';
+        groupBtn.style.color = 'white';
+        individualBtn.style.backgroundColor = 'white';
+        individualBtn.style.color = '#666';
+      } else {
+        groupBtn.style.backgroundColor = 'white';
+        groupBtn.style.color = '#666';
+        individualBtn.style.backgroundColor = 'hsl(var(--primary))';
+        individualBtn.style.color = 'white';
+      }
+    }
+  }, [groupDragMode, isMapReady]);
+
+  // Gérer le mode de déplacement groupé
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return;
+    
+    const map = mapInstanceRef.current;
+    const mapContainer = map.getContainer();
+    
+    if (groupDragMode && markersRef.current.length > 0) {
+      console.log('Activation du mode déplacement groupé avec', markersRef.current.length, 'marqueurs');
+      
+      // Changer le curseur pour indiquer le mode de déplacement groupé
+      mapContainer.style.cursor = 'move';
+      
+      // Désactiver le drag individuel des marqueurs
+      markersRef.current.forEach(marker => {
+        if (marker && marker.dragging) {
+          marker.dragging.disable();
+        }
+      });
+      
+      // Variables pour le drag groupé
+      let isDragging = false;
+      let startPoint: { lat: number; lng: number } | null = null;
+      
+      const onMouseDown = (e: any) => {
+        // Vérifier si le clic est sur un marqueur ou sur la carte
+        if (e.originalEvent && e.originalEvent.target) {
+          const target = e.originalEvent.target;
+          // Ne pas démarrer le drag si on clique sur un contrôle
+          if (target.closest('.leaflet-control')) {
+            return;
+          }
+        }
+        
+        isDragging = true;
+        startPoint = e.latlng;
+        map.dragging.disable();
+        mapContainer.style.cursor = 'grabbing';
+        console.log('Début du drag groupé à', startPoint);
+      };
+      
+      const onMouseMove = (e: any) => {
+        if (!isDragging || !startPoint) return;
+        
+        const currentPoint = e.latlng;
+        const deltaLat = currentPoint.lat - startPoint.lat;
+        const deltaLng = currentPoint.lng - startPoint.lng;
+        
+        // Déplacer tous les marqueurs simultanément
+        markersRef.current.forEach((marker) => {
+          if (marker) {
+            const markerPos = marker.getLatLng();
+            marker.setLatLng([markerPos.lat + deltaLat, markerPos.lng + deltaLng]);
+          }
+        });
+        
+        // Redessiner le polygone en temps réel
+        if (polygonRef.current && markersRef.current.length >= 3) {
+          const newLatLngs: [number, number][] = markersRef.current.map(m => {
+            const pos = m.getLatLng();
+            return [pos.lat, pos.lng];
+          });
+          polygonRef.current.setLatLngs(newLatLngs);
+        }
+        
+        // Redessiner les segments en temps réel
+        segmentLayersRef.current.forEach((segment, index) => {
+          const nextIndex = (index + 1) % markersRef.current.length;
+          const marker1 = markersRef.current[index];
+          const marker2 = markersRef.current[nextIndex];
+          if (marker1 && marker2) {
+            const pos1 = marker1.getLatLng();
+            const pos2 = marker2.getLatLng();
+            segment.setLatLngs([[pos1.lat, pos1.lng], [pos2.lat, pos2.lng]]);
+          }
+        });
+        
+        startPoint = currentPoint;
+      };
+      
+      const onMouseUp = () => {
+        if (!isDragging) return;
+        
+        console.log('Fin du drag groupé');
+        isDragging = false;
+        startPoint = null;
+        mapContainer.style.cursor = 'move';
+        map.dragging.enable();
+        
+        // Mettre à jour les coordonnées finales en préservant l'ordre
+        const updatedCoords = [...coordinates];
+        
+        // Parcourir tous les marqueurs et mettre à jour les coordonnées correspondantes
+        markersRef.current.forEach((marker, markerIndex) => {
+          if (!marker) return;
+          
+          // Trouver la coordonnée correspondante dans validCoords
+          const validCoord = validCoords[markerIndex];
+          if (!validCoord) return;
+          
+          // Trouver l'index de cette coordonnée dans le tableau complet
+          const fullIndex = coordinates.findIndex(c => c.borne === validCoord.borne);
+          if (fullIndex === -1) return;
+          
+          const newPos = marker.getLatLng();
+          updatedCoords[fullIndex] = {
+            ...updatedCoords[fullIndex],
+            lat: newPos.lat.toFixed(6),
+            lng: newPos.lng.toFixed(6)
+          };
+        });
+        
+        onCoordinatesUpdate(updatedCoords);
+        updateParcelSidesFromCoordinates(updatedCoords);
+      };
+      
+      // Gérer également le cas où la souris sort de la carte
+      const onMouseLeave = () => {
+        if (isDragging) {
+          console.log('Souris sortie de la carte pendant le drag');
+          isDragging = false;
+          startPoint = null;
+          mapContainer.style.cursor = 'move';
+          map.dragging.enable();
+          
+          // Mettre à jour les coordonnées comme dans onMouseUp
+          const updatedCoords = [...coordinates];
+          markersRef.current.forEach((marker, markerIndex) => {
+            if (!marker) return;
+            const validCoord = validCoords[markerIndex];
+            if (!validCoord) return;
+            const fullIndex = coordinates.findIndex(c => c.borne === validCoord.borne);
+            if (fullIndex === -1) return;
+            const newPos = marker.getLatLng();
+            updatedCoords[fullIndex] = {
+              ...updatedCoords[fullIndex],
+              lat: newPos.lat.toFixed(6),
+              lng: newPos.lng.toFixed(6)
+            };
+          });
+          onCoordinatesUpdate(updatedCoords);
+          updateParcelSidesFromCoordinates(updatedCoords);
+        }
+      };
+      
+      map.on('mousedown', onMouseDown);
+      map.on('mousemove', onMouseMove);
+      map.on('mouseup', onMouseUp);
+      mapContainer.addEventListener('mouseleave', onMouseLeave);
+      
+      return () => {
+        console.log('Nettoyage des event listeners du mode groupé');
+        map.off('mousedown', onMouseDown);
+        map.off('mousemove', onMouseMove);
+        map.off('mouseup', onMouseUp);
+        mapContainer.removeEventListener('mouseleave', onMouseLeave);
+        mapContainer.style.cursor = '';
+        map.dragging.enable();
+        
+        // Réactiver le drag individuel des marqueurs si configuré
+        if (mapConfig.enableDragging !== false) {
+          markersRef.current.forEach(marker => {
+            if (marker && marker.dragging) {
+              marker.dragging.enable();
+            }
+          });
+        }
+      };
+    } else if (!groupDragMode) {
+      // Mode individuel : réactiver le drag individuel et réinitialiser le curseur
+      console.log('Mode individuel activé');
+      mapContainer.style.cursor = '';
+      if (mapConfig.enableDragging !== false && markersRef.current.length > 0) {
+        markersRef.current.forEach(marker => {
+          if (marker && marker.dragging) {
+            marker.dragging.enable();
+          }
+        });
+      }
+    }
+  }, [groupDragMode, isMapReady, mapConfig.enableDragging, coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
+
+  // Détection des conflits avec des parcelles voisines
+  const detectBoundaryConflicts = async (currentCoords: [number, number][]) => {
+    if (!currentParcelNumber || currentCoords.length < 3) return;
+
+    setLoadingConflicts(true);
+    try {
+      // Récupérer les parcelles voisines dans un rayon proche
+      const bounds = calculateBounds(currentCoords);
+      const { data: nearbyParcels, error } = await supabase
+        .from('cadastral_parcels')
+        .select('*')
+        .neq('parcel_number', currentParcelNumber)
+        .gte('latitude', bounds.minLat)
+        .lte('latitude', bounds.maxLat)
+        .gte('longitude', bounds.minLng)
+        .lte('longitude', bounds.maxLng)
+        .not('gps_coordinates', 'is', null);
+
+      if (error) throw error;
+
+      const conflicts: ConflictingParcel[] = [];
+      const L = await import('leaflet');
+      const map = mapInstanceRef.current;
+
+      nearbyParcels?.forEach((parcel: any) => {
+        try {
+          const parcelCoords = parcel.gps_coordinates as any[];
+          if (!parcelCoords || parcelCoords.length < 3) return;
+
+          const neighborLatLngs: [number, number][] = parcelCoords
+            .filter(c => c.lat && c.lng)
+            .map(c => [parseFloat(c.lat), parseFloat(c.lng)]);
+
+          if (neighborLatLngs.length < 3) return;
+
+          // Vérifier le chevauchement
+          const overlap = checkPolygonOverlap(currentCoords, neighborLatLngs);
+          if (overlap.hasOverlap) {
+            conflicts.push({
+              parcelNumber: parcel.parcel_number,
+              ownerName: parcel.current_owner_name || 'Propriétaire inconnu',
+              location: parcel.location || `${parcel.quartier}, ${parcel.ville}`,
+              coordinates: neighborLatLngs,
+              overlapArea: overlap.area
+            });
+
+            // Afficher la parcelle en conflit sur la carte
+            const conflictPolygon = L.polygon(neighborLatLngs, {
+              color: '#ef4444',
+              fillColor: '#ef4444',
+              fillOpacity: 0.3,
+              weight: 2,
+              dashArray: '5, 5'
+            }).addTo(map);
+
+            conflictPolygon.bindPopup(`
+              <div style="font-size: 12px;">
+                <strong style="color: #ef4444;">⚠️ Conflit détecté</strong><br/>
+                <strong>Parcelle:</strong> ${parcel.parcel_number}<br/>
+                <strong>Propriétaire:</strong> ${parcel.current_owner_name}<br/>
+                <strong>Chevauchement:</strong> ${overlap.area?.toFixed(2)} m²
+              </div>
+            `);
+
+            conflictLayersRef.current.push(conflictPolygon);
+          }
+        } catch (err) {
+          console.error('Error processing parcel:', err);
+        }
+      });
+
+      setConflictingParcels(conflicts);
+    } catch (error) {
+      console.error('Error detecting conflicts:', error);
+    } finally {
+      setLoadingConflicts(false);
+    }
+  };
+
+  // Calculer les limites géographiques d'un polygone
+  const calculateBounds = (coords: [number, number][]) => {
+    const lats = coords.map(c => c[0]);
+    const lngs = coords.map(c => c[1]);
+    return {
+      minLat: Math.min(...lats) - 0.01,
+      maxLat: Math.max(...lats) + 0.01,
+      minLng: Math.min(...lngs) + 0.01,
+      maxLng: Math.max(...lngs) + 0.01
+    };
+  };
+
+  // Vérifier si deux polygones se chevauchent
+  const checkPolygonOverlap = (
+    poly1: [number, number][], 
+    poly2: [number, number][]
+  ): { hasOverlap: boolean; area?: number } => {
+    // Vérifier si des points d'un polygone sont à l'intérieur de l'autre
+    const hasPointInside = poly1.some(point => isPointInPolygon(point, poly2)) ||
+                           poly2.some(point => isPointInPolygon(point, poly1));
+
+    if (!hasPointInside) {
+      return { hasOverlap: false };
+    }
+
+    // Estimer la zone de chevauchement (approximation simple)
+    const overlapPoints = poly1.filter(point => isPointInPolygon(point, poly2));
+    if (overlapPoints.length > 2) {
+      const area = calculatePolygonArea(overlapPoints);
+      return { hasOverlap: true, area };
+    }
+
+    return { hasOverlap: true };
+  };
+
+  // Algorithme Ray Casting pour vérifier si un point est dans un polygone
+  const isPointInPolygon = (point: [number, number], polygon: [number, number][]): boolean => {
+    const [x, y] = point;
+    let inside = false;
+
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+      const [xi, yi] = polygon[i];
+      const [xj, yj] = polygon[j];
+
+      const intersect = ((yi > y) !== (yj > y)) &&
+        (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+      
+      if (intersect) inside = !inside;
+    }
+
+    return inside;
+  };
+
+  // Afficher les dimensions des côtés
   const displaySideDimensions = (L: any, map: any, latLngs: [number, number][]) => {
     for (let i = 0; i < latLngs.length; i++) {
       const j = (i + 1) % latLngs.length;
       const start = latLngs[i];
       const end = latLngs[j];
       
+      // Utiliser la dimension du formulaire si elle existe, sinon calculer
       let distance: number;
       if (parcelSides[i]?.length && parseFloat(parcelSides[i].length) > 0) {
         distance = parseFloat(parcelSides[i].length);
@@ -755,28 +1094,41 @@ export const ParcelMapPreview = ({
         distance = calculateDistance(start[0], start[1], end[0], end[1]);
       }
       
+      // Point milieu
       const midLat = (start[0] + end[0]) / 2;
       const midLng = (start[1] + end[1]) / 2;
       
+      // Vérifier si ce côté borde une route
       const roadSide = roadSides.find(s => s.sideIndex === i);
       const isRoadBordering = roadSide?.bordersRoad || false;
       
-      const formattedDistance = `${distance.toFixed(1)}m`;
-      let labelText = mapConfig.showSideLabels ? `C${i + 1}: ${formattedDistance}` : formattedDistance;
+      // Utiliser le format configuré
+      const dimensionFormat = mapConfig.dimensionFormat || '{value}m';
+      const dimensionUnit = mapConfig.dimensionUnit || 'm';
+      const formattedDistance = dimensionFormat.replace('{value}', distance.toFixed(2));
+      
+      // Créer le label avec infos route si applicable
+      let labelText = formattedDistance;
+      if (mapConfig.showSideLabels) {
+        labelText = `Côté ${i + 1}: ${formattedDistance}`;
+      }
+      if (isRoadBordering && roadSide?.roadType) {
+        labelText += ` (${roadSide.roadType})`;
+      }
       
       const dimensionMarker = L.marker([midLat, midLng], {
         icon: L.divIcon({
           className: 'dimension-label',
           html: `<div style="
-            background:white;
-            color:${mapConfig.dimensionTextColor || '#000'};
-            padding:3px 6px;
-            border-radius:6px;
-            font-size:11px;
-            font-weight:600;
-            border:1px solid ${isRoadBordering ? '#f59e0b' : (mapConfig.lineColor || '#3b82f6')};
-            box-shadow:0 1px 3px rgba(0,0,0,0.2);
-            white-space:nowrap;
+            background-color: white;
+            color: ${mapConfig.dimensionTextColor || '#000000'};
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: ${mapConfig.dimensionFontSize || 11}px;
+            font-weight: 600;
+            border: 1px solid ${isRoadBordering ? '#f59e0b' : (mapConfig.lineColor || '#3b82f6')};
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            white-space: nowrap;
           ">${labelText}</div>`,
           iconSize: [0, 0],
         })
@@ -786,12 +1138,34 @@ export const ParcelMapPreview = ({
     }
   };
 
-  // Propager la surface
-  useEffect(() => {
-    if (onSurfaceChange && surfaceArea > 0) {
-      onSurfaceChange(surfaceArea);
+  // Calculer la surface d'un polygone en m² (formule de Shoelace + rayon terrestre)
+  const calculatePolygonArea = (coords: [number, number][]): number => {
+    if (coords.length < 3) return 0;
+
+    const R = 6371000; // Rayon de la Terre en mètres
+    
+    // Convertir en radians
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    
+    let area = 0;
+    for (let i = 0; i < coords.length; i++) {
+      const j = (i + 1) % coords.length;
+      const lat1 = toRad(coords[i][0]);
+      const lat2 = toRad(coords[j][0]);
+      const lng1 = toRad(coords[i][1]);
+      const lng2 = toRad(coords[j][1]);
+      
+      area += (lng2 - lng1) * (2 + Math.sin(lat1) + Math.sin(lat2));
     }
-  }, [surfaceArea, onSurfaceChange]);
+    
+    area = Math.abs(area * R * R / 2);
+    return Math.round(area * 100) / 100; // Arrondir à 2 décimales
+  };
+
+  // Ne pas afficher si désactivé dans la config
+  if (!mapConfig.enabled) {
+    return null;
+  }
 
   // Handler pour mettre à jour un côté
   const handleRoadSideUpdate = (sideIndex: number, updates: Partial<RoadSideInfo>) => {
@@ -803,50 +1177,19 @@ export const ParcelMapPreview = ({
     }
   };
 
-  // Toggle mode dessin
-  const toggleDrawingMode = useCallback((enabled: boolean) => {
-    setIsDrawingMode(enabled);
-    const map = mapInstanceRef.current;
-    if (map) {
-      if (enabled) {
-        map.dragging.disable();
-        map.scrollWheelZoom.disable();
-        map.doubleClickZoom.disable();
-        map.touchZoom.disable();
-        map.getContainer().dataset.drawingMode = 'true';
-        map.getContainer().style.cursor = 'crosshair';
-      } else {
-        map.dragging.enable();
-        map.scrollWheelZoom.enable();
-        map.doubleClickZoom.enable();
-        map.touchZoom.enable();
-        map.getContainer().dataset.drawingMode = 'false';
-        map.getContainer().style.cursor = 'grab';
-      }
+  // Propager la surface calculée
+  useEffect(() => {
+    if (onSurfaceChange && surfaceArea > 0) {
+      onSurfaceChange(surfaceArea);
     }
-  }, []);
-
-  // Démarrer l'ajout d'une construction
-  const startAddingConstruction = useCallback((type: string) => {
-    setIsAddingConstruction(type);
-    toggleDrawingMode(false);
-    const map = mapInstanceRef.current;
-    if (map) {
-      map.getContainer().dataset.addingConstruction = type;
-      map.getContainer().style.cursor = 'crosshair';
-    }
-  }, [toggleDrawingMode]);
-
-  if (!mapConfig.enabled) {
-    return null;
-  }
+  }, [surfaceArea, onSurfaceChange]);
 
   return (
-    <div className="space-y-3 max-w-[360px] mx-auto">
-      {/* Header compact */}
+    <div className="space-y-4 max-w-[360px] mx-auto">
+      {/* Header compact avec titre et badges */}
       <Card className="p-3 rounded-2xl shadow-sm bg-card/80 backdrop-blur-sm border-border/50">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
             <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
               <MapPin className="h-4 w-4 text-primary" />
             </div>
@@ -868,145 +1211,109 @@ export const ParcelMapPreview = ({
         </div>
       </Card>
 
-      {/* Barre d'outils compacte */}
+      {/* Mode Navigation/Dessin Toggle - Design compact mobile */}
       {enableDrawingMode && (
-        <Card className="p-2 rounded-2xl shadow-sm border-border/50">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {/* Mode Dessin/Navigation Toggle */}
-            <Button
-              type="button"
-              size="sm"
-              variant={isDrawingMode ? "default" : "outline"}
-              onClick={() => toggleDrawingMode(!isDrawingMode)}
-              className={`h-8 rounded-xl gap-1.5 px-2.5 text-xs flex-shrink-0 ${
+        <Card className={`p-3 rounded-2xl shadow-md transition-all duration-200 ${
+          isDrawingMode 
+            ? 'bg-orange-50 dark:bg-orange-950/30 border-orange-400/40 border-2 shadow-orange-500/10' 
+            : 'bg-card border-border/50'
+        }`}>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className={`h-9 w-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
                 isDrawingMode 
-                  ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              {isDrawingMode ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-              <span>{isDrawingMode ? 'Terminer' : 'Tracer'}</span>
-            </Button>
-
-            {/* Bouton Formes géométriques */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className={`h-8 rounded-xl gap-1.5 px-2.5 text-xs ${
-                    isAddingConstruction ? 'border-red-400 bg-red-50 text-red-700' : 'hover:bg-muted'
-                  }`}
-                  disabled={validCoords.length < 3}
-                >
-                  <Square className="h-3.5 w-3.5" />
-                  <span>Bâtiment</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="rounded-xl shadow-lg">
-                <DropdownMenuItem onClick={() => startAddingConstruction('circle')} className="gap-2 text-sm rounded-lg">
-                  <Circle className="h-4 w-4 text-red-500" />
-                  <span>Cercle</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => startAddingConstruction('square')} className="gap-2 text-sm rounded-lg">
-                  <Square className="h-4 w-4 text-red-500" />
-                  <span>Carré</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => startAddingConstruction('rectangle')} className="gap-2 text-sm rounded-lg">
-                  <GripVertical className="h-4 w-4 text-red-500" />
-                  <span>Rectangle</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => startAddingConstruction('polygon')} className="gap-2 text-sm rounded-lg">
-                  <Hexagon className="h-4 w-4 text-red-500" />
-                  <span>Polygone</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Bouton Vérifier voisins (manuel) */}
-            <Button
-              type="button"
-              size="sm"
-              variant={showNeighborParcels ? "default" : "outline"}
-              onClick={() => showNeighborParcels ? hideNeighborParcels() : checkNeighborParcels()}
-              disabled={validCoords.length < 3 || loadingNeighbors}
-              className={`h-8 rounded-xl gap-1.5 px-2.5 text-xs ${
-                showNeighborParcels 
-                  ? 'bg-indigo-500 hover:bg-indigo-600 text-white' 
-                  : 'hover:bg-muted'
-              }`}
-            >
-              <Search className="h-3.5 w-3.5" />
-              <span>{loadingNeighbors ? '...' : 'Voisins'}</span>
-            </Button>
-
-            {/* Spacer */}
-            <div className="flex-1" />
-
-            {/* Boutons de suppression */}
-            {coordinates.length > 0 && (
-              <>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeLastMarker}
-                  className="h-8 rounded-xl px-2 text-xs hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={clearAllMarkers}
-                  className="h-8 rounded-xl px-2 text-xs hover:bg-destructive/10 hover:text-destructive"
-                >
-                  Tout
-                </Button>
-              </>
+                  ? 'bg-orange-500/20' 
+                  : 'bg-primary/10'
+              }`}>
+                {isDrawingMode ? (
+                  <Pencil className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                ) : (
+                  <Navigation className="h-4 w-4 text-primary" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-semibold truncate ${
+                  isDrawingMode 
+                    ? 'text-orange-700 dark:text-orange-300' 
+                    : 'text-foreground'
+                }`}>
+                  {isDrawingMode ? 'Mode Dessin' : 'Mode Navigation'}
+                </p>
+                <p className={`text-xs truncate ${
+                  isDrawingMode 
+                    ? 'text-orange-600/80 dark:text-orange-400/80' 
+                    : 'text-muted-foreground'
+                }`}>
+                  {isDrawingMode 
+                    ? 'Touchez pour ajouter' 
+                    : coordinates.length === 0 
+                      ? 'Naviguez vers la parcelle'
+                      : `${coordinates.length} borne${coordinates.length > 1 ? 's' : ''}`
+                  }
+                </p>
+              </div>
+            </div>
+            
+            {/* Toggle button compact */}
+            {!isDrawingMode ? (
+              <Button 
+                type="button"
+                size="sm" 
+                onClick={() => {
+                  setIsDrawingMode(true);
+                  const map = mapInstanceRef.current;
+                  if (map) {
+                    map.dragging.disable();
+                    map.scrollWheelZoom.disable();
+                    map.doubleClickZoom.disable();
+                    map.touchZoom.disable();
+                    map.getContainer().dataset.drawingMode = 'true';
+                    map.getContainer().style.cursor = 'crosshair';
+                  }
+                }}
+                className="h-9 rounded-xl bg-primary hover:bg-primary/90 gap-1.5 px-3 shadow-sm text-primary-foreground flex-shrink-0"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span className="text-sm font-medium">Tracer</span>
+              </Button>
+            ) : (
+              <Button 
+                type="button"
+                size="sm" 
+                onClick={() => {
+                  setIsDrawingMode(false);
+                  const map = mapInstanceRef.current;
+                  if (map) {
+                    map.dragging.enable();
+                    map.scrollWheelZoom.enable();
+                    map.doubleClickZoom.enable();
+                    map.touchZoom.enable();
+                    map.getContainer().dataset.drawingMode = 'false';
+                    map.getContainer().style.cursor = 'grab';
+                  }
+                }}
+                variant="outline"
+                className="h-9 rounded-xl border-orange-400/60 text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/30 gap-1.5 px-3 flex-shrink-0"
+              >
+                <Check className="h-3.5 w-3.5" />
+                <span className="text-sm font-medium">Terminer</span>
+              </Button>
             )}
           </div>
         </Card>
       )}
 
-      {/* Indicateur ajout construction */}
-      {isAddingConstruction && (
-        <Alert className="py-2 px-3 rounded-xl bg-red-50 border-red-200">
-          <Square className="h-4 w-4 text-red-500" />
-          <AlertDescription className="flex items-center justify-between gap-2 text-xs text-red-700">
-            <span>Cliquez sur la parcelle pour placer le bâtiment</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setIsAddingConstruction(null);
-                const map = mapInstanceRef.current;
-                if (map) {
-                  map.getContainer().dataset.addingConstruction = '';
-                  map.getContainer().style.cursor = 'grab';
-                }
-              }}
-              className="h-6 text-xs px-2 rounded-lg hover:bg-red-100"
-            >
-              Annuler
-            </Button>
-          </AlertDescription>
-        </Alert>
-      )}
-
-      {/* Alertes de conflit */}
+      {/* Alertes de conflit - Design compact */}
       {conflictingParcels.length > 0 && (
-        <Alert variant="destructive" className="py-2 px-3 rounded-xl shadow-sm">
+        <Alert variant="destructive" className="py-2.5 px-3 rounded-2xl shadow-sm">
           <AlertTriangle className="h-4 w-4" />
-          <AlertDescription className="flex items-center justify-between gap-2 text-xs">
+          <AlertDescription className="flex items-center justify-between gap-2 text-sm">
             <span className="font-medium">{conflictingParcels.length} conflit(s)</span>
             <Button
               variant="outline"
               size="sm"
               onClick={() => setShowConflictDialog(true)}
-              className="h-6 text-xs rounded-lg px-2"
+              className="h-7 text-xs rounded-xl px-2.5"
             >
               Signaler
             </Button>
@@ -1014,117 +1321,108 @@ export const ParcelMapPreview = ({
         </Alert>
       )}
 
-      {/* Validation minimum marqueurs */}
+      {/* Validation du nombre minimum de marqueurs */}
       {mapConfig.minMarkers && validCoords.length > 0 && validCoords.length < mapConfig.minMarkers && (
-        <Alert variant="destructive" className="py-2 px-3 rounded-xl shadow-sm">
+        <Alert variant="destructive" className="py-2.5 px-3 rounded-2xl shadow-sm">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription className="text-xs">
+          <AlertDescription className="text-sm">
             Min. {mapConfig.minMarkers} bornes ({validCoords.length} actuel)
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Info parcelles voisines chargées */}
-      {showNeighborParcels && neighborParcelsRef.current.length > 0 && (
-        <Alert className="py-2 px-3 rounded-xl bg-indigo-50 border-indigo-200">
-          <Info className="h-4 w-4 text-indigo-600" />
-          <AlertDescription className="text-xs text-indigo-700">
-            {neighborParcelsRef.current.length} parcelle(s) voisine(s) affichée(s)
+      {/* Validation de la surface */}
+      {surfaceArea > 0 && (
+        <>
+          {mapConfig.minSurfaceSqm && surfaceArea < mapConfig.minSurfaceSqm && (
+            <Alert variant="destructive" className="py-2.5 px-3 rounded-2xl shadow-sm">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                Surface trop petite: {surfaceArea.toLocaleString()} m²
+              </AlertDescription>
+            </Alert>
+          )}
+          {mapConfig.maxSurfaceSqm && surfaceArea > mapConfig.maxSurfaceSqm && (
+            <Alert variant="destructive" className="py-2.5 px-3 rounded-2xl shadow-sm">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-sm">
+                Surface trop grande: {surfaceArea.toLocaleString()} m²
+              </AlertDescription>
+            </Alert>
+          )}
+        </>
+      )}
+
+      {loadingConflicts && (
+        <Alert className="py-2.5 px-3 rounded-2xl shadow-sm">
+          <Info className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            Vérification parcelles voisines...
           </AlertDescription>
         </Alert>
       )}
 
-      {/* Carte */}
+      {/* Carte - Design amélioré */}
       <Card className={`overflow-hidden relative z-0 rounded-2xl shadow-lg transition-all duration-200 ${
         isDrawingMode 
           ? 'border-2 border-orange-400/60 ring-4 ring-orange-500/15' 
-          : isAddingConstruction
-            ? 'border-2 border-red-400/60 ring-4 ring-red-500/15'
-            : 'border-2 border-primary/25 ring-2 ring-primary/5'
+          : 'border-2 border-primary/25 ring-2 ring-primary/5'
       }`}>
         <div 
           ref={mapRef} 
-          className="h-[280px] w-full relative z-0"
-          style={{ cursor: isDrawingMode || isAddingConstruction ? 'crosshair' : 'grab' }}
+          className="h-[260px] w-full relative z-0"
+          style={{ cursor: isDrawingMode ? 'crosshair' : 'grab' }}
         />
-        {/* Badge mode actif */}
-        {(isDrawingMode || isAddingConstruction) && (
+        {/* Indicateur mode actif sur la carte */}
+        {isDrawingMode && (
           <div className="absolute top-2 left-2 z-10">
-            <Badge className={`text-white text-xs h-6 px-2 rounded-lg shadow-md ${
-              isDrawingMode ? 'bg-orange-500' : 'bg-red-500'
-            }`}>
-              {isDrawingMode ? (
-                <>
-                  <Pencil className="h-3 w-3 mr-1" />
-                  Tracé
-                </>
-              ) : (
-                <>
-                  <Square className="h-3 w-3 mr-1" />
-                  Bâtiment
-                </>
-              )}
-            </Badge>
-          </div>
-        )}
-        
-        {/* Indicateur déplacement bornes */}
-        {!isDrawingMode && !isAddingConstruction && validCoords.length > 0 && (
-          <div className="absolute bottom-2 left-2 z-10">
-            <Badge variant="secondary" className="text-xs h-5 px-2 rounded-lg bg-background/90 shadow-sm">
-              <Move className="h-3 w-3 mr-1" />
-              Glissez les bornes
+            <Badge className="bg-orange-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
+              <Pencil className="h-3 w-3 mr-1" />
+              Dessin actif
             </Badge>
           </div>
         )}
       </Card>
 
-      {/* Constructions listées */}
-      {constructions.length > 0 && (
-        <Card className="p-3 rounded-2xl shadow-sm border-border/50">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-red-500"></span>
-              Constructions ({constructions.length})
-            </Label>
-            <div className="grid gap-1.5">
-              {constructions.map((c, idx) => (
-                <div key={c.id} className="flex items-center justify-between bg-muted/40 p-2 rounded-xl text-sm">
-                  <div className="flex items-center gap-2">
-                    {c.type === 'circle' && <Circle className="h-3.5 w-3.5 text-red-500" />}
-                    {c.type === 'square' && <Square className="h-3.5 w-3.5 text-red-500" />}
-                    {c.type === 'rectangle' && <GripVertical className="h-3.5 w-3.5 text-red-500" />}
-                    {c.type === 'polygon' && <Hexagon className="h-3.5 w-3.5 text-red-500" />}
-                    <span className="text-muted-foreground">{c.label}</span>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setConstructions(prev => prev.filter(x => x.id !== c.id))}
-                    className="h-6 w-6 p-0 rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
+      {/* Contrôles de dessin - Boutons compacts */}
+      {enableDrawingMode && coordinates.length > 0 && (
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={removeLastMarker}
+            className="flex-1 gap-1.5 text-sm h-9 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 transition-colors"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Supprimer dernière
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={clearAllMarkers}
+            className="gap-1.5 text-sm h-9 px-3 rounded-xl hover:bg-destructive/10 hover:text-destructive hover:border-destructive/40 transition-colors"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            Tout
+          </Button>
+        </div>
       )}
 
-      {/* Dimensions calculées */}
+      {/* Résumé des dimensions - Design compact */}
       {validCoords.length >= 3 && parcelSides.length > 0 && (
         <Card className="p-3 bg-muted/40 rounded-2xl shadow-sm border-border/50">
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <Label className="text-sm font-semibold text-foreground flex items-center gap-2">
               <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
-              Dimensions
+              Dimensions calculées
             </Label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="grid grid-cols-2 gap-2">
               {parcelSides.map((side, index) => (
-                <div key={index} className="flex items-center justify-between bg-background/70 p-2 rounded-xl text-sm border border-border/30">
-                  <span className="text-muted-foreground font-medium text-xs">{side.name}</span>
-                  <span className="font-mono font-semibold text-foreground text-xs">{side.length} m</span>
+                <div key={index} className="flex items-center justify-between bg-background/70 p-2.5 rounded-xl text-sm border border-border/30">
+                  <span className="text-muted-foreground font-medium">{side.name}</span>
+                  <span className="font-mono font-semibold text-foreground">{side.length} m</span>
                 </div>
               ))}
             </div>
@@ -1132,18 +1430,16 @@ export const ParcelMapPreview = ({
         </Card>
       )}
       
-      {/* Info aide */}
+      {/* Info - Design compact lisible */}
       <Card className="p-2.5 rounded-xl bg-muted/30 border-border/40">
         <div className="flex items-start gap-2">
           <Info className="h-4 w-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {isDrawingMode 
-              ? "Touchez pour ajouter des bornes. 'Terminer' pour naviguer."
-              : isAddingConstruction
-                ? "Touchez l'intérieur de la parcelle pour placer un bâtiment."
-                : enableDrawingMode
-                  ? "Glissez les bornes pour ajuster. 'Tracer' pour ajouter."
-                  : "Utilisez les contrôles pour modifier les bornes."
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            {enableDrawingMode 
+              ? isDrawingMode 
+                ? "Touchez la carte pour ajouter des bornes. Appuyez sur 'Terminer' pour naviguer."
+                : "Appuyez sur 'Tracer' puis touchez la carte pour placer les bornes."
+              : "Utilisez les contrôles pour déplacer les bornes."
             }
           </p>
         </div>
