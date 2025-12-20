@@ -89,6 +89,10 @@ export const ParcelMapPreview = ({
   const buildingLayersRef = useRef<any[]>([]);
   const mapControlsRef = useRef<any[]>([]);
   
+  // Refs pour les callbacks afin d'éviter les closures obsolètes
+  const addMarkerCallbackRef = useRef<(lat: number, lng: number) => void>(() => {});
+  const addBuildingCallbackRef = useRef<(lat: number, lng: number) => void>(() => {});
+  
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
@@ -181,6 +185,11 @@ export const ParcelMapPreview = ({
       }
     }
   }, [coordinates, onCoordinatesUpdate, onParcelSidesUpdate]);
+
+  // Mettre à jour la ref du callback pour que le handler de clic utilise toujours la version courante
+  useEffect(() => {
+    addMarkerCallbackRef.current = addMarkerAtPosition;
+  }, [addMarkerAtPosition]);
 
   // Supprimer le dernier marqueur
   const removeLastMarker = useCallback(() => {
@@ -380,14 +389,13 @@ export const ParcelMapPreview = ({
         maxWidth: 120,
       }).addTo(map);
 
-      // Handler de clic pour le mode dessin
+      // Handler de clic pour le mode dessin - utilise les refs pour éviter les closures obsolètes
       map.on('click', (e: any) => {
         const container = map.getContainer();
         if (container.dataset.drawingMode === 'true') {
-          addMarkerAtPosition(e.latlng.lat, e.latlng.lng);
-        } else if (container.dataset.addingBuilding === 'true' && selectedShapeType) {
-          // Ajouter une forme de construction
-          addBuildingShape(e.latlng.lat, e.latlng.lng);
+          addMarkerCallbackRef.current(e.latlng.lat, e.latlng.lng);
+        } else if (container.dataset.addingBuilding === 'true') {
+          addBuildingCallbackRef.current(e.latlng.lat, e.latlng.lng);
         }
       });
 
@@ -436,6 +444,11 @@ export const ParcelMapPreview = ({
       map.getContainer().style.cursor = 'grab';
     }
   }, [selectedShapeType, isParcelComplete, validCoords, buildingShapes, onBuildingShapesChange]);
+
+  // Mettre à jour la ref du callback building pour éviter les closures obsolètes
+  useEffect(() => {
+    addBuildingCallbackRef.current = addBuildingShape;
+  }, [addBuildingShape]);
 
   // Vérifier les parcelles voisines (manuel)
   const checkNeighborParcels = useCallback(async () => {
