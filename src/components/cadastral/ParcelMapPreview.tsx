@@ -152,6 +152,18 @@ export const ParcelMapPreview = ({
 
   // Vérifie si la parcelle est complète (min 3 points)
   const isParcelComplete = validCoords.length >= 3;
+  
+  // Refs pour stocker les dernières valeurs (utilisées dans les callbacks stables)
+  const coordinatesRef = useRef(coordinates);
+  const validCoordsRef = useRef(validCoords);
+  const roadSidesRef = useRef(roadSides);
+  const buildingShapesRef = useRef(buildingShapes);
+  
+  // Synchroniser les refs avec les valeurs courantes
+  useEffect(() => { coordinatesRef.current = coordinates; }, [coordinates]);
+  useEffect(() => { validCoordsRef.current = validCoords; }, [validCoords]);
+  useEffect(() => { roadSidesRef.current = roadSides; }, [roadSides]);
+  useEffect(() => { buildingShapesRef.current = buildingShapes; }, [buildingShapes]);
 
   // Ajouter un nouveau marqueur
   const addMarkerAtPosition = useCallback((lat: number, lng: number) => {
@@ -840,12 +852,16 @@ export const ParcelMapPreview = ({
       }
     };
 
-    updateMap();
+    // Utiliser requestAnimationFrame pour éviter les mises à jour trop rapides
+    const rafId = requestAnimationFrame(() => {
+      updateMap();
+    });
 
     return () => {
+      cancelAnimationFrame(rafId);
       cancelled = true;
     };
-  }, [isMapReady, validCoords, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, isGroupDragMode, buildingShapes, isDrawingMode, selectedBorne, isAddingBuilding, updateParcelSidesFromCoordinates, onSurfaceChange]);
+  }, [isMapReady, JSON.stringify(validCoords), mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isAddingBuilding]);
 
   // Dessiner une forme de construction
   const drawBuildingShape = (L: any, map: any, shape: BuildingShape) => {
@@ -1442,6 +1458,96 @@ export const ParcelMapPreview = ({
               <Eye className="h-3 w-3 mr-1" />
               Voisins affichés
             </Badge>
+          </div>
+        )}
+        
+        {/* Panel de déplacement précis de borne */}
+        {selectedBorne && (
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[1000]">
+            <Card className="p-2 rounded-2xl shadow-lg bg-white/95 dark:bg-card/95 backdrop-blur-sm border-primary/30">
+              <div className="flex flex-col items-center gap-1.5">
+                <div className="flex items-center gap-1">
+                  <Badge variant="outline" className="text-xs h-5 px-2 rounded-lg bg-primary/10 border-primary/30">
+                    Borne {selectedBorne}
+                  </Badge>
+                  <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-lg text-muted-foreground">
+                    {moveStepMeters.toFixed(1)}m/mvt
+                  </Badge>
+                </div>
+                
+                <div className="grid grid-cols-3 gap-0.5">
+                  <div />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => nudgeSelectedMarker('N')}
+                    className="h-8 w-8 p-0 rounded-lg"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <div />
+                  
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => nudgeSelectedMarker('W')}
+                    className="h-8 w-8 p-0 rounded-lg"
+                  >
+                    <ArrowLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => {
+                      selectedBorneRef.current = null;
+                      selectedMarkerRef.current = null;
+                      setSelectedBorne(null);
+                      const map = mapInstanceRef.current;
+                      if (map) {
+                        const container = map.getContainer();
+                        container.dataset.markerMoving = 'false';
+                        map.dragging.enable();
+                        map.scrollWheelZoom.enable();
+                        map.doubleClickZoom.enable();
+                        map.touchZoom.enable();
+                      }
+                    }}
+                    className="h-8 w-8 p-0 rounded-lg"
+                    title="Quitter mode déplacement"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => nudgeSelectedMarker('E')}
+                    className="h-8 w-8 p-0 rounded-lg"
+                  >
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                  
+                  <div />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => nudgeSelectedMarker('S')}
+                    className="h-8 w-8 p-0 rounded-lg"
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <div />
+                </div>
+                
+                <p className="text-[10px] text-muted-foreground">Appui long sur borne = sélection</p>
+              </div>
+            </Card>
           </div>
         )}
       </Card>
