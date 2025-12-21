@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
@@ -88,11 +88,17 @@ export const ParcelMapPreview = ({
   const neighborLayersRef = useRef<any[]>([]);
   const buildingLayersRef = useRef<any[]>([]);
   const mapControlsRef = useRef<any[]>([]);
-  
+
   // Refs pour les callbacks afin d'éviter les closures obsolètes
   const addMarkerCallbackRef = useRef<(lat: number, lng: number) => void>(() => {});
   const addBuildingCallbackRef = useRef<(lat: number, lng: number) => void>(() => {});
-  
+
+  // Déplacement précis (appui prolongé)
+  const selectedBorneRef = useRef<string | null>(null);
+  const selectedMarkerRef = useRef<any>(null);
+  const longPressTimerRef = useRef<number | null>(null);
+  const renderSeqRef = useRef(0);
+
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
@@ -104,6 +110,8 @@ export const ParcelMapPreview = ({
   const [selectedShapeType, setSelectedShapeType] = useState<BuildingShape['type'] | null>(null);
   const [isAddingBuilding, setIsAddingBuilding] = useState(false);
   const [showShapePicker, setShowShapePicker] = useState(false);
+  const [selectedBorne, setSelectedBorne] = useState<string | null>(null);
+  const [moveStepMeters, setMoveStepMeters] = useState<number>(0.5);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -392,6 +400,8 @@ export const ParcelMapPreview = ({
       // Handler de clic pour le mode dessin - utilise les refs pour éviter les closures obsolètes
       map.on('click', (e: any) => {
         const container = map.getContainer();
+        if (container.dataset.markerMoving === 'true') return;
+
         if (container.dataset.drawingMode === 'true') {
           addMarkerCallbackRef.current(e.latlng.lat, e.latlng.lng);
         } else if (container.dataset.addingBuilding === 'true') {
@@ -412,6 +422,39 @@ export const ParcelMapPreview = ({
       }
     };
   }, []);
+
+  // Mettre à jour le pas de déplacement (mètres) en fonction de l'échelle/zoom
+  useEffect(() => {
+    if (!isMapReady || !mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    const computeStep = () => {
+      try {
+        // Approximation: distance en mètres pour 100px sur l'écran => “échelle” exploitable
+        const p1 = map.containerPointToLatLng([0, 0]);
+        const p2 = map.containerPointToLatLng([100, 0]);
+        const scaleMeters = map.distance(p1, p2);
+
+        let step = 0.5;
+        if (scaleMeters > 200 && scaleMeters <= 500) step = 0.5 * Math.pow(2, 1);
+        else if (scaleMeters > 500 && scaleMeters <= 1000) step = 0.5 * Math.pow(2, 2);
+        else if (scaleMeters > 1000) step = 0.5 * Math.pow(2, 3);
+
+        setMoveStepMeters(step);
+      } catch (err) {
+        console.error('computeStep error', err);
+      }
+    };
+
+    computeStep();
+    map.on('zoomend', computeStep);
+    map.on('moveend', computeStep);
+
+    return () => {
+      map.off('zoomend', computeStep);
+      map.off('moveend', computeStep);
+    };
+  }, [isMapReady]);
 
   // Ajouter une forme de construction
   const addBuildingShape = useCallback((lat: number, lng: number) => {
@@ -554,174 +597,255 @@ export const ParcelMapPreview = ({
   useEffect(() => {
     if (!isMapReady || !mapInstanceRef.current) return;
 
+    let cancelled = false;
+    const seq = ++renderSeqRef.current;
+
     const updateMap = async () => {
-      const L = await import('leaflet');
-      const map = mapInstanceRef.current;
+      try {
+        const L = await import('leaflet');
+        if (cancelled || seq !== renderSeqRef.current) return;
 
-      // Nettoyer les anciens éléments
-      markersRef.current.forEach(marker => {
-        if (map.hasLayer(marker)) map.removeLayer(marker);
-      });
-      markersRef.current = [];
+        const map = mapInstanceRef.current;
+        if (!map) return;
 
-      if (polygonRef.current && map.hasLayer(polygonRef.current)) {
-        map.removeLayer(polygonRef.current);
-        polygonRef.current = null;
-      }
+        const container = map.getContainer();
+        if (!container.dataset.markerMoving) container.dataset.markerMoving = 'false';
 
-      dimensionLayersRef.current.forEach(layer => {
-        if (map.hasLayer(layer)) map.removeLayer(layer);
-      });
-      dimensionLayersRef.current = [];
-
-      segmentLayersRef.current.forEach(layer => {
-        if (map.hasLayer(layer)) map.removeLayer(layer);
-      });
-      segmentLayersRef.current = [];
-
-      buildingLayersRef.current.forEach(layer => {
-        if (map.hasLayer(layer)) map.removeLayer(layer);
-      });
-      buildingLayersRef.current = [];
-
-      const latLngs: [number, number][] = [];
-      const markerColor = mapConfig.markerColor || '#3b82f6';
-
-      // Créer les marqueurs
-      validCoords.forEach((coord, index) => {
-        const lat = parseFloat(coord.lat);
-        const lng = parseFloat(coord.lng);
-        latLngs.push([lat, lng]);
-
-        const marker = L.marker([lat, lng], {
-          draggable: !isGroupDragMode && mapConfig.enableDragging !== false,
-          icon: L.divIcon({
-            className: 'custom-marker',
-            html: `<div style="
-              background-color: ${markerColor};
-              color: white;
-              width: 28px;
-              height: 28px;
-              border-radius: 50% 50% 50% 0;
-              transform: rotate(-45deg);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              border: 2px solid white;
-              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            ">
-              <span style="transform: rotate(45deg); font-weight: bold; font-size: 11px;">${index + 1}</span>
-            </div>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 28],
-          }),
-        }).addTo(map);
-
-        marker.on('dragend', () => {
-          const newPos = marker.getLatLng();
-          const originalIndex = coordinates.findIndex(c => c.borne === coord.borne);
-          if (originalIndex !== -1) {
-            const updatedCoords = [...coordinates];
-            updatedCoords[originalIndex] = {
-              ...updatedCoords[originalIndex],
-              lat: newPos.lat.toFixed(6),
-              lng: newPos.lng.toFixed(6),
-            };
-            onCoordinatesUpdate(updatedCoords);
-            updateParcelSidesFromCoordinates(updatedCoords);
+        // Nettoyer les anciens éléments
+        markersRef.current.forEach(marker => {
+          try {
+            if (marker && map.hasLayer(marker)) map.removeLayer(marker);
+          } catch (e) {
+            console.error('remove marker error', e);
           }
         });
+        markersRef.current = [];
 
-        markersRef.current.push(marker);
-      });
+        if (polygonRef.current) {
+          try {
+            if (map.hasLayer(polygonRef.current)) map.removeLayer(polygonRef.current);
+          } catch (e) {
+            console.error('remove polygon error', e);
+          }
+          polygonRef.current = null;
+        }
 
-      // Dessiner le polygone
-      const minMarkers = mapConfig.minMarkers || 3;
-      if (latLngs.length >= minMarkers) {
-        // Segments avec interaction
+        dimensionLayersRef.current.forEach(layer => {
+          try {
+            if (layer && map.hasLayer(layer)) map.removeLayer(layer);
+          } catch (e) {
+            console.error('remove dimension error', e);
+          }
+        });
+        dimensionLayersRef.current = [];
+
+        segmentLayersRef.current.forEach(layer => {
+          try {
+            if (layer && map.hasLayer(layer)) map.removeLayer(layer);
+          } catch (e) {
+            console.error('remove segment error', e);
+          }
+        });
+        segmentLayersRef.current = [];
+
+        buildingLayersRef.current.forEach(layer => {
+          try {
+            if (layer && map.hasLayer(layer)) map.removeLayer(layer);
+          } catch (e) {
+            console.error('remove building layer error', e);
+          }
+        });
+        buildingLayersRef.current = [];
+
+        const latLngs: [number, number][] = [];
+        const markerColor = mapConfig.markerColor || '#3b82f6';
+        const isMarkerMoveMode = Boolean(selectedBorneRef.current);
+        const shouldAutoCenter = !isDrawingMode && !isGroupDragMode && !selectedBorne && !isMarkerMoveMode;
+
+        // Créer les marqueurs
         validCoords.forEach((coord, index) => {
-          const nextIndex = (index + 1) % validCoords.length;
-          const nextCoord = validCoords[nextIndex];
-          
-          const roadSide = roadSides.find(s => s.sideIndex === index);
-          const isRoadBordering = roadSide?.bordersRoad || false;
-          const lineColor = mapConfig.lineColor || '#3b82f6';
-          
-          const segment = L.polyline(
-            [
-              [parseFloat(coord.lat), parseFloat(coord.lng)],
-              [parseFloat(nextCoord.lat), parseFloat(nextCoord.lng)]
-            ],
-            {
-              color: isRoadBordering ? '#f59e0b' : lineColor,
-              weight: isRoadBordering ? 4 : (mapConfig.lineWidth || 3),
-              opacity: 0.9,
-              dashArray: mapConfig.lineStyle === 'dashed' ? '10, 10' : undefined,
-            }
-          ).addTo(map);
-          
-          if (mapConfig.enableRoadBorderingFeature !== false) {
-            segment.on('click', () => {
-              if (onRoadSidesChange) {
-                const updatedSides = [...roadSides];
-                const sideIndex = updatedSides.findIndex(s => s.sideIndex === index);
-                if (sideIndex !== -1) {
-                  updatedSides[sideIndex] = {
-                    ...updatedSides[sideIndex],
-                    bordersRoad: !updatedSides[sideIndex].bordersRoad,
-                  };
-                }
-                onRoadSidesChange(updatedSides);
+          const lat = parseFloat(coord.lat);
+          const lng = parseFloat(coord.lng);
+          if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+          latLngs.push([lat, lng]);
+
+          const isSelected = selectedBorne === coord.borne;
+          const marker = L.marker([lat, lng], {
+            draggable: !isGroupDragMode && !isDrawingMode && !isMarkerMoveMode && mapConfig.enableDragging !== false,
+            icon: L.divIcon({
+              className: 'custom-marker',
+              html: `<div style="
+                background-color: ${markerColor};
+                color: white;
+                width: ${isSelected ? 32 : 28}px;
+                height: ${isSelected ? 32 : 28}px;
+                border-radius: 50% 50% 50% 0;
+                transform: rotate(-45deg);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: ${isSelected ? 3 : 2}px solid white;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+              ">
+                <span style="transform: rotate(45deg); font-weight: 800; font-size: 11px;">${index + 1}</span>
+              </div>`,
+              iconSize: [isSelected ? 32 : 28, isSelected ? 32 : 28],
+              iconAnchor: [14, 28],
+            }),
+          }).addTo(map);
+
+          // Appui prolongé = sélection + mode déplacement précis
+          const startLongPress = () => {
+            if (isDrawingMode || isGroupDragMode || isAddingBuilding) return;
+            if (longPressTimerRef.current) window.clearTimeout(longPressTimerRef.current);
+
+            longPressTimerRef.current = window.setTimeout(() => {
+              selectedBorneRef.current = coord.borne;
+              selectedMarkerRef.current = marker;
+              setSelectedBorne(coord.borne);
+
+              const mapNow = mapInstanceRef.current;
+              if (mapNow) {
+                const cont = mapNow.getContainer();
+                cont.dataset.markerMoving = 'true';
+                mapNow.dragging.disable();
+                mapNow.scrollWheelZoom.disable();
+                mapNow.doubleClickZoom.disable();
+                mapNow.touchZoom.disable();
               }
-            });
-          }
-          
-          segmentLayersRef.current.push(segment);
+            }, 450);
+          };
+
+          const cancelLongPress = () => {
+            if (longPressTimerRef.current) {
+              window.clearTimeout(longPressTimerRef.current);
+              longPressTimerRef.current = null;
+            }
+          };
+
+          marker.on('mousedown', startLongPress);
+          marker.on('touchstart', startLongPress);
+          marker.on('mouseup', cancelLongPress);
+          marker.on('touchend', cancelLongPress);
+          marker.on('mouseout', cancelLongPress);
+          marker.on('dragstart', cancelLongPress);
+
+          marker.on('dragend', () => {
+            const newPos = marker.getLatLng();
+            const originalIndex = coordinates.findIndex(c => c.borne === coord.borne);
+            if (originalIndex !== -1) {
+              const updatedCoords = [...coordinates];
+              updatedCoords[originalIndex] = {
+                ...updatedCoords[originalIndex],
+                lat: newPos.lat.toFixed(6),
+                lng: newPos.lng.toFixed(6),
+              };
+              onCoordinatesUpdate(updatedCoords);
+              updateParcelSidesFromCoordinates(updatedCoords);
+            }
+          });
+
+          markersRef.current.push(marker);
         });
-        
-        // Polygone rempli
-        const fillColor = mapConfig.fillColor || '#3b82f6';
-        const polygon = L.polygon(latLngs, {
-          color: 'transparent',
-          fillColor: fillColor,
-          fillOpacity: mapConfig.fillOpacity || 0.2,
-          weight: 0,
-          interactive: false,
-        }).addTo(map);
 
-        polygonRef.current = polygon;
+        // Dessiner le polygone
+        const minMarkers = mapConfig.minMarkers || 3;
+        if (latLngs.length >= minMarkers) {
+          // Segments avec interaction
+          validCoords.forEach((coord, index) => {
+            const nextIndex = (index + 1) % validCoords.length;
+            const nextCoord = validCoords[nextIndex];
 
-        // Calculer la surface
-        if (mapConfig.autoCalculateSurface) {
-          const area = calculatePolygonArea(latLngs);
-          setSurfaceArea(area);
-          if (onSurfaceChange) {
-            onSurfaceChange(area);
+            const roadSide = roadSides.find(s => s.sideIndex === index);
+            const isRoadBordering = roadSide?.bordersRoad || false;
+            const lineColor = mapConfig.lineColor || '#3b82f6';
+
+            const segment = L.polyline(
+              [
+                [parseFloat(coord.lat), parseFloat(coord.lng)],
+                [parseFloat(nextCoord.lat), parseFloat(nextCoord.lng)]
+              ],
+              {
+                color: isRoadBordering ? '#f59e0b' : lineColor,
+                weight: isRoadBordering ? 4 : (mapConfig.lineWidth || 3),
+                opacity: 0.9,
+                dashArray: mapConfig.lineStyle === 'dashed' ? '10, 10' : undefined,
+              }
+            ).addTo(map);
+
+            if (mapConfig.enableRoadBorderingFeature !== false) {
+              segment.on('click', () => {
+                if (onRoadSidesChange) {
+                  const updatedSides = [...roadSides];
+                  const sideIndex = updatedSides.findIndex(s => s.sideIndex === index);
+                  if (sideIndex !== -1) {
+                    updatedSides[sideIndex] = {
+                      ...updatedSides[sideIndex],
+                      bordersRoad: !updatedSides[sideIndex].bordersRoad,
+                    };
+                  }
+                  onRoadSidesChange(updatedSides);
+                }
+              });
+            }
+
+            segmentLayersRef.current.push(segment);
+          });
+
+          // Polygone rempli
+          const fillColor = mapConfig.fillColor || '#3b82f6';
+          const polygon = L.polygon(latLngs, {
+            color: 'transparent',
+            fillColor: fillColor,
+            fillOpacity: mapConfig.fillOpacity || 0.2,
+            weight: 0,
+            interactive: false,
+          }).addTo(map);
+
+          polygonRef.current = polygon;
+
+          // Calculer la surface
+          if (mapConfig.autoCalculateSurface) {
+            const area = calculatePolygonArea(latLngs);
+            setSurfaceArea(area);
+            if (onSurfaceChange) {
+              onSurfaceChange(area);
+            }
           }
-        }
-        
-        // Afficher les dimensions
-        if (mapConfig.showSideDimensions) {
-          displaySideDimensions(L, map, latLngs);
+
+          // Afficher les dimensions
+          if (mapConfig.showSideDimensions) {
+            displaySideDimensions(L, map, latLngs);
+          }
+
+          if (shouldAutoCenter) {
+            map.fitBounds(polygon.getBounds(), { padding: [40, 40] });
+          }
+        } else if (latLngs.length > 0) {
+          if (shouldAutoCenter) {
+            map.setView(latLngs[0], mapConfig.defaultZoom || 15);
+          }
+          setSurfaceArea(0);
         }
 
-        map.fitBounds(polygon.getBounds(), { padding: [40, 40] });
-      } else if (latLngs.length > 0) {
-        map.setView(latLngs[0], mapConfig.defaultZoom || 15);
-        setSurfaceArea(0);
+        // Dessiner les formes de construction
+        buildingShapes.forEach(shape => {
+          const shapeLayer = drawBuildingShape(L, map, shape);
+          if (shapeLayer) {
+            buildingLayersRef.current.push(shapeLayer);
+          }
+        });
+      } catch (err) {
+        console.error('ParcelMapPreview updateMap error:', err);
       }
-
-      // Dessiner les formes de construction
-      buildingShapes.forEach(shape => {
-        const shapeLayer = drawBuildingShape(L, map, shape);
-        if (shapeLayer) {
-          buildingLayersRef.current.push(shapeLayer);
-        }
-      });
     };
 
     updateMap();
-  }, [isMapReady, validCoords.length, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, isGroupDragMode, buildingShapes]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isMapReady, validCoords, coordinates, onCoordinatesUpdate, mapConfig, roadSides, onRoadSidesChange, isGroupDragMode, buildingShapes, isDrawingMode, selectedBorne, isAddingBuilding, updateParcelSidesFromCoordinates, onSurfaceChange]);
 
   // Dessiner une forme de construction
   const drawBuildingShape = (L: any, map: any, shape: BuildingShape) => {
@@ -1061,6 +1185,69 @@ export const ParcelMapPreview = ({
     if (buildingShapes.length === 0 || !onBuildingShapesChange) return;
     onBuildingShapesChange(buildingShapes.slice(0, -1));
   }, [buildingShapes, onBuildingShapesChange]);
+
+  const exitMarkerMoveMode = useCallback(() => {
+    selectedBorneRef.current = null;
+    selectedMarkerRef.current = null;
+    setSelectedBorne(null);
+
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const container = map.getContainer();
+    container.dataset.markerMoving = 'false';
+
+    // Restaurer les interactions selon le mode courant
+    if (isDrawingMode) {
+      map.dragging.disable();
+      map.scrollWheelZoom.disable();
+      map.doubleClickZoom.disable();
+      map.touchZoom.disable();
+      container.dataset.drawingMode = 'true';
+      container.style.cursor = 'crosshair';
+      return;
+    }
+
+    map.dragging.enable();
+    map.scrollWheelZoom.enable();
+    map.doubleClickZoom.enable();
+    map.touchZoom.enable();
+    container.style.cursor = isAddingBuilding ? 'crosshair' : 'grab';
+  }, [isDrawingMode, isAddingBuilding]);
+
+  const nudgeSelectedMarker = useCallback((direction: 'N' | 'S' | 'E' | 'W') => {
+    const borne = selectedBorneRef.current;
+    if (!borne) return;
+
+    const index = coordinates.findIndex(c => c.borne === borne);
+    if (index === -1) return;
+
+    const lat = parseFloat(coordinates[index].lat);
+    const lng = parseFloat(coordinates[index].lng);
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return;
+
+    const meters = moveStepMeters;
+    const deltaLat = meters / 111320;
+    const deltaLng = meters / (111320 * Math.cos((lat * Math.PI) / 180));
+
+    let newLat = lat;
+    let newLng = lng;
+
+    if (direction === 'N') newLat += deltaLat;
+    if (direction === 'S') newLat -= deltaLat;
+    if (direction === 'E') newLng += deltaLng;
+    if (direction === 'W') newLng -= deltaLng;
+
+    const updated = [...coordinates];
+    updated[index] = {
+      ...updated[index],
+      lat: newLat.toFixed(6),
+      lng: newLng.toFixed(6),
+    };
+
+    onCoordinatesUpdate(updated);
+    updateParcelSidesFromCoordinates(updated);
+  }, [coordinates, moveStepMeters, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
   return (
     <div className="space-y-3 max-w-[360px] mx-auto">
