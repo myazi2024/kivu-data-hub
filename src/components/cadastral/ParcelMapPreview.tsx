@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X } from 'lucide-react';
+import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
@@ -112,6 +112,8 @@ export const ParcelMapPreview = ({
   const [showShapePicker, setShowShapePicker] = useState(false);
   const [selectedBorne, setSelectedBorne] = useState<string | null>(null);
   const [moveStepMeters, setMoveStepMeters] = useState<number>(0.5);
+  const [parcelRotationDegrees, setParcelRotationDegrees] = useState<number>(0);
+  const [showParcelControls, setShowParcelControls] = useState(false);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -1265,6 +1267,76 @@ export const ParcelMapPreview = ({
     updateParcelSidesFromCoordinates(updated);
   }, [coordinates, moveStepMeters, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
+  // Déplacer toute la parcelle (toutes les bornes ensemble)
+  const nudgeEntireParcel = useCallback((direction: 'N' | 'S' | 'E' | 'W') => {
+    if (validCoords.length < 2) return;
+
+    const centerLat = validCoords.reduce((sum, c) => sum + parseFloat(c.lat), 0) / validCoords.length;
+    const meters = moveStepMeters;
+    const deltaLat = meters / 111320;
+    const deltaLng = meters / (111320 * Math.cos((centerLat * Math.PI) / 180));
+
+    const updated = coordinates.map(coord => {
+      const lat = parseFloat(coord.lat);
+      const lng = parseFloat(coord.lng);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return coord;
+
+      let newLat = lat;
+      let newLng = lng;
+
+      if (direction === 'N') newLat += deltaLat;
+      if (direction === 'S') newLat -= deltaLat;
+      if (direction === 'E') newLng += deltaLng;
+      if (direction === 'W') newLng -= deltaLng;
+
+      return {
+        ...coord,
+        lat: newLat.toFixed(6),
+        lng: newLng.toFixed(6),
+      };
+    });
+
+    onCoordinatesUpdate(updated);
+    updateParcelSidesFromCoordinates(updated);
+  }, [coordinates, validCoords, moveStepMeters, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
+
+  // Rotation de la parcelle autour de son centre
+  const rotateParcel = useCallback((angleDegrees: number) => {
+    if (validCoords.length < 2) return;
+
+    // Calculer le centre de la parcelle
+    const centerLat = validCoords.reduce((sum, c) => sum + parseFloat(c.lat), 0) / validCoords.length;
+    const centerLng = validCoords.reduce((sum, c) => sum + parseFloat(c.lng), 0) / validCoords.length;
+
+    const angleRad = (angleDegrees * Math.PI) / 180;
+    const cosA = Math.cos(angleRad);
+    const sinA = Math.sin(angleRad);
+
+    const updated = coordinates.map(coord => {
+      const lat = parseFloat(coord.lat);
+      const lng = parseFloat(coord.lng);
+      if (Number.isNaN(lat) || Number.isNaN(lng)) return coord;
+
+      // Calculer la distance relative au centre
+      const dLat = lat - centerLat;
+      const dLng = lng - centerLng;
+
+      // Appliquer la rotation
+      const newDLat = dLat * cosA - dLng * sinA;
+      const newDLng = dLat * sinA + dLng * cosA;
+
+      return {
+        ...coord,
+        lat: (centerLat + newDLat).toFixed(6),
+        lng: (centerLng + newDLng).toFixed(6),
+      };
+    });
+
+    setParcelRotationDegrees(prev => (prev + angleDegrees) % 360);
+    onCoordinatesUpdate(updated);
+    updateParcelSidesFromCoordinates(updated);
+  }, [coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
+
   return (
     <div className="space-y-3 max-w-[360px] mx-auto">
       {/* En-tête avec stats */}
@@ -1294,59 +1366,15 @@ export const ParcelMapPreview = ({
         </div>
       </Card>
 
-      {/* Boutons de contrôle principaux */}
-      {enableDrawingMode && (
-        <Card className={`p-3 rounded-2xl shadow-md transition-all ${
-          isDrawingMode 
-            ? 'bg-orange-50 dark:bg-orange-950/30 border-orange-400/40 border-2' 
-            : 'bg-card border-border/50'
-        }`}>
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <div className={`h-8 w-8 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                isDrawingMode ? 'bg-orange-500/20' : 'bg-primary/10'
-              }`}>
-                {isDrawingMode ? (
-                  <Pencil className="h-4 w-4 text-orange-600" />
-                ) : (
-                  <Navigation className="h-4 w-4 text-primary" />
-                )}
-              </div>
-              <div className="min-w-0">
-                <p className={`text-sm font-semibold ${isDrawingMode ? 'text-orange-700' : ''}`}>
-                  {isDrawingMode ? 'Mode Dessin' : 'Mode Navigation'}
-                </p>
-                <p className={`text-xs ${isDrawingMode ? 'text-orange-600/80' : 'text-muted-foreground'}`}>
-                  {isDrawingMode ? 'Touchez pour ajouter' : `${coordinates.length} borne${coordinates.length !== 1 ? 's' : ''}`}
-                </p>
-              </div>
-            </div>
-            
-            <Button 
-              type="button"
-              size="sm" 
-              onClick={() => toggleDrawingMode(!isDrawingMode)}
-              className={`h-8 rounded-xl gap-1 px-3 text-sm ${
-                isDrawingMode 
-                  ? 'border-orange-400/60 text-orange-700 hover:bg-orange-100' 
-                  : 'bg-primary hover:bg-primary/90 text-primary-foreground'
-              }`}
-              variant={isDrawingMode ? 'outline' : 'default'}
-            >
-              {isDrawingMode ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
-              {isDrawingMode ? 'Terminer' : 'Tracer'}
-            </Button>
-          </div>
-        </Card>
-      )}
-
       {/* Carte avec contrôles intégrés */}
       <Card className={`overflow-hidden relative rounded-2xl shadow-lg transition-all ${
         isDrawingMode 
           ? 'border-2 border-orange-400/60 ring-4 ring-orange-500/15' 
           : isAddingBuilding
             ? 'border-2 border-red-400/60 ring-4 ring-red-500/15'
-            : 'border-2 border-primary/25'
+            : showParcelControls
+              ? 'border-2 border-blue-400/60 ring-4 ring-blue-500/15'
+              : 'border-2 border-primary/25'
       }`}>
         <div 
           ref={mapRef} 
@@ -1354,19 +1382,45 @@ export const ParcelMapPreview = ({
           style={{ cursor: isDrawingMode || isAddingBuilding ? 'crosshair' : 'grab' }}
         />
         
-        {/* Boutons de contrôle sur la carte */}
+        {/* Boutons Tracer/Terminer sur la carte (en haut à gauche) */}
+        {enableDrawingMode && (
+          <div className="absolute top-2 left-2 z-[1000] flex items-center gap-1.5">
+            <Button 
+              type="button"
+              size="sm" 
+              onClick={() => toggleDrawingMode(!isDrawingMode)}
+              className={`h-8 rounded-xl gap-1 px-3 text-xs shadow-md ${
+                isDrawingMode 
+                  ? 'bg-orange-500 text-white hover:bg-orange-600' 
+                  : 'bg-white/95 text-foreground hover:bg-white border border-border/50'
+              }`}
+            >
+              {isDrawingMode ? <Check className="h-3.5 w-3.5" /> : <Pencil className="h-3.5 w-3.5" />}
+              {isDrawingMode ? 'Terminer' : 'Tracer'}
+            </Button>
+            
+            {/* Indicateur nb bornes */}
+            {coordinates.length > 0 && !isDrawingMode && (
+              <Badge variant="outline" className="text-[10px] h-6 px-2 rounded-lg bg-white/90 shadow-sm">
+                {coordinates.length} pt{coordinates.length > 1 ? 's' : ''}
+              </Badge>
+            )}
+          </div>
+        )}
+        
+        {/* Boutons de contrôle sur la carte (à droite) */}
         <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1.5">
-          {/* Bouton déplacement groupé */}
+          {/* Bouton contrôles avancés parcelle */}
           {validCoords.length >= 2 && (
             <Button
               type="button"
               size="sm"
-              variant={isGroupDragMode ? "default" : "outline"}
-              onClick={() => setIsGroupDragMode(!isGroupDragMode)}
+              variant={showParcelControls ? "default" : "outline"}
+              onClick={() => setShowParcelControls(!showParcelControls)}
               className={`h-8 w-8 p-0 rounded-xl shadow-md ${
-                isGroupDragMode ? 'bg-primary text-primary-foreground' : 'bg-white hover:bg-gray-50'
+                showParcelControls ? 'bg-blue-500 text-white' : 'bg-white hover:bg-gray-50'
               }`}
-              title={isGroupDragMode ? 'Désactiver déplacement groupé' : 'Déplacer toute la parcelle'}
+              title={showParcelControls ? 'Masquer contrôles' : 'Déplacer/Rotation parcelle'}
             >
               <Move className="h-4 w-4" />
             </Button>
@@ -1433,18 +1487,17 @@ export const ParcelMapPreview = ({
           )}
         </div>
         
-        {/* Indicateur mode actif */}
+        {/* Mode Dessin indicateur */}
         {isDrawingMode && (
-          <div className="absolute top-2 left-2 z-[1000]">
-            <Badge className="bg-orange-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
-              <Pencil className="h-3 w-3 mr-1" />
-              Dessin
+          <div className="absolute bottom-10 left-2 z-[1000]">
+            <Badge className="bg-orange-500/90 text-white text-[10px] h-5 px-2 rounded-lg shadow-md">
+              Touchez pour ajouter
             </Badge>
           </div>
         )}
         
-        {isAddingBuilding && (
-          <div className="absolute top-2 left-2 z-[1000]">
+        {isAddingBuilding && !isDrawingMode && (
+          <div className="absolute bottom-10 left-2 z-[1000]">
             <Badge className="bg-red-500 text-white text-xs h-6 px-2 rounded-lg shadow-md animate-pulse">
               <Building2 className="h-3 w-3 mr-1" />
               {SHAPE_OPTIONS.find(s => s.type === selectedShapeType)?.label}
@@ -1452,12 +1505,126 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {showNeighbors && (
+        {showNeighbors && !isDrawingMode && !isAddingBuilding && (
           <div className="absolute bottom-10 left-2 z-[1000]">
             <Badge className="bg-indigo-500 text-white text-xs h-6 px-2 rounded-lg shadow-md">
               <Eye className="h-3 w-3 mr-1" />
-              Voisins affichés
+              Voisins
             </Badge>
+          </div>
+        )}
+        
+        {/* Panneau de contrôle parcelle (déplacement + rotation) */}
+        {showParcelControls && !selectedBorne && validCoords.length >= 2 && (
+          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[1000]">
+            <Card className="p-2.5 rounded-2xl shadow-lg bg-white/95 dark:bg-card/95 backdrop-blur-sm border-blue-400/40">
+              <div className="flex flex-col items-center gap-2">
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" className="text-xs h-5 px-2 rounded-lg bg-blue-500/10 border-blue-400/30 text-blue-700 dark:text-blue-300">
+                    Déplacer/Pivoter
+                  </Badge>
+                  <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-lg text-muted-foreground">
+                    {moveStepMeters.toFixed(1)}m
+                  </Badge>
+                  <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-lg text-muted-foreground">
+                    {parcelRotationDegrees.toFixed(0)}°
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  {/* Contrôles de déplacement */}
+                  <div className="grid grid-cols-3 gap-0.5">
+                    <div />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => nudgeEntireParcel('N')}
+                      className="h-7 w-7 p-0 rounded-lg"
+                      title="Nord"
+                    >
+                      <ArrowUp className="h-3.5 w-3.5" />
+                    </Button>
+                    <div />
+                    
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => nudgeEntireParcel('W')}
+                      className="h-7 w-7 p-0 rounded-lg"
+                      title="Ouest"
+                    >
+                      <ArrowLeft className="h-3.5 w-3.5" />
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      onClick={() => setShowParcelControls(false)}
+                      className="h-7 w-7 p-0 rounded-lg"
+                      title="Fermer"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                    
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => nudgeEntireParcel('E')}
+                      className="h-7 w-7 p-0 rounded-lg"
+                      title="Est"
+                    >
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                    
+                    <div />
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => nudgeEntireParcel('S')}
+                      className="h-7 w-7 p-0 rounded-lg"
+                      title="Sud"
+                    >
+                      <ArrowDown className="h-3.5 w-3.5" />
+                    </Button>
+                    <div />
+                  </div>
+                  
+                  {/* Séparateur */}
+                  <div className="w-px h-16 bg-border" />
+                  
+                  {/* Contrôles de rotation */}
+                  <div className="flex flex-col gap-1">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => rotateParcel(-1)}
+                      className="h-7 w-8 p-0 rounded-lg"
+                      title="Rotation anti-horaire (-1°)"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => rotateParcel(1)}
+                      className="h-7 w-8 p-0 rounded-lg"
+                      title="Rotation horaire (+1°)"
+                    >
+                      <RotateCw className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+                
+                <p className="text-[10px] text-muted-foreground">Appui long sur borne = déplacer 1 borne</p>
+              </div>
+            </Card>
           </div>
         )}
         

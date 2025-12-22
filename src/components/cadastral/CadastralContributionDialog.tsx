@@ -4365,23 +4365,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     handleInputChange('areaSqm', String(surface));
                   }}
                 />
-                
-                {/* Superficie calculée */}
-                {formData.areaSqm && parseFloat(String(formData.areaSqm)) > 0 && (
-                  <Card className="p-3 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent rounded-2xl border-primary/20">
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1">
-                        <p className="text-xs font-medium text-muted-foreground mb-0.5">
-                          Superficie calculée
-                        </p>
-                        <p className="text-2xl font-bold text-primary">{parseFloat(String(formData.areaSqm)).toLocaleString()} m²</p>
-                      </div>
-                      <Badge variant="secondary" className="text-xs px-2 py-1 rounded-xl">
-                        {gpsCoordinates.filter(c => c.lat && c.lng).length} bornes
-                      </Badge>
-                    </div>
-                  </Card>
-                )}
               </div>
             )}
             
