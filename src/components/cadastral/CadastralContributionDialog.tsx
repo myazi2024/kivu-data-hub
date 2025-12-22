@@ -4347,8 +4347,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
             {/* Aperçu de la carte - collecte GPS et dimensions via dessin */}
             {sectionType && (
-              <div className="space-y-3 pt-4 border-t">
-                <ParcelMapPreview 
+              <div className="space-y-3 pt-4 border-t relative z-0">
+                <ParcelMapPreview
                   coordinates={gpsCoordinates}
                   onCoordinatesUpdate={(updatedCoords) => {
                     setGpsCoordinates(updatedCoords);
