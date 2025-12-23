@@ -424,6 +424,50 @@ export const ParcelMapPreview = ({
       });
 
       mapInstanceRef.current = map;
+      
+      // Géolocalisation: centrer la carte sur la position de l'utilisateur par défaut
+      // seulement si aucune parcelle n'est déjà tracée
+      if (validCoordsRef.current.length === 0 && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            map.setView([latitude, longitude], mapConfig.defaultZoom || 15);
+            
+            // Ajouter un marqueur pour la position de l'utilisateur
+            const userLocationMarker = L.circleMarker([latitude, longitude], {
+              radius: 8,
+              fillColor: '#3b82f6',
+              color: '#ffffff',
+              weight: 3,
+              opacity: 1,
+              fillOpacity: 0.8
+            }).addTo(map);
+            
+            userLocationMarker.bindPopup('<div style="text-align:center;font-size:12px;"><strong>Votre position</strong></div>');
+            
+            // Ajouter un cercle de précision
+            const accuracyCircle = L.circle([latitude, longitude], {
+              radius: position.coords.accuracy,
+              fillColor: '#3b82f6',
+              fillOpacity: 0.1,
+              color: '#3b82f6',
+              weight: 1
+            }).addTo(map);
+            
+            mapControlsRef.current.push(userLocationMarker, accuracyCircle);
+          },
+          (error) => {
+            console.log('Géolocalisation non disponible:', error.message);
+            // Utiliser la position par défaut (mapCenter) si la géolocalisation échoue
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 60000
+          }
+        );
+      }
+      
       setIsMapReady(true);
     };
 
