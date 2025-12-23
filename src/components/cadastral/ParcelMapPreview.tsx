@@ -1514,9 +1514,9 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {/* Panneau de contrôle parcelle compact (déplacement + rotation) - en bas à droite */}
-        {showParcelControls && !selectedBorne && validCoords.length >= 2 && (
-          <div className="absolute bottom-2 right-2 z-[1000]">
+        {/* Panneau de contrôle parcelle compact (déplacement + rotation) - en bas à droite, avant zoom */}
+        {!isDrawingMode && !selectedBorne && validCoords.length >= 3 && (
+          <div className="absolute bottom-2 right-14 z-[1000]">
             <div className="flex flex-col items-end gap-1">
               {/* Indicateurs compacts */}
               <div className="flex items-center gap-1 bg-white/90 dark:bg-card/90 backdrop-blur-sm rounded-lg px-1.5 py-0.5 shadow-sm border border-blue-400/30">
@@ -1600,20 +1600,6 @@ export const ParcelMapPreview = ({
                   </Button>
                 </div>
                 
-                {/* Séparateur fin */}
-                <div className="w-px h-10 bg-border/50 mx-0.5" />
-                
-                {/* Bouton fermer */}
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setShowParcelControls(false)}
-                  className="h-6 w-6 p-0 rounded-md text-destructive hover:bg-destructive/10"
-                  title="Fermer"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
               </div>
             </div>
           </div>
