@@ -1378,7 +1378,7 @@ export const ParcelMapPreview = ({
       }`}>
         <div 
           ref={mapRef} 
-          className="h-[280px] w-full"
+          className="h-[340px] w-full"
           style={{ cursor: isDrawingMode || isAddingBuilding ? 'crosshair' : 'grab' }}
         />
         
@@ -1514,117 +1514,108 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {/* Panneau de contrôle parcelle (déplacement + rotation) */}
+        {/* Panneau de contrôle parcelle compact (déplacement + rotation) - en bas à droite */}
         {showParcelControls && !selectedBorne && validCoords.length >= 2 && (
-          <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-[1000]">
-            <Card className="p-2.5 rounded-2xl shadow-lg bg-white/95 dark:bg-card/95 backdrop-blur-sm border-blue-400/40">
-              <div className="flex flex-col items-center gap-2">
-                <div className="flex items-center gap-1.5">
-                  <Badge variant="outline" className="text-xs h-5 px-2 rounded-lg bg-blue-500/10 border-blue-400/30 text-blue-700 dark:text-blue-300">
-                    Déplacer/Pivoter
-                  </Badge>
-                  <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-lg text-muted-foreground">
-                    {moveStepMeters.toFixed(1)}m
-                  </Badge>
-                  <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-lg text-muted-foreground">
-                    {parcelRotationDegrees.toFixed(0)}°
-                  </Badge>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {/* Contrôles de déplacement */}
-                  <div className="grid grid-cols-3 gap-0.5">
-                    <div />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => nudgeEntireParcel('N')}
-                      className="h-7 w-7 p-0 rounded-lg"
-                      title="Nord"
-                    >
-                      <ArrowUp className="h-3.5 w-3.5" />
-                    </Button>
-                    <div />
-                    
+          <div className="absolute bottom-2 right-2 z-[1000]">
+            <div className="flex flex-col items-end gap-1">
+              {/* Indicateurs compacts */}
+              <div className="flex items-center gap-1 bg-white/90 dark:bg-card/90 backdrop-blur-sm rounded-lg px-1.5 py-0.5 shadow-sm border border-blue-400/30">
+                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">{moveStepMeters.toFixed(1)}m</span>
+                <span className="text-[9px] text-muted-foreground">|</span>
+                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">{parcelRotationDegrees.toFixed(0)}°</span>
+              </div>
+              
+              {/* Contrôles compacts en ligne */}
+              <div className="flex items-center gap-0.5 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-xl p-1 shadow-md border border-blue-400/30">
+                {/* Flèches directionnelles */}
+                <div className="flex flex-col gap-0.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => nudgeEntireParcel('N')}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                    title="Nord"
+                  >
+                    <ArrowUp className="h-3 w-3" />
+                  </Button>
+                  <div className="flex gap-0.5">
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       onClick={() => nudgeEntireParcel('W')}
-                      className="h-7 w-7 p-0 rounded-lg"
+                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
                       title="Ouest"
                     >
-                      <ArrowLeft className="h-3.5 w-3.5" />
+                      <ArrowLeft className="h-3 w-3" />
                     </Button>
-                    
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => setShowParcelControls(false)}
-                      className="h-7 w-7 p-0 rounded-lg"
-                      title="Fermer"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                    
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
                       onClick={() => nudgeEntireParcel('E')}
-                      className="h-7 w-7 p-0 rounded-lg"
+                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
                       title="Est"
                     >
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
-                    
-                    <div />
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => nudgeEntireParcel('S')}
-                      className="h-7 w-7 p-0 rounded-lg"
-                      title="Sud"
-                    >
-                      <ArrowDown className="h-3.5 w-3.5" />
-                    </Button>
-                    <div />
-                  </div>
-                  
-                  {/* Séparateur */}
-                  <div className="w-px h-16 bg-border" />
-                  
-                  {/* Contrôles de rotation */}
-                  <div className="flex flex-col gap-1">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => rotateParcel(-1)}
-                      className="h-7 w-8 p-0 rounded-lg"
-                      title="Rotation anti-horaire (-1°)"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => rotateParcel(1)}
-                      className="h-7 w-8 p-0 rounded-lg"
-                      title="Rotation horaire (+1°)"
-                    >
-                      <RotateCw className="h-3.5 w-3.5" />
+                      <ArrowRight className="h-3 w-3" />
                     </Button>
                   </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => nudgeEntireParcel('S')}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                    title="Sud"
+                  >
+                    <ArrowDown className="h-3 w-3" />
+                  </Button>
                 </div>
                 
-                <p className="text-[10px] text-muted-foreground">Appui long sur borne = déplacer 1 borne</p>
+                {/* Séparateur fin */}
+                <div className="w-px h-10 bg-border/50 mx-0.5" />
+                
+                {/* Rotation */}
+                <div className="flex flex-col gap-0.5">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => rotateParcel(-1)}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                    title="-1°"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => rotateParcel(1)}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
+                    title="+1°"
+                  >
+                    <RotateCw className="h-3 w-3" />
+                  </Button>
+                </div>
+                
+                {/* Séparateur fin */}
+                <div className="w-px h-10 bg-border/50 mx-0.5" />
+                
+                {/* Bouton fermer */}
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setShowParcelControls(false)}
+                  className="h-6 w-6 p-0 rounded-md text-destructive hover:bg-destructive/10"
+                  title="Fermer"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
               </div>
-            </Card>
+            </div>
           </div>
         )}
         
