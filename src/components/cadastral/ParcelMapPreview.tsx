@@ -1301,6 +1301,7 @@ export const ParcelMapPreview = ({
   }, [coordinates, validCoords, moveStepMeters, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
   // Rotation de la parcelle autour de son centre
+  // NOTE: La rotation ne doit PAS recalculer les dimensions car les distances réelles entre bornes ne changent pas
   const rotateParcel = useCallback((angleDegrees: number) => {
     if (validCoords.length < 2) return;
 
@@ -1333,9 +1334,10 @@ export const ParcelMapPreview = ({
     });
 
     setParcelRotationDegrees(prev => (prev + angleDegrees) % 360);
+    // Mise à jour des coordonnées SANS recalculer les dimensions des côtés
+    // Car une rotation pure ne change pas les distances réelles entre les bornes
     onCoordinatesUpdate(updated);
-    updateParcelSidesFromCoordinates(updated);
-  }, [coordinates, validCoords, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
+  }, [coordinates, validCoords, onCoordinatesUpdate]);
 
   return (
     <div className="space-y-3 max-w-[360px] mx-auto">
