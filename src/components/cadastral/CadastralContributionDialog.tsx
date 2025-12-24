@@ -2995,25 +2995,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     type="button"
                     onClick={() => setPermitMode('existing')}
                     className={cn(
-                      "flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all",
+                      "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
                       permitMode === 'existing'
-                        ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                        ? 'bg-emerald-600 text-white shadow-lg'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    J'ai déjà un permis
+                    J'ai un permis
                   </button>
                   <button
                     type="button"
                     onClick={() => setPermitMode('request')}
                     className={cn(
-                      "flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all",
+                      "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
                       permitMode === 'request'
-                        ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                        ? 'bg-amber-600 text-white shadow-lg'
+                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    Je n'ai pas de permis
+                    Pas de permis
                   </button>
                 </div>
 
@@ -3172,25 +3172,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
                 )}
 
-                {/* Mode: Je n'ai pas de permis */}
+                {/* Mode: Pas de permis */}
                 {permitMode === 'request' && (
-                  <div className="space-y-2 animate-fade-in">
-                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
-                      <div className="flex items-start gap-2">
-                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
-                            Pas de permis ? Pas de problème !
-                          </p>
-                          <p className="text-[10px] text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
-                            Après avoir soumis votre contribution CCC, vous pourrez faire une demande de permis depuis votre <strong>Espace Personnel → Permis</strong>.
-                          </p>
-                        </div>
-                      </div>
+                  <div className="animate-fade-in">
+                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                      <p className="text-sm text-amber-800 dark:text-amber-200 text-center">
+                        Demande disponible dans <strong>Espace Personnel</strong> après soumission
+                      </p>
                     </div>
-                    <p className="text-[10px] text-center text-muted-foreground">
-                      💡 Continuez pour compléter les autres informations
-                    </p>
                   </div>
                 )}
               </CardContent>
