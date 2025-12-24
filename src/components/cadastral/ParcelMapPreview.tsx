@@ -1492,12 +1492,38 @@ export const ParcelMapPreview = ({
               {isDrawingMode ? 'Terminer' : 'Tracer'}
             </Button>
             
-            {/* Indicateur nb bornes */}
-            {coordinates.length > 0 && !isDrawingMode && (
+            {/* Indicateur nb bornes - seulement si des bornes valides existent */}
+            {validCoords.length > 0 && !isDrawingMode && (
               <Badge variant="outline" className="text-[10px] h-6 px-2 rounded-lg bg-white/90 shadow-sm">
-                {coordinates.length} pt{coordinates.length > 1 ? 's' : ''}
+                {validCoords.length} pt{validCoords.length > 1 ? 's' : ''}
               </Badge>
             )}
+          </div>
+        )}
+        
+        {/* Boutons de suppression sur la carte (en bas à gauche) */}
+        {enableDrawingMode && validCoords.length > 0 && (
+          <div className="absolute bottom-2 left-2 z-[1000] flex items-center gap-1">
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={removeLastMarker}
+              className="h-8 w-8 p-0 rounded-xl bg-white/95 hover:bg-destructive/10 hover:text-destructive shadow-md border-border/50"
+              title="Supprimer dernière borne"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              onClick={clearAllMarkers}
+              className="h-8 w-8 p-0 rounded-xl bg-white/95 hover:bg-destructive/10 hover:text-destructive shadow-md border-border/50"
+              title="Supprimer toutes les bornes"
+            >
+              <X className="h-4 w-4" />
+            </Button>
           </div>
         )}
         
@@ -1791,31 +1817,6 @@ export const ParcelMapPreview = ({
         </Alert>
       )}
 
-      {/* Boutons d'action */}
-      {enableDrawingMode && coordinates.length > 0 && (
-        <div className="flex items-center gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={removeLastMarker}
-            className="flex-1 gap-1 text-sm h-8 rounded-xl hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Supprimer dernière
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={clearAllMarkers}
-            className="gap-1 text-sm h-8 px-3 rounded-xl hover:bg-destructive/10 hover:text-destructive"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Tout
-          </Button>
-        </div>
-      )}
 
       {/* Constructions ajoutées */}
       {buildingShapes.length > 0 && (
