@@ -453,6 +453,7 @@ export type Database = {
           status: string
           tax_history: Json | null
           territoire: string | null
+          title_issue_date: string | null
           title_reference_number: string | null
           updated_at: string
           user_id: string | null
@@ -514,6 +515,7 @@ export type Database = {
           status?: string
           tax_history?: Json | null
           territoire?: string | null
+          title_issue_date?: string | null
           title_reference_number?: string | null
           updated_at?: string
           user_id?: string | null
@@ -575,6 +577,7 @@ export type Database = {
           status?: string
           tax_history?: Json | null
           territoire?: string | null
+          title_issue_date?: string | null
           title_reference_number?: string | null
           updated_at?: string
           user_id?: string | null
@@ -897,6 +900,7 @@ export type Database = {
           quartier: string | null
           surface_calculee_bornes: number | null
           territoire: string | null
+          title_issue_date: string | null
           title_reference_number: string | null
           updated_at: string
           village: string | null
@@ -936,6 +940,7 @@ export type Database = {
           quartier?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
+          title_issue_date?: string | null
           title_reference_number?: string | null
           updated_at?: string
           village?: string | null
@@ -975,6 +980,7 @@ export type Database = {
           quartier?: string | null
           surface_calculee_bornes?: number | null
           territoire?: string | null
+          title_issue_date?: string | null
           title_reference_number?: string | null
           updated_at?: string
           village?: string | null

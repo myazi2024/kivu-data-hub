@@ -30,6 +30,7 @@ interface MutationRequestDialogProps {
     commune?: string;
     quartier?: string;
     current_owner_name?: string;
+    title_issue_date?: string; // Date de délivrance du titre foncier depuis CCC
   };
   trigger?: React.ReactNode;
   open?: boolean;
@@ -106,6 +107,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [marketValueUsd, setMarketValueUsd] = useState('');
   const [showExpertiseDialog, setShowExpertiseDialog] = useState(false);
   const [titleAge, setTitleAge] = useState<'less_than_10' | '10_or_more' | null>(null);
+  const [titleIssueDateFromCCC, setTitleIssueDateFromCCC] = useState<string | null>(null);
+  const [titleAgeAutoDetected, setTitleAgeAutoDetected] = useState(false);
   const expertiseCertificateInputRef = useRef<HTMLInputElement>(null);
   
   // Payment state
@@ -113,6 +116,73 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
+
+  // Récupérer automatiquement la date du titre depuis les données CCC
+  useEffect(() => {
+    const fetchTitleIssueDate = async () => {
+      // Si la date est déjà fournie dans les props
+      if (parcelData?.title_issue_date) {
+        setTitleIssueDateFromCCC(parcelData.title_issue_date);
+        calculateTitleAgeFromDate(parcelData.title_issue_date);
+        return;
+      }
+
+      // Sinon, chercher dans les contributions CCC validées ou la table des parcelles
+      try {
+        // D'abord chercher dans les contributions validées
+        const { data: contribution } = await supabase
+          .from('cadastral_contributions')
+          .select('title_issue_date')
+          .eq('parcel_number', parcelNumber)
+          .eq('status', 'approved')
+          .not('title_issue_date', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (contribution?.title_issue_date) {
+          setTitleIssueDateFromCCC(contribution.title_issue_date);
+          calculateTitleAgeFromDate(contribution.title_issue_date);
+          return;
+        }
+
+        // Sinon chercher dans la table des parcelles
+        const { data: parcel } = await supabase
+          .from('cadastral_parcels')
+          .select('title_issue_date')
+          .eq('parcel_number', parcelNumber)
+          .not('title_issue_date', 'is', null)
+          .limit(1)
+          .single();
+
+        if (parcel?.title_issue_date) {
+          setTitleIssueDateFromCCC(parcel.title_issue_date);
+          calculateTitleAgeFromDate(parcel.title_issue_date);
+        }
+      } catch (error) {
+        // Pas de date trouvée, l'utilisateur devra la saisir manuellement
+        console.log('Aucune date de délivrance du titre trouvée');
+      }
+    };
+
+    if (open && parcelNumber) {
+      fetchTitleIssueDate();
+    }
+  }, [open, parcelNumber, parcelData?.title_issue_date]);
+
+  // Calculer l'âge du titre à partir de sa date de délivrance
+  const calculateTitleAgeFromDate = (dateString: string) => {
+    const issueDate = new Date(dateString);
+    const today = new Date();
+    const yearsElapsed = differenceInDays(today, issueDate) / 365;
+    
+    if (yearsElapsed >= 10) {
+      setTitleAge('10_or_more');
+    } else {
+      setTitleAge('less_than_10');
+    }
+    setTitleAgeAutoDetected(true);
+  };
 
   // Vérifier si c'est un type de mutation avec transfert
   const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
@@ -375,6 +445,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setExpertiseCertificateDate('');
     setMarketValueUsd('');
     setTitleAge(null);
+    setTitleIssueDateFromCCC(null);
+    setTitleAgeAutoDetected(false);
     onOpenChange(false);
   };
 
@@ -427,6 +499,61 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             {getMutationTypeDetails()?.description}
           </p>
         </div>
+
+        {/* Documents justificatifs - déplacé ici pour cohérence */}
+        <Card className="border rounded-xl">
+          <CardContent className="p-3 space-y-3">
+            <h4 className="text-sm font-semibold flex items-center gap-2">
+              <Upload className="h-4 w-4 text-muted-foreground" />
+              Documents justificatifs
+            </h4>
+            <p className="text-xs text-muted-foreground">
+              Acte de vente, certificat, attestation... (max 10MB/fichier)
+            </p>
+            
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              multiple
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5"
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Ajouter des documents
+            </Button>
+            
+            {attachedFiles.length > 0 && (
+              <div className="space-y-2">
+                {attachedFiles.map((file, index) => (
+                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                    {file.type.startsWith('image/') ? (
+                      <Image className="h-4 w-4 text-primary flex-shrink-0" />
+                    ) : (
+                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                    )}
+                    <span className="flex-1 truncate text-sm">{file.name}</span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeFile(index)}
+                      className="h-7 w-7 rounded-lg hover:bg-destructive/10"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Type de demandeur */}
         <div className="space-y-2">
@@ -690,23 +817,46 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   {/* Ancienneté du titre foncier */}
                   {parseFloat(marketValueUsd) >= 10000 && (
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">Ancienneté du titre foncier *</Label>
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm font-medium">Ancienneté du titre foncier *</Label>
+                        {titleAgeAutoDetected && titleIssueDateFromCCC && (
+                          <span className="text-xs text-green-600 flex items-center gap-1">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Auto-détecté
+                          </span>
+                        )}
+                      </div>
+                      
+                      {titleAgeAutoDetected && titleIssueDateFromCCC && (
+                        <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 rounded-lg">
+                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <AlertDescription className="text-xs text-green-700 dark:text-green-400">
+                            Date de délivrance du titre : <strong>{format(new Date(titleIssueDateFromCCC), 'dd MMMM yyyy', { locale: fr })}</strong>
+                            <br />
+                            Le taux a été automatiquement déterminé selon les données CCC de la parcelle.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
                       <p className="text-xs text-muted-foreground">
                         Le taux des frais de mutation dépend de l'ancienneté du titre (Circulaire n° 005/CAB/MIN/AFF.FONC/2013).
                       </p>
                       <RadioGroup 
                         value={titleAge || ''} 
-                        onValueChange={(value) => setTitleAge(value as 'less_than_10' | '10_or_more')}
+                        onValueChange={(value) => {
+                          setTitleAge(value as 'less_than_10' | '10_or_more');
+                          setTitleAgeAutoDetected(false); // L'utilisateur a manuellement changé
+                        }}
                         className="flex flex-col gap-2"
                       >
-                        <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50">
+                        <div className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50 ${titleAge === 'less_than_10' ? 'bg-primary/5 border border-primary/30' : ''}`}>
                           <RadioGroupItem value="less_than_10" id="title-less-10" />
                           <Label htmlFor="title-less-10" className="text-sm cursor-pointer flex-1">
                             Moins de 10 ans
                             <span className="block text-xs text-muted-foreground">Taux: 3% + frais bancaires</span>
                           </Label>
                         </div>
-                        <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50">
+                        <div className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50 ${titleAge === '10_or_more' ? 'bg-primary/5 border border-primary/30' : ''}`}>
                           <RadioGroupItem value="10_or_more" id="title-10-more" />
                           <Label htmlFor="title-10-more" className="text-sm cursor-pointer flex-1">
                             10 ans ou plus
@@ -764,61 +914,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Card>
         )}
 
-        {/* Pièces jointes */}
-        <Card className="border rounded-xl">
-          <CardContent className="p-3 space-y-3">
-            <h4 className="text-sm font-semibold flex items-center gap-2">
-              <Upload className="h-4 w-4 text-muted-foreground" />
-              Documents justificatifs
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              Acte de vente, certificat, attestation... (max 10MB/fichier)
-            </p>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Ajouter des fichiers
-            </Button>
-            
-            {attachedFiles.length > 0 && (
-              <div className="space-y-2">
-                {attachedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
-                    {file.type.startsWith('image/') ? (
-                      <Image className="h-4 w-4 text-primary flex-shrink-0" />
-                    ) : (
-                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                    )}
-                    <span className="flex-1 truncate text-sm">{file.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFile(index)}
-                      className="h-7 w-7 rounded-lg hover:bg-destructive/10"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
         {/* Frais */}
         <Card className="border rounded-xl">
           <CardContent className="p-3 space-y-3">
@@ -859,29 +954,55 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               ))}
             </div>
 
-            {/* Frais de mutation calculés */}
+            {/* Frais de mutation calculés - même design que frais administratifs */}
             {mutationFeesCalculation.applicable && titleAge && (
-              <div className="space-y-2 pt-2 border-t">
-                <h5 className="text-sm font-semibold text-amber-700 dark:text-amber-400">
-                  Frais de mutation (basés sur la valeur vénale)
-                </h5>
-                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm">Frais de mutation ({mutationFeesCalculation.percentage}%)</span>
-                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${mutationFeesCalculation.mutationFee}</span>
+              <div className="space-y-2">
+                <div 
+                  className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
+                >
+                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/50 rounded-lg mt-0.5">
+                    <DollarSign className="h-4 w-4 text-amber-700 dark:text-amber-400" />
                   </div>
-                  {mutationFeesCalculation.bankFee > 0 && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Frais bancaires (0.5%)</span>
-                      <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${mutationFeesCalculation.bankFee}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium">
+                        Frais de mutation ({mutationFeesCalculation.percentage}%)
+                        <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
+                          calculé
+                        </span>
+                      </span>
+                      <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
+                        ${mutationFeesCalculation.mutationFee.toFixed(2)}
+                      </span>
                     </div>
-                  )}
-                  <div className="flex items-center justify-between pt-1 border-t border-amber-200 dark:border-amber-700">
-                    <span className="text-sm font-semibold">Sous-total frais de mutation</span>
-                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${mutationFeesCalculation.total}</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Basé sur la valeur vénale de ${parseFloat(marketValueUsd).toLocaleString()} USD
+                    </p>
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground">
+
+                {mutationFeesCalculation.bankFee > 0 && (
+                  <div 
+                    className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-100 dark:border-amber-800"
+                  >
+                    <div className="p-1.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg mt-0.5">
+                      <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">Frais bancaires (0.5%)</span>
+                        <span className="text-sm font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap">
+                          ${mutationFeesCalculation.bankFee.toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Commission bancaire estimée
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-muted-foreground px-1">
                   Circulaire n° 005/CAB/MIN/AFF.FONC/2013 • n°0076/2023 et 010/CAB/MIN.FINANCES/2023
                 </p>
               </div>
