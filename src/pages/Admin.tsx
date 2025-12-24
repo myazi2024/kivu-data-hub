@@ -42,6 +42,7 @@ import { AdminPaymentMonitoring } from '@/components/admin/AdminPaymentMonitorin
 import AdminPaymentServiceIntegration from '@/components/admin/AdminPaymentServiceIntegration';
 import AdminTestMode from '@/components/admin/AdminTestMode';
 import AdminMutationRequests from '@/components/admin/AdminMutationRequests';
+import AdminExpertiseRequests from '@/components/admin/AdminExpertiseRequests';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -184,6 +185,10 @@ const Admin = () => {
         return <AdminBuildingPermits />;
       case 'mutations':
         return <AdminMutationRequests />;
+      case 'expertise-requests':
+        return <AdminExpertiseRequests />;
+      case 'permit-fees-config':
+        return <AdminPermitFeesConfig />;
       case 'publications':
         return <AdminPublications onRefresh={fetchPendingCount} />;
       case 'articles':
