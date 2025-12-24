@@ -113,17 +113,12 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
             <Ruler className="h-3.5 w-3.5 text-primary" />
           </div>
           Dimensions & Routes
-          <div className="ml-auto flex items-center gap-1">
-            {roadBorderingSidesCount > 0 && (
-              <Badge variant="secondary" className="text-[10px] h-5 px-1.5 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
-                <Route className="h-2.5 w-2.5 mr-0.5" />
-                {roadBorderingSidesCount}
-              </Badge>
-            )}
-            <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-md font-mono">
-              {totalPerimeter.toFixed(1)}m
+          {roadBorderingSidesCount > 0 && (
+            <Badge variant="secondary" className="ml-auto text-[10px] h-5 px-1.5 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300">
+              <Route className="h-2.5 w-2.5 mr-0.5" />
+              {roadBorderingSidesCount} route{roadBorderingSidesCount > 1 ? 's' : ''}
             </Badge>
-          </div>
+          )}
         </CardTitle>
         <CardDescription className="text-xs text-muted-foreground">
           Côtés de la parcelle • Cliquez pour indiquer une route
