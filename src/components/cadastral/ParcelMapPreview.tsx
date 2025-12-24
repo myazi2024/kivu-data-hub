@@ -100,6 +100,9 @@ export const ParcelMapPreview = ({
   const selectedMarkerRef = useRef<any>(null);
   const longPressTimerRef = useRef<number | null>(null);
   const renderSeqRef = useRef(0);
+  
+  // Ref pour appui prolongé sur les boutons de contrôle
+  const controlButtonIntervalRef = useRef<number | null>(null);
 
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -1393,7 +1396,7 @@ export const ParcelMapPreview = ({
   }, [coordinates, validCoords, moveStepMeters, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
   // Rotation de la parcelle autour de son centre
-  // NOTE: La rotation ne doit PAS recalculer les dimensions car les distances réelles entre bornes ne changent pas
+  // La rotation change les orientations des côtés mais pas leurs longueurs
   const rotateParcel = useCallback((angleDegrees: number) => {
     if (validCoords.length < 2) return;
 
@@ -1426,10 +1429,64 @@ export const ParcelMapPreview = ({
     });
 
     setParcelRotationDegrees(prev => (prev + angleDegrees) % 360);
-    // Mise à jour des coordonnées SANS recalculer les dimensions des côtés
-    // Car une rotation pure ne change pas les distances réelles entre les bornes
     onCoordinatesUpdate(updated);
-  }, [coordinates, validCoords, onCoordinatesUpdate]);
+    
+    // Recalculer les orientations des côtés après rotation
+    if (onRoadSidesChange && updated.length >= 3) {
+      const validUpdated = updated.filter(c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng)));
+      if (validUpdated.length >= 3) {
+        const newSides: RoadSideInfo[] = validUpdated.map((coord, index) => {
+          const nextIndex = (index + 1) % validUpdated.length;
+          const nextCoord = validUpdated[nextIndex];
+          
+          const existingSide = roadSides.find(s => s.sideIndex === index);
+          const length = calculateDistance(
+            parseFloat(coord.lat), 
+            parseFloat(coord.lng),
+            parseFloat(nextCoord.lat),
+            parseFloat(nextCoord.lng)
+          );
+          const orientation = calculateOrientation(
+            parseFloat(coord.lat), 
+            parseFloat(coord.lng),
+            parseFloat(nextCoord.lat),
+            parseFloat(nextCoord.lng)
+          );
+          
+          return {
+            sideIndex: index,
+            bordersRoad: existingSide?.bordersRoad || false,
+            roadType: existingSide?.roadType,
+            roadName: existingSide?.roadName,
+            roadWidth: existingSide?.roadWidth,
+            isConfirmed: existingSide?.isConfirmed || false,
+            orientation,
+            length,
+          };
+        });
+        
+        onRoadSidesChange(newSides);
+      }
+    }
+  }, [coordinates, validCoords, onCoordinatesUpdate, onRoadSidesChange, roadSides]);
+
+  // Fonctions pour appui prolongé sur les boutons de contrôle
+  const startLongPress = useCallback((action: () => void) => {
+    // Exécuter immédiatement au premier clic
+    action();
+    
+    // Démarrer la répétition après un délai initial
+    controlButtonIntervalRef.current = window.setInterval(() => {
+      action();
+    }, 100); // Répéter toutes les 100ms
+  }, []);
+
+  const stopLongPress = useCallback(() => {
+    if (controlButtonIntervalRef.current) {
+      clearInterval(controlButtonIntervalRef.current);
+      controlButtonIntervalRef.current = null;
+    }
+  }, []);
 
   return (
     <div className="space-y-3 max-w-[360px] mx-auto">
@@ -1637,9 +1694,13 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => nudgeEntireParcel('N')}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                    title="Nord"
+                    onMouseDown={() => startLongPress(() => nudgeEntireParcel('N'))}
+                    onMouseUp={stopLongPress}
+                    onMouseLeave={stopLongPress}
+                    onTouchStart={() => startLongPress(() => nudgeEntireParcel('N'))}
+                    onTouchEnd={stopLongPress}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                    title="Nord (maintenir pour répéter)"
                   >
                     <ArrowUp className="h-3 w-3" />
                   </Button>
@@ -1648,9 +1709,13 @@ export const ParcelMapPreview = ({
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => nudgeEntireParcel('W')}
-                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                      title="Ouest"
+                      onMouseDown={() => startLongPress(() => nudgeEntireParcel('W'))}
+                      onMouseUp={stopLongPress}
+                      onMouseLeave={stopLongPress}
+                      onTouchStart={() => startLongPress(() => nudgeEntireParcel('W'))}
+                      onTouchEnd={stopLongPress}
+                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                      title="Ouest (maintenir pour répéter)"
                     >
                       <ArrowLeft className="h-3 w-3" />
                     </Button>
@@ -1658,9 +1723,13 @@ export const ParcelMapPreview = ({
                       type="button"
                       size="sm"
                       variant="outline"
-                      onClick={() => nudgeEntireParcel('E')}
-                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                      title="Est"
+                      onMouseDown={() => startLongPress(() => nudgeEntireParcel('E'))}
+                      onMouseUp={stopLongPress}
+                      onMouseLeave={stopLongPress}
+                      onTouchStart={() => startLongPress(() => nudgeEntireParcel('E'))}
+                      onTouchEnd={stopLongPress}
+                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                      title="Est (maintenir pour répéter)"
                     >
                       <ArrowRight className="h-3 w-3" />
                     </Button>
@@ -1669,9 +1738,13 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => nudgeEntireParcel('S')}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                    title="Sud"
+                    onMouseDown={() => startLongPress(() => nudgeEntireParcel('S'))}
+                    onMouseUp={stopLongPress}
+                    onMouseLeave={stopLongPress}
+                    onTouchStart={() => startLongPress(() => nudgeEntireParcel('S'))}
+                    onTouchEnd={stopLongPress}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                    title="Sud (maintenir pour répéter)"
                   >
                     <ArrowDown className="h-3 w-3" />
                   </Button>
@@ -1686,9 +1759,13 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => rotateParcel(-1)}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                    title="-1°"
+                    onMouseDown={() => startLongPress(() => rotateParcel(-1))}
+                    onMouseUp={stopLongPress}
+                    onMouseLeave={stopLongPress}
+                    onTouchStart={() => startLongPress(() => rotateParcel(-1))}
+                    onTouchEnd={stopLongPress}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                    title="-1° (maintenir pour répéter)"
                   >
                     <RotateCcw className="h-3 w-3" />
                   </Button>
@@ -1696,9 +1773,13 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onClick={() => rotateParcel(1)}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30"
-                    title="+1°"
+                    onMouseDown={() => startLongPress(() => rotateParcel(1))}
+                    onMouseUp={stopLongPress}
+                    onMouseLeave={stopLongPress}
+                    onTouchStart={() => startLongPress(() => rotateParcel(1))}
+                    onTouchEnd={stopLongPress}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                    title="+1° (maintenir pour répéter)"
                   >
                     <RotateCw className="h-3 w-3" />
                   </Button>
