@@ -3,12 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Building2, FileEdit } from "lucide-react";
+import { Building2, FileEdit, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { PermitSection } from "./building-permits/PermitSection";
 import { AppealDialog } from "./building-permits/AppealDialog";
 import { PermitStatistics } from "./building-permits/PermitStatistics";
 import { PermitRenewalAlert } from "./building-permits/PermitRenewalAlert";
+import { PermitRequestCard } from "./building-permits/PermitRequestCard";
 
 interface BuildingPermitRequest {
   id: string;
@@ -38,6 +39,7 @@ export function UserBuildingPermits() {
   const [loading, setLoading] = useState(true);
   const [appealDialogOpen, setAppealDialogOpen] = useState(false);
   const [selectedPermit, setSelectedPermit] = useState<BuildingPermitRequest | null>(null);
+  const [activeMainTab, setActiveMainTab] = useState<'requests' | 'new'>('requests');
 
   useEffect(() => {
     if (user) {
@@ -110,62 +112,103 @@ export function UserBuildingPermits() {
 
   return (
     <div className="space-y-3 md:space-y-4">
-      {/* Alertes de renouvellement */}
-      <PermitRenewalAlert permits={permits} />
-      
-      {/* Statistiques */}
-      <PermitStatistics permits={permits} />
-      
-      <Tabs defaultValue="construction" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 h-auto p-1">
-          <TabsTrigger value="construction" className="gap-1.5 md:gap-2 py-2.5 md:py-2">
-            <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
-            <span className="text-xs md:text-sm font-medium">Construire</span>
-            <span className="text-[10px] md:text-xs bg-muted px-1.5 py-0.5 rounded-full">({constructionPermits.length})</span>
-          </TabsTrigger>
-          <TabsTrigger value="regularization" className="gap-1.5 md:gap-2 py-2.5 md:py-2">
+      {/* Onglets principaux : Mes demandes / Nouvelle demande */}
+      <Tabs value={activeMainTab} onValueChange={(v) => setActiveMainTab(v as 'requests' | 'new')} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-auto p-1 max-w-[360px] mx-auto rounded-2xl">
+          <TabsTrigger value="requests" className="gap-1.5 py-2.5 rounded-xl text-xs md:text-sm">
             <FileEdit className="h-3.5 w-3.5 md:h-4 md:w-4" />
-            <span className="text-xs md:text-sm font-medium">Régulariser</span>
-            <span className="text-[10px] md:text-xs bg-muted px-1.5 py-0.5 rounded-full">({regularizationPermits.length})</span>
+            <span>Mes demandes</span>
+            {permits.length > 0 && (
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full ml-1">
+                {permits.length}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="new" className="gap-1.5 py-2.5 rounded-xl text-xs md:text-sm">
+            <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            <span>Nouvelle demande</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="construction" className="space-y-3 md:space-y-6 mt-3 md:mt-4">
-          <PermitSection
-            title="En attente"
-            permits={constructionByStatus.pending}
-            emptyMessage="Aucune demande en attente"
-          />
-          <PermitSection
-            title="Délivrés"
-            permits={constructionByStatus.approved}
-            emptyMessage="Aucun permis délivré"
-          />
-          <PermitSection
-            title="Refusés"
-            permits={constructionByStatus.rejected}
-            emptyMessage="Aucun permis refusé"
-            onAppealClick={handleAppealClick}
-          />
+        {/* Contenu : Mes demandes */}
+        <TabsContent value="requests" className="mt-4 space-y-3 md:space-y-4">
+          {/* Alertes de renouvellement */}
+          <PermitRenewalAlert permits={permits} />
+          
+          {/* Statistiques */}
+          <PermitStatistics permits={permits} />
+          
+          {permits.length === 0 ? (
+            <div className="text-center py-8 space-y-3">
+              <div className="h-16 w-16 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center">
+                <FileEdit className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Aucune demande de permis</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Commencez par créer une nouvelle demande
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Tabs defaultValue="construction" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 h-auto p-1 max-w-[360px] mx-auto">
+                <TabsTrigger value="construction" className="gap-1.5 md:gap-2 py-2.5 md:py-2">
+                  <Building2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="text-xs md:text-sm font-medium">Construire</span>
+                  <span className="text-[10px] md:text-xs bg-muted px-1.5 py-0.5 rounded-full">({constructionPermits.length})</span>
+                </TabsTrigger>
+                <TabsTrigger value="regularization" className="gap-1.5 md:gap-2 py-2.5 md:py-2">
+                  <FileEdit className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <span className="text-xs md:text-sm font-medium">Régulariser</span>
+                  <span className="text-[10px] md:text-xs bg-muted px-1.5 py-0.5 rounded-full">({regularizationPermits.length})</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="construction" className="space-y-3 md:space-y-6 mt-3 md:mt-4">
+                <PermitSection
+                  title="En attente"
+                  permits={constructionByStatus.pending}
+                  emptyMessage="Aucune demande en attente"
+                />
+                <PermitSection
+                  title="Délivrés"
+                  permits={constructionByStatus.approved}
+                  emptyMessage="Aucun permis délivré"
+                />
+                <PermitSection
+                  title="Refusés"
+                  permits={constructionByStatus.rejected}
+                  emptyMessage="Aucun permis refusé"
+                  onAppealClick={handleAppealClick}
+                />
+              </TabsContent>
+
+              <TabsContent value="regularization" className="space-y-3 md:space-y-6 mt-3 md:mt-4">
+                <PermitSection
+                  title="En attente"
+                  permits={regularizationByStatus.pending}
+                  emptyMessage="Aucune demande en attente"
+                />
+                <PermitSection
+                  title="Délivrés"
+                  permits={regularizationByStatus.approved}
+                  emptyMessage="Aucun permis délivré"
+                />
+                <PermitSection
+                  title="Refusés"
+                  permits={regularizationByStatus.rejected}
+                  emptyMessage="Aucun permis refusé"
+                  onAppealClick={handleAppealClick}
+                />
+              </TabsContent>
+            </Tabs>
+          )}
         </TabsContent>
 
-        <TabsContent value="regularization" className="space-y-3 md:space-y-6 mt-3 md:mt-4">
-          <PermitSection
-            title="En attente"
-            permits={regularizationByStatus.pending}
-            emptyMessage="Aucune demande en attente"
-          />
-          <PermitSection
-            title="Délivrés"
-            permits={regularizationByStatus.approved}
-            emptyMessage="Aucun permis délivré"
-          />
-          <PermitSection
-            title="Refusés"
-            permits={regularizationByStatus.rejected}
-            emptyMessage="Aucun permis refusé"
-            onAppealClick={handleAppealClick}
-          />
+        {/* Contenu : Nouvelle demande */}
+        <TabsContent value="new" className="mt-4">
+          <PermitRequestCard />
         </TabsContent>
       </Tabs>
 
