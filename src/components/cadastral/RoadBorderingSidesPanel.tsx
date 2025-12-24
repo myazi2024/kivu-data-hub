@@ -55,137 +55,121 @@ export const RoadBorderingSidesPanel: React.FC<RoadBorderingSidesPanelProps> = (
   const roadBorderingSidesCount = sides.filter(s => s.bordersRoad).length;
 
   return (
-    <Card className={className}>
-      <CardHeader className="pb-3 md:pb-4">
-        <CardTitle className="flex items-center gap-1.5 md:gap-2 text-sm md:text-base">
-          <Compass className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-          Côtés Bordant une Route
+    <Card className={`max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 ${className}`}>
+      <CardHeader className="pb-2 pt-3 px-3">
+        <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
+          <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Compass className="h-3.5 w-3.5 text-primary" />
+          </div>
+          Côtés bordant une route
         </CardTitle>
-        <CardDescription className="text-xs md:text-sm">
-          Sélectionnez les côtés touchant une route (carte ou cases).
+        <CardDescription className="text-xs text-muted-foreground">
+          Cochez les côtés touchant une route
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-2.5 md:space-y-4">
+      <CardContent className="space-y-2 px-3 pb-3">
         {roadBorderingSidesCount === 0 && (
-          <Alert className="py-2 md:py-3">
-            <Info className="h-3.5 w-3.5 md:h-4 md:w-4" />
-            <AlertDescription className="text-xs md:text-sm">
-              Aucun côté sélectionné. Cliquez sur la carte ou cochez ci-dessous.
+          <Alert className="py-1.5 px-2 rounded-xl bg-muted/50 border-0">
+            <Info className="h-3 w-3" />
+            <AlertDescription className="text-[11px]">
+              Aucun côté sélectionné
             </AlertDescription>
           </Alert>
         )}
 
         {sides.length === 0 ? (
-          <p className="text-xs md:text-sm text-muted-foreground">
-            Saisissez d'abord les coordonnées GPS.
+          <p className="text-xs text-muted-foreground text-center py-2">
+            Saisissez d'abord les coordonnées GPS
           </p>
         ) : (
-          <div className="space-y-2 md:space-y-3">
+          <div className="space-y-1.5">
             {sides.map((side) => (
               <div
                 key={side.sideIndex}
-                className={`p-2.5 md:p-4 rounded-lg border-2 transition-colors ${
+                className={`p-2 rounded-xl transition-all ${
                   side.bordersRoad
-                    ? 'border-primary bg-primary/5'
-                    : 'border-border bg-background'
+                    ? 'bg-primary/5 border border-primary/30 shadow-sm'
+                    : 'bg-muted/30 border border-transparent'
                 }`}
               >
-                <div className="space-y-2 md:space-y-3">
-                  {/* Header: Checkbox + Side Number + Orientation + Length */}
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 md:gap-3">
+                <div className="space-y-2">
+                  {/* Header compact */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
                       <Checkbox
                         id={`side-${side.sideIndex}`}
                         checked={side.bordersRoad}
                         onCheckedChange={(checked) =>
                           onSideUpdate(side.sideIndex, { bordersRoad: checked as boolean })
                         }
-                        className="h-4 w-4"
+                        className="h-4 w-4 rounded-md"
                       />
                       <Label
                         htmlFor={`side-${side.sideIndex}`}
-                        className="font-medium text-xs md:text-sm cursor-pointer"
+                        className="font-medium text-sm cursor-pointer"
                       >
-                        Côté #{side.sideIndex + 1}
+                        Côté {side.sideIndex + 1}
                       </Label>
                     </div>
-                    <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
+                    <div className="flex items-center gap-1">
                       {side.orientation && (
                         <Badge 
                           variant="outline" 
-                          className={`text-[10px] md:text-xs h-5 md:h-6 px-1.5 ${getOrientationColor(side.orientation)}`}
+                          className={`text-[10px] h-5 px-1.5 rounded-md ${getOrientationColor(side.orientation)} text-white border-0`}
                         >
                           {side.orientation}
                         </Badge>
                       )}
                       {side.length && (
-                        <Badge variant="secondary" className="font-mono text-[10px] md:text-xs h-5 md:h-6 px-1.5">
+                        <Badge variant="secondary" className="font-mono text-[10px] h-5 px-1.5 rounded-md">
                           {side.length.toFixed(1)}m
                         </Badge>
                       )}
                     </div>
                   </div>
 
-                  {/* Road Details - Only shown if bordersRoad is true */}
+                  {/* Détails route - compact */}
                   {side.bordersRoad && (
-                    <div className="space-y-2 md:space-y-3 pl-6 md:pl-8 animate-fade-in">
-                      <div className="space-y-1.5">
-                        <Label htmlFor={`roadType-${side.sideIndex}`} className="text-xs md:text-sm">
-                          Type de route *
-                        </Label>
-                        <Select
-                          value={side.roadType || ''}
-                          onValueChange={(value) => 
-                            onSideUpdate(side.sideIndex, { roadType: value })
+                    <div className="space-y-1.5 pl-6 animate-fade-in">
+                      <Select
+                        value={side.roadType || ''}
+                        onValueChange={(value) => 
+                          onSideUpdate(side.sideIndex, { roadType: value })
+                        }
+                      >
+                        <SelectTrigger className="h-8 text-xs rounded-lg">
+                          <SelectValue placeholder="Type de route" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {roadTypes.map((type) => (
+                            <SelectItem key={type.value} value={type.value} className="text-xs">
+                              {type.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <div className="grid grid-cols-2 gap-1.5">
+                        <Input
+                          type="text"
+                          placeholder="Nom route"
+                          value={side.roadName || ''}
+                          onChange={(e) => 
+                            onSideUpdate(side.sideIndex, { roadName: e.target.value })
                           }
-                        >
-                          <SelectTrigger id={`roadType-${side.sideIndex}`} className="h-8 md:h-9 text-xs md:text-sm">
-                            <SelectValue placeholder="Type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {roadTypes.map((type) => (
-                              <SelectItem key={type.value} value={type.value} className="text-xs md:text-sm">
-                                {type.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 md:gap-3">
-                        <div className="space-y-1.5">
-                          <Label htmlFor={`roadName-${side.sideIndex}`} className="text-xs md:text-sm">
-                            Nom de la route
-                          </Label>
-                          <Input
-                            id={`roadName-${side.sideIndex}`}
-                            type="text"
-                            placeholder="ex: Av. Mobutu"
-                            value={side.roadName || ''}
-                            onChange={(e) => 
-                              onSideUpdate(side.sideIndex, { roadName: e.target.value })
-                            }
-                            className="h-8 md:h-9 text-xs md:text-sm"
-                          />
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <Label htmlFor={`roadWidth-${side.sideIndex}`} className="text-xs md:text-sm">
-                            Largeur (m)
-                          </Label>
-                          <Input
-                            id={`roadWidth-${side.sideIndex}`}
-                            type="number"
-                            min="0"
-                            step="0.1"
-                            placeholder="ex: 15"
-                            value={side.roadWidth || ''}
-                            onChange={(e) => 
-                              onSideUpdate(side.sideIndex, { roadWidth: parseFloat(e.target.value) || undefined })
-                            }
-                            className="h-8 md:h-9 text-xs md:text-sm"
-                          />
-                        </div>
+                          className="h-8 text-xs rounded-lg"
+                        />
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          placeholder="Largeur (m)"
+                          value={side.roadWidth || ''}
+                          onChange={(e) => 
+                            onSideUpdate(side.sideIndex, { roadWidth: parseFloat(e.target.value) || undefined })
+                          }
+                          className="h-8 text-xs rounded-lg"
+                        />
                       </div>
                     </div>
                   )}

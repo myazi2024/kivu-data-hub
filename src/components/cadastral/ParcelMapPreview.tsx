@@ -425,6 +425,31 @@ export const ParcelMapPreview = ({
 
       mapInstanceRef.current = map;
       setIsMapReady(true);
+      
+      // Géolocalisation automatique à l'ouverture
+      if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            map.setView([latitude, longitude], mapConfig.defaultZoom || 17);
+            
+            // Ajouter un marqueur de position utilisateur
+            const userLocationMarker = L.circleMarker([latitude, longitude], {
+              radius: 8,
+              color: '#3b82f6',
+              fillColor: '#3b82f6',
+              fillOpacity: 0.6,
+              weight: 2
+            }).addTo(map);
+            
+            userLocationMarker.bindPopup('Votre position actuelle');
+          },
+          (error) => {
+            console.log('Géolocalisation non disponible:', error.message);
+          },
+          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+        );
+      }
     };
 
     initMap();
@@ -1412,22 +1437,6 @@ export const ParcelMapPreview = ({
         
         {/* Boutons de contrôle sur la carte (à droite) */}
         <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1.5">
-          {/* Bouton contrôles avancés parcelle */}
-          {validCoords.length >= 2 && (
-            <Button
-              type="button"
-              size="sm"
-              variant={showParcelControls ? "default" : "outline"}
-              onClick={() => setShowParcelControls(!showParcelControls)}
-              className={`h-8 w-8 p-0 rounded-xl shadow-md ${
-                showParcelControls ? 'bg-blue-500 text-white' : 'bg-white hover:bg-gray-50'
-              }`}
-              title={showParcelControls ? 'Masquer contrôles' : 'Déplacer/Rotation parcelle'}
-            >
-              <Move className="h-4 w-4" />
-            </Button>
-          )}
-          
           {/* Bouton vérification voisins */}
           {isParcelComplete && (
             <Button

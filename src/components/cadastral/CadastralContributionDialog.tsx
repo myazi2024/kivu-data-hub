@@ -18,7 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { 
   getAllProvinces, 
@@ -4072,74 +4072,87 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="location" className="space-y-3 md:space-y-6 mt-4 md:mt-6 animate-fade-in">
-            {/* Type de section et Province côte-à-côte */}
-            <div className="grid grid-cols-2 gap-2 md:gap-4 pb-2 md:pb-4 border-t pt-2 md:pt-0">
-              {/* Choix du type de section */}
-              <div className="space-y-1 md:space-y-1.5">
-                <div className="flex items-center gap-1">
-                  <Label htmlFor="sectionType" className="text-[10px] md:text-sm">Type de section *</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button type="button" variant="ghost" size="sm" className="h-4 w-4 md:h-6 md:w-6 p-0 hover:bg-primary/10">
-                        <Info className="h-3 w-3 md:h-4 md:w-4 text-muted-foreground" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 text-sm">
-                      <h4 className="font-semibold mb-2">Type de section cadastrale</h4>
-                      <p className="text-muted-foreground">
-                        La RDC divise les parcelles en sections urbaines (SU) et sections rurales (SR). Cette classification détermine la structure administrative de localisation de votre bien.
-                      </p>
-                      <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                        <li>• <strong>SU (Section Urbaine)</strong>: Zones urbanisées avec Ville → Commune → Quartier</li>
-                        <li>• <strong>SR (Section Rurale)</strong>: Zones rurales avec Territoire → Collectivité → Village</li>
-                      </ul>
-                    </PopoverContent>
-                  </Popover>
+            {/* Type de section et Province - Design moderne compact */}
+            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+              <CardContent className="p-3 space-y-3">
+                {/* Type de section */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="sectionType" className="text-sm font-medium">Type de section</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
+                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 text-sm rounded-xl">
+                        <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          SU (Urbain): Ville → Commune → Quartier<br/>
+                          SR (Rural): Territoire → Collectivité → Village
+                        </p>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('urbaine')}
+                      disabled={sectionTypeAutoDetected}
+                      className={cn(
+                        "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
+                        sectionType === 'urbaine'
+                          ? 'bg-primary text-primary-foreground shadow-md'
+                          : 'bg-muted/50 text-muted-foreground hover:bg-muted',
+                        sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
+                      )}
+                    >
+                      SU - Urbaine
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('rurale')}
+                      disabled={sectionTypeAutoDetected}
+                      className={cn(
+                        "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
+                        sectionType === 'rurale'
+                          ? 'bg-primary text-primary-foreground shadow-md'
+                          : 'bg-muted/50 text-muted-foreground hover:bg-muted',
+                        sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
+                      )}
+                    >
+                      SR - Rurale
+                    </button>
+                  </div>
+                  {sectionTypeAutoDetected && (
+                    <p className="text-xs text-primary flex items-center gap-1 justify-center">
+                      <CheckCircle2 className="h-3 w-3" />
+                      Type auto-détecté depuis le numéro
+                    </p>
+                  )}
                 </div>
-                <Select 
-                  value={sectionType} 
-                  onValueChange={(value: 'urbaine' | 'rurale') => handleSectionTypeChange(value)}
-                  disabled={sectionTypeAutoDetected}
-                >
-                  <SelectTrigger className={cn(
-                    "h-8 md:h-10 text-[10px] md:text-sm",
-                    sectionTypeAutoDetected && 'bg-muted/50 cursor-not-allowed'
-                  )}>
-                    <SelectValue placeholder="Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="urbaine">SU</SelectItem>
-                    <SelectItem value="rurale">SR</SelectItem>
-                  </SelectContent>
-                </Select>
-                {sectionTypeAutoDetected && (
-                  <p className="text-[9px] md:text-xs text-primary flex items-center gap-0.5">
-                    <CheckCircle2 className="h-2.5 w-2.5 md:h-3 md:w-3" />
-                    Auto-détecté
-                  </p>
-                )}
-              </div>
 
-              {/* Province */}
-              {sectionType && (
-                <div className="space-y-1 md:space-y-1.5">
-                  <Label htmlFor="province" className="text-[10px] md:text-sm">Province *</Label>
-                  <Select 
-                    value={formData.province} 
-                    onValueChange={(value) => handleInputChange('province', value)}
-                  >
-                    <SelectTrigger className="h-8 md:h-10 text-[10px] md:text-sm">
-                      <SelectValue placeholder="Province" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {getAllProvinces().map(province => (
-                        <SelectItem key={province} value={province}>{province}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
+                {/* Province */}
+                {sectionType && (
+                  <div className="space-y-1.5 pt-2 border-t border-border/50">
+                    <Label htmlFor="province" className="text-sm font-medium">Province</Label>
+                    <Select 
+                      value={formData.province} 
+                      onValueChange={(value) => handleInputChange('province', value)}
+                    >
+                      <SelectTrigger className="h-9 text-sm rounded-xl">
+                        <SelectValue placeholder="Sélectionner la province" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAllProvinces().map(province => (
+                          <SelectItem key={province} value={province} className="text-sm">{province}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Section Urbaine (SU) - visible uniquement si type urbain sélectionné */}
             {sectionType === 'urbaine' && (
