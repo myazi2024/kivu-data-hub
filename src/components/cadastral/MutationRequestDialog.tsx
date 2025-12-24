@@ -924,24 +924,25 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               </h4>
               
               <div className="space-y-2">
-                {/* Frais de dossier - 83$ */}
+                {/* Frais de dossier - 83$ obligatoire */}
                 {fees.filter(f => f.fee_name === 'Frais de dossier').map((fee) => (
                   <div 
                     key={fee.id}
-                    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-                      selectedFees.includes(fee.id) ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700' : 'bg-muted/30 border-2 border-transparent'
-                    }`}
+                    className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
                   >
                     <Checkbox
                       id={fee.id}
-                      checked={selectedFees.includes(fee.id)}
-                      onCheckedChange={() => handleFeeToggle(fee.id, false)}
+                      checked={true}
+                      disabled={true}
                       className="mt-0.5"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
                         <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
                           {fee.fee_name}
+                          <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
+                            obligatoire
+                          </span>
                         </label>
                         <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
                       </div>
