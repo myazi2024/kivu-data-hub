@@ -1222,6 +1222,8 @@ export const ParcelMapPreview = ({
   };
 
   // Afficher dimensions des côtés
+  // Afficher les dimensions sur la carte en utilisant les valeurs stockées dans parcelSides
+  // pour éviter les variations dues aux arrondis lors des rotations/déplacements
   const displaySideDimensions = (L: any, map: any, coords: [number, number][]) => {
     coords.forEach((coord, index) => {
       const nextIndex = (index + 1) % coords.length;
@@ -1229,7 +1231,13 @@ export const ParcelMapPreview = ({
       
       const midLat = (coord[0] + nextCoord[0]) / 2;
       const midLng = (coord[1] + nextCoord[1]) / 2;
-      const distance = calculateDistance(coord[0], coord[1], nextCoord[0], nextCoord[1]);
+      
+      // Utiliser la dimension stockée dans parcelSides si disponible (stable)
+      // sinon recalculer (pour les nouveaux points)
+      const storedSide = parcelSides[index];
+      const displayDistance = storedSide?.length 
+        ? parseFloat(storedSide.length) 
+        : calculateDistance(coord[0], coord[1], nextCoord[0], nextCoord[1]);
       
       const label = L.divIcon({
         className: 'dimension-label',
@@ -1242,7 +1250,7 @@ export const ParcelMapPreview = ({
           white-space: nowrap;
           box-shadow: 0 1px 3px rgba(0,0,0,0.2);
           border: 1px solid rgba(0,0,0,0.1);
-        ">${distance.toFixed(1)}m</div>`,
+        ">${displayDistance.toFixed(1)}m</div>`,
         iconSize: [40, 16],
         iconAnchor: [20, 8]
       });
