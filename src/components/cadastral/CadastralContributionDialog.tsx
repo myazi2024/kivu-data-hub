@@ -2522,443 +2522,377 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             )}
 
             {/* Section Propriétaire(s) actuel(s) */}
-            <div className="space-y-3 sm:space-y-4 pt-3 sm:pt-4 border-t">
-              <div>
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
+            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+              <CardContent className="p-3 space-y-3">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <MdDashboard className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
+                  </div>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-5 w-5 p-0 rounded-full hover:bg-primary/10"
-                      >
-                        <Info className="h-4 w-4 text-primary" />
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80" align="start">
-                      <div className="space-y-3">
-                        <div>
-                          <h4 className="font-semibold text-sm mb-2 text-foreground">
-                            Propriétaire différent du document officiel ?
-                          </h4>
-                          <p className="text-xs text-muted-foreground mb-3">
-                            Vous pouvez indiquer votre nom comme propriétaire actuel même si le document officiel comporte un nom différent.
-                          </p>
-                        </div>
-                        
-                        <div className="border-l-2 border-primary pl-3">
-                          <h5 className="font-semibold text-xs mb-2 text-foreground">
-                            Condition requise
-                          </h5>
-                          <p className="text-xs text-muted-foreground mb-2">
-                            Vous devez détenir un document prouvant que vous êtes le nouveau propriétaire, tel que :
-                          </p>
-                          <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
-                            <li>Acte de vente</li>
-                            <li>Acte de donation</li>
-                            <li>Acte de succession ou d'héritage</li>
-                            <li>Tout autre document officiel de transfert de propriété</li>
-                          </ul>
-                        </div>
-                        
-                        <div className="bg-muted/50 p-2 rounded-md">
-                          <p className="text-xs text-muted-foreground">
-                            <strong className="text-foreground">💡 Important :</strong> Veuillez ajouter l'image du document prouvant que vous êtes le nouveau propriétaire en tant que pièce jointe dans la section "Type de titre de propriété, Document du titre de propriété (optionnel)". Ce document sera utilisé pour valider votre contribution CCC.
-                          </p>
-                        </div>
+                    <PopoverContent className="w-72 rounded-xl" align="end">
+                      <div className="space-y-2 text-xs">
+                        <h4 className="font-semibold text-sm">Nom différent du document ?</h4>
+                        <p className="text-muted-foreground">
+                          Vous pouvez indiquer votre nom si vous détenez un acte de transfert (vente, donation, succession).
+                        </p>
+                        <p className="text-muted-foreground">
+                          <strong>💡</strong> Ajoutez ce document dans la section "Document du titre".
+                        </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Indiquez le(s) propriétaire(s) actuel(s) de la parcelle
-                </p>
-              </div>
 
-              {currentOwners.map((owner, index) => (
-                <div key={index} className={`border rounded-xl p-3 sm:p-4 space-y-2 sm:space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
-                  highlightIncompleteOwner && index === currentOwners.length - 1 && (!owner.lastName || !owner.firstName) 
-                    ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
-                    : ''
-                }`}>
-                  <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-semibold">Propriétaire #{index + 1}</h4>
-                    {currentOwners.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeCurrentOwner(index)}
-                        className="text-destructive hover:bg-destructive/10"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-2 sm:gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs sm:text-sm">Nom *</Label>
-                      <Input
-                        placeholder="Nom de famille"
-                        value={owner.lastName}
-                        onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
-                        className="h-9 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs sm:text-sm">Post-nom</Label>
-                      <Input
-                        placeholder="Post-nom (optionnel)"
-                        value={owner.middleName}
-                        onChange={(e) => updateCurrentOwner(index, 'middleName', e.target.value)}
-                        className="h-9 text-sm"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs sm:text-sm">Prénom *</Label>
-                      <Input
-                        placeholder="Prénom"
-                        value={owner.firstName}
-                        onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
-                        className="h-9 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs sm:text-sm">Statut juridique</Label>
-                      <Select 
-                        value={owner.legalStatus}
-                        onValueChange={(value) => updateCurrentOwner(index, 'legalStatus', value)}
-                      >
-                        <SelectTrigger className="h-9 text-sm">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Personne physique">Personne physique</SelectItem>
-                          <SelectItem value="Personne morale">Personne morale</SelectItem>
-                          <SelectItem value="État">État</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs sm:text-sm">Propriétaire depuis</Label>
-                      <Input
-                        type="date"
-                        max={new Date().toISOString().split('T')[0]}
-                        value={owner.since}
-                        onChange={(e) => updateCurrentOwner(index, 'since', e.target.value)}
-                        className="h-9 text-sm"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Owner document attachment */}
-                  <div className="space-y-1.5 mt-2 sm:mt-3 pt-2 sm:pt-3 border-t">
-                    <div className="flex items-center gap-2">
-                      <Label className="text-xs sm:text-sm">Pièce d'identité (optionnel)</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-72 sm:w-80">
-                          <p className="text-xs text-muted-foreground">
-                            La pièce d'identité du propriétaire va aider à valider votre identité en tant que propriétaire de la parcelle. 
-                            Cela renforce la crédibilité de votre contribution cadastrale.
-                          </p>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    {!ownerDocFile ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => document.getElementById('ownerDoc')?.click()}
-                        className="gap-2 hover:bg-primary/5 transition-all w-full text-xs sm:text-sm h-9 rounded-xl"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Ajouter la pièce d'identité
-                      </Button>
-                    ) : (
-                      <div className="flex items-center gap-2 p-2 bg-muted rounded-xl">
-                        <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
-                        <span className="text-xs sm:text-sm flex-1 truncate">{ownerDocFile.name}</span>
+                {currentOwners.map((owner, index) => (
+                  <div key={index} className={`border-2 rounded-2xl p-3 space-y-3 bg-card shadow-sm transition-all duration-300 ${
+                    highlightIncompleteOwner && index === currentOwners.length - 1 && (!owner.lastName || !owner.firstName) 
+                      ? 'ring-2 ring-primary border-primary animate-pulse' 
+                      : 'border-border'
+                  }`}>
+                    {/* Header du propriétaire */}
+                    <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                      <span className="text-sm font-semibold text-foreground">Propriétaire #{index + 1}</span>
+                      {currentOwners.length > 1 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeFile('owner')}
-                          className="h-7 w-7 p-0"
+                          onClick={() => removeCurrentOwner(index)}
+                          className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
                         >
-                          <X className="h-4 w-4" />
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      </div>
-                    )}
-                    <Input
-                      id="ownerDoc"
-                      type="file"
-                      accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                      onChange={(e) => handleFileChange(e, 'owner')}
-                      className="hidden"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      JPG, PNG, WEBP ou PDF - Max 5 MB
-                    </p>
-                  </div>
-                </div>
-              ))}
+                      )}
+                    </div>
 
-              <div className="space-y-2">
-                {/* Notification d'avertissement */}
-                {showOwnerWarning && (
-                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                          Complétez d'abord le propriétaire actuel
-                        </p>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                          Veuillez renseigner le nom et le prénom du propriétaire #{currentOwners.length} avant d'en ajouter un nouveau.
-                        </p>
+                    <div className="grid grid-cols-1 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Nom *</Label>
+                        <Input
+                          placeholder="Nom de famille"
+                          value={owner.lastName}
+                          onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
+                          className="h-10 text-sm rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Post-nom</Label>
+                        <Input
+                          placeholder="Post-nom (optionnel)"
+                          value={owner.middleName}
+                          onChange={(e) => updateCurrentOwner(index, 'middleName', e.target.value)}
+                          className="h-10 text-sm rounded-xl"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Prénom *</Label>
+                        <Input
+                          placeholder="Prénom"
+                          value={owner.firstName}
+                          onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
+                          className="h-10 text-sm rounded-xl"
+                        />
                       </div>
                     </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Statut juridique</Label>
+                        <Select 
+                          value={owner.legalStatus}
+                          onValueChange={(value) => updateCurrentOwner(index, 'legalStatus', value)}
+                        >
+                          <SelectTrigger className="h-10 text-sm rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="Personne physique">Personne physique</SelectItem>
+                            <SelectItem value="Personne morale">Personne morale</SelectItem>
+                            <SelectItem value="État">État</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Depuis</Label>
+                        <Input
+                          type="date"
+                          max={new Date().toISOString().split('T')[0]}
+                          value={owner.since}
+                          onChange={(e) => updateCurrentOwner(index, 'since', e.target.value)}
+                          className="h-10 text-sm rounded-xl"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pièce d'identité */}
+                    <div className="space-y-1.5 pt-2 border-t border-border/50">
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm font-medium">Pièce d'identité (optionnel)</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 rounded-xl text-xs">
+                            <p className="text-muted-foreground">
+                              La pièce d'identité renforce la crédibilité de votre contribution.
+                            </p>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      {!ownerDocFile ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => document.getElementById('ownerDoc')?.click()}
+                          className="gap-2 w-full text-sm h-10 rounded-xl border-dashed border-2 hover:bg-primary/5"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Ajouter la pièce d'identité
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-xl border">
+                          <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                          <span className="text-sm flex-1 truncate">{ownerDocFile.name}</span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeFile('owner')}
+                            className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      )}
+                      <Input
+                        id="ownerDoc"
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                        onChange={(e) => handleFileChange(e, 'owner')}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                {/* Avertissement propriétaire incomplet */}
+                {showOwnerWarning && (
+                  <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                    <p className="text-sm text-amber-700 dark:text-amber-300">
+                      ⚠️ Complétez le propriétaire actuel avant d'en ajouter un nouveau.
+                    </p>
                   </div>
                 )}
-                
-                <div className="flex justify-center sm:justify-start items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={addCurrentOwner}
-                    className="gap-2 text-primary hover:text-primary hover:bg-primary/10 transition-all"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter un propriétaire
-                  </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addCurrentOwner}
+                  className="w-full h-10 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
+                >
+                  <Plus className="h-4 w-4" />
+                  Ajouter un propriétaire
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Le titre foncier est-il au nom du propriétaire actuel? */}
+            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
+              <CardContent className="p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    Le titre est-il au nom du propriétaire actuel ?
+                  </Label>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                        <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                        <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80">
-                      <p className="text-xs text-muted-foreground">
-                        Si vous n'êtes pas l'unique propriétaire de la parcelle, vous pouvez ajouter un autre propriétaire. 
-                        Cela est utile dans le cas de copropriété ou de propriété partagée.
+                    <PopoverContent className="w-72 rounded-xl text-xs">
+                      <p className="text-muted-foreground">
+                        Permet de calculer les frais de retard de mutation si le titre n'est pas encore au nom du propriétaire actuel.
                       </p>
                     </PopoverContent>
                   </Popover>
                 </div>
-              </div>
-            </div>
-
-            {/* Le titre foncier est-il au nom du propriétaire actuel? */}
-            <div className="space-y-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
-              <div className="flex items-center gap-2">
-                <Label className="text-sm font-medium">
-                  Le titre foncier est-il au nom du propriétaire actuel depuis l'acquisition du bien?
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80">
-                    <p className="text-xs text-muted-foreground">
-                      Cette information permet de calculer les frais de retard de mutation en cas de demande de mutation hors délai légal.
-                      Si le titre n'est pas encore au nom du propriétaire actuel, des frais de retard peuvent s'appliquer.
-                    </p>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <RadioGroup
-                value={formData.isTitleInCurrentOwnerName === undefined ? '' : formData.isTitleInCurrentOwnerName ? 'yes' : 'no'}
-                onValueChange={(value) => handleInputChange('isTitleInCurrentOwnerName', value === 'yes')}
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="yes" id="titleInOwnerNameYes" />
-                  <Label htmlFor="titleInOwnerNameYes" className="text-sm cursor-pointer">Oui</Label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('isTitleInCurrentOwnerName', true)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                      formData.isTitleInCurrentOwnerName === true
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
+                    }`}
+                  >
+                    Oui
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                      formData.isTitleInCurrentOwnerName === false
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
+                    }`}
+                  >
+                    Non
+                  </button>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="no" id="titleInOwnerNameNo" />
-                  <Label htmlFor="titleInOwnerNameNo" className="text-sm cursor-pointer">Non</Label>
+                {formData.isTitleInCurrentOwnerName === false && (
+                  <p className="text-xs text-amber-700 dark:text-amber-400">
+                    ⚠️ Frais de retard : 0,45 USD/jour applicables.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Section Type de construction */}
+            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+              <CardContent className="p-3 space-y-3">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <MdLocationOn className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <Label className="text-sm font-semibold">Type de construction</Label>
+                  </div>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 rounded-xl" align="end">
+                      <div className="space-y-2 text-xs">
+                        <h4 className="font-semibold text-sm">Type de construction</h4>
+                        <p className="text-muted-foreground">
+                          Catégorie de votre bien : Résidentielle, Commerciale, Industrielle, Agricole ou Terrain nu.
+                        </p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
                 </div>
-              </RadioGroup>
-              {formData.isTitleInCurrentOwnerName === false && (
-                <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
-                  ⚠️ Des frais de retard de mutation (0,45 USD/jour) peuvent s'appliquer lors de votre demande de mutation.
-                </p>
-              )}
-            </div>
 
-            <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="constructionType" className="flex items-center gap-1">
-                  Type de construction
-                  {highlightRequiredFields && !formData.constructionType && (
-                    <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
-                  )}
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 text-sm">
-                    <h4 className="font-semibold mb-2">Type de construction</h4>
-                    <p className="text-muted-foreground">
-                      Définit la catégorie principale de votre bien immobilier. Cette classification détermine les taxes applicables et les règlements d'urbanisme à respecter.
-                    </p>
-                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <li>• <strong>Résidentielle</strong>: Habitations et logements</li>
-                      <li>• <strong>Commerciale</strong>: Bureaux, magasins, commerces</li>
-                      <li>• <strong>Industrielle</strong>: Usines, ateliers, entrepôts</li>
-                      <li>• <strong>Agricole</strong>: Exploitations agricoles</li>
-                      <li>• <strong>Terrain nu</strong>: Parcelle sans construction</li>
-                    </ul>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <Select 
-                value={formData.constructionType || ''}
-                onValueChange={(value) => {
-                  handleInputChange('constructionType', value);
-                  setHighlightRequiredFields(false);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner le type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-                  <SelectItem value="Commerciale">Commerciale</SelectItem>
-                  <SelectItem value="Industrielle">Industrielle</SelectItem>
-                  <SelectItem value="Agricole">Agricole</SelectItem>
-                  <SelectItem value="Terrain nu">Terrain nu</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                {/* Type de construction */}
+                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <Label className="text-sm font-medium flex items-center gap-1">
+                    Type
+                    {highlightRequiredFields && !formData.constructionType && (
+                      <span className="text-primary text-xs font-semibold">(Requis)</span>
+                    )}
+                  </Label>
+                  <Select 
+                    value={formData.constructionType || ''}
+                    onValueChange={(value) => {
+                      handleInputChange('constructionType', value);
+                      setHighlightRequiredFields(false);
+                    }}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl text-sm">
+                      <SelectValue placeholder="Sélectionner le type" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="Résidentielle">Résidentielle</SelectItem>
+                      <SelectItem value="Commerciale">Commerciale</SelectItem>
+                      <SelectItem value="Industrielle">Industrielle</SelectItem>
+                      <SelectItem value="Agricole">Agricole</SelectItem>
+                      <SelectItem value="Terrain nu">Terrain nu</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="constructionNature" className="flex items-center gap-1">
-                  Nature de construction
-                  {highlightRequiredFields && !formData.constructionNature && (
-                    <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
-                  )}
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 text-sm">
-                    <h4 className="font-semibold mb-2">Nature de construction</h4>
-                    <p className="text-muted-foreground">
-                      Indique la solidité et la durabilité de la construction, critère essentiel pour l'évaluation cadastrale et la détermination de la valeur du bien.
-                    </p>
-                    <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                      <li>• <strong>Durable</strong>: Matériaux solides (béton, briques)</li>
-                      <li>• <strong>Semi-durable</strong>: Matériaux mixtes</li>
-                      <li>• <strong>Précaire</strong>: Matériaux temporaires</li>
-                      <li>• <strong>Non bâti</strong>: Terrain sans construction</li>
-                    </ul>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <Select 
-                value={formData.constructionNature || ''}
-                onValueChange={(value) => {
-                  handleInputChange('constructionNature', value);
-                  setHighlightRequiredFields(false);
-                }}
-                disabled={!formData.constructionType}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={
-                    !formData.constructionType 
-                      ? "Sélectionner d'abord le type de construction" 
-                      : "Sélectionner la nature"
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableConstructionNatures.map((nature) => (
-                    <SelectItem key={nature} value={nature}>{nature}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {!formData.constructionType && (
-                <p className="text-xs text-muted-foreground">
-                  Veuillez d'abord sélectionner le type de construction
-                </p>
-              )}
-            </div>
+                {/* Nature de construction */}
+                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <Label className="text-sm font-medium flex items-center gap-1">
+                    Nature
+                    {highlightRequiredFields && !formData.constructionNature && (
+                      <span className="text-primary text-xs font-semibold">(Requis)</span>
+                    )}
+                  </Label>
+                  <Select 
+                    value={formData.constructionNature || ''}
+                    onValueChange={(value) => {
+                      handleInputChange('constructionNature', value);
+                      setHighlightRequiredFields(false);
+                    }}
+                    disabled={!formData.constructionType}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl text-sm">
+                      <SelectValue placeholder={
+                        !formData.constructionType 
+                          ? "Sélectionner d'abord le type" 
+                          : "Sélectionner la nature"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {availableConstructionNatures.map((nature) => (
+                        <SelectItem key={nature} value={nature}>{nature}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
-              <div className="flex items-center gap-2">
-                <Label htmlFor="declaredUsage" className="flex items-center gap-1">
-                  Usage déclaré
-                  {highlightRequiredFields && !formData.declaredUsage && (
-                    <span className="text-primary text-xs font-semibold animate-fade-in">(Requis)</span>
-                  )}
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                      <Info className="h-4 w-4 text-muted-foreground" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 text-sm">
-                    <h4 className="font-semibold mb-2">Usage déclaré</h4>
-                    <p className="text-muted-foreground">
-                      Précise l'utilisation effective ou prévue du bien. Cette information est cruciale pour la conformité réglementaire et détermine les autorisations nécessaires.
-                    </p>
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      L'usage doit correspondre à l'utilisation réelle du bien et être conforme aux règles d'urbanisme en vigueur dans votre zone.
-                    </p>
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <Select 
-                value={formData.declaredUsage || ''}
-                onValueChange={(value) => {
-                  handleInputChange('declaredUsage', value);
-                  setHighlightRequiredFields(false);
-                }}
-                disabled={!formData.constructionType || !formData.constructionNature}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder={
-                    !formData.constructionType || !formData.constructionNature
-                      ? "Sélectionner d'abord le type et la nature" 
-                      : "Sélectionner l'usage"
-                  } />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableDeclaredUsages.map((usage) => (
-                    <SelectItem key={usage} value={usage}>{usage}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {(!formData.constructionType || !formData.constructionNature) && (
-                <p className="text-xs text-muted-foreground">
-                  Veuillez d'abord sélectionner le type et la nature de construction
-                </p>
-              )}
-            </div>
+                {/* Usage déclaré */}
+                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium flex items-center gap-1">
+                      Usage déclaré
+                      {highlightRequiredFields && !formData.declaredUsage && (
+                        <span className="text-primary text-xs font-semibold">(Requis)</span>
+                      )}
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                          <Info className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-64 rounded-xl text-xs">
+                        <p className="text-muted-foreground">
+                          Utilisation effective ou prévue du bien, conforme aux règles d'urbanisme.
+                        </p>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <Select 
+                    value={formData.declaredUsage || ''}
+                    onValueChange={(value) => {
+                      handleInputChange('declaredUsage', value);
+                      setHighlightRequiredFields(false);
+                    }}
+                    disabled={!formData.constructionType || !formData.constructionNature}
+                  >
+                    <SelectTrigger className="h-10 rounded-xl text-sm">
+                      <SelectValue placeholder={
+                        !formData.constructionType || !formData.constructionNature
+                          ? "Sélectionner d'abord type et nature" 
+                          : "Sélectionner l'usage"
+                      } />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {availableDeclaredUsages.map((usage) => (
+                        <SelectItem key={usage} value={usage}>{usage}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
 
             
             {/* Section Permis de construire - Simplifié */}
