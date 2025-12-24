@@ -2429,96 +2429,97 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             />
 
             {formData.propertyTitleType && (
-              <div className="space-y-2 animate-fade-in">
-                <Label htmlFor="titleReference" className="text-sm">
-                  Numéro de référence du {formData.propertyTitleType.toLowerCase()}
-                </Label>
-                <InputWithPopover
-                  id="titleReference"
-                  placeholder={PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "Ex: XXX-123456"}
-                  value={formData.titleReferenceNumber || ''}
-                  onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
-                  helpTitle="Numéro de référence"
-                  helpText={`Le numéro de référence se trouve généralement en haut de votre document. Format attendu : ${PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "XXX-123456"}`}
-                />
-                <p className="text-xs text-muted-foreground">
-                  {PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.description}
-                </p>
-
-                {/* Date de délivrance du titre foncier */}
-                <div className="space-y-1.5 mt-3">
-                  <Label htmlFor="titleIssueDate" className="text-sm">
-                    Date de délivrance du titre foncier
-                  </Label>
-                  <Input
-                    id="titleIssueDate"
-                    type="date"
-                    max={new Date().toISOString().split('T')[0]}
-                    value={formData.titleIssueDate || ''}
-                    onChange={(e) => handleInputChange('titleIssueDate', e.target.value)}
-                    className="h-9 text-sm"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Cette date permet de déterminer automatiquement le taux des frais de mutation (Circulaire n° 005/CAB/MIN/AFF.FONC/2013).
-                  </p>
-                </div>
-
-                {/* Title document attachment */}
-                <div className="space-y-2 mt-3 sm:mt-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="titleDoc" className="text-sm">Document du titre (optionnel)</Label>
-                    <span className="text-xs text-muted-foreground">
-                      {titleDocFiles.length}/5 fichiers
-                    </span>
+              <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden animate-fade-in">
+                <CardContent className="p-3 space-y-3">
+                  {/* Numéro de référence */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="titleReference" className="text-sm font-medium">
+                      N° de référence
+                    </Label>
+                    <InputWithPopover
+                      id="titleReference"
+                      placeholder={PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "Ex: XXX-123456"}
+                      value={formData.titleReferenceNumber || ''}
+                      onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
+                      helpTitle="Référence"
+                      helpText={`Format : ${PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "XXX-123456"}`}
+                      className="h-9 text-sm rounded-xl"
+                    />
                   </div>
-                  
-                  {/* Liste des fichiers ajoutés */}
-                  {titleDocFiles.length > 0 && (
-                    <div className="space-y-2">
-                      {titleDocFiles.map((file, index) => (
-                        <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-xl">
-                          <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span className="text-xs sm:text-sm flex-1 truncate">{file.name}</span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeFile('title', index)}
-                            className="h-7 w-7 p-0"
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
+
+                  {/* Date de délivrance */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="titleIssueDate" className="text-sm font-medium">
+                      Date de délivrance
+                    </Label>
+                    <Input
+                      id="titleIssueDate"
+                      type="date"
+                      max={new Date().toISOString().split('T')[0]}
+                      value={formData.titleIssueDate || ''}
+                      onChange={(e) => handleInputChange('titleIssueDate', e.target.value)}
+                      className="h-9 text-sm rounded-xl"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Calcul automatique des frais de mutation
+                    </p>
+                  </div>
+
+                  {/* Document du titre */}
+                  <div className="space-y-2 pt-1 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="titleDoc" className="text-sm font-medium">Document (optionnel)</Label>
+                      <span className="text-xs text-muted-foreground">
+                        {titleDocFiles.length}/5
+                      </span>
                     </div>
-                  )}
-                  
-                  {/* Bouton pour ajouter un fichier */}
-                  {titleDocFiles.length < 5 && (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => document.getElementById('titleDoc')?.click()}
-                      className="gap-2 hover:bg-primary/5 transition-all w-full text-xs sm:text-sm h-9 rounded-xl"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Ajouter le titre de propriété
-                    </Button>
-                  )}
-                  
-                  <Input
-                    id="titleDoc"
-                    type="file"
-                    accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                    onChange={(e) => handleFileChange(e, 'title')}
-                    className="hidden"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    JPG, PNG, WEBP ou PDF - Max 5 MB par fichier - Maximum 5 fichiers
-                  </p>
-                </div>
-              </div>
+                    
+                    {titleDocFiles.length > 0 && (
+                      <div className="space-y-1.5">
+                        {titleDocFiles.map((file, index) => (
+                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-xl">
+                            <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="text-xs flex-1 truncate">{file.name}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeFile('title', index)}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    
+                    {titleDocFiles.length < 5 && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => document.getElementById('titleDoc')?.click()}
+                        className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter fichier
+                      </Button>
+                    )}
+                    
+                    <Input
+                      id="titleDoc"
+                      type="file"
+                      accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                      onChange={(e) => handleFileChange(e, 'title')}
+                      className="hidden"
+                    />
+                    <p className="text-xs text-muted-foreground text-center">
+                      JPG, PNG, PDF • Max 5 MB
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Section Propriétaire(s) actuel(s) */}
