@@ -265,29 +265,29 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         <span className="text-[9px] font-bold text-muted-foreground">{index + 1}</span>
                       </div>
                     )}
-                    <span className="font-semibold text-sm">{side.name}</span>
+                    <span className="font-semibold text-xs truncate max-w-[60px]">{side.name}</span>
                     {hasConfirmed && isRoad && roadSide?.roadType && (
-                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0">
+                      <Badge variant="outline" className="text-[9px] h-4 px-1 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0 truncate max-w-[50px]">
                         {roadTypes.find(t => t.value === roadSide.roadType)?.label || roadSide.roadType}
                       </Badge>
                     )}
                     {hasConfirmed && isWall && roadSide?.wallMaterial && (
-                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-0">
+                      <Badge variant="outline" className="text-[9px] h-4 px-1 rounded-md bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 border-0 truncate max-w-[50px]">
                         {wallMaterials.find(m => m.value === roadSide.wallMaterial)?.label || roadSide.wallMaterial}
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     {roadSide?.orientation && (
                       <Badge 
                         variant="outline" 
-                        className={`text-xs h-5 px-2 rounded-md ${getOrientationColor(roadSide.orientation)} text-white border-0 font-medium`}
+                        className={`text-[9px] h-4 px-1.5 rounded-md ${getOrientationColor(roadSide.orientation)} text-white border-0 font-medium`}
                       >
                         {roadSide.orientation}
                       </Badge>
                     )}
-                    <Badge variant="secondary" className="font-mono text-sm h-6 px-2 rounded-md font-bold">
-                      {side.length} m
+                    <Badge variant="secondary" className="font-mono text-xs h-5 px-1.5 rounded-md font-bold whitespace-nowrap">
+                      {side.length}m
                     </Badge>
                     {/* Boutons pour ajouter route ou mur - visible uniquement si pas confirmé */}
                     {!hasConfirmed && !isEditingThis && (
