@@ -106,6 +106,7 @@ export const ParcelMapPreview = ({
   const controlButtonTimeoutRef = useRef<number | null>(null);
 
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
+  const [perimeterLength, setPerimeterLength] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
@@ -916,12 +917,31 @@ export const ParcelMapPreview = ({
 
           polygonRef.current = polygon;
 
-          // Calculer la surface
+          // Calculer la surface et le périmètre à partir des dimensions stockées (stables)
           if (mapConfig.autoCalculateSurface) {
-            const area = calculatePolygonArea(latLngs);
-            setSurfaceArea(area);
-            if (onSurfaceChange) {
-              onSurfaceChange(area);
+            // Calculer le périmètre à partir des dimensions stockées
+            if (parcelSides.length > 0 && parcelSides.length === latLngs.length) {
+              const perimeter = parcelSides.reduce((sum, side) => {
+                const len = parseFloat(side.length);
+                return sum + (isNaN(len) ? 0 : len);
+              }, 0);
+              setPerimeterLength(Math.round(perimeter * 100) / 100);
+              
+              // Calculer la superficie à partir des dimensions stockées (formule de Héron généralisée)
+              // Pour un polygone avec côtés connus, on utilise la formule de Shoelace avec les coordonnées
+              // car la superficie dépend aussi des angles, pas seulement des longueurs
+              const area = calculatePolygonArea(latLngs);
+              setSurfaceArea(area);
+              if (onSurfaceChange) {
+                onSurfaceChange(area);
+              }
+            } else {
+              const area = calculatePolygonArea(latLngs);
+              setSurfaceArea(area);
+              setPerimeterLength(0);
+              if (onSurfaceChange) {
+                onSurfaceChange(area);
+              }
             }
           }
 
@@ -938,6 +958,7 @@ export const ParcelMapPreview = ({
             map.setView(latLngs[0], mapConfig.defaultZoom || 15);
           }
           setSurfaceArea(0);
+          setPerimeterLength(0);
         }
 
         // Dessiner les formes de construction
@@ -1582,7 +1603,7 @@ export const ParcelMapPreview = ({
           style={{ cursor: isDrawingMode || isAddingBuilding ? 'crosshair' : 'grab' }}
         />
         
-        {/* Boutons Tracer/Terminer sur la carte (en haut à gauche) */}
+        {/* Boutons Tracer/Terminer + Superficie/Périmètre sur la carte (en haut à gauche) */}
         {enableDrawingMode && (
           <div className="absolute top-2 left-2 z-[1000] flex items-center gap-1.5">
             <Button 
@@ -1599,11 +1620,41 @@ export const ParcelMapPreview = ({
               {isDrawingMode ? 'Terminer' : 'Tracer'}
             </Button>
             
-            {/* Indicateur nb bornes - seulement si des bornes valides existent */}
-            {validCoords.length > 0 && !isDrawingMode && (
-              <Badge variant="outline" className="text-[10px] h-6 px-2 rounded-lg bg-white/90 shadow-sm">
-                {validCoords.length} pt{validCoords.length > 1 ? 's' : ''}
-              </Badge>
+            {/* Superficie et Périmètre - affichés sur la même ligne avec le même style que les dimensions */}
+            {surfaceArea > 0 && !isDrawingMode && (
+              <div 
+                className="flex items-center gap-1.5"
+                style={{
+                  fontFamily: 'inherit',
+                  fontSize: '10px',
+                  fontWeight: 600,
+                }}
+              >
+                <span 
+                  className="px-1.5 py-0.5 rounded shadow-sm"
+                  style={{
+                    background: 'rgba(255,255,255,0.95)',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                    border: '1px solid rgba(0,0,0,0.1)',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {surfaceArea.toLocaleString()} m²
+                </span>
+                {perimeterLength > 0 && (
+                  <span 
+                    className="px-1.5 py-0.5 rounded shadow-sm"
+                    style={{
+                      background: 'rgba(255,255,255,0.95)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                      border: '1px solid rgba(0,0,0,0.1)',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    P: {perimeterLength.toLocaleString()} m
+                  </span>
+                )}
+              </div>
             )}
           </div>
         )}
