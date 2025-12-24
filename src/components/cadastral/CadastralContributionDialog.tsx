@@ -3225,26 +3225,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Section Urbaine (SU) - visible uniquement si type urbain sélectionné */}
             {sectionType === 'urbaine' && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 animate-fade-in">
-                <CardContent className="p-3 space-y-2.5">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <div className="h-5 w-5 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <MdLocationOn className="h-3 w-3 text-primary" />
+                <CardContent className="p-3 space-y-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <MdLocationOn className="h-4 w-4 text-primary" />
                     </div>
                     <h4 className="text-sm font-semibold">Section Urbaine (SU)</h4>
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">
-                    Remplissez ces champs pour les zones urbaines.
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Champs pour les zones urbaines.
                   </p>
                   
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="ville" className="text-xs">Ville *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="ville" className="text-sm">Ville *</Label>
                       <Select 
                         value={formData.ville}
                         onValueChange={(value) => handleInputChange('ville', value)}
                         disabled={!formData.province || availableVilles.length === 0}
                       >
-                        <SelectTrigger className="h-8 text-xs rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl">
                           <SelectValue placeholder={
                             !formData.province 
                             ? "Province d'abord" 
@@ -3255,20 +3255,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </SelectTrigger>
                         <SelectContent>
                           {availableVilles.map(ville => (
-                            <SelectItem key={ville} value={ville} className="text-xs">{ville}</SelectItem>
+                            <SelectItem key={ville} value={ville} className="text-sm">{ville}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="commune" className="text-xs">Commune *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="commune" className="text-sm">Commune *</Label>
                       <Select 
                         value={formData.commune}
                         onValueChange={(value) => handleInputChange('commune', value)}
                         disabled={!formData.ville || availableCommunes.length === 0}
                       >
-                        <SelectTrigger className="h-8 text-xs rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl">
                           <SelectValue placeholder={
                             !formData.ville 
                             ? "Ville d'abord" 
@@ -3279,7 +3279,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </SelectTrigger>
                         <SelectContent>
                           {availableCommunes.map(commune => (
-                            <SelectItem key={commune} value={commune} className="text-xs">{commune}</SelectItem>
+                            <SelectItem key={commune} value={commune} className="text-sm">{commune}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -3287,14 +3287,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="quartier" className="text-xs">Quartier *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="quartier" className="text-sm">Quartier *</Label>
                       <Select 
                         value={formData.quartier}
                         onValueChange={(value) => handleInputChange('quartier', value)}
                         disabled={!formData.commune || availableQuartiers.length === 0}
                       >
-                        <SelectTrigger className="h-8 text-xs rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl">
                           <SelectValue placeholder={
                             !formData.commune 
                             ? "Commune d'abord" 
@@ -3305,13 +3305,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </SelectTrigger>
                         <SelectContent>
                           {availableQuartiers.map(quartier => (
-                            <SelectItem key={quartier} value={quartier} className="text-xs">{quartier}</SelectItem>
+                            <SelectItem key={quartier} value={quartier} className="text-sm">{quartier}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       {availableQuartiers.length === 0 && formData.commune && (
                         <Input
-                          className="h-8 text-xs rounded-xl mt-1"
+                          className="h-9 text-sm rounded-xl mt-1"
                           placeholder="Saisir quartier"
                           value={formData.quartier || ''}
                           onChange={(e) => handleInputChange('quartier', e.target.value)}
@@ -3319,17 +3319,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       )}
                     </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="avenue" className="text-xs">Avenue *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="avenue" className="text-sm">Avenue *</Label>
                       <Input
                         id="avenue"
-                        className="h-8 text-xs rounded-xl"
+                        className="h-9 text-sm rounded-xl"
                         placeholder="Nom de l'avenue"
                         value={formData.avenue || ''}
                         onChange={(e) => handleInputChange('avenue', e.target.value)}
                         disabled={!formData.quartier}
                       />
-                      <p className="text-[9px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {!formData.quartier ? "Quartier d'abord" : ""}
                       </p>
                     </div>
@@ -3341,26 +3341,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {/* Section Rurale (SR) - visible uniquement si type rural sélectionné */}
             {sectionType === 'rurale' && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 animate-fade-in">
-                <CardContent className="p-3 space-y-2.5">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <div className="h-5 w-5 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <MdLocationOn className="h-3 w-3 text-primary" />
+                <CardContent className="p-3 space-y-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <MdLocationOn className="h-4 w-4 text-primary" />
                     </div>
                     <h4 className="text-sm font-semibold">Section Rurale (SR)</h4>
                   </div>
-                  <p className="text-[10px] text-muted-foreground leading-tight">
-                    Remplissez ces champs pour les zones rurales.
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    Champs pour les zones rurales.
                   </p>
                   
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="territoire" className="text-xs">Territoire *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="territoire" className="text-sm">Territoire *</Label>
                       <Select 
                         value={formData.territoire}
                         onValueChange={(value) => handleInputChange('territoire', value)}
                         disabled={!formData.province || availableTerritoires.length === 0}
                       >
-                        <SelectTrigger className="h-8 text-xs rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl">
                           <SelectValue placeholder={
                             !formData.province 
                             ? "Province d'abord" 
@@ -3371,20 +3371,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </SelectTrigger>
                         <SelectContent>
                           {availableTerritoires.map(territoire => (
-                            <SelectItem key={territoire} value={territoire} className="text-xs">{territoire}</SelectItem>
+                            <SelectItem key={territoire} value={territoire} className="text-sm">{territoire}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="collectivite" className="text-xs">Collectivité *</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="collectivite" className="text-sm">Collectivité *</Label>
                       <Select 
                         value={formData.collectivite}
                         onValueChange={(value) => handleInputChange('collectivite', value)}
                         disabled={!formData.territoire || availableCollectivites.length === 0}
                       >
-                        <SelectTrigger className="h-8 text-xs rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl">
                           <SelectValue placeholder={
                             !formData.territoire 
                             ? "Territoire d'abord" 
@@ -3395,7 +3395,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </SelectTrigger>
                         <SelectContent>
                           {availableCollectivites.map(collectivite => (
-                            <SelectItem key={collectivite} value={collectivite} className="text-xs">{collectivite}</SelectItem>
+                            <SelectItem key={collectivite} value={collectivite} className="text-sm">{collectivite}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -3403,32 +3403,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="groupement" className="text-xs">Groupement</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="groupement" className="text-sm">Groupement</Label>
                       <Input
                         id="groupement"
-                        className="h-8 text-xs rounded-xl"
+                        className="h-9 text-sm rounded-xl"
                         placeholder="ex: Katoyi"
                         value={formData.groupement || ''}
                         onChange={(e) => handleInputChange('groupement', e.target.value)}
                         disabled={!formData.collectivite}
                       />
-                      <p className="text-[9px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {!formData.collectivite ? "Collectivité d'abord" : "Optionnel"}
                       </p>
                     </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="village" className="text-xs">Village</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="village" className="text-sm">Village</Label>
                       <Input
                         id="village"
-                        className="h-8 text-xs rounded-xl"
+                        className="h-9 text-sm rounded-xl"
                         placeholder="ex: Mushaki"
                         value={formData.village || ''}
                         onChange={(e) => handleInputChange('village', e.target.value)}
                         disabled={!formData.collectivite}
                       />
-                      <p className="text-[9px] text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {!formData.collectivite ? "Collectivité d'abord" : "Optionnel"}
                       </p>
                     </div>
