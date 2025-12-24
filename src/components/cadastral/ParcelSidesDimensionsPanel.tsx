@@ -187,6 +187,22 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                     <Badge variant="secondary" className="font-mono text-sm h-6 px-2 rounded-md font-bold">
                       {side.length} m
                     </Badge>
+                    {/* Bouton dédié pour ajouter une route - visible uniquement si pas de route */}
+                    {!hasRoad && !isEditingThis && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleStartEdit(index);
+                        }}
+                        className="h-6 px-2 text-xs rounded-md gap-1 bg-primary/5 hover:bg-primary/10 border-primary/30 text-primary"
+                      >
+                        <Route className="h-3 w-3" />
+                        Route
+                      </Button>
+                    )}
                     {hasRoad && (
                       <Button
                         type="button"
