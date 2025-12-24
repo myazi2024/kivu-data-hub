@@ -914,100 +914,133 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Card>
         )}
 
-        {/* Frais */}
-        <Card className="border rounded-xl">
-          <CardContent className="p-3 space-y-3">
-            <h4 className="text-sm font-semibold">Frais administratifs</h4>
-            
-            <div className="space-y-2">
-              {fees.map((fee) => (
-                <div 
-                  key={fee.id}
-                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-                    selectedFees.includes(fee.id) ? 'bg-primary/5 border-2 border-primary/30' : 'bg-muted/30 border-2 border-transparent'
-                  }`}
-                >
-                  <Checkbox
-                    id={fee.id}
-                    checked={selectedFees.includes(fee.id)}
-                    onCheckedChange={() => handleFeeToggle(fee.id, fee.is_mandatory)}
-                    disabled={fee.is_mandatory}
-                    className="mt-0.5"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
-                        {fee.fee_name}
-                        {fee.is_mandatory && (
-                          <span className="ml-1.5 text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                            obligatoire
-                          </span>
-                        )}
-                      </label>
-                      <span className="text-sm font-bold text-primary whitespace-nowrap">${fee.amount_usd}</span>
-                    </div>
-                    {fee.description && (
-                      <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Frais de mutation calculés - même design que frais administratifs */}
-            {mutationFeesCalculation.applicable && titleAge && (
+        {/* Frais liés au certificat d'expertise (affichés seulement si certificat confirmé) */}
+        {isTransferMutation && hasExpertiseCertificate === 'yes' && (
+          <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
+            <CardContent className="p-3 space-y-3">
+              <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Frais liés à l'expertise immobilière
+              </h4>
+              
               <div className="space-y-2">
-                <div 
-                  className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
-                >
-                  <div className="p-1.5 bg-amber-100 dark:bg-amber-900/50 rounded-lg mt-0.5">
-                    <DollarSign className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm font-medium">
-                        Frais de mutation ({mutationFeesCalculation.percentage}%)
-                        <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
-                          calculé
-                        </span>
-                      </span>
-                      <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
-                        ${mutationFeesCalculation.mutationFee.toFixed(2)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      Basé sur la valeur vénale de ${parseFloat(marketValueUsd).toLocaleString()} USD
-                    </p>
-                  </div>
-                </div>
-
-                {mutationFeesCalculation.bankFee > 0 && (
+                {/* Frais de dossier - 83$ */}
+                {fees.filter(f => f.fee_name === 'Frais de dossier').map((fee) => (
                   <div 
-                    className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-100 dark:border-amber-800"
+                    key={fee.id}
+                    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                      selectedFees.includes(fee.id) ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700' : 'bg-muted/30 border-2 border-transparent'
+                    }`}
                   >
-                    <div className="p-1.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg mt-0.5">
-                      <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                    </div>
+                    <Checkbox
+                      id={fee.id}
+                      checked={selectedFees.includes(fee.id)}
+                      onCheckedChange={() => handleFeeToggle(fee.id, false)}
+                      className="mt-0.5"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">Frais bancaires (0.5%)</span>
-                        <span className="text-sm font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap">
-                          ${mutationFeesCalculation.bankFee.toFixed(2)}
-                        </span>
+                        <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
+                          {fee.fee_name}
+                        </label>
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Commission bancaire estimée
-                      </p>
+                      {fee.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
+                      )}
                     </div>
                   </div>
+                ))}
+
+                {/* Frais de vérification */}
+                {fees.filter(f => f.fee_name === 'Frais de vérification').map((fee) => (
+                  <div 
+                    key={fee.id}
+                    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                      selectedFees.includes(fee.id) ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700' : 'bg-muted/30 border-2 border-transparent'
+                    }`}
+                  >
+                    <Checkbox
+                      id={fee.id}
+                      checked={selectedFees.includes(fee.id)}
+                      onCheckedChange={() => handleFeeToggle(fee.id, false)}
+                      className="mt-0.5"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
+                          {fee.fee_name}
+                        </label>
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
+                      </div>
+                      {fee.description && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Frais de mutation calculés */}
+                {mutationFeesCalculation.applicable && titleAge && (
+                  <>
+                    <div 
+                      className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
+                    >
+                      <div className="p-1.5 bg-amber-100 dark:bg-amber-900/50 rounded-lg mt-0.5">
+                        <DollarSign className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">
+                            Frais de mutation ({mutationFeesCalculation.percentage}%)
+                            <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
+                              calculé
+                            </span>
+                          </span>
+                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
+                            ${mutationFeesCalculation.mutationFee.toFixed(2)}
+                          </span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          Basé sur la valeur vénale de ${parseFloat(marketValueUsd).toLocaleString()} USD
+                        </p>
+                      </div>
+                    </div>
+
+                    {mutationFeesCalculation.bankFee > 0 && (
+                      <div 
+                        className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-100 dark:border-amber-800"
+                      >
+                        <div className="p-1.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg mt-0.5">
+                          <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium">Frais bancaires (0.5%)</span>
+                            <span className="text-sm font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap">
+                              ${mutationFeesCalculation.bankFee.toFixed(2)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Commission bancaire estimée
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-muted-foreground px-1">
+                      Circulaire n° 005/CAB/MIN/AFF.FONC/2013 • n°0076/2023 et 010/CAB/MIN.FINANCES/2023
+                    </p>
+                  </>
                 )}
-
-                <p className="text-[10px] text-muted-foreground px-1">
-                  Circulaire n° 005/CAB/MIN/AFF.FONC/2013 • n°0076/2023 et 010/CAB/MIN.FINANCES/2023
-                </p>
               </div>
-            )}
+            </CardContent>
+          </Card>
+        )}
 
+        {/* Total à payer */}
+        <Card className="border rounded-xl">
+          <CardContent className="p-3">
             <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
               <span className="font-semibold text-sm">Total à payer</span>
               <span className="text-xl font-bold text-primary">${getTotalAmount()}</span>
@@ -1122,18 +1155,22 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             {/* Frais */}
             <Separator />
             <div className="space-y-2">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Frais administratifs</span>
-              {getSelectedFeesDetails().map(fee => (
-                <div key={fee.id} className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
-                  <span className="text-sm font-medium">${fee.amount_usd}</span>
-                </div>
-              ))}
+              {getSelectedFeesDetails().length > 0 && (
+                <>
+                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Frais liés à l'expertise</span>
+                  {getSelectedFeesDetails().map(fee => (
+                    <div key={fee.id} className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
+                      <span className="text-sm font-medium">${fee.amount_usd}</span>
+                    </div>
+                  ))}
+                </>
+              )}
               
               {/* Frais de mutation si applicables */}
               {mutationFeesCalculation.applicable && titleAge && (
                 <>
-                  <Separator className="my-1" />
+                  {getSelectedFeesDetails().length > 0 && <Separator className="my-1" />}
                   <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Frais de mutation</span>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Frais ({mutationFeesCalculation.percentage}% de ${marketValueUsd})</span>
