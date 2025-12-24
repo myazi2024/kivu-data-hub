@@ -2761,6 +2761,47 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </div>
             </div>
 
+            {/* Le titre foncier est-il au nom du propriétaire actuel? */}
+            <div className="space-y-2 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
+              <div className="flex items-center gap-2">
+                <Label className="text-sm font-medium">
+                  Le titre foncier est-il au nom du propriétaire actuel depuis l'acquisition du bien?
+                </Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
+                      <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80">
+                    <p className="text-xs text-muted-foreground">
+                      Cette information permet de calculer les frais de retard de mutation en cas de demande de mutation hors délai légal.
+                      Si le titre n'est pas encore au nom du propriétaire actuel, des frais de retard peuvent s'appliquer.
+                    </p>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <RadioGroup
+                value={formData.isTitleInCurrentOwnerName === undefined ? '' : formData.isTitleInCurrentOwnerName ? 'yes' : 'no'}
+                onValueChange={(value) => handleInputChange('isTitleInCurrentOwnerName', value === 'yes')}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="yes" id="titleInOwnerNameYes" />
+                  <Label htmlFor="titleInOwnerNameYes" className="text-sm cursor-pointer">Oui</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="no" id="titleInOwnerNameNo" />
+                  <Label htmlFor="titleInOwnerNameNo" className="text-sm cursor-pointer">Non</Label>
+                </div>
+              </RadioGroup>
+              {formData.isTitleInCurrentOwnerName === false && (
+                <p className="text-xs text-amber-700 dark:text-amber-400 mt-2">
+                  ⚠️ Des frais de retard de mutation (0,45 USD/jour) peuvent s'appliquer lors de votre demande de mutation.
+                </p>
+              )}
+            </div>
+
             <div className={`space-y-2 transition-all duration-300 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-lg p-3 bg-primary/5 animate-pulse' : ''}`}>
               <div className="flex items-center gap-2">
                 <Label htmlFor="constructionType" className="flex items-center gap-1">

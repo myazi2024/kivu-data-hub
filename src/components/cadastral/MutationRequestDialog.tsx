@@ -31,6 +31,8 @@ interface MutationRequestDialogProps {
     quartier?: string;
     current_owner_name?: string;
     title_issue_date?: string; // Date de délivrance du titre foncier depuis CCC
+    owner_acquisition_date?: string; // Date d'acquisition par le propriétaire actuel
+    is_title_in_current_owner_name?: boolean; // Le titre est-il au nom du propriétaire actuel?
   };
   trigger?: React.ReactNode;
   open?: boolean;
@@ -111,6 +113,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [titleAgeAutoDetected, setTitleAgeAutoDetected] = useState(false);
   const expertiseCertificateInputRef = useRef<HTMLInputElement>(null);
   
+  // État pour les frais de retard de mutation
+  const [ownerAcquisitionDate, setOwnerAcquisitionDate] = useState<string | null>(null);
+  const [ownerAcquisitionDateAutoDetected, setOwnerAcquisitionDateAutoDetected] = useState(false);
+  const [manualAcquisitionDate, setManualAcquisitionDate] = useState('');
+  
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [paymentProvider, setPaymentProvider] = useState('');
@@ -170,6 +177,60 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   }, [open, parcelNumber, parcelData?.title_issue_date]);
 
+  // Vérifier si c'est un type de mutation avec transfert (déclaré avant utilisation)
+  const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
+
+  // Récupérer automatiquement la date d'acquisition du propriétaire depuis CCC
+  useEffect(() => {
+    const fetchOwnerAcquisitionDate = async () => {
+      // Si la date est déjà fournie dans les props
+      if (parcelData?.owner_acquisition_date) {
+        setOwnerAcquisitionDate(parcelData.owner_acquisition_date);
+        setOwnerAcquisitionDateAutoDetected(true);
+        return;
+      }
+
+      // Chercher dans les contributions CCC validées
+      try {
+        const { data: contribution } = await supabase
+          .from('cadastral_contributions')
+          .select('current_owner_since')
+          .eq('parcel_number', parcelNumber)
+          .eq('status', 'approved')
+          .not('current_owner_since', 'is', null)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        if (contribution?.current_owner_since) {
+          setOwnerAcquisitionDate(contribution.current_owner_since);
+          setOwnerAcquisitionDateAutoDetected(true);
+          return;
+        }
+
+        // Sinon chercher dans la table des parcelles
+        const { data: parcel } = await supabase
+          .from('cadastral_parcels')
+          .select('current_owner_since')
+          .eq('parcel_number', parcelNumber)
+          .not('current_owner_since', 'is', null)
+          .limit(1)
+          .single();
+
+        if (parcel?.current_owner_since) {
+          setOwnerAcquisitionDate(parcel.current_owner_since);
+          setOwnerAcquisitionDateAutoDetected(true);
+        }
+      } catch (error) {
+        console.log('Aucune date d\'acquisition du propriétaire trouvée');
+      }
+    };
+
+    if (open && parcelNumber && isTransferMutation) {
+      fetchOwnerAcquisitionDate();
+    }
+  }, [open, parcelNumber, parcelData?.owner_acquisition_date, isTransferMutation]);
+
   // Calculer l'âge du titre à partir de sa date de délivrance
   const calculateTitleAgeFromDate = (dateString: string) => {
     const issueDate = new Date(dateString);
@@ -184,8 +245,27 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setTitleAgeAutoDetected(true);
   };
 
-  // Vérifier si c'est un type de mutation avec transfert
-  const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
+  // Calculer les frais de retard de mutation
+  const calculateLateFees = () => {
+    const dateToUse = ownerAcquisitionDate || manualAcquisitionDate;
+    if (!dateToUse) return { days: 0, fee: 0, applicable: false };
+    
+    const acquisitionDate = new Date(dateToUse);
+    const today = new Date();
+    const daysElapsed = differenceInDays(today, acquisitionDate);
+    
+    // Tarif: 0.45$ par jour
+    const DAILY_LATE_FEE = 0.45;
+    const lateFee = daysElapsed * DAILY_LATE_FEE;
+    
+    return {
+      days: daysElapsed,
+      fee: Math.round(lateFee * 100) / 100,
+      applicable: daysElapsed > 0
+    };
+  };
+
+  const lateFeesCalculation = calculateLateFees();
 
   // Get current mutation type details
   const getMutationTypeDetails = () => {
@@ -259,7 +339,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const getTotalAmount = () => {
     const baseFees = getSelectedFeesDetails().reduce((sum, fee) => sum + fee.amount_usd, 0);
     // Ajouter les frais de mutation calculés si applicables
-    return baseFees + (mutationFeesCalculation.applicable ? mutationFeesCalculation.total : 0);
+    const mutationFees = mutationFeesCalculation.applicable ? mutationFeesCalculation.total : 0;
+    // Ajouter les frais de retard si applicables
+    const lateFees = lateFeesCalculation.applicable ? lateFeesCalculation.fee : 0;
+    return baseFees + mutationFees + lateFees;
   };
 
   // Gestion du fichier certificat d'expertise
@@ -1039,12 +1122,89 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Card>
         )}
 
+        {/* Frais de retard de mutation hors délai légal */}
+        {isTransferMutation && (
+          <Card className="border-2 border-orange-200 dark:border-orange-700 rounded-xl">
+            <CardContent className="p-3 space-y-3">
+              <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Traitement de mutation hors délai légal
+              </h4>
+              
+              <Alert className="bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800 rounded-lg">
+                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-xs text-orange-700 dark:text-orange-400">
+                  Le non-respect du délai légal de mutation immobilière entraîne des frais supplémentaires pour faire aboutir la mutation.
+                  <br />
+                  <span className="font-semibold">Tarif : 0,45 USD par jour</span> à compter de la date d'acquisition jusqu'à aujourd'hui.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-3">
+                {/* Date d'acquisition du propriétaire */}
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                    Date d'acquisition par le propriétaire actuel
+                    {ownerAcquisitionDateAutoDetected && (
+                      <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">
+                        détectée automatiquement
+                      </span>
+                    )}
+                  </Label>
+                  {ownerAcquisitionDate ? (
+                    <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-lg">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">
+                        {format(new Date(ownerAcquisitionDate), 'd MMMM yyyy', { locale: fr })}
+                      </span>
+                    </div>
+                  ) : (
+                    <Input
+                      type="date"
+                      max={new Date().toISOString().split('T')[0]}
+                      value={manualAcquisitionDate}
+                      onChange={(e) => setManualAcquisitionDate(e.target.value)}
+                      className="h-9 text-sm"
+                      placeholder="Sélectionnez la date d'acquisition"
+                    />
+                  )}
+                </div>
+
+                {/* Calcul des frais de retard */}
+                {lateFeesCalculation.applicable && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-700">
+                    <div className="p-1.5 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
+                      <Clock className="h-4 w-4 text-orange-700 dark:text-orange-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">
+                          Frais de retard ({lateFeesCalculation.days} jours)
+                          <span className="ml-1.5 text-[10px] text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/50 px-1.5 py-0.5 rounded">
+                            calculé
+                          </span>
+                        </span>
+                        <span className="text-sm font-bold text-orange-700 dark:text-orange-400 whitespace-nowrap">
+                          ${lateFeesCalculation.fee.toFixed(2)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {lateFeesCalculation.days} jours × 0,45 USD/jour
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Total à payer */}
         <Card className="border rounded-xl">
           <CardContent className="p-3">
             <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
               <span className="font-semibold text-sm">Total à payer</span>
-              <span className="text-xl font-bold text-primary">${getTotalAmount()}</span>
+              <span className="text-xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
             </div>
           </CardContent>
         </Card>

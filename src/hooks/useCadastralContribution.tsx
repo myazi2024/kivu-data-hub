@@ -11,6 +11,8 @@ export interface CadastralContributionData {
   leaseType?: 'initial' | 'renewal';
   titleReferenceNumber?: string;
   titleIssueDate?: string; // Date de délivrance du titre foncier
+  isTitleInCurrentOwnerName?: boolean; // Le titre est-il au nom du propriétaire actuel depuis l'acquisition?
+  ownerAcquisitionDate?: string; // Date d'acquisition par le propriétaire actuel
   currentOwners?: Array<{
     lastName: string;  // Nom
     middleName?: string;  // Post-nom
