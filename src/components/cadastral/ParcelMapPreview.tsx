@@ -107,6 +107,11 @@ export const ParcelMapPreview = ({
 
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [perimeterLength, setPerimeterLength] = useState<number>(0);
+  
+  // Ref pour stocker la superficie stable (ne change pas avec rotation/translation)
+  const stableSurfaceRef = useRef<number>(0);
+  const stablePerimeterRef = useRef<number>(0);
+  const lastParcelSidesLengthRef = useRef<string>('');
   const [isMapReady, setIsMapReady] = useState(false);
   const [conflictingParcels, setConflictingParcels] = useState<ConflictingParcel[]>([]);
   const [showConflictDialog, setShowConflictDialog] = useState(false);
@@ -919,26 +924,40 @@ export const ParcelMapPreview = ({
 
           // Calculer la surface et le périmètre à partir des dimensions stockées (stables)
           if (mapConfig.autoCalculateSurface) {
+            // Créer une clé représentant les longueurs des côtés pour détecter les vrais changements
+            const currentSidesKey = parcelSides.map(s => s.length).join(',');
+            
             // Calculer le périmètre à partir des dimensions stockées
             if (parcelSides.length > 0 && parcelSides.length === latLngs.length) {
               const perimeter = parcelSides.reduce((sum, side) => {
                 const len = parseFloat(side.length);
                 return sum + (isNaN(len) ? 0 : len);
               }, 0);
-              setPerimeterLength(Math.round(perimeter * 100) / 100);
+              const roundedPerimeter = Math.round(perimeter * 100) / 100;
               
-              // Calculer la superficie à partir des dimensions stockées (formule de Héron généralisée)
-              // Pour un polygone avec côtés connus, on utilise la formule de Shoelace avec les coordonnées
-              // car la superficie dépend aussi des angles, pas seulement des longueurs
-              const area = calculatePolygonArea(latLngs);
-              setSurfaceArea(area);
+              // Ne recalculer la superficie que si les dimensions des côtés ont vraiment changé
+              // (pas lors d'une simple rotation/translation)
+              if (lastParcelSidesLengthRef.current !== currentSidesKey || stableSurfaceRef.current === 0) {
+                lastParcelSidesLengthRef.current = currentSidesKey;
+                const area = calculatePolygonArea(latLngs);
+                stableSurfaceRef.current = area;
+                stablePerimeterRef.current = roundedPerimeter;
+              }
+              
+              // Utiliser les valeurs stables
+              setSurfaceArea(stableSurfaceRef.current);
+              setPerimeterLength(stablePerimeterRef.current);
               if (onSurfaceChange) {
-                onSurfaceChange(area);
+                onSurfaceChange(stableSurfaceRef.current);
               }
             } else {
+              // Pas de parcelSides valides, calculer normalement
               const area = calculatePolygonArea(latLngs);
               setSurfaceArea(area);
               setPerimeterLength(0);
+              stableSurfaceRef.current = area;
+              stablePerimeterRef.current = 0;
+              lastParcelSidesLengthRef.current = '';
               if (onSurfaceChange) {
                 onSurfaceChange(area);
               }
@@ -959,6 +978,9 @@ export const ParcelMapPreview = ({
           }
           setSurfaceArea(0);
           setPerimeterLength(0);
+          stableSurfaceRef.current = 0;
+          stablePerimeterRef.current = 0;
+          lastParcelSidesLengthRef.current = '';
         }
 
         // Dessiner les formes de construction
