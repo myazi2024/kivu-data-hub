@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { UserSearchSelect } from './users/UserSearchSelect';
 
-type AppRole = 'super_admin' | 'admin' | 'partner' | 'user';
+type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier';
 
 interface UserRole {
   id: string;
@@ -46,6 +46,12 @@ const roleConfig = {
     label: 'Partenaire',
     color: 'bg-gradient-to-r from-green-500 to-emerald-500',
     description: 'Codes de remise et commissions',
+  },
+  expert_immobilier: {
+    icon: Shield,
+    label: 'Expert Immobilier',
+    color: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    description: 'Évaluation des biens immobiliers',
   },
   user: {
     icon: User,
