@@ -1700,54 +1700,27 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {/* Boutons de suppression sur la carte (au-dessus de la barre d'échelle, alignés verticalement) */}
-        {enableDrawingMode && validCoords.length > 0 && (
-          <div className="absolute bottom-10 left-2 z-[1000] flex flex-col gap-1">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={removeLastMarker}
-              className="h-8 w-8 p-0 rounded-xl bg-white/95 hover:bg-destructive/10 hover:text-destructive shadow-md border-border/50"
-              title="Supprimer dernière borne"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setShowClearAllDialog(true)}
-              className="h-8 w-8 p-0 rounded-xl bg-white/95 hover:bg-destructive/10 hover:text-destructive shadow-md border-border/50"
-              title="Supprimer toutes les bornes"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-        
-        
-        {/* Indicateur Nord / Boussole - coin supérieur gauche */}
-        <div className="absolute top-2 left-2 z-[1000] flex flex-col gap-1.5">
+        {/* Indicateur Nord / Boussole + Boutons suppression - coin inférieur gauche */}
+        <div className="absolute bottom-10 left-2 z-[1000] flex flex-col items-center gap-1.5">
           {/* Boussole avec indicateur Nord */}
           <div 
-            className="relative w-12 h-12 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-full shadow-lg border border-border/50 flex items-center justify-center"
+            className="relative w-10 h-10 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-full shadow-lg border border-border/50 flex items-center justify-center"
             style={{ transform: `rotate(${-mapBearing}deg)` }}
           >
             {/* Flèche Nord */}
             <div className="absolute top-0.5 left-1/2 -translate-x-1/2">
-              <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[10px] border-b-red-500" />
+              <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[8px] border-b-red-500" />
             </div>
             {/* Indicateur N */}
-            <span className="absolute top-2.5 text-[8px] font-bold text-red-500">N</span>
+            <span className="absolute top-2 text-[7px] font-bold text-red-500">N</span>
             {/* Indicateur S */}
-            <span className="absolute bottom-1.5 text-[7px] font-medium text-muted-foreground">S</span>
+            <span className="absolute bottom-1 text-[6px] font-medium text-muted-foreground">S</span>
             {/* Indicateur E */}
-            <span className="absolute right-1.5 text-[7px] font-medium text-muted-foreground">E</span>
+            <span className="absolute right-1 text-[6px] font-medium text-muted-foreground">E</span>
             {/* Indicateur O */}
-            <span className="absolute left-1.5 text-[7px] font-medium text-muted-foreground">O</span>
+            <span className="absolute left-1 text-[6px] font-medium text-muted-foreground">O</span>
             {/* Centre */}
-            <div className="w-2 h-2 rounded-full bg-primary/30" />
+            <div className="w-1.5 h-1.5 rounded-full bg-primary/30" />
           </div>
           
           {/* Bouton calibrer orientation */}
@@ -1757,7 +1730,7 @@ export const ParcelMapPreview = ({
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8 w-12 p-0 rounded-xl bg-white/95 hover:bg-blue-50 shadow-md border-border/50"
+                className="h-8 w-10 p-0 rounded-xl bg-white/95 hover:bg-blue-50 shadow-md border-border/50"
                 title="Calibrer l'orientation de la carte"
               >
                 <Compass className="h-4 w-4" />
@@ -1765,7 +1738,7 @@ export const ParcelMapPreview = ({
             </PopoverTrigger>
             <PopoverContent 
               side="right" 
-              align="start" 
+              align="end" 
               className="w-56 p-3 rounded-xl shadow-lg bg-background border"
               sideOffset={5}
             >
@@ -1842,6 +1815,32 @@ export const ParcelMapPreview = ({
               </div>
             </PopoverContent>
           </Popover>
+          
+          {/* Boutons de suppression */}
+          {enableDrawingMode && validCoords.length > 0 && (
+            <>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={removeLastMarker}
+                className="h-8 w-10 p-0 rounded-xl bg-white/95 hover:bg-destructive/10 hover:text-destructive shadow-md border-border/50"
+                title="Supprimer dernière borne"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => setShowClearAllDialog(true)}
+                className="h-8 w-10 p-0 rounded-xl bg-white/95 hover:bg-destructive/10 hover:text-destructive shadow-md border-border/50"
+                title="Supprimer toutes les bornes"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </>
+          )}
         </div>
         
         {/* Boutons de contrôle sur la carte (à droite) */}
