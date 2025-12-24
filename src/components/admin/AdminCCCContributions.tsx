@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, ExternalLink, Play, FileText, Building2, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, ExternalLink, Play, FileText, Building2, MessageSquare, Route, BrickWall } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
@@ -861,11 +861,33 @@ const AdminCCCContributions: React.FC = () => {
                     <div>
                       <Label className="text-xs text-muted-foreground">Dimensions des côtés</Label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1 md:gap-2 mt-1">
-                        {selectedContribution.parcel_sides.map((side: any, idx: number) => (
-                          <div key={idx} className="p-1.5 md:p-2 bg-secondary rounded text-xs md:text-sm">
-                            <p><strong>{side.name}:</strong> {side.length} m</p>
-                          </div>
-                        ))}
+                        {selectedContribution.parcel_sides.map((side: any, idx: number) => {
+                          const isRoad = side.borderType === 'route';
+                          const isWall = side.borderType === 'mur_mitoyen';
+                          return (
+                            <div key={idx} className={`p-1.5 md:p-2 rounded text-xs md:text-sm ${
+                              isRoad ? 'bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800' :
+                              isWall ? 'bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800' :
+                              'bg-secondary'
+                            }`}>
+                              <div className="flex items-center gap-1.5">
+                                {isRoad && <Route className="h-3 w-3 text-green-600" />}
+                                {isWall && <BrickWall className="h-3 w-3 text-amber-600" />}
+                                <strong>{side.name}:</strong> {side.length} m
+                              </div>
+                              {isRoad && side.roadType && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
+                                  Route: {side.roadType} {side.roadName ? `- ${side.roadName}` : ''} {side.roadWidth ? `(${side.roadWidth}m)` : ''}
+                                </p>
+                              )}
+                              {isWall && side.wallMaterial && (
+                                <p className="text-[10px] text-muted-foreground mt-0.5 ml-4">
+                                  Mur: {side.wallMaterial} {side.wallHeight ? `(H: ${side.wallHeight}m)` : ''}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}

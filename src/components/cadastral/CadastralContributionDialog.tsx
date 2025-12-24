@@ -5429,9 +5429,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     {parcelSides.some(s => s.length) && (
                       <div className="pt-2 border-t">
                         <div className="font-medium mb-1">Dimensions de la parcelle:</div>
-                        {parcelSides.filter(s => s.length).map((side, idx) => (
-                          <div key={idx} className="ml-3 text-xs">• {side.name}: {side.length} m</div>
-                        ))}
+                        {parcelSides.filter(s => s.length).map((side, idx) => {
+                          const roadSide = roadSides.find(r => r.sideIndex === idx);
+                          const isRoad = roadSide?.borderType === 'route' && roadSide?.isConfirmed;
+                          const isWall = roadSide?.borderType === 'mur_mitoyen' && roadSide?.isConfirmed;
+                          return (
+                            <div key={idx} className="ml-3 text-xs">
+                              • {side.name}: {side.length} m
+                              {isRoad && <span className="text-green-600 ml-1">(Route: {roadSide?.roadType})</span>}
+                              {isWall && <span className="text-amber-600 ml-1">(Mur: {roadSide?.wallMaterial})</span>}
+                            </div>
+                          );
+                        })}
                       </div>
                     )}
                     {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
