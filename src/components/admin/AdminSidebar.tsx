@@ -89,7 +89,9 @@ const menuItems = [
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
       { icon: MapPin, label: 'Zones Territoriales', value: 'zones', badge: null },
       { icon: Building2, label: 'Permis de Construire', value: 'permits', badge: null },
+      { icon: FileText, label: 'Config Frais Permis', value: 'permit-fees-config', badge: null },
       { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: null },
+      { icon: FileCheck, label: 'Expertises Immobilières', value: 'expertise-requests', badge: null },
     ]
   },
   {
