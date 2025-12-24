@@ -2077,7 +2077,7 @@ export const ParcelMapPreview = ({
 
       {/* Dialogue de confirmation pour supprimer toutes les bornes - placé en dehors du conteneur carte avec z-index élevé */}
       <AlertDialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
-        <AlertDialogContent className="max-w-[360px] rounded-2xl p-4 shadow-2xl z-[99999] bg-background border border-border">
+        <AlertDialogContent className="max-w-[180px] rounded-2xl p-3 shadow-2xl z-[99999] bg-background border border-border">
           <AlertDialogHeader className="space-y-2">
             <div className="flex items-center gap-2">
               <div className="h-9 w-9 rounded-xl bg-destructive/10 flex items-center justify-center">
