@@ -3665,15 +3665,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
           </TabsContent>
 
-          <TabsContent value="obligations" className="space-y-6 mt-6 animate-fade-in">
-            {/* Switch Taxes/Hypothèques redesigné */}
-            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit shadow-inner">
+          <TabsContent value="obligations" className="space-y-3 mt-4 animate-fade-in">
+            {/* Switch Taxes/Hypothèques compact */}
+            <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-xl w-fit shadow-inner mx-auto">
               <Button
                 type="button"
                 variant={obligationType === 'taxes' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setObligationType('taxes')}
-                className="transition-all hover:scale-105 shadow-sm"
+                className="text-sm h-8"
               >
                 Taxes
               </Button>
@@ -3682,261 +3682,206 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 variant={obligationType === 'mortgages' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setObligationType('mortgages')}
-                className="transition-all hover:scale-105 shadow-sm"
+                className="text-sm h-8"
               >
                 Hypothèques
               </Button>
             </div>
 
-            {/* Section Taxes */}
+            {/* Section Taxes - Design moderne compact */}
             {obligationType === 'taxes' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-semibold">Historique des taxes (optionnel)</Label>
+              <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+                <CardContent className="p-3 space-y-3">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <MdAccountBalance className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <Label className="text-sm font-semibold">Historique fiscal</Label>
+                    </div>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                          <Info className="h-4 w-4 text-muted-foreground" />
+                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                          <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-80 text-sm">
-                        <h4 className="font-semibold mb-2">Historique des taxes</h4>
-                        <p className="text-muted-foreground mb-3">
-                          Documentez toutes les taxes foncières payées sur cette parcelle. Un historique fiscal complet démontre la conformité du bien.
-                        </p>
-                        <div className="space-y-2 text-xs text-muted-foreground">
-                          <p><strong>Pourquoi c'est important :</strong></p>
-                          <ul className="space-y-1 ml-4">
-                            <li>• Prouve la conformité fiscale du bien</li>
-                            <li>• Valorise la propriété lors d'une vente</li>
-                            <li>• Évite les contentieux fiscaux</li>
-                            <li>• Facilite les démarches administratives</li>
-                          </ul>
-                          <p className="mt-3"><strong>Comment remplir :</strong></p>
-                          <ul className="space-y-1 ml-4">
-                            <li>• Ajoutez autant de taxes que vous avez payées</li>
-                            <li>• Joignez les reçus de paiement si possible</li>
-                            <li>• Indiquez le montant exact et l'année fiscale</li>
-                            <li>• Laissez vide si vous n'avez pas d'informations</li>
-                          </ul>
+                      <PopoverContent className="w-72 rounded-xl" align="end">
+                        <div className="space-y-2 text-xs">
+                          <h4 className="font-semibold text-sm">Taxes (optionnel)</h4>
+                          <p className="text-muted-foreground">
+                            Documentez les taxes payées pour prouver la conformité fiscale.
+                          </p>
+                          <p className="text-muted-foreground">
+                            <strong>💡</strong> Joignez les reçus si possible.
+                          </p>
                         </div>
                       </PopoverContent>
                     </Popover>
                   </div>
-                </div>
 
-                <div className="space-y-6">
                   {taxRecords.map((tax, index) => (
-                      <div key={index} className={`border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in ${index === 0 && highlightIncompleteTax ? 'ring-2 ring-amber-500 animate-pulse' : ''}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Taxe #{index + 1}</h4>
+                    <div key={index} className={`border-2 rounded-2xl p-3 space-y-2 bg-card shadow-sm transition-all duration-300 ${
+                      highlightIncompleteTax && index === 0 
+                        ? 'ring-2 ring-amber-500 animate-pulse' 
+                        : 'border-border'
+                    }`}>
+                      {/* Header de la taxe */}
+                      <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                        <span className="text-sm font-semibold text-foreground">Taxe #{index + 1}</span>
+                        {taxRecords.length > 1 && index > 0 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              if (index === 0) {
-                                toast({
-                                  title: "Suppression impossible",
-                                  description: "Le premier bloc de taxe ne peut pas être supprimé. Vous pouvez le laisser vide si vous n'avez pas d'informations.",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-                              removeTaxRecord(index);
-                            }}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+                            onClick={() => removeTaxRecord(index)}
+                            className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
+                        )}
+                      </div>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label>Type de taxe</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                                  <Info className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80 text-sm">
-                                <h4 className="font-semibold mb-2">Type de taxe foncière</h4>
-                                <p className="text-muted-foreground">
-                                  Les taxes foncières sont des impôts périodiques dus par les propriétaires. Le paiement régulier démontre la conformité fiscale du bien.
-                                </p>
-                                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                                  <li>• <strong>Impôt foncier annuel</strong>: Taxe principale</li>
-                                  <li>• <strong>Taxe de superficie</strong>: Basée sur la taille</li>
-                                  <li>• <strong>Revenus locatifs</strong>: Si location</li>
-                                </ul>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Type</Label>
                           <Select
                             value={tax.taxType}
                             onValueChange={(value) => updateTaxRecord(index, 'taxType', value)}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner le type de taxe" />
+                            <SelectTrigger className="h-10 text-sm rounded-xl">
+                              <SelectValue placeholder="Type" />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Impôt foncier annuel">Impôt foncier annuel</SelectItem>
-                              <SelectItem value="Impôt sur les revenus locatifs">Impôt sur les revenus locatifs</SelectItem>
-                              <SelectItem value="Taxe de superficie">Taxe de superficie</SelectItem>
-                              <SelectItem value="Taxe de plus-value immobilière">Taxe de plus-value immobilière</SelectItem>
-                              <SelectItem value="Taxe d'habitation">Taxe d'habitation</SelectItem>
-                              <SelectItem value="Autre taxe">Autre taxe</SelectItem>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="Impôt foncier annuel">Impôt foncier</SelectItem>
+                              <SelectItem value="Impôt sur les revenus locatifs">Revenus locatifs</SelectItem>
+                              <SelectItem value="Taxe de superficie">Superficie</SelectItem>
+                              <SelectItem value="Taxe de plus-value immobilière">Plus-value</SelectItem>
+                              <SelectItem value="Taxe d'habitation">Habitation</SelectItem>
+                              <SelectItem value="Autre taxe">Autre</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
-
-                        <div className="space-y-2">
-                          <Label>Année fiscale</Label>
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Année</Label>
                           <Select
                             value={tax.taxYear}
                             onValueChange={(value) => updateTaxRecord(index, 'taxYear', value)}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner l'année" />
+                            <SelectTrigger className="h-10 text-sm rounded-xl">
+                              <SelectValue placeholder="Année" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                               {Array.from({ length: 10 }, (_, i) => {
                                 const year = new Date().getFullYear() - i;
                                 return <SelectItem key={year} value={year.toString()}>{year}</SelectItem>;
                               })}
                             </SelectContent>
                           </Select>
-                          <p className="text-xs text-muted-foreground">Années fiscales valides uniquement</p>
                         </div>
+                      </div>
 
-                        <div className="space-y-2">
-                          <Label>Montant payé (USD)</Label>
-                          <InputWithPopover
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Montant (USD)</Label>
+                          <Input
                             type="number"
-                            placeholder="ex: 150"
+                            placeholder="150"
                             value={tax.taxAmount}
                             onChange={(e) => updateTaxRecord(index, 'taxAmount', e.target.value)}
-                            helpTitle="Montant de la taxe"
-                            helpText="Indiquez le montant total payé pour cette taxe en dollars américains. Ce montant devrait correspondre à celui indiqué sur votre reçu de paiement officiel."
+                            className="h-10 text-sm rounded-xl"
                           />
                         </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label>Statut de paiement</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                                  <Info className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80 text-sm">
-                                <h4 className="font-semibold mb-2">Statut de paiement</h4>
-                                <p className="text-muted-foreground">
-                                  Indique si la taxe a été acquittée. Un historique de paiement régulier améliore la valeur et la crédibilité du bien.
-                                </p>
-                                <p className="mt-2 text-xs text-muted-foreground">
-                                  Conservez toujours vos reçus de paiement comme preuve de conformité fiscale.
-                                </p>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Statut</Label>
                           <Select
                             value={tax.paymentStatus}
                             onValueChange={(value) => updateTaxRecord(index, 'paymentStatus', value)}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner le statut" />
+                            <SelectTrigger className="h-10 text-sm rounded-xl">
+                              <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                               <SelectItem value="Payé">Payé</SelectItem>
-                              <SelectItem value="Payé partiellement">Payé partiellement</SelectItem>
+                              <SelectItem value="Payé partiellement">Partiel</SelectItem>
                               <SelectItem value="En attente">En attente</SelectItem>
                               <SelectItem value="En retard">En retard</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
 
-                        <div className="space-y-2">
-                          <Label>Date de paiement</Label>
-                          <InputWithPopover
-                            type="date"
-                            max={new Date().toISOString().split('T')[0]}
-                            value={tax.paymentDate}
-                            onChange={(e) => updateTaxRecord(index, 'paymentDate', e.target.value)}
-                            helpTitle="Date de paiement"
-                            helpText="Indiquez la date exacte à laquelle vous avez effectué le paiement de cette taxe. Cette date doit correspondre à celle figurant sur votre reçu officiel."
-                          />
-                          <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Date paiement</Label>
+                        <Input
+                          type="date"
+                          max={new Date().toISOString().split('T')[0]}
+                          value={tax.paymentDate}
+                          onChange={(e) => updateTaxRecord(index, 'paymentDate', e.target.value)}
+                          className="h-10 text-sm rounded-xl"
+                        />
+                      </div>
 
-                        {/* Pièce jointe pour la taxe */}
-                        <div className="space-y-2 pt-2 border-t">
-                          <Label>Pièce justificative (optionnel)</Label>
-                          {!tax.receiptFile ? (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="file"
-                                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                                onChange={(e) => handleTaxFileChange(index, e)}
-                                className="cursor-pointer"
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                              <MdInsertDriveFile className="h-4 w-4 text-primary" />
-                              <span className="text-sm flex-1 truncate">{tax.receiptFile.name}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeTaxFile(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            Reçu de paiement (JPG, PNG, WEBP ou PDF - Max 5 MB)
-                          </p>
-                        </div>
+                      {/* Pièce jointe compacte */}
+                      <div className="space-y-1 pt-2 border-t border-border/50">
+                        <Label className="text-sm font-medium">Reçu (optionnel)</Label>
+                        {!tax.receiptFile ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById(`taxFile-${index}`)?.click()}
+                            className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Ajouter reçu
+                          </Button>
+                        ) : (
+                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
+                            <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="text-sm flex-1 truncate">{tax.receiptFile.name}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeTaxFile(index)}
+                              className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                        <Input
+                          id={`taxFile-${index}`}
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                          onChange={(e) => handleTaxFileChange(index, e)}
+                          className="hidden"
+                        />
+                      </div>
                     </div>
                   ))}
-                </div>
-                
-                {/* Bouton Ajouter déplacé en dessous des blocs */}
-                <div className="space-y-2">
-                  {/* Notification d'avertissement */}
+
+                  {/* Avertissement compact */}
                   {showTaxWarning && (
-                    <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
-                      <div className="flex items-start gap-2">
-                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                            Complétez d'abord la première taxe
-                          </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                            Veuillez renseigner tous les champs obligatoires (type, année, montant, statut et date de paiement) avant d'ajouter une nouvelle taxe.
-                          </p>
-                        </div>
-                      </div>
+                    <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-2">
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        ⚠️ Complétez la taxe avant d'en ajouter une nouvelle.
+                      </p>
                     </div>
                   )}
 
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={addTaxRecord}
-                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                    className="w-full h-10 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
                   >
                     <Plus className="h-4 w-4" />
                     Ajouter une taxe
                   </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
 
             {/* Section Hypothèques */}
