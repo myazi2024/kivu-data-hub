@@ -10,6 +10,7 @@ export interface CadastralContributionData {
   propertyTitleType?: string;
   leaseType?: 'initial' | 'renewal';
   titleReferenceNumber?: string;
+  titleIssueDate?: string; // Date de délivrance du titre foncier
   currentOwners?: Array<{
     lastName: string;  // Nom
     middleName?: string;  // Post-nom

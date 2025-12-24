@@ -2445,6 +2445,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   {PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.description}
                 </p>
 
+                {/* Date de délivrance du titre foncier */}
+                <div className="space-y-1.5 mt-3">
+                  <Label htmlFor="titleIssueDate" className="text-sm">
+                    Date de délivrance du titre foncier
+                  </Label>
+                  <Input
+                    id="titleIssueDate"
+                    type="date"
+                    max={new Date().toISOString().split('T')[0]}
+                    value={formData.titleIssueDate || ''}
+                    onChange={(e) => handleInputChange('titleIssueDate', e.target.value)}
+                    className="h-9 text-sm"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Cette date permet de déterminer automatiquement le taux des frais de mutation (Circulaire n° 005/CAB/MIN/AFF.FONC/2013).
+                  </p>
+                </div>
+
                 {/* Title document attachment */}
                 <div className="space-y-2 mt-3 sm:mt-4">
                   <div className="flex items-center justify-between">
