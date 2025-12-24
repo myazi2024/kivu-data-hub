@@ -8,7 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
-import { RoadBorderingSidesPanel, RoadSideInfo } from './RoadBorderingSidesPanel';
+import { RoadSideInfo } from './RoadBorderingSidesPanel';
+import { ParcelSidesDimensionsPanel } from './ParcelSidesDimensionsPanel';
 import { useMapConfig, MapConfig } from '@/hooks/useMapConfig';
 
 interface Coordinate {
@@ -1842,26 +1843,6 @@ export const ParcelMapPreview = ({
         </Card>
       )}
 
-      {/* Dimensions calculées */}
-      {validCoords.length >= 3 && parcelSides.length > 0 && (
-        <Card className="p-3 bg-muted/40 rounded-2xl shadow-sm border-border/50">
-          <div className="space-y-2">
-            <Label className="text-sm font-semibold flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-primary"></span>
-              Dimensions calculées
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              {parcelSides.map((side, index) => (
-                <div key={index} className="flex items-center justify-between bg-background/70 p-2 rounded-xl text-sm border border-border/30">
-                  <span className="text-muted-foreground text-xs">{side.name}</span>
-                  <span className="font-mono font-semibold text-sm">{side.length} m</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Card>
-      )}
-      
       {/* Info */}
       <Card className="p-2.5 rounded-xl bg-muted/30 border-border/40">
         <div className="flex items-start gap-2">
@@ -1877,11 +1858,12 @@ export const ParcelMapPreview = ({
         </div>
       </Card>
 
-      {/* Panel côtés bordant route */}
-      {validCoords.length >= 3 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
-        <RoadBorderingSidesPanel
-          sides={roadSides}
-          onSideUpdate={handleRoadSideUpdate}
+      {/* Panel fusionné Dimensions & Routes */}
+      {validCoords.length >= 3 && parcelSides.length > 0 && onRoadSidesChange && mapConfig.enableRoadBorderingFeature !== false && (
+        <ParcelSidesDimensionsPanel
+          parcelSides={parcelSides}
+          roadSides={roadSides}
+          onRoadSideUpdate={handleRoadSideUpdate}
           roadTypes={mapConfig.roadTypes}
         />
       )}
