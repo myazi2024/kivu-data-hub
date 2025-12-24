@@ -427,57 +427,95 @@ export const ParcelMapPreview = ({
       mapInstanceRef.current = map;
       setIsMapReady(true);
       
-      // Géolocalisation automatique à l'ouverture
-      if ('geolocation' in navigator) {
+      // Géolocalisation automatique à l'ouverture - demande immédiate
+      const requestGeolocation = () => {
+        if (!('geolocation' in navigator)) {
+          console.warn('Géolocalisation non supportée par ce navigateur');
+          return;
+        }
+        
+        // Demander la position avec haute précision
         navigator.geolocation.getCurrentPosition(
           (position) => {
             const { latitude, longitude, accuracy } = position.coords;
-            map.setView([latitude, longitude], mapConfig.defaultZoom || 17);
+            
+            // Centrer la carte sur la position de l'utilisateur
+            map.setView([latitude, longitude], 18);
             
             // Nettoyer les anciens marqueurs de position
             userLocationLayersRef.current.forEach(layer => {
-              if (map.hasLayer(layer)) map.removeLayer(layer);
+              try {
+                if (map.hasLayer(layer)) map.removeLayer(layer);
+              } catch (e) {}
             });
             userLocationLayersRef.current = [];
             
             // Cercle de précision (zone floue)
             const accuracyCircle = L.circle([latitude, longitude], {
-              radius: Math.min(accuracy, 100),
+              radius: Math.min(accuracy, 50),
               color: '#3b82f6',
               fillColor: '#3b82f6',
               fillOpacity: 0.15,
-              weight: 1,
-              dashArray: '4,4'
+              weight: 2,
+              dashArray: '5,5'
             }).addTo(map);
             userLocationLayersRef.current.push(accuracyCircle);
             
+            // Cercle pulsant externe pour attirer l'attention
+            const pulseCircle = L.circleMarker([latitude, longitude], {
+              radius: 20,
+              color: '#3b82f6',
+              fillColor: '#3b82f6',
+              fillOpacity: 0.3,
+              weight: 2
+            }).addTo(map);
+            userLocationLayersRef.current.push(pulseCircle);
+            
             // Marqueur central de position utilisateur (point bleu)
             const userLocationMarker = L.circleMarker([latitude, longitude], {
-              radius: 10,
+              radius: 12,
               color: '#ffffff',
               fillColor: '#3b82f6',
               fillOpacity: 1,
               weight: 3
             }).addTo(map);
-            userLocationMarker.bindPopup('<strong>📍 Votre position</strong><br/>Précision: ~' + Math.round(accuracy) + 'm');
+            userLocationMarker.bindPopup(
+              '<div style="text-align:center;"><strong>📍 Votre position</strong><br/><span style="color:#666;">Précision: ~' + Math.round(accuracy) + 'm</span></div>'
+            ).openPopup();
             userLocationLayersRef.current.push(userLocationMarker);
             
             // Point central blanc pour effet "bullseye"
             const innerDot = L.circleMarker([latitude, longitude], {
-              radius: 4,
+              radius: 5,
               color: '#3b82f6',
               fillColor: '#ffffff',
               fillOpacity: 1,
               weight: 0
             }).addTo(map);
             userLocationLayersRef.current.push(innerDot);
+            
+            console.log('Position utilisateur chargée:', { latitude, longitude, accuracy });
           },
           (error) => {
-            console.log('Géolocalisation non disponible:', error.message);
+            console.warn('Erreur géolocalisation:', error.code, error.message);
+            // Afficher un message à l'utilisateur sur la carte
+            const errorMessages: Record<number, string> = {
+              1: 'Permission refusée. Veuillez autoriser la géolocalisation.',
+              2: 'Position non disponible.',
+              3: 'Délai de réponse dépassé.'
+            };
+            console.log('Géolocalisation:', errorMessages[error.code] || error.message);
           },
-          { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+          { 
+            enableHighAccuracy: true, 
+            timeout: 10000, 
+            maximumAge: 0 // Toujours demander une position fraîche
+          }
         );
-      }
+      };
+      
+      // Déclencher immédiatement la géolocalisation
+      requestGeolocation();
     };
 
     initMap();
