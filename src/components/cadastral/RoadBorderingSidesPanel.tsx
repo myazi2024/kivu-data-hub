@@ -18,6 +18,9 @@ export interface RoadSideInfo {
   orientation?: string;
   length?: number;
   isConfirmed?: boolean;
+  borderType?: 'route' | 'mur_mitoyen';
+  wallHeight?: number;
+  wallMaterial?: string;
 }
 
 interface RoadBorderingSidesPanelProps {
