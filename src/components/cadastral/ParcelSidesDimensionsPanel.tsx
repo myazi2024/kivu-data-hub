@@ -172,23 +172,24 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                         <span className="text-[9px] font-bold text-muted-foreground">{index + 1}</span>
                       </div>
                     )}
-                    <span className="font-medium text-sm">{side.name}</span>
+                    <span className="font-semibold text-sm">{side.name}</span>
                     {hasRoad && roadSide?.roadType && (
-                      <Badge variant="outline" className="text-[10px] h-5 px-1.5 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0">
+                      <Badge variant="outline" className="text-xs h-5 px-1.5 rounded-md bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-0">
                         {roadTypes.find(t => t.value === roadSide.roadType)?.label || roadSide.roadType}
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-1">
-                    {side.orientation && (
+                  <div className="flex items-center gap-1.5">
+                    {/* Orientation depuis roadSide qui contient les données calculées */}
+                    {roadSide?.orientation && (
                       <Badge 
                         variant="outline" 
-                        className={`text-[10px] h-5 px-1.5 rounded-md ${getOrientationColor(side.orientation)} text-white border-0`}
+                        className={`text-xs h-5 px-2 rounded-md ${getOrientationColor(roadSide.orientation)} text-white border-0 font-medium`}
                       >
-                        {side.orientation}
+                        {roadSide.orientation}
                       </Badge>
                     )}
-                    <Badge variant="secondary" className="font-mono text-[10px] h-5 px-1.5 rounded-md font-semibold">
+                    <Badge variant="secondary" className="font-mono text-sm h-6 px-2 rounded-md font-bold">
                       {side.length} m
                     </Badge>
                     {hasRoad && (
