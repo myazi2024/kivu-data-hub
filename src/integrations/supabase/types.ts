@@ -2067,6 +2067,158 @@ export type Database = {
         }
         Relationships: []
       }
+      real_estate_expertise_requests: {
+        Row: {
+          additional_notes: string | null
+          assigned_at: string | null
+          assigned_to: string | null
+          certificate_expiry_date: string | null
+          certificate_issue_date: string | null
+          certificate_url: string | null
+          construction_quality: string | null
+          construction_year: number | null
+          created_at: string
+          distance_to_hospital_km: number | null
+          distance_to_main_road_m: number | null
+          distance_to_market_km: number | null
+          distance_to_school_km: number | null
+          erosion_risk_zone: boolean | null
+          expertise_date: string | null
+          expertise_report_url: string | null
+          flood_risk_zone: boolean | null
+          garden_area_sqm: number | null
+          has_electricity: boolean | null
+          has_garden: boolean | null
+          has_internet: boolean | null
+          has_parking: boolean | null
+          has_security_system: boolean | null
+          has_sewage_system: boolean | null
+          has_water_supply: boolean | null
+          id: string
+          market_value_usd: number | null
+          number_of_floors: number | null
+          parcel_id: string | null
+          parcel_number: string
+          parking_spaces: number | null
+          processing_notes: string | null
+          property_condition: string | null
+          property_description: string | null
+          reference_number: string
+          rejection_reason: string | null
+          requester_email: string | null
+          requester_name: string
+          requester_phone: string | null
+          road_access_type: string | null
+          status: string
+          supporting_documents: Json | null
+          total_built_area_sqm: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          additional_notes?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          certificate_expiry_date?: string | null
+          certificate_issue_date?: string | null
+          certificate_url?: string | null
+          construction_quality?: string | null
+          construction_year?: number | null
+          created_at?: string
+          distance_to_hospital_km?: number | null
+          distance_to_main_road_m?: number | null
+          distance_to_market_km?: number | null
+          distance_to_school_km?: number | null
+          erosion_risk_zone?: boolean | null
+          expertise_date?: string | null
+          expertise_report_url?: string | null
+          flood_risk_zone?: boolean | null
+          garden_area_sqm?: number | null
+          has_electricity?: boolean | null
+          has_garden?: boolean | null
+          has_internet?: boolean | null
+          has_parking?: boolean | null
+          has_security_system?: boolean | null
+          has_sewage_system?: boolean | null
+          has_water_supply?: boolean | null
+          id?: string
+          market_value_usd?: number | null
+          number_of_floors?: number | null
+          parcel_id?: string | null
+          parcel_number: string
+          parking_spaces?: number | null
+          processing_notes?: string | null
+          property_condition?: string | null
+          property_description?: string | null
+          reference_number: string
+          rejection_reason?: string | null
+          requester_email?: string | null
+          requester_name: string
+          requester_phone?: string | null
+          road_access_type?: string | null
+          status?: string
+          supporting_documents?: Json | null
+          total_built_area_sqm?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          additional_notes?: string | null
+          assigned_at?: string | null
+          assigned_to?: string | null
+          certificate_expiry_date?: string | null
+          certificate_issue_date?: string | null
+          certificate_url?: string | null
+          construction_quality?: string | null
+          construction_year?: number | null
+          created_at?: string
+          distance_to_hospital_km?: number | null
+          distance_to_main_road_m?: number | null
+          distance_to_market_km?: number | null
+          distance_to_school_km?: number | null
+          erosion_risk_zone?: boolean | null
+          expertise_date?: string | null
+          expertise_report_url?: string | null
+          flood_risk_zone?: boolean | null
+          garden_area_sqm?: number | null
+          has_electricity?: boolean | null
+          has_garden?: boolean | null
+          has_internet?: boolean | null
+          has_parking?: boolean | null
+          has_security_system?: boolean | null
+          has_sewage_system?: boolean | null
+          has_water_supply?: boolean | null
+          id?: string
+          market_value_usd?: number | null
+          number_of_floors?: number | null
+          parcel_id?: string | null
+          parcel_number?: string
+          parking_spaces?: number | null
+          processing_notes?: string | null
+          property_condition?: string | null
+          property_description?: string | null
+          reference_number?: string
+          rejection_reason?: string | null
+          requester_email?: string | null
+          requester_name?: string
+          requester_phone?: string | null
+          road_access_type?: string | null
+          status?: string
+          supporting_documents?: Json | null
+          total_built_area_sqm?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "real_estate_expertise_requests_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reseller_sales: {
         Row: {
           commission_earned_usd: number
@@ -2677,6 +2829,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_expert_or_admin: { Args: { _user_id: string }; Returns: boolean }
       is_permit_valid: {
         Args: { issue_date: string; validity_months: number }
         Returns: boolean
@@ -2727,7 +2880,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "admin" | "partner" | "user"
+      app_role:
+        | "super_admin"
+        | "admin"
+        | "partner"
+        | "user"
+        | "expert_immobilier"
       user_role: "admin" | "partner" | "user"
     }
     CompositeTypes: {
@@ -2856,7 +3014,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "admin", "partner", "user"],
+      app_role: [
+        "super_admin",
+        "admin",
+        "partner",
+        "user",
+        "expert_immobilier",
+      ],
       user_role: ["admin", "partner", "user"],
     },
   },
