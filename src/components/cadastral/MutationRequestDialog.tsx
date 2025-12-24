@@ -747,15 +747,31 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         {isTransferMutation && (
           <Card className="border-2 border-amber-200 dark:border-amber-800 rounded-xl bg-amber-50/50 dark:bg-amber-950/20">
             <CardContent className="p-3 space-y-3">
-              <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                <Award className="h-4 w-4" />
-                Certificat d'expertise immobilière
-              </h4>
-              
-              <p className="text-xs text-muted-foreground">
-                Un certificat d'expertise immobilière est requis pour les mutations. 
-                Ce certificat est valable <strong>6 mois</strong> après sa date de délivrance.
-              </p>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                  <Award className="h-4 w-4" />
+                  Certificat d'expertise immobilière
+                </h4>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-5 w-5 text-amber-600 hover:text-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50">
+                      <HelpCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 bg-background border shadow-lg" align="start" sideOffset={5}>
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                        <Award className="h-4 w-4" />
+                        Information importante
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Un certificat d'expertise immobilière est requis pour les mutations. 
+                        Ce certificat est valable <strong>6 mois</strong> après sa date de délivrance.
+                      </p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Avez-vous déjà un certificat d'expertise immobilière ?</Label>
