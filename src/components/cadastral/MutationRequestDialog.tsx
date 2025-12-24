@@ -105,6 +105,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [expertiseCertificateDate, setExpertiseCertificateDate] = useState('');
   const [marketValueUsd, setMarketValueUsd] = useState('');
   const [showExpertiseDialog, setShowExpertiseDialog] = useState(false);
+  const [titleAge, setTitleAge] = useState<'less_than_10' | '10_or_more' | null>(null);
   const expertiseCertificateInputRef = useRef<HTMLInputElement>(null);
   
   // Payment state
@@ -139,6 +140,33 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   const certificateValidity = checkCertificateValidity();
 
+  // Calcul des frais de mutation basés sur la valeur vénale
+  // Circulaire n° 005/CAB/MIN/AFF.FONC/2013 et n°0076/2023
+  const calculateMutationFees = () => {
+    const value = parseFloat(marketValueUsd) || 0;
+    const BANK_FEE_PERCENTAGE = 0.005; // 0.5% frais bancaires estimés
+    
+    // Frais applicables uniquement si valeur >= 10000 USD
+    if (value < 10000) {
+      return { mutationFee: 0, bankFee: 0, total: 0, applicable: false, percentage: 0 };
+    }
+    
+    // 3% si titre < 10 ans, 1.5% si titre >= 10 ans
+    const percentage = titleAge === '10_or_more' ? 0.015 : 0.03;
+    const mutationFee = value * percentage;
+    const bankFee = titleAge === '10_or_more' ? 0 : value * BANK_FEE_PERCENTAGE;
+    
+    return {
+      mutationFee: Math.round(mutationFee * 100) / 100,
+      bankFee: Math.round(bankFee * 100) / 100,
+      total: Math.round((mutationFee + bankFee) * 100) / 100,
+      applicable: true,
+      percentage: percentage * 100
+    };
+  };
+
+  const mutationFeesCalculation = calculateMutationFees();
+
   // Initialize form with mandatory fees
   useEffect(() => {
     const mandatoryFeeIds = fees.filter(f => f.is_mandatory).map(f => f.id);
@@ -159,7 +187,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   };
 
   const getTotalAmount = () => {
-    return getSelectedFeesDetails().reduce((sum, fee) => sum + fee.amount_usd, 0);
+    const baseFees = getSelectedFeesDetails().reduce((sum, fee) => sum + fee.amount_usd, 0);
+    // Ajouter les frais de mutation calculés si applicables
+    return baseFees + (mutationFeesCalculation.applicable ? mutationFeesCalculation.total : 0);
   };
 
   // Gestion du fichier certificat d'expertise
@@ -344,6 +374,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setExpertiseCertificateFile(null);
     setExpertiseCertificateDate('');
     setMarketValueUsd('');
+    setTitleAge(null);
     onOpenChange(false);
   };
 
@@ -636,22 +667,97 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
               {/* Valeur vénale - affiché si certificat présent ou "oui" sélectionné */}
               {(hasExpertiseCertificate === 'yes' && expertiseCertificateFile && expertiseCertificateDate && !certificateValidity.isExpired) && (
-                <div className="space-y-1.5 pt-2 border-t border-amber-200 dark:border-amber-800">
-                  <Label className="text-sm font-medium flex items-center gap-1.5">
-                    <DollarSign className="h-3.5 w-3.5" />
-                    Valeur vénale du bien (USD) *
-                  </Label>
-                  <p className="text-xs text-muted-foreground">
-                    Cette valeur doit correspondre à celle indiquée dans le certificat d'expertise.
-                  </p>
-                  <Input
-                    type="number"
-                    value={marketValueUsd}
-                    onChange={(e) => setMarketValueUsd(e.target.value)}
-                    placeholder="Ex: 50000"
-                    className="h-11 text-sm rounded-xl border-2"
-                    min="0"
-                  />
+                <div className="space-y-3 pt-2 border-t border-amber-200 dark:border-amber-800">
+                  {/* Valeur vénale */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium flex items-center gap-1.5">
+                      <DollarSign className="h-3.5 w-3.5" />
+                      Valeur vénale du bien (USD) *
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Cette valeur doit correspondre à celle indiquée dans le certificat d'expertise.
+                    </p>
+                    <Input
+                      type="number"
+                      value={marketValueUsd}
+                      onChange={(e) => setMarketValueUsd(e.target.value)}
+                      placeholder="Ex: 50000"
+                      className="h-11 text-sm rounded-xl border-2"
+                      min="0"
+                    />
+                  </div>
+
+                  {/* Ancienneté du titre foncier */}
+                  {parseFloat(marketValueUsd) >= 10000 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">Ancienneté du titre foncier *</Label>
+                      <p className="text-xs text-muted-foreground">
+                        Le taux des frais de mutation dépend de l'ancienneté du titre (Circulaire n° 005/CAB/MIN/AFF.FONC/2013).
+                      </p>
+                      <RadioGroup 
+                        value={titleAge || ''} 
+                        onValueChange={(value) => setTitleAge(value as 'less_than_10' | '10_or_more')}
+                        className="flex flex-col gap-2"
+                      >
+                        <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50">
+                          <RadioGroupItem value="less_than_10" id="title-less-10" />
+                          <Label htmlFor="title-less-10" className="text-sm cursor-pointer flex-1">
+                            Moins de 10 ans
+                            <span className="block text-xs text-muted-foreground">Taux: 3% + frais bancaires</span>
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50">
+                          <RadioGroupItem value="10_or_more" id="title-10-more" />
+                          <Label htmlFor="title-10-more" className="text-sm cursor-pointer flex-1">
+                            10 ans ou plus
+                            <span className="block text-xs text-muted-foreground">Taux: 1.5% (sans frais bancaires)</span>
+                          </Label>
+                        </div>
+                      </RadioGroup>
+
+                      {/* Affichage des frais calculés */}
+                      {titleAge && mutationFeesCalculation.applicable && (
+                        <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 rounded-lg mt-2">
+                          <DollarSign className="h-4 w-4 text-green-600" />
+                          <AlertDescription className="text-xs text-green-700 dark:text-green-400">
+                            <strong>Frais de mutation calculés:</strong>
+                            <div className="mt-1 space-y-0.5">
+                              <div className="flex justify-between">
+                                <span>Frais de mutation ({mutationFeesCalculation.percentage}%)</span>
+                                <span className="font-mono">${mutationFeesCalculation.mutationFee}</span>
+                              </div>
+                              {mutationFeesCalculation.bankFee > 0 && (
+                                <div className="flex justify-between">
+                                  <span>Frais bancaires (0.5%)</span>
+                                  <span className="font-mono">${mutationFeesCalculation.bankFee}</span>
+                                </div>
+                              )}
+                              <div className="flex justify-between font-bold pt-1 border-t border-green-300 dark:border-green-700">
+                                <span>Total frais de mutation</span>
+                                <span className="font-mono">${mutationFeesCalculation.total}</span>
+                              </div>
+                            </div>
+                            <p className="mt-2 text-[10px] text-green-600 dark:text-green-500">
+                              Réf: n°0076 CAB/MIN.AFF.FONC/ASM/TMM/2023 et 010/CAB/MIN.FINANCES/2023
+                            </p>
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Message si valeur < 10000 USD */}
+                  {parseFloat(marketValueUsd) > 0 && parseFloat(marketValueUsd) < 10000 && (
+                    <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-lg">
+                      <AlertCircle className="h-4 w-4 text-blue-600" />
+                      <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
+                        Les frais de mutation ne s'appliquent qu'aux biens d'une valeur vénale ≥ 10,000 USD.
+                        <p className="mt-1 text-[10px]">
+                          Réf: n°0076 CAB/MIN.AFF.FONC/ASM/TMM/2023 et 010/CAB/MIN.FINANCES/2023 du 08 Mai 2023
+                        </p>
+                      </AlertDescription>
+                    </Alert>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -716,7 +822,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         {/* Frais */}
         <Card className="border rounded-xl">
           <CardContent className="p-3 space-y-3">
-            <h4 className="text-sm font-semibold">Frais de mutation</h4>
+            <h4 className="text-sm font-semibold">Frais administratifs</h4>
             
             <div className="space-y-2">
               {fees.map((fee) => (
@@ -752,6 +858,34 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 </div>
               ))}
             </div>
+
+            {/* Frais de mutation calculés */}
+            {mutationFeesCalculation.applicable && titleAge && (
+              <div className="space-y-2 pt-2 border-t">
+                <h5 className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                  Frais de mutation (basés sur la valeur vénale)
+                </h5>
+                <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm">Frais de mutation ({mutationFeesCalculation.percentage}%)</span>
+                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${mutationFeesCalculation.mutationFee}</span>
+                  </div>
+                  {mutationFeesCalculation.bankFee > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Frais bancaires (0.5%)</span>
+                      <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${mutationFeesCalculation.bankFee}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-1 border-t border-amber-200 dark:border-amber-700">
+                    <span className="text-sm font-semibold">Sous-total frais de mutation</span>
+                    <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${mutationFeesCalculation.total}</span>
+                  </div>
+                </div>
+                <p className="text-[10px] text-muted-foreground">
+                  Circulaire n° 005/CAB/MIN/AFF.FONC/2013 • n°0076/2023 et 010/CAB/MIN.FINANCES/2023
+                </p>
+              </div>
+            )}
 
             <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
               <span className="font-semibold text-sm">Total à payer</span>
@@ -867,13 +1001,32 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             {/* Frais */}
             <Separator />
             <div className="space-y-2">
-              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Frais sélectionnés</span>
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Frais administratifs</span>
               {getSelectedFeesDetails().map(fee => (
                 <div key={fee.id} className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
                   <span className="text-sm font-medium">${fee.amount_usd}</span>
                 </div>
               ))}
+              
+              {/* Frais de mutation si applicables */}
+              {mutationFeesCalculation.applicable && titleAge && (
+                <>
+                  <Separator className="my-1" />
+                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Frais de mutation</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Frais ({mutationFeesCalculation.percentage}% de ${marketValueUsd})</span>
+                    <span className="text-sm font-medium">${mutationFeesCalculation.mutationFee}</span>
+                  </div>
+                  {mutationFeesCalculation.bankFee > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Frais bancaires (0.5%)</span>
+                      <span className="text-sm font-medium">${mutationFeesCalculation.bankFee}</span>
+                    </div>
+                  )}
+                </>
+              )}
+              
               <div className="flex items-center justify-between pt-2 border-t-2">
                 <span className="text-sm font-bold">Total</span>
                 <span className="text-lg font-bold text-primary">${getTotalAmount()}</span>
