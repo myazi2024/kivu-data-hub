@@ -3473,210 +3473,97 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
           </TabsContent>
 
-          <TabsContent value="history" className="space-y-6 mt-6 animate-fade-in">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-semibold">Historique de propriété (optionnel)</Label>
+          <TabsContent value="history" className="space-y-3 mt-4 animate-fade-in">
+            {/* Historique des anciens propriétaires - Design moderne compact */}
+            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+              <CardContent className="p-3 space-y-3">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <MdEventNote className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <Label className="text-sm font-semibold">Anciens propriétaires</Label>
+                  </div>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                        <Info className="h-4 w-4 text-muted-foreground" />
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80 text-sm">
-                      <h4 className="font-semibold mb-2">Historique de propriété</h4>
-                      <p className="text-muted-foreground mb-3">
-                        Cette section vous permet de documenter tous les anciens propriétaires de la parcelle dont vous avez connaissance.
-                      </p>
-                      <div className="space-y-2 text-xs text-muted-foreground">
-                        <p><strong>Pourquoi c'est important :</strong></p>
-                        <ul className="space-y-1 ml-4">
-                          <li>• Établit la chaîne de propriété complète</li>
-                          <li>• Facilite la vérification des droits de propriété</li>
-                          <li>• Aide à résoudre d'éventuels conflits</li>
-                          <li>• Enrichit les données cadastrales</li>
-                        </ul>
-                        <p className="mt-3"><strong>Logique chronologique :</strong></p>
-                        <ul className="space-y-1 ml-4">
-                          <li>• Le premier ancien propriétaire doit avoir une date de fin correspondant à la date à laquelle le propriétaire actuel a acquis le bien (renseignée dans l'onglet "Informations Générales")</li>
-                          <li>• Les propriétaires suivants doivent être ordonnés chronologiquement du plus récent au plus ancien</li>
-                          <li>• Les dates ne doivent pas se chevaucher</li>
-                        </ul>
-                        <p className="mt-3"><strong>Comment remplir :</strong></p>
-                        <ul className="space-y-1 ml-4">
-                          <li>• Ajoutez autant d'anciens propriétaires que vous connaissez</li>
-                          <li>• Les dates doivent être cohérentes et chronologiques</li>
-                          <li>• Indiquez le type de mutation (vente, succession, etc.)</li>
-                          <li>• Laissez vide si vous n'avez pas d'informations</li>
-                        </ul>
+                    <PopoverContent className="w-72 rounded-xl" align="end">
+                      <div className="space-y-2 text-xs">
+                        <h4 className="font-semibold text-sm">Historique (optionnel)</h4>
+                        <p className="text-muted-foreground">
+                          Documentez les anciens propriétaires pour établir la chaîne de propriété.
+                        </p>
+                        <p className="text-muted-foreground">
+                          <strong>💡</strong> Ordonnez du plus récent au plus ancien.
+                        </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
-              </div>
 
-              <div className="space-y-6">
                 {previousOwners.map((owner, index) => (
-                    <div key={index} className="border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Ancien.ne propriétaire #{index + 1}</h4>
+                  <div key={index} className={`border-2 rounded-2xl p-3 space-y-2 bg-card shadow-sm transition-all duration-300 ${
+                    highlightIncompletePreviousOwner && index === previousOwners.length - 1 && !owner.name 
+                      ? 'ring-2 ring-primary border-primary animate-pulse' 
+                      : 'border-border'
+                  }`}>
+                    {/* Header du propriétaire */}
+                    <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                      <span className="text-sm font-semibold text-foreground">Ancien #{index + 1}</span>
+                      {previousOwners.length > 1 && index > 0 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => {
-                            if (index === 0) {
-                              toast({
-                                title: "Suppression impossible",
-                                description: "Le premier bloc de l'historique ne peut pas être supprimé. Vous pouvez le laisser vide si vous n'avez pas d'informations.",
-                                variant: "destructive"
-                              });
-                              return;
-                            }
-                            removePreviousOwner(index);
-                          }}
-                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+                          onClick={() => removePreviousOwner(index)}
+                          className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </div>
+                      )}
+                    </div>
 
-                       <div className="space-y-2">
-                        <Label>Nom de l'ancien propriétaire</Label>
-                        <InputWithPopover
-                          placeholder="ex: Jean Mukendi"
-                          value={owner.name}
-                          onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
-                          helpTitle="Ancien propriétaire"
-                          helpText="Indiquez le nom complet de l'ancien propriétaire tel qu'il figurait sur les documents officiels. Cette information aide à retracer l'historique de la propriété."
-                        />
-                      </div>
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">Nom complet</Label>
+                      <Input
+                        placeholder="ex: Jean Mukendi"
+                        value={owner.name}
+                        onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
+                        className="h-10 text-sm rounded-xl"
+                      />
+                    </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label>Statut juridique</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 text-sm">
-                              <h4 className="font-semibold mb-2">Statut juridique du propriétaire</h4>
-                              <p className="text-muted-foreground">
-                                Définit la nature légale du propriétaire pour établir ses droits et obligations.
-                              </p>
-                              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                                <li>• <strong>Personne physique</strong>: Individu (citoyen)</li>
-                                <li>• <strong>Personne morale</strong>: Société, association</li>
-                                <li>• <strong>État</strong>: Propriété publique</li>
-                              </ul>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Statut</Label>
                         <Select
                           value={owner.legalStatus}
                           onValueChange={(value) => updatePreviousOwner(index, 'legalStatus', value)}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner le statut" />
+                          <SelectTrigger className="h-10 text-sm rounded-xl">
+                            <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="rounded-xl">
                             <SelectItem value="Personne physique">Personne physique</SelectItem>
                             <SelectItem value="Personne morale">Personne morale</SelectItem>
                             <SelectItem value="État">État</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label>Date début (propriétaire depuis)</Label>
-                          <Input
-                            type="date"
-                            max={owner.endDate || (index === 0 ? currentOwners[0]?.since : previousOwners[index - 1]?.startDate) || new Date().toISOString().split('T')[0]}
-                            value={owner.startDate}
-                            onChange={(e) => updatePreviousOwner(index, 'startDate', e.target.value)}
-                          />
-                          {owner.startDate && owner.endDate && owner.startDate > owner.endDate && (
-                            <p className="text-xs text-destructive">La date de début doit être avant la date de fin</p>
-                          )}
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Date fin (propriétaire jusqu'au)</Label>
-                          <Input
-                            type="date"
-                            min={owner.startDate || undefined}
-                            max={index === 0 ? (currentOwners[0]?.since || new Date().toISOString().split('T')[0]) : (previousOwners[index - 1]?.startDate || new Date().toISOString().split('T')[0])}
-                            value={owner.endDate}
-                            onChange={(e) => updatePreviousOwner(index, 'endDate', e.target.value)}
-                            disabled={true}
-                            className="cursor-not-allowed opacity-70"
-                            onClick={() => {
-                              toast({
-                                title: "Champ verrouillé",
-                                description: "Cette date est automatiquement remplie à partir de la date de début du propriétaire suivant dans la chronologie. Pour la modifier, changez la date de début du propriétaire suivant.",
-                                variant: "default",
-                              });
-                            }}
-                          />
-                          {index === 0 && currentOwners[0]?.since && (
-                            <p className="text-xs text-muted-foreground">
-                              💡 Cette date devrait correspondre au {new Date(currentOwners[0].since).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} (date d'acquisition du propriétaire actuel)
-                            </p>
-                          )}
-                          {index > 0 && previousOwners[index - 1]?.startDate && (
-                            <p className="text-xs text-muted-foreground">
-                              💡 Cette date devrait correspondre au {new Date(previousOwners[index - 1].startDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })} (date d'acquisition de l'Ancien.ne propriétaire #{index})
-                            </p>
-                          )}
-                          {index === 0 && owner.endDate && currentOwners[0]?.since && owner.endDate > currentOwners[0].since && (
-                            <p className="text-xs text-destructive">❌ La date de fin ne peut pas être après la date d'acquisition du propriétaire actuel ({new Date(currentOwners[0].since).toLocaleDateString('fr-FR')})</p>
-                          )}
-                          {index > 0 && owner.endDate && previousOwners[index - 1]?.startDate && owner.endDate > previousOwners[index - 1].startDate && (
-                            <p className="text-xs text-destructive">❌ La date de fin ne peut pas être après la date d'acquisition de l'Ancien.ne propriétaire #{index} ({new Date(previousOwners[index - 1].startDate).toLocaleDateString('fr-FR')})</p>
-                          )}
-                          {index === 0 && owner.endDate && currentOwners[0]?.since && owner.endDate !== currentOwners[0].since && (
-                            <p className="text-xs text-amber-600">⚠️ La date de fin devrait être exactement le {new Date(currentOwners[0].since).toLocaleDateString('fr-FR')} pour assurer la continuité chronologique</p>
-                          )}
-                          {index > 0 && owner.endDate && previousOwners[index - 1]?.startDate && owner.endDate !== previousOwners[index - 1].startDate && (
-                            <p className="text-xs text-amber-600">⚠️ La date de fin devrait être exactement le {new Date(previousOwners[index - 1].startDate).toLocaleDateString('fr-FR')} pour assurer la continuité chronologique</p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label>Type de mutation</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80 text-sm">
-                              <h4 className="font-semibold mb-2">Type de mutation</h4>
-                              <p className="text-muted-foreground">
-                                Indique le mode de transfert de propriété entre l'ancien et le nouveau propriétaire. Cette information est importante pour l'historique juridique de la parcelle.
-                              </p>
-                              <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                                <li>• <strong>Vente</strong>: Transaction commerciale</li>
-                                <li>• <strong>Donation</strong>: Transfert gratuit</li>
-                                <li>• <strong>Succession</strong>: Héritage</li>
-                                <li>• <strong>Expropriation</strong>: Acquisition forcée</li>
-                              </ul>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Mutation</Label>
                         <Select
                           value={owner.mutationType}
                           onValueChange={(value) => updatePreviousOwner(index, 'mutationType', value)}
                         >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner le type" />
+                          <SelectTrigger className="h-10 text-sm rounded-xl">
+                            <SelectValue />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="rounded-xl">
                             <SelectItem value="Vente">Vente</SelectItem>
                             <SelectItem value="Donation">Donation</SelectItem>
                             <SelectItem value="Succession">Succession</SelectItem>
@@ -3685,62 +3572,88 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </SelectContent>
                         </Select>
                       </div>
+                    </div>
 
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Date début</Label>
+                        <Input
+                          type="date"
+                          max={owner.endDate || (index === 0 ? currentOwners[0]?.since : previousOwners[index - 1]?.startDate) || new Date().toISOString().split('T')[0]}
+                          value={owner.startDate}
+                          onChange={(e) => updatePreviousOwner(index, 'startDate', e.target.value)}
+                          className="h-10 text-sm rounded-xl"
+                        />
+                        {owner.startDate && owner.endDate && owner.startDate > owner.endDate && (
+                          <p className="text-xs text-destructive">Début avant fin</p>
+                        )}
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Date fin</Label>
+                        <Input
+                          type="date"
+                          min={owner.startDate || undefined}
+                          max={index === 0 ? (currentOwners[0]?.since || new Date().toISOString().split('T')[0]) : (previousOwners[index - 1]?.startDate || new Date().toISOString().split('T')[0])}
+                          value={owner.endDate}
+                          onChange={(e) => updatePreviousOwner(index, 'endDate', e.target.value)}
+                          disabled={true}
+                          className="h-10 text-sm rounded-xl cursor-not-allowed opacity-70"
+                          onClick={() => {
+                            toast({
+                              title: "Auto-calculée",
+                              description: "Date basée sur le propriétaire suivant.",
+                              variant: "default",
+                            });
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Messages de validation compacts */}
+                    {index === 0 && currentOwners[0]?.since && (
+                      <p className="text-xs text-muted-foreground">
+                        💡 Fin: {new Date(currentOwners[0].since).toLocaleDateString('fr-FR')}
+                      </p>
+                    )}
+                    {index > 0 && previousOwners[index - 1]?.startDate && (
+                      <p className="text-xs text-muted-foreground">
+                        💡 Fin: {new Date(previousOwners[index - 1].startDate).toLocaleDateString('fr-FR')}
+                      </p>
+                    )}
                   </div>
                 ))}
-              </div>
-              
-              {/* Bouton Ajouter déplacé en dessous des blocs */}
-              <div className="space-y-2">
-                {/* Notification pour propriétaire actuel manquant */}
+
+                {/* Avertissements compacts */}
                 {showCurrentOwnerRequiredWarning && (
-                  <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-destructive">
-                          Ajoutez d'abord le(s) propriétaire(s) actuel(s)
-                        </p>
-                        <p className="text-xs text-destructive/80 mt-1">
-                          Pour ajouter un ancien propriétaire, vous devez d'abord renseigner au moins un propriétaire actuel dans l'onglet "Informations Générales" (section Propriétaire).
-                        </p>
-                      </div>
-                    </div>
+                  <div className="bg-destructive/10 border border-destructive/30 rounded-xl p-2">
+                    <p className="text-xs text-destructive">
+                      ⚠️ Ajoutez d'abord un propriétaire actuel (onglet Général).
+                    </p>
                   </div>
                 )}
-                
-                {/* Notification d'avertissement */}
+
                 {showPreviousOwnerWarning && (
-                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                          Complétez d'abord l'ancien propriétaire précédent
-                        </p>
-                        <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                          Veuillez renseigner le nom, le statut juridique et le type de mutation de l'ancien propriétaire avant d'en ajouter un nouveau.
-                        </p>
-                      </div>
-                    </div>
+                  <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-2">
+                    <p className="text-xs text-amber-700 dark:text-amber-300">
+                      ⚠️ Complétez le propriétaire actuel avant d'ajouter.
+                    </p>
                   </div>
                 )}
 
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
                   onClick={addPreviousOwner}
-                  className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                  className="w-full h-10 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
                 >
                   <Plus className="h-4 w-4" />
-                  Ajouter un ancien propriétaire
+                  Ajouter ancien propriétaire
                 </Button>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
             
             {/* Bouton Suivant */}
-            <div className="flex justify-end pt-6 mt-6 border-t">
+            <div className="flex justify-end pt-4 mt-4 border-t">
               <Button
                 type="button"
                 onClick={() => handleTabChange('obligations')}
