@@ -1,10 +1,12 @@
 import React from 'react';
 import { Info } from 'lucide-react';
+import { MdDescription } from 'react-icons/md';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface PropertyTitleType {
   value: string;
@@ -103,136 +105,145 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
   const showLeaseTypeOption = selectedType?.isRenewable;
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
-        <label className="text-sm font-medium">Type de titre de propriété</label>
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full">
-              <Info className="h-4 w-4 text-muted-foreground" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 sm:w-96" side="top">
-            <div className="space-y-2">
-              <h4 className="font-semibold text-sm">Types de titres de propriété en RDC</h4>
-              <p className="text-xs text-muted-foreground">
-                Il s'agit du titre de propriété officiel délivré par les services cadastraux ou le Conservateur des Titres Immobiliers, et non d'un acte sous seing privé (acte de vente, de donation, d'héritage, etc.). 
-                Sélectionnez le type qui correspond à votre document et cliquez sur l'icône ⓘ 
-                à côté de chaque option pour plus de détails.
-              </p>
+    <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+      <CardContent className="p-3 space-y-3">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+              <MdDescription className="h-3.5 w-3.5 text-primary" />
             </div>
-          </PopoverContent>
-        </Popover>
-      </div>
-      
-      <Select value={value} onValueChange={onValueChange}>
-        <SelectTrigger>
-          <SelectValue placeholder="Sélectionner le type de titre" />
-        </SelectTrigger>
-        <SelectContent className="max-h-[400px]">
-          {PROPERTY_TITLE_TYPES.map((type) => (
-            <div key={type.value} className="flex items-center justify-between group">
-              <SelectItem value={type.value} className="flex-1 pr-2">
-                <div className="flex flex-col">
-                  <span className="font-medium">{type.label}</span>
-                  <span className="text-xs text-muted-foreground hidden sm:block">{type.description}</span>
-                </div>
-              </SelectItem>
-              <Popover 
-                open={openPopoverId === type.value} 
-                onOpenChange={(open) => setOpenPopoverId(open ? type.value : null)}
-              >
-                <PopoverTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity mr-2"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setOpenPopoverId(openPopoverId === type.value ? null : type.value);
-                    }}
-                  >
-                    <Info className="h-4 w-4 text-primary" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent 
-                  className="w-[calc(100vw-2rem)] sm:w-96 max-w-md" 
-                  side="left"
-                  sideOffset={10}
-                  align="start"
+            <Label className="text-sm font-semibold">Type de titre de propriété</Label>
+          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-72 rounded-xl" align="end">
+              <div className="space-y-2 text-xs">
+                <h4 className="font-semibold text-sm">Titres de propriété en RDC</h4>
+                <p className="text-muted-foreground">
+                  Titre officiel délivré par les services cadastraux (pas un acte de vente/donation).
+                </p>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
+        
+        {/* Select */}
+        <Select value={value} onValueChange={onValueChange}>
+          <SelectTrigger className="h-10 rounded-xl text-sm">
+            <SelectValue placeholder="Sélectionner le type de titre" />
+          </SelectTrigger>
+          <SelectContent className="max-h-[400px] rounded-xl">
+            {PROPERTY_TITLE_TYPES.map((type) => (
+              <div key={type.value} className="flex items-center justify-between group">
+                <SelectItem value={type.value} className="flex-1 pr-2">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-sm">{type.label}</span>
+                    <span className="text-xs text-muted-foreground hidden sm:block">{type.description}</span>
+                  </div>
+                </SelectItem>
+                <Popover 
+                  open={openPopoverId === type.value} 
+                  onOpenChange={(open) => setOpenPopoverId(open ? type.value : null)}
                 >
-                  <div className="space-y-3">
-                    <div>
-                      <h4 className="font-semibold text-sm mb-1">{type.label}</h4>
-                      <p className="text-xs text-muted-foreground italic">{type.description}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-xs leading-relaxed">{type.details}</p>
-                      <div className="p-2 bg-muted/50 rounded-md">
-                        <p className="text-xs font-medium mb-1">Format du numéro de référence :</p>
-                        <code className="text-xs text-primary">{type.reference}</code>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity mr-2"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setOpenPopoverId(openPopoverId === type.value ? null : type.value);
+                      }}
+                    >
+                      <Info className="h-4 w-4 text-primary" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent 
+                    className="w-[calc(100vw-2rem)] sm:w-96 max-w-md rounded-xl" 
+                    side="left"
+                    sideOffset={10}
+                    align="start"
+                  >
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-semibold text-sm mb-1">{type.label}</h4>
+                        <p className="text-xs text-muted-foreground italic">{type.description}</p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs leading-relaxed">{type.details}</p>
+                        <div className="p-2 bg-muted/50 rounded-lg">
+                          <p className="text-xs font-medium mb-1">Format du numéro :</p>
+                          <code className="text-xs text-primary">{type.reference}</code>
+                        </div>
                       </div>
                     </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {value && (
+          <p className="text-xs text-muted-foreground">
+            {selectedType?.description}
+          </p>
+        )}
+        
+        {showLeaseTypeOption && onLeaseTypeChange && (
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <Label className="text-sm font-medium">Type de bail</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                    <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 rounded-xl" side="top">
+                  <div className="space-y-2 text-xs">
+                    <h4 className="font-semibold text-sm">Où trouver cette info ?</h4>
+                    <p className="text-muted-foreground">
+                      Vérifiez sur votre document s'il s'agit du bail initial ou d'un renouvellement.
+                    </p>
                   </div>
                 </PopoverContent>
               </Popover>
             </div>
-          ))}
-        </SelectContent>
-      </Select>
-      
-      {value && (
-        <p className="text-xs text-muted-foreground">
-          {PROPERTY_TITLE_TYPES.find(t => t.value === value)?.description}
-        </p>
-      )}
-      
-      {showLeaseTypeOption && onLeaseTypeChange && (
-        <div className="space-y-2 pt-2 border-t">
-          <div className="flex items-center gap-2">
-            <Label className="text-sm font-medium">Type de bail</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-5 w-5 rounded-full">
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80 sm:w-96" side="top">
-                <div className="space-y-2">
-                  <h4 className="font-semibold text-sm">Où trouver cette information ?</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Cette information est indiquée sur votre {selectedType?.label.toLowerCase()}. 
-                    Vérifiez si le document mentionne qu'il s'agit du bail initial ou d'un renouvellement. 
-                    {selectedType?.value === "Concession ordinaire" && " Pour les concessions ordinaires, la durée initiale est généralement de 25 ans."}
-                    {selectedType?.value === "Bail emphytéotique" && " Pour les baux emphytéotiques, la durée peut aller de 18 à 99 ans."}
-                    {selectedType?.value === "Certificat de location" && " Pour les certificats de location, la durée est mentionnée dans le contrat de bail."}
-                  </p>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-          <RadioGroup 
-            value={leaseType} 
-            onValueChange={(val) => onLeaseTypeChange(val as 'initial' | 'renewal')}
-            className="flex gap-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="initial" id="lease-initial" />
-              <Label htmlFor="lease-initial" className="text-sm font-normal cursor-pointer">
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => onLeaseTypeChange('initial')}
+                className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                  leaseType === 'initial'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
                 Bail initial
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="renewal" id="lease-renewal" />
-              <Label htmlFor="lease-renewal" className="text-sm font-normal cursor-pointer">
+              </button>
+              <button
+                type="button"
+                onClick={() => onLeaseTypeChange('renewal')}
+                className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                  leaseType === 'renewal'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
                 Renouvellement
-              </Label>
+              </button>
             </div>
-          </RadioGroup>
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
