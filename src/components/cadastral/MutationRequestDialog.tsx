@@ -1143,7 +1143,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                       <HelpCircle className="h-3.5 w-3.5" />
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-80 bg-background border shadow-lg z-50" align="start">
+                  <PopoverContent className="w-80 bg-background border shadow-lg" align="start" sideOffset={5}>
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-orange-700 dark:text-orange-400 flex items-center gap-2">
                         <AlertTriangle className="h-4 w-4" />
