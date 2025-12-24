@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Ruler, Compass, Info, Trash2, Check, Route } from 'lucide-react';
+import { Ruler, Compass, Info, Trash2, Check, Route, X, Lightbulb } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export interface ParcelSide {
@@ -63,8 +63,16 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   roadTypes = defaultRoadTypes,
 }) => {
   const [editingSide, setEditingSide] = useState<number | null>(null);
+  const [showNotification, setShowNotification] = useState(true);
   const roadBorderingSidesCount = roadSides.filter(s => s.bordersRoad && s.isConfirmed).length;
   const totalPerimeter = parcelSides.reduce((sum, side) => sum + parseFloat(side.length || '0'), 0);
+
+  // Masquer la notification quand une route est ajoutée
+  useEffect(() => {
+    if (roadBorderingSidesCount > 0) {
+      setShowNotification(false);
+    }
+  }, [roadBorderingSidesCount]);
 
   const handleConfirmRoad = (sideIndex: number) => {
     const side = roadSides.find(s => s.sideIndex === sideIndex);
@@ -87,6 +95,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
 
   const handleStartEdit = (sideIndex: number) => {
     setEditingSide(sideIndex);
+    setShowNotification(false); // Masquer la notification quand l'utilisateur clique sur Route
     const roadSide = roadSides.find(s => s.sideIndex === sideIndex);
     if (!roadSide?.bordersRoad) {
       onRoadSideUpdate(sideIndex, { bordersRoad: true });
@@ -125,6 +134,33 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-1.5 px-3 pb-3">
+        {/* Notification intelligente */}
+        {showNotification && roadBorderingSidesCount === 0 && (
+          <div className="relative mb-2 p-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/50 dark:to-orange-950/50 border border-amber-200 dark:border-amber-800 animate-fade-in">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowNotification(false)}
+              className="absolute top-1 right-1 h-5 w-5 p-0 text-amber-600 hover:bg-amber-100 dark:hover:bg-amber-900 rounded-md"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+            <div className="flex items-start gap-2 pr-4">
+              <div className="h-6 w-6 rounded-lg bg-amber-100 dark:bg-amber-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Lightbulb className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-xs font-medium text-amber-800 dark:text-amber-200">
+                  💡 Astuce : Indiquez les routes adjacentes
+                </p>
+                <p className="text-[11px] text-amber-700 dark:text-amber-300 leading-relaxed">
+                  Cliquez sur le bouton <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-primary/10 text-primary font-medium"><Route className="h-2.5 w-2.5" />Route</span> à côté d'un côté pour indiquer qu'il borde une route.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
         {parcelSides.map((side, index) => {
           const roadSide = getRoadSideForIndex(index);
           const isEditing = editingSide === index;
