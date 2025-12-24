@@ -2995,9 +2995,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     type="button"
                     onClick={() => setPermitMode('existing')}
                     className={cn(
-                      "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
+                      "flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all",
                       permitMode === 'existing'
-                        ? 'bg-emerald-600 text-white shadow-lg'
+                        ? 'bg-primary text-primary-foreground shadow-lg'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
@@ -3007,9 +3007,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     type="button"
                     onClick={() => setPermitMode('request')}
                     className={cn(
-                      "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
+                      "flex-1 py-3 px-4 rounded-2xl text-sm font-semibold transition-all",
                       permitMode === 'request'
-                        ? 'bg-amber-600 text-white shadow-lg'
+                        ? 'bg-primary text-primary-foreground shadow-lg'
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
@@ -3019,30 +3019,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                 {/* Mode: J'ai déjà un permis */}
                 {permitMode === 'existing' && (
-                  <div className="space-y-3 animate-fade-in">
+                  <div className="space-y-4 animate-fade-in">
                     {buildingPermits.map((permit, index) => (
-                      <div key={index} className={`border rounded-xl p-3 space-y-2.5 bg-muted/20 ${
+                      <div key={index} className={cn(
+                        "border-2 rounded-2xl p-4 space-y-4 bg-card shadow-md",
                         highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issuingService || !permit.issueDate) 
-                          ? 'ring-2 ring-primary animate-pulse' 
-                          : ''
-                      }`}>
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-muted-foreground">Permis #{index + 1}</span>
+                          ? 'ring-2 ring-primary border-primary animate-pulse' 
+                          : 'border-border'
+                      )}>
+                        {/* Header du permis */}
+                        <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                          <div className="flex items-center gap-2">
+                            <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                              <MdInsertDriveFile className="h-4 w-4 text-primary" />
+                            </div>
+                            <span className="text-sm font-semibold text-foreground">Permis #{index + 1}</span>
+                          </div>
                           {index > 0 && (
                             <Button
                               type="button"
                               variant="ghost"
                               size="sm"
                               onClick={() => removeBuildingPermit(index)}
-                              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
                             >
-                              <Trash2 className="h-3 w-3" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           )}
                         </div>
 
                         {/* Type de permis */}
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-2">
                           <button
                             type="button"
                             onClick={() => {
@@ -3053,9 +3060,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             }}
                             disabled={getPermitTypeRestrictions().blockedInExisting === 'construction'}
                             className={cn(
-                              "flex-1 py-1.5 px-2 rounded-lg text-[10px] font-medium transition-all",
+                              "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
                               permit.permitType === 'construction'
-                                ? 'bg-emerald-600 text-white shadow-sm'
+                                ? 'bg-primary text-primary-foreground shadow-md'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80',
                               getPermitTypeRestrictions().blockedInExisting === 'construction' && 'opacity-50 cursor-not-allowed'
                             )}
@@ -3072,9 +3079,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             }}
                             disabled={getPermitTypeRestrictions().blockedInExisting === 'regularization'}
                             className={cn(
-                              "flex-1 py-1.5 px-2 rounded-lg text-[10px] font-medium transition-all",
+                              "flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all",
                               permit.permitType === 'regularization'
-                                ? 'bg-amber-600 text-white shadow-sm'
+                                ? 'bg-primary text-primary-foreground shadow-md'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80',
                               getPermitTypeRestrictions().blockedInExisting === 'regularization' && 'opacity-50 cursor-not-allowed'
                             )}
@@ -3083,39 +3090,39 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </button>
                         </div>
 
-                        {/* Champs compacts */}
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">N° Permis</Label>
+                        {/* Champs du formulaire */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium text-foreground">N° Permis</Label>
                             <Input
                               placeholder="PC-2024-001"
                               value={permit.permitNumber}
                               onChange={(e) => updateBuildingPermit(index, 'permitNumber', e.target.value)}
-                              className="h-8 text-xs rounded-lg"
+                              className="h-10 text-sm rounded-xl"
                             />
                           </div>
-                          <div className="space-y-1">
-                            <Label className="text-[10px] text-muted-foreground">Date d'émission</Label>
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium text-foreground">Date</Label>
                             <Input
                               type="date"
                               value={permit.issueDate}
                               onChange={(e) => updateBuildingPermit(index, 'issueDate', e.target.value)}
-                              className="h-8 text-xs rounded-lg"
+                              className="h-10 text-sm rounded-xl"
                             />
                           </div>
                         </div>
 
-                        <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">Service émetteur</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-sm font-medium text-foreground">Service émetteur</Label>
                           <BuildingPermitIssuingServiceSelect
                             value={permit.issuingService}
                             onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
                           />
                         </div>
 
-                        {/* Pièce jointe simplifiée */}
-                        <div className="space-y-1">
-                          <Label className="text-[10px] text-muted-foreground">Document (optionnel)</Label>
+                        {/* Document */}
+                        <div className="space-y-1.5">
+                          <Label className="text-sm font-medium text-foreground">Document (optionnel)</Label>
                           {!permit.attachmentFile ? (
                             <Input
                               type="file"
@@ -3130,19 +3137,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                   updateBuildingPermitFile(index, file);
                                 }
                               }}
-                              className="h-8 text-xs rounded-lg"
+                              className="h-10 text-sm rounded-xl"
                             />
                           ) : (
-                            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-                              <span className="text-[10px] flex-1 truncate">{permit.attachmentFile.name}</span>
+                            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl border">
+                              <span className="text-sm flex-1 truncate">{permit.attachmentFile.name}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeBuildingPermitFile(index)}
-                                className="h-5 w-5 p-0 text-destructive"
+                                className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
                               >
-                                <X className="h-3 w-3" />
+                                <X className="h-4 w-4" />
                               </Button>
                             </div>
                           )}
@@ -3152,8 +3159,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                     {/* Avertissement permis incomplet */}
                     {showPermitWarning && (
-                      <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-2.5">
-                        <p className="text-[10px] text-amber-700 dark:text-amber-300">
+                      <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                        <p className="text-sm text-amber-700 dark:text-amber-300">
                           ⚠️ Complétez le permis actuel avant d'en ajouter un nouveau.
                         </p>
                       </div>
@@ -3161,12 +3168,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="sm"
+                      variant="outline"
                       onClick={addBuildingPermit}
-                      className="w-full h-8 gap-1.5 text-xs hover:bg-primary/5 rounded-xl"
+                      className="w-full h-11 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
                     >
-                      <Plus className="h-3.5 w-3.5" />
+                      <Plus className="h-4 w-4" />
                       Ajouter un autre permis
                     </Button>
                   </div>
