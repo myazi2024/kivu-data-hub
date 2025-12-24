@@ -103,6 +103,7 @@ export const ParcelMapPreview = ({
   
   // Ref pour appui prolongé sur les boutons de contrôle
   const controlButtonIntervalRef = useRef<number | null>(null);
+  const controlButtonTimeoutRef = useRef<number | null>(null);
 
   const [surfaceArea, setSurfaceArea] = useState<number>(0);
   const [isMapReady, setIsMapReady] = useState(false);
@@ -165,12 +166,14 @@ export const ParcelMapPreview = ({
   const validCoordsRef = useRef(validCoords);
   const roadSidesRef = useRef(roadSides);
   const buildingShapesRef = useRef(buildingShapes);
+  const moveStepMetersRef = useRef(moveStepMeters);
   
   // Synchroniser les refs avec les valeurs courantes
   useEffect(() => { coordinatesRef.current = coordinates; }, [coordinates]);
   useEffect(() => { validCoordsRef.current = validCoords; }, [validCoords]);
   useEffect(() => { roadSidesRef.current = roadSides; }, [roadSides]);
   useEffect(() => { buildingShapesRef.current = buildingShapes; }, [buildingShapes]);
+  useEffect(() => { moveStepMetersRef.current = moveStepMeters; }, [moveStepMeters]);
 
   // Ajouter un nouveau marqueur
   const addMarkerAtPosition = useCallback((lat: number, lng: number) => {
@@ -1363,15 +1366,22 @@ export const ParcelMapPreview = ({
   }, [coordinates, moveStepMeters, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
 
   // Déplacer toute la parcelle (toutes les bornes ensemble)
+  // IMPORTANT: ne pas recalculer les longueurs ici (les dimensions doivent rester stables)
   const nudgeEntireParcel = useCallback((direction: 'N' | 'S' | 'E' | 'W') => {
-    if (validCoords.length < 2) return;
+    const currentValid = validCoordsRef.current;
+    if (currentValid.length < 2) return;
 
-    const centerLat = validCoords.reduce((sum, c) => sum + parseFloat(c.lat), 0) / validCoords.length;
-    const meters = moveStepMeters;
-    const deltaLat = meters / 111320;
-    const deltaLng = meters / (111320 * Math.cos((centerLat * Math.PI) / 180));
+    const currentCoords = coordinatesRef.current;
+    const centerLat =
+      currentValid.reduce((sum, c) => sum + parseFloat(c.lat), 0) / currentValid.length;
 
-    const updated = coordinates.map(coord => {
+    const meters = moveStepMetersRef.current;
+    const deltaLat = Number((meters / 111320).toFixed(6));
+    const deltaLng = Number(
+      (meters / (111320 * Math.cos((centerLat * Math.PI) / 180))).toFixed(6)
+    );
+
+    const updated = currentCoords.map((coord) => {
       const lat = parseFloat(coord.lat);
       const lng = parseFloat(coord.lng);
       if (Number.isNaN(lat) || Number.isNaN(lng)) return coord;
@@ -1392,67 +1402,83 @@ export const ParcelMapPreview = ({
     });
 
     onCoordinatesUpdate(updated);
-    updateParcelSidesFromCoordinates(updated);
-  }, [coordinates, validCoords, moveStepMeters, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
+  }, [onCoordinatesUpdate]);
 
   // Rotation de la parcelle autour de son centre
-  // La rotation change les orientations des côtés mais pas leurs longueurs
+  // IMPORTANT: la rotation doit conserver les longueurs; on travaille en mètres (projection locale) puis on reconvertit
   const rotateParcel = useCallback((angleDegrees: number) => {
-    if (validCoords.length < 2) return;
+    const currentValid = validCoordsRef.current;
+    if (currentValid.length < 2) return;
 
-    // Calculer le centre de la parcelle
-    const centerLat = validCoords.reduce((sum, c) => sum + parseFloat(c.lat), 0) / validCoords.length;
-    const centerLng = validCoords.reduce((sum, c) => sum + parseFloat(c.lng), 0) / validCoords.length;
+    const currentCoords = coordinatesRef.current;
+
+    // Centre (en degrés)
+    const centerLat =
+      currentValid.reduce((sum, c) => sum + parseFloat(c.lat), 0) / currentValid.length;
+    const centerLng =
+      currentValid.reduce((sum, c) => sum + parseFloat(c.lng), 0) / currentValid.length;
 
     const angleRad = (angleDegrees * Math.PI) / 180;
     const cosA = Math.cos(angleRad);
     const sinA = Math.sin(angleRad);
 
-    const updated = coordinates.map(coord => {
+    // Conversion locale degrés <-> mètres (approx)
+    const metersPerDegLat = 111320;
+    const metersPerDegLng = 111320 * Math.cos((centerLat * Math.PI) / 180);
+
+    const updated = currentCoords.map((coord) => {
       const lat = parseFloat(coord.lat);
       const lng = parseFloat(coord.lng);
       if (Number.isNaN(lat) || Number.isNaN(lng)) return coord;
 
-      // Calculer la distance relative au centre
-      const dLat = lat - centerLat;
-      const dLng = lng - centerLng;
+      const x = (lng - centerLng) * metersPerDegLng; // Est/Ouest
+      const y = (lat - centerLat) * metersPerDegLat; // Nord/Sud
 
-      // Appliquer la rotation
-      const newDLat = dLat * cosA - dLng * sinA;
-      const newDLng = dLat * sinA + dLng * cosA;
+      const newX = x * cosA - y * sinA;
+      const newY = x * sinA + y * cosA;
+
+      const newLat = centerLat + newY / metersPerDegLat;
+      const newLng = centerLng + newX / metersPerDegLng;
 
       return {
         ...coord,
-        lat: (centerLat + newDLat).toFixed(6),
-        lng: (centerLng + newDLng).toFixed(6),
+        lat: newLat.toFixed(6),
+        lng: newLng.toFixed(6),
       };
     });
 
-    setParcelRotationDegrees(prev => (prev + angleDegrees) % 360);
+    setParcelRotationDegrees((prev) => (prev + angleDegrees) % 360);
     onCoordinatesUpdate(updated);
-    
-    // Recalculer les orientations des côtés après rotation
+
+    // Recalculer les orientations des côtés après rotation (sans toucher aux dimensions affichées)
     if (onRoadSidesChange && updated.length >= 3) {
-      const validUpdated = updated.filter(c => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng)));
+      const validUpdated = updated.filter(
+        (c) => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
+      );
+
       if (validUpdated.length >= 3) {
+        const existingSides = roadSidesRef.current;
+
         const newSides: RoadSideInfo[] = validUpdated.map((coord, index) => {
           const nextIndex = (index + 1) % validUpdated.length;
           const nextCoord = validUpdated[nextIndex];
-          
-          const existingSide = roadSides.find(s => s.sideIndex === index);
+
+          const existingSide = existingSides.find((s) => s.sideIndex === index);
+
           const length = calculateDistance(
-            parseFloat(coord.lat), 
+            parseFloat(coord.lat),
             parseFloat(coord.lng),
             parseFloat(nextCoord.lat),
             parseFloat(nextCoord.lng)
           );
+
           const orientation = calculateOrientation(
-            parseFloat(coord.lat), 
+            parseFloat(coord.lat),
             parseFloat(coord.lng),
             parseFloat(nextCoord.lat),
             parseFloat(nextCoord.lng)
           );
-          
+
           return {
             sideIndex: index,
             bordersRoad: existingSide?.bordersRoad || false,
@@ -1464,29 +1490,79 @@ export const ParcelMapPreview = ({
             length,
           };
         });
-        
+
         onRoadSidesChange(newSides);
       }
     }
-  }, [coordinates, validCoords, onCoordinatesUpdate, onRoadSidesChange, roadSides]);
+  }, [onCoordinatesUpdate, onRoadSidesChange]);
 
   // Fonctions pour appui prolongé sur les boutons de contrôle
   const startLongPress = useCallback((action: () => void) => {
-    // Exécuter immédiatement au premier clic
+    // Toujours repartir d'un état propre
+    if (controlButtonTimeoutRef.current) {
+      clearTimeout(controlButtonTimeoutRef.current);
+      controlButtonTimeoutRef.current = null;
+    }
+    if (controlButtonIntervalRef.current) {
+      clearInterval(controlButtonIntervalRef.current);
+      controlButtonIntervalRef.current = null;
+    }
+
+    // Exécuter immédiatement au premier appui
     action();
-    
-    // Démarrer la répétition après un délai initial
-    controlButtonIntervalRef.current = window.setInterval(() => {
-      action();
-    }, 100); // Répéter toutes les 100ms
+
+    // Puis répéter tant que l'utilisateur maintient
+    controlButtonTimeoutRef.current = window.setTimeout(() => {
+      controlButtonIntervalRef.current = window.setInterval(() => {
+        action();
+      }, 90);
+    }, 220);
   }, []);
 
   const stopLongPress = useCallback(() => {
+    if (controlButtonTimeoutRef.current) {
+      clearTimeout(controlButtonTimeoutRef.current);
+      controlButtonTimeoutRef.current = null;
+    }
     if (controlButtonIntervalRef.current) {
       clearInterval(controlButtonIntervalRef.current);
       controlButtonIntervalRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    const onWindowStop = () => stopLongPress();
+    window.addEventListener('pointerup', onWindowStop);
+    window.addEventListener('blur', onWindowStop);
+
+    return () => {
+      window.removeEventListener('pointerup', onWindowStop);
+      window.removeEventListener('blur', onWindowStop);
+      stopLongPress();
+    };
+  }, [stopLongPress]);
+
+  const getLongPressProps = useCallback(
+    (action: () => void) => ({
+      onPointerDown: (e: any) => {
+        e.preventDefault?.();
+        e.stopPropagation?.();
+        try {
+          e.currentTarget?.setPointerCapture?.(e.pointerId);
+        } catch {}
+        startLongPress(action);
+      },
+      onPointerUp: (e: any) => {
+        e.preventDefault?.();
+        e.stopPropagation?.();
+        stopLongPress();
+      },
+      onPointerCancel: () => stopLongPress(),
+      onPointerLeave: () => stopLongPress(),
+      onContextMenu: (e: any) => e.preventDefault?.(),
+    }),
+    [startLongPress, stopLongPress]
+  );
 
   return (
     <div className="space-y-3 max-w-[360px] mx-auto">
@@ -1694,12 +1770,8 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onMouseDown={() => startLongPress(() => nudgeEntireParcel('N'))}
-                    onMouseUp={stopLongPress}
-                    onMouseLeave={stopLongPress}
-                    onTouchStart={() => startLongPress(() => nudgeEntireParcel('N'))}
-                    onTouchEnd={stopLongPress}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                    {...getLongPressProps(() => nudgeEntireParcel('N'))}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
                     title="Nord (maintenir pour répéter)"
                   >
                     <ArrowUp className="h-3 w-3" />
@@ -1709,12 +1781,8 @@ export const ParcelMapPreview = ({
                       type="button"
                       size="sm"
                       variant="outline"
-                      onMouseDown={() => startLongPress(() => nudgeEntireParcel('W'))}
-                      onMouseUp={stopLongPress}
-                      onMouseLeave={stopLongPress}
-                      onTouchStart={() => startLongPress(() => nudgeEntireParcel('W'))}
-                      onTouchEnd={stopLongPress}
-                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                      {...getLongPressProps(() => nudgeEntireParcel('W'))}
+                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
                       title="Ouest (maintenir pour répéter)"
                     >
                       <ArrowLeft className="h-3 w-3" />
@@ -1723,12 +1791,8 @@ export const ParcelMapPreview = ({
                       type="button"
                       size="sm"
                       variant="outline"
-                      onMouseDown={() => startLongPress(() => nudgeEntireParcel('E'))}
-                      onMouseUp={stopLongPress}
-                      onMouseLeave={stopLongPress}
-                      onTouchStart={() => startLongPress(() => nudgeEntireParcel('E'))}
-                      onTouchEnd={stopLongPress}
-                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                      {...getLongPressProps(() => nudgeEntireParcel('E'))}
+                      className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
                       title="Est (maintenir pour répéter)"
                     >
                       <ArrowRight className="h-3 w-3" />
@@ -1738,12 +1802,8 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onMouseDown={() => startLongPress(() => nudgeEntireParcel('S'))}
-                    onMouseUp={stopLongPress}
-                    onMouseLeave={stopLongPress}
-                    onTouchStart={() => startLongPress(() => nudgeEntireParcel('S'))}
-                    onTouchEnd={stopLongPress}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                    {...getLongPressProps(() => nudgeEntireParcel('S'))}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
                     title="Sud (maintenir pour répéter)"
                   >
                     <ArrowDown className="h-3 w-3" />
@@ -1759,12 +1819,8 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onMouseDown={() => startLongPress(() => rotateParcel(-1))}
-                    onMouseUp={stopLongPress}
-                    onMouseLeave={stopLongPress}
-                    onTouchStart={() => startLongPress(() => rotateParcel(-1))}
-                    onTouchEnd={stopLongPress}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                    {...getLongPressProps(() => rotateParcel(-1))}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
                     title="-1° (maintenir pour répéter)"
                   >
                     <RotateCcw className="h-3 w-3" />
@@ -1773,12 +1829,8 @@ export const ParcelMapPreview = ({
                     type="button"
                     size="sm"
                     variant="outline"
-                    onMouseDown={() => startLongPress(() => rotateParcel(1))}
-                    onMouseUp={stopLongPress}
-                    onMouseLeave={stopLongPress}
-                    onTouchStart={() => startLongPress(() => rotateParcel(1))}
-                    onTouchEnd={stopLongPress}
-                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50"
+                    {...getLongPressProps(() => rotateParcel(1))}
+                    className="h-6 w-6 p-0 rounded-md border-0 bg-transparent hover:bg-blue-100 dark:hover:bg-blue-900/30 active:bg-blue-200 dark:active:bg-blue-800/50 touch-none select-none"
                     title="+1° (maintenir pour répéter)"
                   >
                     <RotateCw className="h-3 w-3" />
