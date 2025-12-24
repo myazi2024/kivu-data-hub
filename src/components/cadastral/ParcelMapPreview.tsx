@@ -1404,8 +1404,8 @@ export const ParcelMapPreview = ({
     onCoordinatesUpdate(updated);
   }, [onCoordinatesUpdate]);
 
-  // Rotation de la parcelle autour de son centre
-  // IMPORTANT: la rotation doit conserver les longueurs; on travaille en mètres (projection locale) puis on reconvertit
+  // Rotation de la parcelle autour de son centre (visuelle uniquement)
+  // Les orientations des côtés restent fixes car elles représentent des directions géographiques réelles
   const rotateParcel = useCallback((angleDegrees: number) => {
     const currentValid = validCoordsRef.current;
     if (currentValid.length < 2) return;
@@ -1431,8 +1431,8 @@ export const ParcelMapPreview = ({
       const lng = parseFloat(coord.lng);
       if (Number.isNaN(lat) || Number.isNaN(lng)) return coord;
 
-      const x = (lng - centerLng) * metersPerDegLng; // Est/Ouest
-      const y = (lat - centerLat) * metersPerDegLat; // Nord/Sud
+      const x = (lng - centerLng) * metersPerDegLng;
+      const y = (lat - centerLat) * metersPerDegLat;
 
       const newX = x * cosA - y * sinA;
       const newY = x * sinA + y * cosA;
@@ -1449,52 +1449,15 @@ export const ParcelMapPreview = ({
 
     setParcelRotationDegrees((prev) => (prev + angleDegrees) % 360);
     onCoordinatesUpdate(updated);
+    // Pas de recalcul des orientations - elles représentent des directions fixes
+  }, [onCoordinatesUpdate]);
 
-    // Recalculer les orientations des côtés après rotation (sans toucher aux dimensions affichées)
-    if (onRoadSidesChange && updated.length >= 3) {
-      const validUpdated = updated.filter(
-        (c) => c.lat && c.lng && !isNaN(parseFloat(c.lat)) && !isNaN(parseFloat(c.lng))
-      );
-
-      if (validUpdated.length >= 3) {
-        const existingSides = roadSidesRef.current;
-
-        const newSides: RoadSideInfo[] = validUpdated.map((coord, index) => {
-          const nextIndex = (index + 1) % validUpdated.length;
-          const nextCoord = validUpdated[nextIndex];
-
-          const existingSide = existingSides.find((s) => s.sideIndex === index);
-
-          const length = calculateDistance(
-            parseFloat(coord.lat),
-            parseFloat(coord.lng),
-            parseFloat(nextCoord.lat),
-            parseFloat(nextCoord.lng)
-          );
-
-          const orientation = calculateOrientation(
-            parseFloat(coord.lat),
-            parseFloat(coord.lng),
-            parseFloat(nextCoord.lat),
-            parseFloat(nextCoord.lng)
-          );
-
-          return {
-            sideIndex: index,
-            bordersRoad: existingSide?.bordersRoad || false,
-            roadType: existingSide?.roadType,
-            roadName: existingSide?.roadName,
-            roadWidth: existingSide?.roadWidth,
-            isConfirmed: existingSide?.isConfirmed || false,
-            orientation,
-            length,
-          };
-        });
-
-        onRoadSidesChange(newSides);
-      }
+  // Retour haptique (vibration légère)
+  const triggerHaptic = useCallback(() => {
+    if (navigator.vibrate) {
+      navigator.vibrate(8);
     }
-  }, [onCoordinatesUpdate, onRoadSidesChange]);
+  }, []);
 
   // Fonctions pour appui prolongé sur les boutons de contrôle
   const startLongPress = useCallback((action: () => void) => {
@@ -1508,16 +1471,18 @@ export const ParcelMapPreview = ({
       controlButtonIntervalRef.current = null;
     }
 
-    // Exécuter immédiatement au premier appui
+    // Exécuter immédiatement au premier appui avec haptic
     action();
+    triggerHaptic();
 
-    // Puis répéter tant que l'utilisateur maintient
+    // Puis répéter rapidement tant que l'utilisateur maintient
     controlButtonTimeoutRef.current = window.setTimeout(() => {
       controlButtonIntervalRef.current = window.setInterval(() => {
         action();
-      }, 90);
-    }, 220);
-  }, []);
+        triggerHaptic();
+      }, 50); // 50ms pour une répétition plus rapide
+    }, 150); // 150ms avant de commencer la répétition
+  }, [triggerHaptic]);
 
   const stopLongPress = useCallback(() => {
     if (controlButtonTimeoutRef.current) {
