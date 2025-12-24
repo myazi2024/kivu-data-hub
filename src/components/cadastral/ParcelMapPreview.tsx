@@ -863,7 +863,7 @@ export const ParcelMapPreview = ({
             const nextCoord = validCoords[nextIndex];
 
             const roadSide = roadSides.find(s => s.sideIndex === index);
-            const isRoadBordering = roadSide?.bordersRoad || false;
+            const isRoadBordering = roadSide?.bordersRoad && roadSide?.isConfirmed;
             const lineColor = mapConfig.lineColor || '#3b82f6';
 
             const segment = L.polyline(
@@ -955,7 +955,7 @@ export const ParcelMapPreview = ({
       cancelAnimationFrame(rafId);
       cancelled = true;
     };
-  }, [isMapReady, JSON.stringify(validCoords), mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isAddingBuilding]);
+  }, [isMapReady, JSON.stringify(validCoords), JSON.stringify(roadSides), mapConfig, isGroupDragMode, isDrawingMode, selectedBorne, isAddingBuilding]);
 
   // Dessiner une forme de construction
   const drawBuildingShape = (L: any, map: any, shape: BuildingShape) => {
