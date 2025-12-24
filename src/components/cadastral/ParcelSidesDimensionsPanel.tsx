@@ -301,7 +301,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             setEditingSide(index);
                             setShowNotification(false);
                           }}
-                          className="h-6 px-2 text-[10px] rounded-md gap-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white border-0 shadow-sm font-medium"
+                          className="h-6 px-2 text-[10px] rounded-md gap-1 bg-emerald-500 hover:bg-emerald-600 dark:bg-emerald-600 dark:hover:bg-emerald-500 text-white border-0 font-medium shadow-[0_3px_0_0_rgb(4,120,87)] hover:shadow-[0_1px_0_0_rgb(4,120,87)] hover:translate-y-[2px] active:shadow-none active:translate-y-[3px] transition-all duration-100"
                         >
                           <Route className="h-3 w-3" />
                           Route
@@ -315,7 +315,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             setEditingSide(index);
                             setShowNotification(false);
                           }}
-                          className="h-6 px-2 text-[10px] rounded-md gap-1 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 text-white border-0 shadow-sm font-medium"
+                          className="h-6 px-2 text-[10px] rounded-md gap-1 bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 text-white border-0 font-medium shadow-[0_3px_0_0_rgb(194,65,12)] hover:shadow-[0_1px_0_0_rgb(194,65,12)] hover:translate-y-[2px] active:shadow-none active:translate-y-[3px] transition-all duration-100"
                         >
                           <BrickWall className="h-3 w-3" />
                           Mur
