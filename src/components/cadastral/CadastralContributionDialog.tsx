@@ -4156,123 +4156,125 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
           {/* Onglet Révision & Soumission */}
           <TabsContent value="review" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
-            <div className="space-y-4 sm:space-y-6 py-4 sm:py-6">
+            <div className="space-y-3 py-3 max-w-[360px] mx-auto">
               {/* En-tête avec estimation CCC */}
-              <div className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/30 dark:to-amber-900/20 border-2 border-amber-200 dark:border-amber-800 rounded-2xl p-3 sm:p-6 shadow-lg">
-                <div className="flex items-start gap-2 sm:gap-4">
-                  <div className="h-10 w-10 sm:h-16 sm:w-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg flex-shrink-0">
-                    <Info className="h-5 w-5 sm:h-8 sm:w-8 text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-base sm:text-2xl font-bold text-amber-900 dark:text-amber-100 mb-1 sm:mb-2">
-                      Votre contribution CCC
-                    </h3>
-                    <div className="flex items-baseline gap-1 sm:gap-2 mb-2 sm:mb-3">
-                      <span className="text-xl sm:text-4xl font-bold text-amber-600 dark:text-amber-400">
-                        ${calculateCCCValue().value.toFixed(2)}
-                      </span>
-                      <span className="text-xs sm:text-lg text-amber-700 dark:text-amber-300">/ $5.00</span>
+              <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden bg-gradient-to-br from-amber-50/50 to-amber-100/30 dark:from-amber-950/20 dark:to-amber-900/10">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md flex-shrink-0">
+                      <MdRateReview className="h-5 w-5 text-white" />
                     </div>
-                    {calculateCCCValue().value < 5 && (
-                      <p className="text-[10px] sm:text-xs text-amber-700 dark:text-amber-300 mt-1 sm:mt-2 flex items-start gap-1">
-                        <Info className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                        <span>Complétez davantage de champs pour maximiser votre code CCC !</span>
-                      </p>
-                    )}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-amber-900 dark:text-amber-100">
+                        Valeur CCC estimée
+                      </h3>
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                          ${calculateCCCValue().value.toFixed(2)}
+                        </span>
+                        <span className="text-xs text-amber-700 dark:text-amber-300">/ $5.00</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                  {calculateCCCValue().value < 5 && (
+                    <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                      <Info className="h-3 w-3 flex-shrink-0" />
+                      <span>Complétez plus de champs pour maximiser votre CCC</span>
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Titre Récapitulatif */}
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-semibold">Récapitulatif</h3>
               </div>
 
-              {/* Récapitulatif des sections */}
-              <div className="space-y-2 sm:space-y-4">
-                <h3 className="text-sm sm:text-lg font-semibold flex items-center gap-2">
-                  <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-                  Récapitulatif de votre contribution
-                </h3>
-
-                {/* Section Informations Générales */}
-                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-xs sm:text-sm">📋 Informations générales</h4>
+              {/* Section Infos Générales */}
+              <Card className="rounded-2xl shadow-sm border-border/50">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                      <span>📋</span> Infos générales
+                    </h4>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTabChange('general')}
-                      className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3"
+                      className="text-xs h-6 px-2"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="space-y-2 text-xs sm:text-sm">
+                  <div className="space-y-1 text-xs">
                     {formData.parcelNumber && (
-                      <div><span className="font-medium">N° Parcelle:</span> {formData.parcelNumber}</div>
+                      <div><span className="font-medium">Parcelle:</span> {formData.parcelNumber}</div>
                     )}
                     {formData.propertyTitleType && (
-                      <div><span className="font-medium">Type de titre:</span> {formData.propertyTitleType}</div>
+                      <div><span className="font-medium">Titre:</span> {formData.propertyTitleType}</div>
                     )}
                     {formData.titleReferenceNumber && (
-                      <div><span className="font-medium">N° référence titre:</span> {formData.titleReferenceNumber}</div>
+                      <div><span className="font-medium">Réf:</span> {formData.titleReferenceNumber}</div>
                     )}
                     {currentOwners.some(o => o.lastName || o.firstName) && (
-                      <div className="pt-2 border-t">
-                        <div className="font-medium mb-1">Propriétaire(s) actuel(s):</div>
+                      <div className="pt-1 border-t border-border/50">
+                        <div className="font-medium">Propriétaire(s):</div>
                         {currentOwners.filter(o => o.lastName || o.firstName).map((owner, idx) => (
-                          <div key={idx} className="ml-3 text-xs">
-                            • {owner.lastName} {owner.middleName} {owner.firstName}
-                            {owner.legalStatus && ` (${owner.legalStatus})`}
-                            {owner.since && ` - Depuis le ${new Date(owner.since).toLocaleDateString('fr-FR')}`}
+                          <div key={idx} className="ml-2 text-muted-foreground">
+                            • {owner.lastName} {owner.firstName}
+                            {owner.since && ` (${new Date(owner.since).toLocaleDateString('fr-FR')})`}
                           </div>
                         ))}
                       </div>
                     )}
                     {formData.constructionType && (
-                      <div className="pt-2 border-t"><span className="font-medium">Type de construction:</span> {formData.constructionType}</div>
-                    )}
-                    {formData.constructionNature && (
-                      <div><span className="font-medium">Nature:</span> {formData.constructionNature}</div>
+                      <div className="pt-1 border-t border-border/50"><span className="font-medium">Construction:</span> {formData.constructionType}</div>
                     )}
                     {formData.declaredUsage && (
-                      <div><span className="font-medium">Usage déclaré:</span> {formData.declaredUsage}</div>
+                      <div><span className="font-medium">Usage:</span> {formData.declaredUsage}</div>
                     )}
                     {buildingPermits.some(p => p.permitNumber) && (
-                      <div className="pt-2 border-t">
-                        <div className="font-medium mb-1">Permis de construire:</div>
+                      <div className="pt-1 border-t border-border/50">
+                        <div className="font-medium">Permis:</div>
                         {buildingPermits.filter(p => p.permitNumber).map((permit, idx) => (
-                          <div key={idx} className="ml-3 text-xs">
-                            • N° {permit.permitNumber} - {permit.permitType === 'construction' ? 'Construction' : 'Régularisation'}
-                            {permit.issueDate && ` - Émis le ${new Date(permit.issueDate).toLocaleDateString('fr-FR')}`}
-                            {permit.issuingService && ` par ${permit.issuingService}`}
+                          <div key={idx} className="ml-2 text-muted-foreground">
+                            • N° {permit.permitNumber}
                           </div>
                         ))}
                       </div>
                     )}
-                    {(!formData.propertyTitleType && !formData.titleReferenceNumber && !currentOwners.some(o => o.lastName || o.firstName) && !formData.constructionType) && (
-                      <div className="text-muted-foreground italic text-xs">Aucune information générale renseignée</div>
+                    {(!formData.propertyTitleType && !currentOwners.some(o => o.lastName || o.firstName)) && (
+                      <div className="text-muted-foreground italic">Aucune info renseignée</div>
                     )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
 
-                {/* Section Localisation */}
-                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-xs sm:text-sm">📍 Localisation</h4>
+              {/* Section Localisation */}
+              <Card className="rounded-2xl shadow-sm border-border/50">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                      <span>📍</span> Localisation
+                    </h4>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTabChange('location')}
-                      className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3"
+                      className="text-xs h-6 px-2"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="space-y-2 text-xs sm:text-sm">
+                  <div className="space-y-1 text-xs">
                     {formData.province && (
                       <div><span className="font-medium">Province:</span> {formData.province}</div>
                     )}
                     {sectionType && (
-                      <div><span className="font-medium">Type de section:</span> {sectionType === 'urbaine' ? 'Section Urbaine (SU)' : 'Section Rurale (SR)'}</div>
+                      <div><span className="font-medium">Section:</span> {sectionType === 'urbaine' ? 'Urbaine' : 'Rurale'}</div>
                     )}
                     {sectionType === 'urbaine' && (
                       <>
@@ -4287,289 +4289,221 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         {formData.territoire && <div><span className="font-medium">Territoire:</span> {formData.territoire}</div>}
                         {formData.collectivite && <div><span className="font-medium">Collectivité:</span> {formData.collectivite}</div>}
                         {formData.village && <div><span className="font-medium">Village:</span> {formData.village}</div>}
-                        {formData.groupement && <div><span className="font-medium">Groupement:</span> {formData.groupement}</div>}
                       </>
                     )}
                     {formData.areaSqm && (
-                      <div className="pt-2 border-t"><span className="font-medium">Superficie totale:</span> {formData.areaSqm} m²</div>
+                      <div className="pt-1 border-t border-border/50"><span className="font-medium">Superficie:</span> {formData.areaSqm} m²</div>
                     )}
                     {parcelSides.some(s => s.length) && (
-                      <div className="pt-2 border-t">
-                        <div className="font-medium mb-1">Dimensions de la parcelle:</div>
-                        {parcelSides.filter(s => s.length).map((side, idx) => {
-                          const roadSide = roadSides.find(r => r.sideIndex === idx);
-                          const isRoad = roadSide?.borderType === 'route' && roadSide?.isConfirmed;
-                          const isWall = roadSide?.borderType === 'mur_mitoyen' && roadSide?.isConfirmed;
-                          return (
-                            <div key={idx} className="ml-3 text-xs">
-                              • {side.name}: {side.length} m
-                              {isRoad && <span className="text-green-600 ml-1">(Route: {roadSide?.roadType})</span>}
-                              {isWall && <span className="text-amber-600 ml-1">(Mur: {roadSide?.wallMaterial})</span>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
-                      <div className="pt-2 border-t">
-                        <div className="font-medium mb-1">Coordonnées GPS ({gpsCoordinates.filter(g => g.lat && g.lng).length} borne{gpsCoordinates.filter(g => g.lat && g.lng).length > 1 ? 's' : ''}):</div>
-                        {gpsCoordinates.filter(g => g.lat && g.lng).map((coord, idx) => (
-                          <div key={idx} className="ml-3 text-xs">
-                            • {coord.borne}: {coord.lat}, {coord.lng}
-                          </div>
+                      <div className="pt-1 border-t border-border/50">
+                        <div className="font-medium">Dimensions:</div>
+                        {parcelSides.filter(s => s.length).map((side, idx) => (
+                          <span key={idx} className="text-muted-foreground mr-2">
+                            {side.name.replace('Côté ', '')}: {side.length}m
+                          </span>
                         ))}
                       </div>
                     )}
-                    {(!formData.province && !formData.areaSqm && !parcelSides.some(s => s.length) && !gpsCoordinates.some(g => g.lat && g.lng)) && (
-                      <div className="text-muted-foreground italic text-xs">Aucune information de localisation renseignée</div>
+                    {gpsCoordinates.filter(g => g.lat && g.lng).length > 0 && (
+                      <div className="pt-1 border-t border-border/50">
+                        <span className="font-medium">GPS:</span> {gpsCoordinates.filter(g => g.lat && g.lng).length} borne(s)
+                      </div>
+                    )}
+                    {(!formData.province && !formData.areaSqm) && (
+                      <div className="text-muted-foreground italic">Aucune localisation renseignée</div>
                     )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
 
-                {/* Section Historique des propriétaires */}
-                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-xs sm:text-sm">📜 Historique des propriétaires</h4>
+              {/* Section Historique */}
+              <Card className="rounded-2xl shadow-sm border-border/50">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                      <span>📜</span> Historique
+                    </h4>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTabChange('history')}
-                      className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3"
+                      className="text-xs h-6 px-2"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="space-y-3 text-xs sm:text-sm">
+                  <div className="space-y-1 text-xs">
                     {previousOwners.some(o => o.name) ? (
                       previousOwners.filter(o => o.name).map((owner, idx) => (
-                        <div key={idx} className="border-l-2 border-primary/30 pl-3">
-                          <div className="font-medium">Ancien propriétaire #{idx + 1}</div>
-                          <div className="ml-2 space-y-1 text-xs">
-                            <div>• Nom: {owner.name}</div>
-                            {owner.legalStatus && <div>• Statut: {owner.legalStatus}</div>}
-                            {owner.startDate && <div>• Période: du {new Date(owner.startDate).toLocaleDateString('fr-FR')}</div>}
-                            {owner.endDate && <div>  au {new Date(owner.endDate).toLocaleDateString('fr-FR')}</div>}
-                            {owner.mutationType && <div>• Type de mutation: {owner.mutationType}</div>}
+                        <div key={idx} className="border-l-2 border-primary/30 pl-2">
+                          <div className="font-medium">Ancien #{idx + 1}: {owner.name}</div>
+                          <div className="text-muted-foreground">
+                            {owner.mutationType && `${owner.mutationType}`}
+                            {owner.startDate && ` • ${new Date(owner.startDate).toLocaleDateString('fr-FR')}`}
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className="text-muted-foreground italic text-xs">Aucun historique de propriétaire renseigné</div>
+                      <div className="text-muted-foreground italic">Aucun historique</div>
                     )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
 
-                {/* Section Obligations (Taxes et Hypothèques) */}
-                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
-                  <div className="flex items-center justify-between gap-2">
-                    <h4 className="font-semibold text-xs sm:text-sm">💼 Obligations (Taxes et Hypothèques)</h4>
+              {/* Section Obligations */}
+              <Card className="rounded-2xl shadow-sm border-border/50">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                      <span>💼</span> Obligations
+                    </h4>
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       onClick={() => handleTabChange('obligations')}
-                      className="text-[10px] sm:text-xs h-6 sm:h-7 px-2 sm:px-3"
+                      className="text-xs h-6 px-2"
                     >
                       Modifier
                     </Button>
                   </div>
-                  <div className="space-y-3 text-xs sm:text-sm">
+                  <div className="space-y-2 text-xs">
                     {taxRecords.some(t => t.taxAmount) ? (
                       <div>
-                        <div className="font-medium mb-2">Taxes foncières:</div>
+                        <div className="font-medium">Taxes:</div>
                         {taxRecords.filter(t => t.taxAmount).map((tax, idx) => (
-                          <div key={idx} className="border-l-2 border-blue-300 pl-3 mb-2">
-                            <div className="ml-2 space-y-1 text-xs">
-                              <div>• Type: {tax.taxType}</div>
-                              {tax.taxYear && <div>• Année: {tax.taxYear}</div>}
-                              {tax.taxAmount && <div>• Montant: {tax.taxAmount} USD</div>}
-                              {tax.paymentStatus && <div>• Statut: {tax.paymentStatus}</div>}
-                              {tax.paymentDate && <div>• Date de paiement: {new Date(tax.paymentDate).toLocaleDateString('fr-FR')}</div>}
-                            </div>
+                          <div key={idx} className="ml-2 text-muted-foreground">
+                            • {tax.taxYear}: {tax.taxAmount} USD ({tax.paymentStatus})
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className="text-muted-foreground italic text-xs">Aucune taxe foncière renseignée</div>
+                      <div className="text-muted-foreground italic">Aucune taxe</div>
                     )}
                     {mortgageRecords.some(m => m.mortgageAmount) ? (
-                      <div className={taxRecords.some(t => t.taxAmount) ? "pt-2 border-t" : ""}>
-                        <div className="font-medium mb-2">Hypothèques:</div>
+                      <div className="pt-1 border-t border-border/50">
+                        <div className="font-medium">Hypothèques:</div>
                         {mortgageRecords.filter(m => m.mortgageAmount).map((mortgage, idx) => (
-                          <div key={idx} className="border-l-2 border-amber-300 pl-3 mb-2">
-                            <div className="ml-2 space-y-1 text-xs">
-                              {mortgage.mortgageAmount && <div>• Montant: {mortgage.mortgageAmount} USD</div>}
-                              {mortgage.duration && <div>• Durée: {mortgage.duration} mois</div>}
-                              {mortgage.creditorName && <div>• Créancier: {mortgage.creditorName}</div>}
-                              {mortgage.creditorType && <div>• Type: {mortgage.creditorType}</div>}
-                              {mortgage.contractDate && <div>• Date du contrat: {new Date(mortgage.contractDate).toLocaleDateString('fr-FR')}</div>}
-                              {mortgage.mortgageStatus && <div>• Statut: {mortgage.mortgageStatus}</div>}
-                            </div>
+                          <div key={idx} className="ml-2 text-muted-foreground">
+                            • {mortgage.mortgageAmount} USD - {mortgage.creditorName} ({mortgage.mortgageStatus})
                           </div>
                         ))}
                       </div>
                     ) : (
-                      <div className={taxRecords.some(t => t.taxAmount) ? "pt-2 border-t text-muted-foreground italic text-xs" : "text-muted-foreground italic text-xs"}>
-                        Aucune hypothèque renseignée
+                      <div className={taxRecords.some(t => t.taxAmount) ? "pt-1 border-t border-border/50 text-muted-foreground italic" : "text-muted-foreground italic"}>
+                        Aucune hypothèque
                       </div>
                     )}
                   </div>
-                </div>
+                </CardContent>
+              </Card>
 
-                {/* Pièces jointes */}
-                <div className="border rounded-xl p-2.5 sm:p-4 space-y-2 sm:space-y-3 bg-muted/30">
-                  <h4 className="font-semibold text-xs sm:text-sm">📎 Pièces jointes</h4>
-                  <div className="grid grid-cols-1 gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                    <div className={ownerDocFile ? "text-foreground flex items-start gap-2" : "text-muted-foreground italic flex items-start gap-2"}>
-                      {ownerDocFile ? <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> : <span className="text-base">⭕</span>}
-                      <span className="break-words">Pièce d'identité : {ownerDocFile ? ownerDocFile.name : "Non fournie"}</span>
+              {/* Pièces jointes */}
+              <Card className="rounded-2xl shadow-sm border-border/50">
+                <CardContent className="p-3 space-y-2">
+                  <h4 className="text-xs font-semibold flex items-center gap-1.5">
+                    <span>📎</span> Documents joints
+                  </h4>
+                  <div className="space-y-1 text-xs">
+                    <div className={ownerDocFile ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
+                      {ownerDocFile ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
+                      <span>Pièce d'identité: {ownerDocFile ? "✓" : "Non"}</span>
                     </div>
-                    <div className={titleDocFiles.length > 0 ? "text-foreground flex items-start gap-2" : "text-muted-foreground italic flex items-start gap-2"}>
-                      {titleDocFiles.length > 0 ? <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" /> : <span className="text-base">⭕</span>}
-                      <span className="break-words">Titre de propriété : {titleDocFiles.length > 0 ? `${titleDocFiles.length} fichier(s)` : "Non fourni"}</span>
+                    <div className={titleDocFiles.length > 0 ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
+                      {titleDocFiles.length > 0 ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
+                      <span>Titre: {titleDocFiles.length > 0 ? `${titleDocFiles.length} fichier(s)` : "Non"}</span>
                     </div>
-                    
-                    {/* Pièces jointes des permis de construire */}
                     {buildingPermits.some(p => p.attachmentFile) && (
-                      <div className="text-foreground flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                        <div className="break-words">
-                          <span className="font-medium">Permis de construire :</span>
-                          <ul className="ml-2 mt-1 space-y-1">
-                            {buildingPermits.map((permit, index) => 
-                              permit.attachmentFile && (
-                                <li key={index} className="text-muted-foreground">
-                                  • {permit.attachmentFile.name}
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
+                      <div className="text-foreground flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3 text-primary" />
+                        <span>Permis: {buildingPermits.filter(p => p.attachmentFile).length} fichier(s)</span>
                       </div>
                     )}
-                    
-                    {/* Reçus de taxes */}
                     {taxRecords.some(t => t.receiptFile) && (
-                      <div className="text-foreground flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                        <div className="break-words">
-                          <span className="font-medium">Reçus de taxes :</span>
-                          <ul className="ml-2 mt-1 space-y-1">
-                            {taxRecords.map((tax, index) => 
-                              tax.receiptFile && (
-                                <li key={index} className="text-muted-foreground">
-                                  • {tax.receiptFile.name}
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
+                      <div className="text-foreground flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3 text-primary" />
+                        <span>Reçus taxes: {taxRecords.filter(t => t.receiptFile).length} fichier(s)</span>
                       </div>
                     )}
-                    
-                    {/* Documents d'hypothèques */}
                     {mortgageRecords.some(m => m.receiptFile) && (
-                      <div className="text-foreground flex items-start gap-2">
-                        <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                        <div className="break-words">
-                          <span className="font-medium">Documents d'hypothèques :</span>
-                          <ul className="ml-2 mt-1 space-y-1">
-                            {mortgageRecords.map((mortgage, index) => 
-                              mortgage.receiptFile && (
-                                <li key={index} className="text-muted-foreground">
-                                  • {mortgage.receiptFile.name}
-                                </li>
-                              )
-                            )}
-                          </ul>
-                        </div>
+                      <div className="text-foreground flex items-center gap-1.5">
+                        <CheckCircle2 className="h-3 w-3 text-primary" />
+                        <span>Hypothèques: {mortgageRecords.filter(m => m.receiptFile).length} fichier(s)</span>
                       </div>
                     )}
                   </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
               {/* Message de motivation */}
               {calculateCCCValue().value < 5 && (
-                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-2.5 sm:p-4">
-                  <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-200 flex items-start gap-2">
-                    <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                    <span>
-                      <strong>Conseil :</strong> Pour maximiser votre code CCC (5$), complétez les sections manquantes. 
-                      Plus vous fournissez d'informations, plus votre contribution est valorisée !
-                    </span>
-                  </p>
-                </div>
+                <Card className="rounded-2xl shadow-sm border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
+                  <CardContent className="p-3">
+                    <p className="text-xs text-blue-800 dark:text-blue-200 flex items-start gap-1.5">
+                      <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                      <span>Complétez plus de champs pour maximiser votre CCC (5$)</span>
+                    </p>
+                  </CardContent>
+                </Card>
               )}
 
               {/* Bouton de soumission */}
               {user ? (
-                <div className="sticky bottom-0 left-0 right-0 mt-6 sm:mt-8 -mx-3 sm:-mx-6 -mb-4 sm:-mb-6 bg-background/95 backdrop-blur-sm border-t p-3 sm:p-6 z-10 rounded-b-2xl">
-                  <div className="max-w-2xl mx-auto">
-                    <Button
-                      type="button"
-                      size="lg"
-                      onClick={handleSubmit}
-                      disabled={loading || uploading || !isFormValidForSubmission()}
-                      className="w-full h-11 sm:h-14 text-sm sm:text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80 rounded-xl"
-                    >
-                      {loading || uploading ? (
-                        <>
-                          <Loader2 className="h-4 w-4 sm:h-5 sm:w-5 animate-spin" />
-                          {uploading ? "Téléchargement..." : "Envoi en cours..."}
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                          Soumettre ma contribution
-                        </>
-                      )}
-                    </Button>
-                    {!isFormValidForSubmission() && (
-                      <p className="text-[10px] sm:text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
-                        Complétez : Type de titre, Propriétaire(s), et localisation
-                      </p>
+                <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-3 -mx-3 px-3 -mb-3 pb-3">
+                  <Button
+                    type="button"
+                    size="lg"
+                    onClick={handleSubmit}
+                    disabled={loading || uploading || !isFormValidForSubmission()}
+                    className="w-full h-11 text-sm font-semibold gap-2 shadow-lg hover:shadow-xl transition-all bg-gradient-to-r from-primary to-primary/80 rounded-xl"
+                  >
+                    {loading || uploading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        {uploading ? "Téléchargement..." : "Envoi..."}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4" />
+                        Soumettre
+                      </>
                     )}
-                    <p className="text-[10px] sm:text-xs text-center text-muted-foreground mt-2 sm:mt-3">
-                      En soumettant, vous acceptez que vos données soient vérifiées
+                  </Button>
+                  {!isFormValidForSubmission() && (
+                    <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
+                      Complétez: Titre, Propriétaire, Localisation
                     </p>
-                  </div>
+                  )}
+                  <p className="text-xs text-center text-muted-foreground mt-2">
+                    En soumettant, vous acceptez la vérification des données
+                  </p>
                 </div>
               ) : (
-                <div className="sticky bottom-0 left-0 right-0 mt-6 sm:mt-8 -mx-3 sm:-mx-6 -mb-4 sm:-mb-6 bg-background/95 backdrop-blur-sm border-t p-3 sm:p-6 z-10 rounded-b-2xl">
-                  <div className="max-w-2xl mx-auto">
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
-                      <div className="flex-1 text-center sm:text-left">
-                        <p className="text-xs sm:text-sm font-medium text-foreground mb-0.5 sm:mb-1">
-                          Formulaire complété
-                        </p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground">
-                          Connectez-vous pour soumettre et obtenir votre code CCC
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        size="lg"
-                        onClick={() => {
-                          saveFormDataToStorage();
-                          setShowQuickAuth(true);
-                          setPendingSubmission(true);
-                        }}
-                        disabled={!isFormValidForSubmission()}
-                        className="w-full sm:w-auto px-4 sm:px-8 h-10 sm:h-14 text-sm sm:text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all rounded-xl"
-                      >
-                        <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                        <span className="hidden sm:inline">Soumettre ma contribution</span>
-                        <span className="sm:hidden">Soumettre</span>
-                      </Button>
-                    </div>
-                    {!isFormValidForSubmission() && (
-                      <p className="text-[10px] sm:text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
-                        Complétez : Type de titre, Propriétaire(s), et localisation
-                      </p>
-                    )}
+                <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t pt-3 -mx-3 px-3 -mb-3 pb-3">
+                  <div className="text-center mb-2">
+                    <p className="text-xs font-medium">Formulaire complété</p>
+                    <p className="text-xs text-muted-foreground">Connectez-vous pour soumettre</p>
                   </div>
+                  <Button
+                    type="button"
+                    size="lg"
+                    onClick={() => {
+                      saveFormDataToStorage();
+                      setShowQuickAuth(true);
+                      setPendingSubmission(true);
+                    }}
+                    disabled={!isFormValidForSubmission()}
+                    className="w-full h-11 text-sm font-semibold gap-2 shadow-lg hover:shadow-xl transition-all rounded-xl"
+                  >
+                    <CheckCircle2 className="h-4 w-4" />
+                    Soumettre
+                  </Button>
+                  {!isFormValidForSubmission() && (
+                    <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
+                      Complétez: Titre, Propriétaire, Localisation
+                    </p>
+                  )}
                 </div>
               )}
             </div>
