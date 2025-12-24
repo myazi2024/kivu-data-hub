@@ -2961,1161 +2961,240 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </div>
 
             
-            {/* Section Permis de construire */}
-            <div className="space-y-4 pt-4 border-t">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="text-sm font-semibold">Permis de construire</Label>
+            {/* Section Permis de construire - Simplifié */}
+            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+              <CardContent className="p-3 space-y-3">
+                {/* Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <MdInsertDriveFile className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <Label className="text-sm font-semibold">Permis de construire</Label>
+                  </div>
                   <Popover>
                     <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-transparent">
-                        <Info className="h-4 w-4 text-muted-foreground hover:text-foreground transition-colors" />
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                        <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-80" align="start">
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-sm">Guide du permis de construire</h4>
-                        
-                        <div className="space-y-3 text-sm">
-                          <div className="space-y-2">
-                            <p className="font-medium text-primary">Option 1 : J'ai déjà un permis</p>
-                            <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
-                              <li>Cliquez sur "J'ai déjà un permis"</li>
-                              <li>Renseignez le numéro du permis</li>
-                              <li>Indiquez la date d'émission</li>
-                              <li>Sélectionnez le service émetteur</li>
-                              <li>Joignez une copie du document (optionnel)</li>
-                            </ol>
-                          </div>
-                          
-                          <div className="space-y-2 pt-2 border-t">
-                            <p className="font-medium text-primary">Option 2 : Demander un permis</p>
-                            <ol className="list-decimal list-inside space-y-1 text-muted-foreground ml-2">
-                              <li>Cliquez sur "Demander un permis"</li>
-                              <li>Choisissez le type (construction ou régularisation)</li>
-                              <li>Décrivez votre projet de construction</li>
-                              <li>Renseignez vos coordonnées de contact</li>
-                              <li>Joignez les plans architecturaux (si disponibles)</li>
-                            </ol>
-                          </div>
-                        </div>
-                        
-                        <p className="text-xs text-muted-foreground italic pt-2 border-t">
-                          💡 Cette section est optionnelle mais fortement recommandée pour régulariser votre parcelle
+                    <PopoverContent className="w-72 rounded-xl" align="end">
+                      <div className="space-y-2 text-xs">
+                        <h4 className="font-semibold text-sm">À propos du permis</h4>
+                        <p className="text-muted-foreground">
+                          Si vous avez déjà un permis, renseignez-le ici. Sinon, vous pourrez faire une demande depuis votre espace personnel après la soumission de votre contribution.
                         </p>
                       </div>
                     </PopoverContent>
                   </Popover>
                 </div>
-              </div>
 
-              {/* Toggle pour choisir le mode */}
-              <div className="space-y-3 bg-muted/30 p-4 rounded-lg border">
-                <Label className="text-sm">Situation du permis</Label>
+                {/* Toggle pour choisir le mode */}
                 <div className="flex gap-2">
-                  <Button
+                  <button
                     type="button"
-                    variant={permitMode === 'existing' ? 'default' : 'outline'}
-                    size="sm"
                     onClick={() => setPermitMode('existing')}
-                    className="flex-1 text-xs sm:text-sm px-2 sm:px-4"
+                    className={cn(
+                      "flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all",
+                      permitMode === 'existing'
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    )}
                   >
                     J'ai déjà un permis
-                  </Button>
-                  <Button
+                  </button>
+                  <button
                     type="button"
-                    variant={permitMode === 'request' ? 'default' : 'outline'}
-                    size="sm"
                     onClick={() => setPermitMode('request')}
-                    className="flex-1 text-xs sm:text-sm px-2 sm:px-4"
+                    className={cn(
+                      "flex-1 py-2 px-3 rounded-xl text-xs font-medium transition-all",
+                      permitMode === 'request'
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                    )}
                   >
-                    Demander un permis
-                  </Button>
+                    Je n'ai pas de permis
+                  </button>
                 </div>
-              </div>
 
-              {/* Mode: J'ai déjà un permis */}
-              {permitMode === 'existing' && (
-                <div className="space-y-4">
-                  {buildingPermits.map((permit, index) => (
-                      <div key={index} className={`border rounded-xl p-4 space-y-3 bg-gradient-to-br from-muted/30 to-transparent animate-fade-in transition-all duration-300 ${
+                {/* Mode: J'ai déjà un permis */}
+                {permitMode === 'existing' && (
+                  <div className="space-y-3 animate-fade-in">
+                    {buildingPermits.map((permit, index) => (
+                      <div key={index} className={`border rounded-xl p-3 space-y-2.5 bg-muted/20 ${
                         highlightIncompletePermit && index === buildingPermits.length - 1 && (!permit.permitNumber || !permit.issuingService || !permit.issueDate) 
-                          ? 'ring-2 ring-primary bg-primary/5 animate-pulse' 
+                          ? 'ring-2 ring-primary animate-pulse' 
                           : ''
                       }`}>
-                      <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-semibold">Permis #{index + 1}</h4>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            if (index === 0) {
-                              toast({
-                                title: "Suppression impossible",
-                                description: "Le premier bloc de permis ne peut pas être supprimé. Vous pouvez le laisser vide si vous n'avez pas de permis.",
-                                variant: "destructive"
-                              });
-                              return;
-                            }
-                            removeBuildingPermit(index);
-                          }}
-                          className="text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      {/* Type de permis */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs font-medium">Type de permis délivré</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-muted">
-                                <Info className="h-4 w-4 text-muted-foreground" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80" align="start">
-                              <div className="space-y-3">
-                                <div className="space-y-2">
-                                  <h4 className="font-medium text-sm">Qu'est-ce qu'un permis délivré ?</h4>
-                                  <p className="text-xs text-muted-foreground">
-                                    Il s'agit du permis de construire qui a été officiellement délivré par le service compétent (Commune, Ville, Division Urbaine) pour autoriser votre construction.
-                                  </p>
-                                </div>
-                                
-                                {!permit.permitNumber && (
-                                  <div className="border-t pt-3 space-y-2">
-                                    <h4 className="font-medium text-sm">Vous n'avez pas encore de permis ?</h4>
-                                    <p className="text-xs text-muted-foreground">
-                                      Vous pouvez faire une demande dans la section "Demander un permis" ci-dessous.
-                                      {formData.constructionType !== "Terrain nu" ? (
-                                        <span className="block mt-2 text-primary font-medium">
-                                          → Un permis de régularisation serait le mieux adapté compte tenu de votre situation (Type de construction: {formData.constructionType}).
-                                        </span>
-                                      ) : formData.constructionNature === "Précaire" ? (
-                                        <span className="block mt-2 text-primary font-medium">
-                                          → Un permis de construire est adapté pour une construction précaire.
-                                        </span>
-                                      ) : (
-                                        <span className="block mt-2 text-primary font-medium">
-                                          → Un permis de construire est adapté pour un terrain nu.
-                                        </span>
-                                      )}
-                                    </p>
-                                  </div>
-                                )}
-                              </div>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        
-                        {/* Notification type de permis bloqué - affichée au-dessus */}
-                        {showPermitTypeBlockedWarning && (
-                          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in mb-2 shadow-lg">
-                            <div className="flex items-start gap-2">
-                              <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-destructive">
-                                  Type de permis non applicable
-                                </p>
-                                <p className="text-xs text-destructive/80 mt-1">
-                                  {permitTypeBlockedMessage}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                        
-                        <RadioGroup 
-                          value={permit.permitType} 
-                          onValueChange={(value: 'construction' | 'regularization') => {
-                            const restrictions = getPermitTypeRestrictions();
-                            
-                            // Vérifier si le type est bloqué
-                            if (restrictions.blockedInExisting === value) {
-                              handleBlockedPermitTypeClick(value, restrictions.messageExisting, 'existing');
-                              return;
-                            }
-                            
-                            updateBuildingPermit(index, 'permitType', value);
-                          }}
-                          className="flex gap-2"
-                        >
-                          <div 
-                            className={`flex items-center space-x-2 flex-1 p-2 rounded-lg border transition-colors ${
-                              getPermitTypeRestrictions().blockedInExisting === 'construction'
-                                ? 'bg-muted/30 opacity-60 cursor-not-allowed'
-                                : 'bg-card hover:bg-muted/50 cursor-pointer'
-                            }`}
-                            onClick={(e) => {
-                              const restrictions = getPermitTypeRestrictions();
-                              if (restrictions.blockedInExisting === 'construction') {
-                                e.preventDefault();
-                                handleBlockedPermitTypeClick('construction', restrictions.messageExisting, 'existing');
-                              }
-                            }}
-                          >
-                            <RadioGroupItem 
-                              value="construction" 
-                              id={`construction-${index}`}
-                              disabled={getPermitTypeRestrictions().blockedInExisting === 'construction'}
-                            />
-                            <Label 
-                              htmlFor={`construction-${index}`} 
-                              className={`flex-1 text-xs ${
-                                getPermitTypeRestrictions().blockedInExisting === 'construction'
-                                  ? 'cursor-not-allowed'
-                                  : 'cursor-pointer'
-                              }`}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-muted-foreground">Permis #{index + 1}</span>
+                          {index > 0 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeBuildingPermit(index)}
+                              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
                             >
-                              Permis de construire
-                            </Label>
-                          </div>
-                          <div 
-                            className={`flex items-center space-x-2 flex-1 p-2 rounded-lg border transition-colors ${
-                              getPermitTypeRestrictions().blockedInExisting === 'regularization'
-                                ? 'bg-muted/30 opacity-60 cursor-not-allowed'
-                                : 'bg-card hover:bg-muted/50 cursor-pointer'
-                            }`}
-                            onClick={(e) => {
-                              const restrictions = getPermitTypeRestrictions();
-                              if (restrictions.blockedInExisting === 'regularization') {
-                                e.preventDefault();
-                                handleBlockedPermitTypeClick('regularization', restrictions.messageExisting, 'existing');
-                              }
-                            }}
-                          >
-                            <RadioGroupItem 
-                              value="regularization" 
-                              id={`regularization-${index}`}
-                              disabled={getPermitTypeRestrictions().blockedInExisting === 'regularization'}
-                            />
-                            <Label 
-                              htmlFor={`regularization-${index}`} 
-                              className={`flex-1 text-xs ${
-                                getPermitTypeRestrictions().blockedInExisting === 'regularization'
-                                  ? 'cursor-not-allowed'
-                                  : 'cursor-pointer'
-                              }`}
-                            >
-                              Permis de régularisation
-                            </Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label className="text-xs">Numéro du permis</Label>
-                          <InputWithPopover
-                            placeholder="ex: PC-2024-001"
-                            value={permit.permitNumber}
-                            onChange={(e) => updateBuildingPermit(index, 'permitNumber', e.target.value)}
-                            helpTitle="Numéro de permis"
-                            helpText="Le numéro de permis de construire est un identifiant unique délivré par les services d'urbanisme. Il figure généralement en haut du document officiel du permis."
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label className="text-xs">Date d'émission</Label>
-                          <Input
-                            type="date"
-                            min={permit.permitType === 'construction' 
-                              ? getPermitTypeRestrictions().dateMinExisting 
-                              : getPermitTypeRestrictions().dateMinRegularization}
-                            max={permit.permitType === 'construction'
-                              ? getPermitTypeRestrictions().dateMaxExisting 
-                              : getPermitTypeRestrictions().dateMaxRegularization}
-                            value={permit.issueDate}
-                            onChange={(e) => {
-                              const restrictions = getPermitTypeRestrictions();
-                              const selectedDate = new Date(e.target.value);
-                              
-                              const minDate = permit.permitType === 'construction'
-                                ? (restrictions.dateMinExisting ? new Date(restrictions.dateMinExisting) : null)
-                                : (restrictions.dateMinRegularization ? new Date(restrictions.dateMinRegularization) : null);
-                              
-                              const maxDate = permit.permitType === 'construction'
-                                ? (restrictions.dateMaxExisting ? new Date(restrictions.dateMaxExisting) : new Date())
-                                : (restrictions.dateMaxRegularization ? new Date(restrictions.dateMaxRegularization) : new Date());
-
-                              if (minDate && selectedDate < minDate) {
-                                toast({
-                                  title: "Date invalide",
-                                  description: `La date d'émission doit être postérieure au ${minDate.toLocaleDateString('fr-FR')}`,
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-
-                              if (maxDate && selectedDate > maxDate) {
-                                toast({
-                                  title: "Date invalide",
-                                  description: `La date d'émission doit être antérieure au ${maxDate.toLocaleDateString('fr-FR')}`,
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-
-                              updateBuildingPermit(index, 'issueDate', e.target.value);
-                            }}
-                          />
-                          {(getPermitTypeRestrictions().dateMinExisting || getPermitTypeRestrictions().dateMinRegularization) && (
-                            <p className="text-xs text-muted-foreground">
-                              Période: {permit.permitType === 'construction'
-                                ? `${new Date(getPermitTypeRestrictions().dateMinExisting).toLocaleDateString('fr-FR')} - ${new Date(getPermitTypeRestrictions().dateMaxExisting).toLocaleDateString('fr-FR')}`
-                                : `${new Date(getPermitTypeRestrictions().dateMinRegularization).toLocaleDateString('fr-FR')} - ${new Date(getPermitTypeRestrictions().dateMaxRegularization).toLocaleDateString('fr-FR')}`}
-                            </p>
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
                           )}
                         </div>
-                      </div>
 
-                      <div className="space-y-2">
-                        <BuildingPermitIssuingServiceSelect
-                          value={permit.issuingService}
-                          onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
-                        />
-                      </div>
+                        {/* Type de permis */}
+                        <div className="flex gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const restrictions = getPermitTypeRestrictions();
+                              if (restrictions.blockedInExisting !== 'construction') {
+                                updateBuildingPermit(index, 'permitType', 'construction');
+                              }
+                            }}
+                            disabled={getPermitTypeRestrictions().blockedInExisting === 'construction'}
+                            className={cn(
+                              "flex-1 py-1.5 px-2 rounded-lg text-[10px] font-medium transition-all",
+                              permit.permitType === 'construction'
+                                ? 'bg-emerald-600 text-white shadow-sm'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                              getPermitTypeRestrictions().blockedInExisting === 'construction' && 'opacity-50 cursor-not-allowed'
+                            )}
+                          >
+                            Construire
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const restrictions = getPermitTypeRestrictions();
+                              if (restrictions.blockedInExisting !== 'regularization') {
+                                updateBuildingPermit(index, 'permitType', 'regularization');
+                              }
+                            }}
+                            disabled={getPermitTypeRestrictions().blockedInExisting === 'regularization'}
+                            className={cn(
+                              "flex-1 py-1.5 px-2 rounded-lg text-[10px] font-medium transition-all",
+                              permit.permitType === 'regularization'
+                                ? 'bg-amber-600 text-white shadow-sm'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                              getPermitTypeRestrictions().blockedInExisting === 'regularization' && 'opacity-50 cursor-not-allowed'
+                            )}
+                          >
+                            Régularisation
+                          </button>
+                        </div>
 
+                        {/* Champs compacts */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">N° Permis</Label>
+                            <Input
+                              placeholder="PC-2024-001"
+                              value={permit.permitNumber}
+                              onChange={(e) => updateBuildingPermit(index, 'permitNumber', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[10px] text-muted-foreground">Date d'émission</Label>
+                            <Input
+                              type="date"
+                              value={permit.issueDate}
+                              onChange={(e) => updateBuildingPermit(index, 'issueDate', e.target.value)}
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        </div>
 
-                      {/* Pièce jointe du permis */}
-                      <div className="space-y-2">
-                        <Label className="text-xs">Pièce jointe (PDF, JPG, PNG)</Label>
-                        {!permit.attachmentFile ? (
-                          <div className="flex gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Service émetteur</Label>
+                          <BuildingPermitIssuingServiceSelect
+                            value={permit.issuingService}
+                            onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
+                          />
+                        </div>
+
+                        {/* Pièce jointe simplifiée */}
+                        <div className="space-y-1">
+                          <Label className="text-[10px] text-muted-foreground">Document (optionnel)</Label>
+                          {!permit.attachmentFile ? (
                             <Input
                               type="file"
                               accept=".pdf,.jpg,.jpeg,.png"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
                                 if (file) {
-                                  // Vérifier la taille (max 10MB)
                                   if (file.size > 10 * 1024 * 1024) {
-                                    toast({
-                                      title: "Fichier trop volumineux",
-                                      description: "La taille maximale est de 10 MB",
-                                      variant: "destructive"
-                                    });
+                                    toast({ title: "Fichier trop volumineux", description: "Max 10 MB", variant: "destructive" });
                                     return;
                                   }
                                   updateBuildingPermitFile(index, file);
                                 }
                               }}
-                              className="flex-1"
+                              className="h-8 text-xs rounded-lg"
                             />
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2 p-3 bg-muted/30 rounded-lg border">
-                            <MdInsertDriveFile className="h-4 w-4 text-primary" />
-                            <span className="text-xs flex-1 truncate">{permit.attachmentFile.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {(permit.attachmentFile.size / 1024).toFixed(1)} KB
-                            </span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeBuildingPermitFile(index)}
-                              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
-                            >
-                              <X className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        )}
-                        <p className="text-xs text-muted-foreground">
-                          Ajoutez une copie du permis de construire pour validation
-                        </p>
+                          ) : (
+                            <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
+                              <span className="text-[10px] flex-1 truncate">{permit.attachmentFile.name}</span>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeBuildingPermitFile(index)}
+                                className="h-5 w-5 p-0 text-destructive"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
 
-                  {/* Bouton Ajouter déplacé en dessous des blocs */}
-                  <div className="space-y-2">
-
-                    {/* Notification d'avertissement */}
+                    {/* Avertissement permis incomplet */}
                     {showPermitWarning && (
-                      <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
-                        <div className="flex items-start gap-2">
-                          <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                              Complétez d'abord le permis actuel
-                            </p>
-                            <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                              Veuillez renseigner le numéro, le service émetteur et la date d'émission du Permis #{buildingPermits.length} avant d'en ajouter un nouveau.
-                            </p>
-                          </div>
-                        </div>
+                      <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-2.5">
+                        <p className="text-[10px] text-amber-700 dark:text-amber-300">
+                          ⚠️ Complétez le permis actuel avant d'en ajouter un nouveau.
+                        </p>
                       </div>
                     )}
 
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={addBuildingPermit}
-                        className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
-                      >
-                        <Plus className="h-4 w-4" />
-                        Ajouter un permis
-                      </Button>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80">
-                          <p className="text-xs text-muted-foreground">
-                            Si vous avez d'autres permis de construire ou de régularisation délivrés dans le passé, vous pouvez également les ajouter. 
-                            Veuillez respecter la logique chronologique dépendante du permis précédent (les dates doivent être cohérentes).
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={addBuildingPermit}
+                      className="w-full h-8 gap-1.5 text-xs hover:bg-primary/5 rounded-xl"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Ajouter un autre permis
+                    </Button>
+                  </div>
+                )}
+
+                {/* Mode: Je n'ai pas de permis */}
+                {permitMode === 'request' && (
+                  <div className="space-y-2 animate-fade-in">
+                    <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
+                      <div className="flex items-start gap-2">
+                        <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-blue-900 dark:text-blue-100">
+                            Pas de permis ? Pas de problème !
                           </p>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Mode: Je souhaite faire une demande */}
-              {permitMode === 'request' && (
-                <div className="space-y-4 animate-fade-in">
-                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
-                          Demande de permis
-                        </p>
-                        <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                          Votre demande sera traitée après validation de votre contribution cadastrale. Les frais de traitement seront communiqués par nos services.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Type de permis demandé */}
-                  <div className="space-y-3">
-                    <Label className="text-sm font-semibold">Type de permis demandé *</Label>
-                    
-                    {/* Notification type de permis bloqué - affichée au-dessus */}
-                    {showPermitTypeBlockedWarning && (
-                      <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3 animate-fade-in shadow-lg">
-                        <div className="flex items-start gap-2">
-                          <Info className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium text-destructive">
-                              Type de permis non applicable
-                            </p>
-                            <p className="text-xs text-destructive/80 mt-1">
-                              {permitTypeBlockedMessage}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="space-y-3">
-                      <div 
-                        className={`flex items-start gap-2 p-3 rounded-lg border transition-colors ${
-                          getPermitTypeRestrictions().blockedInRequest === 'construction'
-                            ? 'bg-muted/30 opacity-60 cursor-not-allowed'
-                            : permitRequest.permitType === 'construction' 
-                              ? 'border-primary bg-primary/5' 
-                              : 'hover:bg-muted/30 cursor-pointer'
-                        }`}
-                        onClick={() => {
-                          const restrictions = getPermitTypeRestrictions();
-                          if (restrictions.blockedInRequest === 'construction') {
-                            handleBlockedPermitTypeClick('construction', restrictions.messageRequest, 'request');
-                          } else {
-                            setPermitRequest({ ...permitRequest, permitType: 'construction' });
-                          }
-                        }}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="permit-type-construction"
-                            name="permitType"
-                            value="construction"
-                            checked={permitRequest.permitType === 'construction'}
-                            disabled={getPermitTypeRestrictions().blockedInRequest === 'construction'}
-                            onChange={(e) => {
-                              if (getPermitTypeRestrictions().blockedInRequest !== 'construction') {
-                                setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularization' });
-                              }
-                            }}
-                            className="h-4 w-4 mt-0.5"
-                          />
-                          <label 
-                            htmlFor="permit-type-construction" 
-                            className={`text-sm font-medium ${
-                              getPermitTypeRestrictions().blockedInRequest === 'construction'
-                                ? 'cursor-not-allowed'
-                                : 'cursor-pointer'
-                            }`}
-                          >
-                            Permis de construire
-                          </label>
-                        </div>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <div className="space-y-2">
-                              <h4 className="font-semibold">Permis de construire</h4>
-                              <p className="text-sm text-muted-foreground">
-                                Pour une nouvelle construction ou un projet de construction sur un terrain vierge. 
-                                Ce permis est nécessaire avant de commencer tout travaux de construction.
-                              </p>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-
-                      <div 
-                        className={`flex items-start gap-2 p-3 rounded-lg border transition-colors ${
-                          getPermitTypeRestrictions().blockedInRequest === 'regularization'
-                            ? 'bg-muted/30 opacity-60 cursor-not-allowed'
-                            : permitRequest.permitType === 'regularization' 
-                              ? 'border-primary bg-primary/5' 
-                              : 'hover:bg-muted/30 cursor-pointer'
-                        }`}
-                        onClick={() => {
-                          const restrictions = getPermitTypeRestrictions();
-                          if (restrictions.blockedInRequest === 'regularization') {
-                            handleBlockedPermitTypeClick('regularization', restrictions.messageRequest, 'request');
-                          } else {
-                            setPermitRequest({ ...permitRequest, permitType: 'regularization' });
-                          }
-                        }}
-                      >
-                        <div className="flex items-center space-x-2">
-                          <input
-                            type="radio"
-                            id="permit-type-regularisation"
-                            name="permitType"
-                            value="regularization"
-                            checked={permitRequest.permitType === 'regularization'}
-                            disabled={getPermitTypeRestrictions().blockedInRequest === 'regularization'}
-                            onChange={(e) => {
-                              if (getPermitTypeRestrictions().blockedInRequest !== 'regularization') {
-                                setPermitRequest({ ...permitRequest, permitType: e.target.value as 'construction' | 'regularization' });
-                              }
-                            }}
-                            className="h-4 w-4 mt-0.5"
-                          />
-                          <label 
-                            htmlFor="permit-type-regularisation" 
-                            className={`text-sm font-medium ${
-                              getPermitTypeRestrictions().blockedInRequest === 'regularization'
-                                ? 'cursor-not-allowed'
-                                : 'cursor-pointer'
-                            }`}
-                          >
-                            Permis de régularisation
-                          </label>
-                        </div>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                              <Info className="h-4 w-4 text-muted-foreground" />
-                            </Button>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-80">
-                            <div className="space-y-2">
-                              <h4 className="font-semibold">Permis de régularisation</h4>
-                              <p className="text-sm text-muted-foreground">
-                                Pour régulariser une construction existante qui a été réalisée sans permis ou qui ne respecte pas 
-                                les normes initiales. Permet de mettre en conformité un bâtiment déjà construit.
-                              </p>
-                            </div>
-                          </PopoverContent>
-                        </Popover>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Champs conditionnels selon le type de permis */}
-                  {permitRequest.permitType === 'construction' ? (
-                    // === PERMIS DE CONSTRUIRE ===
-                    <>
-                      {/* Description du projet */}
-                      <div className="space-y-2">
-                        <Label>Description du projet de construction *</Label>
-                        <Textarea
-                          placeholder="Décrivez le projet (ex: Construction d'une villa moderne de type R+1 avec 4 chambres)"
-                          value={permitRequest.constructionDescription}
-                          onChange={(e) => setPermitRequest({ ...permitRequest, constructionDescription: e.target.value })}
-                          rows={3}
-                        />
-                      </div>
-
-                      {/* Usage prévu */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label>Usage prévu *</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80">
-                              <p className="text-xs text-muted-foreground">
-                                L'usage prévu est automatiquement défini selon l'usage déclaré dans "Informations Générales". 
-                                Cette valeur ne peut pas être modifiée ici pour garantir la cohérence des données.
-                              </p>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        <Select
-                          value={permitRequest.plannedUsage || formData.declaredUsage}
-                          onValueChange={(value) => {
-                            setShowUsageLockedWarning(true);
-                            setTimeout(() => setShowUsageLockedWarning(false), 5000);
-                          }}
-                          disabled={true}
-                        >
-                          <SelectTrigger className="bg-muted/30">
-                            <SelectValue placeholder="Défini automatiquement selon l'usage déclaré" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableDeclaredUsages.map(usage => (
-                              <SelectItem key={usage} value={usage}>{usage}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {showUsageLockedWarning && (
-                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-2 animate-fade-in">
-                            <p className="text-xs text-blue-700 dark:text-blue-300">
-                              L'usage prévu est automatiquement rempli selon votre "Usage déclaré" dans l'onglet Informations Générales et ne peut être modifié ici.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Surface estimée */}
-                        <div className="space-y-2">
-                          <Label>Surface de construction estimée (m²) *</Label>
-                          <Input
-                            type="number"
-                            placeholder="ex: 150"
-                            value={permitRequest.estimatedArea}
-                            onChange={(e) => setPermitRequest({ ...permitRequest, estimatedArea: e.target.value })}
-                          />
-                        </div>
-
-                        {/* Nombre d'étages */}
-                        <div className="space-y-2">
-                          <Label>Nombre d'étages *</Label>
-                          <Select
-                            value={permitRequest.numberOfFloors}
-                            onValueChange={(value) => setPermitRequest({ ...permitRequest, numberOfFloors: value })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="RDC">RDC (Rez-de-chaussée uniquement)</SelectItem>
-                              <SelectItem value="R+1">R+1 (1 étage)</SelectItem>
-                              <SelectItem value="R+2">R+2 (2 étages)</SelectItem>
-                              <SelectItem value="R+3">R+3 (3 étages)</SelectItem>
-                              <SelectItem value="R+4">R+4 (4 étages ou plus)</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      {/* Matériaux de construction */}
-                      <div className="space-y-2">
-                        <Label>Matériaux de construction principaux *</Label>
-                        <Select
-                          value={permitRequest.buildingMaterials}
-                          onValueChange={(value) => setPermitRequest({ ...permitRequest, buildingMaterials: value })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner les matériaux" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Béton armé">Béton armé</SelectItem>
-                            <SelectItem value="Briques cuites">Briques cuites</SelectItem>
-                            <SelectItem value="Blocs de ciment">Blocs de ciment</SelectItem>
-                            <SelectItem value="Bois">Bois</SelectItem>
-                            <SelectItem value="Matériaux mixtes">Matériaux mixtes</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Plans architecturaux */}
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          Plans architecturaux * 
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-72">
-                              <p className="text-xs text-muted-foreground">
-                                Veuillez joindre les plans de votre construction (plans de façade, plans d'étage, plans de masse). 
-                                Formats acceptés: JPG, PNG, PDF. Maximum 5 fichiers.
-                              </p>
-                            </PopoverContent>
-                          </Popover>
-                        </Label>
-                        <div className="space-y-2">
-                          <Input
-                            type="file"
-                            accept="image/jpeg,image/jpg,image/png,application/pdf"
-                            multiple
-                            onChange={(e) => {
-                              const files = Array.from(e.target.files || []);
-                              if (permitRequest.architecturalPlanImages.length + files.length > 5) {
-                                toast({
-                                  title: "Limite atteinte",
-                                  description: "Vous ne pouvez ajouter que 5 plans maximum",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-                              setPermitRequest({ 
-                                ...permitRequest, 
-                                architecturalPlanImages: [...permitRequest.architecturalPlanImages, ...files] 
-                              });
-                              e.target.value = '';
-                            }}
-                            className="cursor-pointer"
-                          />
-                          {permitRequest.architecturalPlanImages.length > 0 && (
-                            <div className="space-y-1">
-                              {permitRequest.architecturalPlanImages.map((file, idx) => (
-                                <div key={idx} className="flex items-center justify-between text-xs bg-secondary/50 p-2 rounded">
-                                  <span className="truncate">{file.name}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={() => setPermitRequest({
-                                      ...permitRequest,
-                                      architecturalPlanImages: permitRequest.architecturalPlanImages.filter((_, i) => i !== idx)
-                                    })}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  ) : (
-                    // === PERMIS DE RÉGULARISATION ===
-                    <>
-                      {/* Description de la construction existante */}
-                      <div className="space-y-2">
-                        <Label>Description de la construction existante *</Label>
-                        <Textarea
-                          placeholder="Décrivez la construction actuelle (ex: Maison en dur de type R+1, construite en 2018)"
-                          value={permitRequest.constructionDescription}
-                          onChange={(e) => setPermitRequest({ ...permitRequest, constructionDescription: e.target.value })}
-                          rows={3}
-                        />
-                      </div>
-
-                      {/* Usage actuel */}
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label>Usage actuel de la construction *</Label>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-80">
-                              <p className="text-xs text-muted-foreground">
-                                L'usage actuel est automatiquement défini selon l'usage déclaré dans "Informations Générales". 
-                                Cette valeur ne peut pas être modifiée ici pour garantir la cohérence des données.
-                              </p>
-                            </PopoverContent>
-                          </Popover>
-                        </div>
-                        <Select
-                          value={permitRequest.plannedUsage || formData.declaredUsage}
-                          onValueChange={(value) => {
-                            setShowUsageLockedWarning(true);
-                            setTimeout(() => setShowUsageLockedWarning(false), 5000);
-                          }}
-                          disabled={true}
-                        >
-                          <SelectTrigger className="bg-muted/30">
-                            <SelectValue placeholder="Défini automatiquement selon l'usage déclaré" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {availableDeclaredUsages.map(usage => (
-                              <SelectItem key={usage} value={usage}>{usage}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {showUsageLockedWarning && (
-                          <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-2 animate-fade-in">
-                            <p className="text-xs text-blue-700 dark:text-blue-300">
-                              L'usage actuel est automatiquement rempli selon votre "Usage déclaré" dans l'onglet Informations Générales et ne peut être modifié ici.
-                            </p>
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {/* Surface de la construction */}
-                        <div className="space-y-2">
-                          <Label>Surface de la construction (m²) *</Label>
-                          <Input
-                            type="number"
-                            placeholder="ex: 120"
-                            value={permitRequest.estimatedArea}
-                            onChange={(e) => setPermitRequest({ ...permitRequest, estimatedArea: e.target.value })}
-                          />
-                        </div>
-
-                        {/* Année de construction */}
-                        <div className="space-y-2">
-                          <Label>Année de construction *</Label>
-                          <Select
-                            value={permitRequest.constructionYear}
-                            onValueChange={(value) => setPermitRequest({ ...permitRequest, constructionYear: value })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner l'année" />
-                            </SelectTrigger>
-                            <SelectContent className="max-h-[200px]">
-                              {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                                <SelectItem key={year} value={year.toString()}>
-                                  {year}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      {/* Raison de la régularisation */}
-                      <div className="space-y-2">
-                        <Label>Raison de la régularisation *</Label>
-                        <Select
-                          value={permitRequest.regularizationReason}
-                          onValueChange={(value) => setPermitRequest({ ...permitRequest, regularizationReason: value, previousPermitNumber: '' })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Sélectionner la raison" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Construction sans permis">Construction réalisée sans permis initial</SelectItem>
-                            <SelectItem value="Modifications non autorisées">Modifications non autorisées sur construction existante</SelectItem>
-                            <SelectItem value="Non-conformité normes">Non-conformité aux normes d'urbanisme</SelectItem>
-                            <SelectItem value="Extension non déclarée">Extension ou agrandissement non déclaré</SelectItem>
-                            <SelectItem value="Changement d'usage">Changement d'usage sans autorisation</SelectItem>
-                            <SelectItem value="Autre">Autre raison</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Numéro du permis précédent (si applicable) */}
-                      {(permitRequest.regularizationReason === "Modifications non autorisées" || 
-                        permitRequest.regularizationReason === "Extension non déclarée" ||
-                        permitRequest.regularizationReason === "Changement d'usage") && (
-                        <div className="space-y-2 border border-border/50 rounded-lg p-4 bg-muted/30">
-                          <Label className="flex items-center gap-2">
-                            Numéro du permis de construire précédent *
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80">
-                                <div className="space-y-2">
-                                  <p className="text-xs text-muted-foreground">
-                                    Pour régulariser des modifications, une extension ou un changement d'usage, vous devez fournir le numéro du permis de construire 
-                                    initial de la construction.
-                                  </p>
-                                  <p className="text-xs font-medium text-primary">
-                                    Si vous n'avez jamais obtenu de permis pour la construction originale, veuillez sélectionner 
-                                    "Construction réalisée sans permis initial" dans la liste des raisons de régularisation.
-                                  </p>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </Label>
-                          <Input
-                            type="text"
-                            placeholder="ex: PC/2018/1234"
-                            value={permitRequest.previousPermitNumber || ''}
-                            onChange={(e) => setPermitRequest({ ...permitRequest, previousPermitNumber: e.target.value })}
-                          />
-                          <p className="text-xs text-muted-foreground">
-                            Entrez le numéro du permis qui vous avait été délivré pour la construction originale avant les modifications.
+                          <p className="text-[10px] text-blue-700 dark:text-blue-300 mt-1 leading-relaxed">
+                            Après avoir soumis votre contribution CCC, vous pourrez faire une demande de permis depuis votre <strong>Espace Personnel → Permis</strong>.
                           </p>
                         </div>
-                      )}
-
-                      {/* Photos de la construction */}
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-2">
-                          Photos de la construction (tous les angles) * 
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-72">
-                              <p className="text-xs text-muted-foreground">
-                                Veuillez fournir des photos de tous les angles de votre construction (façade principale, façades latérales, 
-                                arrière, intérieur si pertinent). Minimum 4 photos, maximum 10 photos. Formats: JPG, PNG.
-                              </p>
-                            </PopoverContent>
-                          </Popover>
-                        </Label>
-                        <div className="space-y-2">
-                          <div className="flex gap-2">
-                            <div className="flex-1">
-                              <input
-                                type="file"
-                                id="photo-camera-input"
-                                accept="image/jpeg,image/jpg,image/png"
-                                capture="environment"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => {
-                                  const files = Array.from(e.target.files || []);
-                                  if (permitRequest.constructionPhotos.length + files.length > 10) {
-                                    toast({
-                                      title: "Limite atteinte",
-                                      description: "Vous ne pouvez ajouter que 10 photos maximum",
-                                      variant: "destructive"
-                                    });
-                                    return;
-                                  }
-                                  
-                                  // Renommer les fichiers avec un nom court
-                                  const renamedFiles = files.map((file, idx) => {
-                                    const extension = file.name.split('.').pop();
-                                    const newName = `photo-${permitRequest.constructionPhotos.length + idx + 1}.${extension}`;
-                                    return new File([file], newName, { type: file.type });
-                                  });
-                                  
-                                  setPermitRequest({ 
-                                    ...permitRequest, 
-                                    constructionPhotos: [...permitRequest.constructionPhotos, ...renamedFiles] 
-                                  });
-                                  e.target.value = '';
-                                }}
-                              />
-                              <Button
-                                type="button"
-                                variant="seloger"
-                                size={isMobile ? "icon" : "default"}
-                                className={isMobile ? "" : "w-full"}
-                                onClick={() => document.getElementById('photo-camera-input')?.click()}
-                              >
-                                <Camera className="h-4 w-4" />
-                                {!isMobile && <span className="ml-2">Prendre une photo</span>}
-                              </Button>
-                            </div>
-                            <div className="flex-1">
-                              <input
-                                type="file"
-                                id="photo-file-input"
-                                accept="image/jpeg,image/jpg,image/png"
-                                multiple
-                                className="hidden"
-                                onChange={(e) => {
-                                  const files = Array.from(e.target.files || []);
-                                  if (permitRequest.constructionPhotos.length + files.length > 10) {
-                                    toast({
-                                      title: "Limite atteinte",
-                                      description: "Vous ne pouvez ajouter que 10 photos maximum",
-                                      variant: "destructive"
-                                    });
-                                    return;
-                                  }
-                                  
-                                  // Renommer les fichiers avec un nom court
-                                  const renamedFiles = files.map((file, idx) => {
-                                    const extension = file.name.split('.').pop();
-                                    const newName = `photo-${permitRequest.constructionPhotos.length + idx + 1}.${extension}`;
-                                    return new File([file], newName, { type: file.type });
-                                  });
-                                  
-                                  setPermitRequest({ 
-                                    ...permitRequest, 
-                                    constructionPhotos: [...permitRequest.constructionPhotos, ...renamedFiles] 
-                                  });
-                                  e.target.value = '';
-                                }}
-                              />
-                              <Button
-                                type="button"
-                                variant="seloger"
-                                size={isMobile ? "icon" : "default"}
-                                className={isMobile ? "" : "w-full"}
-                                onClick={() => document.getElementById('photo-file-input')?.click()}
-                              >
-                                <Upload className="h-4 w-4" />
-                                {!isMobile && <span className="ml-2">Choisir des fichiers</span>}
-                              </Button>
-                            </div>
-                          </div>
-                          {permitRequest.constructionPhotos.length > 0 && (
-                            <div className="space-y-1">
-                              <p className="text-xs text-muted-foreground">
-                                {permitRequest.constructionPhotos.length} photo(s) ajoutée(s) {permitRequest.constructionPhotos.length < 4 && '(minimum 4 requis)'}
-                              </p>
-                              {permitRequest.constructionPhotos.map((file, idx) => (
-                                <div key={idx} className="flex items-center justify-between text-xs bg-secondary/50 p-2 rounded">
-                                  <span className="truncate">{file.name}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-6 w-6 p-0"
-                                    onClick={() => setPermitRequest({
-                                      ...permitRequest,
-                                      constructionPhotos: permitRequest.constructionPhotos.filter((_, i) => i !== idx)
-                                    })}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </>
-                  )}
-
-                  <div className="border-t pt-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Label className="text-sm font-semibold">Informations du demandeur</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-80">
-                          <p className="text-xs text-muted-foreground">
-                            Seul(e) le(la) propriétaire ou l'un des propriétaires peut faire une demande de permis de construire ou de régularisation.
-                            Sélectionnez un propriétaire dans la liste ci-dessous.
-                          </p>
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    
-                    <div className="space-y-3">
-                      {currentOwners.length > 1 && (
-                        <div className="space-y-2">
-                          <Label>Sélectionner le propriétaire demandeur *</Label>
-                          <Select
-                            value={permitRequest.selectedOwnerIndex.toString()}
-                            onValueChange={(value) => {
-                              const idx = parseInt(value);
-                              const owner = currentOwners[idx];
-                              if (owner) {
-                                const fullName = `${owner.lastName} ${owner.middleName ? owner.middleName + ' ' : ''}${owner.firstName}`.trim();
-                                setPermitRequest({ 
-                                  ...permitRequest, 
-                                  applicantName: fullName,
-                                  selectedOwnerIndex: idx
-                                });
-                              }
-                            }}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Choisir un propriétaire" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {currentOwners.map((owner, idx) => {
-                                if (owner.lastName && owner.firstName) {
-                                  const fullName = `${owner.lastName} ${owner.middleName ? owner.middleName + ' ' : ''}${owner.firstName}`.trim();
-                                  return (
-                                    <SelectItem key={idx} value={idx.toString()}>
-                                      {fullName}
-                                    </SelectItem>
-                                  );
-                                }
-                                return null;
-                              })}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-                      
-                      <div className="space-y-2">
-                        <Label>Nom complet *</Label>
-                        <Input
-                          placeholder="Nom et prénom du demandeur"
-                          value={permitRequest.applicantName}
-                          onChange={(e) => setPermitRequest({ ...permitRequest, applicantName: e.target.value })}
-                          disabled={currentOwners.length > 0}
-                          className={currentOwners.length > 0 ? 'bg-muted/30' : ''}
-                        />
-                        {currentOwners.length > 0 && (
-                          <p className="text-xs text-muted-foreground">
-                            Le nom est défini automatiquement selon le propriétaire sélectionné
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Téléphone *</Label>
-                        <Input
-                          type="tel"
-                          placeholder="ex: +243 999 999 999"
-                          value={permitRequest.applicantPhone}
-                          onChange={(e) => setPermitRequest({ ...permitRequest, applicantPhone: e.target.value })}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Pour les tests, utilisez: 97123456 ou 97123TEST
-                        </p>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Email</Label>
-                        <Input
-                          type="email"
-                          placeholder="email@exemple.com"
-                          value={permitRequest.applicantEmail}
-                          onChange={(e) => setPermitRequest({ ...permitRequest, applicantEmail: e.target.value })}
-                        />
                       </div>
                     </div>
+                    <p className="text-[10px] text-center text-muted-foreground">
+                      💡 Continuez pour compléter les autres informations
+                    </p>
                   </div>
-
-                  <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                      <div className="flex-1">
-                        <p className="text-xs text-amber-700 dark:text-amber-300">
-                          Une fois votre contribution validée, vous recevrez les instructions pour finaliser votre demande de permis de construire.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
+                )}
+              </CardContent>
+            </Card>
             
             {/* Bouton Suivant */}
             <div className="flex justify-end pt-6 mt-6 border-t">
