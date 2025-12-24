@@ -247,22 +247,27 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   };
 
   // Calculer les frais de retard de mutation
+  // Selon la Note circulaire n°1.441/SG/AFF.F/003/2016 du 07 décembre 2016, le délai légal est de 20 jours
   const calculateLateFees = () => {
     const dateToUse = ownerAcquisitionDate || manualAcquisitionDate;
     if (!dateToUse) return { days: 0, fee: 0, applicable: false };
     
     const acquisitionDate = new Date(dateToUse);
     const today = new Date();
-    const daysElapsed = differenceInDays(today, acquisitionDate);
+    const totalDaysElapsed = differenceInDays(today, acquisitionDate);
     
-    // Tarif: 0.45$ par jour
+    // Délai légal de 20 jours - les frais s'appliquent à partir du 21ème jour
+    const LEGAL_GRACE_PERIOD = 20;
+    const daysAfterGracePeriod = Math.max(0, totalDaysElapsed - LEGAL_GRACE_PERIOD);
+    
+    // Tarif: 0.45$ par jour après le délai légal
     const DAILY_LATE_FEE = 0.45;
-    const lateFee = daysElapsed * DAILY_LATE_FEE;
+    const lateFee = daysAfterGracePeriod * DAILY_LATE_FEE;
     
     return {
-      days: daysElapsed,
+      days: daysAfterGracePeriod,
       fee: Math.round(lateFee * 100) / 100,
-      applicable: daysElapsed > 0
+      applicable: daysAfterGracePeriod > 0
     };
   };
 
@@ -1145,10 +1150,13 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                         Frais de retard de mutation
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Le non-respect du délai légal de mutation immobilière entraîne des frais supplémentaires pour faire aboutir la mutation.
+                        Le non-respect du délai légal de mutation immobilière (20 jours) entraîne des frais supplémentaires pour faire aboutir la mutation.
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        <span className="font-medium">Référence :</span> Note circulaire n°1.441/SG/AFF.F/003/2016 du 07 décembre 2016
                       </p>
                       <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                        Tarif : 0,45 USD par jour à compter de la date d'acquisition jusqu'à aujourd'hui.
+                        Tarif : 0,45 USD par jour à partir du 21ème jour après l'acquisition.
                       </p>
                     </div>
                   </PopoverContent>
