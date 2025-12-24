@@ -665,8 +665,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 </div>
               )}
 
-              {/* Valeur vénale - affiché si certificat présent ou "oui" sélectionné */}
-              {(hasExpertiseCertificate === 'yes' && expertiseCertificateFile && expertiseCertificateDate && !certificateValidity.isExpired) && (
+              {/* Valeur vénale - affiché dès que certificat confirmé */}
+              {hasExpertiseCertificate === 'yes' && (
                 <div className="space-y-3 pt-2 border-t border-amber-200 dark:border-amber-800">
                   {/* Valeur vénale */}
                   <div className="space-y-1.5">
