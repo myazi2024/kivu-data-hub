@@ -5,6 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { AlertCircle, MapPin, AlertTriangle, Info, Move, Hand, Plus, Trash2, Target, Pencil, Check, Navigation, Eye, Square, Circle, Triangle, Hexagon, Building2, Layers, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, X, RotateCw, RotateCcw } from 'lucide-react';
 import { BoundaryConflictDialog } from './BoundaryConflictDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -126,6 +136,7 @@ export const ParcelMapPreview = ({
   const [moveStepMeters, setMoveStepMeters] = useState<number>(0.5);
   const [parcelRotationDegrees, setParcelRotationDegrees] = useState<number>(0);
   const [showParcelControls, setShowParcelControls] = useState(false);
+  const [showClearAllDialog, setShowClearAllDialog] = useState(false);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -278,6 +289,13 @@ export const ParcelMapPreview = ({
       onBuildingShapesChange([]);
     }
     setShowNeighbors(false);
+    // Réinitialiser les données de surface et périmètre
+    setSurfaceArea(0);
+    setPerimeterLength(0);
+    stableSurfaceRef.current = 0;
+    stablePerimeterRef.current = 0;
+    lastParcelSidesLengthRef.current = '';
+    setShowClearAllDialog(false);
   }, [onCoordinatesUpdate, onParcelSidesUpdate, onRoadSidesChange, onBuildingShapesChange]);
 
   // Calculer l'orientation d'un côté
@@ -1681,9 +1699,9 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {/* Boutons de suppression sur la carte (en bas à gauche) */}
+        {/* Boutons de suppression sur la carte (au-dessus de la barre d'échelle, alignés verticalement) */}
         {enableDrawingMode && validCoords.length > 0 && (
-          <div className="absolute bottom-2 left-2 z-[1000] flex items-center gap-1">
+          <div className="absolute bottom-10 left-2 z-[1000] flex flex-col gap-1">
             <Button
               type="button"
               size="sm"
@@ -1698,7 +1716,7 @@ export const ParcelMapPreview = ({
               type="button"
               size="sm"
               variant="outline"
-              onClick={clearAllMarkers}
+              onClick={() => setShowClearAllDialog(true)}
               className="h-8 w-8 p-0 rounded-xl bg-white/95 hover:bg-destructive/10 hover:text-destructive shadow-md border-border/50"
               title="Supprimer toutes les bornes"
             >
@@ -1706,6 +1724,44 @@ export const ParcelMapPreview = ({
             </Button>
           </div>
         )}
+        
+        {/* Dialogue de confirmation pour supprimer toutes les bornes */}
+        <AlertDialog open={showClearAllDialog} onOpenChange={setShowClearAllDialog}>
+          <AlertDialogContent className="max-w-[360px] rounded-2xl p-4 shadow-xl">
+            <AlertDialogHeader className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-9 w-9 rounded-xl bg-destructive/10 flex items-center justify-center">
+                  <AlertTriangle className="h-5 w-5 text-destructive" />
+                </div>
+                <AlertDialogTitle className="text-sm font-semibold">
+                  Supprimer toutes les bornes ?
+                </AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed">
+                Cette action supprimera toutes les bornes tracées sur la carte ainsi que les données associées (dimensions, routes).
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="mt-2 p-2.5 rounded-xl bg-muted/50 border border-border/50">
+              <p className="text-xs text-muted-foreground flex items-start gap-2">
+                <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0 text-primary" />
+                <span>
+                  Pour supprimer uniquement la dernière borne, utilisez le bouton <Trash2 className="inline h-3 w-3 mx-0.5" /> à la place.
+                </span>
+              </p>
+            </div>
+            <AlertDialogFooter className="mt-3 gap-2 sm:gap-2">
+              <AlertDialogCancel className="h-9 px-4 rounded-xl text-sm">
+                Annuler
+              </AlertDialogCancel>
+              <AlertDialogAction 
+                onClick={clearAllMarkers}
+                className="h-9 px-4 rounded-xl text-sm bg-destructive hover:bg-destructive/90"
+              >
+                Tout supprimer
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         
         {/* Boutons de contrôle sur la carte (à droite) */}
         <div className="absolute top-2 right-2 z-[1000] flex flex-col gap-1.5">
@@ -1797,19 +1853,19 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {/* Panneau de contrôle parcelle compact (déplacement + rotation) - en bas à droite, avant zoom */}
+        {/* Panneau de contrôle parcelle compact (déplacement + rotation) - aligné avec zoom, au-dessus de l'attribution */}
         {!isDrawingMode && !selectedBorne && validCoords.length >= 3 && (
-          <div className="absolute bottom-2 right-14 z-[1000]">
-            <div className="flex flex-col items-end gap-1">
+          <div className="absolute bottom-8 right-2 z-[1000]">
+            <div className="flex flex-col items-end gap-0.5">
               {/* Indicateurs compacts */}
-              <div className="flex items-center gap-1 bg-white/90 dark:bg-card/90 backdrop-blur-sm rounded-lg px-1.5 py-0.5 shadow-sm border border-blue-400/30">
-                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">{moveStepMeters.toFixed(1)}m</span>
-                <span className="text-[9px] text-muted-foreground">|</span>
-                <span className="text-[9px] text-blue-600 dark:text-blue-400 font-medium">{parcelRotationDegrees.toFixed(0)}°</span>
+              <div className="flex items-center gap-1 bg-white/90 dark:bg-card/90 backdrop-blur-sm rounded-lg px-1 py-0.5 shadow-sm border border-blue-400/30">
+                <span className="text-[8px] text-blue-600 dark:text-blue-400 font-medium">{moveStepMeters.toFixed(1)}m</span>
+                <span className="text-[8px] text-muted-foreground">|</span>
+                <span className="text-[8px] text-blue-600 dark:text-blue-400 font-medium">{parcelRotationDegrees.toFixed(0)}°</span>
               </div>
               
               {/* Contrôles compacts en ligne */}
-              <div className="flex items-center gap-0.5 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-xl p-1 shadow-md border border-blue-400/30">
+              <div className="flex items-center gap-0.5 bg-white/95 dark:bg-card/95 backdrop-blur-sm rounded-lg p-0.5 shadow-md border border-blue-400/30">
                 {/* Flèches directionnelles */}
                 <div className="flex flex-col gap-0.5">
                   <Button
