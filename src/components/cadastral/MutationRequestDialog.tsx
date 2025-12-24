@@ -10,7 +10,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle, FileSearch, ExternalLink, Calendar, DollarSign, Award } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle, FileSearch, ExternalLink, Calendar, DollarSign, Award, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest, MutationFee, MutationRequest } from '@/hooks/useMutationRequest';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
@@ -1126,19 +1127,33 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         {isTransferMutation && (
           <Card className="border-2 border-orange-200 dark:border-orange-700 rounded-xl">
             <CardContent className="p-3 space-y-3">
-              <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Traitement de mutation hors délai légal
-              </h4>
-              
-              <Alert className="bg-orange-50 border-orange-200 dark:bg-orange-950/30 dark:border-orange-800 rounded-lg">
-                <AlertTriangle className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="text-xs text-orange-700 dark:text-orange-400">
-                  Le non-respect du délai légal de mutation immobilière entraîne des frais supplémentaires pour faire aboutir la mutation.
-                  <br />
-                  <span className="font-semibold">Tarif : 0,45 USD par jour</span> à compter de la date d'acquisition jusqu'à aujourd'hui.
-                </AlertDescription>
-              </Alert>
+              <div className="flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                  <Clock className="h-4 w-4" />
+                  Traitement de mutation hors délai légal
+                </h4>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-100">
+                      <HelpCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 bg-background border shadow-lg z-50" align="start">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        Frais de retard de mutation
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Le non-respect du délai légal de mutation immobilière entraîne des frais supplémentaires pour faire aboutir la mutation.
+                      </p>
+                      <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                        Tarif : 0,45 USD par jour à compter de la date d'acquisition jusqu'à aujourd'hui.
+                      </p>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
               <div className="space-y-3">
                 {/* Date d'acquisition du propriétaire */}
