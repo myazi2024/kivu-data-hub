@@ -299,16 +299,17 @@ export const ParcelMapPreview = ({
     setShowClearAllDialog(false);
   }, [onCoordinatesUpdate, onParcelSidesUpdate, onRoadSidesChange, onBuildingShapesChange]);
 
-  // Calculer l'orientation d'un côté
-  const calculateOrientation = (lat1: number, lng1: number, lat2: number, lng2: number): string => {
-    const bearing = Math.atan2(lng2 - lng1, lat2 - lat1) * (180 / Math.PI);
-    const normalized = (bearing + 360) % 360;
+  // Calculer l'orientation d'un côté (prend en compte le mapBearing)
+  const calculateOrientation = useCallback((lat1: number, lng1: number, lat2: number, lng2: number, bearing: number = 0): string => {
+    const geoBearing = Math.atan2(lng2 - lng1, lat2 - lat1) * (180 / Math.PI);
+    // Appliquer le décalage du bearing de la carte
+    const adjusted = (geoBearing - bearing + 360) % 360;
     
-    if (normalized >= 315 || normalized < 45) return 'Nord';
-    if (normalized >= 45 && normalized < 135) return 'Est';
-    if (normalized >= 135 && normalized < 225) return 'Sud';
+    if (adjusted >= 315 || adjusted < 45) return 'Nord';
+    if (adjusted >= 45 && adjusted < 135) return 'Est';
+    if (adjusted >= 135 && adjusted < 225) return 'Sud';
     return 'Ouest';
-  };
+  }, []);
 
   // Mettre à jour parcelSides quand les coordonnées changent
   const updateParcelSidesFromCoordinates = useCallback((coords: Coordinate[]) => {
@@ -349,7 +350,7 @@ export const ParcelMapPreview = ({
     onParcelSidesUpdate(updatedSides);
   }, [onParcelSidesUpdate, parcelSides]);
 
-  // Initialiser/mettre à jour les roadSides quand les coordonnées changent
+  // Initialiser/mettre à jour les roadSides quand les coordonnées ou le bearing changent
   useEffect(() => {
     if (validCoords.length >= 3 && onRoadSidesChange) {
       const newSides: RoadSideInfo[] = validCoords.map((coord, index) => {
@@ -367,7 +368,8 @@ export const ParcelMapPreview = ({
           parseFloat(coord.lat), 
           parseFloat(coord.lng),
           parseFloat(nextCoord.lat),
-          parseFloat(nextCoord.lng)
+          parseFloat(nextCoord.lng),
+          mapBearing
         );
         
         return {
@@ -376,16 +378,23 @@ export const ParcelMapPreview = ({
           roadType: existingSide?.roadType,
           roadName: existingSide?.roadName,
           roadWidth: existingSide?.roadWidth,
+          borderType: existingSide?.borderType,
+          wallHeight: existingSide?.wallHeight,
+          wallMaterial: existingSide?.wallMaterial,
           orientation,
           length,
         };
       });
       
-      if (roadSides.length !== newSides.length) {
+      // Mettre à jour si le nombre de côtés change OU si les orientations ont changé
+      const orientationsChanged = roadSides.length === newSides.length && 
+        newSides.some((side, i) => roadSides[i]?.orientation !== side.orientation);
+      
+      if (roadSides.length !== newSides.length || orientationsChanged) {
         onRoadSidesChange(newSides);
       }
     }
-  }, [validCoords.length]);
+  }, [validCoords.length, mapBearing, calculateOrientation]);
 
   // Calculer la distance entre 2 points GPS
   const calculateDistance = (lat1: number, lng1: number, lat2: number, lng2: number): number => {
