@@ -88,6 +88,7 @@ export const ParcelMapPreview = ({
   const neighborLayersRef = useRef<any[]>([]);
   const buildingLayersRef = useRef<any[]>([]);
   const mapControlsRef = useRef<any[]>([]);
+  const userLocationLayersRef = useRef<any[]>([]);
 
   // Refs pour les callbacks afin d'éviter les closures obsolètes
   const addMarkerCallbackRef = useRef<(lat: number, lng: number) => void>(() => {});
@@ -430,24 +431,51 @@ export const ParcelMapPreview = ({
       if ('geolocation' in navigator) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
-            const { latitude, longitude } = position.coords;
+            const { latitude, longitude, accuracy } = position.coords;
             map.setView([latitude, longitude], mapConfig.defaultZoom || 17);
             
-            // Ajouter un marqueur de position utilisateur
-            const userLocationMarker = L.circleMarker([latitude, longitude], {
-              radius: 8,
+            // Nettoyer les anciens marqueurs de position
+            userLocationLayersRef.current.forEach(layer => {
+              if (map.hasLayer(layer)) map.removeLayer(layer);
+            });
+            userLocationLayersRef.current = [];
+            
+            // Cercle de précision (zone floue)
+            const accuracyCircle = L.circle([latitude, longitude], {
+              radius: Math.min(accuracy, 100),
               color: '#3b82f6',
               fillColor: '#3b82f6',
-              fillOpacity: 0.6,
-              weight: 2
+              fillOpacity: 0.15,
+              weight: 1,
+              dashArray: '4,4'
             }).addTo(map);
+            userLocationLayersRef.current.push(accuracyCircle);
             
-            userLocationMarker.bindPopup('Votre position actuelle');
+            // Marqueur central de position utilisateur (point bleu)
+            const userLocationMarker = L.circleMarker([latitude, longitude], {
+              radius: 10,
+              color: '#ffffff',
+              fillColor: '#3b82f6',
+              fillOpacity: 1,
+              weight: 3
+            }).addTo(map);
+            userLocationMarker.bindPopup('<strong>📍 Votre position</strong><br/>Précision: ~' + Math.round(accuracy) + 'm');
+            userLocationLayersRef.current.push(userLocationMarker);
+            
+            // Point central blanc pour effet "bullseye"
+            const innerDot = L.circleMarker([latitude, longitude], {
+              radius: 4,
+              color: '#3b82f6',
+              fillColor: '#ffffff',
+              fillOpacity: 1,
+              weight: 0
+            }).addTo(map);
+            userLocationLayersRef.current.push(innerDot);
           },
           (error) => {
             console.log('Géolocalisation non disponible:', error.message);
           },
-          { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
         );
       }
     };
