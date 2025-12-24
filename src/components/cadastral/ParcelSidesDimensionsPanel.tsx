@@ -291,10 +291,9 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                     </Badge>
                     {/* Boutons pour ajouter route ou mur - visible uniquement si pas confirmé */}
                     {!hasConfirmed && !isEditingThis && (
-                      <div className="flex gap-1">
+                      <div className="flex gap-0.5">
                         <Button
                           type="button"
-                          variant="outline"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -302,14 +301,13 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             setEditingSide(index);
                             setShowNotification(false);
                           }}
-                          className="h-6 px-1.5 text-[10px] rounded-md gap-0.5 bg-green-50 hover:bg-green-100 dark:bg-green-950 dark:hover:bg-green-900 border-green-300 dark:border-green-700 text-green-700 dark:text-green-300"
+                          className="h-6 px-2 text-[10px] rounded-md gap-1 bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white border-0 shadow-sm font-medium"
                         >
-                          <Route className="h-2.5 w-2.5" />
+                          <Route className="h-3 w-3" />
                           Route
                         </Button>
                         <Button
                           type="button"
-                          variant="outline"
                           size="sm"
                           onClick={(e) => {
                             e.stopPropagation();
@@ -317,9 +315,9 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
                             setEditingSide(index);
                             setShowNotification(false);
                           }}
-                          className="h-6 px-1.5 text-[10px] rounded-md gap-0.5 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950 dark:hover:bg-amber-900 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300"
+                          className="h-6 px-2 text-[10px] rounded-md gap-1 bg-orange-600 hover:bg-orange-700 dark:bg-orange-700 dark:hover:bg-orange-600 text-white border-0 shadow-sm font-medium"
                         >
-                          <BrickWall className="h-2.5 w-2.5" />
+                          <BrickWall className="h-3 w-3" />
                           Mur
                         </Button>
                       </div>
