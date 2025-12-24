@@ -1,0 +1,649 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { 
+  FileSearch, Search, Filter, Eye, Check, X, User, MapPin, 
+  Building, Calendar, DollarSign, Loader2, Clock, AlertTriangle,
+  FileText, Download, UserCheck, RefreshCw
+} from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+interface ExpertiseRequest {
+  id: string;
+  reference_number: string;
+  user_id: string;
+  parcel_number: string;
+  property_description?: string;
+  construction_year?: number;
+  construction_quality?: string;
+  number_of_floors?: number;
+  total_built_area_sqm?: number;
+  property_condition?: string;
+  has_water_supply: boolean;
+  has_electricity: boolean;
+  has_sewage_system: boolean;
+  road_access_type?: string;
+  additional_notes?: string;
+  supporting_documents: string[];
+  requester_name: string;
+  requester_phone?: string;
+  requester_email?: string;
+  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'rejected';
+  assigned_to?: string;
+  market_value_usd?: number;
+  certificate_url?: string;
+  certificate_issue_date?: string;
+  processing_notes?: string;
+  rejection_reason?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+const statusConfig: Record<string, { label: string; color: string }> = {
+  pending: { label: 'En attente', color: 'bg-amber-100 text-amber-800' },
+  assigned: { label: 'Assigné', color: 'bg-blue-100 text-blue-800' },
+  in_progress: { label: 'En cours', color: 'bg-purple-100 text-purple-800' },
+  completed: { label: 'Terminé', color: 'bg-green-100 text-green-800' },
+  rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-800' },
+};
+
+export const AdminExpertiseRequests: React.FC = () => {
+  const { user } = useAuth();
+  const [requests, setRequests] = useState<ExpertiseRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const itemsPerPage = 10;
+
+  // Dialog states
+  const [selectedRequest, setSelectedRequest] = useState<ExpertiseRequest | null>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
+  const [showProcessDialog, setShowProcessDialog] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  // Process form state
+  const [processAction, setProcessAction] = useState<'complete' | 'reject'>('complete');
+  const [marketValue, setMarketValue] = useState('');
+  const [certificateUrl, setCertificateUrl] = useState('');
+  const [processingNotes, setProcessingNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
+
+  const fetchRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      let query = supabase
+        .from('real_estate_expertise_requests')
+        .select('*', { count: 'exact' })
+        .order('created_at', { ascending: false });
+
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter);
+      }
+
+      if (searchQuery) {
+        query = query.or(`reference_number.ilike.%${searchQuery}%,parcel_number.ilike.%${searchQuery}%,requester_name.ilike.%${searchQuery}%`);
+      }
+
+      const from = (currentPage - 1) * itemsPerPage;
+      const to = from + itemsPerPage - 1;
+      query = query.range(from, to);
+
+      const { data, error, count } = await query;
+
+      if (error) throw error;
+
+      setRequests((data || []) as ExpertiseRequest[]);
+      setTotalCount(count || 0);
+    } catch (error: any) {
+      console.error('Error fetching expertise requests:', error);
+      toast.error('Erreur lors du chargement des demandes');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, statusFilter, searchQuery]);
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
+
+  const handleViewDetails = (request: ExpertiseRequest) => {
+    setSelectedRequest(request);
+    setShowDetailsDialog(true);
+  };
+
+  const handleOpenProcess = (request: ExpertiseRequest) => {
+    setSelectedRequest(request);
+    setProcessAction('complete');
+    setMarketValue(request.market_value_usd?.toString() || '');
+    setCertificateUrl(request.certificate_url || '');
+    setProcessingNotes(request.processing_notes || '');
+    setRejectionReason('');
+    setShowProcessDialog(true);
+  };
+
+  const handleProcessRequest = async () => {
+    if (!selectedRequest || !user) return;
+
+    if (processAction === 'complete' && (!marketValue || !certificateUrl)) {
+      toast.error('Veuillez renseigner la valeur vénale et le lien du certificat');
+      return;
+    }
+
+    if (processAction === 'reject' && !rejectionReason) {
+      toast.error('Veuillez indiquer la raison du rejet');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const updateData: any = {
+        processing_notes: processingNotes,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (processAction === 'complete') {
+        updateData.status = 'completed';
+        updateData.market_value_usd = parseFloat(marketValue);
+        updateData.certificate_url = certificateUrl;
+        updateData.certificate_issue_date = new Date().toISOString();
+        updateData.certificate_expiry_date = new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString();
+        updateData.expertise_date = new Date().toISOString();
+      } else {
+        updateData.status = 'rejected';
+        updateData.rejection_reason = rejectionReason;
+      }
+
+      const { error } = await supabase
+        .from('real_estate_expertise_requests')
+        .update(updateData)
+        .eq('id', selectedRequest.id);
+
+      if (error) throw error;
+
+      // Create notification for user
+      await supabase.from('notifications').insert({
+        user_id: selectedRequest.user_id,
+        type: processAction === 'complete' ? 'success' : 'error',
+        title: processAction === 'complete' 
+          ? 'Expertise immobilière terminée' 
+          : 'Demande d\'expertise rejetée',
+        message: processAction === 'complete'
+          ? `Votre certificat d'expertise pour la parcelle ${selectedRequest.parcel_number} est disponible. Valeur vénale: $${marketValue}`
+          : `Votre demande d'expertise pour la parcelle ${selectedRequest.parcel_number} a été rejetée. Raison: ${rejectionReason}`,
+        action_url: '/dashboard?tab=expertise',
+      });
+
+      toast.success(processAction === 'complete' 
+        ? 'Expertise complétée avec succès' 
+        : 'Demande rejetée');
+      
+      setShowProcessDialog(false);
+      fetchRequests();
+    } catch (error: any) {
+      console.error('Error processing request:', error);
+      toast.error('Erreur lors du traitement');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const getStats = () => {
+    return {
+      total: totalCount,
+      pending: requests.filter(r => r.status === 'pending').length,
+      inProgress: requests.filter(r => r.status === 'in_progress' || r.status === 'assigned').length,
+      completed: requests.filter(r => r.status === 'completed').length,
+    };
+  };
+
+  const stats = getStats();
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <FileSearch className="h-6 w-6 text-primary" />
+            Demandes d'expertise immobilière
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            Gérez les demandes d'évaluation de valeur vénale
+          </p>
+        </div>
+        <Button onClick={fetchRequests} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Actualiser
+        </Button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold">{stats.total}</p>
+            <p className="text-xs text-muted-foreground">Total</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
+            <p className="text-xs text-muted-foreground">En attente</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-blue-600">{stats.inProgress}</p>
+            <p className="text-xs text-muted-foreground">En cours</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-green-600">{stats.completed}</p>
+            <p className="text-xs text-muted-foreground">Terminées</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par référence, parcelle ou demandeur..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-48">
+                <Filter className="h-4 w-4 mr-2" />
+                <SelectValue placeholder="Filtrer par statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="pending">En attente</SelectItem>
+                <SelectItem value="assigned">Assigné</SelectItem>
+                <SelectItem value="in_progress">En cours</SelectItem>
+                <SelectItem value="completed">Terminé</SelectItem>
+                <SelectItem value="rejected">Rejeté</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Table */}
+      <Card>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : requests.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <FileSearch className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <p>Aucune demande d'expertise trouvée</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="text-left p-4 text-sm font-medium">Référence</th>
+                    <th className="text-left p-4 text-sm font-medium">Parcelle</th>
+                    <th className="text-left p-4 text-sm font-medium">Demandeur</th>
+                    <th className="text-left p-4 text-sm font-medium">Date</th>
+                    <th className="text-left p-4 text-sm font-medium">Statut</th>
+                    <th className="text-left p-4 text-sm font-medium">Valeur</th>
+                    <th className="text-right p-4 text-sm font-medium">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {requests.map((request) => (
+                    <tr key={request.id} className="border-t hover:bg-muted/30">
+                      <td className="p-4">
+                        <span className="font-mono text-sm">{request.reference_number}</span>
+                      </td>
+                      <td className="p-4">
+                        <span className="font-medium">{request.parcel_number}</span>
+                      </td>
+                      <td className="p-4">
+                        <div>
+                          <p className="text-sm font-medium">{request.requester_name}</p>
+                          {request.requester_email && (
+                            <p className="text-xs text-muted-foreground">{request.requester_email}</p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="text-sm">
+                          {format(new Date(request.created_at), 'dd/MM/yyyy', { locale: fr })}
+                        </span>
+                      </td>
+                      <td className="p-4">
+                        <Badge className={statusConfig[request.status]?.color}>
+                          {statusConfig[request.status]?.label}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        {request.market_value_usd ? (
+                          <span className="font-bold text-green-600">
+                            ${request.market_value_usd.toLocaleString()}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground">-</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewDetails(request)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          {request.status !== 'completed' && request.status !== 'rejected' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenProcess(request)}
+                            >
+                              <UserCheck className="h-4 w-4 mr-1" />
+                              Traiter
+                            </Button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pagination */}
+      {totalCount > itemsPerPage && (
+        <div className="flex items-center justify-center gap-2 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => prev - 1)}
+          >
+            Précédent
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            Page {currentPage} sur {Math.ceil(totalCount / itemsPerPage)}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={currentPage >= Math.ceil(totalCount / itemsPerPage)}
+            onClick={() => setCurrentPage(prev => prev + 1)}
+          >
+            Suivant
+          </Button>
+        </div>
+      )}
+
+      {/* Details Dialog */}
+      <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSearch className="h-5 w-5 text-primary" />
+              Détails de la demande
+            </DialogTitle>
+            <DialogDescription>
+              Référence: {selectedRequest?.reference_number}
+            </DialogDescription>
+          </DialogHeader>
+          
+          {selectedRequest && (
+            <ScrollArea className="max-h-[60vh]">
+              <div className="space-y-4 pr-4">
+                {/* Infos générales */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Parcelle</Label>
+                    <p className="font-mono font-bold">{selectedRequest.parcel_number}</p>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Statut</Label>
+                    <Badge className={statusConfig[selectedRequest.status]?.color}>
+                      {statusConfig[selectedRequest.status]?.label}
+                    </Badge>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Demandeur */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Demandeur
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Nom</Label>
+                      <p>{selectedRequest.requester_name}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Email</Label>
+                      <p>{selectedRequest.requester_email || '-'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Infos bien */}
+                <div>
+                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                    <Building className="h-4 w-4" />
+                    Informations du bien
+                  </h4>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Année de construction</Label>
+                      <p>{selectedRequest.construction_year || '-'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Surface bâtie</Label>
+                      <p>{selectedRequest.total_built_area_sqm ? `${selectedRequest.total_built_area_sqm} m²` : '-'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">État</Label>
+                      <p>{selectedRequest.property_condition || '-'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Qualité</Label>
+                      <p>{selectedRequest.construction_quality || '-'}</p>
+                    </div>
+                  </div>
+                  {selectedRequest.property_description && (
+                    <div className="mt-2">
+                      <Label className="text-xs text-muted-foreground">Description</Label>
+                      <p className="text-sm">{selectedRequest.property_description}</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Résultat si complété */}
+                {selectedRequest.status === 'completed' && (
+                  <>
+                    <Separator />
+                    <div className="bg-green-50 dark:bg-green-950/30 p-4 rounded-lg">
+                      <h4 className="text-sm font-semibold mb-2 flex items-center gap-2 text-green-700 dark:text-green-400">
+                        <DollarSign className="h-4 w-4" />
+                        Résultat de l'expertise
+                      </h4>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Valeur vénale</Label>
+                          <p className="text-lg font-bold text-green-600">
+                            ${selectedRequest.market_value_usd?.toLocaleString()}
+                          </p>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Date d'émission</Label>
+                          <p>{selectedRequest.certificate_issue_date ? format(new Date(selectedRequest.certificate_issue_date), 'dd/MM/yyyy') : '-'}</p>
+                        </div>
+                      </div>
+                      {selectedRequest.certificate_url && (
+                        <Button variant="outline" size="sm" className="mt-2" asChild>
+                          <a href={selectedRequest.certificate_url} target="_blank" rel="noopener noreferrer">
+                            <Download className="h-4 w-4 mr-2" />
+                            Télécharger le certificat
+                          </a>
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )}
+
+                {/* Rejet si rejeté */}
+                {selectedRequest.status === 'rejected' && selectedRequest.rejection_reason && (
+                  <>
+                    <Separator />
+                    <Alert className="bg-red-50 border-red-200">
+                      <AlertTriangle className="h-4 w-4 text-red-600" />
+                      <AlertDescription className="text-red-700">
+                        <strong>Motif du rejet:</strong> {selectedRequest.rejection_reason}
+                      </AlertDescription>
+                    </Alert>
+                  </>
+                )}
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Process Dialog */}
+      <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Traiter la demande</DialogTitle>
+            <DialogDescription>
+              {selectedRequest?.reference_number} - {selectedRequest?.parcel_number}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="flex gap-2">
+              <Button
+                variant={processAction === 'complete' ? 'default' : 'outline'}
+                onClick={() => setProcessAction('complete')}
+                className="flex-1"
+              >
+                <Check className="h-4 w-4 mr-2" />
+                Compléter
+              </Button>
+              <Button
+                variant={processAction === 'reject' ? 'destructive' : 'outline'}
+                onClick={() => setProcessAction('reject')}
+                className="flex-1"
+              >
+                <X className="h-4 w-4 mr-2" />
+                Rejeter
+              </Button>
+            </div>
+
+            {processAction === 'complete' ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Valeur vénale (USD) *</Label>
+                  <Input
+                    type="number"
+                    value={marketValue}
+                    onChange={(e) => setMarketValue(e.target.value)}
+                    placeholder="Ex: 50000"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>URL du certificat *</Label>
+                  <Input
+                    value={certificateUrl}
+                    onChange={(e) => setCertificateUrl(e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Notes de traitement</Label>
+                  <Textarea
+                    value={processingNotes}
+                    onChange={(e) => setProcessingNotes(e.target.value)}
+                    placeholder="Observations..."
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Raison du rejet *</Label>
+                  <Textarea
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="Indiquez la raison du rejet..."
+                    className="min-h-[100px]"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-2 pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setShowProcessDialog(false)}
+                className="flex-1"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={handleProcessRequest}
+                disabled={processing}
+                className="flex-1"
+                variant={processAction === 'reject' ? 'destructive' : 'default'}
+              >
+                {processing ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : processAction === 'complete' ? (
+                  <Check className="h-4 w-4 mr-2" />
+                ) : (
+                  <X className="h-4 w-4 mr-2" />
+                )}
+                {processAction === 'complete' ? 'Valider' : 'Rejeter'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+export default AdminExpertiseRequests;

@@ -9,14 +9,17 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Loader2, FileEdit, CreditCard, CheckCircle2, AlertTriangle, MapPin, Clock, Hash, Upload, X, FileText, Image, Eye, ArrowLeft, AlertCircle, FileSearch, ExternalLink, Calendar, DollarSign, Award } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useMutationRequest, MutationFee, MutationRequest } from '@/hooks/useMutationRequest';
+import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { format, differenceInDays, addMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
+import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog';
 
 interface MutationRequestDialogProps {
   parcelNumber: string;
@@ -96,6 +99,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [uploadedFileUrls, setUploadedFileUrls] = useState<string[]>([]);
   
+  // Certificat d'expertise immobilière
+  const [hasExpertiseCertificate, setHasExpertiseCertificate] = useState<'yes' | 'no' | null>(null);
+  const [expertiseCertificateFile, setExpertiseCertificateFile] = useState<File | null>(null);
+  const [expertiseCertificateDate, setExpertiseCertificateDate] = useState('');
+  const [marketValueUsd, setMarketValueUsd] = useState('');
+  const [showExpertiseDialog, setShowExpertiseDialog] = useState(false);
+  const expertiseCertificateInputRef = useRef<HTMLInputElement>(null);
+  
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [paymentProvider, setPaymentProvider] = useState('');
@@ -109,6 +120,24 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const getMutationTypeDetails = () => {
     return MUTATION_TYPES.find(t => t.value === mutationType);
   };
+
+  // Vérifier la validité du certificat d'expertise (6 mois)
+  const checkCertificateValidity = () => {
+    if (!expertiseCertificateDate) return { isValid: false, daysRemaining: 0, isExpired: false };
+    
+    const issueDate = new Date(expertiseCertificateDate);
+    const expiryDate = addMonths(issueDate, 6);
+    const today = new Date();
+    const daysRemaining = differenceInDays(expiryDate, today);
+    
+    return {
+      isValid: daysRemaining > 0,
+      daysRemaining: Math.max(0, daysRemaining),
+      isExpired: daysRemaining <= 0
+    };
+  };
+
+  const certificateValidity = checkCertificateValidity();
 
   // Initialize form with mandatory fees
   useEffect(() => {
@@ -131,6 +160,28 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   const getTotalAmount = () => {
     return getSelectedFeesDetails().reduce((sum, fee) => sum + fee.amount_usd, 0);
+  };
+
+  // Gestion du fichier certificat d'expertise
+  const handleExpertiseCertificateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    
+    const file = files[0];
+    const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
+    const isValidSize = file.size <= 10 * 1024 * 1024;
+    
+    if (!isValid) {
+      toast.error('Format non supporté (images ou PDF uniquement)');
+      return;
+    }
+    if (!isValidSize) {
+      toast.error('Fichier trop volumineux (max 10MB)');
+      return;
+    }
+    
+    setExpertiseCertificateFile(file);
+    if (expertiseCertificateInputRef.current) expertiseCertificateInputRef.current.value = '';
   };
 
   // Gestion des fichiers
@@ -289,6 +340,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setBeneficiaryPhone('');
     setAttachedFiles([]);
     setUploadedFileUrls([]);
+    setHasExpertiseCertificate(null);
+    setExpertiseCertificateFile(null);
+    setExpertiseCertificateDate('');
+    setMarketValueUsd('');
     onOpenChange(false);
   };
 
@@ -437,6 +492,168 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   className="h-11 text-sm rounded-xl border-2"
                 />
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Certificat d'expertise immobilière */}
+        {isTransferMutation && (
+          <Card className="border-2 border-amber-200 dark:border-amber-800 rounded-xl bg-amber-50/50 dark:bg-amber-950/20">
+            <CardContent className="p-3 space-y-3">
+              <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                <Award className="h-4 w-4" />
+                Certificat d'expertise immobilière
+              </h4>
+              
+              <p className="text-xs text-muted-foreground">
+                Un certificat d'expertise immobilière est requis pour les mutations. 
+                Ce certificat est valable <strong>6 mois</strong> après sa date de délivrance.
+              </p>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Avez-vous déjà un certificat d'expertise immobilière ?</Label>
+                <RadioGroup 
+                  value={hasExpertiseCertificate || ''} 
+                  onValueChange={(value) => setHasExpertiseCertificate(value as 'yes' | 'no')}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="yes" id="cert-yes" />
+                    <Label htmlFor="cert-yes" className="text-sm cursor-pointer">Oui</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="no" id="cert-no" />
+                    <Label htmlFor="cert-no" className="text-sm cursor-pointer">Non</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              {hasExpertiseCertificate === 'yes' && (
+                <div className="space-y-3 pt-2 border-t border-amber-200 dark:border-amber-800">
+                  {/* Upload du certificat */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm">Certificat d'expertise *</Label>
+                    <input
+                      ref={expertiseCertificateInputRef}
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={handleExpertiseCertificateSelect}
+                      className="hidden"
+                    />
+                    
+                    {expertiseCertificateFile ? (
+                      <div className="flex items-center gap-2 p-2 bg-white dark:bg-card rounded-xl border-2 border-green-500/30">
+                        {expertiseCertificateFile.type.startsWith('image/') ? (
+                          <Image className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        ) : (
+                          <FileText className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        )}
+                        <span className="flex-1 truncate text-sm">{expertiseCertificateFile.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setExpertiseCertificateFile(null)}
+                          className="h-7 w-7 rounded-lg hover:bg-destructive/10"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => expertiseCertificateInputRef.current?.click()}
+                        className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        Ajouter le certificat (PDF ou image)
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Date de délivrance */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5" />
+                      Date de délivrance *
+                    </Label>
+                    <Input
+                      type="date"
+                      value={expertiseCertificateDate}
+                      onChange={(e) => setExpertiseCertificateDate(e.target.value)}
+                      max={new Date().toISOString().split('T')[0]}
+                      className="h-11 text-sm rounded-xl border-2"
+                    />
+                    
+                    {expertiseCertificateDate && (
+                      certificateValidity.isExpired ? (
+                        <Alert className="bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800 rounded-lg mt-2">
+                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                          <AlertDescription className="text-xs text-red-700 dark:text-red-400">
+                            Ce certificat a expiré. Veuillez demander un nouveau certificat d'expertise.
+                          </AlertDescription>
+                        </Alert>
+                      ) : certificateValidity.daysRemaining <= 30 ? (
+                        <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 rounded-lg mt-2">
+                          <AlertTriangle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-xs text-amber-700 dark:text-amber-400">
+                            Ce certificat expire dans {certificateValidity.daysRemaining} jours.
+                          </AlertDescription>
+                        </Alert>
+                      ) : (
+                        <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Certificat valide ({certificateValidity.daysRemaining} jours restants)
+                        </p>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {hasExpertiseCertificate === 'no' && (
+                <div className="space-y-3 pt-2 border-t border-amber-200 dark:border-amber-800">
+                  <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-lg">
+                    <FileSearch className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
+                      Un certificat d'expertise immobilière est nécessaire pour procéder à la mutation.
+                      Vous pouvez en demander un en cliquant sur le bouton ci-dessous.
+                    </AlertDescription>
+                  </Alert>
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowExpertiseDialog(true)}
+                    className="w-full h-11 text-sm rounded-xl border-2 border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:border-blue-700 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 dark:text-blue-400"
+                  >
+                    <FileSearch className="h-4 w-4 mr-2" />
+                    Demander un certificat d'expertise immobilière
+                    <ExternalLink className="h-3.5 w-3.5 ml-2" />
+                  </Button>
+                </div>
+              )}
+
+              {/* Valeur vénale - affiché si certificat présent ou "oui" sélectionné */}
+              {(hasExpertiseCertificate === 'yes' && expertiseCertificateFile && expertiseCertificateDate && !certificateValidity.isExpired) && (
+                <div className="space-y-1.5 pt-2 border-t border-amber-200 dark:border-amber-800">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <DollarSign className="h-3.5 w-3.5" />
+                    Valeur vénale du bien (USD) *
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    Cette valeur doit correspondre à celle indiquée dans le certificat d'expertise.
+                  </p>
+                  <Input
+                    type="number"
+                    value={marketValueUsd}
+                    onChange={(e) => setMarketValueUsd(e.target.value)}
+                    placeholder="Ex: 50000"
+                    className="h-11 text-sm rounded-xl border-2"
+                    min="0"
+                  />
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
@@ -900,6 +1117,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
       </DialogPortal>
+
+      {/* Dialog pour demande d'expertise immobilière */}
+      <RealEstateExpertiseRequestDialog
+        parcelNumber={parcelNumber}
+        parcelId={parcelId}
+        parcelData={parcelData}
+        open={showExpertiseDialog}
+        onOpenChange={setShowExpertiseDialog}
+        onSuccess={() => {
+          toast.success('Demande d\'expertise soumise ! Vous serez notifié une fois le certificat disponible.');
+        }}
+      />
     </Dialog>
   );
 };
