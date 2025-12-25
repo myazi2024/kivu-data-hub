@@ -1245,6 +1245,101 @@ export type Database = {
         }
         Relationships: []
       }
+      expertise_fees_config: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          description: string | null
+          display_order: number
+          fee_name: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          updated_at: string
+        }
+        Insert: {
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          updated_at?: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      expertise_payments: {
+        Row: {
+          created_at: string
+          expertise_request_id: string
+          fee_items: Json
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          payment_provider: string | null
+          phone_number: string | null
+          receipt_url: string | null
+          status: string
+          total_amount_usd: number
+          transaction_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expertise_request_id: string
+          fee_items?: Json
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_provider?: string | null
+          phone_number?: string | null
+          receipt_url?: string | null
+          status?: string
+          total_amount_usd?: number
+          transaction_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expertise_request_id?: string
+          fee_items?: Json
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          payment_provider?: string | null
+          phone_number?: string | null
+          receipt_url?: string | null
+          status?: string
+          total_amount_usd?: number
+          transaction_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expertise_payments_expertise_request_id_fkey"
+            columns: ["expertise_request_id"]
+            isOneToOne: false
+            referencedRelation: "real_estate_expertise_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fraud_attempts: {
         Row: {
           contribution_id: string | null
@@ -2106,6 +2201,7 @@ export type Database = {
           parcel_id: string | null
           parcel_number: string
           parking_spaces: number | null
+          payment_status: string | null
           processing_notes: string | null
           property_condition: string | null
           property_description: string | null
@@ -2153,6 +2249,7 @@ export type Database = {
           parcel_id?: string | null
           parcel_number: string
           parking_spaces?: number | null
+          payment_status?: string | null
           processing_notes?: string | null
           property_condition?: string | null
           property_description?: string | null
@@ -2200,6 +2297,7 @@ export type Database = {
           parcel_id?: string | null
           parcel_number?: string
           parking_spaces?: number | null
+          payment_status?: string | null
           processing_notes?: string | null
           property_condition?: string | null
           property_description?: string | null
