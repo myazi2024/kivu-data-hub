@@ -630,7 +630,7 @@ const CadastralMap = () => {
 
         {/* Bouton Contribuer détaché - Animation élégante */}
         {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
-          <div className={`absolute ${isMobile ? 'left-3 right-3' : 'left-3 w-96'} z-[1000] animate-fade-in`}
+          <div className="absolute left-1/2 -translate-x-1/2 z-[1000] animate-fade-in"
             style={{ top: isSearchBarActive ? 'calc(var(--search-bar-height, 80px) + 1rem)' : 'auto', bottom: !isSearchBarActive ? '8rem' : 'auto' }}
           >
             <div className="relative">
@@ -647,15 +647,15 @@ const CadastralMap = () => {
                 </div>
               )}
               
-              {/* Bouton principal large et visible */}
+              {/* Bouton principal centré et compact */}
               <Button
                 variant="default"
                 size="lg"
-                className="w-full h-12 text-sm font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary animate-scale-in"
+                className="h-11 px-5 text-sm font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary animate-scale-in"
                 onClick={handleManualSearchClick}
               >
                 <div className="flex items-center justify-center gap-2">
-                  <div className="h-8 w-8 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
+                  <div className="h-7 w-7 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
                     <MapPinPlus className="h-4 w-4" />
                   </div>
                   <div className="text-left">
