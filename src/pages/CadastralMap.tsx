@@ -528,7 +528,7 @@ const CadastralMap = () => {
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
               {/* Barre de recherche */}
               <div className="flex items-center gap-2">
-                <div className={`relative ${isMobile ? 'flex-1 max-w-[160px]' : 'flex-1'}`}>
+                <div className={`relative ${isMobile ? 'flex-1 max-w-[220px]' : 'flex-1'}`}>
                   <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground`}>
                     <Search className="h-full w-full" />
                   </div>
