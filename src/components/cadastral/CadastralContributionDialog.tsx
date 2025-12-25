@@ -2729,7 +2729,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
                 {formData.isTitleInCurrentOwnerName === false && (
                   <p className="text-xs text-amber-700 dark:text-amber-400">
-                    ⚠️ Hors délai légal de mutation.
+                    ⚠️ Hors délai légal de mutation (De 1 à 20 jours après acquisition).
                   </p>
                 )}
               </CardContent>
