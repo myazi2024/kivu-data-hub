@@ -196,10 +196,10 @@ const UserProfileSection: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {/* Profil Header + Edit */}
-      <Card className="border-none shadow-md rounded-2xl overflow-hidden bg-gradient-to-br from-background to-muted/30">
-        <CardContent className="p-3">
+      <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
+        <div className="p-4">
           <div className="flex items-start gap-3">
             {/* Avatar */}
             <div className="relative">
@@ -232,22 +232,22 @@ const UserProfileSection: React.FC = () => {
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Nom complet"
-                    className="h-8 text-sm"
+                    className="h-8 text-sm rounded-xl"
                     disabled={loading}
                   />
                   <Input
                     value={organization}
                     onChange={(e) => setOrganization(e.target.value)}
                     placeholder="Organisation"
-                    className="h-8 text-sm"
+                    className="h-8 text-sm rounded-xl"
                     disabled={loading}
                   />
                   <div className="flex gap-1.5">
-                    <Button size="sm" onClick={handleSaveProfile} disabled={loading} className="h-7 text-xs px-2">
+                    <Button size="sm" onClick={handleSaveProfile} disabled={loading} className="h-7 text-xs px-2 rounded-lg">
                       {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3 mr-1" />}
                       Sauver
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="h-7 text-xs px-2">
+                    <Button size="sm" variant="ghost" onClick={() => setIsEditing(false)} className="h-7 text-xs px-2 rounded-lg">
                       <X className="h-3 w-3" />
                     </Button>
                   </div>
@@ -282,45 +282,43 @@ const UserProfileSection: React.FC = () => {
               )}
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Quick Stats */}
-      <Card className="border-none shadow-md rounded-2xl">
-        <CardContent className="p-3">
-          <div className="grid grid-cols-4 gap-2">
-            {statItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.title} className="text-center p-2 bg-muted/30 rounded-xl">
-                  <div className="flex justify-center mb-1">
-                    <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <Icon className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                  </div>
-                  <p className="text-lg font-bold">{item.value}</p>
-                  <p className="text-[9px] text-muted-foreground">{item.title}</p>
+      <div className="grid grid-cols-4 gap-2">
+        {statItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <div key={item.title} className="bg-background rounded-2xl shadow-sm border text-center p-3">
+              <div className="flex justify-center mb-1">
+                <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Icon className="h-4 w-4 text-primary" />
                 </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
+              </div>
+              <p className="text-xl font-bold">{item.value}</p>
+              <p className="text-[9px] text-muted-foreground">{item.title}</p>
+            </div>
+          );
+        })}
+      </div>
 
       {/* Actions rapides */}
-      <Card className="border-none shadow-md rounded-2xl">
-        <CardContent className="p-3 space-y-2">
+      <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
+        <div className="p-3 border-b flex items-center gap-2">
+          <Share2 className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Actions rapides</h3>
+        </div>
+        
+        <div className="p-3 space-y-2">
           {/* Parrainage */}
           <div className="p-2.5 bg-muted/30 rounded-xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Share2 className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-medium">Lien de parrainage</span>
-            </div>
+            <p className="text-xs font-medium mb-2">Lien de parrainage</p>
             <div className="flex items-center gap-1.5">
-              <code className="flex-1 text-[9px] bg-background p-1.5 rounded-lg truncate">
+              <code className="flex-1 text-[9px] bg-background p-1.5 rounded-lg truncate border">
                 {referralLink}
               </code>
-              <Button size="sm" variant="outline" onClick={handleCopyReferralLink} className="h-7 w-7 p-0 shrink-0">
+              <Button size="sm" variant="outline" onClick={handleCopyReferralLink} className="h-7 w-7 p-0 shrink-0 rounded-lg">
                 <Copy className="h-3 w-3" />
               </Button>
             </div>
@@ -328,13 +326,13 @@ const UserProfileSection: React.FC = () => {
 
           {/* Support */}
           <Link to="/contact" className="block">
-            <Button variant="outline" size="sm" className="w-full justify-start gap-2 h-9 rounded-xl">
+            <Button variant="outline" size="sm" className="w-full justify-start gap-2 h-9 rounded-xl text-xs">
               <HelpCircle className="h-3.5 w-3.5" />
-              <span className="text-xs">Contacter le support</span>
+              <span>Contacter le support</span>
             </Button>
           </Link>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 };

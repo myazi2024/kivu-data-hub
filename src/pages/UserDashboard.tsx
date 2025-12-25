@@ -29,54 +29,69 @@ const UserDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-muted/30">
       <Navigation />
       
-      <main className="flex-grow px-2 sm:px-4 py-3">
-        <div className="max-w-[400px] sm:max-w-2xl lg:max-w-4xl mx-auto space-y-3">
+      <main className="flex-grow px-3 py-4">
+        <div className="max-w-[360px] sm:max-w-md lg:max-w-2xl mx-auto">
           <Tabs defaultValue="profile" className="w-full">
-            {/* 5 onglets principaux fusionnés */}
-            <TabsList className="w-full h-auto p-0.5 grid grid-cols-5 gap-0.5 bg-muted/50 rounded-xl">
-              <TabsTrigger value="profile" className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-                <User className="h-3.5 w-3.5" />
-                <span className="text-[9px] sm:text-[10px]">Profil</span>
+            {/* Navigation compacte */}
+            <TabsList className="w-full h-auto p-1 grid grid-cols-5 gap-1 bg-background shadow-sm rounded-2xl border">
+              <TabsTrigger 
+                value="profile" 
+                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+              >
+                <User className="h-4 w-4" />
+                <span className="text-[10px] font-medium">Profil</span>
               </TabsTrigger>
-              <TabsTrigger value="contributions" className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-                <FileText className="h-3.5 w-3.5" />
-                <span className="text-[9px] sm:text-[10px]">Données</span>
+              <TabsTrigger 
+                value="contributions" 
+                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+              >
+                <FileText className="h-4 w-4" />
+                <span className="text-[10px] font-medium">Données</span>
               </TabsTrigger>
-              <TabsTrigger value="permits" className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-                <Building className="h-3.5 w-3.5" />
-                <span className="text-[9px] sm:text-[10px]">Permis</span>
+              <TabsTrigger 
+                value="permits" 
+                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+              >
+                <Building className="h-4 w-4" />
+                <span className="text-[10px] font-medium">Permis</span>
               </TabsTrigger>
-              <TabsTrigger value="invoices" className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-                <CreditCard className="h-3.5 w-3.5" />
-                <span className="text-[9px] sm:text-[10px]">Factures</span>
+              <TabsTrigger 
+                value="invoices" 
+                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+              >
+                <CreditCard className="h-4 w-4" />
+                <span className="text-[10px] font-medium">Factures</span>
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex flex-col items-center gap-0.5 px-1 py-1.5 text-xs data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-lg">
-                <Settings className="h-3.5 w-3.5" />
-                <span className="text-[9px] sm:text-[10px]">Réglages</span>
+              <TabsTrigger 
+                value="settings" 
+                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+              >
+                <Settings className="h-4 w-4" />
+                <span className="text-[10px] font-medium">Réglages</span>
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="profile" className="mt-3">
+            <TabsContent value="profile" className="mt-4">
               <UserProfileSection />
             </TabsContent>
 
-            <TabsContent value="contributions" className="mt-3 space-y-3">
+            <TabsContent value="contributions" className="mt-4 space-y-4">
               <UserContributions />
               <UserCCCCodes />
             </TabsContent>
 
-            <TabsContent value="permits" className="mt-3">
+            <TabsContent value="permits" className="mt-4">
               <UserBuildingPermits />
             </TabsContent>
 
-            <TabsContent value="invoices" className="mt-3">
+            <TabsContent value="invoices" className="mt-4">
               <CadastralDashboardTabs />
             </TabsContent>
 
-            <TabsContent value="settings" className="mt-3 space-y-3">
+            <TabsContent value="settings" className="mt-4 space-y-4">
               <UserPreferences />
               <UserAccountSecurity />
             </TabsContent>
