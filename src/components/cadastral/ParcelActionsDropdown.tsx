@@ -92,7 +92,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             onClick={() => setShowRegularizationPermitDialog(true)}
             className="flex items-center gap-2 cursor-pointer rounded-lg"
           >
-            <FileCheck className="h-4 w-4 text-green-600" />
+            <FileCheck className="h-5 w-5 text-green-600" />
             <div>
               <div className="font-medium text-sm">Ajouter P. Régularisation</div>
               <div className="text-xs text-muted-foreground">Permis pour regulariser une construction existante construite sans permis de construire.</div>
