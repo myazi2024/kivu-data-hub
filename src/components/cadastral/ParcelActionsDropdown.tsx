@@ -56,7 +56,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             className="cursor-pointer rounded-lg"
           >
             <div>
-              <div className="font-medium text-sm">Mutation</div>
+              <div className="font-medium text-sm">Demander Mutation</div>
               <div className="text-xs text-muted-foreground">Transfert de propriété</div>
             </div>
           </DropdownMenuItem>
