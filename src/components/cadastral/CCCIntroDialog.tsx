@@ -40,10 +40,10 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
         <div className="px-4 pt-8 pb-2">
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-lg font-bold text-center text-primary">
-              Ajouter une parcelle au cadastre
+              Enregistrement d'une parcelle
             </DialogTitle>
             <p className="text-sm text-muted-foreground text-center">
-              À lire avant de commencer
+              Veuillez lire attentivement avant de continuer
             </p>
           </DialogHeader>
         </div>
@@ -60,9 +60,9 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <Clock className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm mb-1">Rapide et simple</h3>
+                <h3 className="font-semibold text-sm mb-1">Durée estimée</h3>
                 <p className="text-sm leading-relaxed text-foreground/80">
-                  <strong className="text-foreground">3 à 5 min</strong> suffisent. Sauvegardez votre progression à tout moment.
+                  Le formulaire prend environ <strong className="text-foreground">3 à 5 minutes</strong> à compléter. Vous pouvez sauvegarder votre progression à tout moment.
                 </p>
               </div>
             </div>
@@ -75,9 +75,9 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <Smartphone className="h-4 w-4 text-green-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm mb-1">Idéal sur téléphone</h3>
+                <h3 className="font-semibold text-sm mb-1">Appareil recommandé</h3>
                 <p className="text-sm leading-relaxed text-foreground/80">
-                  Photographiez et ajoutez vos <strong className="text-foreground">documents facilement</strong>.
+                  Nous recommandons d'utiliser un <strong className="text-foreground">téléphone mobile</strong> pour faciliter la prise de photos et l'ajout de documents justificatifs.
                 </p>
               </div>
             </div>
@@ -90,23 +90,23 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <FileText className="h-4 w-4 text-accent-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm mb-2">Infos demandées</h3>
+                <h3 className="font-semibold text-sm mb-2">Informations requises</h3>
                 <div className="space-y-1.5 text-sm text-foreground/80">
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">Base :</strong> N° cadastral, superficie, type</span>
+                    <span><strong className="text-foreground">Informations générales :</strong> numéro cadastral, superficie, type de propriété</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">Lieu :</strong> Mesures des côtés, coordonnées GPS</span>
+                    <span><strong className="text-foreground">Localisation :</strong> dimensions des côtés, coordonnées GPS</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">Historique :</strong> Propriétaires précédents</span>
+                    <span><strong className="text-foreground">Historique :</strong> liste des propriétaires précédents</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">Taxes :</strong> Impôts fonciers, hypothèques</span>
+                    <span><strong className="text-foreground">Fiscalité :</strong> impôts fonciers et hypothèques éventuelles</span>
                   </div>
                 </div>
               </div>
@@ -120,19 +120,19 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 <MessageCircle className="h-4 w-4 text-blue-500" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm mb-2">Aide disponible</h3>
+                <h3 className="font-semibold text-sm mb-2">Assistance disponible</h3>
                 <div className="space-y-1.5 text-sm text-foreground/80">
                   <div className="flex items-start gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
-                    <span><strong className="text-foreground">Bulles d'aide</strong> sur chaque champ</span>
+                    <span><strong className="text-foreground">Bulles d'aide</strong> contextuelles sur chaque champ</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
-                    <span><strong className="text-foreground">Notifications</strong> et conseils</span>
+                    <span><strong className="text-foreground">Notifications</strong> et conseils personnalisés</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <FaWhatsapp className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">WhatsApp 24/7</strong> via bouton flottant</span>
+                    <span><strong className="text-foreground">Support WhatsApp</strong> disponible 24h/24</span>
                   </div>
                 </div>
               </div>
@@ -151,18 +151,18 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
                 : 'bg-muted cursor-not-allowed opacity-60'
             }`}
           >
-            <span className="mr-1.5">Commencer</span>
+            <span className="mr-1.5">Commencer l'enregistrement</span>
             <ArrowRight className={`h-4 w-4 transition-transform duration-300 ${hasScrolledToBottom ? 'group-hover:translate-x-1' : ''}`} />
           </Button>
           
           {!hasScrolledToBottom && (
             <p className="text-xs text-center text-muted-foreground">
-              Défiler ou attendre 2s
+              Veuillez défiler vers le bas ou patienter 2 secondes
             </p>
           )}
           
           <p className="text-xs text-muted-foreground text-center">
-            Infos vérifiées par notre équipe
+            Toutes les informations sont vérifiées par notre équipe
           </p>
         </div>
       </DialogContent>
