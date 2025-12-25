@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Download, Trash2 } from 'lucide-react';
+import { Download, Trash2, Bell, Mail, Shield, Loader2 } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,6 +38,7 @@ export const UserPreferences: React.FC = () => {
     timezone: 'Africa/Lubumbashi'
   });
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     fetchPreferences();
@@ -76,20 +77,20 @@ export const UserPreferences: React.FC = () => {
     if (error) {
       toast({
         title: 'Erreur',
-        description: 'Impossible de mettre à jour vos préférences',
+        description: 'Impossible de mettre à jour',
         variant: 'destructive'
       });
     } else {
       setPreferences(prev => ({ ...prev, [key]: value }));
       toast({
-        title: 'Succès',
-        description: 'Préférences mises à jour'
+        title: 'Préférence mise à jour'
       });
     }
   };
 
   const exportData = async () => {
     if (!user) return;
+    setExporting(true);
 
     try {
       const { data, error } = await supabase.rpc('export_user_data', {
@@ -98,7 +99,6 @@ export const UserPreferences: React.FC = () => {
 
       if (error) throw error;
 
-      // Create download
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -113,9 +113,11 @@ export const UserPreferences: React.FC = () => {
     } catch (error: any) {
       toast({
         title: 'Erreur',
-        description: error.message || 'Impossible d\'exporter vos données',
+        description: error.message || 'Impossible d\'exporter',
         variant: 'destructive'
       });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -123,7 +125,6 @@ export const UserPreferences: React.FC = () => {
     if (!user) return;
 
     try {
-      // Soft delete profile
       const { error } = await supabase
         .from('profiles')
         .update({ deleted_at: new Date().toISOString() })
@@ -131,85 +132,90 @@ export const UserPreferences: React.FC = () => {
 
       if (error) throw error;
 
-      // Sign out
       await supabase.auth.signOut();
       
       toast({
-        title: 'Compte supprimé',
-        description: 'Votre compte a été supprimé'
+        title: 'Compte supprimé'
       });
 
       window.location.href = '/';
     } catch (error: any) {
       toast({
         title: 'Erreur',
-        description: error.message || 'Impossible de supprimer votre compte',
+        description: error.message,
         variant: 'destructive'
       });
     }
   };
 
   if (loading) {
-    return <div>Chargement...</div>;
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Notifications</CardTitle>
-          <CardDescription>
-            Gérez vos préférences de notifications
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="email-notif" className="flex flex-col gap-1">
-              <span>Notifications par email</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                Recevez des emails pour les mises à jour importantes
-              </span>
-            </Label>
-            <Switch
-              id="email-notif"
-              checked={preferences.email_notifications}
-              onCheckedChange={(checked) => updatePreference('email_notifications', checked)}
-            />
+    <div className="space-y-3">
+      {/* Notifications */}
+      <Card className="border-none shadow-md rounded-2xl">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Bell className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h3 className="text-sm font-semibold">Notifications</h3>
           </div>
+          
+          <div className="space-y-3">
+            <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-xl">
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                <div>
+                  <p className="text-xs font-medium">Notifications email</p>
+                  <p className="text-[10px] text-muted-foreground">Mises à jour importantes</p>
+                </div>
+              </div>
+              <Switch
+                checked={preferences.email_notifications}
+                onCheckedChange={(checked) => updatePreference('email_notifications', checked)}
+              />
+            </div>
 
-          <div className="flex items-center justify-between">
-            <Label htmlFor="marketing" className="flex flex-col gap-1">
-              <span>Emails marketing</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                Recevez des offres et nouveautés
-              </span>
-            </Label>
-            <Switch
-              id="marketing"
-              checked={preferences.marketing_emails}
-              onCheckedChange={(checked) => updatePreference('marketing_emails', checked)}
-            />
+            <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-xl">
+              <div className="flex items-center gap-2">
+                <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                <div>
+                  <p className="text-xs font-medium">Emails marketing</p>
+                  <p className="text-[10px] text-muted-foreground">Offres et nouveautés</p>
+                </div>
+              </div>
+              <Switch
+                checked={preferences.marketing_emails}
+                onCheckedChange={(checked) => updatePreference('marketing_emails', checked)}
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Confidentialité</CardTitle>
-          <CardDescription>
-            Gérez vos données et votre vie privée
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="data-sharing" className="flex flex-col gap-1">
-              <span>Partage de données</span>
-              <span className="text-sm text-muted-foreground font-normal">
-                Autoriser l'analyse anonyme pour améliorer le service
-              </span>
-            </Label>
+      {/* Confidentialité */}
+      <Card className="border-none shadow-md rounded-2xl">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Shield className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h3 className="text-sm font-semibold">Confidentialité</h3>
+          </div>
+          
+          <div className="flex items-center justify-between p-2.5 bg-muted/30 rounded-xl">
+            <div>
+              <p className="text-xs font-medium">Partage de données</p>
+              <p className="text-[10px] text-muted-foreground">Analyse anonyme</p>
+            </div>
             <Switch
-              id="data-sharing"
               checked={preferences.data_sharing_consent}
               onCheckedChange={(checked) => updatePreference('data_sharing_consent', checked)}
             />
@@ -217,41 +223,51 @@ export const UserPreferences: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Mes données (RGPD)</CardTitle>
-          <CardDescription>
-            Exportez ou supprimez vos données personnelles
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button onClick={exportData} variant="outline" className="w-full">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter mes données
-          </Button>
+      {/* Données RGPD */}
+      <Card className="border-none shadow-md rounded-2xl">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Download className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h3 className="text-sm font-semibold">Mes données (RGPD)</h3>
+          </div>
+          
+          <div className="space-y-2">
+            <Button 
+              onClick={exportData} 
+              variant="outline" 
+              size="sm" 
+              className="w-full justify-start gap-2 h-9 rounded-xl text-xs"
+              disabled={exporting}
+            >
+              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+              Exporter mes données
+            </Button>
 
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="w-full">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Supprimer mon compte
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Cette action est irréversible. Toutes vos données seront définitivement supprimées.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Annuler</AlertDialogCancel>
-                <AlertDialogAction onClick={deleteAccount} className="bg-destructive">
-                  Supprimer définitivement
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" className="w-full justify-start gap-2 h-9 rounded-xl text-xs">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Supprimer mon compte
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-[340px] rounded-2xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-sm">Supprimer le compte ?</AlertDialogTitle>
+                  <AlertDialogDescription className="text-xs">
+                    Cette action est irréversible. Toutes vos données seront supprimées.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="gap-2">
+                  <AlertDialogCancel className="text-xs h-8">Annuler</AlertDialogCancel>
+                  <AlertDialogAction onClick={deleteAccount} className="bg-destructive text-xs h-8">
+                    Supprimer
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </CardContent>
       </Card>
     </div>
