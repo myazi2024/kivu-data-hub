@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, FileEdit, Building2, FileCheck, Receipt, Landmark, FilePlus } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import BuildingPermitFormDialog from './BuildingPermitFormDialog';
@@ -53,9 +53,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         >
           <DropdownMenuItem 
             onClick={() => setShowMutationDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-lg"
           >
-            <FileEdit className="h-4 w-4 text-primary" />
             <div>
               <div className="font-medium text-sm">Mutation</div>
               <div className="text-xs text-muted-foreground">Transfert de propriété</div>
@@ -66,9 +65,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           
           <DropdownMenuItem 
             onClick={() => setShowMortgageDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-lg"
           >
-            <Landmark className="h-4 w-4 text-amber-600" />
             <div>
               <div className="font-medium text-sm">Hypothèque</div>
               <div className="text-xs text-muted-foreground">Ajouter une garantie</div>
@@ -79,9 +77,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           
           <DropdownMenuItem 
             onClick={() => setShowBuildingPermitDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-lg"
           >
-            <Building2 className="h-4 w-4 text-blue-600" />
             <div>
               <div className="font-medium text-sm">Ajouter Permis</div>
               <div className="text-xs text-muted-foreground">Pour une nouvelle construction</div>
@@ -90,9 +87,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           
           <DropdownMenuItem 
             onClick={() => setShowRegularizationPermitDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-lg"
           >
-            <FileCheck className="h-5 w-5 text-green-600" />
             <div>
               <div className="font-medium text-sm">Ajouter P. Régularisation</div>
               <div className="text-xs text-muted-foreground">Permis pour regulariser une construction existante construite sans permis de construire.</div>
@@ -103,9 +99,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           
           <DropdownMenuItem 
             onClick={() => setShowTaxDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-lg"
           >
-            <Receipt className="h-4 w-4 text-purple-600" />
             <div>
               <div className="font-medium text-sm">Taxe foncière</div>
               <div className="text-xs text-muted-foreground">Paiement fiscal</div>
@@ -116,9 +111,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           
           <DropdownMenuItem 
             onClick={() => setShowPermitRequestDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-lg"
           >
-            <FilePlus className="h-4 w-4 text-cyan-600" />
             <div>
               <div className="font-medium text-sm">Demande permis</div>
               <div className="text-xs text-muted-foreground">Permis de construire ou régularisation</div>
