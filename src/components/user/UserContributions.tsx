@@ -146,141 +146,74 @@ export const UserContributions: React.FC = () => {
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-3 md:mb-6">
-        <Card>
-          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
-            <CardTitle className="text-[10px] md:text-sm font-medium">Total</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2 md:pb-3">
-            <div className="text-lg md:text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
-            <CardTitle className="text-[10px] md:text-sm font-medium">En attente</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2 md:pb-3">
-            <div className="text-lg md:text-2xl font-bold text-yellow-600">{stats.pending}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
-            <CardTitle className="text-[10px] md:text-sm font-medium">Approuvées</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2 md:pb-3">
-            <div className="text-lg md:text-2xl font-bold text-green-600">{stats.approved}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
-            <CardTitle className="text-[10px] md:text-sm font-medium">Rejetées</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2 md:pb-3">
-            <div className="text-lg md:text-2xl font-bold text-red-600">{stats.rejected}</div>
-          </CardContent>
-        </Card>
+      {/* Stats compactes */}
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        {[
+          { label: "Total", value: stats.total, color: "text-foreground" },
+          { label: "Attente", value: stats.pending, color: "text-amber-600" },
+          { label: "Validées", value: stats.approved, color: "text-green-600" },
+          { label: "Rejetées", value: stats.rejected, color: "text-destructive" },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-background rounded-2xl p-3 shadow-sm border text-center">
+            <p className={`text-xl font-bold ${stat.color}`}>{stat.value}</p>
+            <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+          </div>
+        ))}
       </div>
 
-      <Card>
-        <CardHeader className="pb-3 md:pb-6">
-          <CardTitle className="flex items-center gap-2 text-sm md:text-base">
-            <FileText className="h-4 w-4 md:h-5 md:w-5" />
-            Mes contributions CCC
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 md:p-6">
+      {/* Liste des contributions */}
+      <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
+        <div className="p-3 border-b flex items-center gap-2">
+          <FileText className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Mes contributions CCC</h3>
+        </div>
+        
+        <div className="p-3">
           {contributions.length === 0 ? (
-            <div className="text-center py-12">
-              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Vous n'avez pas encore de contributions</p>
+            <div className="text-center py-8">
+              <div className="h-12 w-12 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center mb-3">
+                <FileText className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">Aucune contribution</p>
             </div>
           ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden md:block rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Numéro parcelle</TableHead>
-                      <TableHead>Localisation</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contributions.map((contribution) => (
-                      <TableRow key={contribution.id}>
-                        <TableCell className="font-medium">{contribution.parcel_number}</TableCell>
-                        <TableCell>
-                          {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(contribution.created_at).toLocaleDateString('fr-FR')}
-                        </TableCell>
-                        <TableCell>
-                          {getStatusBadge(contribution.status, contribution.is_suspicious)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedContribution(contribution);
-                              setIsDetailsOpen(true);
-                            }}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Mobile Cards */}
-              <div className="md:hidden space-y-2">
-                {contributions.map((contribution) => (
-                  <Card key={contribution.id} className="p-2">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-xs truncate">{contribution.parcel_number}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
-                          </p>
-                        </div>
-                        {getStatusBadge(contribution.status, contribution.is_suspicious)}
-                      </div>
-                      
-                      <div className="flex items-center justify-between pt-1 border-t">
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                        </span>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedContribution(contribution);
-                            setIsDetailsOpen(true);
-                          }}
-                          className="h-7"
-                        >
-                          <Eye className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            </>
+            <div className="space-y-2">
+              {contributions.slice(0, 5).map((contribution) => (
+                <div 
+                  key={contribution.id} 
+                  className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => {
+                    setSelectedContribution(contribution);
+                    setIsDetailsOpen(true);
+                  }}
+                >
+                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <FileText className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate">{contribution.parcel_number}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    {getStatusBadge(contribution.status, contribution.is_suspicious)}
+                    <p className="text-[9px] text-muted-foreground mt-0.5">
+                      {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+              
+              {contributions.length > 5 && (
+                <p className="text-center text-xs text-muted-foreground pt-2">
+                  +{contributions.length - 5} autres contributions
+                </p>
+              )}
+            </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       <Dialog open={isDetailsOpen} onOpenChange={(open) => {
         setIsDetailsOpen(open);

@@ -85,213 +85,92 @@ export const UserCCCCodes: React.FC = () => {
 
   if (loading) {
     return (
-      <Card>
-        <CardContent className="p-8">
-          <div className="flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="bg-background rounded-2xl shadow-sm border p-6">
+        <div className="flex items-center justify-center">
+          <div className="animate-spin rounded-full h-6 w-6 border-2 border-primary border-t-transparent"></div>
+        </div>
+      </div>
     );
   }
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mb-3 md:mb-6">
-        <Card>
-          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
-            <CardTitle className="text-[10px] md:text-sm font-medium">Total codes</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2 md:pb-3">
-            <div className="text-lg md:text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
-            <CardTitle className="text-[10px] md:text-sm font-medium">Disponibles</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2 md:pb-3">
-            <div className="text-lg md:text-2xl font-bold text-green-600">{stats.available}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
-            <CardTitle className="text-[10px] md:text-sm font-medium">Utilisés</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2 md:pb-3">
-            <div className="text-lg md:text-2xl font-bold text-blue-600">{stats.used}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-1 md:pb-3 pt-2 md:pt-6">
-            <CardTitle className="text-[10px] md:text-sm font-medium">Valeur totale</CardTitle>
-          </CardHeader>
-          <CardContent className="pb-2 md:pb-3">
-            <div className="text-lg md:text-2xl font-bold flex items-center gap-0.5">
-              <DollarSign className="h-3 w-3 md:h-5 md:w-5" />
-              <span className="text-sm md:text-2xl">{stats.totalValue.toFixed(2)}</span>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Stats compactes */}
+      <div className="grid grid-cols-4 gap-2 mb-4">
+        {[
+          { label: "Total", value: stats.total, color: "text-foreground" },
+          { label: "Dispo.", value: stats.available, color: "text-green-600" },
+          { label: "Utilisés", value: stats.used, color: "text-blue-600" },
+          { label: "Valeur", value: `$${stats.totalValue.toFixed(0)}`, color: "text-primary" },
+        ].map((stat) => (
+          <div key={stat.label} className="bg-background rounded-2xl p-3 shadow-sm border text-center">
+            <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
+            <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+          </div>
+        ))}
       </div>
 
-      <Card>
-        <CardHeader className="pb-3 md:pb-6">
-          <CardTitle className="flex items-center gap-2 text-sm md:text-base">
-            <Gift className="h-4 w-4 md:h-5 md:w-5" />
-            Mes codes CCC
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-3 md:p-6">
+      {/* Liste des codes */}
+      <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
+        <div className="p-3 border-b flex items-center gap-2">
+          <Gift className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-semibold">Mes codes CCC</h3>
+        </div>
+        
+        <div className="p-3">
           {codes.length === 0 ? (
-            <div className="text-center py-12">
-              <Gift className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground mb-2">Vous n'avez pas encore de codes CCC</p>
-              <p className="text-sm text-muted-foreground">
-                Soumettez des contributions pour gagner des codes
+            <div className="text-center py-8">
+              <div className="h-12 w-12 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center mb-3">
+                <Gift className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <p className="text-sm text-muted-foreground">Aucun code CCC</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Contribuez pour en gagner
               </p>
             </div>
           ) : (
-            <>
-              {/* Desktop Table */}
-              <div className="hidden lg:block rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Code</TableHead>
-                      <TableHead>Parcelle</TableHead>
-                      <TableHead>Valeur</TableHead>
-                      <TableHead>Date création</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {codes.map((code) => (
-                      <TableRow key={code.id}>
-                        <TableCell className="font-mono font-medium">{code.code}</TableCell>
-                        <TableCell>{code.parcel_number}</TableCell>
-                        <TableCell>
-                          <span className="flex items-center gap-1 font-medium text-green-600">
-                            <DollarSign className="h-3 w-3" />
-                            {Number(code.value_usd).toFixed(2)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {new Date(code.created_at).toLocaleDateString('fr-FR')}
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={getCodeStatus(code)} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => copyToClipboard(code.code)}
-                              disabled={!code.is_valid || code.is_used}
-                              title="Copier le code"
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedCode(code);
-                                setIsDetailsOpen(true);
-                              }}
-                              title="Voir les détails"
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-
-              {/* Mobile Cards */}
-              <div className="lg:hidden space-y-2">
-                {codes.map((code) => (
-                  <Card key={code.id} className="p-2">
-                    <div className="space-y-2">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-mono font-medium text-xs">{code.code}</p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5 truncate">
-                            Parcelle: {code.parcel_number}
-                          </p>
-                        </div>
-                        <StatusBadge status={getCodeStatus(code)} />
-                      </div>
-
-                      <div className="flex items-center justify-between py-1 border-y">
-                        <div>
-                          <p className="text-[10px] text-muted-foreground">Valeur</p>
-                          <p className="font-semibold text-green-600 flex items-center gap-0.5 mt-0.5 text-xs">
-                            <DollarSign className="h-3 w-3" />
-                            {Number(code.value_usd).toFixed(2)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-[10px] text-muted-foreground">Expire</p>
-                          <p className="text-[10px] font-medium mt-0.5">
-                            {new Date(code.expires_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] text-muted-foreground">
-                          {new Date(code.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                        </span>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setSelectedCode(code);
-                              setIsDetailsOpen(true);
-                            }}
-                            className="h-7 text-[11px]"
-                          >
-                            <Eye className="h-3 w-3 mr-1" />
-                            Voir
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => copyToClipboard(code.code)}
-                            disabled={!code.is_valid || code.is_used}
-                            className="h-7 text-[11px]"
-                          >
-                            <Copy className="h-3 w-3 mr-1" />
-                            Copier
-                          </Button>
-                        </div>
-                      </div>
+            <div className="space-y-2">
+              {codes.slice(0, 5).map((code) => (
+                <div 
+                  key={code.id} 
+                  className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
+                >
+                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <Gift className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-mono font-medium truncate">{code.code}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {code.parcel_number}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0 space-y-1">
+                    <div className="flex items-center gap-1">
+                      <StatusBadge status={getCodeStatus(code)} />
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(code.code)}
+                        disabled={!code.is_valid || code.is_used}
+                        className="h-6 w-6 p-0"
+                      >
+                        <Copy className="h-3 w-3" />
+                      </Button>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            </>
-          )}
-
-          {codes.length > 0 && (
-            <div className="mt-4 p-4 bg-muted/50 rounded-lg">
-              <p className="text-sm text-muted-foreground">
-                <strong>💡 Astuce :</strong> Utilisez vos codes CCC lors du paiement pour bénéficier d'une remise automatique !
-              </p>
+                    <p className="text-xs font-semibold text-green-600">${Number(code.value_usd).toFixed(2)}</p>
+                  </div>
+                </div>
+              ))}
+              
+              {codes.length > 5 && (
+                <p className="text-center text-xs text-muted-foreground pt-2">
+                  +{codes.length - 5} autres codes
+                </p>
+              )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
       
       <UserCCCCodeDetailsDialog 
         open={isDetailsOpen} 
