@@ -2698,7 +2698,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </PopoverTrigger>
                     <PopoverContent className="w-72 rounded-xl text-xs">
                       <p className="text-muted-foreground">
-                        Permet de calculer les frais de retard de mutation si le titre n'est pas encore au nom du propriétaire actuel.
+                        Il est essentiel que le titre foncier soit enregistré au nom du véritable propriétaire afin de prévenir d'éventuelles complications légales, fiscales ou administratives.
                       </p>
                     </PopoverContent>
                   </Popover>
