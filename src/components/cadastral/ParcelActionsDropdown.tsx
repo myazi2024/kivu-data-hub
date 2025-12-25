@@ -83,8 +83,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           >
             <Building2 className="h-4 w-4 text-blue-600" />
             <div>
-              <div className="font-medium text-sm">Permis construire</div>
-              <div className="text-xs text-muted-foreground">Nouvelle construction</div>
+              <div className="font-medium text-sm">Ajouter Permis</div>
+              <div className="text-xs text-muted-foreground">Pour une nouvelle construction</div>
             </div>
           </DropdownMenuItem>
           
@@ -94,8 +94,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           >
             <FileCheck className="h-4 w-4 text-green-600" />
             <div>
-              <div className="font-medium text-sm">Régularisation</div>
-              <div className="text-xs text-muted-foreground">Construction existante</div>
+              <div className="font-medium text-sm">Ajouter P. Régularisation</div>
+              <div className="text-xs text-muted-foreground">Pour regulariser le permis une construction existante.</div>
             </div>
           </DropdownMenuItem>
           
