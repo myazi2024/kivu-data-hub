@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
-  CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign
+  CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
@@ -763,100 +763,116 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   );
 
   const renderPayment = () => (
-    <div className="space-y-3">
-      {/* Header compact avec référence et montant */}
-      <Card className="bg-muted/50 border-0 rounded-lg">
-        <CardContent className="p-2">
-          <div className="flex items-center justify-between">
+    <div className="space-y-4">
+      {/* Header moderne avec gradient */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-4 border border-primary/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-primary/20 rounded-lg flex items-center justify-center">
+              <DollarSign className="h-5 w-5 text-primary" />
+            </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Parcelle</p>
-              <p className="font-mono font-bold text-sm">{parcelNumber}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[10px] text-muted-foreground">Montant</p>
-              <p className="text-lg font-bold text-primary">${getTotalAmount()}</p>
+              <p className="text-xs text-muted-foreground">Parcelle</p>
+              <p className="font-mono font-bold">{parcelNumber}</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Total à payer</p>
+            <p className="text-2xl font-bold text-primary">${getTotalAmount()}</p>
+          </div>
+        </div>
+      </div>
 
-      {/* Détails des frais - compact */}
-      <div className="bg-muted/30 rounded-lg p-2 space-y-1">
-        {fees.map((fee, index) => (
-          <div key={fee.id} className={`flex justify-between items-center text-xs py-0.5 ${index < fees.length - 1 ? 'border-b border-border/50' : ''}`}>
-            <span className="text-muted-foreground">{fee.fee_name}</span>
-            <span className="font-medium">${fee.amount_usd}</span>
-          </div>
-        ))}
+      {/* Détails des frais */}
+      <div className="bg-muted/40 rounded-xl p-3">
+        <p className="text-xs font-semibold text-muted-foreground mb-2">Détails des frais</p>
+        <div className="space-y-2">
+          {fees.map((fee) => (
+            <div key={fee.id} className="flex justify-between items-center">
+              <span className="text-sm">{fee.fee_name}</span>
+              <span className="font-semibold">${fee.amount_usd}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Mode de paiement */}
-      <div className="space-y-2">
-        <Label className="text-xs font-medium">Mode de paiement</Label>
-        <div className="grid grid-cols-2 gap-1.5">
-          <Button
-            variant={paymentMethod === 'mobile_money' ? 'seloger' : 'outline'}
-            size="sm"
+      <div>
+        <p className="text-sm font-semibold mb-2">Mode de paiement</p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
             onClick={() => setPaymentMethod('mobile_money')}
-            className="h-8 text-xs rounded-lg"
+            className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+              paymentMethod === 'mobile_money' 
+                ? 'border-primary bg-primary/10 text-primary' 
+                : 'border-border hover:border-primary/50'
+            }`}
           >
-            Mobile Money
-          </Button>
-          <Button
-            variant={paymentMethod === 'bank_card' ? 'seloger' : 'outline'}
-            size="sm"
+            <Phone className="h-5 w-5" />
+            <span className="font-medium">Mobile Money</span>
+          </button>
+          <button
+            type="button"
             onClick={() => setPaymentMethod('bank_card')}
-            className="h-8 text-xs rounded-lg"
+            className={`p-3 rounded-xl border-2 transition-all flex items-center gap-2 ${
+              paymentMethod === 'bank_card' 
+                ? 'border-primary bg-primary/10 text-primary' 
+                : 'border-border hover:border-primary/50'
+            }`}
           >
-            Carte bancaire
-          </Button>
+            <CreditCard className="h-5 w-5" />
+            <span className="font-medium">Carte bancaire</span>
+          </button>
         </div>
       </div>
 
       {/* Détails Mobile Money */}
       {paymentMethod === 'mobile_money' && (
-        <div className="space-y-2">
-          <div className="space-y-1">
-            <Label className="text-[10px]">Opérateur</Label>
-            <Select value={paymentProvider} onValueChange={setPaymentProvider}>
-              <SelectTrigger className="h-8 text-xs rounded-lg">
-                <SelectValue placeholder="Sélectionner..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="airtel" className="text-xs">Airtel Money</SelectItem>
-                <SelectItem value="orange" className="text-xs">Orange Money</SelectItem>
-                <SelectItem value="mpesa" className="text-xs">M-Pesa</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px]">Numéro de téléphone</Label>
-            <Input
-              value={paymentPhone}
-              onChange={(e) => setPaymentPhone(e.target.value)}
-              placeholder="+243..."
-              className="h-8 text-xs rounded-lg"
-            />
+        <div className="bg-muted/30 rounded-xl p-3 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Opérateur</Label>
+              <Select value={paymentProvider} onValueChange={setPaymentProvider}>
+                <SelectTrigger className="h-10 rounded-lg">
+                  <SelectValue placeholder="Choisir..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="airtel">Airtel Money</SelectItem>
+                  <SelectItem value="orange">Orange Money</SelectItem>
+                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs font-medium mb-1.5 block">Téléphone</Label>
+              <Input
+                value={paymentPhone}
+                onChange={(e) => setPaymentPhone(e.target.value)}
+                placeholder="+243 ..."
+                className="h-10 rounded-lg"
+              />
+            </div>
           </div>
         </div>
       )}
 
       {paymentMethod === 'bank_card' && (
-        <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg">
-          <CreditCard className="h-4 w-4 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">
-            Redirection vers Stripe pour le paiement sécurisé.
+        <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+          <CreditCard className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          <p className="text-sm text-blue-700 dark:text-blue-300">
+            Vous serez redirigé vers Stripe pour un paiement sécurisé.
           </p>
         </div>
       )}
 
       {/* Boutons */}
-      <div className="flex gap-1.5 pt-2">
+      <div className="flex gap-2 pt-2">
         <Button 
           variant="outline" 
           onClick={() => setStep('form')}
           disabled={processingPayment}
-          className="flex-1 h-8 text-xs rounded-lg"
+          className="flex-1 h-11 rounded-xl"
         >
           Retour
         </Button>
@@ -864,15 +880,18 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           variant="seloger"
           onClick={handlePayment}
           disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
-          className="flex-1 h-8 text-xs rounded-lg"
+          className="flex-1 h-11 rounded-xl font-semibold"
         >
           {processingPayment ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-              Paiement...
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Traitement...
             </>
           ) : (
-            'Payer'
+            <>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Payer ${getTotalAmount()}
+            </>
           )}
         </Button>
       </div>
