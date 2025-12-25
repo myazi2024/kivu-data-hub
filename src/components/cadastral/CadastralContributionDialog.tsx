@@ -185,6 +185,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     receiptFile: null
   }]);
 
+  // État pour savoir si une hypothèque existe sur la parcelle
+  const [hasMortgage, setHasMortgage] = useState<boolean | null>(null);
+  
   // État pour gérer plusieurs hypothèques
   const [mortgageRecords, setMortgageRecords] = useState<Array<{
     mortgageAmount: string;
@@ -3873,7 +3876,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
 
-            {/* Section Hypothèques - Design moderne compact */}
+            {/* Section Hypothèques - Design moderne compact avec question parent */}
             {obligationType === 'mortgages' && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
                 <CardContent className="p-3 space-y-3">
@@ -3883,7 +3886,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
                         <MdAccountBalance className="h-3.5 w-3.5 text-primary" />
                       </div>
-                      <Label className="text-sm font-semibold">Hypothèques</Label>
+                      <Label className="text-sm font-semibold">Hypothèque</Label>
                     </div>
                     <Popover>
                       <PopoverTrigger asChild>
@@ -3893,183 +3896,243 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </PopoverTrigger>
                       <PopoverContent className="w-72 rounded-xl" align="end">
                         <div className="space-y-2 text-xs">
-                          <h4 className="font-semibold text-sm">Hypothèques (optionnel)</h4>
+                          <h4 className="font-semibold text-sm">Statut hypothécaire</h4>
                           <p className="text-muted-foreground">
-                            Déclarez les hypothèques grevant cette parcelle pour établir sa situation juridique.
+                            Indiquez si cette parcelle est grevée d'une hypothèque active.
                           </p>
                           <p className="text-muted-foreground">
-                            <strong>💡</strong> Laissez vide si aucune hypothèque.
+                            <strong>💡</strong> Cette information est importante pour les acheteurs potentiels.
                           </p>
                         </div>
                       </PopoverContent>
                     </Popover>
                   </div>
 
-                  {mortgageRecords.map((mortgage, index) => (
-                    <div key={index} className={`border-2 rounded-2xl p-3 space-y-2 bg-card shadow-sm transition-all duration-300 ${
-                      highlightIncompleteMortgage && index === 0 
-                        ? 'ring-2 ring-amber-500 animate-pulse' 
-                        : 'border-border'
-                    }`}>
-                      {/* Header de l'hypothèque */}
-                      <div className="flex items-center justify-between pb-2 border-b border-border/50">
-                        <span className="text-sm font-semibold text-foreground">Hypothèque #{index + 1}</span>
-                        {mortgageRecords.length > 1 && index > 0 && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeMortgageRecord(index)}
-                            className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        )}
+                  {/* Question parent: Y a-t-il une hypothèque? */}
+                  <div className="border-2 rounded-2xl p-3 space-y-3 bg-card shadow-sm">
+                    <Label className="text-sm font-medium">
+                      Y a-t-il une hypothèque active sur cette parcelle ?
+                    </Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant={hasMortgage === true ? "default" : "outline"}
+                        onClick={() => setHasMortgage(true)}
+                        className={`h-10 text-sm rounded-xl transition-all ${
+                          hasMortgage === true 
+                            ? "bg-primary text-primary-foreground shadow-md" 
+                            : "hover:bg-primary/10"
+                        }`}
+                      >
+                        Oui
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={hasMortgage === false ? "default" : "outline"}
+                        onClick={() => {
+                          setHasMortgage(false);
+                          // Reset mortgage records when No is selected
+                          setMortgageRecords([{
+                            mortgageAmount: '',
+                            duration: '',
+                            creditorName: '',
+                            creditorType: 'Banque',
+                            contractDate: '',
+                            mortgageStatus: 'Active',
+                            receiptFile: null
+                          }]);
+                        }}
+                        className={`h-10 text-sm rounded-xl transition-all ${
+                          hasMortgage === false 
+                            ? "bg-primary text-primary-foreground shadow-md" 
+                            : "hover:bg-primary/10"
+                        }`}
+                      >
+                        Non
+                      </Button>
+                    </div>
+
+                    {/* Confirmation si Non */}
+                    {hasMortgage === false && (
+                      <div className="bg-green-50 dark:bg-green-950/50 border border-green-200 dark:border-green-800 rounded-xl p-2 flex items-center gap-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                        <p className="text-xs text-green-700 dark:text-green-300">
+                          Aucune hypothèque active - parcelle libre de charges
+                        </p>
                       </div>
+                    )}
+                  </div>
 
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-sm font-medium">Montant (USD)</Label>
-                          <Input
-                            type="number"
-                            placeholder="50000"
-                            value={mortgage.mortgageAmount}
-                            onChange={(e) => updateMortgageRecord(index, 'mortgageAmount', e.target.value)}
-                            className="h-10 text-sm rounded-xl"
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-sm font-medium">Durée (mois)</Label>
-                          <Input
-                            type="number"
-                            placeholder="120"
-                            value={mortgage.duration}
-                            onChange={(e) => updateMortgageRecord(index, 'duration', e.target.value)}
-                            className="h-10 text-sm rounded-xl"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-sm font-medium">Nom du créancier</Label>
-                          <Input
-                            placeholder="ex: Banque XYZ"
-                            value={mortgage.creditorName}
-                            onChange={(e) => updateMortgageRecord(index, 'creditorName', e.target.value)}
-                            className="h-10 text-sm rounded-xl"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-sm font-medium">Type de créancier</Label>
-                          <Select
-                            value={mortgage.creditorType}
-                            onValueChange={(value) => updateMortgageRecord(index, 'creditorType', value)}
-                          >
-                            <SelectTrigger className="h-10 text-sm rounded-xl">
-                              <SelectValue placeholder="Type" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                              <SelectItem value="Banque">Banque</SelectItem>
-                              <SelectItem value="Microfinance">Microfinance</SelectItem>
-                              <SelectItem value="Coopérative">Coopérative</SelectItem>
-                              <SelectItem value="Particulier">Particulier</SelectItem>
-                              <SelectItem value="Autre institution">Autre</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label className="text-sm font-medium">Date du contrat</Label>
-                          <Input
-                            type="date"
-                            max={new Date().toISOString().split('T')[0]}
-                            value={mortgage.contractDate}
-                            onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
-                            className="h-10 text-sm rounded-xl"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <Label className="text-sm font-medium">Statut</Label>
-                          <Select
-                            value={mortgage.mortgageStatus}
-                            onValueChange={(value) => updateMortgageRecord(index, 'mortgageStatus', value)}
-                          >
-                            <SelectTrigger className="h-10 text-sm rounded-xl">
-                              <SelectValue placeholder="Statut" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl">
-                              <SelectItem value="Active">Active</SelectItem>
-                              <SelectItem value="Remboursée">Remboursée</SelectItem>
-                              <SelectItem value="En défaut">En défaut</SelectItem>
-                              <SelectItem value="Renégociée">Renégociée</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-
-                      {/* Pièce jointe compacte */}
-                      <div className="space-y-1 pt-2 border-t border-border/50">
-                        <Label className="text-sm font-medium">Justificatif (optionnel)</Label>
-                        {!mortgage.receiptFile ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => document.getElementById(`mortgageFile-${index}`)?.click()}
-                            className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2"
-                          >
-                            <Plus className="h-4 w-4" />
-                            Ajouter justificatif
-                          </Button>
-                        ) : (
-                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border overflow-hidden min-w-0">
-                            <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span className="text-sm flex-1 truncate overflow-hidden min-w-0">{mortgage.receiptFile.name}</span>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeMortgageFile(index)}
-                              className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg flex-shrink-0"
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                  {/* Formulaire hypothèque - affiché uniquement si Oui */}
+                  {hasMortgage === true && (
+                    <>
+                      {mortgageRecords.map((mortgage, index) => (
+                        <div key={index} className={`border-2 rounded-2xl p-3 space-y-2 bg-card shadow-sm transition-all duration-300 ${
+                          highlightIncompleteMortgage && index === 0 
+                            ? 'ring-2 ring-amber-500 animate-pulse' 
+                            : 'border-border'
+                        }`}>
+                          {/* Header de l'hypothèque */}
+                          <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                            <span className="text-sm font-semibold text-foreground">Hypothèque #{index + 1}</span>
+                            {mortgageRecords.length > 1 && index > 0 && (
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => removeMortgageRecord(index)}
+                                className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
-                        )}
-                        <Input
-                          id={`mortgageFile-${index}`}
-                          type="file"
-                          accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                          onChange={(e) => handleMortgageFileChange(index, e)}
-                          className="hidden"
-                        />
-                      </div>
-                    </div>
-                  ))}
 
-                  {/* Avertissement compact */}
-                  {showMortgageWarning && (
-                    <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-2">
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
-                        ⚠️ Complétez l'hypothèque avant d'en ajouter une nouvelle.
-                      </p>
-                    </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">Montant (USD)</Label>
+                              <Input
+                                type="number"
+                                placeholder="50000"
+                                value={mortgage.mortgageAmount}
+                                onChange={(e) => updateMortgageRecord(index, 'mortgageAmount', e.target.value)}
+                                className="h-10 text-sm rounded-xl"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">Durée (mois)</Label>
+                              <Input
+                                type="number"
+                                placeholder="120"
+                                value={mortgage.duration}
+                                onChange={(e) => updateMortgageRecord(index, 'duration', e.target.value)}
+                                className="h-10 text-sm rounded-xl"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">Créancier</Label>
+                              <Input
+                                placeholder="ex: Banque XYZ"
+                                value={mortgage.creditorName}
+                                onChange={(e) => updateMortgageRecord(index, 'creditorName', e.target.value)}
+                                className="h-10 text-sm rounded-xl"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">Type</Label>
+                              <Select
+                                value={mortgage.creditorType}
+                                onValueChange={(value) => updateMortgageRecord(index, 'creditorType', value)}
+                              >
+                                <SelectTrigger className="h-10 text-sm rounded-xl">
+                                  <SelectValue placeholder="Type" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                  <SelectItem value="Banque">Banque</SelectItem>
+                                  <SelectItem value="Microfinance">Microfinance</SelectItem>
+                                  <SelectItem value="Coopérative">Coopérative</SelectItem>
+                                  <SelectItem value="Particulier">Particulier</SelectItem>
+                                  <SelectItem value="Autre institution">Autre</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">Date contrat</Label>
+                              <Input
+                                type="date"
+                                max={new Date().toISOString().split('T')[0]}
+                                value={mortgage.contractDate}
+                                onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
+                                className="h-10 text-sm rounded-xl"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">Statut</Label>
+                              <Select
+                                value={mortgage.mortgageStatus}
+                                onValueChange={(value) => updateMortgageRecord(index, 'mortgageStatus', value)}
+                              >
+                                <SelectTrigger className="h-10 text-sm rounded-xl">
+                                  <SelectValue placeholder="Statut" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                  <SelectItem value="Active">Active</SelectItem>
+                                  <SelectItem value="Remboursée">Remboursée</SelectItem>
+                                  <SelectItem value="En défaut">En défaut</SelectItem>
+                                  <SelectItem value="Renégociée">Renégociée</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          {/* Pièce jointe compacte */}
+                          <div className="space-y-1 pt-2 border-t border-border/50">
+                            <Label className="text-sm font-medium">Justificatif (optionnel)</Label>
+                            {!mortgage.receiptFile ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => document.getElementById(`mortgageFile-${index}`)?.click()}
+                                className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2"
+                              >
+                                <Plus className="h-4 w-4" />
+                                Ajouter justificatif
+                              </Button>
+                            ) : (
+                              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border overflow-hidden min-w-0">
+                                <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                                <span className="text-sm flex-1 truncate overflow-hidden min-w-0">{mortgage.receiptFile.name}</span>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removeMortgageFile(index)}
+                                  className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg flex-shrink-0"
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            )}
+                            <Input
+                              id={`mortgageFile-${index}`}
+                              type="file"
+                              accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                              onChange={(e) => handleMortgageFileChange(index, e)}
+                              className="hidden"
+                            />
+                          </div>
+                        </div>
+                      ))}
+
+                      {/* Avertissement compact */}
+                      {showMortgageWarning && (
+                        <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-2">
+                          <p className="text-xs text-amber-700 dark:text-amber-300">
+                            ⚠️ Complétez l'hypothèque avant d'en ajouter une nouvelle.
+                          </p>
+                        </div>
+                      )}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addMortgageRecord}
+                        className="w-full h-10 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter une hypothèque
+                      </Button>
+                    </>
                   )}
-
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={addMortgageRecord}
-                    className="w-full h-10 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Ajouter une hypothèque
-                  </Button>
                 </CardContent>
               </Card>
             )}
@@ -4314,20 +4377,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     ) : (
                       <div className="text-muted-foreground italic">Aucune taxe</div>
                     )}
-                    {mortgageRecords.some(m => m.mortgageAmount) ? (
-                      <div className="pt-1 border-t border-border/50">
-                        <div className="font-medium">Hypothèques:</div>
-                        {mortgageRecords.filter(m => m.mortgageAmount).map((mortgage, idx) => (
-                          <div key={idx} className="ml-2 text-muted-foreground">
-                            • {mortgage.mortgageAmount} USD - {mortgage.creditorName} ({mortgage.mortgageStatus})
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className={taxRecords.some(t => t.taxAmount) ? "pt-1 border-t border-border/50 text-muted-foreground italic" : "text-muted-foreground italic"}>
-                        Aucune hypothèque
-                      </div>
-                    )}
+                    {/* Section Hypothèque */}
+                    <div className="pt-1 border-t border-border/50">
+                      <div className="font-medium">Hypothèque:</div>
+                      {hasMortgage === null ? (
+                        <div className="ml-2 text-muted-foreground italic">Non renseigné</div>
+                      ) : hasMortgage === false ? (
+                        <div className="ml-2 text-green-600 flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Aucune hypothèque - Parcelle libre
+                        </div>
+                      ) : mortgageRecords.some(m => m.mortgageAmount) ? (
+                        <>
+                          {mortgageRecords.filter(m => m.mortgageAmount).map((mortgage, idx) => (
+                            <div key={idx} className="ml-2 text-muted-foreground">
+                              • {mortgage.mortgageAmount} USD - {mortgage.creditorName} ({mortgage.mortgageStatus})
+                            </div>
+                          ))}
+                        </>
+                      ) : (
+                        <div className="ml-2 text-amber-600">Hypothèque déclarée - détails à compléter</div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

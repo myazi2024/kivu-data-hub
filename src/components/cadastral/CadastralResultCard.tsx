@@ -11,6 +11,7 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   CreditCard,
   Landmark,
@@ -1300,10 +1301,18 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                     <CardContent className="p-3">
                       <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
                         <CreditCard className="h-3 w-3" />
-                        Hypothèques
+                        Statut Hypothécaire
                       </h4>
                       {mortgage_history.length > 0 ? (
                         <div className="space-y-2">
+                          {/* Indicateur d'hypothèque active */}
+                          <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                            <div className="h-2 w-2 rounded-full bg-amber-500 animate-pulse"></div>
+                            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                              Parcelle avec hypothèque active
+                            </span>
+                          </div>
+                          
                            {mortgage_history.map((mortgage) => {
                              const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
                              const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
@@ -1417,8 +1426,16 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                            })}
                         </div>
                       ) : (
-                        <div className="text-center text-xs text-muted-foreground py-2">
-                          Aucun historique disponible
+                        <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
+                          <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                          <div>
+                            <span className="text-xs font-medium text-green-700 dark:text-green-300 block">
+                              Aucune hypothèque enregistrée
+                            </span>
+                            <span className="text-[10px] text-green-600 dark:text-green-400">
+                              Parcelle libre de charges hypothécaires
+                            </span>
+                          </div>
                         </div>
                       )}
                     </CardContent>
