@@ -659,7 +659,7 @@ const CadastralMap = () => {
                     <MapPinPlus className="h-4 w-4" />
                   </div>
                   <div className="text-left">
-                    <div className="font-bold">Contribuer cette parcelle</div>
+                    <div className="font-bold">Ajouter cette parcelle</div>
                     <div className="text-[10px] opacity-80 font-normal">Ajoutez "{searchQuery}" au cadastre numérique de la RDC</div>
                   </div>
                 </div>
