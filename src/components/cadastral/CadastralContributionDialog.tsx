@@ -3873,188 +3873,122 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
 
-            {/* Section Hypothèques */}
+            {/* Section Hypothèques - Design moderne compact */}
             {obligationType === 'mortgages' && (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-semibold">Hypothèque (optionnel)</Label>
+              <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
+                <CardContent className="p-3 space-y-3">
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <MdAccountBalance className="h-3.5 w-3.5 text-primary" />
+                      </div>
+                      <Label className="text-sm font-semibold">Hypothèques</Label>
+                    </div>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                          <Info className="h-4 w-4 text-muted-foreground" />
+                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                          <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-80 text-sm">
-                        <h4 className="font-semibold mb-2">Hypothèques</h4>
-                        <p className="text-muted-foreground mb-3">
-                          Déclarez toutes les hypothèques grevant cette parcelle. Cette information est essentielle pour établir la situation juridique complète du bien.
-                        </p>
-                        <div className="space-y-2 text-xs text-muted-foreground">
-                          <p><strong>Pourquoi c'est important :</strong></p>
-                          <ul className="space-y-1 ml-4">
-                            <li>• Établit les charges financières sur le bien</li>
-                            <li>• Informe les acheteurs potentiels</li>
-                            <li>• Évite les surprises juridiques</li>
-                            <li>• Facilite l'obtention de nouveaux crédits</li>
-                          </ul>
-                          <p className="mt-3"><strong>Comment remplir :</strong></p>
-                          <ul className="space-y-1 ml-4">
-                            <li>• Listez toutes les hypothèques actives</li>
-                            <li>• Indiquez le montant exact et la durée</li>
-                            <li>• Précisez le créancier et le statut</li>
-                            <li>• Laissez vide si aucune hypothèque</li>
-                          </ul>
+                      <PopoverContent className="w-72 rounded-xl" align="end">
+                        <div className="space-y-2 text-xs">
+                          <h4 className="font-semibold text-sm">Hypothèques (optionnel)</h4>
+                          <p className="text-muted-foreground">
+                            Déclarez les hypothèques grevant cette parcelle pour établir sa situation juridique.
+                          </p>
+                          <p className="text-muted-foreground">
+                            <strong>💡</strong> Laissez vide si aucune hypothèque.
+                          </p>
                         </div>
                       </PopoverContent>
                     </Popover>
                   </div>
-                </div>
 
-                <div className="space-y-6">
                   {mortgageRecords.map((mortgage, index) => (
-                      <div key={index} className={`border rounded-xl p-5 space-y-4 relative bg-gradient-to-br from-muted/30 to-transparent hover:shadow-md transition-all animate-fade-in ${index === 0 && highlightIncompleteMortgage ? 'ring-2 ring-amber-500 animate-pulse' : ''}`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-semibold bg-primary/10 px-3 py-1 rounded-full">Hypothèque #{index + 1}</h4>
+                    <div key={index} className={`border-2 rounded-2xl p-3 space-y-2 bg-card shadow-sm transition-all duration-300 ${
+                      highlightIncompleteMortgage && index === 0 
+                        ? 'ring-2 ring-amber-500 animate-pulse' 
+                        : 'border-border'
+                    }`}>
+                      {/* Header de l'hypothèque */}
+                      <div className="flex items-center justify-between pb-2 border-b border-border/50">
+                        <span className="text-sm font-semibold text-foreground">Hypothèque #{index + 1}</span>
+                        {mortgageRecords.length > 1 && index > 0 && (
                           <Button
                             type="button"
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              if (index === 0) {
-                                toast({
-                                  title: "Suppression impossible",
-                                  description: "Le premier bloc d'hypothèque ne peut pas être supprimé. Vous pouvez le laisser vide si vous n'avez pas d'informations.",
-                                  variant: "destructive"
-                                });
-                                return;
-                              }
-                              removeMortgageRecord(index);
-                            }}
-                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10 transition-all"
+                            onClick={() => removeMortgageRecord(index)}
+                            className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
-                        </div>
+                        )}
+                      </div>
 
-                        <div className="space-y-2">
-                          <Label>Montant de l'hypothèque (USD)</Label>
-                          <InputWithPopover
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Montant (USD)</Label>
+                          <Input
                             type="number"
-                            placeholder="ex: 50000"
+                            placeholder="50000"
                             value={mortgage.mortgageAmount}
                             onChange={(e) => updateMortgageRecord(index, 'mortgageAmount', e.target.value)}
-                            helpTitle="Montant de l'hypothèque"
-                            helpText="Indiquez le montant total de l'hypothèque en dollars américains. Il s'agit du capital emprunté garanti par la parcelle, tel qu'indiqué dans le contrat d'hypothèque."
+                            className="h-10 text-sm rounded-xl"
                           />
                         </div>
-
-                        <div className="space-y-2">
-                          <Label>Durée (mois)</Label>
-                          <InputWithPopover
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Durée (mois)</Label>
+                          <Input
                             type="number"
-                            placeholder="ex: 120"
+                            placeholder="120"
                             value={mortgage.duration}
                             onChange={(e) => updateMortgageRecord(index, 'duration', e.target.value)}
-                            helpTitle="Durée de l'hypothèque"
-                            helpText="Indiquez la durée totale de l'hypothèque en mois. Par exemple, pour un prêt de 10 ans, saisissez 120 mois. Cette information figure dans votre contrat d'hypothèque."
+                            className="h-10 text-sm rounded-xl"
                           />
                         </div>
+                      </div>
 
-                        <div className="space-y-2">
-                          <Label>Nom du créancier</Label>
-                          <InputWithPopover
-                            placeholder="ex: Banque XYZ"
-                            value={mortgage.creditorName}
-                            onChange={(e) => updateMortgageRecord(index, 'creditorName', e.target.value)}
-                            helpTitle="Créancier"
-                            helpText="Indiquez le nom complet de l'institution financière ou de la personne qui a accordé l'hypothèque. Ce nom doit correspondre exactement à celui figurant sur le contrat d'hypothèque."
-                          />
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Nom du créancier</Label>
+                        <Input
+                          placeholder="ex: Banque XYZ"
+                          value={mortgage.creditorName}
+                          onChange={(e) => updateMortgageRecord(index, 'creditorName', e.target.value)}
+                          className="h-10 text-sm rounded-xl"
+                        />
+                      </div>
 
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label>Type de créancier</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                                  <Info className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80 text-sm">
-                                <h4 className="font-semibold mb-2">Type de créancier</h4>
-                                <p className="text-muted-foreground">
-                                  Précise la nature de l'institution ou de la personne ayant accordé le prêt hypothécaire. Cette information aide à identifier le type d'engagement financier.
-                                </p>
-                                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                                  <li>• <strong>Banque</strong>: Institution bancaire classique</li>
-                                  <li>• <strong>Microfinance</strong>: Institution de microfinance</li>
-                                  <li>• <strong>Particulier</strong>: Prêt entre particuliers</li>
-                                </ul>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Type</Label>
                           <Select
                             value={mortgage.creditorType}
                             onValueChange={(value) => updateMortgageRecord(index, 'creditorType', value)}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner le type" />
+                            <SelectTrigger className="h-10 text-sm rounded-xl">
+                              <SelectValue placeholder="Type" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                               <SelectItem value="Banque">Banque</SelectItem>
                               <SelectItem value="Microfinance">Microfinance</SelectItem>
                               <SelectItem value="Coopérative">Coopérative</SelectItem>
                               <SelectItem value="Particulier">Particulier</SelectItem>
-                              <SelectItem value="Autre institution">Autre institution</SelectItem>
+                              <SelectItem value="Autre institution">Autre</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
-
-                        <div className="space-y-2">
-                          <Label>Date du contrat</Label>
-                          <InputWithPopover
-                            type="date"
-                            max={new Date().toISOString().split('T')[0]}
-                            value={mortgage.contractDate}
-                            onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
-                            helpTitle="Date du contrat"
-                            helpText="Indiquez la date de signature du contrat d'hypothèque. Cette date marque le début de l'engagement hypothécaire sur la parcelle."
-                          />
-                          <p className="text-xs text-muted-foreground">Ne peut pas être dans le futur</p>
-                        </div>
-
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2">
-                            <Label>Statut de l'hypothèque</Label>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <Button type="button" variant="ghost" size="sm" className="h-6 w-6 p-0 hover:bg-primary/10">
-                                  <Info className="h-4 w-4 text-muted-foreground" />
-                                </Button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-80 text-sm">
-                                <h4 className="font-semibold mb-2">Statut de l'hypothèque</h4>
-                                <p className="text-muted-foreground">
-                                  Indique l'état actuel de l'hypothèque. Un bien avec hypothèque active a une charge financière qui peut affecter sa transaction.
-                                </p>
-                                <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
-                                  <li>• <strong>Active</strong>: Hypothèque en cours de remboursement</li>
-                                  <li>• <strong>Remboursée</strong>: Hypothèque soldée</li>
-                                  <li>• <strong>En défaut</strong>: Retard de paiement</li>
-                                  <li>• <strong>Renégociée</strong>: Conditions modifiées</li>
-                                </ul>
-                              </PopoverContent>
-                            </Popover>
-                          </div>
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Statut</Label>
                           <Select
                             value={mortgage.mortgageStatus}
                             onValueChange={(value) => updateMortgageRecord(index, 'mortgageStatus', value)}
                           >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionner le statut" />
+                            <SelectTrigger className="h-10 text-sm rounded-xl">
+                              <SelectValue placeholder="Statut" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                               <SelectItem value="Active">Active</SelectItem>
                               <SelectItem value="Remboursée">Remboursée</SelectItem>
                               <SelectItem value="En défaut">En défaut</SelectItem>
@@ -4062,72 +3996,79 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
 
-                        {/* Pièce jointe pour l'hypothèque */}
-                        <div className="space-y-2 pt-2 border-t">
-                          <Label>Pièce justificative (optionnel)</Label>
-                          {!mortgage.receiptFile ? (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type="file"
-                                accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-                                onChange={(e) => handleMortgageFileChange(index, e)}
-                                className="cursor-pointer"
-                              />
-                            </div>
-                          ) : (
-                            <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                              <MdInsertDriveFile className="h-4 w-4 text-primary" />
-                              <span className="text-sm flex-1 truncate">{mortgage.receiptFile.name}</span>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removeMortgageFile(index)}
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          )}
-                          <p className="text-xs text-muted-foreground">
-                            Contrat ou justificatif (JPG, PNG, WEBP ou PDF - Max 5 MB)
-                          </p>
-                        </div>
+                      <div className="space-y-1">
+                        <Label className="text-sm font-medium">Date contrat</Label>
+                        <Input
+                          type="date"
+                          max={new Date().toISOString().split('T')[0]}
+                          value={mortgage.contractDate}
+                          onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
+                          className="h-10 text-sm rounded-xl"
+                        />
+                      </div>
+
+                      {/* Pièce jointe compacte */}
+                      <div className="space-y-1 pt-2 border-t border-border/50">
+                        <Label className="text-sm font-medium">Justificatif (optionnel)</Label>
+                        {!mortgage.receiptFile ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => document.getElementById(`mortgageFile-${index}`)?.click()}
+                            className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Ajouter justificatif
+                          </Button>
+                        ) : (
+                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border overflow-hidden min-w-0">
+                            <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="text-sm flex-1 truncate overflow-hidden min-w-0">{mortgage.receiptFile.name}</span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => removeMortgageFile(index)}
+                              className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg flex-shrink-0"
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        )}
+                        <Input
+                          id={`mortgageFile-${index}`}
+                          type="file"
+                          accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                          onChange={(e) => handleMortgageFileChange(index, e)}
+                          className="hidden"
+                        />
+                      </div>
                     </div>
                   ))}
-                </div>
-                
-                {/* Bouton Ajouter déplacé en dessous des blocs */}
-                <div className="space-y-2">
-                  {/* Notification d'avertissement */}
+
+                  {/* Avertissement compact */}
                   {showMortgageWarning && (
-                    <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3 animate-fade-in">
-                      <div className="flex items-start gap-2">
-                        <Info className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                            Complétez d'abord la première hypothèque
-                          </p>
-                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                            Veuillez renseigner tous les champs obligatoires (montant, durée, nom du créancier, type, date du contrat et statut) avant d'ajouter une nouvelle hypothèque.
-                          </p>
-                        </div>
-                      </div>
+                    <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-2">
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        ⚠️ Complétez l'hypothèque avant d'en ajouter une nouvelle.
+                      </p>
                     </div>
                   )}
 
                   <Button
                     type="button"
                     variant="outline"
-                    size="sm"
                     onClick={addMortgageRecord}
-                    className="gap-2 hover:bg-primary/5 transition-all hover:scale-[1.02] shadow-sm"
+                    className="w-full h-10 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
                   >
                     <Plus className="h-4 w-4" />
                     Ajouter une hypothèque
                   </Button>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
             )}
             
             {/* Bouton Suivant */}
