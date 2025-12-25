@@ -4141,9 +4141,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <Button
                 type="button"
                 onClick={() => handleTabChange('review')}
-                className="gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white text-sm sm:text-base h-10 sm:h-11 rounded-xl"
+                className="gap-2 bg-gradient-to-r from-seloger-red to-seloger-red-dark hover:from-seloger-red-dark hover:to-red-700 transition-all hover:scale-105 shadow-lg hover:shadow-xl animate-fade-in text-white text-sm sm:text-base h-10 sm:h-11 rounded-xl"
               >
-                Réviser ma contribution
+                Reviser
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
