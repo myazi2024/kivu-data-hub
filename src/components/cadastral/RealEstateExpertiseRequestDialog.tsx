@@ -629,7 +629,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-lg'} p-4 rounded-2xl`}>
+      <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-lg'} p-4 rounded-2xl z-[1100]`}>
         <DialogHeader className="space-y-1">
           <DialogTitle className="text-lg font-bold flex items-center gap-2">
             <FileSearch className="h-5 w-5 text-primary" />
