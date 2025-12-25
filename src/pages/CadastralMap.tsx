@@ -647,15 +647,22 @@ const CadastralMap = () => {
                 </div>
               )}
               
-              {/* Bouton compact */}
+              {/* Bouton principal large et visible */}
               <Button
                 variant="default"
-                size="default"
-                className="h-10 px-4 text-sm font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary animate-scale-in gap-2"
+                size="lg"
+                className="w-full h-12 text-sm font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary animate-scale-in"
                 onClick={handleManualSearchClick}
               >
-                <MapPinPlus className="h-4 w-4" />
-                <span>Ajouter cette parcelle</span>
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-8 w-8 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
+                    <MapPinPlus className="h-4 w-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold">Ajouter cette parcelle</div>
+                    <div className="text-[10px] opacity-80 font-normal">Ajoutez "{searchQuery}" au cadastre numérique de la RDC</div>
+                  </div>
+                </div>
               </Button>
             </div>
           </div>
