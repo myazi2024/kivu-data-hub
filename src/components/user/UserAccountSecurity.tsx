@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Lock, Shield, Smartphone } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Lock, Shield, Smartphone, Eye, EyeOff } from "lucide-react";
 
 export const UserAccountSecurity = () => {
   const { user } = useAuth();
@@ -15,6 +14,7 @@ export const UserAccountSecurity = () => {
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +33,7 @@ export const UserAccountSecurity = () => {
       toast({
         variant: "destructive",
         title: "Erreur",
-        description: "Le mot de passe doit contenir au moins 6 caractères.",
+        description: "Minimum 6 caractères requis.",
       });
       return;
     }
@@ -48,7 +48,6 @@ export const UserAccountSecurity = () => {
 
       toast({
         title: "Mot de passe modifié",
-        description: "Votre mot de passe a été mis à jour avec succès.",
       });
       setNewPassword("");
       setConfirmPassword("");
@@ -64,66 +63,87 @@ export const UserAccountSecurity = () => {
   };
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      <Card>
-        <CardHeader className="pb-3 px-4 md:px-6">
-          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-            <Lock className="h-4 w-4 md:h-5 md:w-5" />
-            Changer le mot de passe
-          </CardTitle>
-          <CardDescription className="text-xs md:text-sm">Mettez à jour votre mot de passe</CardDescription>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6">
-          <form onSubmit={handlePasswordChange} className="space-y-3 md:space-y-4">
-            <div className="space-y-1.5 md:space-y-2">
-              <Label htmlFor="newPassword" className="text-xs md:text-sm">Nouveau mot de passe</Label>
-              <Input
-                id="newPassword"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                placeholder="••••••••"
-                disabled={loading}
-                className="text-sm"
-              />
+    <div className="space-y-3">
+      {/* Changer mot de passe */}
+      <Card className="border-none shadow-md rounded-2xl">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Lock className="h-3.5 w-3.5 text-primary" />
+            </div>
+            <h3 className="text-sm font-semibold">Mot de passe</h3>
+          </div>
+          
+          <form onSubmit={handlePasswordChange} className="space-y-2.5">
+            <div className="space-y-1">
+              <Label htmlFor="newPassword" className="text-[11px]">Nouveau mot de passe</Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  type={showPassword ? "text" : "password"}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={loading}
+                  className="h-9 text-sm pr-9 rounded-xl"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-9 w-9 p-0"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                </Button>
+              </div>
             </div>
 
-            <div className="space-y-1.5 md:space-y-2">
-              <Label htmlFor="confirmPassword" className="text-xs md:text-sm">Confirmer</Label>
+            <div className="space-y-1">
+              <Label htmlFor="confirmPassword" className="text-[11px]">Confirmer</Label>
               <Input
                 id="confirmPassword"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="••••••••"
                 disabled={loading}
-                className="text-sm"
+                className="h-9 text-sm rounded-xl"
               />
             </div>
 
-            <Button type="submit" disabled={loading} size="sm" className="w-full sm:w-auto">
-              {loading && <Loader2 className="mr-2 h-3 w-3 md:h-4 md:w-4 animate-spin" />}
-              <span className="text-xs md:text-sm">Changer</span>
+            <Button 
+              type="submit" 
+              disabled={loading || !newPassword || !confirmPassword} 
+              size="sm" 
+              className="w-full h-9 rounded-xl text-xs"
+            >
+              {loading && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              Changer le mot de passe
             </Button>
           </form>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="pb-3 px-4 md:px-6">
-          <CardTitle className="flex items-center gap-2 text-base md:text-lg">
-            <Shield className="h-4 w-4 md:h-5 md:w-5" />
-            Authentification 2FA
-          </CardTitle>
-          <CardDescription className="text-xs md:text-sm">Sécurisez votre compte</CardDescription>
-        </CardHeader>
-        <CardContent className="px-4 md:px-6">
-          <Alert className="py-2 px-3">
-            <Smartphone className="h-3 w-3 md:h-4 md:w-4" />
-            <AlertDescription className="text-xs md:text-sm">
-              Configuration bientôt disponible
-            </AlertDescription>
-          </Alert>
+      {/* 2FA */}
+      <Card className="border-none shadow-md rounded-2xl">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="h-7 w-7 rounded-lg bg-muted flex items-center justify-center">
+              <Shield className="h-3.5 w-3.5 text-muted-foreground" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Authentification 2FA</h3>
+              <p className="text-[10px] text-muted-foreground">Bientôt disponible</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 p-2.5 bg-muted/30 rounded-xl">
+            <Smartphone className="h-3.5 w-3.5 text-muted-foreground" />
+            <p className="text-[11px] text-muted-foreground">
+              La configuration 2FA sera bientôt disponible pour sécuriser votre compte.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
