@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, FileEdit, Building2, FileCheck, Receipt, Landmark, FilePlus, FileQuestion } from 'lucide-react';
+import { ChevronDown, FileEdit, Building2, FileCheck, Receipt, Landmark, FilePlus } from 'lucide-react';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import BuildingPermitFormDialog from './BuildingPermitFormDialog';
@@ -31,7 +31,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const [showRegularizationPermitDialog, setShowRegularizationPermitDialog] = useState(false);
   const [showTaxDialog, setShowTaxDialog] = useState(false);
   const [showPermitRequestDialog, setShowPermitRequestDialog] = useState(false);
-  const [showRegularizationRequestDialog, setShowRegularizationRequestDialog] = useState(false);
 
   return (
     <>
@@ -121,18 +120,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             <FilePlus className="h-4 w-4 text-cyan-600" />
             <div>
               <div className="font-medium text-sm">Demande permis</div>
-              <div className="text-xs text-muted-foreground">Nouvelle construction</div>
-            </div>
-          </DropdownMenuItem>
-          
-          <DropdownMenuItem 
-            onClick={() => setShowRegularizationRequestDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
-          >
-            <FileQuestion className="h-4 w-4 text-orange-600" />
-            <div>
-              <div className="font-medium text-sm">Demande régul.</div>
-              <div className="text-xs text-muted-foreground">Construction existante</div>
+              <div className="text-xs text-muted-foreground">Permis de construire</div>
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -186,14 +174,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         open={showPermitRequestDialog}
         onOpenChange={setShowPermitRequestDialog}
         hasExistingConstruction={false}
-      />
-
-      {/* Dialog Demande de régularisation */}
-      <BuildingPermitRequestDialog
-        parcelNumber={parcelNumber}
-        open={showRegularizationRequestDialog}
-        onOpenChange={setShowRegularizationRequestDialog}
-        hasExistingConstruction={true}
       />
     </>
   );
