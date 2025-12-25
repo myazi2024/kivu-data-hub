@@ -15,7 +15,7 @@ import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 import AdvancedSearchFilters from '@/components/cadastral/AdvancedSearchFilters';
 import SearchHistory from '@/components/cadastral/SearchHistory';
-import MutationRequestDialog from '@/components/cadastral/MutationRequestDialog';
+import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import 'leaflet/dist/leaflet.css';
@@ -745,18 +745,9 @@ const CadastralMap = () => {
                       </>
                     )}
                   </Button>
-                  <MutationRequestDialog
+                  <ParcelActionsDropdown
                     parcelNumber={selectedParcel.parcel_number}
-                    trigger={
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="flex-1 h-9 text-xs rounded-xl font-medium"
-                      >
-                        <FileEdit className="h-3 w-3 mr-1.5" />
-                        Mutation
-                      </Button>
-                    }
+                    parcelId={selectedParcel.id}
                   />
                   <Button
                     onClick={() => {
