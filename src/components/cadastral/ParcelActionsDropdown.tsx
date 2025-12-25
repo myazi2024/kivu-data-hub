@@ -120,7 +120,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             <FilePlus className="h-4 w-4 text-cyan-600" />
             <div>
               <div className="font-medium text-sm">Demande permis</div>
-              <div className="text-xs text-muted-foreground">Permis de construire</div>
+              <div className="text-xs text-muted-foreground">Permis de construire ou régularisation</div>
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
