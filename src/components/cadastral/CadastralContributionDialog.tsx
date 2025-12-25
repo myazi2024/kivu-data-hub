@@ -2597,7 +2597,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-sm font-medium">Depuis</Label>
+                        <Label className="text-sm font-medium">Propriétaire depuis</Label>
                         <Input
                           type="date"
                           max={new Date().toISOString().split('T')[0]}
