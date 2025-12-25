@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogPortal,
+  DialogOverlay,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,10 +20,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
+import PermitRequestMobileMoneyPayment from '@/components/payment/PermitRequestMobileMoneyPayment';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Building2, CheckCircle2, AlertCircle, ArrowLeft, CalendarIcon, Clock, Hash, MapPin, CreditCard, Loader2 } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle, ArrowLeft, CalendarIcon, Clock, MapPin, CreditCard } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -185,17 +193,21 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const servicePrice = requestType === 'new' ? 150 : 200;
   const cartItem: CartItem = {
     id: 'building-permit-request',
-    title: requestType === 'new' ? 'Demande de permis de construire' : 'Demande de permis de régularisation',
+    title: requestType === 'new' ? 'Demande de permis' : 'Demande de permis de régularisation',
     price: servicePrice,
     description: `Parcelle: ${parcelNumber}`
   };
 
   const getStepTitle = () => {
     switch (step) {
-      case 'preview': return 'Aperçu de la demande';
-      case 'payment': return 'Paiement';
-      case 'confirmation': return 'Confirmation';
-      default: return requestType === 'new' ? 'Demande de permis de construire' : 'Demande de régularisation';
+      case 'preview':
+        return 'Aperçu de la demande';
+      case 'payment':
+        return 'Paiement';
+      case 'confirmation':
+        return 'Confirmation';
+      default:
+        return requestType === 'new' ? 'Demande de permis' : 'Demande de régularisation';
     }
   };
 
@@ -672,8 +684,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         </CardContent>
       </Card>
 
-      <MobileMoneyPayment
-        item={cartItem}
+      <PermitRequestMobileMoneyPayment
+        amountUsd={servicePrice}
         currency="USD"
         onPaymentSuccess={handlePaymentSuccess}
       />
