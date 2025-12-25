@@ -436,6 +436,12 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         <p className="text-sm text-muted-foreground mt-1">
           Votre {title.toLowerCase()} pour la parcelle {parcelNumber} a été soumis avec succès.
         </p>
+        <div className={`mt-3 p-3 rounded-xl border ${isConstruction ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'}`}>
+          <p className={`text-xs ${isConstruction ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300'}`}>
+            🎁 Un <strong>code CCC</strong> sera généré après validation par l'administration. 
+            Sa valeur dépendra de la complétude des informations fournies.
+          </p>
+        </div>
       </div>
       <Button onClick={handleClose} className="w-full h-11 rounded-xl">
         Fermer

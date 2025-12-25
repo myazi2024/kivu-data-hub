@@ -425,6 +425,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         <p className="text-sm text-muted-foreground mt-1">
           Votre déclaration d'hypothèque pour la parcelle {parcelNumber} a été soumise avec succès.
         </p>
+        <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
+          <p className="text-xs text-amber-700 dark:text-amber-300">
+            🎁 Un <strong>code CCC</strong> sera généré après validation par l'administration. 
+            Sa valeur dépendra de la complétude des informations fournies.
+          </p>
+        </div>
       </div>
       <Button onClick={handleClose} className="w-full h-11 rounded-xl">
         Fermer
