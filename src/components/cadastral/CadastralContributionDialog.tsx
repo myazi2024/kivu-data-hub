@@ -2405,38 +2405,35 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             {formData.propertyTitleType && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden animate-fade-in">
                 <CardContent className="p-3 space-y-3">
-                  {/* Numéro de référence */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="titleReference" className="text-sm font-medium">
-                      N° de référence
-                    </Label>
-                    <InputWithPopover
-                      id="titleReference"
-                      placeholder={PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "Ex: XXX-123456"}
-                      value={formData.titleReferenceNumber || ''}
-                      onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
-                      helpTitle="Référence"
-                      helpText={`Format : ${PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "XXX-123456"}`}
-                      className="h-9 text-sm rounded-xl"
-                    />
-                  </div>
-
-                  {/* Date de délivrance */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="titleIssueDate" className="text-sm font-medium">
-                      Date de délivrance
-                    </Label>
-                    <Input
-                      id="titleIssueDate"
-                      type="date"
-                      max={new Date().toISOString().split('T')[0]}
-                      value={formData.titleIssueDate || ''}
-                      onChange={(e) => handleInputChange('titleIssueDate', e.target.value)}
-                      className="h-9 text-sm rounded-xl"
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Calcul automatique des frais de mutation
-                    </p>
+                  {/* Numéro de référence et Date de délivrance - côte-à-côte */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="titleReference" className="text-sm font-medium">
+                        N° de référence
+                      </Label>
+                      <InputWithPopover
+                        id="titleReference"
+                        placeholder={PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "XXX-123456"}
+                        value={formData.titleReferenceNumber || ''}
+                        onChange={(e) => handleInputChange('titleReferenceNumber', e.target.value)}
+                        helpTitle="Référence"
+                        helpText={`Format : ${PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType)?.reference || "XXX-123456"}`}
+                        className="h-9 text-sm rounded-xl"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="titleIssueDate" className="text-sm font-medium">
+                        Date délivrance
+                      </Label>
+                      <Input
+                        id="titleIssueDate"
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={formData.titleIssueDate || ''}
+                        onChange={(e) => handleInputChange('titleIssueDate', e.target.value)}
+                        className="h-9 text-sm rounded-xl"
+                      />
+                    </div>
                   </div>
 
                   {/* Document du titre */}
@@ -2559,23 +2556,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           className="h-10 text-sm rounded-xl"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Post-nom</Label>
-                        <Input
-                          placeholder="Post-nom (optionnel)"
-                          value={owner.middleName}
-                          onChange={(e) => updateCurrentOwner(index, 'middleName', e.target.value)}
-                          className="h-10 text-sm rounded-xl"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Prénom *</Label>
-                        <Input
-                          placeholder="Prénom"
-                          value={owner.firstName}
-                          onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
-                          className="h-10 text-sm rounded-xl"
-                        />
+                      {/* Post-nom et Prénom - côte-à-côte */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Post-nom</Label>
+                          <Input
+                            placeholder="Post-nom"
+                            value={owner.middleName}
+                            onChange={(e) => updateCurrentOwner(index, 'middleName', e.target.value)}
+                            className="h-10 text-sm rounded-xl"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Prénom *</Label>
+                          <Input
+                            placeholder="Prénom"
+                            value={owner.firstName}
+                            onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
+                            className="h-10 text-sm rounded-xl"
+                          />
+                        </div>
                       </div>
                     </div>
 
