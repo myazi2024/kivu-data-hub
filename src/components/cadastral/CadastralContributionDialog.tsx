@@ -2727,11 +2727,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     Non
                   </button>
                 </div>
-                {formData.isTitleInCurrentOwnerName === false && (
-                  <p className="text-xs text-amber-700 dark:text-amber-400">
-                    ⚠️ Hors délai légal de mutation (De 1 à 20 jours après acquisition).
-                  </p>
-                )}
+                {formData.isTitleInCurrentOwnerName === false && (() => {
+                  const ownerSinceDate = currentOwners[0]?.since;
+                  if (!ownerSinceDate) return null;
+                  
+                  const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  if (daysDiff >= 20) {
+                    return (
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        ⚠️ Hors délai légal de mutation (De 1 à 20 jours après acquisition).
+                      </p>
+                    );
+                  } else {
+                    return (
+                      <p className="text-xs text-green-700 dark:text-green-400">
+                        ✓ Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (De 1 à 20 jours après acquisition).
+                      </p>
+                    );
+                  }
+                })()}
               </CardContent>
             </Card>
 
