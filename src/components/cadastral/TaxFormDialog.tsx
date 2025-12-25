@@ -1,0 +1,454 @@
+import React, { useState, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Loader2, Receipt, CheckCircle2, Upload, X, Plus, Info, ArrowLeft, FileText } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+interface TaxFormDialogProps {
+  parcelNumber: string;
+  parcelId?: string;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+type Step = 'form' | 'preview' | 'confirmation';
+
+interface TaxRecord {
+  taxType: string;
+  taxYear: string;
+  taxAmount: string;
+  paymentStatus: string;
+  paymentDate: string;
+  receiptFile: File | null;
+}
+
+const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
+  parcelNumber,
+  parcelId,
+  open,
+  onOpenChange
+}) => {
+  const isMobile = useIsMobile();
+  const { user } = useAuth();
+  const [step, setStep] = useState<Step>('form');
+  const [loading, setLoading] = useState(false);
+  
+  const currentYear = new Date().getFullYear();
+  
+  const [taxRecord, setTaxRecord] = useState<TaxRecord>({
+    taxType: 'Impôt foncier annuel',
+    taxYear: currentYear.toString(),
+    taxAmount: '',
+    paymentStatus: 'Payé',
+    paymentDate: '',
+    receiptFile: null
+  });
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const updateTax = (field: keyof TaxRecord, value: string | File | null) => {
+    setTaxRecord(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
+      const isValidSize = file.size <= 10 * 1024 * 1024;
+      
+      if (!isValid) {
+        toast.error('Format non supporté (images ou PDF uniquement)');
+        return;
+      }
+      if (!isValidSize) {
+        toast.error('Fichier trop volumineux (max 10MB)');
+        return;
+      }
+      
+      updateTax('receiptFile', file);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const removeFile = () => {
+    updateTax('receiptFile', null);
+  };
+
+  const validateForm = (): boolean => {
+    if (!taxRecord.taxAmount || !taxRecord.taxYear) {
+      toast.error('Veuillez remplir les champs obligatoires: Montant, Année');
+      return false;
+    }
+    return true;
+  };
+
+  const handlePreview = () => {
+    if (!validateForm()) return;
+    setStep('preview');
+  };
+
+  const handleSubmit = async () => {
+    if (!user) {
+      toast.error('Vous devez être connecté');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // Upload du fichier si présent
+      let documentUrl = null;
+      if (taxRecord.receiptFile) {
+        const fileExt = taxRecord.receiptFile.name.split('.').pop();
+        const fileName = `tax_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const filePath = `tax-documents/${user.id}/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('cadastral-documents')
+          .upload(filePath, taxRecord.receiptFile);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
+        documentUrl = data.publicUrl;
+      }
+
+      // Créer l'enregistrement de la taxe via une contribution
+      const { error } = await supabase
+        .from('cadastral_contributions')
+        .insert({
+          parcel_number: parcelNumber,
+          original_parcel_id: parcelId,
+          user_id: user.id,
+          contribution_type: 'update',
+          status: 'pending',
+          tax_history: [{
+            tax_type: taxRecord.taxType,
+            tax_year: parseInt(taxRecord.taxYear),
+            amount_usd: parseFloat(taxRecord.taxAmount),
+            payment_status: taxRecord.paymentStatus,
+            payment_date: taxRecord.paymentDate || null,
+            receipt_document_url: documentUrl
+          }]
+        });
+
+      if (error) throw error;
+
+      // Créer une notification
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        title: 'Taxe enregistrée',
+        message: `Votre déclaration de taxe pour la parcelle ${parcelNumber} (${taxRecord.taxYear}) a été soumise avec succès.`,
+        type: 'success'
+      });
+
+      setStep('confirmation');
+      toast.success('Taxe enregistrée avec succès');
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error('Erreur lors de l\'enregistrement');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setStep('form');
+    setTaxRecord({
+      taxType: 'Impôt foncier annuel',
+      taxYear: currentYear.toString(),
+      taxAmount: '',
+      paymentStatus: 'Payé',
+      paymentDate: '',
+      receiptFile: null
+    });
+    onOpenChange(false);
+  };
+
+  const renderFormStep = () => (
+    <div className="space-y-4">
+      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
+        <CardContent className="p-4 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                <Receipt className="h-4 w-4 text-purple-600" />
+              </div>
+              <div>
+                <Label className="text-base font-semibold">Taxe foncière</Label>
+                <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
+              </div>
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full">
+                  <Info className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72 rounded-xl" align="end">
+                <div className="space-y-2 text-xs">
+                  <h4 className="font-semibold text-sm">Déclaration fiscale</h4>
+                  <p className="text-muted-foreground">
+                    Enregistrez le paiement d'une taxe foncière pour prouver la conformité fiscale de cette parcelle.
+                  </p>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          {/* Formulaire */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Type de taxe</Label>
+              <Select
+                value={taxRecord.taxType}
+                onValueChange={(value) => updateTax('taxType', value)}
+              >
+                <SelectTrigger className="h-10 text-sm rounded-xl">
+                  <SelectValue placeholder="Type" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl bg-popover">
+                  <SelectItem value="Impôt foncier annuel">Impôt foncier</SelectItem>
+                  <SelectItem value="Impôt sur les revenus locatifs">Revenus locatifs</SelectItem>
+                  <SelectItem value="Taxe de superficie">Superficie</SelectItem>
+                  <SelectItem value="Taxe de plus-value immobilière">Plus-value</SelectItem>
+                  <SelectItem value="Taxe d'habitation">Habitation</SelectItem>
+                  <SelectItem value="Autre taxe">Autre</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Année *</Label>
+              <Select
+                value={taxRecord.taxYear}
+                onValueChange={(value) => updateTax('taxYear', value)}
+              >
+                <SelectTrigger className="h-10 text-sm rounded-xl">
+                  <SelectValue placeholder="Année" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl bg-popover">
+                  {Array.from({ length: 10 }, (_, i) => {
+                    const year = currentYear - i;
+                    return <SelectItem key={year} value={year.toString()}>{year}</SelectItem>;
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Montant (USD) *</Label>
+              <Input
+                type="number"
+                placeholder="150"
+                value={taxRecord.taxAmount}
+                onChange={(e) => updateTax('taxAmount', e.target.value)}
+                className="h-10 text-sm rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Statut</Label>
+              <Select
+                value={taxRecord.paymentStatus}
+                onValueChange={(value) => updateTax('paymentStatus', value)}
+              >
+                <SelectTrigger className="h-10 text-sm rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl bg-popover">
+                  <SelectItem value="Payé">Payé</SelectItem>
+                  <SelectItem value="Payé partiellement">Partiel</SelectItem>
+                  <SelectItem value="En attente">En attente</SelectItem>
+                  <SelectItem value="En retard">En retard</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Date paiement</Label>
+            <Input
+              type="date"
+              max={new Date().toISOString().split('T')[0]}
+              value={taxRecord.paymentDate}
+              onChange={(e) => updateTax('paymentDate', e.target.value)}
+              className="h-10 text-sm rounded-xl"
+            />
+          </div>
+
+          {/* Pièce jointe */}
+          <div className="space-y-2 pt-2 border-t border-border/50">
+            <Label className="text-sm font-medium">Reçu (optionnel)</Label>
+            {!taxRecord.receiptFile ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="gap-2 w-full text-sm h-10 rounded-xl border-dashed border-2"
+              >
+                <Plus className="h-4 w-4" />
+                Ajouter reçu
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
+                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                <span className="text-sm flex-1 truncate">{taxRecord.receiptFile.name}</span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={removeFile}
+                  className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={handleClose}
+          className="flex-1 h-11 rounded-xl"
+        >
+          Annuler
+        </Button>
+        <Button
+          onClick={handlePreview}
+          className="flex-1 h-11 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+        >
+          Prévisualiser
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderPreviewStep = () => (
+    <div className="space-y-4">
+      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <Receipt className="h-4 w-4 text-purple-600" />
+            </div>
+            <div>
+              <Label className="text-base font-semibold">Récapitulatif</Label>
+              <p className="text-xs text-muted-foreground">Vérifiez les informations</p>
+            </div>
+          </div>
+
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Parcelle</span>
+              <span className="font-mono font-bold">{parcelNumber}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Type</span>
+              <span>{taxRecord.taxType}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Année</span>
+              <span className="font-semibold">{taxRecord.taxYear}</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Montant</span>
+              <span className="font-semibold">{parseFloat(taxRecord.taxAmount).toLocaleString()} USD</span>
+            </div>
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">Statut</span>
+              <span>{taxRecord.paymentStatus}</span>
+            </div>
+            {taxRecord.paymentDate && (
+              <div className="flex justify-between py-2">
+                <span className="text-muted-foreground">Date paiement</span>
+                <span>{taxRecord.paymentDate}</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => setStep('form')}
+          className="flex-1 h-11 rounded-xl gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Modifier
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="flex-1 h-11 rounded-xl bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700"
+        >
+          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Soumettre'}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderConfirmationStep = () => (
+    <div className="space-y-4 text-center py-6">
+      <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+        <CheckCircle2 className="h-8 w-8 text-green-600" />
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold">Taxe enregistrée</h3>
+        <p className="text-sm text-muted-foreground mt-1">
+          Votre déclaration de taxe pour la parcelle {parcelNumber} ({taxRecord.taxYear}) a été soumise avec succès.
+        </p>
+      </div>
+      <Button onClick={handleClose} className="w-full h-11 rounded-xl">
+        Fermer
+      </Button>
+    </div>
+  );
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-md'} rounded-2xl p-0 gap-0 max-h-[90vh] overflow-hidden`}>
+        <DialogHeader className="p-4 pb-2 border-b">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Receipt className="h-5 w-5 text-purple-600" />
+            Déclarer une taxe
+          </DialogTitle>
+          <DialogDescription className="text-xs">
+            Enregistrez le paiement d'une taxe foncière
+          </DialogDescription>
+        </DialogHeader>
+        
+        <ScrollArea className="flex-1 max-h-[calc(90vh-80px)]">
+          <div className="p-4">
+            {step === 'form' && renderFormStep()}
+            {step === 'preview' && renderPreviewStep()}
+            {step === 'confirmation' && renderConfirmationStep()}
+          </div>
+        </ScrollArea>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default TaxFormDialog;
