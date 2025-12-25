@@ -622,36 +622,51 @@ const CadastralMap = () => {
                   <span className="text-[10px] text-muted-foreground font-medium">
                     {searchQuery ? `${filteredParcels.length} résultat(s)` : `${parcels.length} parcelles`}
                   </span>
-                  {searchQuery && filteredParcels.length === 0 && (
-                    <div className="relative">
-                      {/* Notification tooltip */}
-                      {showManualSearchNotification && (
-                        <div className="absolute -top-14 right-0 w-52">
-                          <div className="bg-primary text-primary-foreground text-[10px] px-3 py-2 rounded-xl shadow-lg">
-                            <div className="flex items-start gap-2">
-                              <Sparkles className="h-3 w-3 shrink-0 mt-0.5" />
-                              <span>Plus de possibilités pour <strong>{searchQuery}</strong></span>
-                            </div>
-                          </div>
-                          <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-l-transparent border-r-transparent border-t-primary" />
-                        </div>
-                      )}
-                      <Button
-                        variant="default"
-                        size="sm"
-                        className="h-6 text-[10px] px-2.5 rounded-full font-medium shadow-sm"
-                        onClick={handleManualSearchClick}
-                      >
-                        <Sparkles className="h-2.5 w-2.5 mr-1" />
-                        Contribuer
-                      </Button>
-                    </div>
-                  )}
                 </div>
               )}
             </div>
           </div>
         </div>
+
+        {/* Bouton Contribuer détaché - Animation élégante */}
+        {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
+          <div className={`absolute ${isMobile ? 'left-3 right-3' : 'left-3 w-96'} z-[1000] animate-fade-in`}
+            style={{ top: isSearchBarActive ? 'calc(var(--search-bar-height, 80px) + 1rem)' : 'auto', bottom: !isSearchBarActive ? '8rem' : 'auto' }}
+          >
+            <div className="relative">
+              {/* Notification flottante au-dessus du bouton */}
+              {showManualSearchNotification && (
+                <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-64 animate-scale-in">
+                  <div className="bg-primary text-primary-foreground text-xs px-4 py-2.5 rounded-xl shadow-lg text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                      <span>Cette parcelle n'existe pas encore</span>
+                    </div>
+                  </div>
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-l-transparent border-r-transparent border-t-primary" />
+                </div>
+              )}
+              
+              {/* Bouton principal large et visible */}
+              <Button
+                variant="default"
+                size="lg"
+                className="w-full h-12 text-sm font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary animate-scale-in"
+                onClick={handleManualSearchClick}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <div className="h-8 w-8 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div className="text-left">
+                    <div className="font-bold">Contribuer cette parcelle</div>
+                    <div className="text-[10px] opacity-80 font-normal">Ajoutez "{searchQuery}" à la base de données</div>
+                  </div>
+                </div>
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Panneau d'information de la parcelle sélectionnée - Design moderne */}
         {selectedParcel && (
