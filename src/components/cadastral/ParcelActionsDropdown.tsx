@@ -85,7 +85,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                 <div className="text-xs text-muted-foreground">Construction / Régularisation</div>
               </div>
             </DropdownMenuSubTrigger>
-            <DropdownMenuSubContent className="rounded-xl bg-popover border shadow-lg z-[1100]">
+            <DropdownMenuSubContent className="rounded-xl bg-popover border shadow-lg z-[1200]" sideOffset={5}>
               <DropdownMenuItem 
                 onClick={() => setShowBuildingPermitDialog(true)}
                 className="flex items-center gap-2 cursor-pointer rounded-lg"
