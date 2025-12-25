@@ -91,7 +91,8 @@ const menuItems = [
       { icon: Building2, label: 'Permis de Construire', value: 'permits', badge: null },
       { icon: FileText, label: 'Config Frais Permis', value: 'permit-fees-config', badge: null },
       { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: null },
-      { icon: FileCheck, label: 'Expertises Immobilières', value: 'expertise-requests', badge: null },
+      { icon: FileCheck, label: 'Expertises Immob.', value: 'expertise-requests', badge: null },
+      { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
     ]
   },
   {
@@ -99,6 +100,7 @@ const menuItems = [
     items: [
       { icon: FileText, label: 'Publications', value: 'publications', badge: null },
       { icon: FileText, label: 'Articles', value: 'articles', badge: null },
+      { icon: Tag, label: 'Thèmes Articles', value: 'article-themes', badge: null },
       { icon: Bell, label: 'Notifications', value: 'notifications', badge: null },
     ]
   },

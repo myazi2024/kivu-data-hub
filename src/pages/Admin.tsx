@@ -27,6 +27,7 @@ import AdminContributionConfig from '@/components/admin/AdminContributionConfig'
 import AdminCCCCodes from '@/components/admin/AdminCCCCodes';
 import AdminAuditLogs from '@/components/admin/AdminAuditLogs';
 import AdminArticles from '@/components/admin/AdminArticles';
+import AdminArticleThemes from '@/components/admin/AdminArticleThemes';
 import AdminFraudDetection from '@/components/admin/AdminFraudDetection';
 import AdminInvoices from '@/components/admin/AdminInvoices';
 import AdminFinancialDashboard from '@/components/admin/AdminFinancialDashboard';
@@ -43,6 +44,7 @@ import AdminPaymentServiceIntegration from '@/components/admin/AdminPaymentServi
 import AdminTestMode from '@/components/admin/AdminTestMode';
 import AdminMutationRequests from '@/components/admin/AdminMutationRequests';
 import AdminExpertiseRequests from '@/components/admin/AdminExpertiseRequests';
+import AdminExpertiseFeesConfig from '@/components/admin/AdminExpertiseFeesConfig';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -187,12 +189,16 @@ const Admin = () => {
         return <AdminMutationRequests />;
       case 'expertise-requests':
         return <AdminExpertiseRequests />;
+      case 'expertise-fees-config':
+        return <AdminExpertiseFeesConfig />;
       case 'permit-fees-config':
         return <AdminPermitFeesConfig />;
       case 'publications':
         return <AdminPublications onRefresh={fetchPendingCount} />;
       case 'articles':
         return <AdminArticles />;
+      case 'article-themes':
+        return <AdminArticleThemes />;
       case 'notifications':
         return <AdminNotifications />;
       case 'audit-logs':
@@ -203,22 +209,22 @@ const Admin = () => {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-56 lg:w-64 flex-col border-r bg-card">
-        <div className="p-4 lg:p-6 border-b">
-          <h2 className="text-base lg:text-lg font-semibold">Admin Dashboard</h2>
-          <p className="text-xs text-muted-foreground mt-1">Gestion complète</p>
+      <aside className="hidden md:flex w-52 lg:w-60 flex-col border-r bg-card/50 backdrop-blur-sm">
+        <div className="p-3 lg:p-4 border-b bg-background/80">
+          <h2 className="text-sm lg:text-base font-bold">Admin</h2>
+          <p className="text-[10px] text-muted-foreground">Gestion complète</p>
         </div>
         <AdminSidebar pendingCount={pendingCount} />
       </aside>
 
       {/* Mobile Sidebar */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-        <SheetContent side="left" className="w-[280px] p-0">
-          <div className="p-4 border-b">
-            <h2 className="text-base font-semibold">Admin Dashboard</h2>
-            <p className="text-xs text-muted-foreground mt-0.5">Gestion complète</p>
+        <SheetContent side="left" className="w-[260px] p-0">
+          <div className="p-3 border-b bg-background">
+            <h2 className="text-sm font-bold">Admin</h2>
+            <p className="text-[10px] text-muted-foreground">Gestion complète</p>
           </div>
           <AdminSidebar 
             pendingCount={pendingCount} 
@@ -233,8 +239,10 @@ const Admin = () => {
           onMenuClick={() => setMobileMenuOpen(true)}
         />
         
-        <main className="flex-1 overflow-y-auto p-3 md:p-4 lg:p-6">
-          {renderContent()}
+        <main className="flex-1 overflow-y-auto p-2 md:p-3 lg:p-4">
+          <div className="max-w-[360px] mx-auto md:max-w-none">
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>
