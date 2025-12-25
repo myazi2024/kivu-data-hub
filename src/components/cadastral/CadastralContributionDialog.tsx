@@ -3929,7 +3929,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">Montant de l'hypothèque (USD)</Label>
+                          <Label className="text-sm font-medium">Montant (USD)</Label>
                           <Input
                             type="number"
                             placeholder="50000"
@@ -3994,7 +3994,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </div>
 
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">Statut de l'hypothèque</Label>
+                          <Label className="text-sm font-medium">Statut</Label>
                           <Select
                             value={mortgage.mortgageStatus}
                             onValueChange={(value) => updateMortgageRecord(index, 'mortgageStatus', value)}
