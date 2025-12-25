@@ -419,6 +419,12 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
         <p className="text-sm text-muted-foreground mt-1">
           Votre déclaration de taxe pour la parcelle {parcelNumber} ({taxRecord.taxYear}) a été soumise avec succès.
         </p>
+        <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-950/30 rounded-xl border border-purple-200 dark:border-purple-800">
+          <p className="text-xs text-purple-700 dark:text-purple-300">
+            🎁 Un <strong>code CCC</strong> sera généré après validation par l'administration. 
+            Sa valeur dépendra de la complétude des informations fournies.
+          </p>
+        </div>
       </div>
       <Button onClick={handleClose} className="w-full h-11 rounded-xl">
         Fermer
