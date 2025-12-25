@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -656,11 +656,11 @@ const CadastralMap = () => {
               >
                 <div className="flex items-center justify-center gap-2">
                   <div className="h-8 w-8 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
-                    <Sparkles className="h-4 w-4" />
+                    <MapPinPlus className="h-4 w-4" />
                   </div>
                   <div className="text-left">
                     <div className="font-bold">Contribuer cette parcelle</div>
-                    <div className="text-[10px] opacity-80 font-normal">Ajoutez "{searchQuery}" à la base de données</div>
+                    <div className="text-[10px] opacity-80 font-normal">Ajoutez "{searchQuery}" au cadastre numérique de la RDC</div>
                   </div>
                 </div>
               </Button>
