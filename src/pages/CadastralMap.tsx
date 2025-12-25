@@ -528,20 +528,27 @@ const CadastralMap = () => {
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
               {/* Barre de recherche */}
               <div className="flex items-center gap-2">
-                <div className="relative flex-1">
+                <div className={`relative ${isMobile ? 'flex-1 max-w-[160px]' : 'flex-1'}`}>
                   <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground`}>
                     <Search className="h-full w-full" />
                   </div>
                   <Input
-                    placeholder={selectedParcel && isMobile ? "Rechercher..." : "Référence cadastrale..."}
+                    placeholder={selectedParcel && isMobile ? "N°..." : "N° parcelle..."}
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      // Accepter seulement les caractères numériques
+                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      setSearchQuery(numericValue);
+                    }}
                     onFocus={() => setIsSearchBarActive(true)}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && searchQuery.trim()) {
                         searchHistory.addToHistory(searchQuery);
                       }
                     }}
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all`}
                   />
                   {searchQuery && (
