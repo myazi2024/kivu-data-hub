@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +10,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { 
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
-  Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2
+  Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
+  CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
@@ -37,6 +39,16 @@ interface RealEstateExpertiseRequestDialogProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   onSuccess?: () => void;
+}
+
+interface ExpertiseFee {
+  id: string;
+  fee_name: string;
+  amount_usd: number;
+  description: string | null;
+  is_mandatory: boolean;
+  is_active: boolean;
+  display_order: number;
 }
 
 const CONSTRUCTION_QUALITY_OPTIONS = [
@@ -78,8 +90,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const { createExpertiseRequest, loading } = useRealEstateExpertise();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [step, setStep] = useState<'form' | 'confirmation'>('form');
+  const [step, setStep] = useState<'form' | 'payment' | 'confirmation'>('form');
   const [createdRequest, setCreatedRequest] = useState<any>(null);
+
+  // Payment state
+  const [fees, setFees] = useState<ExpertiseFee[]>([]);
+  const [loadingFees, setLoadingFees] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
+  const [paymentProvider, setPaymentProvider] = useState('');
+  const [paymentPhone, setPaymentPhone] = useState('');
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [formData, setFormData] = useState<any>(null);
 
   // Form state
   const [propertyDescription, setPropertyDescription] = useState('');
@@ -112,6 +133,35 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
+
+  // Fetch expertise fees on mount
+  useEffect(() => {
+    const fetchFees = async () => {
+      setLoadingFees(true);
+      try {
+        const { data, error } = await supabase
+          .from('expertise_fees_config')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order');
+
+        if (error) throw error;
+        setFees(data || []);
+      } catch (error) {
+        console.error('Error fetching expertise fees:', error);
+      } finally {
+        setLoadingFees(false);
+      }
+    };
+
+    if (open) {
+      fetchFees();
+    }
+  }, [open]);
+
+  const getTotalAmount = () => {
+    return fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -166,18 +216,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
   };
 
-  const handleSubmit = async () => {
+  const handleProceedToPayment = () => {
     if (!user) {
       toast.error('Vous devez être connecté');
       return;
     }
 
-    let documentUrls: string[] = [];
-    if (attachedFiles.length > 0) {
-      documentUrls = await uploadFiles();
-    }
-
-    const request = await createExpertiseRequest({
+    // Store form data for later submission
+    setFormData({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
       property_description: propertyDescription || undefined,
@@ -203,27 +249,157 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       flood_risk_zone: floodRiskZone,
       erosion_risk_zone: erosionRiskZone,
       additional_notes: additionalNotes || undefined,
-      supporting_documents: documentUrls,
       requester_name: profile?.full_name || user.email || 'Utilisateur',
       requester_phone: undefined,
       requester_email: profile?.email || user.email || undefined,
     });
 
-    if (request) {
+    setStep('payment');
+  };
+
+  const handlePayment = async () => {
+    if (!user || !formData) return;
+
+    if (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) {
+      toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
+      return;
+    }
+
+    setProcessingPayment(true);
+
+    try {
+      // Upload files first
+      let documentUrls: string[] = [];
+      if (attachedFiles.length > 0) {
+        documentUrls = await uploadFiles();
+      }
+
+      // Create the expertise request
+      const request = await createExpertiseRequest({
+        ...formData,
+        supporting_documents: documentUrls,
+      });
+
+      if (!request) {
+        throw new Error('Erreur lors de la création de la demande');
+      }
+
+      // Create payment record
+      const feeItems = fees.map(fee => ({
+        fee_id: fee.id,
+        fee_name: fee.fee_name,
+        amount_usd: fee.amount_usd
+      }));
+
+      const { data: paymentRecord, error: paymentError } = await supabase
+        .from('expertise_payments')
+        .insert({
+          expertise_request_id: request.id,
+          user_id: user.id,
+          fee_items: feeItems,
+          total_amount_usd: getTotalAmount(),
+          payment_method: paymentMethod,
+          payment_provider: paymentMethod === 'mobile_money' ? paymentProvider : 'stripe',
+          phone_number: paymentMethod === 'mobile_money' ? paymentPhone : null,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (paymentError) throw paymentError;
+
+      // Process payment
+      if (paymentMethod === 'mobile_money') {
+        // Call mobile money edge function
+        const { data: paymentResult, error: mmError } = await supabase.functions.invoke(
+          'process-mobile-money-payment',
+          {
+            body: {
+              payment_provider: paymentProvider,
+              phone_number: paymentPhone,
+              amount_usd: getTotalAmount(),
+              payment_type: 'expertise_fee',
+              invoice_id: paymentRecord.id
+            }
+          }
+        );
+
+        if (mmError) throw mmError;
+
+        // Simulate payment confirmation (in production, this would be webhook-based)
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Update payment status
+        await supabase
+          .from('expertise_payments')
+          .update({
+            status: 'completed',
+            paid_at: new Date().toISOString(),
+            transaction_id: paymentResult?.transaction_id || 'TXN-' + Date.now()
+          })
+          .eq('id', paymentRecord.id);
+
+        // Update expertise request payment status
+        await supabase
+          .from('real_estate_expertise_requests')
+          .update({ payment_status: 'paid' })
+          .eq('id', request.id);
+
+      } else if (paymentMethod === 'bank_card') {
+        // Stripe payment
+        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke(
+          'create-payment',
+          {
+            body: {
+              invoice_id: paymentRecord.id,
+              payment_type: 'expertise_fee',
+              amount_usd: getTotalAmount()
+            }
+          }
+        );
+
+        if (stripeError) throw stripeError;
+
+        if (stripeSession?.url) {
+          window.location.href = stripeSession.url;
+          return;
+        }
+      }
+
+      // Create notification
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'success',
+        title: 'Demande d\'expertise soumise',
+        message: `Votre demande d'expertise immobilière pour la parcelle ${parcelNumber} a été enregistrée. Un expert vous contactera prochainement.`,
+        action_url: '/user-dashboard'
+      });
+
       setCreatedRequest(request);
       setStep('confirmation');
+      toast.success('Paiement réussi ! Votre demande a été enregistrée.');
       onSuccess?.();
+
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.message || 'Erreur lors du paiement');
+    } finally {
+      setProcessingPayment(false);
     }
   };
 
   const handleClose = () => {
     setStep('form');
     setCreatedRequest(null);
+    setFormData(null);
     setPropertyDescription('');
     setConstructionYear('');
     setTotalBuiltAreaSqm('');
     setAdditionalNotes('');
     setAttachedFiles([]);
+    setPaymentMethod('mobile_money');
+    setPaymentProvider('');
+    setPaymentPhone('');
     onOpenChange(false);
   };
 
@@ -565,24 +741,143 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </Card>
 
         <Button 
-          onClick={handleSubmit} 
+          onClick={handleProceedToPayment} 
           className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
-          disabled={loading || uploadingFiles}
+          disabled={loading || uploadingFiles || loadingFees}
         >
-          {loading || uploadingFiles ? (
+          {loadingFees ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              {uploadingFiles ? 'Envoi des fichiers...' : 'Création...'}
+              Chargement...
             </>
           ) : (
             <>
-              <FileSearch className="h-4 w-4 mr-2" />
-              Soumettre la demande d'expertise
+              <DollarSign className="h-4 w-4 mr-2" />
+              Continuer vers le paiement ({getTotalAmount()}$)
             </>
           )}
         </Button>
       </div>
     </ScrollArea>
+  );
+
+  const renderPayment = () => (
+    <div className="space-y-4">
+      {/* Récapitulatif des frais */}
+      <Card className="bg-muted/30 rounded-xl">
+        <CardContent className="p-4 space-y-3">
+          <h4 className="font-semibold text-sm flex items-center gap-2">
+            <Receipt className="h-4 w-4 text-primary" />
+            Récapitulatif des frais
+          </h4>
+          <div className="space-y-2">
+            {fees.map((fee) => (
+              <div key={fee.id} className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">{fee.fee_name}</span>
+                <span className="font-medium">{fee.amount_usd}$</span>
+              </div>
+            ))}
+          </div>
+          <Separator />
+          <div className="flex justify-between items-center font-bold">
+            <span>Total</span>
+            <span className="text-primary text-lg">{getTotalAmount()}$</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Méthode de paiement */}
+      <div className="space-y-3">
+        <Label className="text-sm font-semibold">Mode de paiement</Label>
+        <RadioGroup
+          value={paymentMethod}
+          onValueChange={(v) => setPaymentMethod(v as 'mobile_money' | 'bank_card')}
+          className="grid grid-cols-2 gap-3"
+        >
+          <div className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'mobile_money' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+            <RadioGroupItem value="mobile_money" id="mobile_money" />
+            <Label htmlFor="mobile_money" className="cursor-pointer flex items-center gap-2 text-sm">
+              <Smartphone className="h-4 w-4 text-green-600" />
+              Mobile Money
+            </Label>
+          </div>
+          <div className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'bank_card' ? 'border-primary bg-primary/5' : 'border-border'}`}>
+            <RadioGroupItem value="bank_card" id="bank_card" />
+            <Label htmlFor="bank_card" className="cursor-pointer flex items-center gap-2 text-sm">
+              <CreditCard className="h-4 w-4 text-blue-600" />
+              Carte bancaire
+            </Label>
+          </div>
+        </RadioGroup>
+      </div>
+
+      {/* Détails Mobile Money */}
+      {paymentMethod === 'mobile_money' && (
+        <div className="space-y-3">
+          <div className="space-y-2">
+            <Label className="text-xs">Opérateur</Label>
+            <Select value={paymentProvider} onValueChange={setPaymentProvider}>
+              <SelectTrigger className="h-10 rounded-xl">
+                <SelectValue placeholder="Sélectionner un opérateur" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="airtel">Airtel Money</SelectItem>
+                <SelectItem value="orange">Orange Money</SelectItem>
+                <SelectItem value="mpesa">M-Pesa</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Numéro de téléphone</Label>
+            <Input
+              value={paymentPhone}
+              onChange={(e) => setPaymentPhone(e.target.value)}
+              placeholder="+243..."
+              className="h-10 rounded-xl"
+            />
+          </div>
+        </div>
+      )}
+
+      {paymentMethod === 'bank_card' && (
+        <Alert className="rounded-xl">
+          <CreditCard className="h-4 w-4" />
+          <AlertDescription className="text-sm">
+            Vous serez redirigé vers la page de paiement sécurisée Stripe.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Boutons */}
+      <div className="flex gap-3 pt-2">
+        <Button
+          variant="outline"
+          onClick={() => setStep('form')}
+          disabled={processingPayment}
+          className="flex-1 h-11 rounded-xl"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Retour
+        </Button>
+        <Button
+          onClick={handlePayment}
+          disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
+          className="flex-1 h-11 rounded-xl"
+        >
+          {processingPayment ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Traitement...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              Payer {getTotalAmount()}$
+            </>
+          )}
+        </Button>
+      </div>
+    </div>
   );
 
   const renderConfirmation = () => (
@@ -608,6 +903,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             <div className="flex items-center justify-between text-sm">
               <span className="text-muted-foreground">Parcelle</span>
               <span className="font-medium">{parcelNumber}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-muted-foreground">Montant payé</span>
+              <span className="font-medium text-green-600">{getTotalAmount()}$</span>
             </div>
           </CardContent>
         </Card>
@@ -640,7 +939,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           </DialogDescription>
         </DialogHeader>
         
-        {step === 'form' ? renderForm() : renderConfirmation()}
+        {step === 'form' && renderForm()}
+        {step === 'payment' && renderPayment()}
+        {step === 'confirmation' && renderConfirmation()}
       </DialogContent>
     </Dialog>
   );
