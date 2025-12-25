@@ -3929,7 +3929,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">Montant (USD)</Label>
+                          <Label className="text-sm font-medium">Montant de l'hypothèque (USD)</Label>
                           <Input
                             type="number"
                             placeholder="50000"
@@ -3950,19 +3950,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </div>
                       </div>
 
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Nom du créancier</Label>
-                        <Input
-                          placeholder="ex: Banque XYZ"
-                          value={mortgage.creditorName}
-                          onChange={(e) => updateMortgageRecord(index, 'creditorName', e.target.value)}
-                          className="h-10 text-sm rounded-xl"
-                        />
-                      </div>
-
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">Type</Label>
+                          <Label className="text-sm font-medium">Nom du créancier</Label>
+                          <Input
+                            placeholder="ex: Banque XYZ"
+                            value={mortgage.creditorName}
+                            onChange={(e) => updateMortgageRecord(index, 'creditorName', e.target.value)}
+                            className="h-10 text-sm rounded-xl"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Type de créancier</Label>
                           <Select
                             value={mortgage.creditorType}
                             onValueChange={(value) => updateMortgageRecord(index, 'creditorType', value)}
@@ -3979,8 +3979,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             </SelectContent>
                           </Select>
                         </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">Statut</Label>
+                          <Label className="text-sm font-medium">Date du contrat</Label>
+                          <Input
+                            type="date"
+                            max={new Date().toISOString().split('T')[0]}
+                            value={mortgage.contractDate}
+                            onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
+                            className="h-10 text-sm rounded-xl"
+                          />
+                        </div>
+
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Statut de l'hypothèque</Label>
                           <Select
                             value={mortgage.mortgageStatus}
                             onValueChange={(value) => updateMortgageRecord(index, 'mortgageStatus', value)}
@@ -3996,17 +4010,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             </SelectContent>
                           </Select>
                         </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Date contrat</Label>
-                        <Input
-                          type="date"
-                          max={new Date().toISOString().split('T')[0]}
-                          value={mortgage.contractDate}
-                          onChange={(e) => updateMortgageRecord(index, 'contractDate', e.target.value)}
-                          className="h-10 text-sm rounded-xl"
-                        />
                       </div>
 
                       {/* Pièce jointe compacte */}
