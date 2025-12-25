@@ -7,12 +7,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, FileEdit, Building2, FileCheck, Receipt, Landmark, FilePlus, FileQuestion } from 'lucide-react';
+import { ChevronDown, FileEdit, Building2, FileCheck, Receipt, Landmark } from 'lucide-react';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import BuildingPermitFormDialog from './BuildingPermitFormDialog';
 import TaxFormDialog from './TaxFormDialog';
-import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
 
 interface ParcelActionsDropdownProps {
   parcelNumber: string;
@@ -30,8 +29,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const [showBuildingPermitDialog, setShowBuildingPermitDialog] = useState(false);
   const [showRegularizationPermitDialog, setShowRegularizationPermitDialog] = useState(false);
   const [showTaxDialog, setShowTaxDialog] = useState(false);
-  const [showPermitRequestDialog, setShowPermitRequestDialog] = useState(false);
-  const [showRegularizationRequestDialog, setShowRegularizationRequestDialog] = useState(false);
 
   return (
     <>
@@ -111,30 +108,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
               <div className="text-xs text-muted-foreground">Paiement fiscal</div>
             </div>
           </DropdownMenuItem>
-          
-          <DropdownMenuSeparator />
-          
-          <DropdownMenuItem 
-            onClick={() => setShowPermitRequestDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
-          >
-            <FilePlus className="h-4 w-4 text-cyan-600" />
-            <div>
-              <div className="font-medium text-sm">Demande permis</div>
-              <div className="text-xs text-muted-foreground">Nouvelle construction</div>
-            </div>
-          </DropdownMenuItem>
-          
-          <DropdownMenuItem 
-            onClick={() => setShowRegularizationRequestDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
-          >
-            <FileQuestion className="h-4 w-4 text-orange-600" />
-            <div>
-              <div className="font-medium text-sm">Demande régul.</div>
-              <div className="text-xs text-muted-foreground">Construction existante</div>
-            </div>
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -178,22 +151,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         parcelId={parcelId}
         open={showTaxDialog}
         onOpenChange={setShowTaxDialog}
-      />
-
-      {/* Dialog Demande de permis de construire */}
-      <BuildingPermitRequestDialog
-        parcelNumber={parcelNumber}
-        open={showPermitRequestDialog}
-        onOpenChange={setShowPermitRequestDialog}
-        hasExistingConstruction={false}
-      />
-
-      {/* Dialog Demande de régularisation */}
-      <BuildingPermitRequestDialog
-        parcelNumber={parcelNumber}
-        open={showRegularizationRequestDialog}
-        onOpenChange={setShowRegularizationRequestDialog}
-        hasExistingConstruction={true}
       />
     </>
   );

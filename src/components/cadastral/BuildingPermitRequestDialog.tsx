@@ -237,7 +237,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     
     return (
       <Container open={open} onOpenChange={handleClose}>
-        <Content className={isMobile ? "z-[1100]" : "sm:max-w-md z-[1100]"}>
+        <Content className={isMobile ? undefined : "sm:max-w-md"}>
           <SuccessContent />
         </Content>
       </Container>
@@ -301,7 +301,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     
     return (
       <Container open={open} onOpenChange={handleClose}>
-        <Content className={isMobile ? "z-[1100]" : "sm:max-w-md z-[1100]"}>
+        <Content className={isMobile ? undefined : "sm:max-w-md"}>
           {isMobile && (
             <Header>
               <Title>Paiement du service</Title>
@@ -661,7 +661,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   return (
     <Container open={open} onOpenChange={handleClose}>
-      <Content className={isMobile ? "max-h-[90vh] z-[1100]" : "sm:max-w-lg max-h-[90vh] overflow-y-auto z-[1100]"}>
+      <Content className={isMobile ? "max-h-[90vh]" : "sm:max-w-lg max-h-[90vh] overflow-y-auto"}>
         <Header className={isMobile ? "px-4" : undefined}>
           <Title className="flex items-center gap-2 text-base">
             <Building2 className="h-5 w-5 text-primary" />
