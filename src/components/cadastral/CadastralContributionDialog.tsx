@@ -2729,7 +2729,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </div>
                 {formData.isTitleInCurrentOwnerName === false && (
                   <p className="text-xs text-amber-700 dark:text-amber-400">
-                    ⚠️ Frais de retard : 0,45 USD/jour applicables.
+                    ⚠️ Hors délai légal de mutation.
                   </p>
                 )}
               </CardContent>
