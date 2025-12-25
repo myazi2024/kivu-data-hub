@@ -37,7 +37,7 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[320px] max-h-[85vh] overflow-hidden p-0 rounded-2xl z-[9999]">
-        <div className="px-4 pt-4 pb-2">
+        <div className="px-4 pt-8 pb-2">
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-lg font-bold text-center text-primary">
               Ajouter une parcelle au cadastre
