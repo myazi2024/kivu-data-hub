@@ -2347,75 +2347,59 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           }
         }}
       >
-        <DialogHeader className="px-3 sm:px-6 pt-3 sm:pt-6 pb-2 sm:pb-4 border-b bg-gradient-to-r from-primary/5 to-transparent text-center sm:text-left rounded-t-2xl">
-          <DialogTitle className="text-sm sm:text-2xl font-semibold leading-tight">
-            <span className="hidden sm:inline">Contribuer aux informations cadastrales</span>
-            <span className="sm:hidden">Contribution cadastrale</span>
+        <DialogHeader className="px-3 sm:px-4 pt-2 sm:pt-3 pb-1.5 sm:pb-2 border-b bg-gradient-to-r from-primary/5 to-transparent rounded-t-2xl">
+          <DialogTitle className="text-sm sm:text-base font-semibold leading-tight flex items-center gap-2 justify-center sm:justify-start">
+            <Badge variant="secondary" className="text-[10px] sm:text-xs font-medium px-1.5 py-0.5 rounded-lg">
+              {parcelNumber}
+            </Badge>
+            <span className="text-xs sm:text-sm text-muted-foreground">Contribution CCC</span>
           </DialogTitle>
-          <DialogDescription className="text-sm sm:text-base mt-1 sm:mt-2 space-y-0.5 sm:space-y-0">
-            <div className="flex items-center gap-1.5 flex-wrap justify-center sm:justify-start">
-              <span className="text-muted-foreground">Parcelle :</span>
-              <strong className="text-foreground font-semibold">{parcelNumber}</strong>
-            </div>
-            <p className="text-xs sm:text-sm text-muted-foreground leading-tight sm:leading-normal">
-              Renseignez les informations que vous possédez
-            </p>
-          </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
-          <div className="sticky top-0 z-20 bg-background px-3 sm:px-6 pt-3 pb-2 border-b shadow-sm">
-            <TabsList className="grid w-full grid-cols-5 h-auto sm:h-12 bg-muted/50 p-0.5 sm:p-1 rounded-xl shadow-inner mb-2 gap-0.5">
+          <div className="sticky top-0 z-20 bg-background px-2 sm:px-4 pt-2 pb-1.5 border-b shadow-sm">
+            <TabsList className="grid w-full grid-cols-5 h-auto bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
               <TabsTrigger 
                 value="general" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdDashboard className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
-                {(!isMobile || activeTab === "general") && <span className="hidden sm:inline">Général</span>}
-                {isMobile && activeTab === "general" && <span className="text-[10px]">Général</span>}
+                <MdDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {(!isMobile || activeTab === "general") && <span className="hidden sm:inline text-xs">Général</span>}
+                {isMobile && activeTab === "general" && <span className="text-[9px]">Général</span>}
               </TabsTrigger>
               <TabsTrigger 
                 value="location" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdLocationOn className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
-                {(!isMobile || activeTab === "location") && <span className="hidden sm:inline">Localisation</span>}
-                {isMobile && activeTab === "location" && <span className="text-[10px]">Lieu</span>}
+                <MdLocationOn className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {(!isMobile || activeTab === "location") && <span className="hidden sm:inline text-xs">Lieu</span>}
+                {isMobile && activeTab === "location" && <span className="text-[9px]">Lieu</span>}
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdEventNote className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
-                {(!isMobile || activeTab === "history") && <span className="hidden sm:inline">Historiques</span>}
-                {isMobile && activeTab === "history" && <span className="text-[10px]">Hist.</span>}
+                <MdEventNote className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {(!isMobile || activeTab === "history") && <span className="hidden sm:inline text-xs">Hist.</span>}
+                {isMobile && activeTab === "history" && <span className="text-[9px]">Hist.</span>}
               </TabsTrigger>
               <TabsTrigger 
                 value="obligations" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdAccountBalance className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0" />
-                {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline">Obligations</span>}
-                {isMobile && activeTab === "obligations" && <span className="text-[10px]">Taxes</span>}
+                <MdAccountBalance className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline text-xs">Taxes</span>}
+                {isMobile && activeTab === "obligations" && <span className="text-[9px]">Taxes</span>}
               </TabsTrigger>
               <TabsTrigger 
                 value="review" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs sm:text-sm py-1.5 sm:py-2 min-h-[40px] sm:min-h-[44px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
               >
-                <MdRateReview className="h-4 w-4 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
-                {(!isMobile || activeTab === "review") && <span className="hidden sm:inline">Révision</span>}
-                {isMobile && activeTab === "review" && <span className="text-[10px]">Révision</span>}
+                <MdRateReview className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
+                {(!isMobile || activeTab === "review") && <span className="hidden sm:inline text-xs">Révision</span>}
+                {isMobile && activeTab === "review" && <span className="text-[9px]">Révision</span>}
               </TabsTrigger>
             </TabsList>
-            
-            <div className="space-y-2">
-              {/* Message motivant avec animation */}
-              <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent p-2 sm:p-3 rounded-xl border border-primary/20 animate-fade-in">
-                <p className="text-xs sm:text-sm font-medium text-foreground">
-                  {getMotivationalMessage(calculateProgress())}
-                </p>
-              </div>
-            </div>
           </div>
           
           <div className="px-3 sm:px-6 pb-4 sm:pb-6">
