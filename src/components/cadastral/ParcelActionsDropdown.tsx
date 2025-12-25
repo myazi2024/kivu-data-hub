@@ -46,7 +46,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         <DropdownMenuContent 
           align="end" 
           side="top"
-          sideOffset={16}
+          sideOffset={8}
           className="w-56 rounded-xl bg-popover border shadow-lg z-[1100]"
         >
           <DropdownMenuItem 
