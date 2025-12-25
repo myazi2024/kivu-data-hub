@@ -886,12 +886,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="seloger"
                     onClick={() => setShowExpertiseDialog(true)}
-                    className="w-full h-11 text-sm rounded-xl border-2 border-blue-300 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:border-blue-700 dark:bg-blue-950/30 dark:hover:bg-blue-900/40 dark:text-blue-400"
+                    className="w-full h-11 text-sm rounded-xl"
                   >
                     <FileSearch className="h-4 w-4 mr-2" />
-                    Demander un certificat d'expertise immobilière
+                    Demander un certificat
                     <ExternalLink className="h-3.5 w-3.5 ml-2" />
                   </Button>
                 </div>
