@@ -6,8 +6,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
-import { ChevronDown, FileEdit, Building2, FileCheck, Receipt, Landmark } from 'lucide-react';
+import { ChevronDown, FileEdit, Building2, Receipt, Landmark } from 'lucide-react';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import BuildingPermitFormDialog from './BuildingPermitFormDialog';
@@ -74,27 +77,31 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           
           <DropdownMenuSeparator />
           
-          <DropdownMenuItem 
-            onClick={() => setShowBuildingPermitDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
-          >
-            <Building2 className="h-4 w-4 text-blue-600" />
-            <div>
-              <div className="font-medium text-sm">Permis construire</div>
-              <div className="text-xs text-muted-foreground">Nouvelle construction</div>
-            </div>
-          </DropdownMenuItem>
-          
-          <DropdownMenuItem 
-            onClick={() => setShowRegularizationPermitDialog(true)}
-            className="flex items-center gap-2 cursor-pointer rounded-lg"
-          >
-            <FileCheck className="h-4 w-4 text-green-600" />
-            <div>
-              <div className="font-medium text-sm">Régularisation</div>
-              <div className="text-xs text-muted-foreground">Construction existante</div>
-            </div>
-          </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="flex items-center gap-2 cursor-pointer rounded-lg">
+              <Building2 className="h-4 w-4 text-blue-600" />
+              <div>
+                <div className="font-medium text-sm">Ajouter permis</div>
+                <div className="text-xs text-muted-foreground">Construction / Régularisation</div>
+              </div>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent className="rounded-xl bg-popover border shadow-lg z-[1100]">
+              <DropdownMenuItem 
+                onClick={() => setShowBuildingPermitDialog(true)}
+                className="flex items-center gap-2 cursor-pointer rounded-lg"
+              >
+                <Building2 className="h-4 w-4 text-blue-600" />
+                <span>Nouvelle construction</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setShowRegularizationPermitDialog(true)}
+                className="flex items-center gap-2 cursor-pointer rounded-lg"
+              >
+                <Building2 className="h-4 w-4 text-green-600" />
+                <span>Régularisation</span>
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           
           <DropdownMenuSeparator />
           
