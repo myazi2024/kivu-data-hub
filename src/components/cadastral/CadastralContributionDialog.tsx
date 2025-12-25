@@ -2448,9 +2448,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     {titleDocFiles.length > 0 && (
                       <div className="space-y-1.5">
                         {titleDocFiles.map((file, index) => (
-                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-xl">
+                          <div key={index} className="flex items-center gap-2 p-2 bg-muted rounded-xl overflow-hidden">
                             <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span className="text-xs flex-1 truncate">{file.name}</span>
+                            <span className="text-xs flex-1 min-w-0 truncate">{file.name}</span>
                             <Button
                               type="button"
                               variant="ghost"
@@ -2637,9 +2637,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           Ajouter la pièce d'identité
                         </Button>
                       ) : (
-                        <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-xl border">
+                        <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-xl border overflow-hidden">
                           <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
-                          <span className="text-sm flex-1 truncate">{ownerDocFile.name}</span>
+                          <span className="text-sm flex-1 min-w-0 truncate">{ownerDocFile.name}</span>
                           <Button
                             type="button"
                             variant="ghost"
@@ -3064,8 +3064,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               className="h-10 text-sm rounded-xl"
                             />
                           ) : (
-                            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl border">
-                              <span className="text-sm flex-1 truncate">{permit.attachmentFile.name}</span>
+                            <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-xl border overflow-hidden">
+                              <span className="text-sm flex-1 min-w-0 truncate">{permit.attachmentFile.name}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -3826,9 +3826,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             Ajouter reçu
                           </Button>
                         ) : (
-                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
+                          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border overflow-hidden">
                             <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
-                            <span className="text-sm flex-1 truncate">{tax.receiptFile.name}</span>
+                            <span className="text-sm flex-1 min-w-0 truncate">{tax.receiptFile.name}</span>
                             <Button
                               type="button"
                               variant="ghost"
@@ -4076,9 +4076,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               />
                             </div>
                           ) : (
-                            <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
-                              <MdInsertDriveFile className="h-4 w-4 text-primary" />
-                              <span className="text-sm flex-1 truncate">{mortgage.receiptFile.name}</span>
+                            <div className="flex items-center gap-2 p-2 bg-muted rounded-lg overflow-hidden">
+                              <MdInsertDriveFile className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span className="text-sm flex-1 min-w-0 truncate">{mortgage.receiptFile.name}</span>
                               <Button
                                 type="button"
                                 variant="ghost"
