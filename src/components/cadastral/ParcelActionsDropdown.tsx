@@ -102,8 +102,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             className="cursor-pointer rounded-lg"
           >
             <div>
-              <div className="font-medium text-sm">Taxe foncière</div>
-              <div className="text-xs text-muted-foreground">Paiement fiscal</div>
+              <div className="font-medium text-sm">Ajouter Taxe foncière</div>
+              <div className="text-xs text-muted-foreground">Ajouter une taxe foncière pour signaler qu'elle a été payé</div>
             </div>
           </DropdownMenuItem>
           
