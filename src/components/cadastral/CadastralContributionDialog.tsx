@@ -4064,9 +4064,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                   <SelectValue placeholder="Statut" />
                                 </SelectTrigger>
                                 <SelectContent className="rounded-xl">
-                                  <SelectItem value="Active">Active</SelectItem>
-                                  <SelectItem value="Remboursée">Remboursée</SelectItem>
-                                  <SelectItem value="En défaut">En défaut</SelectItem>
+                                  <SelectItem value="Active">En cours</SelectItem>
+                                  <SelectItem value="En défaut">En défaut de paiement</SelectItem>
                                   <SelectItem value="Renégociée">Renégociée</SelectItem>
                                 </SelectContent>
                               </Select>
