@@ -2358,46 +2358,36 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
         <Tabs value={activeTab} className="w-full" onValueChange={handleTabChange}>
           <div className="sticky top-0 z-20 bg-background px-2 sm:px-4 pt-2 pb-1.5 border-b shadow-sm">
-            <TabsList className="grid w-full grid-cols-5 h-auto bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
+            <TabsList className="grid w-full grid-cols-5 h-9 bg-muted/50 p-0.5 rounded-xl shadow-inner gap-0.5">
               <TabsTrigger 
                 value="general" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-xs font-medium py-1 rounded-lg"
               >
-                <MdDashboard className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                {(!isMobile || activeTab === "general") && <span className="hidden sm:inline text-xs">Général</span>}
-                {isMobile && activeTab === "general" && <span className="text-[9px]">Général</span>}
+                Infos
               </TabsTrigger>
               <TabsTrigger 
                 value="location" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-xs font-medium py-1 rounded-lg"
               >
-                <MdLocationOn className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                {(!isMobile || activeTab === "location") && <span className="hidden sm:inline text-xs">Lieu</span>}
-                {isMobile && activeTab === "location" && <span className="text-[9px]">Lieu</span>}
+                Lieu
               </TabsTrigger>
               <TabsTrigger 
                 value="history" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-xs font-medium py-1 rounded-lg"
               >
-                <MdEventNote className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                {(!isMobile || activeTab === "history") && <span className="hidden sm:inline text-xs">Hist.</span>}
-                {isMobile && activeTab === "history" && <span className="text-[9px]">Hist.</span>}
+                Passé
               </TabsTrigger>
               <TabsTrigger 
                 value="obligations" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-xs font-medium py-1 rounded-lg"
               >
-                <MdAccountBalance className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
-                {(!isMobile || activeTab === "obligations") && <span className="hidden sm:inline text-xs">Taxes</span>}
-                {isMobile && activeTab === "obligations" && <span className="text-[9px]">Taxes</span>}
+                Taxes
               </TabsTrigger>
               <TabsTrigger 
                 value="review" 
-                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-xs py-1.5 min-h-[36px] sm:min-h-[40px] flex items-center justify-center gap-1 rounded-lg"
+                className="data-[state=active]:bg-background data-[state=active]:shadow-md transition-all text-[11px] sm:text-xs font-medium py-1 rounded-lg"
               >
-                <MdRateReview className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0 text-amber-500" />
-                {(!isMobile || activeTab === "review") && <span className="hidden sm:inline text-xs">Révision</span>}
-                {isMobile && activeTab === "review" && <span className="text-[9px]">Révision</span>}
+                Envoi
               </TabsTrigger>
             </TabsList>
           </div>
