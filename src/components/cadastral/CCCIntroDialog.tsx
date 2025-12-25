@@ -39,8 +39,8 @@ const CCCIntroDialog = ({ open, onOpenChange, onContinue }: CCCIntroDialogProps)
       <DialogContent className="max-w-[320px] max-h-[85vh] overflow-hidden p-0 rounded-2xl z-[9999]">
         <div className="px-4 pt-4 pb-2">
           <DialogHeader className="space-y-1">
-            <DialogTitle className="text-lg font-bold text-center text-primary">
-              Recherche manuelle
+            <DialogTitle className="text-base font-bold text-center text-primary leading-tight">
+              Ajouter parcelle au cadastre numérique de la République Démocratique du Congo
             </DialogTitle>
             <p className="text-sm text-muted-foreground text-center">
               À lire avant de commencer
