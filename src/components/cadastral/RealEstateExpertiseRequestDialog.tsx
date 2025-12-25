@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Badge } from '@/components/ui/badge';
 import { 
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
@@ -762,63 +763,84 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   );
 
   const renderPayment = () => (
-    <div className="space-y-4">
-      {/* Récapitulatif des frais */}
-      <Card className="bg-muted/30 rounded-xl">
-        <CardContent className="p-4 space-y-3">
-          <h4 className="font-semibold text-sm flex items-center gap-2">
-            <Receipt className="h-4 w-4 text-primary" />
-            Récapitulatif des frais
-          </h4>
-          <div className="space-y-2">
-            {fees.map((fee) => (
-              <div key={fee.id} className="flex justify-between items-center text-sm">
-                <span className="text-muted-foreground">{fee.fee_name}</span>
-                <span className="font-medium">{fee.amount_usd}$</span>
-              </div>
-            ))}
+    <div className="space-y-3">
+      {/* Header avec montant total */}
+      <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent rounded-xl p-3 border border-primary/20">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/20 rounded-lg">
+              <DollarSign className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Montant total</p>
+              <p className="text-xl font-bold text-primary">{getTotalAmount()} USD</p>
+            </div>
           </div>
-          <Separator />
-          <div className="flex justify-between items-center font-bold">
-            <span>Total</span>
-            <span className="text-primary text-lg">{getTotalAmount()}$</span>
-          </div>
-        </CardContent>
-      </Card>
+          <Badge variant="outline" className="text-xs">
+            {fees.length} frais
+          </Badge>
+        </div>
+      </div>
 
-      {/* Méthode de paiement */}
-      <div className="space-y-3">
-        <Label className="text-sm font-semibold">Mode de paiement</Label>
+      {/* Détails des frais - compact */}
+      <div className="bg-muted/30 rounded-lg p-2.5 space-y-1.5">
+        {fees.map((fee, index) => (
+          <div key={fee.id} className={`flex justify-between items-center text-xs py-1 ${index < fees.length - 1 ? 'border-b border-border/50' : ''}`}>
+            <span className="text-muted-foreground">{fee.fee_name}</span>
+            <span className="font-medium">{fee.amount_usd}$</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Mode de paiement - design compact */}
+      <div className="space-y-2">
+        <Label className="text-xs font-medium text-muted-foreground">Mode de paiement</Label>
         <RadioGroup
           value={paymentMethod}
           onValueChange={(v) => setPaymentMethod(v as 'mobile_money' | 'bank_card')}
-          className="grid grid-cols-2 gap-3"
+          className="grid grid-cols-2 gap-2"
         >
-          <div className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'mobile_money' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-            <RadioGroupItem value="mobile_money" id="mobile_money" />
-            <Label htmlFor="mobile_money" className="cursor-pointer flex items-center gap-2 text-sm">
-              <Smartphone className="h-4 w-4 text-green-600" />
+          <div 
+            onClick={() => setPaymentMethod('mobile_money')}
+            className={`flex items-center gap-2 p-2.5 border-2 rounded-lg cursor-pointer transition-all ${
+              paymentMethod === 'mobile_money' 
+                ? 'border-green-500 bg-green-50 dark:bg-green-950/30' 
+                : 'border-border hover:border-green-300'
+            }`}
+          >
+            <div className={`p-1.5 rounded-md ${paymentMethod === 'mobile_money' ? 'bg-green-500' : 'bg-muted'}`}>
+              <Smartphone className={`h-3.5 w-3.5 ${paymentMethod === 'mobile_money' ? 'text-white' : 'text-muted-foreground'}`} />
+            </div>
+            <span className={`text-xs font-medium ${paymentMethod === 'mobile_money' ? 'text-green-700 dark:text-green-300' : ''}`}>
               Mobile Money
-            </Label>
+            </span>
           </div>
-          <div className={`flex items-center gap-2 p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'bank_card' ? 'border-primary bg-primary/5' : 'border-border'}`}>
-            <RadioGroupItem value="bank_card" id="bank_card" />
-            <Label htmlFor="bank_card" className="cursor-pointer flex items-center gap-2 text-sm">
-              <CreditCard className="h-4 w-4 text-blue-600" />
+          <div 
+            onClick={() => setPaymentMethod('bank_card')}
+            className={`flex items-center gap-2 p-2.5 border-2 rounded-lg cursor-pointer transition-all ${
+              paymentMethod === 'bank_card' 
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30' 
+                : 'border-border hover:border-blue-300'
+            }`}
+          >
+            <div className={`p-1.5 rounded-md ${paymentMethod === 'bank_card' ? 'bg-blue-500' : 'bg-muted'}`}>
+              <CreditCard className={`h-3.5 w-3.5 ${paymentMethod === 'bank_card' ? 'text-white' : 'text-muted-foreground'}`} />
+            </div>
+            <span className={`text-xs font-medium ${paymentMethod === 'bank_card' ? 'text-blue-700 dark:text-blue-300' : ''}`}>
               Carte bancaire
-            </Label>
+            </span>
           </div>
         </RadioGroup>
       </div>
 
-      {/* Détails Mobile Money */}
+      {/* Détails Mobile Money - compact */}
       {paymentMethod === 'mobile_money' && (
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <Label className="text-xs">Opérateur</Label>
+        <div className="grid grid-cols-2 gap-2 p-2.5 bg-green-50/50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Opérateur</Label>
             <Select value={paymentProvider} onValueChange={setPaymentProvider}>
-              <SelectTrigger className="h-10 rounded-xl">
-                <SelectValue placeholder="Sélectionner un opérateur" />
+              <SelectTrigger className="h-9 text-xs rounded-lg border-green-200 dark:border-green-800">
+                <SelectValue placeholder="Choisir..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="airtel">Airtel Money</SelectItem>
@@ -827,42 +849,43 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label className="text-xs">Numéro de téléphone</Label>
+          <div className="space-y-1">
+            <Label className="text-[10px] text-muted-foreground">Téléphone</Label>
             <Input
               value={paymentPhone}
               onChange={(e) => setPaymentPhone(e.target.value)}
               placeholder="+243..."
-              className="h-10 rounded-xl"
+              className="h-9 text-xs rounded-lg border-green-200 dark:border-green-800"
             />
           </div>
         </div>
       )}
 
       {paymentMethod === 'bank_card' && (
-        <Alert className="rounded-xl">
-          <CreditCard className="h-4 w-4" />
-          <AlertDescription className="text-sm">
-            Vous serez redirigé vers la page de paiement sécurisée Stripe.
-          </AlertDescription>
-        </Alert>
+        <div className="flex items-center gap-2 p-2.5 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <CreditCard className="h-4 w-4 text-blue-600" />
+          <p className="text-xs text-blue-700 dark:text-blue-300">
+            Redirection vers Stripe pour le paiement sécurisé.
+          </p>
+        </div>
       )}
 
-      {/* Boutons */}
-      <div className="flex gap-3 pt-2">
+      {/* Boutons - compact */}
+      <div className="flex gap-2 pt-1">
         <Button
-          variant="outline"
+          variant="ghost"
+          size="sm"
           onClick={() => setStep('form')}
           disabled={processingPayment}
-          className="flex-1 h-11 rounded-xl"
+          className="h-10 px-3 rounded-lg"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 mr-1" />
           Retour
         </Button>
         <Button
           onClick={handlePayment}
           disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
-          className="flex-1 h-11 rounded-xl"
+          className="flex-1 h-10 rounded-lg bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 text-white shadow-md"
         >
           {processingPayment ? (
             <>
