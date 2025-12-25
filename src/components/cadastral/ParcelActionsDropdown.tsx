@@ -68,8 +68,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             className="cursor-pointer rounded-lg"
           >
             <div>
-              <div className="font-medium text-sm">Hypothèque</div>
-              <div className="text-xs text-muted-foreground">Ajouter une garantie</div>
+              <div className="font-medium text-sm">Ajouter Hypothèque</div>
+              <div className="text-xs text-muted-foreground">Ajouter une Hypothèque active sur ce bien</div>
             </div>
           </DropdownMenuItem>
           
