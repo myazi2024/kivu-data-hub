@@ -58,6 +58,7 @@ const menuItems = [
       { icon: ClipboardList, label: 'Contributions CCC', value: 'ccc', badge: null },
       { icon: FileCheck, label: 'File de validation', value: 'validation', badge: 'pending' },
       { icon: Gift, label: 'Codes CCC', value: 'ccc-codes', badge: null },
+      { icon: BarChart, label: 'Utilisation CCC', value: 'ccc-usage', badge: null },
       { icon: Settings, label: 'Config Contributions', value: 'contribution-config', badge: null },
     ]
   },
@@ -66,14 +67,16 @@ const menuItems = [
     items: [
       { icon: BarChart, label: 'Tableau de Bord', value: 'financial', badge: null },
       { icon: CreditCard, label: 'Paiements', value: 'payments', badge: null },
+      { icon: CheckSquare, label: 'Réconciliation', value: 'payment-reconciliation', badge: null },
       { icon: Smartphone, label: 'Moyens de Paiement', value: 'payment-methods', badge: null },
       { icon: Settings, label: 'Mode de Paiement', value: 'payment-mode', badge: null },
-      { icon: CheckSquare, label: 'Intégration Services', value: 'payment-integration', badge: 'new' },
+      { icon: CheckSquare, label: 'Intégration Services', value: 'payment-integration', badge: null },
       { icon: TrendingUp, label: 'Monitoring Paiements', value: 'payment-monitoring', badge: null },
       { icon: Receipt, label: 'Config Facturation', value: 'billing-config', badge: null },
       { icon: DollarSign, label: 'Factures', value: 'invoices', badge: null },
       { icon: FileText, label: 'Transactions', value: 'transactions', badge: null },
       { icon: Users, label: 'Commissions', value: 'commissions', badge: null },
+      { icon: DollarSign, label: 'Commissions Revendeurs', value: 'reseller-commissions', badge: null },
       { icon: ShoppingCart, label: 'Revendeurs', value: 'resellers', badge: null },
       { icon: Tag, label: 'Codes de Remise', value: 'discount-codes', badge: null },
     ]
@@ -91,8 +94,14 @@ const menuItems = [
       { icon: Building2, label: 'Permis de Construire', value: 'permits', badge: null },
       { icon: FileText, label: 'Config Frais Permis', value: 'permit-fees-config', badge: null },
       { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: null },
+      { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null },
       { icon: FileCheck, label: 'Expertises Immob.', value: 'expertise-requests', badge: null },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
+      { icon: AlertTriangle, label: 'Conflits Limites', value: 'boundary-conflicts', badge: null },
+      { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },
+      { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
+      { icon: Users, label: 'Historique Propriété', value: 'ownership-history', badge: null },
+      { icon: MapPin, label: 'Historique Bornage', value: 'boundary-history', badge: null },
     ]
   },
   {
@@ -109,6 +118,7 @@ const menuItems = [
     items: [
       { icon: TestTube, label: 'Mode Test', value: 'test-mode', badge: null },
       { icon: Shield, label: 'Logs d\'Audit', value: 'audit-logs', badge: null },
+      { icon: Database, label: 'Santé Système', value: 'system-health', badge: null },
     ]
   },
 ];

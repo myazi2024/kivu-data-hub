@@ -45,6 +45,16 @@ import AdminTestMode from '@/components/admin/AdminTestMode';
 import AdminMutationRequests from '@/components/admin/AdminMutationRequests';
 import AdminExpertiseRequests from '@/components/admin/AdminExpertiseRequests';
 import AdminExpertiseFeesConfig from '@/components/admin/AdminExpertiseFeesConfig';
+import AdminMutationFeesConfig from '@/components/admin/AdminMutationFeesConfig';
+import AdminBoundaryConflicts from '@/components/admin/AdminBoundaryConflicts';
+import AdminMortgages from '@/components/admin/AdminMortgages';
+import AdminTaxHistory from '@/components/admin/AdminTaxHistory';
+import AdminOwnershipHistory from '@/components/admin/AdminOwnershipHistory';
+import AdminBoundaryHistory from '@/components/admin/AdminBoundaryHistory';
+import AdminCCCUsage from '@/components/admin/AdminCCCUsage';
+import AdminPaymentReconciliation from '@/components/admin/AdminPaymentReconciliation';
+import AdminResellerCommissions from '@/components/admin/AdminResellerCommissions';
+import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -193,6 +203,26 @@ const Admin = () => {
         return <AdminExpertiseFeesConfig />;
       case 'permit-fees-config':
         return <AdminPermitFeesConfig />;
+      case 'mutation-fees-config':
+        return <AdminMutationFeesConfig />;
+      case 'boundary-conflicts':
+        return <AdminBoundaryConflicts />;
+      case 'mortgages':
+        return <AdminMortgages />;
+      case 'tax-history':
+        return <AdminTaxHistory />;
+      case 'ownership-history':
+        return <AdminOwnershipHistory />;
+      case 'boundary-history':
+        return <AdminBoundaryHistory />;
+      case 'ccc-usage':
+        return <AdminCCCUsage />;
+      case 'payment-reconciliation':
+        return <AdminPaymentReconciliation />;
+      case 'reseller-commissions':
+        return <AdminResellerCommissions />;
+      case 'system-health':
+        return <AdminSystemHealth />;
       case 'publications':
         return <AdminPublications onRefresh={fetchPendingCount} />;
       case 'articles':
