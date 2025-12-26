@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 import { UserSearchSelect } from './users/UserSearchSelect';
 
-type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier';
+type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer';
 
 interface UserRole {
   id: string;
@@ -52,6 +52,12 @@ const roleConfig = {
     label: 'Expert Immobilier',
     color: 'bg-gradient-to-r from-amber-500 to-orange-500',
     description: 'Évaluation des biens immobiliers',
+  },
+  mortgage_officer: {
+    icon: Shield,
+    label: 'Officier Hypothécaire',
+    color: 'bg-gradient-to-r from-red-500 to-rose-500',
+    description: 'Traitement des demandes de radiation d\'hypothèque',
   },
   user: {
     icon: User,

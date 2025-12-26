@@ -10,6 +10,7 @@ import {
 import { ChevronDown } from 'lucide-react';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageFormDialog from './MortgageFormDialog';
+import MortgageCancellationDialog from './MortgageCancellationDialog';
 import BuildingPermitFormDialog from './BuildingPermitFormDialog';
 import TaxFormDialog from './TaxFormDialog';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
@@ -27,6 +28,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
 }) => {
   const [showMutationDialog, setShowMutationDialog] = useState(false);
   const [showMortgageDialog, setShowMortgageDialog] = useState(false);
+  const [showMortgageCancellationDialog, setShowMortgageCancellationDialog] = useState(false);
   const [showBuildingPermitDialog, setShowBuildingPermitDialog] = useState(false);
   const [showRegularizationPermitDialog, setShowRegularizationPermitDialog] = useState(false);
   const [showTaxDialog, setShowTaxDialog] = useState(false);
@@ -70,6 +72,16 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
             <div>
               <div className="font-medium text-sm">Ajouter Hypothèque</div>
               <div className="text-xs text-muted-foreground">Ajouter une Hypothèque active sur ce bien</div>
+            </div>
+          </DropdownMenuItem>
+          
+          <DropdownMenuItem 
+            onClick={() => setShowMortgageCancellationDialog(true)}
+            className="cursor-pointer rounded-lg"
+          >
+            <div>
+              <div className="font-medium text-sm">Retirer Hypothèque</div>
+              <div className="text-xs text-muted-foreground">Demander la radiation d'une Hypothèque active</div>
             </div>
           </DropdownMenuItem>
           
@@ -135,6 +147,14 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         parcelId={parcelId}
         open={showMortgageDialog}
         onOpenChange={setShowMortgageDialog}
+      />
+
+      {/* Dialog Radiation Hypothèque */}
+      <MortgageCancellationDialog
+        parcelNumber={parcelNumber}
+        parcelId={parcelId}
+        open={showMortgageCancellationDialog}
+        onOpenChange={setShowMortgageCancellationDialog}
       />
 
       {/* Dialog Permis de construire */}
