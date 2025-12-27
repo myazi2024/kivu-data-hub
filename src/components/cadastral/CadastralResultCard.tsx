@@ -1316,9 +1316,30 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                            {mortgage_history.map((mortgage) => {
                              const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
                              const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
+                             const referenceNumber = (mortgage as any).reference_number;
                              
                              return (
                                <div key={mortgage.id} className="p-2 bg-muted/30 rounded">
+                                 {/* Numéro de référence en évidence */}
+                                 {referenceNumber && (mortgage.mortgage_status === 'active' || (mortgage as any).mortgage_status === 'Active' || (mortgage as any).mortgage_status === 'En cours') && (
+                                   <div className="flex items-center gap-1.5 mb-2 p-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-lg border border-amber-300 dark:border-amber-700">
+                                     <div className="flex items-center gap-1 text-amber-700 dark:text-amber-300">
+                                       <span className="text-[9px] font-medium">N° Réf:</span>
+                                       <span className="text-[10px] font-mono font-bold tracking-wide">{referenceNumber}</span>
+                                     </div>
+                                     <Tooltip>
+                                       <TooltipTrigger asChild>
+                                         <button className="ml-auto p-0.5 hover:bg-amber-200 dark:hover:bg-amber-800 rounded transition-colors">
+                                           <Info className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                         </button>
+                                       </TooltipTrigger>
+                                       <TooltipContent side="top" className="max-w-xs">
+                                         <p className="text-xs">Ce numéro de référence est requis pour toute demande de radiation d'hypothèque.</p>
+                                       </TooltipContent>
+                                     </Tooltip>
+                                   </div>
+                                 )}
+                                 
                                  <div className="flex items-start justify-between gap-2 mb-1">
                                    <div className="flex items-start gap-1.5">
                                      <Landmark className="h-3 w-3 text-blue-500 mt-0.5 flex-shrink-0" />

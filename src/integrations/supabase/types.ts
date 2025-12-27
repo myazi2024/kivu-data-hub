@@ -786,6 +786,7 @@ export type Database = {
           mortgage_amount_usd: number
           mortgage_status: string
           parcel_id: string
+          reference_number: string | null
           updated_at: string
         }
         Insert: {
@@ -798,6 +799,7 @@ export type Database = {
           mortgage_amount_usd?: number
           mortgage_status?: string
           parcel_id: string
+          reference_number?: string | null
           updated_at?: string
         }
         Update: {
@@ -810,6 +812,7 @@ export type Database = {
           mortgage_amount_usd?: number
           mortgage_status?: string
           parcel_id?: string
+          reference_number?: string | null
           updated_at?: string
         }
         Relationships: [
