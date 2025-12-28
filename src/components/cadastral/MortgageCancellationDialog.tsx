@@ -617,7 +617,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
           <p className="text-xs text-muted-foreground flex items-start gap-1.5">
             <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
-            <span>Le numéro de référence est disponible dans le résultat cadastral (onglet Obligations → Hypothèques).</span>
+            <span>
+              Chaque hypothèque active possède un numéro de référence unique qui permet de l'identifier dans notre base de données. 
+              Pour l'obtenir, fermez ce formulaire, puis cliquez sur le bouton "Données". Ensuite, dans le catalogue de services, 
+              sélectionnez uniquement le service "Obligations fiscales et Hypothèque", puis procédez au paiement pour accéder au résultat cadastral. 
+              Le numéro de référence est disponible dans le résultat cadastral (onglet Obligations → Hypothèques). 
+              Une fois que vous l'avez obtenu, revenez sur ce formulaire, ajoutez-le et finalisez votre demande de radiation.
+            </span>
           </p>
         </CardContent>
       </Card>
