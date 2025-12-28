@@ -2954,7 +2954,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <MdInsertDriveFile className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <Label className="text-sm font-semibold leading-tight">
-                      Avez-vous un permis de construire pour votre {formData.constructionType?.toLowerCase() || 'construction'}
+                      Avez-vous un permis de construire pour votre construction {formData.constructionType?.toLowerCase() || ''}
                       {formData.constructionNature ? `, ${formData.constructionNature.toLowerCase()}` : ''}
                       {formData.constructionMaterials ? `, en ${formData.constructionMaterials.toLowerCase()}` : ''}
                       {formData.declaredUsage ? `, utilisée en tant que ${formData.declaredUsage.toLowerCase()}` : ''} ?
