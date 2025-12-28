@@ -51,76 +51,55 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           side="top"
           align="end" 
           sideOffset={70}
-          className="w-64 p-3 rounded-2xl bg-background/95 backdrop-blur-lg border-2 border-destructive/20 shadow-2xl z-[1100] space-y-2"
+          className="w-52 p-1.5 rounded-xl bg-transparent border-0 shadow-none z-[1100] space-y-1"
         >
           <DropdownMenuItem 
             onClick={() => setShowMutationDialog(true)}
-            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
+            className="cursor-pointer rounded-lg bg-destructive/90 text-destructive-foreground backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:scale-[1.03] hover:bg-destructive hover:shadow-md active:scale-95"
           >
-            <div>
-              <div className="font-semibold text-sm">Demander Mutation</div>
-              <div className="text-xs opacity-70">Transfert de propriété</div>
-            </div>
+            <span className="text-xs font-medium">Demander Mutation</span>
           </DropdownMenuItem>
           
           <DropdownMenuItem 
             onClick={() => setShowMortgageDialog(true)}
-            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
+            className="cursor-pointer rounded-lg bg-destructive/90 text-destructive-foreground backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:scale-[1.03] hover:bg-destructive hover:shadow-md active:scale-95"
           >
-            <div>
-              <div className="font-semibold text-sm">Ajouter Hypothèque</div>
-              <div className="text-xs opacity-70">Ajouter une Hypothèque active</div>
-            </div>
+            <span className="text-xs font-medium">Ajouter Hypothèque</span>
           </DropdownMenuItem>
           
           <DropdownMenuItem 
             onClick={() => setShowMortgageCancellationDialog(true)}
-            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
+            className="cursor-pointer rounded-lg bg-destructive/90 text-destructive-foreground backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:scale-[1.03] hover:bg-destructive hover:shadow-md active:scale-95"
           >
-            <div>
-              <div className="font-semibold text-sm">Retirer Hypothèque</div>
-              <div className="text-xs opacity-70">Demander la radiation</div>
-            </div>
+            <span className="text-xs font-medium">Retirer Hypothèque</span>
           </DropdownMenuItem>
           
           <DropdownMenuItem 
             onClick={() => setShowBuildingPermitDialog(true)}
-            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
+            className="cursor-pointer rounded-lg bg-destructive/90 text-destructive-foreground backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:scale-[1.03] hover:bg-destructive hover:shadow-md active:scale-95"
           >
-            <div>
-              <div className="font-semibold text-sm">Ajouter Permis</div>
-              <div className="text-xs opacity-70">Nouvelle construction</div>
-            </div>
+            <span className="text-xs font-medium">Ajouter Permis</span>
           </DropdownMenuItem>
           
           <DropdownMenuItem 
             onClick={() => setShowRegularizationPermitDialog(true)}
-            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
+            className="cursor-pointer rounded-lg bg-destructive/90 text-destructive-foreground backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:scale-[1.03] hover:bg-destructive hover:shadow-md active:scale-95"
           >
-            <div>
-              <div className="font-semibold text-sm">Ajouter P. Régularisation</div>
-              <div className="text-xs opacity-70">Régulariser une construction</div>
-            </div>
+            <span className="text-xs font-medium">P. Régularisation</span>
           </DropdownMenuItem>
           
           <DropdownMenuItem 
             onClick={() => setShowTaxDialog(true)}
-            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
+            className="cursor-pointer rounded-lg bg-destructive/90 text-destructive-foreground backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:scale-[1.03] hover:bg-destructive hover:shadow-md active:scale-95"
           >
-            <div>
-              <div className="font-semibold text-sm">Ajouter Taxe foncière</div>
-              <div className="text-xs opacity-70">Signaler un paiement</div>
-            </div>
+            <span className="text-xs font-medium">Ajouter Taxe foncière</span>
           </DropdownMenuItem>
           
           <DropdownMenuItem 
             onClick={() => setShowPermitRequestDialog(true)}
-            className="cursor-pointer rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground border border-destructive p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg font-semibold"
+            className="cursor-pointer rounded-lg bg-destructive text-destructive-foreground backdrop-blur-sm px-3 py-2 transition-all duration-200 hover:scale-[1.03] hover:shadow-md active:scale-95 font-semibold"
           >
-            <div>
-              <div className="font-bold text-sm">Obtenir un permis</div>
-              <div className="text-xs opacity-80">Introduire une demande</div>
-            </div>
+            <span className="text-xs font-bold">Obtenir un permis</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
