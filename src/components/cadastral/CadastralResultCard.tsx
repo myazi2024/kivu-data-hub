@@ -22,7 +22,8 @@ import {
   Settings,
   FileCheck,
   ExternalLink,
-  Info
+  Info,
+  Hash
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1316,16 +1317,17 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                            {mortgage_history.map((mortgage) => {
                              const totalPaid = mortgage.payments.reduce((sum, payment) => sum + payment.payment_amount_usd, 0);
                              const remainingAmount = mortgage.mortgage_amount_usd - totalPaid;
-                             const referenceNumber = (mortgage as any).reference_number;
+                             const isActive = ['active', 'Active', 'En cours'].includes(mortgage.mortgage_status);
                              
                              return (
                                <div key={mortgage.id} className="p-2 bg-muted/30 rounded">
-                                 {/* Numéro de référence en évidence */}
-                                 {referenceNumber && (mortgage.mortgage_status === 'active' || (mortgage as any).mortgage_status === 'Active' || (mortgage as any).mortgage_status === 'En cours') && (
+                                 {/* Numéro de référence en évidence pour les hypothèques actives */}
+                                 {mortgage.reference_number && isActive && (
                                    <div className="flex items-center gap-1.5 mb-2 p-1.5 bg-amber-100 dark:bg-amber-900/40 rounded-lg border border-amber-300 dark:border-amber-700">
                                      <div className="flex items-center gap-1 text-amber-700 dark:text-amber-300">
-                                       <span className="text-[9px] font-medium">N° Réf:</span>
-                                       <span className="text-[10px] font-mono font-bold tracking-wide">{referenceNumber}</span>
+                                       <Hash className="h-3 w-3" />
+                                       <span className="text-[9px] font-medium">Réf. Hypothèque:</span>
+                                       <span className="text-[11px] font-mono font-bold tracking-wide bg-amber-200 dark:bg-amber-800 px-1.5 py-0.5 rounded">{mortgage.reference_number}</span>
                                      </div>
                                      <Tooltip>
                                        <TooltipTrigger asChild>
@@ -1334,7 +1336,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                          </button>
                                        </TooltipTrigger>
                                        <TooltipContent side="top" className="max-w-xs">
-                                         <p className="text-xs">Ce numéro de référence est requis pour toute demande de radiation d'hypothèque.</p>
+                                         <p className="text-xs">Ce numéro de référence est requis pour toute demande de radiation d'hypothèque. Conservez-le précieusement.</p>
                                        </TooltipContent>
                                      </Tooltip>
                                    </div>
@@ -1353,11 +1355,11 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                                      </div>
                                    </div>
                                    <Badge variant={
-                                     mortgage.mortgage_status === 'paid_off' ? 'default' :
-                                     mortgage.mortgage_status === 'active' ? 'secondary' : 'destructive'
+                                     ['paid_off', 'Éteinte'].includes(mortgage.mortgage_status) ? 'default' :
+                                     isActive ? 'secondary' : 'destructive'
                                    } className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
-                                     {mortgage.mortgage_status === 'paid_off' ? 'Éteinte' :
-                                      mortgage.mortgage_status === 'active' ? 'Active' : 'Défaillante'}
+                                     {['paid_off', 'Éteinte'].includes(mortgage.mortgage_status) ? 'Éteinte' :
+                                      isActive ? 'Active' : 'Défaillante'}
                                    </Badge>
                                  </div>
 

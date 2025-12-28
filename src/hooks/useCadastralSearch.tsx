@@ -50,12 +50,13 @@ export interface MortgagePayment {
 
 export interface MortgageHistory {
   id: string;
+  reference_number: string | null;
   mortgage_amount_usd: number;
   duration_months: number;
   creditor_name: string;
   creditor_type: string;
   contract_date: string;
-  mortgage_status: 'active' | 'paid_off' | 'defaulted';
+  mortgage_status: 'active' | 'paid_off' | 'defaulted' | 'Active' | 'En cours' | 'Éteinte';
   payments: MortgagePayment[];
 }
 
