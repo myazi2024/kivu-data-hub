@@ -33,6 +33,11 @@ interface Contribution {
   province: string | null;
   ville: string | null;
   changed_fields: any;
+  mortgage_history: any;
+  building_permits: any;
+  tax_history: any;
+  boundary_history: any;
+  permit_request_data: any;
 }
 
 export const UserContributions: React.FC = () => {
@@ -91,6 +96,29 @@ export const UserContributions: React.FC = () => {
     } catch (error) {
       console.error('Error fetching CCC code:', error);
     }
+  };
+
+  // Détermine le type de contribution (hypothèque, permis, etc.)
+  const getContributionTypeLabel = (contribution: Contribution) => {
+    if (contribution.mortgage_history && Array.isArray(contribution.mortgage_history) && contribution.mortgage_history.length > 0) {
+      return { label: 'Hypothèque', icon: '🏦', color: 'text-amber-600' };
+    }
+    if (contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0) {
+      return { label: 'Permis de bâtir', icon: '🏗️', color: 'text-blue-600' };
+    }
+    if (contribution.permit_request_data) {
+      return { label: 'Demande de permis', icon: '📝', color: 'text-purple-600' };
+    }
+    if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) {
+      return { label: 'Historique fiscal', icon: '📊', color: 'text-green-600' };
+    }
+    if (contribution.boundary_history && Array.isArray(contribution.boundary_history) && contribution.boundary_history.length > 0) {
+      return { label: 'Bornage', icon: '📍', color: 'text-red-600' };
+    }
+    if (contribution.contribution_type === 'update') {
+      return { label: 'Mise à jour', icon: '✏️', color: 'text-blue-600' };
+    }
+    return { label: 'Nouvelle parcelle', icon: '🗺️', color: 'text-primary' };
   };
 
   const getStatusBadge = (status: string, isSuspicious: boolean) => {
@@ -178,36 +206,42 @@ export const UserContributions: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {contributions.slice(0, 5).map((contribution) => (
-                <div 
-                  key={contribution.id} 
-                  className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
-                  onClick={() => {
-                    setSelectedContribution(contribution);
-                    setIsDetailsOpen(true);
-                  }}
-                >
-                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <FileText className="h-4 w-4 text-primary" />
+              {contributions.slice(0, 8).map((contribution) => {
+                const typeInfo = getContributionTypeLabel(contribution);
+                return (
+                  <div 
+                    key={contribution.id} 
+                    className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedContribution(contribution);
+                      setIsDetailsOpen(true);
+                    }}
+                  >
+                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <span className="text-lg">{typeInfo.icon}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-medium truncate">{contribution.parcel_number}</p>
+                        <span className={`text-[10px] ${typeInfo.color} font-medium`}>{typeInfo.label}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">
+                        {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      {getStatusBadge(contribution.status, contribution.is_suspicious)}
+                      <p className="text-[9px] text-muted-foreground mt-0.5">
+                        {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{contribution.parcel_number}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0">
-                    {getStatusBadge(contribution.status, contribution.is_suspicious)}
-                    <p className="text-[9px] text-muted-foreground mt-0.5">
-                      {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               
-              {contributions.length > 5 && (
+              {contributions.length > 8 && (
                 <p className="text-center text-xs text-muted-foreground pt-2">
-                  +{contributions.length - 5} autres contributions
+                  +{contributions.length - 8} autres contributions
                 </p>
               )}
             </div>
@@ -240,8 +274,9 @@ export const UserContributions: React.FC = () => {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">Type de contribution</label>
-                  <p className="text-base">
-                    {selectedContribution.contribution_type === 'new' ? 'Nouvelle parcelle' : 'Mise à jour'}
+                  <p className="text-base flex items-center gap-2">
+                    <span>{getContributionTypeLabel(selectedContribution).icon}</span>
+                    <span>{getContributionTypeLabel(selectedContribution).label}</span>
                   </p>
                 </div>
                 <div>
@@ -327,6 +362,56 @@ export const UserContributions: React.FC = () => {
                   <p className="text-xs text-muted-foreground mt-2">
                     Consultez l'onglet "Codes" pour plus de détails
                   </p>
+                </div>
+              )}
+
+              {/* Mortgage details for update contributions */}
+              {selectedContribution.mortgage_history && Array.isArray(selectedContribution.mortgage_history) && selectedContribution.mortgage_history.length > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
+                  <p className="text-sm font-medium text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-2">
+                    🏦 Détails de l'hypothèque
+                  </p>
+                  {selectedContribution.mortgage_history.map((mortgage: any, idx: number) => (
+                    <div key={idx} className="text-sm space-y-1">
+                      <p><strong>Montant:</strong> {mortgage.mortgage_amount_usd?.toLocaleString() || mortgage.mortgageAmountUsd?.toLocaleString() || 'N/A'} USD</p>
+                      <p><strong>Créancier:</strong> {mortgage.creditor_name || mortgage.creditorName || 'N/A'}</p>
+                      <p><strong>Type:</strong> {mortgage.creditor_type || mortgage.creditorType || 'N/A'}</p>
+                      <p><strong>Durée:</strong> {mortgage.duration_months || mortgage.duration || 'N/A'} mois</p>
+                      <p><strong>Date contrat:</strong> {mortgage.contract_date || mortgage.contractDate || 'N/A'}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Permit request details */}
+              {selectedContribution.permit_request_data && (
+                <div className="bg-purple-50 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800 rounded-lg p-4">
+                  <p className="text-sm font-medium text-purple-700 dark:text-purple-400 mb-2 flex items-center gap-2">
+                    📝 Détails de la demande de permis
+                  </p>
+                  <div className="text-sm space-y-1">
+                    <p><strong>Type:</strong> {selectedContribution.permit_request_data.permit_type || selectedContribution.permit_request_data.permitType || 'Permis de bâtir'}</p>
+                    <p><strong>Surface:</strong> {selectedContribution.permit_request_data.construction_area || selectedContribution.permit_request_data.constructionArea || 'N/A'} m²</p>
+                    {selectedContribution.permit_request_data.construction_type && (
+                      <p><strong>Type construction:</strong> {selectedContribution.permit_request_data.construction_type}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Building permits details */}
+              {selectedContribution.building_permits && Array.isArray(selectedContribution.building_permits) && selectedContribution.building_permits.length > 0 && (
+                <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm font-medium text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
+                    🏗️ Détails du permis de bâtir
+                  </p>
+                  {selectedContribution.building_permits.map((permit: any, idx: number) => (
+                    <div key={idx} className="text-sm space-y-1">
+                      <p><strong>N° Permis:</strong> {permit.permit_number || permit.permitNumber || 'N/A'}</p>
+                      <p><strong>Date émission:</strong> {permit.issue_date || permit.issueDate || 'N/A'}</p>
+                      <p><strong>Service émetteur:</strong> {permit.issuing_service || permit.issuingService || 'N/A'}</p>
+                    </div>
+                  ))}
                 </div>
               )}
 
