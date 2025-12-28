@@ -32,6 +32,7 @@ interface PendingMortgage {
   status: string;
   created_at: string;
   user_id: string;
+  original_parcel_id?: string;
 }
 
 const AdminMortgages = () => {
@@ -74,7 +75,7 @@ const AdminMortgages = () => {
       // Récupérer les hypothèques en attente de validation (contributions)
       const { data: pendingData, error: pendingError } = await supabase
         .from('cadastral_contributions')
-        .select('id, parcel_number, mortgage_history, status, created_at, user_id')
+        .select('id, parcel_number, mortgage_history, status, created_at, user_id, original_parcel_id')
         .not('mortgage_history', 'is', null)
         .in('status', ['pending', 'rejected'])
         .order('created_at', { ascending: false });
@@ -473,15 +474,26 @@ const AdminMortgages = () => {
                       onClick={async () => {
                         setProcessing(true);
                         try {
-                          // Trouver la parcelle
-                          const { data: parcelData } = await supabase
-                            .from('cadastral_parcels')
-                            .select('id')
-                            .eq('parcel_number', selectedPending.parcel_number)
-                            .single();
+                          let parcelId: string | null = null;
 
-                          if (!parcelData) {
-                            toast.error('Parcelle non trouvée');
+                          // Si on a un original_parcel_id (contribution de type update), l'utiliser directement
+                          if (selectedPending.original_parcel_id) {
+                            parcelId = selectedPending.original_parcel_id;
+                          } else {
+                            // Sinon, chercher par parcel_number
+                            const { data: parcelData } = await supabase
+                              .from('cadastral_parcels')
+                              .select('id')
+                              .eq('parcel_number', selectedPending.parcel_number)
+                              .maybeSingle();
+
+                            if (parcelData) {
+                              parcelId = parcelData.id;
+                            }
+                          }
+
+                          if (!parcelId) {
+                            toast.error('Parcelle non trouvée. Veuillez d\'abord valider la contribution CCC de cette parcelle.');
                             setProcessing(false);
                             return;
                           }
@@ -493,7 +505,7 @@ const AdminMortgages = () => {
                           const { error: insertError } = await supabase
                             .from('cadastral_mortgages')
                             .insert({
-                              parcel_id: parcelData.id,
+                              parcel_id: parcelId,
                               creditor_name: mortgage?.creditor_name || mortgage?.creditorName || 'Non spécifié',
                               creditor_type: mortgage?.creditor_type || mortgage?.creditorType || 'Banque',
                               mortgage_amount_usd: mortgage?.mortgage_amount_usd || mortgage?.mortgageAmountUsd || 0,
