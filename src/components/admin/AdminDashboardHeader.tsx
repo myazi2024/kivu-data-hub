@@ -45,12 +45,26 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
     }
   };
 
+  const resolveActionUrl = (actionUrl: string): string => {
+    // Mapping des routes obsolètes vers les routes actuelles
+    const routeMapping: Record<string, string> = {
+      '/user-dashboard': '/mon-compte',
+    };
+    
+    // Si l'URL contient des paramètres de requête ou des fragments, les préserver
+    const [basePath, queryString] = actionUrl.split('?');
+    const resolvedPath = routeMapping[basePath] || basePath;
+    
+    return queryString ? `${resolvedPath}?${queryString}` : resolvedPath;
+  };
+
   const handleNotificationClick = async (notification: typeof notifications[0]) => {
     await markAsRead(notification.id);
     
     if (notification.action_url) {
       setNotificationsOpen(false);
-      navigate(notification.action_url);
+      const resolvedUrl = resolveActionUrl(notification.action_url);
+      navigate(resolvedUrl);
     }
   };
 
