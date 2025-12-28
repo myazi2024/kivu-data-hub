@@ -250,145 +250,163 @@ const AdminCCCContributions: React.FC = () => {
 
       console.log('Contribution approuvée avec succès:', updatedContribution);
 
-      // 2. Créer la parcelle dans cadastral_parcels
-      let latitude = null;
-      let longitude = null;
-      if (updatedContribution.gps_coordinates && Array.isArray(updatedContribution.gps_coordinates) && updatedContribution.gps_coordinates.length > 0) {
-        const firstCoord = updatedContribution.gps_coordinates[0] as any;
-        latitude = firstCoord.lat || firstCoord.latitude || null;
-        longitude = firstCoord.lng || firstCoord.longitude || null;
-      }
+      // Vérifier si c'est une contribution de type "update" (mise à jour d'une parcelle existante)
+      const isUpdateContribution = updatedContribution.contribution_type === 'update' && updatedContribution.original_parcel_id;
 
-      const { data: createdParcel, error: parcelError } = await supabase
-        .from('cadastral_parcels')
-        .insert({
-          parcel_number: updatedContribution.parcel_number,
-          current_owner_name: updatedContribution.current_owner_name,
-          current_owner_legal_status: updatedContribution.current_owner_legal_status,
-          current_owner_since: updatedContribution.current_owner_since,
-          area_sqm: updatedContribution.area_sqm,
-          area_hectares: updatedContribution.area_sqm ? updatedContribution.area_sqm / 10000 : null,
-          parcel_type: updatedContribution.parcel_type || 'Propriété privée',
-          property_title_type: updatedContribution.property_title_type,
-          title_reference_number: updatedContribution.title_reference_number,
-          lease_type: updatedContribution.lease_type,
-          construction_type: updatedContribution.construction_type,
-          construction_nature: updatedContribution.construction_nature,
-          declared_usage: updatedContribution.declared_usage,
-          province: updatedContribution.province,
-          ville: updatedContribution.ville,
-          commune: updatedContribution.commune,
-          quartier: updatedContribution.quartier,
-          avenue: updatedContribution.avenue,
-          territoire: updatedContribution.territoire,
-          collectivite: updatedContribution.collectivite,
-          groupement: updatedContribution.groupement,
-          village: updatedContribution.village,
-          circonscription_fonciere: updatedContribution.circonscription_fonciere,
-          location: [
-            updatedContribution.province,
-            updatedContribution.ville,
-            updatedContribution.commune,
-            updatedContribution.quartier
-          ].filter(Boolean).join(', ') || 'Non renseigné',
-          gps_coordinates: updatedContribution.gps_coordinates,
-          parcel_sides: updatedContribution.parcel_sides,
-          latitude,
-          longitude,
-          whatsapp_number: updatedContribution.whatsapp_number,
-          owner_document_url: updatedContribution.owner_document_url,
-          property_title_document_url: updatedContribution.property_title_document_url
-        })
-        .select()
-        .single();
+      let targetParcelId: string;
 
-      if (parcelError) {
-        console.error('Erreur lors de la création de la parcelle:', parcelError);
-        toast.error('Contribution approuvée mais erreur lors de la création de la parcelle');
-        await fetchContributions();
-        return;
-      }
+      if (isUpdateContribution) {
+        // Pour les contributions "update", utiliser la parcelle existante
+        targetParcelId = updatedContribution.original_parcel_id;
+        console.log('Contribution de mise à jour - utilisation de la parcelle existante:', targetParcelId);
+      } else {
+        // Pour les nouvelles contributions, créer la parcelle
+        let latitude = null;
+        let longitude = null;
+        if (updatedContribution.gps_coordinates && Array.isArray(updatedContribution.gps_coordinates) && updatedContribution.gps_coordinates.length > 0) {
+          const firstCoord = updatedContribution.gps_coordinates[0] as any;
+          latitude = firstCoord.lat || firstCoord.latitude || null;
+          longitude = firstCoord.lng || firstCoord.longitude || null;
+        }
 
-      // 3. Créer les historiques associés si présents
-      if (updatedContribution.ownership_history && Array.isArray(updatedContribution.ownership_history)) {
-        for (const history of updatedContribution.ownership_history) {
-          if (typeof history === 'object' && history !== null) {
-            await supabase.from('cadastral_ownership_history').insert({
-              parcel_id: createdParcel.id,
-              owner_name: (history as any).owner_name,
-              legal_status: (history as any).legal_status,
-              ownership_start_date: (history as any).ownership_start_date,
-              ownership_end_date: (history as any).ownership_end_date,
-              mutation_type: (history as any).mutation_type,
-              ownership_document_url: (history as any).ownership_document_url
-            });
+        const { data: createdParcel, error: parcelError } = await supabase
+          .from('cadastral_parcels')
+          .insert({
+            parcel_number: updatedContribution.parcel_number,
+            current_owner_name: updatedContribution.current_owner_name,
+            current_owner_legal_status: updatedContribution.current_owner_legal_status,
+            current_owner_since: updatedContribution.current_owner_since,
+            area_sqm: updatedContribution.area_sqm,
+            area_hectares: updatedContribution.area_sqm ? updatedContribution.area_sqm / 10000 : null,
+            parcel_type: updatedContribution.parcel_type || 'Propriété privée',
+            property_title_type: updatedContribution.property_title_type,
+            title_reference_number: updatedContribution.title_reference_number,
+            lease_type: updatedContribution.lease_type,
+            construction_type: updatedContribution.construction_type,
+            construction_nature: updatedContribution.construction_nature,
+            declared_usage: updatedContribution.declared_usage,
+            province: updatedContribution.province,
+            ville: updatedContribution.ville,
+            commune: updatedContribution.commune,
+            quartier: updatedContribution.quartier,
+            avenue: updatedContribution.avenue,
+            territoire: updatedContribution.territoire,
+            collectivite: updatedContribution.collectivite,
+            groupement: updatedContribution.groupement,
+            village: updatedContribution.village,
+            circonscription_fonciere: updatedContribution.circonscription_fonciere,
+            location: [
+              updatedContribution.province,
+              updatedContribution.ville,
+              updatedContribution.commune,
+              updatedContribution.quartier
+            ].filter(Boolean).join(', ') || 'Non renseigné',
+            gps_coordinates: updatedContribution.gps_coordinates,
+            parcel_sides: updatedContribution.parcel_sides,
+            latitude,
+            longitude,
+            whatsapp_number: updatedContribution.whatsapp_number,
+            owner_document_url: updatedContribution.owner_document_url,
+            property_title_document_url: updatedContribution.property_title_document_url
+          })
+          .select()
+          .single();
+
+        if (parcelError) {
+          console.error('Erreur lors de la création de la parcelle:', parcelError);
+          toast.error('Contribution approuvée mais erreur lors de la création de la parcelle');
+          await fetchContributions();
+          return;
+        }
+
+        targetParcelId = createdParcel.id;
+
+        // Créer les historiques associés uniquement pour les nouvelles parcelles
+        if (updatedContribution.ownership_history && Array.isArray(updatedContribution.ownership_history)) {
+          for (const history of updatedContribution.ownership_history) {
+            if (typeof history === 'object' && history !== null) {
+              await supabase.from('cadastral_ownership_history').insert({
+                parcel_id: targetParcelId,
+                owner_name: (history as any).owner_name,
+                legal_status: (history as any).legal_status,
+                ownership_start_date: (history as any).ownership_start_date,
+                ownership_end_date: (history as any).ownership_end_date,
+                mutation_type: (history as any).mutation_type,
+                ownership_document_url: (history as any).ownership_document_url
+              });
+            }
+          }
+        }
+
+        if (updatedContribution.boundary_history && Array.isArray(updatedContribution.boundary_history)) {
+          for (const history of updatedContribution.boundary_history) {
+            if (typeof history === 'object' && history !== null) {
+              await supabase.from('cadastral_boundary_history').insert({
+                parcel_id: targetParcelId,
+                pv_reference_number: (history as any).pv_reference_number,
+                boundary_purpose: (history as any).boundary_purpose,
+                surveyor_name: (history as any).surveyor_name,
+                survey_date: (history as any).survey_date,
+                boundary_document_url: (history as any).boundary_document_url
+              });
+            }
+          }
+        }
+
+        if (updatedContribution.tax_history && Array.isArray(updatedContribution.tax_history)) {
+          for (const history of updatedContribution.tax_history) {
+            if (typeof history === 'object' && history !== null) {
+              await supabase.from('cadastral_tax_history').insert({
+                parcel_id: targetParcelId,
+                tax_year: (history as any).tax_year,
+                amount_usd: (history as any).amount_usd,
+                payment_status: (history as any).payment_status,
+                payment_date: (history as any).payment_date,
+                receipt_document_url: (history as any).receipt_document_url
+              });
+            }
+          }
+        }
+
+        if (updatedContribution.building_permits && Array.isArray(updatedContribution.building_permits)) {
+          for (const permit of updatedContribution.building_permits) {
+            if (typeof permit === 'object' && permit !== null) {
+              await supabase.from('cadastral_building_permits').insert({
+                parcel_id: targetParcelId,
+                permit_number: (permit as any).permit_number,
+                issuing_service: (permit as any).issuing_service,
+                issue_date: (permit as any).issue_date,
+                validity_period_months: (permit as any).validity_period_months,
+                administrative_status: (permit as any).administrative_status,
+                is_current: (permit as any).is_current,
+                issuing_service_contact: (permit as any).issuing_service_contact,
+                permit_document_url: (permit as any).permit_document_url
+              });
+            }
           }
         }
       }
 
-      if (updatedContribution.boundary_history && Array.isArray(updatedContribution.boundary_history)) {
-        for (const history of updatedContribution.boundary_history) {
-          if (typeof history === 'object' && history !== null) {
-            await supabase.from('cadastral_boundary_history').insert({
-              parcel_id: createdParcel.id,
-              pv_reference_number: (history as any).pv_reference_number,
-              boundary_purpose: (history as any).boundary_purpose,
-              surveyor_name: (history as any).surveyor_name,
-              survey_date: (history as any).survey_date,
-              boundary_document_url: (history as any).boundary_document_url
-            });
-          }
-        }
-      }
-
-      if (updatedContribution.tax_history && Array.isArray(updatedContribution.tax_history)) {
-        for (const history of updatedContribution.tax_history) {
-          if (typeof history === 'object' && history !== null) {
-            await supabase.from('cadastral_tax_history').insert({
-              parcel_id: createdParcel.id,
-              tax_year: (history as any).tax_year,
-              amount_usd: (history as any).amount_usd,
-              payment_status: (history as any).payment_status,
-              payment_date: (history as any).payment_date,
-              receipt_document_url: (history as any).receipt_document_url
-            });
-          }
-        }
-      }
-
+      // Traiter les hypothèques (pour les nouvelles contributions ET les mises à jour)
       if (updatedContribution.mortgage_history && Array.isArray(updatedContribution.mortgage_history)) {
         for (const history of updatedContribution.mortgage_history) {
           if (typeof history === 'object' && history !== null) {
             const h = history as any;
             // Gérer les deux formats de champs (camelCase du formulaire CCC et snake_case)
-            await supabase.from('cadastral_mortgages').insert({
-              parcel_id: createdParcel.id,
+            const { error: mortgageError } = await supabase.from('cadastral_mortgages').insert({
+              parcel_id: targetParcelId,
               mortgage_amount_usd: h.mortgage_amount_usd || h.mortgageAmountUsd || 0,
               duration_months: h.duration_months || h.durationMonths || 0,
               creditor_name: h.creditor_name || h.creditorName || 'Non spécifié',
               creditor_type: h.creditor_type || h.creditorType || 'Banque',
               contract_date: h.contract_date || h.contractDate || new Date().toISOString().split('T')[0],
-              mortgage_status: h.mortgage_status || h.mortgageStatus || 'active'
+              mortgage_status: (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase() === 'active' ? 'active' : (h.mortgage_status || h.mortgageStatus || 'active').toLowerCase()
               // reference_number est généré automatiquement par le trigger SQL
             });
-          }
-        }
-      }
-
-      if (updatedContribution.building_permits && Array.isArray(updatedContribution.building_permits)) {
-        for (const permit of updatedContribution.building_permits) {
-          if (typeof permit === 'object' && permit !== null) {
-            await supabase.from('cadastral_building_permits').insert({
-              parcel_id: createdParcel.id,
-              permit_number: (permit as any).permit_number,
-              issuing_service: (permit as any).issuing_service,
-              issue_date: (permit as any).issue_date,
-              validity_period_months: (permit as any).validity_period_months,
-              administrative_status: (permit as any).administrative_status,
-              is_current: (permit as any).is_current,
-              issuing_service_contact: (permit as any).issuing_service_contact,
-              permit_document_url: (permit as any).permit_document_url
-            });
+            
+            if (mortgageError) {
+              console.error('Erreur lors de la création de l\'hypothèque:', mortgageError);
+            }
           }
         }
       }
@@ -398,7 +416,10 @@ const AdminCCCContributions: React.FC = () => {
       // 2. Calculer la valeur du code
       // 3. Créer une notification pour l'utilisateur
 
-      toast.success('Contribution approuvée et parcelle créée ! Le code CCC a été généré.');
+      const successMessage = isUpdateContribution 
+        ? 'Contribution approuvée et données ajoutées à la parcelle existante ! Le code CCC a été généré.'
+        : 'Contribution approuvée et parcelle créée ! Le code CCC a été généré.';
+      toast.success(successMessage);
       await fetchContributions();
       setIsDetailsOpen(false);
       setValidationResult(null);
