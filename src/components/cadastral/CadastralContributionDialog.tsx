@@ -2591,7 +2591,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
                       <MdDashboard className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    <Label className="text-sm font-semibold">Propriétaire(s) actuel(s)</Label>
+                    <Label className="text-sm font-semibold">
+                      {formData.isTitleInCurrentOwnerName === true 
+                        ? `Ajouter le/la propriétaire figurant sur le ${formData.propertyTitleType || 'titre de propriété'}`
+                        : formData.isTitleInCurrentOwnerName === false
+                        ? "Ajouter le/la propriétaire figurant sur tout acte prouvant son droit sur cette parcelle"
+                        : "Propriétaire(s) actuel(s)"}
+                    </Label>
                   </div>
                   <Popover>
                     <PopoverTrigger asChild>
