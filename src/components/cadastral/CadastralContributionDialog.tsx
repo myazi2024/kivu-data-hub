@@ -2625,10 +2625,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       ? 'ring-2 ring-primary border-primary animate-pulse' 
                       : 'border-border'
                   }`}>
-                    {/* Header du propriétaire */}
-                    <div className="flex items-center justify-between pb-2 border-b border-border/50">
-                      <span className="text-sm font-semibold text-foreground">Propriétaire #{index + 1}</span>
-                      {currentOwners.length > 1 && (
+                    {/* Bouton supprimer si plusieurs propriétaires */}
+                    {currentOwners.length > 1 && (
+                      <div className="flex justify-end">
                         <Button
                           type="button"
                           variant="ghost"
@@ -2638,8 +2637,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      )}
-                    </div>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 gap-2">
                       <div className="space-y-1">
