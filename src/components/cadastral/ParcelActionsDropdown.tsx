@@ -51,83 +51,75 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           side="top"
           align="end" 
           sideOffset={70}
-          className="w-56 rounded-xl bg-popover border shadow-lg z-[1100]"
+          className="w-64 p-3 rounded-2xl bg-background/95 backdrop-blur-lg border-2 border-destructive/20 shadow-2xl z-[1100] space-y-2"
         >
           <DropdownMenuItem 
             onClick={() => setShowMutationDialog(true)}
-            className="cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
           >
             <div>
-              <div className="font-medium text-sm">Demander Mutation</div>
-              <div className="text-xs text-muted-foreground">Transfert de propriété</div>
+              <div className="font-semibold text-sm">Demander Mutation</div>
+              <div className="text-xs opacity-70">Transfert de propriété</div>
             </div>
           </DropdownMenuItem>
           
-          <DropdownMenuSeparator />
-          
           <DropdownMenuItem 
             onClick={() => setShowMortgageDialog(true)}
-            className="cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
           >
             <div>
-              <div className="font-medium text-sm">Ajouter Hypothèque</div>
-              <div className="text-xs text-muted-foreground">Ajouter une Hypothèque active sur ce bien</div>
+              <div className="font-semibold text-sm">Ajouter Hypothèque</div>
+              <div className="text-xs opacity-70">Ajouter une Hypothèque active</div>
             </div>
           </DropdownMenuItem>
           
           <DropdownMenuItem 
             onClick={() => setShowMortgageCancellationDialog(true)}
-            className="cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
           >
             <div>
-              <div className="font-medium text-sm">Retirer Hypothèque</div>
-              <div className="text-xs text-muted-foreground">Demander la radiation d'une Hypothèque active</div>
+              <div className="font-semibold text-sm">Retirer Hypothèque</div>
+              <div className="text-xs opacity-70">Demander la radiation</div>
             </div>
           </DropdownMenuItem>
           
-          <DropdownMenuSeparator />
-          
           <DropdownMenuItem 
             onClick={() => setShowBuildingPermitDialog(true)}
-            className="cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
           >
             <div>
-              <div className="font-medium text-sm">Ajouter Permis</div>
-              <div className="text-xs text-muted-foreground">Pour une nouvelle construction</div>
+              <div className="font-semibold text-sm">Ajouter Permis</div>
+              <div className="text-xs opacity-70">Nouvelle construction</div>
             </div>
           </DropdownMenuItem>
           
           <DropdownMenuItem 
             onClick={() => setShowRegularizationPermitDialog(true)}
-            className="cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
           >
             <div>
-              <div className="font-medium text-sm">Ajouter P. Régularisation</div>
-              <div className="text-xs text-muted-foreground">Permis pour regulariser une construction existante construite sans permis de construire.</div>
+              <div className="font-semibold text-sm">Ajouter P. Régularisation</div>
+              <div className="text-xs opacity-70">Régulariser une construction</div>
             </div>
           </DropdownMenuItem>
-          
-          <DropdownMenuSeparator />
           
           <DropdownMenuItem 
             onClick={() => setShowTaxDialog(true)}
-            className="cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-xl bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground border border-destructive/30 p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg focus:bg-destructive focus:text-destructive-foreground"
           >
             <div>
-              <div className="font-medium text-sm">Ajouter Taxe foncière</div>
-              <div className="text-xs text-muted-foreground">Ajouter une taxe foncière pour signaler qu'elle a été payé</div>
+              <div className="font-semibold text-sm">Ajouter Taxe foncière</div>
+              <div className="text-xs opacity-70">Signaler un paiement</div>
             </div>
           </DropdownMenuItem>
           
-          <DropdownMenuSeparator />
-          
           <DropdownMenuItem 
             onClick={() => setShowPermitRequestDialog(true)}
-            className="cursor-pointer rounded-lg"
+            className="cursor-pointer rounded-xl bg-destructive hover:bg-destructive/90 text-destructive-foreground border border-destructive p-3 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg font-semibold"
           >
             <div>
-              <div className="font-medium text-sm">Obtenir un permis</div>
-              <div className="text-xs text-muted-foreground">Introduire une demande d'un Permis de construire ou de régularisation.</div>
+              <div className="font-bold text-sm">Obtenir un permis</div>
+              <div className="text-xs opacity-80">Introduire une demande</div>
             </div>
           </DropdownMenuItem>
         </DropdownMenuContent>
