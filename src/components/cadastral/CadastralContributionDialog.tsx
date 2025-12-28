@@ -2869,7 +2869,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   {/* Matériaux de construction - visible sauf pour Terrain nu */}
                   {formData.constructionType && formData.constructionType !== 'Terrain nu' ? (
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Matériaux</Label>
+                      <Label className="text-sm font-medium">Matériaux utilisés</Label>
                       <Select 
                         value={formData.constructionMaterials || ''}
                         onValueChange={(value) => handleInputChange('constructionMaterials', value)}
