@@ -2515,6 +2515,73 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
 
+            {/* Le titre foncier est-il au nom du propriétaire actuel? */}
+            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
+              <CardContent className="p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                    Le titre est-il au nom du propriétaire actuel ?
+                  </Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                        <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-72 rounded-xl text-xs">
+                      <p className="text-muted-foreground">
+                        Il est essentiel que le titre foncier soit enregistré au nom du véritable propriétaire afin de prévenir d'éventuelles complications légales, fiscales ou administratives.
+                      </p>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('isTitleInCurrentOwnerName', true)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                      formData.isTitleInCurrentOwnerName === true
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
+                    }`}
+                  >
+                    Oui
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
+                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                      formData.isTitleInCurrentOwnerName === false
+                        ? 'bg-primary text-primary-foreground shadow-md'
+                        : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
+                    }`}
+                  >
+                    Non
+                  </button>
+                </div>
+                {formData.isTitleInCurrentOwnerName === false && (() => {
+                  const ownerSinceDate = currentOwners[0]?.since;
+                  if (!ownerSinceDate) return null;
+                  
+                  const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
+                  
+                  if (daysDiff >= 20) {
+                    return (
+                      <p className="text-xs text-amber-700 dark:text-amber-400">
+                        ⚠️ Hors délai légal de mutation (De 1 à 20 jours après acquisition).
+                      </p>
+                    );
+                  } else {
+                    return (
+                      <p className="text-xs text-green-700 dark:text-green-400">
+                        ✓ Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (De 1 à 20 jours après acquisition).
+                      </p>
+                    );
+                  }
+                })()}
+              </CardContent>
+            </Card>
+
             {/* Section Propriétaire(s) actuel(s) */}
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
@@ -2705,72 +2772,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </CardContent>
             </Card>
 
-            {/* Le titre foncier est-il au nom du propriétaire actuel? */}
-            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    Le titre est-il au nom du propriétaire actuel ?
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-                        <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-72 rounded-xl text-xs">
-                      <p className="text-muted-foreground">
-                        Il est essentiel que le titre foncier soit enregistré au nom du véritable propriétaire afin de prévenir d'éventuelles complications légales, fiscales ou administratives.
-                      </p>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('isTitleInCurrentOwnerName', true)}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                      formData.isTitleInCurrentOwnerName === true
-                        ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
-                    }`}
-                  >
-                    Oui
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                      formData.isTitleInCurrentOwnerName === false
-                        ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
-                    }`}
-                  >
-                    Non
-                  </button>
-                </div>
-                {formData.isTitleInCurrentOwnerName === false && (() => {
-                  const ownerSinceDate = currentOwners[0]?.since;
-                  if (!ownerSinceDate) return null;
-                  
-                  const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
-                  
-                  if (daysDiff >= 20) {
-                    return (
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
-                        ⚠️ Hors délai légal de mutation (De 1 à 20 jours après acquisition).
-                      </p>
-                    );
-                  } else {
-                    return (
-                      <p className="text-xs text-green-700 dark:text-green-400">
-                        ✓ Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (De 1 à 20 jours après acquisition).
-                      </p>
-                    );
-                  }
-                })()}
-              </CardContent>
-            </Card>
 
             {/* Section Type de construction */}
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
