@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,8 +10,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, FileX2, CheckCircle2, Upload, X, Plus, Info, ArrowLeft, FileText, AlertTriangle, Landmark, Calendar, DollarSign, Clock, Award, CreditCard, Phone, HelpCircle, Hash, Image } from 'lucide-react';
+import { Loader2, FileX2, CheckCircle2, Upload, X, Info, ArrowLeft, FileText, AlertTriangle, Landmark, Calendar, DollarSign, Clock, Award, CreditCard, Phone, Hash, Image, MapPin, User, Building, FileCheck } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
@@ -36,6 +35,32 @@ interface CancellationFee {
   description?: string;
 }
 
+interface ParcelData {
+  id: string;
+  parcel_number: string;
+  current_owner_name: string;
+  current_owner_legal_status?: string;
+  property_title_type?: string;
+  title_reference_number?: string;
+  province?: string;
+  ville?: string;
+  commune?: string;
+  quartier?: string;
+  avenue?: string;
+  area_sqm?: number;
+}
+
+interface MortgageData {
+  id: string;
+  reference_number: string;
+  creditor_name: string;
+  creditor_type: string;
+  mortgage_amount_usd: number;
+  contract_date: string;
+  duration_months: number;
+  mortgage_status: string;
+}
+
 interface CancellationRequest {
   mortgageReferenceNumber: string;
   reason: string;
@@ -44,15 +69,38 @@ interface CancellationRequest {
   requesterName: string;
   requesterPhone: string;
   requesterEmail: string;
+  requesterIdNumber: string;
+  requesterQuality: string;
+  creditorAccord: boolean;
   supportingDocuments: File[];
   comments: string;
 }
 
+// Frais de radiation selon la législation RDC
 const CANCELLATION_FEES: CancellationFee[] = [
-  { id: 'dossier', name: 'Frais de dossier', amount_usd: 50, is_mandatory: true, description: 'Frais administratifs de traitement' },
-  { id: 'radiation', name: 'Frais de radiation', amount_usd: 75, is_mandatory: true, description: 'Frais de radiation au registre foncier' },
-  { id: 'certificat', name: 'Certificat de radiation', amount_usd: 25, is_mandatory: true, description: 'Délivrance du certificat officiel' },
-  { id: 'verification', name: 'Frais de vérification', amount_usd: 15, is_mandatory: false, description: 'Vérification complémentaire des documents' }
+  { id: 'dossier', name: 'Frais d\'ouverture de dossier', amount_usd: 50, is_mandatory: true, description: 'Frais administratifs de constitution du dossier' },
+  { id: 'radiation', name: 'Droit de radiation', amount_usd: 100, is_mandatory: true, description: 'Droit de radiation au registre des titres fonciers' },
+  { id: 'certificat', name: 'Certificat de radiation', amount_usd: 35, is_mandatory: true, description: 'Délivrance du certificat officiel de mainlevée' },
+  { id: 'timbre', name: 'Droit de timbre', amount_usd: 15, is_mandatory: true, description: 'Timbre fiscal légal' },
+  { id: 'conservation', name: 'Frais de conservation', amount_usd: 25, is_mandatory: true, description: 'Mise à jour du livre foncier' },
+  { id: 'verification', name: 'Vérification complémentaire', amount_usd: 20, is_mandatory: false, description: 'Vérification approfondie des documents' }
+];
+
+const CANCELLATION_REASONS = [
+  { value: 'remboursement_integral', label: 'Remboursement intégral du prêt', description: 'La dette hypothécaire a été entièrement remboursée' },
+  { value: 'refinancement', label: 'Refinancement', description: 'Transfert de la dette vers un autre créancier' },
+  { value: 'accord_amiable', label: 'Accord amiable', description: 'Accord négocié avec le créancier' },
+  { value: 'prescription', label: 'Prescription extinctive', description: 'L\'hypothèque est prescrite (30 ans)' },
+  { value: 'renonciation', label: 'Renonciation du créancier', description: 'Le créancier renonce à son droit' },
+  { value: 'autre', label: 'Autre motif', description: 'Précisez dans les commentaires' }
+];
+
+const REQUESTER_QUALITIES = [
+  { value: 'proprietaire', label: 'Propriétaire du bien' },
+  { value: 'debiteur', label: 'Débiteur' },
+  { value: 'mandataire', label: 'Mandataire/Représentant légal' },
+  { value: 'heritier', label: 'Héritier' },
+  { value: 'notaire', label: 'Notaire' }
 ];
 
 const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
@@ -65,11 +113,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
+  const [loadingData, setLoadingData] = useState(false);
   const [validatingReference, setValidatingReference] = useState(false);
   const [referenceValid, setReferenceValid] = useState<boolean | null>(null);
   const [referenceError, setReferenceError] = useState<string | null>(null);
   const [requestReferenceNumber, setRequestReferenceNumber] = useState('');
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
+  
+  // Données pré-remplies depuis la base de données
+  const [parcelData, setParcelData] = useState<ParcelData | null>(null);
+  const [mortgageData, setMortgageData] = useState<MortgageData | null>(null);
   
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
@@ -85,21 +138,39 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     requesterName: '',
     requesterPhone: '',
     requesterEmail: '',
+    requesterIdNumber: '',
+    requesterQuality: 'proprietaire',
+    creditorAccord: false,
     supportingDocuments: [],
     comments: ''
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const CANCELLATION_REASONS = [
-    { value: 'remboursement_integral', label: 'Remboursement intégral du prêt' },
-    { value: 'refinancement', label: 'Refinancement auprès d\'un autre créancier' },
-    { value: 'accord_amiable', label: 'Accord amiable avec le créancier' },
-    { value: 'prescription', label: 'Prescription de la dette' },
-    { value: 'autre', label: 'Autre motif' }
-  ];
+  // Charger les données de la parcelle
+  const loadParcelData = async () => {
+    if (!parcelId) return;
+    
+    setLoadingData(true);
+    try {
+      const { data, error } = await supabase
+        .from('cadastral_parcels')
+        .select('*')
+        .eq('id', parcelId)
+        .maybeSingle();
+      
+      if (error) throw error;
+      if (data) {
+        setParcelData(data);
+      }
+    } catch (error) {
+      console.error('Error loading parcel data:', error);
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
-  // Générer le numéro de référence de la demande
+  // Générer le numéro de référence et charger les données
   useEffect(() => {
     if (open) {
       const ref = `RAD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
@@ -108,8 +179,11 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       // Initialiser les frais obligatoires
       const mandatoryFeeIds = CANCELLATION_FEES.filter(f => f.is_mandatory).map(f => f.id);
       setSelectedFees(mandatoryFeeIds);
+      
+      // Charger les données de la parcelle
+      loadParcelData();
     }
-  }, [open]);
+  }, [open, parcelId]);
 
   // Pré-remplir avec le profil utilisateur
   useEffect(() => {
@@ -122,11 +196,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   }, [profile]);
 
-  // Validation du numéro de référence de l'hypothèque
+  // Validation du numéro de référence et récupération des données de l'hypothèque
   const validateMortgageReference = async (refNumber: string) => {
     if (!refNumber.trim()) {
       setReferenceValid(null);
       setReferenceError(null);
+      setMortgageData(null);
       return;
     }
 
@@ -134,10 +209,9 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setReferenceError(null);
 
     try {
-      // Vérifier si le numéro de référence existe dans cadastral_mortgages pour cette parcelle
       const { data, error } = await supabase
         .from('cadastral_mortgages')
-        .select('id, reference_number, mortgage_status, creditor_name, mortgage_amount_usd')
+        .select('*')
         .eq('parcel_id', parcelId)
         .eq('reference_number', refNumber.trim().toUpperCase())
         .in('mortgage_status', ['active', 'Active', 'En cours'])
@@ -148,13 +222,21 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       if (data) {
         setReferenceValid(true);
         setReferenceError(null);
+        setMortgageData(data);
+        // Pré-remplir le montant de règlement avec le montant de l'hypothèque
+        setFormData(prev => ({
+          ...prev,
+          settlementAmount: data.mortgage_amount_usd?.toString() || ''
+        }));
       } else {
         setReferenceValid(false);
+        setMortgageData(null);
         setReferenceError('Ce numéro de référence n\'est pas valide ou ne correspond pas à une hypothèque active sur cette parcelle.');
       }
     } catch (error) {
       console.error('Error validating reference:', error);
       setReferenceValid(false);
+      setMortgageData(null);
       setReferenceError('Erreur lors de la vérification. Veuillez réessayer.');
     } finally {
       setValidatingReference(false);
@@ -169,6 +251,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       } else {
         setReferenceValid(null);
         setReferenceError(null);
+        setMortgageData(null);
       }
     }, 500);
 
@@ -232,12 +315,20 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       toast.error('Veuillez indiquer votre nom');
       return false;
     }
+    if (!formData.requesterQuality) {
+      toast.error('Veuillez indiquer votre qualité');
+      return false;
+    }
     if (!formData.cancellationDate) {
-      toast.error('Veuillez indiquer la date de radiation');
+      toast.error('Veuillez indiquer la date de radiation souhaitée');
       return false;
     }
     if (formData.supportingDocuments.length === 0) {
       toast.error('Veuillez joindre au moins un document justificatif');
+      return false;
+    }
+    if (!formData.creditorAccord) {
+      toast.error('Vous devez confirmer avoir l\'accord du créancier');
       return false;
     }
     return true;
@@ -272,11 +363,9 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   };
 
   const processPayment = async (): Promise<boolean> => {
-    // Simulation du paiement - en production, intégrer avec le système de paiement réel
     setProcessingPayment(true);
     
     try {
-      // Simuler un délai de traitement
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       if (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) {
@@ -300,16 +389,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       return;
     }
 
-    // Traiter le paiement d'abord
     const paymentSuccess = await processPayment();
     if (!paymentSuccess) return;
 
     setLoading(true);
     try {
-      // Upload des documents
       const documentUrls = await uploadDocuments();
 
-      // Créer la demande de radiation via une contribution
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -323,12 +409,17 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             type: 'cancellation_request',
             request_reference_number: requestReferenceNumber,
             mortgage_reference_number: formData.mortgageReferenceNumber.toUpperCase(),
+            mortgage_data: mortgageData,
+            parcel_data: parcelData,
             cancellation_reason: formData.reason,
             cancellation_date: formData.cancellationDate,
             settlement_amount: formData.settlementAmount ? parseFloat(formData.settlementAmount) : null,
             requester_name: formData.requesterName,
             requester_phone: formData.requesterPhone,
             requester_email: formData.requesterEmail,
+            requester_id_number: formData.requesterIdNumber,
+            requester_quality: formData.requesterQuality,
+            creditor_accord: formData.creditorAccord,
             supporting_documents: documentUrls,
             fees_paid: getSelectedFeesDetails(),
             total_amount_paid: getTotalAmount(),
@@ -340,7 +431,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
       if (error) throw error;
 
-      // Créer une notification
       await supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Demande de radiation soumise',
@@ -363,6 +453,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setStep('form');
     setReferenceValid(null);
     setReferenceError(null);
+    setMortgageData(null);
+    setParcelData(null);
     setFormData({
       mortgageReferenceNumber: '',
       reason: 'remboursement_integral',
@@ -371,6 +463,9 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       requesterName: profile?.full_name || '',
       requesterPhone: '',
       requesterEmail: profile?.email || '',
+      requesterIdNumber: '',
+      requesterQuality: 'proprietaire',
+      creditorAccord: false,
       supportingDocuments: [],
       comments: ''
     });
@@ -384,6 +479,15 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
   };
 
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'dd MMMM yyyy', { locale: fr });
+    } catch {
+      return dateString;
+    }
+  };
+
+  // Render Form Step
   const renderFormStep = () => (
     <div className="space-y-4">
       {/* En-tête */}
@@ -400,6 +504,44 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </div>
         </CardContent>
       </Card>
+
+      {/* Données de la parcelle (pré-remplies) */}
+      {loadingData ? (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 flex items-center justify-center">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="ml-2 text-sm">Chargement des données...</span>
+          </CardContent>
+        </Card>
+      ) : parcelData && (
+        <Card className="rounded-2xl shadow-md border-blue-200 dark:border-blue-800">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-blue-600" />
+              <Label className="text-sm font-semibold text-blue-700 dark:text-blue-300">Données de la parcelle</Label>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="space-y-1">
+                <span className="text-muted-foreground">N° Parcelle</span>
+                <p className="font-medium">{parcelData.parcel_number}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground">Propriétaire</span>
+                <p className="font-medium">{parcelData.current_owner_name}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground">Localisation</span>
+                <p className="font-medium">{[parcelData.quartier, parcelData.commune, parcelData.ville].filter(Boolean).join(', ')}</p>
+              </div>
+              <div className="space-y-1">
+                <span className="text-muted-foreground">N° Titre foncier</span>
+                <p className="font-medium">{parcelData.title_reference_number || 'N/A'}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Numéro de référence de l'hypothèque */}
       <Card className="rounded-2xl shadow-md border-border/50">
@@ -438,18 +580,36 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
                   <p className="font-medium">{referenceError}</p>
                   <p className="mt-1.5 text-red-600 dark:text-red-400">
                     <strong>Comment obtenir ce numéro ?</strong> Le numéro de référence de l'hypothèque (format: HYP-XXXXXX-XXXXX) 
-                    est affiché dans le résultat cadastral, onglet "Obligations" → "Hypothèques". 
+                    est affiché dans le résultat cadastral, onglet "Obligations" → "Hypothèques actives". 
                     Vous devez d'abord accéder au résultat cadastral pour obtenir cette information.
                   </p>
                 </AlertDescription>
               </Alert>
             )}
 
-            {referenceValid === true && (
+            {referenceValid === true && mortgageData && (
               <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 rounded-xl">
                 <CheckCircle2 className="h-4 w-4 text-green-600" />
                 <AlertDescription className="text-xs text-green-700 dark:text-green-300">
-                  Numéro de référence validé. Cette hypothèque est active sur cette parcelle.
+                  <p className="font-medium mb-2">Hypothèque identifiée et validée</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Créancier:</span>
+                      <p className="font-medium">{mortgageData.creditor_name}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Montant:</span>
+                      <p className="font-medium">{formatCurrency(mortgageData.mortgage_amount_usd)}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Date contrat:</span>
+                      <p className="font-medium">{formatDate(mortgageData.contract_date)}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Durée:</span>
+                      <p className="font-medium">{mortgageData.duration_months} mois</p>
+                    </div>
+                  </div>
                 </AlertDescription>
               </Alert>
             )}
@@ -477,14 +637,131 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             <SelectTrigger className="h-11 text-sm rounded-xl border-2">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-xl bg-popover">
+            <SelectContent className="rounded-xl bg-popover z-[1200]">
               {CANCELLATION_REASONS.map(reason => (
-                <SelectItem key={reason.value} value={reason.value}>
-                  {reason.label}
+                <SelectItem key={reason.value} value={reason.value} className="rounded-lg">
+                  <div>
+                    <div className="font-medium">{reason.label}</div>
+                    <div className="text-xs text-muted-foreground">{reason.description}</div>
+                  </div>
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
+        </CardContent>
+      </Card>
+
+      {/* Informations du demandeur */}
+      <Card className="rounded-2xl shadow-md border-border/50">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-primary" />
+            <Label className="text-sm font-semibold">Informations du demandeur</Label>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Qualité du demandeur *</Label>
+              <Select
+                value={formData.requesterQuality}
+                onValueChange={(value) => setFormData(prev => ({ ...prev, requesterQuality: value }))}
+              >
+                <SelectTrigger className="h-10 text-sm rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl bg-popover z-[1200]">
+                  {REQUESTER_QUALITIES.map(q => (
+                    <SelectItem key={q.value} value={q.value}>{q.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-1.5">
+              <Label className="text-xs">Nom complet *</Label>
+              <Input
+                value={formData.requesterName}
+                onChange={(e) => setFormData(prev => ({ ...prev, requesterName: e.target.value }))}
+                placeholder="Votre nom complet"
+                className="h-10 text-sm rounded-xl"
+              />
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">N° Pièce d'identité</Label>
+                <Input
+                  value={formData.requesterIdNumber}
+                  onChange={(e) => setFormData(prev => ({ ...prev, requesterIdNumber: e.target.value }))}
+                  placeholder="CNI, Passeport..."
+                  className="h-10 text-sm rounded-xl"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Téléphone</Label>
+                <Input
+                  value={formData.requesterPhone}
+                  onChange={(e) => setFormData(prev => ({ ...prev, requesterPhone: e.target.value }))}
+                  placeholder="+243..."
+                  className="h-10 text-sm rounded-xl"
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-1.5">
+              <Label className="text-xs">Email</Label>
+              <Input
+                type="email"
+                value={formData.requesterEmail}
+                onChange={(e) => setFormData(prev => ({ ...prev, requesterEmail: e.target.value }))}
+                placeholder="email@exemple.com"
+                className="h-10 text-sm rounded-xl"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Informations complémentaires */}
+      <Card className="rounded-2xl shadow-md border-border/50">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-primary" />
+            <Label className="text-sm font-semibold">Informations complémentaires</Label>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Date souhaitée de radiation *</Label>
+              <Input
+                type="date"
+                value={formData.cancellationDate}
+                onChange={(e) => setFormData(prev => ({ ...prev, cancellationDate: e.target.value }))}
+                className="h-10 text-sm rounded-xl"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Montant de règlement (USD)</Label>
+              <Input
+                type="number"
+                value={formData.settlementAmount}
+                onChange={(e) => setFormData(prev => ({ ...prev, settlementAmount: e.target.value }))}
+                placeholder="Montant final payé"
+                className="h-10 text-sm rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs">Commentaires additionnels</Label>
+            <Textarea
+              value={formData.comments}
+              onChange={(e) => setFormData(prev => ({ ...prev, comments: e.target.value }))}
+              placeholder="Informations supplémentaires..."
+              className="text-sm rounded-xl resize-none"
+              rows={3}
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -496,9 +773,18 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             <Label className="text-sm font-semibold">Documents justificatifs *</Label>
           </div>
           
-          <p className="text-xs text-muted-foreground">
-            Joignez l'attestation de remboursement, mainlevée du créancier, ou tout autre document justifiant la radiation.
-          </p>
+          <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-xl">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-xs text-blue-700 dark:text-blue-300">
+              <strong>Documents requis en RDC:</strong>
+              <ul className="mt-1 list-disc list-inside space-y-0.5">
+                <li>Attestation de remboursement du créancier</li>
+                <li>Mainlevée signée par le créancier</li>
+                <li>Copie de la pièce d'identité du demandeur</li>
+                <li>Copie du certificat d'enregistrement</li>
+              </ul>
+            </AlertDescription>
+          </Alert>
           
           <input
             ref={fileInputRef}
@@ -544,89 +830,23 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         </CardContent>
       </Card>
 
-      {/* Informations du demandeur */}
-      <Card className="rounded-2xl shadow-md border-border/50">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Landmark className="h-4 w-4 text-primary" />
-            <Label className="text-sm font-semibold">Informations du demandeur</Label>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Nom complet *</Label>
-              <Input
-                value={formData.requesterName}
-                onChange={(e) => setFormData(prev => ({ ...prev, requesterName: e.target.value }))}
-                placeholder="Votre nom complet"
-                className="h-10 text-sm rounded-xl"
-              />
-            </div>
-            
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Téléphone</Label>
-                <Input
-                  value={formData.requesterPhone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, requesterPhone: e.target.value }))}
-                  placeholder="+243..."
-                  className="h-10 text-sm rounded-xl"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Email</Label>
-                <Input
-                  type="email"
-                  value={formData.requesterEmail}
-                  onChange={(e) => setFormData(prev => ({ ...prev, requesterEmail: e.target.value }))}
-                  placeholder="email@exemple.com"
-                  className="h-10 text-sm rounded-xl"
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Informations complémentaires */}
-      <Card className="rounded-2xl shadow-md border-border/50">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4 text-primary" />
-            <Label className="text-sm font-semibold">Informations complémentaires</Label>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-xs">Date souhaitée de radiation</Label>
-              <Input
-                type="date"
-                value={formData.cancellationDate}
-                onChange={(e) => setFormData(prev => ({ ...prev, cancellationDate: e.target.value }))}
-                className="h-10 text-sm rounded-xl"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">Montant de règlement (USD)</Label>
-              <Input
-                type="number"
-                value={formData.settlementAmount}
-                onChange={(e) => setFormData(prev => ({ ...prev, settlementAmount: e.target.value }))}
-                placeholder="Montant final payé"
-                className="h-10 text-sm rounded-xl"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label className="text-xs">Commentaires additionnels</Label>
-            <Textarea
-              value={formData.comments}
-              onChange={(e) => setFormData(prev => ({ ...prev, comments: e.target.value }))}
-              placeholder="Informations supplémentaires..."
-              className="text-sm rounded-xl resize-none"
-              rows={3}
+      {/* Accord du créancier */}
+      <Card className="rounded-2xl shadow-md border-amber-200 dark:border-amber-800">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Checkbox
+              id="creditorAccord"
+              checked={formData.creditorAccord}
+              onCheckedChange={(checked) => setFormData(prev => ({ ...prev, creditorAccord: checked as boolean }))}
+              className="mt-0.5"
             />
+            <label htmlFor="creditorAccord" className="text-xs cursor-pointer">
+              <span className="font-medium text-amber-700 dark:text-amber-300">Je certifie disposer de l'accord du créancier *</span>
+              <p className="mt-1 text-muted-foreground">
+                Je confirme que le créancier (banque, institution financière ou particulier) a donné son accord 
+                pour la radiation de l'hypothèque, conformément à l'article 229 du Code foncier de la RDC.
+              </p>
+            </label>
           </div>
         </CardContent>
       </Card>
@@ -707,248 +927,322 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     </div>
   );
 
+  // Render Review Step
   const renderReviewStep = () => (
     <div className="space-y-4">
-      {/* En-tête */}
-      <div className="flex items-center gap-2 mb-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setStep('form')}
-          className="h-8 w-8 rounded-xl"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h3 className="font-semibold">Révision de la demande</h3>
-          <p className="text-xs text-muted-foreground">Vérifiez les informations avant de procéder au paiement</p>
-        </div>
-      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setStep('form')}
+        className="flex items-center gap-1 text-xs mb-2"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Modifier
+      </Button>
 
-      {/* Récapitulatif */}
-      <Card className="rounded-2xl shadow-md border-border/50">
-        <CardContent className="p-4 space-y-4">
-          <h4 className="text-sm font-semibold flex items-center gap-2">
-            <FileX2 className="h-4 w-4 text-red-600" />
-            Demande de radiation
-          </h4>
+      <Card className="rounded-2xl border-red-200 dark:border-red-800 bg-gradient-to-r from-red-50 to-red-100/50 dark:from-red-950/30 dark:to-red-900/20">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <FileCheck className="h-6 w-6 text-red-600" />
+            <div>
+              <h3 className="font-semibold text-red-800 dark:text-red-200">Révision de la demande</h3>
+              <p className="text-xs text-red-600 dark:text-red-400">Réf: {requestReferenceNumber}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between py-2 border-b border-muted">
-              <span className="text-muted-foreground">N° de référence demande</span>
-              <span className="font-mono font-medium">{requestReferenceNumber}</span>
+      {/* Récapitulatif parcelle */}
+      {parcelData && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <MapPin className="h-4 w-4 text-primary" />
+              Parcelle concernée
             </div>
-            <div className="flex justify-between py-2 border-b border-muted">
-              <span className="text-muted-foreground">Parcelle</span>
-              <span className="font-mono">{parcelNumber}</span>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">N° Parcelle:</span>
+                <p className="font-medium">{parcelData.parcel_number}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Propriétaire:</span>
+                <p className="font-medium">{parcelData.current_owner_name}</p>
+              </div>
             </div>
-            <div className="flex justify-between py-2 border-b border-muted">
-              <span className="text-muted-foreground">Réf. hypothèque</span>
-              <span className="font-mono">{formData.mortgageReferenceNumber}</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Récapitulatif hypothèque */}
+      {mortgageData && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold">
+              <Building className="h-4 w-4 text-primary" />
+              Hypothèque à radier
             </div>
-            <div className="flex justify-between py-2 border-b border-muted">
-              <span className="text-muted-foreground">Motif</span>
-              <span>{CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label}</span>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <span className="text-muted-foreground">Référence:</span>
+                <p className="font-medium font-mono">{mortgageData.reference_number}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Créancier:</span>
+                <p className="font-medium">{mortgageData.creditor_name}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Montant initial:</span>
+                <p className="font-medium">{formatCurrency(mortgageData.mortgage_amount_usd)}</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Date contrat:</span>
+                <p className="font-medium">{formatDate(mortgageData.contract_date)}</p>
+              </div>
             </div>
-            <div className="flex justify-between py-2 border-b border-muted">
-              <span className="text-muted-foreground">Demandeur</span>
-              <span>{formData.requesterName}</span>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Récapitulatif demandeur */}
+      <Card className="rounded-2xl">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <User className="h-4 w-4 text-primary" />
+            Demandeur
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div>
+              <span className="text-muted-foreground">Nom:</span>
+              <p className="font-medium">{formData.requesterName}</p>
             </div>
-            <div className="flex justify-between py-2 border-b border-muted">
-              <span className="text-muted-foreground">Documents joints</span>
-              <span>{formData.supportingDocuments.length} fichier(s)</span>
+            <div>
+              <span className="text-muted-foreground">Qualité:</span>
+              <p className="font-medium">{REQUESTER_QUALITIES.find(q => q.value === formData.requesterQuality)?.label}</p>
             </div>
+            <div>
+              <span className="text-muted-foreground">Téléphone:</span>
+              <p className="font-medium">{formData.requesterPhone || 'N/A'}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Email:</span>
+              <p className="font-medium">{formData.requesterEmail || 'N/A'}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Récapitulatif motif */}
+      <Card className="rounded-2xl">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <FileText className="h-4 w-4 text-primary" />
+            Motif de radiation
+          </div>
+          <p className="text-sm">{CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label}</p>
+          {formData.settlementAmount && (
+            <p className="text-xs text-muted-foreground">Montant de règlement: {formatCurrency(parseFloat(formData.settlementAmount))}</p>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Documents */}
+      <Card className="rounded-2xl">
+        <CardContent className="p-4 space-y-2">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <Upload className="h-4 w-4 text-primary" />
+            Documents joints ({formData.supportingDocuments.length})
+          </div>
+          <div className="space-y-1">
+            {formData.supportingDocuments.map((file, index) => (
+              <p key={index} className="text-xs text-muted-foreground flex items-center gap-1">
+                <FileText className="h-3 w-3" />
+                {file.name}
+              </p>
+            ))}
           </div>
         </CardContent>
       </Card>
 
       {/* Frais */}
-      <Card className="rounded-2xl shadow-md border-amber-200 dark:border-amber-800">
+      <Card className="rounded-2xl border-amber-200 dark:border-amber-800">
         <CardContent className="p-4 space-y-3">
-          <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-300">
             <DollarSign className="h-4 w-4" />
             Frais à payer
-          </h4>
-
-          <div className="space-y-2">
-            {getSelectedFeesDetails().map((fee) => (
-              <div key={fee.id} className="flex justify-between text-sm py-1.5">
-                <span className="text-muted-foreground">{fee.name}</span>
-                <span className="font-medium">${fee.amount_usd}</span>
+          </div>
+          <div className="space-y-1">
+            {getSelectedFeesDetails().map(fee => (
+              <div key={fee.id} className="flex justify-between text-xs">
+                <span>{fee.name}</span>
+                <span className="font-medium">{formatCurrency(fee.amount_usd)}</span>
               </div>
             ))}
           </div>
-
-          <div className="flex items-center justify-between pt-3 border-t border-amber-200 dark:border-amber-700">
+          <div className="flex justify-between pt-2 border-t border-amber-200 dark:border-amber-700">
             <span className="font-semibold">Total</span>
-            <span className="text-xl font-bold text-amber-700 dark:text-amber-400">
-              {formatCurrency(getTotalAmount())}
-            </span>
+            <span className="font-bold text-amber-700 dark:text-amber-400">{formatCurrency(getTotalAmount())}</span>
           </div>
         </CardContent>
       </Card>
 
-      {/* Boutons d'action */}
+      {/* Boutons */}
       <div className="flex gap-3">
         <Button
           variant="outline"
           onClick={() => setStep('form')}
           className="flex-1 h-11 rounded-xl"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
           Modifier
         </Button>
         <Button
           onClick={handleGoToPayment}
           className="flex-1 h-11 rounded-xl bg-red-600 hover:bg-red-700"
         >
-          Payer {formatCurrency(getTotalAmount())}
+          Procéder au paiement
         </Button>
       </div>
     </div>
   );
 
+  // Render Payment Step
   const renderPaymentStep = () => (
     <div className="space-y-4">
-      {/* En-tête */}
-      <div className="flex items-center gap-2 mb-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setStep('review')}
-          className="h-8 w-8 rounded-xl"
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h3 className="font-semibold">Paiement</h3>
-          <p className="text-xs text-muted-foreground">Choisissez votre mode de paiement</p>
-        </div>
-      </div>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setStep('review')}
+        className="flex items-center gap-1 text-xs mb-2"
+      >
+        <ArrowLeft className="h-3.5 w-3.5" />
+        Retour
+      </Button>
 
-      {/* Montant */}
-      <Card className="rounded-2xl border-primary/30 bg-primary/5">
-        <CardContent className="p-4 text-center">
-          <p className="text-sm text-muted-foreground mb-1">Montant à payer</p>
-          <p className="text-3xl font-bold text-primary">{formatCurrency(getTotalAmount())}</p>
+      <Card className="rounded-2xl border-green-200 dark:border-green-800 bg-gradient-to-r from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <DollarSign className="h-6 w-6 text-green-600" />
+              <div>
+                <h3 className="font-semibold text-green-800 dark:text-green-200">Paiement des frais</h3>
+                <p className="text-xs text-green-600 dark:text-green-400">Réf: {requestReferenceNumber}</p>
+              </div>
+            </div>
+            <span className="text-xl font-bold text-green-700 dark:text-green-400">
+              {formatCurrency(getTotalAmount())}
+            </span>
+          </div>
         </CardContent>
       </Card>
 
       {/* Mode de paiement */}
-      <Card className="rounded-2xl shadow-md">
+      <Card className="rounded-2xl">
         <CardContent className="p-4 space-y-4">
           <Label className="text-sm font-semibold">Mode de paiement</Label>
           
-          <RadioGroup 
-            value={paymentMethod} 
-            onValueChange={(value) => setPaymentMethod(value as 'mobile_money' | 'bank_card')}
-            className="space-y-2"
-          >
-            <div className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-colors ${
-              paymentMethod === 'mobile_money' ? 'border-primary bg-primary/5' : 'border-muted'
-            }`}>
+          <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as any)}>
+            <div className="flex items-center space-x-3 p-3 rounded-xl border-2 hover:border-primary cursor-pointer">
               <RadioGroupItem value="mobile_money" id="mobile_money" />
-              <Label htmlFor="mobile_money" className="flex-1 cursor-pointer flex items-center gap-2">
-                <Phone className="h-4 w-4" />
-                Mobile Money
-              </Label>
+              <label htmlFor="mobile_money" className="flex items-center gap-2 cursor-pointer flex-1">
+                <Phone className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Mobile Money</p>
+                  <p className="text-xs text-muted-foreground">M-Pesa, Airtel Money, Orange Money</p>
+                </div>
+              </label>
             </div>
-            <div className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-colors ${
-              paymentMethod === 'bank_card' ? 'border-primary bg-primary/5' : 'border-muted'
-            }`}>
+            <div className="flex items-center space-x-3 p-3 rounded-xl border-2 hover:border-primary cursor-pointer">
               <RadioGroupItem value="bank_card" id="bank_card" />
-              <Label htmlFor="bank_card" className="flex-1 cursor-pointer flex items-center gap-2">
-                <CreditCard className="h-4 w-4" />
-                Carte bancaire
-              </Label>
+              <label htmlFor="bank_card" className="flex items-center gap-2 cursor-pointer flex-1">
+                <CreditCard className="h-4 w-4 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Carte bancaire</p>
+                  <p className="text-xs text-muted-foreground">Visa, Mastercard</p>
+                </div>
+              </label>
             </div>
           </RadioGroup>
-
-          {paymentMethod === 'mobile_money' && (
-            <div className="space-y-3 pt-3 border-t">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Opérateur</Label>
-                <Select value={paymentProvider} onValueChange={setPaymentProvider}>
-                  <SelectTrigger className="h-10 rounded-xl">
-                    <SelectValue placeholder="Choisir un opérateur" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="mpesa">M-Pesa</SelectItem>
-                    <SelectItem value="airtel_money">Airtel Money</SelectItem>
-                    <SelectItem value="orange_money">Orange Money</SelectItem>
-                    <SelectItem value="afrimoney">Afrimoney</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-1.5">
-                <Label className="text-xs">Numéro de téléphone</Label>
-                <Input
-                  value={paymentPhone}
-                  onChange={(e) => setPaymentPhone(e.target.value)}
-                  placeholder="+243..."
-                  className="h-10 rounded-xl"
-                />
-              </div>
-            </div>
-          )}
-
-          {paymentMethod === 'bank_card' && (
-            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-xl">
-              <CreditCard className="h-4 w-4 text-blue-600" />
-              <AlertDescription className="text-xs text-blue-700 dark:text-blue-300">
-                Vous serez redirigé vers une page de paiement sécurisée.
-              </AlertDescription>
-            </Alert>
-          )}
         </CardContent>
       </Card>
+
+      {paymentMethod === 'mobile_money' && (
+        <Card className="rounded-2xl">
+          <CardContent className="p-4 space-y-4">
+            <Label className="text-sm font-semibold">Opérateur</Label>
+            <Select value={paymentProvider} onValueChange={setPaymentProvider}>
+              <SelectTrigger className="h-10 rounded-xl">
+                <SelectValue placeholder="Sélectionnez un opérateur" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl bg-popover z-[1200]">
+                <SelectItem value="mpesa">M-Pesa (Vodacom)</SelectItem>
+                <SelectItem value="airtel">Airtel Money</SelectItem>
+                <SelectItem value="orange">Orange Money</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs">Numéro de téléphone</Label>
+              <Input
+                value={paymentPhone}
+                onChange={(e) => setPaymentPhone(e.target.value)}
+                placeholder="+243..."
+                className="h-10 rounded-xl"
+              />
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Bouton de paiement */}
       <Button
         onClick={handleSubmit}
-        disabled={loading || processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
-        className="w-full h-12 rounded-xl bg-red-600 hover:bg-red-700"
+        disabled={loading || processingPayment}
+        className="w-full h-12 rounded-xl bg-green-600 hover:bg-green-700"
       >
-        {loading || processingPayment ? (
+        {(loading || processingPayment) ? (
           <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             Traitement en cours...
           </>
         ) : (
           <>
-            <CreditCard className="h-4 w-4 mr-2" />
-            Payer et soumettre la demande
+            <CreditCard className="mr-2 h-4 w-4" />
+            Payer {formatCurrency(getTotalAmount())} et soumettre
           </>
         )}
       </Button>
     </div>
   );
 
+  // Render Confirmation Step
   const renderConfirmationStep = () => (
-    <div className="space-y-6 text-center py-6">
-      <div className="mx-auto h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-        <CheckCircle2 className="h-8 w-8 text-green-600" />
-      </div>
-      
-      <div className="space-y-2">
-        <h3 className="text-xl font-semibold text-green-700 dark:text-green-300">Demande soumise avec succès</h3>
-        <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-          Votre demande de radiation d'hypothèque a été enregistrée et sera traitée dans les plus brefs délais.
-        </p>
+    <div className="space-y-4 text-center">
+      <div className="flex justify-center">
+        <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+          <CheckCircle2 className="h-8 w-8 text-green-600" />
+        </div>
       </div>
 
-      <Card className="rounded-2xl bg-muted/50">
-        <CardContent className="p-4 space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Référence</span>
+      <div>
+        <h3 className="text-lg font-bold text-green-700 dark:text-green-300">Demande soumise avec succès!</h3>
+        <p className="text-sm text-muted-foreground mt-1">Votre demande de radiation d'hypothèque a été enregistrée.</p>
+      </div>
+
+      <Card className="rounded-2xl">
+        <CardContent className="p-4 space-y-2 text-left">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Référence demande</span>
             <span className="font-mono font-medium">{requestReferenceNumber}</span>
           </div>
-          <div className="flex justify-between">
-            <span className="text-muted-foreground">Parcelle</span>
-            <span className="font-mono">{parcelNumber}</span>
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Référence hypothèque</span>
+            <span className="font-mono font-medium">{formData.mortgageReferenceNumber}</span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between text-xs">
+            <span className="text-muted-foreground">Parcelle</span>
+            <span className="font-medium">{parcelNumber}</span>
+          </div>
+          <div className="flex justify-between text-xs">
             <span className="text-muted-foreground">Montant payé</span>
             <span className="font-medium text-green-600">{formatCurrency(getTotalAmount())}</span>
           </div>
@@ -961,16 +1255,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           <strong>Prochaines étapes:</strong>
           <ol className="mt-1.5 list-decimal list-inside space-y-1">
             <li>Votre demande sera examinée par un officier hypothécaire</li>
-            <li>Vous recevrez une notification pour le suivi</li>
+            <li>Vous recevrez une notification de suivi</li>
             <li>Le certificat de radiation sera délivré après validation</li>
           </ol>
         </AlertDescription>
       </Alert>
 
-      <Button
-        onClick={handleClose}
-        className="w-full h-11 rounded-xl"
-      >
+      <Button onClick={handleClose} className="w-full h-11 rounded-xl">
         Fermer
       </Button>
     </div>
@@ -978,24 +1269,29 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${isMobile ? 'max-w-[95vw] h-[90vh] p-0' : 'max-w-lg'} rounded-2xl`}>
-        <DialogHeader className={`${isMobile ? 'p-4 pb-0' : ''}`}>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <FileX2 className="h-5 w-5 text-red-600" />
-            Radiation d'hypothèque
-          </DialogTitle>
-          <DialogDescription className="text-xs">
-            Parcelle {parcelNumber}
-          </DialogDescription>
-        </DialogHeader>
-        
-        <ScrollArea className={`${isMobile ? 'h-[calc(90vh-80px)] px-4 pb-4' : 'max-h-[70vh] px-6 pb-6'}`}>
-          {step === 'form' && renderFormStep()}
-          {step === 'review' && renderReviewStep()}
-          {step === 'payment' && renderPaymentStep()}
-          {step === 'confirmation' && renderConfirmationStep()}
-        </ScrollArea>
-      </DialogContent>
+      <DialogPortal>
+        <DialogOverlay className="z-[1100]" />
+        <DialogContent className={`z-[1100] ${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
+          <DialogHeader className="p-4 pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <div className="p-1.5 bg-red-500/10 rounded-lg">
+                <FileX2 className="h-4 w-4 text-red-600" />
+              </div>
+              Radiation d'hypothèque
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Parcelle {parcelNumber}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className={`${isMobile ? 'h-[calc(88vh-80px)]' : 'max-h-[calc(85vh-80px)]'} px-4 pb-4`}>
+            {step === 'form' && renderFormStep()}
+            {step === 'review' && renderReviewStep()}
+            {step === 'payment' && renderPaymentStep()}
+            {step === 'confirmation' && renderConfirmationStep()}
+          </ScrollArea>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
   );
 };
