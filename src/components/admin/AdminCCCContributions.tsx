@@ -359,14 +359,17 @@ const AdminCCCContributions: React.FC = () => {
       if (updatedContribution.mortgage_history && Array.isArray(updatedContribution.mortgage_history)) {
         for (const history of updatedContribution.mortgage_history) {
           if (typeof history === 'object' && history !== null) {
+            const h = history as any;
+            // Gérer les deux formats de champs (camelCase du formulaire CCC et snake_case)
             await supabase.from('cadastral_mortgages').insert({
               parcel_id: createdParcel.id,
-              mortgage_amount_usd: (history as any).mortgage_amount_usd,
-              duration_months: (history as any).duration_months,
-              creditor_name: (history as any).creditor_name,
-              creditor_type: (history as any).creditor_type,
-              contract_date: (history as any).contract_date,
-              mortgage_status: (history as any).mortgage_status
+              mortgage_amount_usd: h.mortgage_amount_usd || h.mortgageAmountUsd || 0,
+              duration_months: h.duration_months || h.durationMonths || 0,
+              creditor_name: h.creditor_name || h.creditorName || 'Non spécifié',
+              creditor_type: h.creditor_type || h.creditorType || 'Banque',
+              contract_date: h.contract_date || h.contractDate || new Date().toISOString().split('T')[0],
+              mortgage_status: h.mortgage_status || h.mortgageStatus || 'active'
+              // reference_number est généré automatiquement par le trigger SQL
             });
           }
         }
