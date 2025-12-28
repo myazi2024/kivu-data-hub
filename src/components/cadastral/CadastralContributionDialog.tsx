@@ -2412,7 +2412,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <Label htmlFor="titleReference" className="text-sm font-medium">
-                        N° de référence
+                        N° {formData.propertyTitleType ? (() => {
+                          const titleType = formData.propertyTitleType;
+                          // Abréviations pour les noms longs
+                          const abbreviations: Record<string, string> = {
+                            "Certificat d'enregistrement": "Cert. d'enreg.",
+                            "Titre foncier": "Titre foncier",
+                            "Concession perpétuelle": "Conc. perpét.",
+                            "Concession ordinaire": "Conc. ordin.",
+                            "Bail emphytéotique": "Bail emphyt.",
+                            "Certificat de location": "Cert. de loc.",
+                            "Autorisation d'occupation provisoire": "AOP",
+                            "Permis d'occupation urbain": "POU",
+                            "Permis d'occupation rural": "POR",
+                            "Livret de logeur": "Livret logeur",
+                            "Fiche parcellaire": "Fiche parcel."
+                          };
+                          return abbreviations[titleType] || titleType;
+                        })() : "de référence"}
                       </Label>
                       <InputWithPopover
                         id="titleReference"
