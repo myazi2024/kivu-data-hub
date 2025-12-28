@@ -1381,6 +1381,192 @@ export type Database = {
           },
         ]
       }
+      land_title_fees_config: {
+        Row: {
+          amount_usd: number
+          created_at: string
+          description: string | null
+          display_order: number
+          fee_name: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          updated_at: string
+        }
+        Insert: {
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          updated_at?: string
+        }
+        Update: {
+          amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      land_title_requests: {
+        Row: {
+          additional_documents: Json | null
+          area_sqm: number | null
+          avenue: string | null
+          circonscription_fonciere: string | null
+          collectivite: string | null
+          commune: string | null
+          created_at: string
+          estimated_processing_days: number | null
+          fee_items: Json
+          gps_coordinates: Json | null
+          groupement: string | null
+          id: string
+          is_owner_same_as_requester: boolean | null
+          owner_first_name: string | null
+          owner_id_document_url: string | null
+          owner_last_name: string | null
+          owner_legal_status: string | null
+          owner_middle_name: string | null
+          owner_phone: string | null
+          paid_at: string | null
+          parcel_sides: Json | null
+          payment_id: string | null
+          payment_status: string
+          processing_notes: string | null
+          proof_of_ownership_url: string | null
+          province: string
+          quartier: string | null
+          reference_number: string
+          rejection_reason: string | null
+          requester_email: string | null
+          requester_first_name: string
+          requester_id_document_url: string | null
+          requester_last_name: string
+          requester_middle_name: string | null
+          requester_phone: string
+          requester_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          road_bordering_sides: Json | null
+          section_type: string
+          status: string
+          territoire: string | null
+          total_amount_usd: number
+          updated_at: string
+          user_id: string
+          village: string | null
+          ville: string | null
+        }
+        Insert: {
+          additional_documents?: Json | null
+          area_sqm?: number | null
+          avenue?: string | null
+          circonscription_fonciere?: string | null
+          collectivite?: string | null
+          commune?: string | null
+          created_at?: string
+          estimated_processing_days?: number | null
+          fee_items?: Json
+          gps_coordinates?: Json | null
+          groupement?: string | null
+          id?: string
+          is_owner_same_as_requester?: boolean | null
+          owner_first_name?: string | null
+          owner_id_document_url?: string | null
+          owner_last_name?: string | null
+          owner_legal_status?: string | null
+          owner_middle_name?: string | null
+          owner_phone?: string | null
+          paid_at?: string | null
+          parcel_sides?: Json | null
+          payment_id?: string | null
+          payment_status?: string
+          processing_notes?: string | null
+          proof_of_ownership_url?: string | null
+          province: string
+          quartier?: string | null
+          reference_number: string
+          rejection_reason?: string | null
+          requester_email?: string | null
+          requester_first_name: string
+          requester_id_document_url?: string | null
+          requester_last_name: string
+          requester_middle_name?: string | null
+          requester_phone: string
+          requester_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          road_bordering_sides?: Json | null
+          section_type: string
+          status?: string
+          territoire?: string | null
+          total_amount_usd?: number
+          updated_at?: string
+          user_id: string
+          village?: string | null
+          ville?: string | null
+        }
+        Update: {
+          additional_documents?: Json | null
+          area_sqm?: number | null
+          avenue?: string | null
+          circonscription_fonciere?: string | null
+          collectivite?: string | null
+          commune?: string | null
+          created_at?: string
+          estimated_processing_days?: number | null
+          fee_items?: Json
+          gps_coordinates?: Json | null
+          groupement?: string | null
+          id?: string
+          is_owner_same_as_requester?: boolean | null
+          owner_first_name?: string | null
+          owner_id_document_url?: string | null
+          owner_last_name?: string | null
+          owner_legal_status?: string | null
+          owner_middle_name?: string | null
+          owner_phone?: string | null
+          paid_at?: string | null
+          parcel_sides?: Json | null
+          payment_id?: string | null
+          payment_status?: string
+          processing_notes?: string | null
+          proof_of_ownership_url?: string | null
+          province?: string
+          quartier?: string | null
+          reference_number?: string
+          rejection_reason?: string | null
+          requester_email?: string | null
+          requester_first_name?: string
+          requester_id_document_url?: string | null
+          requester_last_name?: string
+          requester_middle_name?: string | null
+          requester_phone?: string
+          requester_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          road_bordering_sides?: Json | null
+          section_type?: string
+          status?: string
+          territoire?: string | null
+          total_amount_usd?: number
+          updated_at?: string
+          user_id?: string
+          village?: string | null
+          ville?: string | null
+        }
+        Relationships: []
+      }
       market_trends: {
         Row: {
           average_rent_price: number
@@ -2806,6 +2992,7 @@ export type Database = {
       }
       generate_ccc_code: { Args: never; Returns: string }
       generate_invoice_number: { Args: never; Returns: string }
+      generate_land_title_reference: { Args: never; Returns: string }
       generate_mutation_reference: { Args: never; Returns: string }
       generate_permit_number: {
         Args: { permit_type: string; province: string }
