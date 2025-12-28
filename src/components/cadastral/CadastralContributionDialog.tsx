@@ -2948,12 +2948,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
                 {/* Header */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-2">
+                    <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                       <MdInsertDriveFile className="h-3.5 w-3.5 text-primary" />
                     </div>
-                    <Label className="text-sm font-semibold">Permis de construire</Label>
+                    <Label className="text-sm font-semibold leading-tight">
+                      Avez-vous un permis de construire pour votre {formData.constructionType?.toLowerCase() || 'construction'}
+                      {formData.constructionNature ? `, ${formData.constructionNature.toLowerCase()}` : ''}
+                      {formData.constructionMaterials ? `, en ${formData.constructionMaterials.toLowerCase()}` : ''}
+                      {formData.declaredUsage ? `, utilisée en tant que ${formData.declaredUsage.toLowerCase()}` : ''} ?
+                    </Label>
                   </div>
                   <Popover>
                     <PopoverTrigger asChild>
