@@ -2798,64 +2798,97 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </Popover>
                 </div>
 
-                {/* Type de construction */}
-                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
-                  <Label className="text-sm font-medium flex items-center gap-1">
-                    Type
-                    {highlightRequiredFields && !formData.constructionType && (
-                      <span className="text-primary text-xs font-semibold">(Requis)</span>
-                    )}
-                  </Label>
-                  <Select 
-                    value={formData.constructionType || ''}
-                    onValueChange={(value) => {
-                      handleInputChange('constructionType', value);
-                      setHighlightRequiredFields(false);
-                    }}
-                  >
-                    <SelectTrigger className="h-10 rounded-xl text-sm">
-                      <SelectValue placeholder="Sélectionner le type" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-                      <SelectItem value="Commerciale">Commerciale</SelectItem>
-                      <SelectItem value="Industrielle">Industrielle</SelectItem>
-                      <SelectItem value="Agricole">Agricole</SelectItem>
-                      <SelectItem value="Terrain nu">Terrain nu</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Type et Nature - côte-à-côte */}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Type de construction */}
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionType ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                    <Label className="text-sm font-medium flex items-center gap-1">
+                      Type
+                      {highlightRequiredFields && !formData.constructionType && (
+                        <span className="text-primary text-xs font-semibold">*</span>
+                      )}
+                    </Label>
+                    <Select 
+                      value={formData.constructionType || ''}
+                      onValueChange={(value) => {
+                        handleInputChange('constructionType', value);
+                        // Reset materials if switching to Terrain nu
+                        if (value === 'Terrain nu') {
+                          handleInputChange('constructionMaterials', '');
+                        }
+                        setHighlightRequiredFields(false);
+                      }}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl text-sm">
+                        <SelectValue placeholder="Sélectionner" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="Résidentielle">Résidentielle</SelectItem>
+                        <SelectItem value="Commerciale">Commerciale</SelectItem>
+                        <SelectItem value="Industrielle">Industrielle</SelectItem>
+                        <SelectItem value="Agricole">Agricole</SelectItem>
+                        <SelectItem value="Terrain nu">Terrain nu</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Nature de construction */}
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                    <Label className="text-sm font-medium flex items-center gap-1">
+                      Nature
+                      {highlightRequiredFields && !formData.constructionNature && (
+                        <span className="text-primary text-xs font-semibold">*</span>
+                      )}
+                    </Label>
+                    <Select 
+                      value={formData.constructionNature || ''}
+                      onValueChange={(value) => {
+                        handleInputChange('constructionNature', value);
+                        setHighlightRequiredFields(false);
+                      }}
+                      disabled={!formData.constructionType}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl text-sm">
+                        <SelectValue placeholder={
+                          !formData.constructionType 
+                            ? "Type d'abord" 
+                            : "Sélectionner"
+                        } />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        {availableConstructionNatures.map((nature) => (
+                          <SelectItem key={nature} value={nature}>{nature}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                {/* Nature de construction */}
-                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.constructionNature ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
-                  <Label className="text-sm font-medium flex items-center gap-1">
-                    Nature
-                    {highlightRequiredFields && !formData.constructionNature && (
-                      <span className="text-primary text-xs font-semibold">(Requis)</span>
-                    )}
-                  </Label>
-                  <Select 
-                    value={formData.constructionNature || ''}
-                    onValueChange={(value) => {
-                      handleInputChange('constructionNature', value);
-                      setHighlightRequiredFields(false);
-                    }}
-                    disabled={!formData.constructionType}
-                  >
-                    <SelectTrigger className="h-10 rounded-xl text-sm">
-                      <SelectValue placeholder={
-                        !formData.constructionType 
-                          ? "Sélectionner d'abord le type" 
-                          : "Sélectionner la nature"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {availableConstructionNatures.map((nature) => (
-                        <SelectItem key={nature} value={nature}>{nature}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                {/* Matériaux de construction - visible sauf pour Terrain nu */}
+                {formData.constructionType && formData.constructionType !== 'Terrain nu' && (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Matériaux de construction</Label>
+                    <Select 
+                      value={formData.constructionMaterials || ''}
+                      onValueChange={(value) => handleInputChange('constructionMaterials', value)}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl text-sm">
+                        <SelectValue placeholder="Sélectionner les matériaux" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="Béton armé">Béton armé</SelectItem>
+                        <SelectItem value="Briques cuites">Briques cuites</SelectItem>
+                        <SelectItem value="Briques adobes">Briques adobes</SelectItem>
+                        <SelectItem value="Parpaings">Parpaings</SelectItem>
+                        <SelectItem value="Bois">Bois</SelectItem>
+                        <SelectItem value="Tôles">Tôles</SelectItem>
+                        <SelectItem value="Semi-dur">Semi-dur</SelectItem>
+                        <SelectItem value="Mixte">Mixte</SelectItem>
+                        <SelectItem value="Autre">Autre</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Usage déclaré */}
                 <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
