@@ -2520,7 +2520,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               <CardContent className="p-3 space-y-3">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    Le titre est-il au nom du propriétaire actuel ?
+                    Ce titre de type "{formData.propertyTitleType || 'non sélectionné'}" est-il au nom du propriétaire actuel ?
                   </Label>
                   <Popover>
                     <PopoverTrigger asChild>
