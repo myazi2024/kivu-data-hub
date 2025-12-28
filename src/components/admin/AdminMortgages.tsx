@@ -4,9 +4,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Building, Eye, DollarSign, Calendar, AlertCircle } from 'lucide-react';
+import { RefreshCw, Building, Eye, DollarSign, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -21,14 +22,26 @@ interface Mortgage {
   duration_months: number;
   created_at: string;
   parcel_number?: string;
+  reference_number?: string;
+}
+
+interface PendingMortgage {
+  id: string;
+  parcel_number: string;
+  mortgage_history: any[];
+  status: string;
+  created_at: string;
+  user_id: string;
 }
 
 const AdminMortgages = () => {
   const [mortgages, setMortgages] = useState<Mortgage[]>([]);
+  const [pendingMortgages, setPendingMortgages] = useState<PendingMortgage[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedMortgage, setSelectedMortgage] = useState<Mortgage | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [activeTab, setActiveTab] = useState<string>('approved');
 
   useEffect(() => {
     fetchMortgages();
@@ -37,22 +50,44 @@ const AdminMortgages = () => {
   const fetchMortgages = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      // Récupérer les hypothèques validées
+      const { data: approvedData, error: approvedError } = await supabase
         .from('cadastral_mortgages')
         .select(`
           *,
-          cadastral_parcels!fk_cadastral_mortgages_parcel(parcel_number)
+          cadastral_parcels(parcel_number)
         `)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (approvedError) throw approvedError;
       
-      const mortgagesWithParcel = (data || []).map(m => ({
+      const mortgagesWithParcel = (approvedData || []).map(m => ({
         ...m,
         parcel_number: (m.cadastral_parcels as any)?.parcel_number || 'N/A'
       }));
       
       setMortgages(mortgagesWithParcel);
+
+      // Récupérer les hypothèques en attente de validation (contributions)
+      const { data: pendingData, error: pendingError } = await supabase
+        .from('cadastral_contributions')
+        .select('id, parcel_number, mortgage_history, status, created_at, user_id')
+        .not('mortgage_history', 'is', null)
+        .in('status', ['pending', 'rejected'])
+        .order('created_at', { ascending: false });
+
+      if (pendingError) throw pendingError;
+      
+      // Filtrer les contributions qui ont des hypothèques valides
+      const validPending = (pendingData || []).filter(item => {
+        const history = item.mortgage_history;
+        return Array.isArray(history) && history.length > 0;
+      }).map(item => ({
+        ...item,
+        mortgage_history: item.mortgage_history as any[]
+      }));
+      
+      setPendingMortgages(validPending);
     } catch (error) {
       console.error('Error fetching mortgages:', error);
       toast.error('Erreur lors du chargement des hypothèques');
@@ -62,34 +97,44 @@ const AdminMortgages = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase();
+    switch (normalizedStatus) {
       case 'active':
         return <Badge variant="outline" className="text-[9px] bg-blue-100 text-blue-700 border-blue-200">Actif</Badge>;
       case 'paid':
         return <Badge variant="outline" className="text-[9px] bg-green-100 text-green-700 border-green-200">Soldé</Badge>;
       case 'defaulted':
+      case 'en défaut':
         return <Badge variant="outline" className="text-[9px] bg-red-100 text-red-700 border-red-200">Défaut</Badge>;
+      case 'pending':
+        return <Badge variant="outline" className="text-[9px] bg-yellow-100 text-yellow-700 border-yellow-200">En attente</Badge>;
+      case 'rejected':
+        return <Badge variant="outline" className="text-[9px] bg-red-100 text-red-700 border-red-200">Rejeté</Badge>;
       default:
         return <Badge variant="outline" className="text-[9px]">{status}</Badge>;
     }
   };
 
   const getCreditorTypeLabel = (type: string) => {
-    switch (type) {
-      case 'bank': return 'Banque';
+    switch (type?.toLowerCase()) {
+      case 'bank':
+      case 'banque': return 'Banque';
       case 'microfinance': return 'Microfinance';
-      case 'private': return 'Privé';
-      default: return type;
+      case 'private':
+      case 'particulier': return 'Particulier';
+      case 'coopérative': return 'Coopérative';
+      default: return type || 'Non spécifié';
     }
   };
 
   const filteredMortgages = filterStatus === 'all' 
     ? mortgages 
-    : mortgages.filter(m => m.mortgage_status === filterStatus);
+    : mortgages.filter(m => m.mortgage_status?.toLowerCase() === filterStatus);
 
-  const activeCount = mortgages.filter(m => m.mortgage_status === 'active').length;
-  const paidCount = mortgages.filter(m => m.mortgage_status === 'paid').length;
-  const totalAmount = mortgages.filter(m => m.mortgage_status === 'active').reduce((sum, m) => sum + m.mortgage_amount_usd, 0);
+  const activeCount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'active').length;
+  const paidCount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'paid').length;
+  const pendingCount = pendingMortgages.filter(m => m.status === 'pending').length;
+  const totalAmount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'active').reduce((sum, m) => sum + (m.mortgage_amount_usd || 0), 0);
 
   return (
     <div className="space-y-3 md:space-y-4">
@@ -108,14 +153,18 @@ const AdminMortgages = () => {
       </Card>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-2">
-        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center cursor-pointer hover:bg-accent/50" onClick={() => setFilterStatus('active')}>
+      <div className="grid grid-cols-4 gap-2">
+        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center cursor-pointer hover:bg-accent/50" onClick={() => { setActiveTab('approved'); setFilterStatus('active'); }}>
           <p className="text-lg md:text-xl font-bold text-blue-500">{activeCount}</p>
           <p className="text-[9px] md:text-[10px] text-muted-foreground">Actives</p>
         </Card>
-        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center cursor-pointer hover:bg-accent/50" onClick={() => setFilterStatus('paid')}>
+        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center cursor-pointer hover:bg-accent/50" onClick={() => { setActiveTab('approved'); setFilterStatus('paid'); }}>
           <p className="text-lg md:text-xl font-bold text-green-500">{paidCount}</p>
           <p className="text-[9px] md:text-[10px] text-muted-foreground">Soldées</p>
+        </Card>
+        <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center cursor-pointer hover:bg-accent/50" onClick={() => setActiveTab('pending')}>
+          <p className="text-lg md:text-xl font-bold text-yellow-500">{pendingCount}</p>
+          <p className="text-[9px] md:text-[10px] text-muted-foreground">En attente</p>
         </Card>
         <Card className="p-2.5 md:p-3 bg-background rounded-xl shadow-sm border text-center">
           <p className="text-lg md:text-xl font-bold text-primary">${(totalAmount / 1000).toFixed(0)}k</p>
@@ -123,69 +172,150 @@ const AdminMortgages = () => {
         </Card>
       </div>
 
-      {/* Filter */}
-      <Card className="p-2.5 bg-background rounded-xl shadow-sm border">
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-8 text-xs">
-            <SelectValue placeholder="Filtrer par statut" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Toutes les hypothèques</SelectItem>
-            <SelectItem value="active">Actives</SelectItem>
-            <SelectItem value="paid">Soldées</SelectItem>
-            <SelectItem value="defaulted">En défaut</SelectItem>
-          </SelectContent>
-        </Select>
-      </Card>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-2 h-9">
+          <TabsTrigger value="approved" className="text-xs">
+            <CheckCircle2 className="h-3 w-3 mr-1" />
+            Validées ({mortgages.length})
+          </TabsTrigger>
+          <TabsTrigger value="pending" className="text-xs">
+            <Clock className="h-3 w-3 mr-1" />
+            En attente ({pendingCount})
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Mortgages List */}
-      <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
-        <h3 className="text-xs font-semibold mb-3">Liste des hypothèques ({filteredMortgages.length})</h3>
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          </div>
-        ) : filteredMortgages.length === 0 ? (
-          <div className="text-center py-8">
-            <Building className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-            <p className="text-xs text-muted-foreground">Aucune hypothèque trouvée</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {filteredMortgages.map((mortgage) => (
-              <div key={mortgage.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Building className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="text-xs font-medium truncate">{mortgage.creditor_name}</span>
-                      {getStatusBadge(mortgage.mortgage_status)}
-                    </div>
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <span className="truncate">Parcelle: {mortgage.parcel_number}</span>
-                      <span>•</span>
-                      <span>{getCreditorTypeLabel(mortgage.creditor_type)}</span>
-                    </div>
-                    <div className="flex items-center gap-2 mt-1 text-[10px]">
-                      <DollarSign className="h-2.5 w-2.5 text-green-500" />
-                      <span className="font-semibold">${mortgage.mortgage_amount_usd.toLocaleString()}</span>
-                      <span className="text-muted-foreground">• {mortgage.duration_months} mois</span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    <span className="text-[9px] text-muted-foreground">
-                      {format(new Date(mortgage.contract_date), 'dd/MM/yy', { locale: fr })}
-                    </span>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setSelectedMortgage(mortgage); setDetailsOpen(true); }}>
-                      <Eye className="h-3 w-3" />
-                    </Button>
-                  </div>
-                </div>
+        <TabsContent value="approved" className="mt-3">
+          {/* Filter */}
+          <Card className="p-2.5 bg-background rounded-xl shadow-sm border mb-3">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue placeholder="Filtrer par statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes les hypothèques</SelectItem>
+                <SelectItem value="active">Actives</SelectItem>
+                <SelectItem value="paid">Soldées</SelectItem>
+                <SelectItem value="defaulted">En défaut</SelectItem>
+              </SelectContent>
+            </Select>
+          </Card>
+
+          {/* Approved Mortgages List */}
+          <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
+            <h3 className="text-xs font-semibold mb-3">Hypothèques validées ({filteredMortgages.length})</h3>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
+            ) : filteredMortgages.length === 0 ? (
+              <div className="text-center py-8">
+                <Building className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-xs text-muted-foreground">Aucune hypothèque validée trouvée</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredMortgages.map((mortgage) => (
+                  <div key={mortgage.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Building className="h-3.5 w-3.5 text-primary shrink-0" />
+                          <span className="text-xs font-medium truncate">{mortgage.creditor_name}</span>
+                          {getStatusBadge(mortgage.mortgage_status)}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <span className="truncate">Parcelle: {mortgage.parcel_number}</span>
+                          <span>•</span>
+                          <span>{getCreditorTypeLabel(mortgage.creditor_type)}</span>
+                        </div>
+                        {mortgage.reference_number && (
+                          <div className="mt-1 text-[10px] font-mono text-primary">
+                            Réf: {mortgage.reference_number}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mt-1 text-[10px]">
+                          <DollarSign className="h-2.5 w-2.5 text-green-500" />
+                          <span className="font-semibold">${(mortgage.mortgage_amount_usd || 0).toLocaleString()}</span>
+                          <span className="text-muted-foreground">• {mortgage.duration_months} mois</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="text-[9px] text-muted-foreground">
+                          {format(new Date(mortgage.contract_date), 'dd/MM/yy', { locale: fr })}
+                        </span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setSelectedMortgage(mortgage); setDetailsOpen(true); }}>
+                          <Eye className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="pending" className="mt-3">
+          {/* Pending Mortgages List */}
+          <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
+            <h3 className="text-xs font-semibold mb-3">Hypothèques en attente de validation ({pendingMortgages.length})</h3>
+            <p className="text-[10px] text-muted-foreground mb-3">
+              Ces hypothèques sont en attente dans "Contributions CCC". Validez-les depuis cette section.
+            </p>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : pendingMortgages.length === 0 ? (
+              <div className="text-center py-8">
+                <Clock className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                <p className="text-xs text-muted-foreground">Aucune hypothèque en attente</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {pendingMortgages.map((pending) => {
+                  const mortgage = pending.mortgage_history[0];
+                  return (
+                    <div key={pending.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Building className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+                            <span className="text-xs font-medium truncate">
+                              {mortgage?.creditor_name || mortgage?.creditorName || 'Non spécifié'}
+                            </span>
+                            {getStatusBadge(pending.status)}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span className="truncate">Parcelle: {pending.parcel_number}</span>
+                            <span>•</span>
+                            <span>{getCreditorTypeLabel(mortgage?.creditor_type || mortgage?.creditorType)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1 text-[10px]">
+                            <DollarSign className="h-2.5 w-2.5 text-green-500" />
+                            <span className="font-semibold">
+                              ${(mortgage?.mortgage_amount_usd || mortgage?.mortgageAmountUsd || 0).toLocaleString()}
+                            </span>
+                            <span className="text-muted-foreground">
+                              • {mortgage?.duration_months || mortgage?.durationMonths || 0} mois
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="text-[9px] text-muted-foreground">
+                            {format(new Date(pending.created_at), 'dd/MM/yy', { locale: fr })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Details Dialog */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
@@ -195,6 +325,12 @@ const AdminMortgages = () => {
           </DialogHeader>
           {selectedMortgage && (
             <div className="space-y-3 py-2">
+              {selectedMortgage.reference_number && (
+                <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20">
+                  <p className="text-[10px] text-muted-foreground mb-1">Numéro de référence</p>
+                  <p className="text-sm font-mono font-bold text-primary">{selectedMortgage.reference_number}</p>
+                </div>
+              )}
               <div className="p-2.5 rounded-lg bg-muted/50">
                 <p className="text-[10px] text-muted-foreground mb-1">Créancier</p>
                 <p className="text-xs font-medium">{selectedMortgage.creditor_name}</p>
@@ -203,7 +339,7 @@ const AdminMortgages = () => {
               <div className="grid grid-cols-2 gap-2">
                 <div className="p-2.5 rounded-lg bg-muted/50">
                   <p className="text-[10px] text-muted-foreground mb-1">Montant</p>
-                  <p className="text-sm font-bold text-primary">${selectedMortgage.mortgage_amount_usd.toLocaleString()}</p>
+                  <p className="text-sm font-bold text-primary">${(selectedMortgage.mortgage_amount_usd || 0).toLocaleString()}</p>
                 </div>
                 <div className="p-2.5 rounded-lg bg-muted/50">
                   <p className="text-[10px] text-muted-foreground mb-1">Durée</p>
