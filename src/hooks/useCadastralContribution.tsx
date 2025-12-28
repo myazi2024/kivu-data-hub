@@ -22,6 +22,7 @@ export interface CadastralContributionData {
   }>;
   constructionType?: string;
   constructionNature?: string;
+  constructionMaterials?: string;
   declaredUsage?: string;
   
   // Permis de construire
