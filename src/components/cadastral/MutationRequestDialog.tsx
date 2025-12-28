@@ -880,7 +880,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                     <FileSearch className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
                       Un certificat d'expertise immobilière est nécessaire pour procéder à la mutation.
-                      Vous pouvez en demander un en cliquant sur le bouton ci-dessous.
+                      Vous pouvez en demander un en cliquant sur le bouton ci-dessous. Puis revenir plus tard sur ce formulaire pour finir votre demande de mutation.
                     </AlertDescription>
                   </Alert>
                   
