@@ -2864,75 +2864,80 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
                 </div>
 
-                {/* Matériaux de construction - visible sauf pour Terrain nu */}
-                {formData.constructionType && formData.constructionType !== 'Terrain nu' && (
-                  <div className="space-y-1.5">
-                    <Label className="text-sm font-medium">Matériaux de construction</Label>
+                {/* Matériaux et Usage - côte-à-côte */}
+                <div className="grid grid-cols-2 gap-2">
+                  {/* Matériaux de construction - visible sauf pour Terrain nu */}
+                  {formData.constructionType && formData.constructionType !== 'Terrain nu' ? (
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Matériaux</Label>
+                      <Select 
+                        value={formData.constructionMaterials || ''}
+                        onValueChange={(value) => handleInputChange('constructionMaterials', value)}
+                      >
+                        <SelectTrigger className="h-10 rounded-xl text-sm">
+                          <SelectValue placeholder="Sélectionner" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="Béton armé">Béton armé</SelectItem>
+                          <SelectItem value="Briques cuites">Briques cuites</SelectItem>
+                          <SelectItem value="Briques adobes">Briques adobes</SelectItem>
+                          <SelectItem value="Parpaings">Parpaings</SelectItem>
+                          <SelectItem value="Bois">Bois</SelectItem>
+                          <SelectItem value="Tôles">Tôles</SelectItem>
+                          <SelectItem value="Semi-dur">Semi-dur</SelectItem>
+                          <SelectItem value="Mixte">Mixte</SelectItem>
+                          <SelectItem value="Autre">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  ) : (
+                    <div /> 
+                  )}
+
+                  {/* Usage déclaré */}
+                  <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
+                    <div className="flex items-center gap-1">
+                      <Label className="text-sm font-medium flex items-center gap-1">
+                        Usage
+                        {highlightRequiredFields && !formData.declaredUsage && (
+                          <span className="text-primary text-xs font-semibold">*</span>
+                        )}
+                      </Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                            <Info className="h-3 w-3 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 rounded-xl text-xs">
+                          <p className="text-muted-foreground">
+                            Utilisation effective ou prévue du bien, conforme aux règles d'urbanisme.
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <Select 
-                      value={formData.constructionMaterials || ''}
-                      onValueChange={(value) => handleInputChange('constructionMaterials', value)}
+                      value={formData.declaredUsage || ''}
+                      onValueChange={(value) => {
+                        handleInputChange('declaredUsage', value);
+                        setHighlightRequiredFields(false);
+                      }}
+                      disabled={!formData.constructionType || !formData.constructionNature}
                     >
                       <SelectTrigger className="h-10 rounded-xl text-sm">
-                        <SelectValue placeholder="Sélectionner les matériaux" />
+                        <SelectValue placeholder={
+                          !formData.constructionType || !formData.constructionNature
+                            ? "Type et nature d'abord" 
+                            : "Sélectionner"
+                        } />
                       </SelectTrigger>
                       <SelectContent className="rounded-xl">
-                        <SelectItem value="Béton armé">Béton armé</SelectItem>
-                        <SelectItem value="Briques cuites">Briques cuites</SelectItem>
-                        <SelectItem value="Briques adobes">Briques adobes</SelectItem>
-                        <SelectItem value="Parpaings">Parpaings</SelectItem>
-                        <SelectItem value="Bois">Bois</SelectItem>
-                        <SelectItem value="Tôles">Tôles</SelectItem>
-                        <SelectItem value="Semi-dur">Semi-dur</SelectItem>
-                        <SelectItem value="Mixte">Mixte</SelectItem>
-                        <SelectItem value="Autre">Autre</SelectItem>
+                        {availableDeclaredUsages.map((usage) => (
+                          <SelectItem key={usage} value={usage}>{usage}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-                )}
-
-                {/* Usage déclaré */}
-                <div className={`space-y-1.5 ${highlightRequiredFields && !formData.declaredUsage ? 'ring-2 ring-primary rounded-xl p-2 bg-primary/5 animate-pulse' : ''}`}>
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium flex items-center gap-1">
-                      Usage déclaré
-                      {highlightRequiredFields && !formData.declaredUsage && (
-                        <span className="text-primary text-xs font-semibold">(Requis)</span>
-                      )}
-                    </Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
-                          <Info className="h-3 w-3 text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-64 rounded-xl text-xs">
-                        <p className="text-muted-foreground">
-                          Utilisation effective ou prévue du bien, conforme aux règles d'urbanisme.
-                        </p>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
-                  <Select 
-                    value={formData.declaredUsage || ''}
-                    onValueChange={(value) => {
-                      handleInputChange('declaredUsage', value);
-                      setHighlightRequiredFields(false);
-                    }}
-                    disabled={!formData.constructionType || !formData.constructionNature}
-                  >
-                    <SelectTrigger className="h-10 rounded-xl text-sm">
-                      <SelectValue placeholder={
-                        !formData.constructionType || !formData.constructionNature
-                          ? "Sélectionner d'abord type et nature" 
-                          : "Sélectionner l'usage"
-                      } />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {availableDeclaredUsages.map((usage) => (
-                        <SelectItem key={usage} value={usage}>{usage}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
                 </div>
               </CardContent>
             </Card>
