@@ -39,9 +39,12 @@ const AdminMortgages = () => {
   const [pendingMortgages, setPendingMortgages] = useState<PendingMortgage[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [pendingDetailsOpen, setPendingDetailsOpen] = useState(false);
   const [selectedMortgage, setSelectedMortgage] = useState<Mortgage | null>(null);
+  const [selectedPending, setSelectedPending] = useState<PendingMortgage | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [activeTab, setActiveTab] = useState<string>('approved');
+  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     fetchMortgages();
@@ -277,7 +280,11 @@ const AdminMortgages = () => {
                 {pendingMortgages.map((pending) => {
                   const mortgage = pending.mortgage_history[0];
                   return (
-                    <div key={pending.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
+                    <div 
+                      key={pending.id} 
+                      className="p-2.5 md:p-3 rounded-xl border bg-card cursor-pointer hover:bg-accent/50 transition-colors"
+                      onClick={() => { setSelectedPending(pending); setPendingDetailsOpen(true); }}
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -306,6 +313,9 @@ const AdminMortgages = () => {
                           <span className="text-[9px] text-muted-foreground">
                             {format(new Date(pending.created_at), 'dd/MM/yy', { locale: fr })}
                           </span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6">
+                            <Eye className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -364,6 +374,164 @@ const AdminMortgages = () => {
           )}
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setDetailsOpen(false)} className="h-8 text-xs">Fermer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pending Mortgage Details Dialog */}
+      <Dialog open={pendingDetailsOpen} onOpenChange={setPendingDetailsOpen}>
+        <DialogContent className="max-w-[380px] rounded-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-sm">Traitement de l'hypothèque en attente</DialogTitle>
+          </DialogHeader>
+          {selectedPending && (() => {
+            const mortgage = selectedPending.mortgage_history[0];
+            return (
+              <div className="space-y-3 py-2">
+                <div className="p-2.5 rounded-lg bg-yellow-50 border border-yellow-200">
+                  <p className="text-[10px] text-yellow-700 font-medium mb-1">Statut actuel</p>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(selectedPending.status)}
+                    <span className="text-xs text-yellow-800">
+                      {selectedPending.status === 'pending' ? 'En attente de validation' : 'Rejeté - Peut être révisé'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-muted/50">
+                  <p className="text-[10px] text-muted-foreground mb-1">Parcelle concernée</p>
+                  <p className="text-sm font-bold text-primary">{selectedPending.parcel_number}</p>
+                </div>
+
+                <div className="p-2.5 rounded-lg bg-muted/50">
+                  <p className="text-[10px] text-muted-foreground mb-1">Créancier</p>
+                  <p className="text-xs font-medium">{mortgage?.creditor_name || mortgage?.creditorName || 'Non spécifié'}</p>
+                  <p className="text-[10px] text-muted-foreground">{getCreditorTypeLabel(mortgage?.creditor_type || mortgage?.creditorType)}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 rounded-lg bg-muted/50">
+                    <p className="text-[10px] text-muted-foreground mb-1">Montant</p>
+                    <p className="text-sm font-bold text-primary">
+                      ${(mortgage?.mortgage_amount_usd || mortgage?.mortgageAmountUsd || 0).toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-muted/50">
+                    <p className="text-[10px] text-muted-foreground mb-1">Durée</p>
+                    <p className="text-sm font-bold">{mortgage?.duration_months || mortgage?.durationMonths || 0} mois</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2.5 rounded-lg bg-muted/50">
+                    <p className="text-[10px] text-muted-foreground mb-1">Date contrat</p>
+                    <p className="text-xs font-medium">
+                      {mortgage?.contract_date || mortgage?.contractDate 
+                        ? format(new Date(mortgage?.contract_date || mortgage?.contractDate), 'dd/MM/yyyy', { locale: fr })
+                        : 'Non spécifié'
+                      }
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-muted/50">
+                    <p className="text-[10px] text-muted-foreground mb-1">Soumis le</p>
+                    <p className="text-xs font-medium">{format(new Date(selectedPending.created_at), 'dd/MM/yyyy', { locale: fr })}</p>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t space-y-2">
+                  <p className="text-[10px] font-medium text-muted-foreground">Actions de traitement</p>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="flex-1 h-9 text-xs border-red-200 text-red-600 hover:bg-red-50"
+                      disabled={processing}
+                      onClick={async () => {
+                        setProcessing(true);
+                        try {
+                          await supabase
+                            .from('cadastral_contributions')
+                            .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
+                            .eq('id', selectedPending.id);
+                          toast.success('Hypothèque rejetée');
+                          setPendingDetailsOpen(false);
+                          fetchMortgages();
+                        } catch (error) {
+                          toast.error('Erreur lors du rejet');
+                        } finally {
+                          setProcessing(false);
+                        }
+                      }}
+                    >
+                      <XCircle className="h-3.5 w-3.5 mr-1" />
+                      Rejeter
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      className="flex-1 h-9 text-xs bg-green-600 hover:bg-green-700"
+                      disabled={processing}
+                      onClick={async () => {
+                        setProcessing(true);
+                        try {
+                          // Trouver la parcelle
+                          const { data: parcelData } = await supabase
+                            .from('cadastral_parcels')
+                            .select('id')
+                            .eq('parcel_number', selectedPending.parcel_number)
+                            .single();
+
+                          if (!parcelData) {
+                            toast.error('Parcelle non trouvée');
+                            setProcessing(false);
+                            return;
+                          }
+
+                          // Générer un numéro de référence
+                          const referenceNumber = `HYP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+
+                          // Créer l'hypothèque validée
+                          const { error: insertError } = await supabase
+                            .from('cadastral_mortgages')
+                            .insert({
+                              parcel_id: parcelData.id,
+                              creditor_name: mortgage?.creditor_name || mortgage?.creditorName || 'Non spécifié',
+                              creditor_type: mortgage?.creditor_type || mortgage?.creditorType || 'Banque',
+                              mortgage_amount_usd: mortgage?.mortgage_amount_usd || mortgage?.mortgageAmountUsd || 0,
+                              duration_months: mortgage?.duration_months || mortgage?.durationMonths || 12,
+                              contract_date: mortgage?.contract_date || mortgage?.contractDate || new Date().toISOString().split('T')[0],
+                              mortgage_status: 'active',
+                              reference_number: referenceNumber
+                            });
+
+                          if (insertError) throw insertError;
+
+                          // Mettre à jour la contribution
+                          await supabase
+                            .from('cadastral_contributions')
+                            .update({ status: 'approved', reviewed_at: new Date().toISOString() })
+                            .eq('id', selectedPending.id);
+
+                          toast.success(`Hypothèque validée avec le numéro ${referenceNumber}`);
+                          setPendingDetailsOpen(false);
+                          fetchMortgages();
+                        } catch (error) {
+                          console.error('Error approving mortgage:', error);
+                          toast.error('Erreur lors de la validation');
+                        } finally {
+                          setProcessing(false);
+                        }
+                      }}
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                      {processing ? 'Traitement...' : 'Valider'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setPendingDetailsOpen(false)} className="h-8 text-xs">Fermer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
