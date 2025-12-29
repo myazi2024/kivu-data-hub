@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 import { supabase } from '@/integrations/supabase/client';
 import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus } from 'lucide-react';
@@ -518,14 +519,23 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Boutons flottants en haut à gauche - visibles seulement quand la barre de recherche n'est pas active */}
+        {/* Bouton Obtenir titre foncier - au-dessus de la barre de recherche quand inactive */}
         {!isSearchBarActive && !selectedParcel && (
-          <div className={`absolute left-3 z-[1000] flex gap-2 animate-fade-in ${isMobile ? 'top-3' : 'top-3'}`}>
-            {/* Bouton Obtenir titre foncier */}
+          <div 
+            className={cn(
+              "absolute left-3 z-[1001] animate-fade-in",
+              isMobile ? "right-3" : "w-auto",
+              "bottom-[calc(100dvh-8rem)]"
+            )}
+          >
             <Button
               variant="default"
-              size="sm"
-              className="h-10 px-4 text-xs font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
+              size={isMobile ? "default" : "sm"}
+              className={cn(
+                "font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300",
+                "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary",
+                isMobile ? "w-full h-11 text-sm" : "h-10 px-4 text-xs"
+              )}
               onClick={() => setShowLandTitleDialog(true)}
             >
               <div className="flex items-center gap-2">
