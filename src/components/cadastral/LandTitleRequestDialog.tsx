@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -15,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   getAllProvinces, 
   getVillesForProvince, 
@@ -273,34 +273,35 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-[10000] bg-black/80" />
-          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[10000] w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] border bg-background p-6 shadow-2xl rounded-xl max-h-[90vh] overflow-y-auto">
-            <div className="space-y-4">
-              <div className="text-center space-y-2">
-                <DialogPrimitive.Title className="text-xl font-semibold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                  Paiement - Titre foncier
-                </DialogPrimitive.Title>
-                <DialogPrimitive.Description className="text-sm text-muted-foreground">
-                  Montant total : {totalAmount} USD
-                </DialogPrimitive.Description>
-              </div>
-              
-              <MobileMoneyPayment
-                item={cartItem}
-                currency="USD"
-                onPaymentSuccess={handlePaymentSuccess}
-              />
-              <Button 
-                variant="outline" 
-                onClick={() => setShowPayment(false)} 
-                className="w-full mt-2"
-              >
-                Annuler
-              </Button>
-            </div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
+        <DialogPortal>
+          <DialogOverlay className="z-[1100]" />
+          <DialogContent className={`z-[1100] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+            <DialogHeader className="pb-2">
+              <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  <CreditCard className="h-4 w-4 text-primary" />
+                </div>
+                Paiement - Titre foncier
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Montant total : {totalAmount} USD
+              </DialogDescription>
+            </DialogHeader>
+            
+            <MobileMoneyPayment
+              item={cartItem}
+              currency="USD"
+              onPaymentSuccess={handlePaymentSuccess}
+            />
+            <Button 
+              variant="outline" 
+              onClick={() => setShowPayment(false)} 
+              className="w-full h-11 text-sm rounded-xl mt-2"
+            >
+              Annuler
+            </Button>
+          </DialogContent>
+        </DialogPortal>
       </Dialog>
     );
   }
@@ -309,29 +310,37 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   if (showSuccess) {
     return (
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-[10000] bg-black/80" />
-          <DialogPrimitive.Content className="fixed left-[50%] top-[50%] z-[10000] w-[calc(100%-2rem)] max-w-md translate-x-[-50%] translate-y-[-50%] border bg-background p-6 shadow-2xl rounded-xl">
-            <div className="text-center space-y-4">
-              <div className="h-16 w-16 mx-auto rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle2 className="h-8 w-8 text-green-600" />
+        <DialogPortal>
+          <DialogOverlay className="z-[1100]" />
+          <DialogContent className={`z-[1100] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+            <div className="space-y-3 text-center py-2">
+              <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
               </div>
-              <DialogPrimitive.Title className="text-xl font-semibold">
-                Demande soumise avec succès !
-              </DialogPrimitive.Title>
-              <DialogPrimitive.Description className="text-muted-foreground">
-                Votre demande de titre foncier a été enregistrée sous le numéro :
-              </DialogPrimitive.Description>
-              <div className="bg-primary/10 rounded-xl p-4">
-                <p className="text-2xl font-bold text-primary">{savedReferenceNumber}</p>
+              
+              <div>
+                <h3 className="font-semibold text-sm">Demande soumise avec succès</h3>
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Votre demande de titre foncier a été enregistrée
+                </p>
               </div>
-              <p className="text-sm text-muted-foreground">
+
+              <Card className="bg-muted/50 border-0 text-left rounded-lg">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">Référence</span>
+                    <span className="font-mono font-bold text-sm text-primary">{savedReferenceNumber}</span>
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <p className="text-[10px] text-muted-foreground">
                 Vous recevrez une notification dès que votre demande sera traitée.
               </p>
-              <Button onClick={handleClose} className="w-full">Fermer</Button>
+              <Button onClick={handleClose} className="w-full h-11 text-sm rounded-xl">Fermer</Button>
             </div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
+          </DialogContent>
+        </DialogPortal>
       </Dialog>
     );
   }
@@ -339,62 +348,50 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay className="fixed inset-0 z-[10000] bg-black/80" />
-          <DialogPrimitive.Content className={cn(
-            "fixed left-[50%] top-[50%] z-[10000] w-[calc(100%-1rem)] translate-x-[-50%] translate-y-[-50%] border bg-background shadow-2xl rounded-xl overflow-hidden",
-            isMobile ? "max-w-[400px] max-h-[90vh]" : "max-w-2xl max-h-[85vh]"
-          )}>
-            {/* Header */}
-            <div className="sticky top-0 z-10 bg-background border-b px-4 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center">
-                    <Building className="h-5 w-5 text-primary-foreground" />
-                  </div>
-                  <div>
-                    <DialogPrimitive.Title className="text-lg font-semibold">
-                      Demande de titre foncier
-                    </DialogPrimitive.Title>
-                    <DialogPrimitive.Description className="text-xs text-muted-foreground">
-                      Obtenez votre certificat d'enregistrement
-                    </DialogPrimitive.Description>
-                  </div>
+        <DialogPortal>
+          <DialogOverlay className="z-[1100]" />
+          <DialogContent className={`z-[1100] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+            <DialogHeader className="pb-2">
+              <DialogTitle className="flex items-center gap-2 text-base font-bold">
+                <div className="p-1.5 bg-primary/10 rounded-lg">
+                  <Building className="h-4 w-4 text-primary" />
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleClose} className="rounded-full">
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+                Demande de titre foncier
+              </DialogTitle>
+              <DialogDescription className="text-sm text-muted-foreground">
+                Obtenez votre certificat d'enregistrement
+              </DialogDescription>
+            </DialogHeader>
 
-            {/* Content */}
-            <div className="overflow-y-auto max-h-[calc(85vh-140px)] p-4">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-4 mb-4">
-                  <TabsTrigger value="requester" className="text-xs gap-1">
-                    <User className="h-3 w-3" />
-                    <span className="hidden sm:inline">Demandeur</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="location" className="text-xs gap-1">
-                    <MapPin className="h-3 w-3" />
-                    <span className="hidden sm:inline">Lieu</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="documents" className="text-xs gap-1">
-                    <FileText className="h-3 w-3" />
-                    <span className="hidden sm:inline">Documents</span>
-                  </TabsTrigger>
-                  <TabsTrigger value="payment" className="text-xs gap-1">
-                    <CreditCard className="h-3 w-3" />
-                    <span className="hidden sm:inline">Frais</span>
-                  </TabsTrigger>
-                </TabsList>
+            <ScrollArea className="h-[65vh] sm:h-[70vh]">
+              <div className="space-y-4 pr-2">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                  <TabsList className="grid w-full grid-cols-4 mb-4">
+                    <TabsTrigger value="requester" className="text-xs gap-1">
+                      <User className="h-3 w-3" />
+                      <span className="hidden sm:inline">Demandeur</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="location" className="text-xs gap-1">
+                      <MapPin className="h-3 w-3" />
+                      <span className="hidden sm:inline">Lieu</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="documents" className="text-xs gap-1">
+                      <FileText className="h-3 w-3" />
+                      <span className="hidden sm:inline">Documents</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="payment" className="text-xs gap-1">
+                      <CreditCard className="h-3 w-3" />
+                      <span className="hidden sm:inline">Frais</span>
+                    </TabsTrigger>
+                  </TabsList>
+
 
                 {/* Tab: Requester */}
                 <TabsContent value="requester" className="space-y-4">
-                  <Card className="rounded-2xl">
-                    <CardContent className="p-4 space-y-4">
+                  <Card className="border rounded-xl shadow-sm">
+                    <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <div className="p-1.5 bg-primary/10 rounded-lg">
                           <User className="h-4 w-4 text-primary" />
                         </div>
                         <Label className="text-sm font-semibold">Informations du demandeur</Label>
@@ -430,126 +427,124 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
                           <Label className="text-sm">Nom *</Label>
                           <Input
                             value={formData.requesterLastName}
                             onChange={(e) => handleInputChange('requesterLastName', e.target.value)}
                             placeholder="Votre nom"
-                            className="h-9 rounded-xl"
+                            className="h-11 text-sm rounded-xl border-2"
                           />
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <Label className="text-sm">Prénom *</Label>
                           <Input
                             value={formData.requesterFirstName}
                             onChange={(e) => handleInputChange('requesterFirstName', e.target.value)}
                             placeholder="Votre prénom"
-                            className="h-9 rounded-xl"
+                            className="h-11 text-sm rounded-xl border-2"
                           />
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
                           <Label className="text-sm">Post-nom</Label>
                           <Input
                             value={formData.requesterMiddleName}
                             onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)}
                             placeholder="Post-nom"
-                            className="h-9 rounded-xl"
+                            className="h-11 text-sm rounded-xl border-2"
                           />
                         </div>
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <Label className="text-sm">Téléphone *</Label>
                           <Input
                             value={formData.requesterPhone}
                             onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
                             placeholder="+243..."
-                            className="h-9 rounded-xl"
+                            className="h-11 text-sm rounded-xl border-2"
                           />
                         </div>
                       </div>
 
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         <Label className="text-sm">Email</Label>
                         <Input
                           type="email"
                           value={formData.requesterEmail}
                           onChange={(e) => handleInputChange('requesterEmail', e.target.value)}
                           placeholder="votre@email.com"
-                          className="h-9 rounded-xl"
+                          className="h-11 text-sm rounded-xl border-2"
                         />
                       </div>
                     </CardContent>
                   </Card>
 
                   {formData.requesterType === 'representative' && (
-                    <Card className="rounded-2xl animate-fade-in">
-                      <CardContent className="p-4 space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
-                            <User className="h-4 w-4 text-primary" />
-                          </div>
-                          <Label className="text-sm font-semibold">Informations du propriétaire</Label>
-                        </div>
+                    <Card className="border-2 border-dashed rounded-xl">
+                      <CardContent className="p-3 space-y-3">
+                        <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                          Informations du propriétaire
+                        </h4>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Nom *</Label>
                             <Input
                               value={formData.ownerLastName || ''}
                               onChange={(e) => handleInputChange('ownerLastName', e.target.value)}
                               placeholder="Nom du propriétaire"
-                              className="h-9 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                             />
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Prénom *</Label>
                             <Input
                               value={formData.ownerFirstName || ''}
                               onChange={(e) => handleInputChange('ownerFirstName', e.target.value)}
                               placeholder="Prénom"
-                              className="h-9 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                             />
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Post-nom</Label>
                             <Input
                               value={formData.ownerMiddleName || ''}
                               onChange={(e) => handleInputChange('ownerMiddleName', e.target.value)}
                               placeholder="Post-nom"
-                              className="h-9 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                             />
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Téléphone</Label>
                             <Input
                               value={formData.ownerPhone || ''}
                               onChange={(e) => handleInputChange('ownerPhone', e.target.value)}
                               placeholder="+243..."
-                              className="h-9 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                             />
                           </div>
                         </div>
 
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <Label className="text-sm">Statut juridique</Label>
                           <Select
                             value={formData.ownerLegalStatus || 'Personne physique'}
                             onValueChange={(value) => handleInputChange('ownerLegalStatus', value)}
                           >
-                            <SelectTrigger className="h-9 rounded-xl">
+                            <SelectTrigger className="h-11 text-sm rounded-xl border-2">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Personne physique">Personne physique</SelectItem>
-                              <SelectItem value="Personne morale">Personne morale</SelectItem>
-                              <SelectItem value="Indivision">Indivision</SelectItem>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="Personne physique" className="text-sm py-2">Personne physique</SelectItem>
+                              <SelectItem value="Personne morale" className="text-sm py-2">Personne morale</SelectItem>
+                              <SelectItem value="Indivision" className="text-sm py-2">Indivision</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -558,7 +553,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   <div className="flex justify-end pt-4">
-                    <Button onClick={() => setActiveTab('location')} className="gap-2">
+                    <Button onClick={() => setActiveTab('location')} className="h-11 text-sm rounded-xl gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -566,10 +561,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Location */}
                 <TabsContent value="location" className="space-y-4">
-                  <Card className="rounded-2xl">
-                    <CardContent className="p-4 space-y-4">
+                  <Card className="border rounded-xl shadow-sm">
+                    <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <div className="p-1.5 bg-primary/10 rounded-lg">
                           <MapPin className="h-4 w-4 text-primary" />
                         </div>
                         <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
@@ -606,18 +601,18 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       </div>
 
                       {formData.sectionType && (
-                        <div className="space-y-1 animate-fade-in">
+                        <div className="space-y-1.5 animate-fade-in">
                           <Label className="text-sm">Province *</Label>
                           <Select
                             value={formData.province}
                             onValueChange={(value) => handleInputChange('province', value)}
                           >
-                            <SelectTrigger className="h-9 rounded-xl">
+                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
                               <SelectValue placeholder="Sélectionner la province" />
                             </SelectTrigger>
-                            <SelectContent>
+                            <SelectContent className="rounded-xl">
                               {getAllProvinces().map(province => (
-                                <SelectItem key={province} value={province}>{province}</SelectItem>
+                                <SelectItem key={province} value={province} className="text-sm py-2">{province}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -627,72 +622,72 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   {formData.sectionType === 'urbaine' && formData.province && (
-                    <Card className="rounded-2xl animate-fade-in">
-                      <CardContent className="p-4 space-y-3">
+                    <Card className="border rounded-xl shadow-sm animate-fade-in">
+                      <CardContent className="p-3 space-y-3">
                         <Label className="text-sm font-semibold">Section Urbaine (SU)</Label>
                         
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Ville *</Label>
                             <Select
                               value={formData.ville}
                               onValueChange={(value) => handleInputChange('ville', value)}
                               disabled={availableVilles.length === 0}
                             >
-                              <SelectTrigger className="h-9 rounded-xl">
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="rounded-xl">
                                 {availableVilles.map(ville => (
-                                  <SelectItem key={ville} value={ville}>{ville}</SelectItem>
+                                  <SelectItem key={ville} value={ville} className="text-sm py-2">{ville}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Commune *</Label>
                             <Select
                               value={formData.commune}
                               onValueChange={(value) => handleInputChange('commune', value)}
                               disabled={!formData.ville || availableCommunes.length === 0}
                             >
-                              <SelectTrigger className="h-9 rounded-xl">
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="rounded-xl">
                                 {availableCommunes.map(commune => (
-                                  <SelectItem key={commune} value={commune}>{commune}</SelectItem>
+                                  <SelectItem key={commune} value={commune} className="text-sm py-2">{commune}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Quartier *</Label>
                             <Select
                               value={formData.quartier}
                               onValueChange={(value) => handleInputChange('quartier', value)}
                               disabled={!formData.commune}
                             >
-                              <SelectTrigger className="h-9 rounded-xl">
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="rounded-xl">
                                 {availableQuartiers.map(quartier => (
-                                  <SelectItem key={quartier} value={quartier}>{quartier}</SelectItem>
+                                  <SelectItem key={quartier} value={quartier} className="text-sm py-2">{quartier}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Avenue</Label>
                             <Input
                               value={formData.avenue || ''}
                               onChange={(e) => handleInputChange('avenue', e.target.value)}
                               placeholder="Nom de l'avenue"
-                              className="h-9 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                               disabled={!formData.quartier}
                             />
                           </div>
@@ -702,64 +697,64 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   {formData.sectionType === 'rurale' && formData.province && (
-                    <Card className="rounded-2xl animate-fade-in">
-                      <CardContent className="p-4 space-y-3">
+                    <Card className="border rounded-xl shadow-sm animate-fade-in">
+                      <CardContent className="p-3 space-y-3">
                         <Label className="text-sm font-semibold">Section Rurale (SR)</Label>
                         
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Territoire *</Label>
                             <Select
                               value={formData.territoire}
                               onValueChange={(value) => handleInputChange('territoire', value)}
                               disabled={availableTerritoires.length === 0}
                             >
-                              <SelectTrigger className="h-9 rounded-xl">
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="rounded-xl">
                                 {availableTerritoires.map(territoire => (
-                                  <SelectItem key={territoire} value={territoire}>{territoire}</SelectItem>
+                                  <SelectItem key={territoire} value={territoire} className="text-sm py-2">{territoire}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Collectivité *</Label>
                             <Select
                               value={formData.collectivite}
                               onValueChange={(value) => handleInputChange('collectivite', value)}
                               disabled={!formData.territoire || availableCollectivites.length === 0}
                             >
-                              <SelectTrigger className="h-9 rounded-xl">
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="rounded-xl">
                                 {availableCollectivites.map(collectivite => (
-                                  <SelectItem key={collectivite} value={collectivite}>{collectivite}</SelectItem>
+                                  <SelectItem key={collectivite} value={collectivite} className="text-sm py-2">{collectivite}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-3">
-                          <div className="space-y-1">
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Groupement</Label>
                             <Input
                               value={formData.groupement || ''}
                               onChange={(e) => handleInputChange('groupement', e.target.value)}
                               placeholder="Nom du groupement"
-                              className="h-9 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                             />
                           </div>
-                          <div className="space-y-1">
+                          <div className="space-y-1.5">
                             <Label className="text-sm">Village</Label>
                             <Input
                               value={formData.village || ''}
                               onChange={(e) => handleInputChange('village', e.target.value)}
                               placeholder="Nom du village"
-                              className="h-9 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                             />
                           </div>
                         </div>
@@ -782,9 +777,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </div>
                   )}
 
-                  <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('requester')}>Précédent</Button>
-                    <Button onClick={() => setActiveTab('documents')} className="gap-2">
+                  <div className="flex gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-11 text-sm rounded-xl">
+                      Précédent
+                    </Button>
+                    <Button onClick={() => setActiveTab('documents')} className="flex-1 h-11 text-sm rounded-xl gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -792,17 +789,18 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Documents */}
                 <TabsContent value="documents" className="space-y-4">
-                  <Card className="rounded-2xl">
-                    <CardContent className="p-4 space-y-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
-                          <FileText className="h-4 w-4 text-primary" />
-                        </div>
-                        <Label className="text-sm font-semibold">Documents justificatifs</Label>
-                      </div>
+                  <Card className="border rounded-xl shadow-sm">
+                    <CardContent className="p-3 space-y-3">
+                      <h4 className="text-sm font-semibold flex items-center gap-2">
+                        <Upload className="h-4 w-4 text-muted-foreground" />
+                        Documents justificatifs
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        Pièces d'identité, preuves de propriété (max 10MB/fichier)
+                      </p>
 
                       <div className="space-y-3">
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <Label className="text-sm">Pièce d'identité du demandeur</Label>
                           {!requesterIdFile ? (
                             <Input
@@ -814,26 +812,26 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   setRequesterIdFile(file);
                                 }
                               }}
-                              className="h-10 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                             />
                           ) : (
-                            <div className="flex items-center gap-2 p-2 bg-muted rounded-xl">
-                              <FileText className="h-4 w-4 text-primary" />
-                              <span className="text-sm flex-1 truncate">{requesterIdFile.name}</span>
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                              <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span className="flex-1 truncate text-sm">{requesterIdFile.name}</span>
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 onClick={() => setRequesterIdFile(null)}
-                                className="h-6 w-6 p-0"
+                                className="h-7 w-7 rounded-lg hover:bg-destructive/10"
                               >
-                                <X className="h-4 w-4" />
+                                <X className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           )}
                         </div>
 
                         {formData.requesterType === 'representative' && (
-                          <div className="space-y-1 animate-fade-in">
+                          <div className="space-y-1.5 animate-fade-in">
                             <Label className="text-sm">Pièce d'identité du propriétaire</Label>
                             {!ownerIdFile ? (
                               <Input
@@ -845,26 +843,26 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                     setOwnerIdFile(file);
                                   }
                                 }}
-                                className="h-10 rounded-xl"
+                                className="h-11 text-sm rounded-xl border-2"
                               />
                             ) : (
-                              <div className="flex items-center gap-2 p-2 bg-muted rounded-xl">
-                                <FileText className="h-4 w-4 text-primary" />
-                                <span className="text-sm flex-1 truncate">{ownerIdFile.name}</span>
+                              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                                <span className="flex-1 truncate text-sm">{ownerIdFile.name}</span>
                                 <Button
                                   variant="ghost"
-                                  size="sm"
+                                  size="icon"
                                   onClick={() => setOwnerIdFile(null)}
-                                  className="h-6 w-6 p-0"
+                                  className="h-7 w-7 rounded-lg hover:bg-destructive/10"
                                 >
-                                  <X className="h-4 w-4" />
+                                  <X className="h-3.5 w-3.5" />
                                 </Button>
                               </div>
                             )}
                           </div>
                         )}
 
-                        <div className="space-y-1">
+                        <div className="space-y-1.5">
                           <Label className="text-sm">Preuve de propriété (acte de vente, héritage, etc.)</Label>
                           {!proofOfOwnershipFile ? (
                             <Input
@@ -876,19 +874,19 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   setProofOfOwnershipFile(file);
                                 }
                               }}
-                              className="h-10 rounded-xl"
+                              className="h-11 text-sm rounded-xl border-2"
                             />
                           ) : (
-                            <div className="flex items-center gap-2 p-2 bg-muted rounded-xl">
-                              <FileText className="h-4 w-4 text-primary" />
-                              <span className="text-sm flex-1 truncate">{proofOfOwnershipFile.name}</span>
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                              <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                              <span className="flex-1 truncate text-sm">{proofOfOwnershipFile.name}</span>
                               <Button
                                 variant="ghost"
-                                size="sm"
+                                size="icon"
                                 onClick={() => setProofOfOwnershipFile(null)}
-                                className="h-6 w-6 p-0"
+                                className="h-7 w-7 rounded-lg hover:bg-destructive/10"
                               >
-                                <X className="h-4 w-4" />
+                                <X className="h-3.5 w-3.5" />
                               </Button>
                             </div>
                           )}
@@ -897,9 +895,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                   </Card>
 
-                  <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('location')}>Précédent</Button>
-                    <Button onClick={() => setActiveTab('payment')} className="gap-2">
+                  <div className="flex gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-11 text-sm rounded-xl">
+                      Précédent
+                    </Button>
+                    <Button onClick={() => setActiveTab('payment')} className="flex-1 h-11 text-sm rounded-xl gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -907,10 +907,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Payment */}
                 <TabsContent value="payment" className="space-y-4">
-                  <Card className="rounded-2xl">
-                    <CardContent className="p-4 space-y-4">
+                  <Card className="border rounded-xl shadow-sm">
+                    <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <div className="p-1.5 bg-primary/10 rounded-lg">
                           <CreditCard className="h-4 w-4 text-primary" />
                         </div>
                         <Label className="text-sm font-semibold">Frais de dossier</Label>
@@ -933,7 +933,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                     <p className="text-xs text-muted-foreground">{fee.description}</p>
                                   )}
                                 </div>
-                                <p className="text-sm font-semibold">{fee.amount_usd} USD</p>
+                                <p className="text-sm font-semibold whitespace-nowrap">${fee.amount_usd}</p>
                               </div>
                             ))}
                           </div>
@@ -962,44 +962,51 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                       )}
                                     </div>
                                   </div>
-                                  <p className="text-sm font-semibold">{fee.amount_usd} USD</p>
+                                  <p className="text-sm font-semibold whitespace-nowrap">${fee.amount_usd}</p>
                                 </div>
                               ))}
                             </div>
                           )}
-
-                          {/* Total */}
-                          <div className="flex items-center justify-between p-4 bg-primary/10 rounded-xl mt-4">
-                            <p className="text-base font-semibold">Total à payer</p>
-                            <p className="text-xl font-bold text-primary">{totalAmount} USD</p>
-                          </div>
                         </div>
                       )}
                     </CardContent>
                   </Card>
 
-                  <div className="flex justify-between pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('documents')}>Précédent</Button>
+                  {/* Total */}
+                  <Card className="border rounded-xl">
+                    <CardContent className="p-3">
+                      <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
+                        <span className="font-semibold text-sm">Total à payer</span>
+                        <span className="text-xl font-bold text-primary">${totalAmount}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setActiveTab('documents')} className="flex-1 h-12 text-sm font-semibold rounded-xl">
+                      Précédent
+                    </Button>
                     <Button
                       onClick={handleProceedToPayment}
                       disabled={loading || !isFormValid()}
-                      className="gap-2 bg-gradient-to-r from-primary to-primary/80"
+                      className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg"
                     >
                       {loading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          Payer {totalAmount} USD
-                          <ChevronRight className="h-4 w-4" />
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Payer ${totalAmount}
                         </>
                       )}
                     </Button>
                   </div>
                 </TabsContent>
-              </Tabs>
-            </div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
+                </Tabs>
+              </div>
+            </ScrollArea>
+          </DialogContent>
+        </DialogPortal>
       </Dialog>
 
       {/* Quick Auth Dialog */}
