@@ -965,439 +965,342 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Valorisation */}
                 <TabsContent value="valorisation" className="space-y-4">
-                  {/* Étape 1: Type de construction */}
-                  <div className="relative">
-                    <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-primary/50 via-primary/20 to-transparent" />
-                    
-                    <div className="relative pl-8">
-                      <div className="absolute left-2.5 top-3 w-3 h-3 rounded-full bg-primary ring-4 ring-primary/20" />
-                      
-                      <Card className="border-0 shadow-md bg-gradient-to-br from-card to-muted/20">
-                        <CardContent className="p-4 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-primary/10 rounded-xl">
-                                <Home className="h-5 w-5 text-primary" />
-                              </div>
-                              <div>
-                                <h3 className="text-sm font-bold text-foreground">Type de mise en valeur</h3>
-                                <p className="text-xs text-muted-foreground">
-                                  {formData.sectionType === 'urbaine' ? 'Section Urbaine' : 
-                                   formData.sectionType === 'rurale' ? 'Section Rurale' : 
-                                   'Section non définie'}
-                                </p>
-                              </div>
-                            </div>
-                            <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                              Étape 1/3
-                            </span>
-                          </div>
+                  {/* Type de construction */}
+                  <Card className="border rounded-xl">
+                    <CardContent className="p-3 space-y-3">
+                      <h4 className="text-sm font-semibold flex items-center gap-2">
+                        <Home className="h-4 w-4 text-muted-foreground" />
+                        Type de mise en valeur
+                      </h4>
+                      <p className="text-xs text-muted-foreground">
+                        {formData.sectionType === 'urbaine' ? 'Section Urbaine' : 
+                         formData.sectionType === 'rurale' ? 'Section Rurale' : 
+                         'Section non définie'}
+                      </p>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div className="space-y-2">
-                              <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">Type</Label>
-                              <Select 
-                                value={constructionType}
-                                onValueChange={(value) => {
-                                  setConstructionType(value);
-                                  if (value === 'Terrain nu') setConstructionMaterials('');
-                                }}
-                              >
-                                <SelectTrigger className="h-10 text-sm rounded-xl border-2 border-muted hover:border-primary/50 transition-colors">
-                                  <SelectValue placeholder="Choisir le type" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                  <SelectItem value="Résidentielle" className="py-2.5">🏠 Résidentielle</SelectItem>
-                                  <SelectItem value="Commerciale" className="py-2.5">🏪 Commerciale</SelectItem>
-                                  <SelectItem value="Industrielle" className="py-2.5">🏭 Industrielle</SelectItem>
-                                  <SelectItem value="Agricole" className="py-2.5">🌾 Agricole</SelectItem>
-                                  <SelectItem value="Terrain nu" className="py-2.5">🏞️ Terrain nu</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Type *</Label>
+                          <Select 
+                            value={constructionType}
+                            onValueChange={(value) => {
+                              setConstructionType(value);
+                              if (value === 'Terrain nu') setConstructionMaterials('');
+                            }}
+                          >
+                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                              <SelectValue placeholder="Choisir le type" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="Résidentielle" className="text-sm py-2">🏠 Résidentielle</SelectItem>
+                              <SelectItem value="Commerciale" className="text-sm py-2">🏪 Commerciale</SelectItem>
+                              <SelectItem value="Industrielle" className="text-sm py-2">🏭 Industrielle</SelectItem>
+                              <SelectItem value="Agricole" className="text-sm py-2">🌾 Agricole</SelectItem>
+                              <SelectItem value="Terrain nu" className="text-sm py-2">🏞️ Terrain nu</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
-                            <div className="space-y-2">
-                              <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">Nature</Label>
-                              <Select 
-                                value={constructionNature}
-                                onValueChange={setConstructionNature}
-                                disabled={!constructionType}
-                              >
-                                <SelectTrigger className={cn(
-                                  "h-10 text-sm rounded-xl border-2 transition-colors",
-                                  !constructionType ? "border-muted bg-muted/50 cursor-not-allowed" : "border-muted hover:border-primary/50"
-                                )}>
-                                  <SelectValue placeholder={!constructionType ? "→ Type d'abord" : "Choisir"} />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-xl">
-                                  {availableConstructionNatures.map((nature) => (
-                                    <SelectItem key={nature} value={nature} className="py-2.5">{nature}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-
-                          {/* Affichage conditionnel des matériaux et usage */}
-                          {constructionType && (
-                            <div className="grid grid-cols-2 gap-3 animate-fade-in">
-                              {constructionType !== 'Terrain nu' && (
-                                <div className="space-y-2">
-                                  <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">Matériaux</Label>
-                                  <Select value={constructionMaterials} onValueChange={setConstructionMaterials}>
-                                    <SelectTrigger className="h-10 text-sm rounded-xl border-2 border-muted hover:border-primary/50 transition-colors">
-                                      <SelectValue placeholder="Choisir" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-xl">
-                                      <SelectItem value="Béton armé">Béton armé</SelectItem>
-                                      <SelectItem value="Briques cuites">Briques cuites</SelectItem>
-                                      <SelectItem value="Briques adobes">Briques adobes</SelectItem>
-                                      <SelectItem value="Parpaings">Parpaings</SelectItem>
-                                      <SelectItem value="Bois">Bois</SelectItem>
-                                      <SelectItem value="Tôles">Tôles</SelectItem>
-                                      <SelectItem value="Semi-dur">Semi-dur</SelectItem>
-                                      <SelectItem value="Mixte">Mixte</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              )}
-
-                              <div className={cn("space-y-2", constructionType === 'Terrain nu' && "col-span-2")}>
-                                <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wide">Usage déclaré</Label>
-                                <Select 
-                                  value={declaredUsage}
-                                  onValueChange={setDeclaredUsage}
-                                  disabled={!constructionNature}
-                                >
-                                  <SelectTrigger className={cn(
-                                    "h-10 text-sm rounded-xl border-2 transition-colors",
-                                    !constructionNature ? "border-muted bg-muted/50" : "border-muted hover:border-primary/50"
-                                  )}>
-                                    <SelectValue placeholder={!constructionNature ? "→ Nature d'abord" : "Choisir l'usage"} />
-                                  </SelectTrigger>
-                                  <SelectContent className="rounded-xl">
-                                    {availableDeclaredUsages.map((usage) => (
-                                      <SelectItem key={usage} value={usage} className="py-2.5">{usage}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-
-                  {/* Étape 2: Informations du demandeur - Conditionnelle */}
-                  {constructionType && constructionNature && declaredUsage && (
-                    <div className="relative animate-fade-in">
-                      <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-gradient-to-b from-amber-500/50 via-amber-500/20 to-transparent" />
-                      
-                      <div className="relative pl-8">
-                        <div className="absolute left-2.5 top-3 w-3 h-3 rounded-full bg-amber-500 ring-4 ring-amber-500/20" />
-                        
-                        <Card className="border-0 shadow-md bg-gradient-to-br from-card to-amber-500/5">
-                          <CardContent className="p-4 space-y-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="p-2 bg-amber-500/10 rounded-xl">
-                                  <User className="h-5 w-5 text-amber-600" />
-                                </div>
-                                <div>
-                                  <h3 className="text-sm font-bold text-foreground">Éligibilité légale</h3>
-                                  <p className="text-xs text-muted-foreground">
-                                    Critères déterminants selon la Loi n° 73-021
-                                  </p>
-                                </div>
-                              </div>
-                              <span className="text-xs font-medium text-amber-600 bg-amber-500/10 px-2 py-1 rounded-full">
-                                Étape 2/3
-                              </span>
-                            </div>
-
-                            <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
-                              <div className="flex items-start gap-2">
-                                <Info className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                                <p className="text-xs text-amber-700 dark:text-amber-400">
-                                  <strong>Important :</strong> Selon le droit foncier congolais, seuls les citoyens congolais peuvent obtenir 
-                                  une concession perpétuelle. Les étrangers ont accès aux baux emphytéotiques et concessions ordinaires.
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                              <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wide flex items-center gap-1.5">
-                                  Nationalité
-                                  <span className="text-destructive">*</span>
-                                </Label>
-                                <Select 
-                                  value={nationality}
-                                  onValueChange={(value) => setNationality(value as 'congolais' | 'etranger')}
-                                >
-                                  <SelectTrigger className="h-10 text-sm rounded-xl border-2 border-muted hover:border-amber-500/50 transition-colors">
-                                    <SelectValue placeholder="Choisir" />
-                                  </SelectTrigger>
-                                  <SelectContent className="rounded-xl">
-                                    {NATIONALITY_OPTIONS.map((option) => (
-                                      <SelectItem key={option.value} value={option.value} className="py-2.5">
-                                        <div className="flex items-center gap-2">
-                                          <span>{option.value === 'congolais' ? '🇨🇩' : '🌍'}</span>
-                                          <span>{option.label}</span>
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div className="space-y-2">
-                                <Label className="text-xs font-semibold text-foreground/80 uppercase tracking-wide flex items-center gap-1.5">
-                                  Durée souhaitée
-                                  <span className="text-destructive">*</span>
-                                </Label>
-                                <Select 
-                                  value={occupationDuration}
-                                  onValueChange={(value) => setOccupationDuration(value as 'perpetuel' | 'long_terme' | 'temporaire')}
-                                >
-                                  <SelectTrigger className={cn(
-                                    "h-10 text-sm rounded-xl border-2 transition-colors",
-                                    nationality === 'etranger' && occupationDuration === 'perpetuel'
-                                      ? "border-destructive"
-                                      : "border-muted hover:border-amber-500/50"
-                                  )}>
-                                    <SelectValue placeholder="Choisir" />
-                                  </SelectTrigger>
-                                  <SelectContent className="rounded-xl">
-                                    {OCCUPATION_DURATION_OPTIONS.map((option) => (
-                                      <SelectItem 
-                                        key={option.value} 
-                                        value={option.value}
-                                        disabled={nationality === 'etranger' && option.value === 'perpetuel'}
-                                        className="py-2.5"
-                                      >
-                                        <div className="flex flex-col">
-                                          <span className={cn(
-                                            nationality === 'etranger' && option.value === 'perpetuel' && "line-through text-muted-foreground"
-                                          )}>
-                                            {option.label}
-                                          </span>
-                                          {nationality === 'etranger' && option.value === 'perpetuel' && (
-                                            <span className="text-[10px] text-destructive">Non accessible aux étrangers</span>
-                                          )}
-                                        </div>
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-
-                            {/* Message conditionnel basé sur les sélections */}
-                            {nationality && occupationDuration && (
-                              <div className={cn(
-                                "p-3 rounded-xl text-xs animate-fade-in",
-                                nationality === 'congolais' && occupationDuration === 'perpetuel'
-                                  ? "bg-green-500/10 border border-green-500/30 text-green-700 dark:text-green-400"
-                                  : nationality === 'etranger'
-                                  ? "bg-blue-500/10 border border-blue-500/30 text-blue-700 dark:text-blue-400"
-                                  : "bg-amber-500/10 border border-amber-500/30 text-amber-700 dark:text-amber-400"
-                              )}>
-                                {nationality === 'congolais' && occupationDuration === 'perpetuel' ? (
-                                  <span className="flex items-center gap-2">
-                                    <Check className="h-4 w-4" />
-                                    Vous êtes éligible à la <strong>Concession Perpétuelle</strong> - le titre le plus complet en RDC
-                                  </span>
-                                ) : nationality === 'etranger' ? (
-                                  <span className="flex items-center gap-2">
-                                    <Info className="h-4 w-4" />
-                                    En tant qu'étranger, vous pouvez obtenir un <strong>Bail Emphytéotique</strong> ou une <strong>Concession Ordinaire</strong>
-                                  </span>
-                                ) : (
-                                  <span className="flex items-center gap-2">
-                                    <AlertCircle className="h-4 w-4" />
-                                    Titre temporaire disponible selon les conditions locales
-                                  </span>
-                                )}
-                              </div>
-                            )}
-                          </CardContent>
-                        </Card>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Étape 3: Bouton de validation et résultat */}
-                  {nationality && occupationDuration && (
-                    <div className="relative animate-fade-in">
-                      <div className="absolute left-4 top-0 h-12 w-0.5 bg-gradient-to-b from-green-500/50 to-transparent" />
-                      
-                      <div className="relative pl-8">
-                        <div className={cn(
-                          "absolute left-2.5 top-3 w-3 h-3 rounded-full ring-4 transition-colors",
-                          valorisationValidated 
-                            ? "bg-green-500 ring-green-500/20" 
-                            : "bg-muted-foreground/30 ring-muted/20"
-                        )} />
-                        
-                        <Button 
-                          onClick={handleValidateValorisation}
-                          disabled={!constructionType || !constructionNature || !declaredUsage || !nationality || !occupationDuration}
-                          className={cn(
-                            "w-full h-12 text-sm rounded-xl gap-2 transition-all shadow-lg",
-                            valorisationValidated 
-                              ? "bg-green-600 hover:bg-green-700 shadow-green-500/25" 
-                              : "shadow-primary/25"
-                          )}
-                        >
-                          {valorisationValidated ? (
-                            <>
-                              <Check className="h-5 w-5" />
-                              Titre foncier déterminé avec succès
-                            </>
-                          ) : (
-                            <>
-                              <Award className="h-5 w-5" />
-                              Déterminer mon type de titre foncier
-                            </>
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Résultat: Bloc Type de titre déduit */}
-                  {valorisationValidated && deducedTitleType && (
-                    <div className="animate-fade-in">
-                      <Card className={cn(
-                        "overflow-hidden border-0 shadow-xl",
-                        deducedTitleType.confidence === 'high' 
-                          ? "bg-gradient-to-br from-green-500/10 via-card to-green-500/5 ring-2 ring-green-500/30" 
-                          : deducedTitleType.confidence === 'medium'
-                          ? "bg-gradient-to-br from-amber-500/10 via-card to-amber-500/5 ring-2 ring-amber-500/30"
-                          : "bg-gradient-to-br from-blue-500/10 via-card to-blue-500/5 ring-2 ring-blue-500/30"
-                      )}>
-                        <CardContent className="p-5 space-y-5">
-                          {/* En-tête avec badge flottant */}
-                          <div className="relative">
-                            <div className={cn(
-                              "absolute -top-2 -right-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase shadow-lg",
-                              deducedTitleType.confidence === 'high' 
-                                ? "bg-green-500 text-white" 
-                                : deducedTitleType.confidence === 'medium'
-                                ? "bg-amber-500 text-white"
-                                : "bg-blue-500 text-white"
+                        <div className="space-y-1.5">
+                          <Label className="text-sm">Nature *</Label>
+                          <Select 
+                            value={constructionNature}
+                            onValueChange={setConstructionNature}
+                            disabled={!constructionType}
+                          >
+                            <SelectTrigger className={cn(
+                              "h-11 text-sm rounded-xl border-2",
+                              !constructionType ? "bg-muted/50 cursor-not-allowed" : "focus:border-primary"
                             )}>
-                              {deducedTitleType.confidence === 'high' ? '✓ Fiable' : 
-                               deducedTitleType.confidence === 'medium' ? '⚡ Probable' : 
-                               '? À préciser'}
+                              <SelectValue placeholder={!constructionType ? "→ Type d'abord" : "Choisir"} />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              {availableConstructionNatures.map((nature) => (
+                                <SelectItem key={nature} value={nature} className="text-sm py-2">{nature}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {constructionType && (
+                        <div className="grid grid-cols-2 gap-2">
+                          {constructionType !== 'Terrain nu' && (
+                            <div className="space-y-1.5">
+                              <Label className="text-sm">Matériaux</Label>
+                              <Select value={constructionMaterials} onValueChange={setConstructionMaterials}>
+                                <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                                  <SelectValue placeholder="Choisir" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-xl">
+                                  <SelectItem value="Béton armé" className="text-sm py-2">Béton armé</SelectItem>
+                                  <SelectItem value="Briques cuites" className="text-sm py-2">Briques cuites</SelectItem>
+                                  <SelectItem value="Briques adobes" className="text-sm py-2">Briques adobes</SelectItem>
+                                  <SelectItem value="Parpaings" className="text-sm py-2">Parpaings</SelectItem>
+                                  <SelectItem value="Bois" className="text-sm py-2">Bois</SelectItem>
+                                  <SelectItem value="Tôles" className="text-sm py-2">Tôles</SelectItem>
+                                  <SelectItem value="Semi-dur" className="text-sm py-2">Semi-dur</SelectItem>
+                                  <SelectItem value="Mixte" className="text-sm py-2">Mixte</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                            
-                            <div className="flex items-start gap-4">
-                              <div className={cn(
-                                "p-3 rounded-2xl shadow-lg",
-                                deducedTitleType.confidence === 'high' 
-                                  ? "bg-gradient-to-br from-green-500 to-green-600" 
-                                  : deducedTitleType.confidence === 'medium'
-                                  ? "bg-gradient-to-br from-amber-500 to-amber-600"
-                                  : "bg-gradient-to-br from-blue-500 to-blue-600"
+                          )}
+
+                          <div className={cn("space-y-1.5", constructionType === 'Terrain nu' && "col-span-2")}>
+                            <Label className="text-sm">Usage déclaré *</Label>
+                            <Select 
+                              value={declaredUsage}
+                              onValueChange={setDeclaredUsage}
+                              disabled={!constructionNature}
+                            >
+                              <SelectTrigger className={cn(
+                                "h-11 text-sm rounded-xl border-2",
+                                !constructionNature ? "bg-muted/50" : "focus:border-primary"
                               )}>
-                                <Award className="h-6 w-6 text-white" />
-                              </div>
-                              <div className="flex-1 pt-1">
-                                <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium mb-1">
-                                  Votre titre foncier recommandé
-                                </p>
-                                <h2 className={cn(
-                                  "text-xl font-extrabold leading-tight",
-                                  deducedTitleType.confidence === 'high' 
-                                    ? "text-green-700 dark:text-green-400" 
-                                    : deducedTitleType.confidence === 'medium'
-                                    ? "text-amber-700 dark:text-amber-400"
-                                    : "text-blue-700 dark:text-blue-400"
-                                )}>
-                                  {deducedTitleType.label}
-                                </h2>
-                              </div>
-                            </div>
+                                <SelectValue placeholder={!constructionNature ? "→ Nature d'abord" : "Choisir l'usage"} />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                {availableDeclaredUsages.map((usage) => (
+                                  <SelectItem key={usage} value={usage} className="text-sm py-2">{usage}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Éligibilité légale */}
+                  {constructionType && constructionNature && declaredUsage && (
+                    <Card className="border-2 border-dashed rounded-xl">
+                      <CardContent className="p-3 space-y-3">
+                        <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                          Éligibilité légale
+                        </h4>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          Selon le droit foncier congolais (Loi n° 73-021), seuls les citoyens congolais peuvent obtenir 
+                          une concession perpétuelle. Les étrangers ont accès aux baux emphytéotiques et concessions ordinaires.
+                        </p>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Nationalité *</Label>
+                            <Select 
+                              value={nationality}
+                              onValueChange={(value) => setNationality(value as 'congolais' | 'etranger')}
+                            >
+                              <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                                <SelectValue placeholder="Choisir" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                {NATIONALITY_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={option.value} className="text-sm py-2">
+                                    <div className="flex items-center gap-2">
+                                      <span>{option.value === 'congolais' ? '🇨🇩' : '🌍'}</span>
+                                      <span>{option.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
 
-                          {/* Description */}
-                          <p className="text-sm text-muted-foreground leading-relaxed pl-1 border-l-2 border-primary/30">
-                            {deducedTitleType.description}
-                          </p>
-
-                          {/* Conditions requises */}
-                          {deducedTitleType.conditions && deducedTitleType.conditions.length > 0 && (
-                            <div className="space-y-3 p-4 bg-card/80 rounded-xl border border-border/50">
-                              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                                Conditions à remplir
-                              </h4>
-                              <ul className="space-y-2">
-                                {deducedTitleType.conditions.map((condition, idx) => (
-                                  <li key={idx} className="text-sm text-muted-foreground flex items-start gap-3 pl-1">
-                                    <span className="h-5 w-5 rounded-full bg-green-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                      <Check className="h-3 w-3 text-green-600" />
-                                    </span>
-                                    {condition}
-                                  </li>
+                          <div className="space-y-1.5">
+                            <Label className="text-sm">Durée souhaitée *</Label>
+                            <Select 
+                              value={occupationDuration}
+                              onValueChange={(value) => setOccupationDuration(value as 'perpetuel' | 'long_terme' | 'temporaire')}
+                            >
+                              <SelectTrigger className={cn(
+                                "h-11 text-sm rounded-xl border-2",
+                                nationality === 'etranger' && occupationDuration === 'perpetuel'
+                                  ? "border-destructive"
+                                  : "focus:border-primary"
+                              )}>
+                                <SelectValue placeholder="Choisir" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                {OCCUPATION_DURATION_OPTIONS.map((option) => (
+                                  <SelectItem 
+                                    key={option.value} 
+                                    value={option.value}
+                                    disabled={nationality === 'etranger' && option.value === 'perpetuel'}
+                                    className="text-sm py-2"
+                                  >
+                                    <div className="flex flex-col">
+                                      <span className={cn(
+                                        nationality === 'etranger' && option.value === 'perpetuel' && "line-through text-muted-foreground"
+                                      )}>
+                                        {option.label}
+                                      </span>
+                                      {nationality === 'etranger' && option.value === 'perpetuel' && (
+                                        <span className="text-[10px] text-destructive">Non accessible aux étrangers</span>
+                                      )}
+                                    </div>
+                                  </SelectItem>
                                 ))}
-                              </ul>
-                            </div>
-                          )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
 
-                          {/* Prochaines étapes */}
-                          {deducedTitleType.nextSteps && deducedTitleType.nextSteps.length > 0 && (
-                            <div className="space-y-3 p-4 bg-primary/5 rounded-xl border border-primary/20">
-                              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                                <ChevronRight className="h-4 w-4 text-primary" />
-                                Vos prochaines étapes
-                              </h4>
-                              <ol className="space-y-2">
-                                {deducedTitleType.nextSteps.map((step, idx) => (
-                                  <li key={idx} className="text-sm text-muted-foreground flex items-start gap-3">
-                                    <span className="h-6 w-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-xs font-bold shadow-sm">
-                                      {idx + 1}
-                                    </span>
-                                    {step}
-                                  </li>
-                                ))}
-                              </ol>
-                            </div>
-                          )}
-
-                          {/* Possibilité de conversion */}
-                          {deducedTitleType.conversionPossible && (
-                            <div className="p-4 bg-gradient-to-r from-primary/5 to-primary/10 border border-primary/20 rounded-xl">
-                              <h4 className="text-sm font-bold text-primary flex items-center gap-2 mb-3">
-                                <Award className="h-4 w-4" />
-                                Évolution possible → {deducedTitleType.conversionPossible.targetTitle}
-                              </h4>
-                              <ul className="space-y-1.5">
-                                {deducedTitleType.conversionPossible.requirements.map((req, idx) => (
-                                  <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
-                                    <ChevronRight className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />
-                                    {req}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-
-                          {/* Base légale */}
-                          <div className="pt-4 border-t border-border/30">
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground/70">
-                              <FileText className="h-3.5 w-3.5" />
-                              <span>
-                                <span className="font-semibold">Base légale :</span> {deducedTitleType.legalBasis}
+                        {nationality && occupationDuration && (
+                          <div className={cn(
+                            "p-2.5 rounded-xl text-xs",
+                            nationality === 'congolais' && occupationDuration === 'perpetuel'
+                              ? "bg-green-50 border border-green-200 text-green-700 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400"
+                              : nationality === 'etranger'
+                              ? "bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-400"
+                              : "bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400"
+                          )}>
+                            {nationality === 'congolais' && occupationDuration === 'perpetuel' ? (
+                              <span className="flex items-center gap-2">
+                                <Check className="h-4 w-4" />
+                                Vous êtes éligible à la <strong>Concession Perpétuelle</strong> - le titre le plus complet en RDC
                               </span>
-                            </div>
+                            ) : nationality === 'etranger' ? (
+                              <span className="flex items-center gap-2">
+                                <Info className="h-4 w-4" />
+                                En tant qu'étranger, vous pouvez obtenir un <strong>Bail Emphytéotique</strong> ou une <strong>Concession Ordinaire</strong>
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4" />
+                                Titre temporaire disponible selon les conditions locales
+                              </span>
+                            )}
                           </div>
-                        </CardContent>
-                      </Card>
-                    </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Bouton de validation */}
+                  {nationality && occupationDuration && (
+                    <Button 
+                      onClick={handleValidateValorisation}
+                      disabled={!constructionType || !constructionNature || !declaredUsage || !nationality || !occupationDuration}
+                      className={cn(
+                        "w-full h-11 text-sm rounded-xl gap-2",
+                        valorisationValidated 
+                          ? "bg-green-600 hover:bg-green-700" 
+                          : ""
+                      )}
+                    >
+                      {valorisationValidated ? (
+                        <>
+                          <CheckCircle2 className="h-4 w-4" />
+                          Titre foncier déterminé avec succès
+                        </>
+                      ) : (
+                        <>
+                          <Award className="h-4 w-4" />
+                          Déterminer mon type de titre foncier
+                        </>
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Résultat: Titre déduit */}
+                  {valorisationValidated && deducedTitleType && (
+                    <Card className={cn(
+                      "border-2 rounded-xl",
+                      deducedTitleType.confidence === 'high' 
+                        ? "border-green-200 bg-green-50/50 dark:border-green-800 dark:bg-green-950/20" 
+                        : deducedTitleType.confidence === 'medium'
+                        ? "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
+                        : "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20"
+                    )}>
+                      <CardContent className="p-3 space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Award className={cn(
+                            "h-4 w-4",
+                            deducedTitleType.confidence === 'high' 
+                              ? "text-green-600" 
+                              : deducedTitleType.confidence === 'medium'
+                              ? "text-amber-600"
+                              : "text-blue-600"
+                          )} />
+                          <h4 className={cn(
+                            "text-sm font-semibold",
+                            deducedTitleType.confidence === 'high' 
+                              ? "text-green-700 dark:text-green-400" 
+                              : deducedTitleType.confidence === 'medium'
+                              ? "text-amber-700 dark:text-amber-400"
+                              : "text-blue-700 dark:text-blue-400"
+                          )}>
+                            {deducedTitleType.label}
+                          </h4>
+                          <span className={cn(
+                            "ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium",
+                            deducedTitleType.confidence === 'high' 
+                              ? "bg-green-500 text-white" 
+                              : deducedTitleType.confidence === 'medium'
+                              ? "bg-amber-500 text-white"
+                              : "bg-blue-500 text-white"
+                          )}>
+                            {deducedTitleType.confidence === 'high' ? 'Fiable' : 
+                             deducedTitleType.confidence === 'medium' ? 'Probable' : 
+                             'À préciser'}
+                          </span>
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          {deducedTitleType.description}
+                        </p>
+
+                        {deducedTitleType.conditions && deducedTitleType.conditions.length > 0 && (
+                          <div className="space-y-1.5 pt-2 border-t border-border/50">
+                            <p className="text-xs font-medium text-foreground">Conditions à remplir :</p>
+                            <ul className="space-y-1">
+                              {deducedTitleType.conditions.slice(0, 3).map((condition, idx) => (
+                                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                                  <Check className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+                                  {condition}
+                                </li>
+                              ))}
+                              {deducedTitleType.conditions.length > 3 && (
+                                <li className="text-xs text-muted-foreground">
+                                  + {deducedTitleType.conditions.length - 3} autres conditions
+                                </li>
+                              )}
+                            </ul>
+                          </div>
+                        )}
+
+                        {deducedTitleType.nextSteps && deducedTitleType.nextSteps.length > 0 && (
+                          <div className="space-y-1.5 pt-2 border-t border-border/50">
+                            <p className="text-xs font-medium text-foreground">Prochaines étapes :</p>
+                            <ol className="space-y-1">
+                              {deducedTitleType.nextSteps.slice(0, 3).map((step, idx) => (
+                                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                                  <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-[10px] font-bold">
+                                    {idx + 1}
+                                  </span>
+                                  {step}
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
+
+                        {deducedTitleType.conversionPossible && (
+                          <div className="p-2 bg-primary/5 border border-primary/20 rounded-lg">
+                            <p className="text-xs text-primary font-medium flex items-center gap-1.5">
+                              <ChevronRight className="h-3 w-3" />
+                              Évolution possible → {deducedTitleType.conversionPossible.targetTitle}
+                            </p>
+                          </div>
+                        )}
+
+                        <p className="text-[10px] text-muted-foreground/70 flex items-center gap-1.5 pt-1 border-t border-border/30">
+                          <FileText className="h-3 w-3" />
+                          Base légale : {deducedTitleType.legalBasis}
+                        </p>
+                      </CardContent>
+                    </Card>
                   )}
 
                   <div className="flex gap-2 pt-4">
