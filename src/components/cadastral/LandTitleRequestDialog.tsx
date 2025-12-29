@@ -296,7 +296,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             <Button 
               variant="outline" 
               onClick={() => setShowPayment(false)} 
-              className="w-full h-11 text-sm rounded-xl mt-2"
+              className="w-full h-8 text-xs rounded-lg mt-2"
             >
               Annuler
             </Button>
@@ -329,7 +329,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                 <CardContent className="p-3 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-muted-foreground">Référence</span>
-                    <span className="font-mono font-bold text-sm text-primary">{savedReferenceNumber}</span>
+                    <span className="font-mono font-bold text-xs text-primary">{savedReferenceNumber}</span>
                   </div>
                 </CardContent>
               </Card>
@@ -337,7 +337,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               <p className="text-[10px] text-muted-foreground">
                 Vous recevrez une notification dès que votre demande sera traitée.
               </p>
-              <Button onClick={handleClose} className="w-full h-11 text-sm rounded-xl">Fermer</Button>
+              <Button onClick={handleClose} className="w-full h-8 text-xs rounded-lg">Fermer</Button>
             </div>
           </DialogContent>
         </DialogPortal>
@@ -388,7 +388,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Requester */}
                 <TabsContent value="requester" className="space-y-4">
-                  <Card className="border rounded-xl shadow-sm">
+                  <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="p-1.5 bg-primary/10 rounded-lg">
@@ -404,7 +404,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             type="button"
                             onClick={() => handleInputChange('requesterType', 'owner')}
                             className={cn(
-                              "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
+                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
                               formData.requesterType === 'owner'
                                 ? 'bg-primary text-primary-foreground shadow-md'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -416,7 +416,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             type="button"
                             onClick={() => handleInputChange('requesterType', 'representative')}
                             className={cn(
-                              "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
+                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
                               formData.requesterType === 'representative'
                                 ? 'bg-primary text-primary-foreground shadow-md'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -434,7 +434,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={formData.requesterLastName}
                             onChange={(e) => handleInputChange('requesterLastName', e.target.value)}
                             placeholder="Votre nom"
-                            className="h-11 text-sm rounded-xl border-2"
+                            className="h-9 text-sm rounded-lg border"
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -443,7 +443,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={formData.requesterFirstName}
                             onChange={(e) => handleInputChange('requesterFirstName', e.target.value)}
                             placeholder="Votre prénom"
-                            className="h-11 text-sm rounded-xl border-2"
+                            className="h-9 text-sm rounded-lg border"
                           />
                         </div>
                       </div>
@@ -455,7 +455,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={formData.requesterMiddleName}
                             onChange={(e) => handleInputChange('requesterMiddleName', e.target.value)}
                             placeholder="Post-nom"
-                            className="h-11 text-sm rounded-xl border-2"
+                            className="h-9 text-sm rounded-lg border"
                           />
                         </div>
                         <div className="space-y-1.5">
@@ -464,7 +464,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={formData.requesterPhone}
                             onChange={(e) => handleInputChange('requesterPhone', e.target.value)}
                             placeholder="+243..."
-                            className="h-11 text-sm rounded-xl border-2"
+                            className="h-9 text-sm rounded-lg border"
                           />
                         </div>
                       </div>
@@ -476,14 +476,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           value={formData.requesterEmail}
                           onChange={(e) => handleInputChange('requesterEmail', e.target.value)}
                           placeholder="votre@email.com"
-                          className="h-11 text-sm rounded-xl border-2"
+                          className="h-9 text-sm rounded-lg border"
                         />
                       </div>
                     </CardContent>
                   </Card>
 
                   {formData.requesterType === 'representative' && (
-                    <Card className="border-2 border-dashed rounded-xl">
+                    <Card className="border-2 border-dashed rounded-lg">
                       <CardContent className="p-3 space-y-3">
                         <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full" />
@@ -497,7 +497,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               value={formData.ownerLastName || ''}
                               onChange={(e) => handleInputChange('ownerLastName', e.target.value)}
                               placeholder="Nom du propriétaire"
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -506,7 +506,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               value={formData.ownerFirstName || ''}
                               onChange={(e) => handleInputChange('ownerFirstName', e.target.value)}
                               placeholder="Prénom"
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                             />
                           </div>
                         </div>
@@ -518,7 +518,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               value={formData.ownerMiddleName || ''}
                               onChange={(e) => handleInputChange('ownerMiddleName', e.target.value)}
                               placeholder="Post-nom"
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -527,7 +527,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               value={formData.ownerPhone || ''}
                               onChange={(e) => handleInputChange('ownerPhone', e.target.value)}
                               placeholder="+243..."
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                             />
                           </div>
                         </div>
@@ -538,10 +538,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={formData.ownerLegalStatus || 'Personne physique'}
                             onValueChange={(value) => handleInputChange('ownerLegalStatus', value)}
                           >
-                            <SelectTrigger className="h-11 text-sm rounded-xl border-2">
+                            <SelectTrigger className="h-9 text-sm rounded-lg border">
                               <SelectValue />
                             </SelectTrigger>
-                            <SelectContent className="rounded-xl">
+                            <SelectContent className="rounded-lg">
                               <SelectItem value="Personne physique" className="text-sm py-2">Personne physique</SelectItem>
                               <SelectItem value="Personne morale" className="text-sm py-2">Personne morale</SelectItem>
                               <SelectItem value="Indivision" className="text-sm py-2">Indivision</SelectItem>
@@ -553,7 +553,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   <div className="flex justify-end pt-4">
-                    <Button onClick={() => setActiveTab('location')} className="h-11 text-sm rounded-xl gap-2">
+                    <Button onClick={() => setActiveTab('location')} className="h-8 text-xs rounded-lg gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -561,7 +561,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Location */}
                 <TabsContent value="location" className="space-y-4">
-                  <Card className="border rounded-xl shadow-sm">
+                  <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="p-1.5 bg-primary/10 rounded-lg">
@@ -577,7 +577,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             type="button"
                             onClick={() => handleInputChange('sectionType', 'urbaine')}
                             className={cn(
-                              "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
+                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
                               formData.sectionType === 'urbaine'
                                 ? 'bg-primary text-primary-foreground shadow-md'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -589,7 +589,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             type="button"
                             onClick={() => handleInputChange('sectionType', 'rurale')}
                             className={cn(
-                              "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
+                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
                               formData.sectionType === 'rurale'
                                 ? 'bg-primary text-primary-foreground shadow-md'
                                 : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -607,10 +607,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             value={formData.province}
                             onValueChange={(value) => handleInputChange('province', value)}
                           >
-                            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                            <SelectTrigger className="h-9 text-sm rounded-lg border">
                               <SelectValue placeholder="Sélectionner la province" />
                             </SelectTrigger>
-                            <SelectContent className="rounded-xl">
+                            <SelectContent className="rounded-lg">
                               {getAllProvinces().map(province => (
                                 <SelectItem key={province} value={province} className="text-sm py-2">{province}</SelectItem>
                               ))}
@@ -622,7 +622,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   {formData.sectionType === 'urbaine' && formData.province && (
-                    <Card className="border rounded-xl shadow-sm animate-fade-in">
+                    <Card className="border-2 rounded-lg animate-fade-in">
                       <CardContent className="p-3 space-y-3">
                         <Label className="text-sm font-semibold">Section Urbaine (SU)</Label>
                         
@@ -634,10 +634,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('ville', value)}
                               disabled={availableVilles.length === 0}
                             >
-                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl">
+                              <SelectContent className="rounded-lg">
                                 {availableVilles.map(ville => (
                                   <SelectItem key={ville} value={ville} className="text-sm py-2">{ville}</SelectItem>
                                 ))}
@@ -651,10 +651,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('commune', value)}
                               disabled={!formData.ville || availableCommunes.length === 0}
                             >
-                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl">
+                              <SelectContent className="rounded-lg">
                                 {availableCommunes.map(commune => (
                                   <SelectItem key={commune} value={commune} className="text-sm py-2">{commune}</SelectItem>
                                 ))}
@@ -671,10 +671,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('quartier', value)}
                               disabled={!formData.commune}
                             >
-                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl">
+                              <SelectContent className="rounded-lg">
                                 {availableQuartiers.map(quartier => (
                                   <SelectItem key={quartier} value={quartier} className="text-sm py-2">{quartier}</SelectItem>
                                 ))}
@@ -687,7 +687,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               value={formData.avenue || ''}
                               onChange={(e) => handleInputChange('avenue', e.target.value)}
                               placeholder="Nom de l'avenue"
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                               disabled={!formData.quartier}
                             />
                           </div>
@@ -697,7 +697,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   {formData.sectionType === 'rurale' && formData.province && (
-                    <Card className="border rounded-xl shadow-sm animate-fade-in">
+                    <Card className="border-2 rounded-lg animate-fade-in">
                       <CardContent className="p-3 space-y-3">
                         <Label className="text-sm font-semibold">Section Rurale (SR)</Label>
                         
@@ -709,10 +709,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('territoire', value)}
                               disabled={availableTerritoires.length === 0}
                             >
-                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl">
+                              <SelectContent className="rounded-lg">
                                 {availableTerritoires.map(territoire => (
                                   <SelectItem key={territoire} value={territoire} className="text-sm py-2">{territoire}</SelectItem>
                                 ))}
@@ -726,10 +726,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('collectivite', value)}
                               disabled={!formData.territoire || availableCollectivites.length === 0}
                             >
-                              <SelectTrigger className="h-11 text-sm rounded-xl border-2">
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-xl">
+                              <SelectContent className="rounded-lg">
                                 {availableCollectivites.map(collectivite => (
                                   <SelectItem key={collectivite} value={collectivite} className="text-sm py-2">{collectivite}</SelectItem>
                                 ))}
@@ -745,7 +745,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               value={formData.groupement || ''}
                               onChange={(e) => handleInputChange('groupement', e.target.value)}
                               placeholder="Nom du groupement"
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                             />
                           </div>
                           <div className="space-y-1.5">
@@ -754,7 +754,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               value={formData.village || ''}
                               onChange={(e) => handleInputChange('village', e.target.value)}
                               placeholder="Nom du village"
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                             />
                           </div>
                         </div>
@@ -778,10 +778,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-11 text-sm rounded-xl">
+                    <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-8 text-xs rounded-lg">
                       Précédent
                     </Button>
-                    <Button onClick={() => setActiveTab('documents')} className="flex-1 h-11 text-sm rounded-xl gap-2">
+                    <Button onClick={() => setActiveTab('documents')} className="flex-1 h-8 text-xs rounded-lg gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -789,7 +789,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Documents */}
                 <TabsContent value="documents" className="space-y-4">
-                  <Card className="border rounded-xl shadow-sm">
+                  <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <h4 className="text-sm font-semibold flex items-center gap-2">
                         <Upload className="h-4 w-4 text-muted-foreground" />
@@ -812,10 +812,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   setRequesterIdFile(file);
                                 }
                               }}
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                             />
                           ) : (
-                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
                               <FileText className="h-4 w-4 text-primary flex-shrink-0" />
                               <span className="flex-1 truncate text-sm">{requesterIdFile.name}</span>
                               <Button
@@ -843,10 +843,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                     setOwnerIdFile(file);
                                   }
                                 }}
-                                className="h-11 text-sm rounded-xl border-2"
+                                className="h-9 text-sm rounded-lg border"
                               />
                             ) : (
-                              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
                                 <FileText className="h-4 w-4 text-primary flex-shrink-0" />
                                 <span className="flex-1 truncate text-sm">{ownerIdFile.name}</span>
                                 <Button
@@ -874,10 +874,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                   setProofOfOwnershipFile(file);
                                 }
                               }}
-                              className="h-11 text-sm rounded-xl border-2"
+                              className="h-9 text-sm rounded-lg border"
                             />
                           ) : (
-                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                            <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-lg">
                               <FileText className="h-4 w-4 text-primary flex-shrink-0" />
                               <span className="flex-1 truncate text-sm">{proofOfOwnershipFile.name}</span>
                               <Button
@@ -896,10 +896,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-11 text-sm rounded-xl">
+                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-lg">
                       Précédent
                     </Button>
-                    <Button onClick={() => setActiveTab('payment')} className="flex-1 h-11 text-sm rounded-xl gap-2">
+                    <Button onClick={() => setActiveTab('payment')} className="flex-1 h-8 text-xs rounded-lg gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -907,7 +907,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Payment */}
                 <TabsContent value="payment" className="space-y-4">
-                  <Card className="border rounded-xl shadow-sm">
+                  <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="p-1.5 bg-primary/10 rounded-lg">
@@ -926,7 +926,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           <div className="space-y-2">
                             <p className="text-xs font-medium text-muted-foreground uppercase">Frais obligatoires</p>
                             {getMandatoryFees().map(fee => (
-                              <div key={fee.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
+                              <div key={fee.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                                 <div>
                                   <p className="text-sm font-medium">{fee.fee_name}</p>
                                   {fee.description && (
@@ -946,7 +946,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                                 <div
                                   key={fee.id}
                                   className={cn(
-                                    "flex items-center justify-between p-3 rounded-xl border-2 cursor-pointer transition-all",
+                                    "flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-all",
                                     formData.selectedFees.includes(fee.id)
                                       ? "border-primary bg-primary/5"
                                       : "border-transparent bg-muted/30 hover:bg-muted/50"
@@ -973,23 +973,23 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   {/* Total */}
-                  <Card className="border rounded-xl">
+                  <Card className="border rounded-lg">
                     <CardContent className="p-3">
-                      <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
+                      <div className="flex items-center justify-between p-3 bg-primary/10 rounded-lg">
                         <span className="font-semibold text-sm">Total à payer</span>
-                        <span className="text-xl font-bold text-primary">${totalAmount}</span>
+                        <span className="text-lg font-bold text-primary">${totalAmount}</span>
                       </div>
                     </CardContent>
                   </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('documents')} className="flex-1 h-12 text-sm font-semibold rounded-xl">
+                    <Button variant="outline" onClick={() => setActiveTab('documents')} className="flex-1 h-8 text-xs rounded-lg">
                       Précédent
                     </Button>
                     <Button
                       onClick={handleProceedToPayment}
                       disabled={loading || !isFormValid()}
-                      className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg"
+                      className="flex-1 h-8 text-xs rounded-lg"
                     >
                       {loading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
