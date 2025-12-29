@@ -992,11 +992,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <SelectValue placeholder="Choisir le type" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl">
-                              <SelectItem value="Résidentielle" className="text-sm py-2">🏠 Résidentielle</SelectItem>
-                              <SelectItem value="Commerciale" className="text-sm py-2">🏪 Commerciale</SelectItem>
-                              <SelectItem value="Industrielle" className="text-sm py-2">🏭 Industrielle</SelectItem>
-                              <SelectItem value="Agricole" className="text-sm py-2">🌾 Agricole</SelectItem>
-                              <SelectItem value="Terrain nu" className="text-sm py-2">🏞️ Terrain nu</SelectItem>
+                              <SelectItem value="Résidentielle" className="text-sm py-2">Résidentielle</SelectItem>
+                              <SelectItem value="Commerciale" className="text-sm py-2">Commerciale</SelectItem>
+                              <SelectItem value="Industrielle" className="text-sm py-2">Industrielle</SelectItem>
+                              <SelectItem value="Agricole" className="text-sm py-2">Agricole</SelectItem>
+                              <SelectItem value="Terrain nu" className="text-sm py-2">Terrain nu</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
