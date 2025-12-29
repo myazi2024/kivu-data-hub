@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -109,6 +109,137 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [declaredUsage, setDeclaredUsage] = useState<string>('');
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
+  
+  // Land title type deduction
+  const [valorisationValidated, setValorisationValidated] = useState(false);
+  const [deducedTitleType, setDeducedTitleType] = useState<{
+    type: string;
+    label: string;
+    description: string;
+    confidence: 'high' | 'medium' | 'low';
+  } | null>(null);
+
+  // Function to deduce land title type based on Congolese land law
+  const deduceLandTitleType = () => {
+    if (!constructionType || !constructionNature || !declaredUsage) {
+      return null;
+    }
+
+    const isUrban = formData.sectionType === 'urbaine';
+    const isRural = formData.sectionType === 'rurale';
+    const hasDurableConstruction = constructionNature === 'Durable';
+    const hasSemiDurableConstruction = constructionNature === 'Semi-durable';
+    const isPrecaire = constructionNature === 'Précaire';
+    const isNonBati = constructionNature === 'Non bâti';
+    
+    // Selon le droit foncier congolais (Loi n° 73-021 du 20 juillet 1973)
+    
+    // 1. Concession perpétuelle - Pour les nationaux congolais avec mise en valeur complète
+    if (hasDurableConstruction && (constructionType === 'Résidentielle' || constructionType === 'Commerciale')) {
+      if (isUrban) {
+        return {
+          type: 'Concession perpétuelle',
+          label: 'Concession perpétuelle',
+          description: 'Droit d\'usage perpétuel accordé aux nationaux congolais sur terrain urbain avec construction durable. Ce titre est transmissible par succession ou aliénation.',
+          confidence: 'high' as const
+        };
+      }
+    }
+
+    // 2. Concession ordinaire (25 ans renouvelables) - Pour terrains en cours de mise en valeur
+    if ((hasSemiDurableConstruction || isPrecaire) && !isNonBati) {
+      return {
+        type: 'Concession ordinaire',
+        label: 'Concession ordinaire (25 ans)',
+        description: 'Droit d\'usage temporaire de 25 ans renouvelable. Peut être converti en concession perpétuelle après mise en valeur complète (construction durable).',
+        confidence: 'medium' as const
+      };
+    }
+
+    // 3. Bail emphytéotique - Pour terrains agricoles ou industriels
+    if (constructionType === 'Agricole' || constructionType === 'Industrielle') {
+      if (hasDurableConstruction || hasSemiDurableConstruction) {
+        return {
+          type: 'Bail emphytéotique',
+          label: 'Bail emphytéotique (18-99 ans)',
+          description: `Bail de longue durée pour exploitation ${constructionType.toLowerCase()}. Confère des droits étendus de jouissance et transformation du bien.`,
+          confidence: 'high' as const
+        };
+      } else {
+        return {
+          type: 'Concession ordinaire',
+          label: 'Concession ordinaire agricole/industrielle',
+          description: 'Concession temporaire pour mise en valeur agricole ou industrielle. Conversion possible en bail emphytéotique après développement.',
+          confidence: 'medium' as const
+        };
+      }
+    }
+
+    // 4. Permis d'occupation - Pour terrains non encore mis en valeur
+    if (isNonBati || constructionType === 'Terrain nu') {
+      if (isUrban) {
+        return {
+          type: 'Permis d\'occupation urbain',
+          label: 'Permis d\'occupation urbain',
+          description: 'Autorisation d\'occuper un terrain en zone urbaine. Précède l\'obtention d\'un titre définitif après mise en valeur.',
+          confidence: 'high' as const
+        };
+      } else if (isRural) {
+        return {
+          type: 'Permis d\'occupation rural',
+          label: 'Permis d\'occupation rural',
+          description: 'Permet l\'occupation et l\'exploitation agricole d\'une terre rurale. Peut évoluer vers un titre plus stable après mise en valeur.',
+          confidence: 'high' as const
+        };
+      }
+    }
+
+    // 5. Autorisation d'occupation provisoire - Construction précaire
+    if (isPrecaire) {
+      return {
+        type: 'Autorisation d\'occupation provisoire',
+        label: 'Autorisation d\'occupation provisoire (AOP)',
+        description: 'Droit précaire en attente de régularisation. Le titulaire doit entreprendre les démarches de mise en valeur dans les délais.',
+        confidence: 'medium' as const
+      };
+    }
+
+    // Fallback
+    return {
+      type: 'Certificat d\'enregistrement',
+      label: 'Certificat d\'enregistrement',
+      description: 'Document administratif attestant l\'enregistrement du droit foncier. Type exact à déterminer après examen du dossier.',
+      confidence: 'low' as const
+    };
+  };
+
+  const handleValidateValorisation = () => {
+    if (!constructionType || !constructionNature || !declaredUsage) {
+      toast({
+        title: "Données incomplètes",
+        description: "Veuillez remplir le type, la nature et l'usage de la parcelle",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    const deduced = deduceLandTitleType();
+    setDeducedTitleType(deduced);
+    setValorisationValidated(true);
+    
+    if (deduced) {
+      toast({
+        title: "Données validées",
+        description: `Type de titre recommandé : ${deduced.label}`,
+      });
+    }
+  };
+
+  // Reset validation when construction data changes
+  useEffect(() => {
+    setValorisationValidated(false);
+    setDeducedTitleType(null);
+  }, [constructionType, constructionNature, declaredUsage]);
 
   // Construction type -> Nature logic
   useEffect(() => {
@@ -1016,14 +1147,132 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </Select>
                         </div>
                       </div>
+
+                      {/* Bouton Valider */}
+                      <div className="pt-2">
+                        <Button 
+                          onClick={handleValidateValorisation}
+                          disabled={!constructionType || !constructionNature || !declaredUsage}
+                          className={cn(
+                            "w-full h-9 text-sm rounded-lg gap-2 transition-all",
+                            valorisationValidated 
+                              ? "bg-green-600 hover:bg-green-700" 
+                              : ""
+                          )}
+                        >
+                          {valorisationValidated ? (
+                            <>
+                              <Check className="h-4 w-4" />
+                              Données validées
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-4 w-4" />
+                              Valider les informations
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
+
+                  {/* Bloc Type de titre déduit */}
+                  {valorisationValidated && deducedTitleType && (
+                    <Card className={cn(
+                      "border-2 rounded-lg animate-fade-in",
+                      deducedTitleType.confidence === 'high' 
+                        ? "border-green-500/50 bg-green-50/50 dark:bg-green-950/20" 
+                        : deducedTitleType.confidence === 'medium'
+                        ? "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20"
+                        : "border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20"
+                    )}>
+                      <CardContent className="p-3 space-y-3">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              "p-1.5 rounded-lg",
+                              deducedTitleType.confidence === 'high' 
+                                ? "bg-green-500/20" 
+                                : deducedTitleType.confidence === 'medium'
+                                ? "bg-amber-500/20"
+                                : "bg-blue-500/20"
+                            )}>
+                              <Award className={cn(
+                                "h-4 w-4",
+                                deducedTitleType.confidence === 'high' 
+                                  ? "text-green-600" 
+                                  : deducedTitleType.confidence === 'medium'
+                                  ? "text-amber-600"
+                                  : "text-blue-600"
+                              )} />
+                            </div>
+                            <div>
+                              <Label className="text-sm font-semibold">Type de titre recommandé</Label>
+                              <p className="text-xs text-muted-foreground">Selon le droit foncier congolais</p>
+                            </div>
+                          </div>
+                          <div className={cn(
+                            "px-2 py-0.5 rounded-full text-[10px] font-medium",
+                            deducedTitleType.confidence === 'high' 
+                              ? "bg-green-500/20 text-green-700 dark:text-green-400" 
+                              : deducedTitleType.confidence === 'medium'
+                              ? "bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                              : "bg-blue-500/20 text-blue-700 dark:text-blue-400"
+                          )}>
+                            {deducedTitleType.confidence === 'high' ? 'Confiance élevée' : 
+                             deducedTitleType.confidence === 'medium' ? 'Confiance moyenne' : 
+                             'À confirmer'}
+                          </div>
+                        </div>
+
+                        <div className={cn(
+                          "p-3 rounded-lg",
+                          deducedTitleType.confidence === 'high' 
+                            ? "bg-green-500/10" 
+                            : deducedTitleType.confidence === 'medium'
+                            ? "bg-amber-500/10"
+                            : "bg-blue-500/10"
+                        )}>
+                          <h4 className={cn(
+                            "font-semibold text-sm mb-1",
+                            deducedTitleType.confidence === 'high' 
+                              ? "text-green-700 dark:text-green-400" 
+                              : deducedTitleType.confidence === 'medium'
+                              ? "text-amber-700 dark:text-amber-400"
+                              : "text-blue-700 dark:text-blue-400"
+                          )}>
+                            {deducedTitleType.label}
+                          </h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            {deducedTitleType.description}
+                          </p>
+                        </div>
+
+                        {deducedTitleType.confidence !== 'high' && (
+                          <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg">
+                            <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-muted-foreground">
+                              Le type exact sera confirmé par les services cadastraux après examen complet de votre dossier.
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="text-xs text-muted-foreground border-t border-border/50 pt-2">
+                          <span className="font-medium">Base légale :</span> Loi n° 73-021 du 20 juillet 1973 portant régime général des biens, régime foncier et immobilier et régime des sûretés.
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
 
                   <div className="flex gap-2 pt-4">
                     <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-lg">
                       Précédent
                     </Button>
-                    <Button onClick={() => setActiveTab('documents')} className="flex-1 h-8 text-xs rounded-lg gap-2">
+                    <Button 
+                      onClick={() => setActiveTab('documents')} 
+                      disabled={!valorisationValidated}
+                      className="flex-1 h-8 text-xs rounded-lg gap-2"
+                    >
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
