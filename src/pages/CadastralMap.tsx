@@ -523,9 +523,8 @@ const CadastralMap = () => {
         {!isSearchBarActive && !selectedParcel && (
           <div 
             className={cn(
-              "absolute left-3 z-[1001] animate-fade-in",
-              isMobile ? "right-3" : "w-auto",
-              "bottom-[calc(100dvh-8rem)]"
+              "fixed z-[1001] animate-fade-in",
+              isMobile ? "left-3 right-3 bottom-24" : "left-3 bottom-28"
             )}
           >
             <Button
