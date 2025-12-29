@@ -97,7 +97,8 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
   // ═══════════════════════════════════════════════════════════════════════════
 
   if (wantsTemporaire) {
-    // Pour une durée ≤25 ans, JAMAIS de certificat d'enregistrement
+    // ⚠️ RÈGLE STRICTE: Pour une durée ≤25 ans, JAMAIS de certificat d'enregistrement
+    // Peu importe la nationalité ou l'état de mise en valeur!
     // Options: Concession ordinaire, Bail foncier, ou Bail emphytéotique court
     
     // Cas 1: Étranger avec durée temporaire
@@ -266,15 +267,49 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
         }
       }
     }
+    
+    // Cas 3: Nationalité non spécifiée avec durée temporaire
+    // On retourne quand même une concession ordinaire par défaut
+    if (!nationality) {
+      return {
+        type: 'Concession ordinaire',
+        label: 'Concession ordinaire (25 ans renouvelables)',
+        description: 'Droit de jouissance temporaire sur le domaine privé de l\'État. ⚠️ Ce n\'est PAS un titre de propriété définitif. La durée demandée (≤25 ans) ne permet pas d\'obtenir un certificat d\'enregistrement.',
+        conditions: [
+          'Durée fixée par l\'État (généralement 25 ans maximum)',
+          'Précisez votre nationalité pour affiner la recommandation',
+          'Mise en valeur requise pour le maintien du titre',
+          'Titre NON définitif - peut être retiré'
+        ],
+        nextSteps: [
+          'Préciser votre nationalité pour une recommandation adaptée',
+          'Obtenir l\'acte de concession ordinaire',
+          'Respecter les obligations de mise en valeur'
+        ],
+        legalBasis: 'Art. 61-79 de la Loi n° 73-021 du 20 juillet 1973',
+        confidence: 'medium',
+        conversionPossible: {
+          targetTitle: 'Certificat d\'enregistrement (si nationalité congolaise)',
+          requirements: [
+            'Nationalité congolaise obligatoire',
+            'Construction en matériaux durables',
+            'Mise en valeur complète',
+            'Demande avant expiration des 25 ans'
+          ]
+        }
+      };
+    }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RÈGLE 1: CERTIFICAT D'ENREGISTREMENT (CONCESSION PERPÉTUELLE)
   // Seul titre foncier DÉFINITIF en RDC - Perpétuel et inattaquable
-  // Conditions strictes: Congolais + Mise en valeur complète + Durée perpétuelle
+  // ⚠️ STRICTEMENT: Congolais + Mise en valeur complète + Durée PERPÉTUELLE EXPLICITE
   // ═══════════════════════════════════════════════════════════════════════════
   
-  if (isCongolais && hasDurableConstruction && !isNonBati && (wantsPerpetuel || !occupationDuration)) {
+  // CORRECTION: Le certificat d'enregistrement n'est suggéré QUE si wantsPerpetuel est EXPLICITEMENT true
+  // PAS si occupationDuration est vide - cela doit être une demande explicite de titre perpétuel
+  if (isCongolais && hasDurableConstruction && !isNonBati && wantsPerpetuel) {
     if (isResidential || isCommercial || isMixed || isIndustrial) {
       return {
         type: 'Certificat d\'enregistrement',
