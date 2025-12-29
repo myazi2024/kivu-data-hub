@@ -98,9 +98,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     { name: 'Côté Est', length: '' },
     { name: 'Côté Ouest', length: '' }
   ]);
-  
-  // Road sides for dimensions panel
-  const [roadSides, setRoadSides] = useState<Array<any>>([]);
 
   // Pre-fill with user info
   useEffect(() => {
@@ -776,8 +773,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         parcelSides={parcelSides}
                         onParcelSidesUpdate={setParcelSides}
                         onSurfaceChange={(surface) => handleInputChange('areaSqm', surface)}
-                        roadSides={roadSides}
-                        onRoadSidesChange={setRoadSides}
                       />
                     </div>
                   )}

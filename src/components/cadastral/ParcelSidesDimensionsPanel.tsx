@@ -165,7 +165,7 @@ export const ParcelSidesDimensionsPanel: React.FC<ParcelSidesDimensionsPanelProp
   }
 
   return (
-    <Card className={`w-full rounded-lg shadow-sm border-border/50 overflow-hidden ${className}`}>
+    <Card className={`max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 ${className}`}>
       <CardHeader className="pb-2 pt-3 px-3">
         <CardTitle className="flex items-center gap-1.5 text-sm font-semibold">
           <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
