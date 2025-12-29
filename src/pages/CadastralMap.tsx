@@ -119,11 +119,11 @@ const CadastralMap = () => {
 
   // Timer d'inactivité pour afficher la notification du bouton "Obtenir titre foncier"
   useEffect(() => {
-    // Afficher la notification 5 secondes après l'apparition du bouton
+    // Afficher la notification 10 secondes après l'apparition du bouton
     if (showLandTitleButton && !showLandTitleNotification && !landTitleNotificationDismissedRef.current) {
       landTitleNotificationTimerRef.current = setTimeout(() => {
         setShowLandTitleNotification(true);
-      }, 5000);
+      }, 10000);
     }
 
     return () => {
