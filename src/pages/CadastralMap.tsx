@@ -18,6 +18,7 @@ import AdvancedSearchFilters from '@/components/cadastral/AdvancedSearchFilters'
 import SearchHistory from '@/components/cadastral/SearchHistory';
 import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
 import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
+import LandTitleTermsDialog from '@/components/cadastral/LandTitleTermsDialog';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import 'leaflet/dist/leaflet.css';
@@ -65,6 +66,7 @@ const CadastralMap = () => {
   const [showManualSearchNotification, setShowManualSearchNotification] = useState(false);
   const [isSearchBarActive, setIsSearchBarActive] = useState(false);
   const [showLandTitleDialog, setShowLandTitleDialog] = useState(false);
+  const [showLandTitleTermsDialog, setShowLandTitleTermsDialog] = useState(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showLandTitleNotification, setShowLandTitleNotification] = useState(false);
   const landTitleNotificationTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -608,7 +610,7 @@ const CadastralMap = () => {
                 "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary",
                 isMobile ? "h-10 text-xs px-3" : "h-9 px-3 text-xs"
               )}
-              onClick={() => setShowLandTitleDialog(true)}
+              onClick={() => setShowLandTitleTermsDialog(true)}
             >
               <div className="flex items-center gap-2">
                 <FileEdit className="h-4 w-4" />
@@ -940,6 +942,13 @@ const CadastralMap = () => {
           parcelNumber={selectedParcel?.parcel_number || searchQuery}
         />
       )}
+
+      {/* Dialog des termes et conditions */}
+      <LandTitleTermsDialog
+        open={showLandTitleTermsDialog}
+        onOpenChange={setShowLandTitleTermsDialog}
+        onAccept={() => setShowLandTitleDialog(true)}
+      />
 
       {/* Dialog de demande de titre foncier */}
       <LandTitleRequestDialog
