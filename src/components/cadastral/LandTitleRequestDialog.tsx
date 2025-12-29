@@ -25,6 +25,13 @@ import {
 } from '@/lib/geographicData';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLandTitleRequest, LandTitleRequestData } from '@/hooks/useLandTitleRequest';
+import { 
+  deduceLandTitleType as deduceLandTitle, 
+  DeducedLandTitle,
+  NATIONALITY_OPTIONS,
+  OCCUPATION_DURATION_OPTIONS,
+  validateDeductionInput
+} from '@/utils/landTitleDeduction';
 import { QuickAuthDialog } from './QuickAuthDialog';
 import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { CartItem } from '@/hooks/useCart';
@@ -102,7 +109,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Road sides for dimensions panel
   const [roadSides, setRoadSides] = useState<Array<any>>([]);
 
-  // Construction type state
+// Construction type state
   const [constructionType, setConstructionType] = useState<string>('');
   const [constructionNature, setConstructionNature] = useState<string>('');
   const [constructionMaterials, setConstructionMaterials] = useState<string>('');
@@ -110,120 +117,53 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [availableConstructionNatures, setAvailableConstructionNatures] = useState<string[]>([]);
   const [availableDeclaredUsages, setAvailableDeclaredUsages] = useState<string[]>([]);
   
+  // New fields for land title deduction
+  const [nationality, setNationality] = useState<'congolais' | 'etranger' | ''>('');
+  const [occupationDuration, setOccupationDuration] = useState<'perpetuel' | 'long_terme' | 'temporaire' | ''>('');
+  
   // Land title type deduction
   const [valorisationValidated, setValorisationValidated] = useState(false);
-  const [deducedTitleType, setDeducedTitleType] = useState<{
-    type: string;
-    label: string;
-    description: string;
-    confidence: 'high' | 'medium' | 'low';
-  } | null>(null);
-
-  // Function to deduce land title type based on Congolese land law
-  const deduceLandTitleType = () => {
-    if (!constructionType || !constructionNature || !declaredUsage) {
-      return null;
-    }
-
-    const isUrban = formData.sectionType === 'urbaine';
-    const isRural = formData.sectionType === 'rurale';
-    const hasDurableConstruction = constructionNature === 'Durable';
-    const hasSemiDurableConstruction = constructionNature === 'Semi-durable';
-    const isPrecaire = constructionNature === 'Précaire';
-    const isNonBati = constructionNature === 'Non bâti';
-    
-    // Selon le droit foncier congolais (Loi n° 73-021 du 20 juillet 1973)
-    
-    // 1. Concession perpétuelle - Pour les nationaux congolais avec mise en valeur complète
-    if (hasDurableConstruction && (constructionType === 'Résidentielle' || constructionType === 'Commerciale')) {
-      if (isUrban) {
-        return {
-          type: 'Concession perpétuelle',
-          label: 'Concession perpétuelle',
-          description: 'Droit d\'usage perpétuel accordé aux nationaux congolais sur terrain urbain avec construction durable. Ce titre est transmissible par succession ou aliénation.',
-          confidence: 'high' as const
-        };
-      }
-    }
-
-    // 2. Concession ordinaire (25 ans renouvelables) - Pour terrains en cours de mise en valeur
-    if ((hasSemiDurableConstruction || isPrecaire) && !isNonBati) {
-      return {
-        type: 'Concession ordinaire',
-        label: 'Concession ordinaire (25 ans)',
-        description: 'Droit d\'usage temporaire de 25 ans renouvelable. Peut être converti en concession perpétuelle après mise en valeur complète (construction durable).',
-        confidence: 'medium' as const
-      };
-    }
-
-    // 3. Bail emphytéotique - Pour terrains agricoles ou industriels
-    if (constructionType === 'Agricole' || constructionType === 'Industrielle') {
-      if (hasDurableConstruction || hasSemiDurableConstruction) {
-        return {
-          type: 'Bail emphytéotique',
-          label: 'Bail emphytéotique (18-99 ans)',
-          description: `Bail de longue durée pour exploitation ${constructionType.toLowerCase()}. Confère des droits étendus de jouissance et transformation du bien.`,
-          confidence: 'high' as const
-        };
-      } else {
-        return {
-          type: 'Concession ordinaire',
-          label: 'Concession ordinaire agricole/industrielle',
-          description: 'Concession temporaire pour mise en valeur agricole ou industrielle. Conversion possible en bail emphytéotique après développement.',
-          confidence: 'medium' as const
-        };
-      }
-    }
-
-    // 4. Permis d'occupation - Pour terrains non encore mis en valeur
-    if (isNonBati || constructionType === 'Terrain nu') {
-      if (isUrban) {
-        return {
-          type: 'Permis d\'occupation urbain',
-          label: 'Permis d\'occupation urbain',
-          description: 'Autorisation d\'occuper un terrain en zone urbaine. Précède l\'obtention d\'un titre définitif après mise en valeur.',
-          confidence: 'high' as const
-        };
-      } else if (isRural) {
-        return {
-          type: 'Permis d\'occupation rural',
-          label: 'Permis d\'occupation rural',
-          description: 'Permet l\'occupation et l\'exploitation agricole d\'une terre rurale. Peut évoluer vers un titre plus stable après mise en valeur.',
-          confidence: 'high' as const
-        };
-      }
-    }
-
-    // 5. Autorisation d'occupation provisoire - Construction précaire
-    if (isPrecaire) {
-      return {
-        type: 'Autorisation d\'occupation provisoire',
-        label: 'Autorisation d\'occupation provisoire (AOP)',
-        description: 'Droit précaire en attente de régularisation. Le titulaire doit entreprendre les démarches de mise en valeur dans les délais.',
-        confidence: 'medium' as const
-      };
-    }
-
-    // Fallback
-    return {
-      type: 'Certificat d\'enregistrement',
-      label: 'Certificat d\'enregistrement',
-      description: 'Document administratif attestant l\'enregistrement du droit foncier. Type exact à déterminer après examen du dossier.',
-      confidence: 'low' as const
-    };
-  };
+  const [deducedTitleType, setDeducedTitleType] = useState<DeducedLandTitle | null>(null);
 
   const handleValidateValorisation = () => {
-    if (!constructionType || !constructionNature || !declaredUsage) {
+    const validation = validateDeductionInput({
+      sectionType: formData.sectionType as 'urbaine' | 'rurale' | '',
+      constructionType,
+      constructionNature,
+      declaredUsage,
+      nationality,
+      occupationDuration
+    });
+
+    if (!validation.isValid) {
       toast({
         title: "Données incomplètes",
-        description: "Veuillez remplir le type, la nature et l'usage de la parcelle",
+        description: `Veuillez remplir: ${validation.missingFields.join(', ')}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check for recommendations
+    if (validation.recommendations.length > 0 && !nationality) {
+      toast({
+        title: "Données incomplètes",
+        description: "Veuillez indiquer votre nationalité et la durée d'occupation souhaitée",
         variant: "destructive"
       });
       return;
     }
     
-    const deduced = deduceLandTitleType();
+    const deduced = deduceLandTitle({
+      sectionType: formData.sectionType as 'urbaine' | 'rurale' | '',
+      constructionType,
+      constructionNature,
+      declaredUsage,
+      nationality,
+      occupationDuration,
+      areaSqm: formData.areaSqm
+    });
+    
     setDeducedTitleType(deduced);
     setValorisationValidated(true);
     
@@ -239,7 +179,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   useEffect(() => {
     setValorisationValidated(false);
     setDeducedTitleType(null);
-  }, [constructionType, constructionNature, declaredUsage]);
+  }, [constructionType, constructionNature, declaredUsage, nationality, occupationDuration, formData.sectionType]);
 
   // Construction type -> Nature logic
   useEffect(() => {
@@ -1148,13 +1088,83 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </div>
                       </div>
 
+                      {/* Nationalité et Durée d'occupation - NOUVEAUX CHAMPS REQUIS */}
+                      <div className="mt-4 pt-4 border-t border-border/50">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="p-1.5 bg-primary/10 rounded-lg">
+                            <User className="h-4 w-4 text-primary" />
+                          </div>
+                          <Label className="text-sm font-semibold">Informations du demandeur</Label>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent ml-auto">
+                                <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-72 rounded-xl" align="end">
+                              <div className="space-y-2 text-xs">
+                                <h4 className="font-semibold text-sm">Pourquoi ces informations ?</h4>
+                                <p className="text-muted-foreground">
+                                  Selon le droit foncier congolais, la nationalité détermine les types de titres accessibles. 
+                                  Seuls les Congolais peuvent obtenir une concession perpétuelle.
+                                </p>
+                              </div>
+                            </PopoverContent>
+                          </Popover>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium">Nationalité *</Label>
+                            <Select 
+                              value={nationality}
+                              onValueChange={(value) => setNationality(value as 'congolais' | 'etranger')}
+                            >
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-lg">
+                                {NATIONALITY_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    <div className="flex flex-col">
+                                      <span>{option.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="text-sm font-medium">Durée souhaitée *</Label>
+                            <Select 
+                              value={occupationDuration}
+                              onValueChange={(value) => setOccupationDuration(value as 'perpetuel' | 'long_terme' | 'temporaire')}
+                            >
+                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-lg">
+                                {OCCUPATION_DURATION_OPTIONS.map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    <div className="flex flex-col">
+                                      <span>{option.label}</span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* Bouton Valider */}
-                      <div className="pt-2">
+                      <div className="pt-3">
                         <Button 
                           onClick={handleValidateValorisation}
-                          disabled={!constructionType || !constructionNature || !declaredUsage}
+                          disabled={!constructionType || !constructionNature || !declaredUsage || !nationality || !occupationDuration}
                           className={cn(
-                            "w-full h-9 text-sm rounded-lg gap-2 transition-all",
+                            "w-full h-10 text-sm rounded-lg gap-2 transition-all",
                             valorisationValidated 
                               ? "bg-green-600 hover:bg-green-700" 
                               : ""
@@ -1168,7 +1178,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           ) : (
                             <>
                               <CheckCircle2 className="h-4 w-4" />
-                              Valider les informations
+                              Déterminer le type de titre
                             </>
                           )}
                         </Button>
@@ -1176,86 +1186,136 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </CardContent>
                   </Card>
 
-                  {/* Bloc Type de titre déduit */}
+                  {/* Bloc Type de titre déduit - REDESIGNED */}
                   {valorisationValidated && deducedTitleType && (
-                    <div className={cn(
-                      "relative overflow-hidden rounded-xl border-2 p-5 animate-fade-in",
+                    <Card className={cn(
+                      "overflow-hidden border-2 animate-fade-in",
                       deducedTitleType.confidence === 'high' 
-                        ? "border-green-500/40 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent" 
+                        ? "border-green-500/50 bg-gradient-to-br from-green-500/5 to-transparent" 
                         : deducedTitleType.confidence === 'medium'
-                        ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent"
-                        : "border-blue-500/40 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent"
+                        ? "border-amber-500/50 bg-gradient-to-br from-amber-500/5 to-transparent"
+                        : "border-blue-500/50 bg-gradient-to-br from-blue-500/5 to-transparent"
                     )}>
-                      {/* Badge de confiance en haut à droite */}
-                      <div className={cn(
-                        "absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide shadow-sm",
-                        deducedTitleType.confidence === 'high' 
-                          ? "bg-green-500 text-white" 
-                          : deducedTitleType.confidence === 'medium'
-                          ? "bg-amber-500 text-white"
-                          : "bg-blue-500 text-white"
-                      )}>
-                        {deducedTitleType.confidence === 'high' ? '✓ Fiable' : 
-                         deducedTitleType.confidence === 'medium' ? 'Probable' : 
-                         'À préciser'}
-                      </div>
-
-                      {/* En-tête avec icône */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className={cn(
-                          "p-2.5 rounded-xl shadow-sm",
-                          deducedTitleType.confidence === 'high' 
-                            ? "bg-green-500/20" 
-                            : deducedTitleType.confidence === 'medium'
-                            ? "bg-amber-500/20"
-                            : "bg-blue-500/20"
-                        )}>
-                          <Award className={cn(
-                            "h-5 w-5",
+                      <CardContent className="p-4 space-y-4">
+                        {/* En-tête avec badge */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div className={cn(
+                              "p-2 rounded-lg",
+                              deducedTitleType.confidence === 'high' 
+                                ? "bg-green-500/20" 
+                                : deducedTitleType.confidence === 'medium'
+                                ? "bg-amber-500/20"
+                                : "bg-blue-500/20"
+                            )}>
+                              <Award className={cn(
+                                "h-5 w-5",
+                                deducedTitleType.confidence === 'high' 
+                                  ? "text-green-600" 
+                                  : deducedTitleType.confidence === 'medium'
+                                  ? "text-amber-600"
+                                  : "text-blue-600"
+                              )} />
+                            </div>
+                            <div>
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                                Type de titre qui vous sera délivré
+                              </p>
+                              <h3 className={cn(
+                                "text-lg font-bold leading-tight",
+                                deducedTitleType.confidence === 'high' 
+                                  ? "text-green-700 dark:text-green-400" 
+                                  : deducedTitleType.confidence === 'medium'
+                                  ? "text-amber-700 dark:text-amber-400"
+                                  : "text-blue-700 dark:text-blue-400"
+                              )}>
+                                {deducedTitleType.label}
+                              </h3>
+                            </div>
+                          </div>
+                          <div className={cn(
+                            "px-2 py-1 rounded-full text-[10px] font-semibold uppercase",
                             deducedTitleType.confidence === 'high' 
-                              ? "text-green-600" 
+                              ? "bg-green-500 text-white" 
                               : deducedTitleType.confidence === 'medium'
-                              ? "text-amber-600"
-                              : "text-blue-600"
-                          )} />
+                              ? "bg-amber-500 text-white"
+                              : "bg-blue-500 text-white"
+                          )}>
+                            {deducedTitleType.confidence === 'high' ? '✓ Fiable' : 
+                             deducedTitleType.confidence === 'medium' ? 'Probable' : 
+                             'À préciser'}
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide pr-16">
-                          Titre foncier que vous pourrez obtenir
+
+                        {/* Description */}
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {deducedTitleType.description}
                         </p>
-                      </div>
 
-                      {/* Titre principal mis en évidence */}
-                      <div className={cn(
-                        "text-xl font-bold mb-2 leading-tight",
-                        deducedTitleType.confidence === 'high' 
-                          ? "text-green-700 dark:text-green-400" 
-                          : deducedTitleType.confidence === 'medium'
-                          ? "text-amber-700 dark:text-amber-400"
-                          : "text-blue-700 dark:text-blue-400"
-                      )}>
-                        {deducedTitleType.label}
-                      </div>
+                        {/* Conditions requises */}
+                        {deducedTitleType.conditions && deducedTitleType.conditions.length > 0 && (
+                          <div className="space-y-2">
+                            <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                              Conditions requises
+                            </h4>
+                            <ul className="space-y-1">
+                              {deducedTitleType.conditions.map((condition, idx) => (
+                                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                                  <span className="text-primary mt-1">•</span>
+                                  {condition}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
-                      {/* Description */}
-                      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                        {deducedTitleType.description}
-                      </p>
+                        {/* Prochaines étapes */}
+                        {deducedTitleType.nextSteps && deducedTitleType.nextSteps.length > 0 && (
+                          <div className="space-y-2 p-3 bg-muted/30 rounded-lg">
+                            <h4 className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                              <ChevronRight className="h-3.5 w-3.5 text-primary" />
+                              Prochaines étapes pour vous
+                            </h4>
+                            <ol className="space-y-1">
+                              {deducedTitleType.nextSteps.map((step, idx) => (
+                                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                                  <span className="bg-primary/20 text-primary rounded-full h-4 w-4 flex items-center justify-center flex-shrink-0 text-[10px] font-bold mt-0.5">
+                                    {idx + 1}
+                                  </span>
+                                  {step}
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+                        )}
 
-                      {/* Note d'avertissement pour confiance non-élevée */}
-                      {deducedTitleType.confidence !== 'high' && (
-                        <div className="flex items-start gap-2.5 p-3 bg-background/70 backdrop-blur-sm rounded-lg border border-border/50 mb-3">
-                          <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                          <p className="text-xs text-muted-foreground leading-relaxed">
-                            Cette estimation vous donne une idée du titre que vous pourrez obtenir. Le type définitif sera confirmé par les services cadastraux après examen de votre dossier.
+                        {/* Possibilité de conversion */}
+                        {deducedTitleType.conversionPossible && (
+                          <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                            <h4 className="text-xs font-semibold text-primary flex items-center gap-1.5 mb-2">
+                              <Award className="h-3.5 w-3.5" />
+                              Évolution possible vers : {deducedTitleType.conversionPossible.targetTitle}
+                            </h4>
+                            <ul className="space-y-1">
+                              {deducedTitleType.conversionPossible.requirements.map((req, idx) => (
+                                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                                  <span className="text-primary">→</span>
+                                  {req}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+
+                        {/* Base légale */}
+                        <div className="pt-3 border-t border-border/30">
+                          <p className="text-[10px] text-muted-foreground/70">
+                            <span className="font-medium">Base légale :</span> {deducedTitleType.legalBasis}
                           </p>
                         </div>
-                      )}
-
-                      {/* Base légale */}
-                      <div className="text-[11px] text-muted-foreground/70 pt-3 border-t border-border/30">
-                        <span className="font-medium">Base légale :</span> Loi n° 73-021 du 20 juillet 1973
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   )}
 
                   <div className="flex gap-2 pt-4">
