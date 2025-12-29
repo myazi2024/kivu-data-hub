@@ -533,7 +533,7 @@ const CadastralMap = () => {
               className={cn(
                 "font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300",
                 "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary",
-                isMobile ? "h-11 text-sm px-4" : "h-10 px-4 text-xs"
+                isMobile ? "h-10 text-xs px-3" : "h-9 px-3 text-xs"
               )}
               onClick={() => setShowLandTitleDialog(true)}
             >
