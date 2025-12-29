@@ -968,15 +968,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   {/* Type de construction */}
                   <Card className="border rounded-xl">
                     <CardContent className="p-3 space-y-3">
-                      <h4 className="text-sm font-semibold flex items-center gap-2">
-                        <Home className="h-4 w-4 text-muted-foreground" />
-                        Type de mise en valeur
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {formData.sectionType === 'urbaine' ? 'Section Urbaine' : 
-                         formData.sectionType === 'rurale' ? 'Section Rurale' : 
-                         'Section non définie'}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold flex items-center gap-2">
+                          <Home className="h-4 w-4 text-muted-foreground" />
+                          Mise en valeur
+                        </h4>
+                        <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">
+                          {formData.sectionType === 'urbaine' ? 'SU' : formData.sectionType === 'rurale' ? 'SR' : '—'}
+                        </span>
+                      </div>
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
@@ -1077,12 +1077,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <CardContent className="p-3 space-y-3">
                         <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-                          Éligibilité légale
+                          Éligibilité
                         </h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          Selon le droit foncier congolais (Loi n° 73-021), seuls les citoyens congolais peuvent obtenir 
-                          une concession perpétuelle. Les étrangers ont accès aux baux emphytéotiques et concessions ordinaires.
-                        </p>
 
                         <div className="grid grid-cols-2 gap-2">
                           <div className="space-y-1.5">
@@ -1148,28 +1144,28 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                         {nationality && occupationDuration && (
                           <div className={cn(
-                            "p-2.5 rounded-xl text-xs",
+                            "p-2 rounded-lg text-xs flex items-center gap-2",
                             nationality === 'congolais' && occupationDuration === 'perpetuel'
-                              ? "bg-green-50 border border-green-200 text-green-700 dark:bg-green-950/30 dark:border-green-800 dark:text-green-400"
+                              ? "bg-green-50 text-green-700 dark:bg-green-950/30 dark:text-green-400"
                               : nationality === 'etranger'
-                              ? "bg-blue-50 border border-blue-200 text-blue-700 dark:bg-blue-950/30 dark:border-blue-800 dark:text-blue-400"
-                              : "bg-amber-50 border border-amber-200 text-amber-700 dark:bg-amber-950/30 dark:border-amber-800 dark:text-amber-400"
+                              ? "bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400"
+                              : "bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
                           )}>
                             {nationality === 'congolais' && occupationDuration === 'perpetuel' ? (
-                              <span className="flex items-center gap-2">
-                                <Check className="h-4 w-4" />
-                                Vous êtes éligible à la <strong>Concession Perpétuelle</strong> - le titre le plus complet en RDC
-                              </span>
+                              <>
+                                <Check className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span>Éligible → <strong>Concession Perpétuelle</strong></span>
+                              </>
                             ) : nationality === 'etranger' ? (
-                              <span className="flex items-center gap-2">
-                                <Info className="h-4 w-4" />
-                                En tant qu'étranger, vous pouvez obtenir un <strong>Bail Emphytéotique</strong> ou une <strong>Concession Ordinaire</strong>
-                              </span>
+                              <>
+                                <Info className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span>Éligible → <strong>Bail/Concession Ordinaire</strong></span>
+                              </>
                             ) : (
-                              <span className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4" />
-                                Titre temporaire disponible selon les conditions locales
-                              </span>
+                              <>
+                                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                                <span>Titre temporaire disponible</span>
+                              </>
                             )}
                           </div>
                         )}
@@ -1183,22 +1179,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       onClick={handleValidateValorisation}
                       disabled={!constructionType || !constructionNature || !declaredUsage || !nationality || !occupationDuration}
                       className={cn(
-                        "w-full h-11 text-sm rounded-xl gap-2",
-                        valorisationValidated 
-                          ? "bg-green-600 hover:bg-green-700" 
-                          : ""
+                        "w-full h-10 text-sm rounded-xl gap-2",
+                        valorisationValidated ? "bg-green-600 hover:bg-green-700" : ""
                       )}
                     >
                       {valorisationValidated ? (
-                        <>
-                          <CheckCircle2 className="h-4 w-4" />
-                          Titre foncier déterminé avec succès
-                        </>
+                        <><CheckCircle2 className="h-4 w-4" /> Titre déterminé</>
                       ) : (
-                        <>
-                          <Award className="h-4 w-4" />
-                          Déterminer mon type de titre foncier
-                        </>
+                        <><Award className="h-4 w-4" /> Déterminer le titre</>
                       )}
                     </Button>
                   )}
@@ -1252,52 +1240,29 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         </p>
 
                         {deducedTitleType.conditions && deducedTitleType.conditions.length > 0 && (
-                          <div className="space-y-1.5 pt-2 border-t border-border/50">
-                            <p className="text-xs font-medium text-foreground">Conditions à remplir :</p>
-                            <ul className="space-y-1">
-                              {deducedTitleType.conditions.slice(0, 3).map((condition, idx) => (
-                                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
+                          <div className="pt-2 border-t border-border/50">
+                            <p className="text-[10px] font-medium text-muted-foreground mb-1">Conditions :</p>
+                            <ul className="space-y-0.5">
+                              {deducedTitleType.conditions.slice(0, 2).map((condition, idx) => (
+                                <li key={idx} className="text-[10px] text-muted-foreground flex items-start gap-1.5">
                                   <Check className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
                                   {condition}
                                 </li>
                               ))}
-                              {deducedTitleType.conditions.length > 3 && (
-                                <li className="text-xs text-muted-foreground">
-                                  + {deducedTitleType.conditions.length - 3} autres conditions
-                                </li>
-                              )}
                             </ul>
                           </div>
                         )}
 
-                        {deducedTitleType.nextSteps && deducedTitleType.nextSteps.length > 0 && (
-                          <div className="space-y-1.5 pt-2 border-t border-border/50">
-                            <p className="text-xs font-medium text-foreground">Prochaines étapes :</p>
-                            <ol className="space-y-1">
-                              {deducedTitleType.nextSteps.slice(0, 3).map((step, idx) => (
-                                <li key={idx} className="text-xs text-muted-foreground flex items-start gap-2">
-                                  <span className="h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center flex-shrink-0 text-[10px] font-bold">
-                                    {idx + 1}
-                                  </span>
-                                  {step}
-                                </li>
-                              ))}
-                            </ol>
-                          </div>
-                        )}
-
                         {deducedTitleType.conversionPossible && (
-                          <div className="p-2 bg-primary/5 border border-primary/20 rounded-lg">
-                            <p className="text-xs text-primary font-medium flex items-center gap-1.5">
-                              <ChevronRight className="h-3 w-3" />
-                              Évolution possible → {deducedTitleType.conversionPossible.targetTitle}
+                          <div className="p-1.5 bg-primary/5 rounded-md">
+                            <p className="text-[10px] text-primary font-medium">
+                              → Évolution : {deducedTitleType.conversionPossible.targetTitle}
                             </p>
                           </div>
                         )}
 
-                        <p className="text-[10px] text-muted-foreground/70 flex items-center gap-1.5 pt-1 border-t border-border/30">
-                          <FileText className="h-3 w-3" />
-                          Base légale : {deducedTitleType.legalBasis}
+                        <p className="text-[10px] text-muted-foreground/60 pt-1 border-t border-border/30">
+                          Réf: {deducedTitleType.legalBasis}
                         </p>
                       </CardContent>
                     </Card>
