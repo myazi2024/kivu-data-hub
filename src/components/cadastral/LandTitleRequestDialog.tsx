@@ -107,7 +107,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
         ...prev,
         requesterLastName: nameParts[0] || '',
         requesterFirstName: nameParts.slice(1).join(' ') || '',
-        requesterPhone: profile.phone || '',
         requesterEmail: profile.email || ''
       }));
     }
@@ -126,21 +125,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   useEffect(() => {
     if (formData.ville) {
-      setAvailableCommunes(getCommunesForVille(formData.ville));
+      setAvailableCommunes(getCommunesForVille(formData.province, formData.ville));
     }
-  }, [formData.ville]);
+  }, [formData.ville, formData.province]);
 
   useEffect(() => {
-    if (formData.commune) {
-      setAvailableQuartiers(getQuartiersForCommune(formData.commune));
+    if (formData.commune && formData.ville) {
+      setAvailableQuartiers(getQuartiersForCommune(formData.province, formData.ville, formData.commune));
     }
-  }, [formData.commune]);
+  }, [formData.commune, formData.province, formData.ville]);
 
   useEffect(() => {
     if (formData.territoire) {
-      setAvailableCollectivites(getCollectivitesForTerritoire(formData.territoire));
+      setAvailableCollectivites(getCollectivitesForTerritoire(formData.province, formData.territoire));
     }
-  }, [formData.territoire]);
+  }, [formData.territoire, formData.province]);
 
   const handleInputChange = (field: keyof LandTitleRequestData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -288,10 +287,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               </div>
               
               <MobileMoneyPayment
-                items={[cartItem]}
-                onSuccess={handlePaymentSuccess}
-                onCancel={() => setShowPayment(false)}
+                item={cartItem}
+                currency="USD"
+                onPaymentSuccess={handlePaymentSuccess}
               />
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPayment(false)} 
+                className="w-full mt-2"
+              >
+                Annuler
+              </Button>
             </div>
           </DialogPrimitive.Content>
         </DialogPrimitive.Portal>
@@ -1000,7 +1006,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       <QuickAuthDialog
         open={showQuickAuth}
         onOpenChange={setShowQuickAuth}
-        onSuccess={() => {
+        onAuthSuccess={() => {
           setShowQuickAuth(false);
           handleProceedToPayment();
         }}

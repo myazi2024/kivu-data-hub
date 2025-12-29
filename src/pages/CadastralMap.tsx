@@ -16,6 +16,7 @@ import CadastralContributionDialog from '@/components/cadastral/CadastralContrib
 import AdvancedSearchFilters from '@/components/cadastral/AdvancedSearchFilters';
 import SearchHistory from '@/components/cadastral/SearchHistory';
 import ParcelActionsDropdown from '@/components/cadastral/ParcelActionsDropdown';
+import LandTitleRequestDialog from '@/components/cadastral/LandTitleRequestDialog';
 import { useAdvancedCadastralSearch } from '@/hooks/useAdvancedCadastralSearch';
 import { useSearchHistory } from '@/hooks/useSearchHistory';
 import 'leaflet/dist/leaflet.css';
@@ -62,6 +63,7 @@ const CadastralMap = () => {
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showManualSearchNotification, setShowManualSearchNotification] = useState(false);
   const [isSearchBarActive, setIsSearchBarActive] = useState(false);
+  const [showLandTitleDialog, setShowLandTitleDialog] = useState(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Advanced search hooks
@@ -516,6 +518,24 @@ const CadastralMap = () => {
           />
         )}
 
+        {/* Boutons flottants en haut à gauche - visibles seulement quand la barre de recherche n'est pas active */}
+        {!isSearchBarActive && !selectedParcel && (
+          <div className={`absolute left-3 z-[1000] flex gap-2 animate-fade-in ${isMobile ? 'top-3' : 'top-3'}`}>
+            {/* Bouton Obtenir titre foncier */}
+            <Button
+              variant="default"
+              size="sm"
+              className="h-10 px-4 text-xs font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary"
+              onClick={() => setShowLandTitleDialog(true)}
+            >
+              <div className="flex items-center gap-2">
+                <FileEdit className="h-4 w-4" />
+                <span>Obtenir titre foncier</span>
+              </div>
+            </Button>
+          </div>
+        )}
+
         {/* Overlay de recherche - Design moderne avec animation de rebond */}
         <div 
           className={`absolute left-3 top-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} transform-gpu ${
@@ -838,6 +858,12 @@ const CadastralMap = () => {
           parcelNumber={selectedParcel?.parcel_number || searchQuery}
         />
       )}
+
+      {/* Dialog de demande de titre foncier */}
+      <LandTitleRequestDialog
+        open={showLandTitleDialog}
+        onOpenChange={setShowLandTitleDialog}
+      />
     </div>
   );
 };
