@@ -108,7 +108,7 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[9998]" />
-        <DialogContent className="z-[9999] max-w-xs max-h-[90vh] p-0 overflow-hidden bg-background border-border rounded-2xl">
+        <DialogContent className="z-[9999] max-w-xs max-h-[85vh] p-0 overflow-hidden bg-background border-border rounded-2xl flex flex-col">
           {/* Header avec gradient */}
           <DialogHeader className="p-4 sm:p-6 pb-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
             <div className="flex items-center gap-4">
@@ -133,7 +133,7 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
 
           {/* Content */}
           <ScrollArea 
-            className="h-[420px] sm:h-[480px]"
+            className="flex-1 max-h-[calc(85vh-220px)]"
             onScrollCapture={handleScroll}
             ref={scrollRef}
           >
