@@ -62,7 +62,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     submitRequest 
   } = useLandTitleRequest();
   
-  const [activeTab, setActiveTab] = useState('intro');
+  const [showIntro, setShowIntro] = useState(true);
+  const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -425,7 +426,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setRequesterIdFile(null);
     setOwnerIdFile(null);
     setProofOfOwnershipFile(null);
-    setActiveTab('intro');
+    setActiveTab('requester');
+    setShowIntro(true);
     setShowPayment(false);
     setShowSuccess(false);
     onOpenChange(false);
@@ -516,6 +518,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     );
   }
 
+  // Intro view (shown first before the form)
+  if (showIntro) {
+    return (
+      <LandTitleIntroPage 
+        open={open} 
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            handleClose();
+          }
+        }}
+        onAccept={() => setShowIntro(false)}
+      />
+    );
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={handleClose}>
@@ -537,11 +554,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             <ScrollArea className="h-[65vh] sm:h-[70vh]">
               <div className="space-y-4 pr-2">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-7 mb-4">
-                    <TabsTrigger value="intro" className="text-xs gap-1">
-                      <Info className="h-3 w-3" />
-                      <span className="hidden sm:inline">Intro</span>
-                    </TabsTrigger>
+                  <TabsList className="grid w-full grid-cols-6 mb-4">
                     <TabsTrigger value="requester" className="text-xs gap-1">
                       <User className="h-3 w-3" />
                       <span className="hidden sm:inline">Demandeur</span>
@@ -567,12 +580,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <span className="hidden sm:inline">Frais</span>
                     </TabsTrigger>
                   </TabsList>
-
-
-                {/* Tab: Introduction */}
-                <TabsContent value="intro" className="space-y-5">
-                  <LandTitleIntroPage onStart={() => setActiveTab('requester')} />
-                </TabsContent>
 
                 {/* Tab: Requester */}
                 <TabsContent value="requester" className="space-y-4">
@@ -741,7 +748,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('intro')} className="flex-1 h-8 text-xs rounded-lg">
+                    <Button variant="outline" onClick={() => setShowIntro(true)} className="flex-1 h-8 text-xs rounded-lg">
                       Précédent
                     </Button>
                     <Button onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-lg gap-2">
