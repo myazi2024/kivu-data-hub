@@ -80,7 +80,7 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm mb-1">À propos du service</h3>
                 <p className="text-sm leading-relaxed text-foreground/80">
-                  Ce service permet de soumettre une <strong className="text-foreground">demande de titre foncier</strong> auprès des autorités de la RDC selon les procédures légales.
+                  Ce service vous permet de soumettre une <strong className="text-foreground">demande officielle de titre foncier</strong> auprès des autorités compétentes de la République Démocratique du Congo. Le titre foncier constitue le document juridique le plus sécurisant pour attester de votre droit de propriété sur un terrain.
                 </p>
               </div>
             </div>
@@ -95,7 +95,7 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm mb-1">Délai de traitement</h3>
                 <p className="text-sm leading-relaxed text-foreground/80">
-                  Votre demande sera traitée dans un délai de <strong className="text-foreground">30 à 90 jours</strong> selon la complexité du dossier.
+                  Le traitement de votre demande nécessite <strong className="text-foreground">30 à 90 jours ouvrables</strong> selon la complexité du dossier et la localisation du terrain. Ce délai inclut la vérification des documents, les enquêtes de terrain et la validation administrative par les services cadastraux compétents.
                 </p>
               </div>
             </div>
@@ -108,19 +108,23 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
                 <Shield className="h-4 w-4 text-green-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm mb-2">Documents requis</h3>
+                <h3 className="font-semibold text-sm mb-2">Documents obligatoires</h3>
                 <div className="space-y-1.5 text-sm text-foreground/80">
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">Pièce d'identité</strong> du demandeur</span>
+                    <span><strong className="text-foreground">Pièce d'identité valide</strong> du demandeur (carte d'identité, passeport ou permis de conduire)</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">Preuve de propriété</strong> ou d'occupation</span>
+                    <span><strong className="text-foreground">Preuve de propriété</strong> : acte de vente notarié, attestation d'occupation, certificat d'enregistrement ou tout document justifiant vos droits</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">Documents terrain</strong> (croquis, PV bornage)</span>
+                    <span><strong className="text-foreground">Documents du terrain</strong> : croquis du terrain, procès-verbal de bornage, plan cadastral si disponible</span>
+                  </div>
+                  <div className="flex items-start gap-1.5">
+                    <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
+                    <span><strong className="text-foreground">Coordonnées GPS</strong> des bornes du terrain (si disponibles)</span>
                   </div>
                 </div>
               </div>
@@ -135,59 +139,104 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm mb-2">Conditions d'utilisation</h3>
+                <p className="text-sm leading-relaxed text-foreground/80 mb-2">
+                  En utilisant ce service, vous vous engagez à :
+                </p>
                 <div className="space-y-1.5 text-sm text-foreground/80">
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Fournir des <strong className="text-foreground">informations exactes</strong></span>
+                    <span>Fournir des <strong className="text-foreground">informations véridiques et exactes</strong> sur votre identité et le terrain concerné</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Soumettre des <strong className="text-foreground">documents authentiques</strong></span>
+                    <span>Soumettre uniquement des <strong className="text-foreground">documents authentiques et non falsifiés</strong></span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Respecter les <strong className="text-foreground">lois foncières RDC</strong></span>
+                    <span>Respecter les <strong className="text-foreground">lois foncières de la RDC</strong> et les procédures administratives en vigueur</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <CheckCircle className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span>Payer les <strong className="text-foreground">frais dans les délais</strong></span>
+                    <span>Procéder au <strong className="text-foreground">paiement des frais</strong> dans les délais impartis après validation de votre demande</span>
                   </div>
                 </div>
               </div>
             </div>
           </Card>
 
-          {/* Avertissement légal */}
+          {/* Avertissement légal principal */}
           <Card className="p-3 rounded-xl border-destructive/30 bg-destructive/5 shadow-sm">
             <div className="flex items-start gap-2.5">
               <div className="p-2 bg-destructive/20 rounded-lg flex-shrink-0">
                 <AlertTriangle className="h-4 w-4 text-destructive" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-sm mb-1 text-destructive">Avertissement légal</h3>
+                <h3 className="font-semibold text-sm mb-1 text-destructive">⚠️ AVERTISSEMENT IMPORTANT</h3>
+                <div className="space-y-2 text-sm leading-relaxed text-foreground/80">
+                  <p>
+                    <strong className="text-destructive">Toute fausse déclaration, falsification de documents ou tentative de fraude</strong> constitue une infraction pénale passible de poursuites judiciaires conformément au <strong className="text-foreground">Code pénal congolais</strong>.
+                  </p>
+                  <p>
+                    Les sanctions peuvent inclure des <strong className="text-foreground">amendes substantielles</strong> et des <strong className="text-foreground">peines d'emprisonnement</strong>. En outre, votre demande sera <strong className="text-foreground">annulée définitivement</strong> et vous pourrez être <strong className="text-foreground">interdit de toute démarche foncière future</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </Card>
+
+          {/* Avertissement litiges */}
+          <Card className="p-3 rounded-xl border-amber-500/30 bg-amber-500/5 shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <div className="p-2 bg-amber-500/20 rounded-lg flex-shrink-0">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm mb-1 text-amber-700">Vérification préalable</h3>
                 <p className="text-sm leading-relaxed text-foreground/80">
-                  Toute <strong className="text-foreground">fausse déclaration</strong> est passible de poursuites conformément au Code pénal congolais.
+                  Avant de soumettre votre demande, assurez-vous que le terrain ne fait l'objet d'<strong className="text-foreground">aucun litige, conflit de propriété ou hypothèque non déclarée</strong>. Une déclaration incomplète ou erronée peut entraîner le rejet de votre dossier et des complications juridiques.
+                </p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Protection des données */}
+          <Card className="p-3 rounded-xl border-blue-500/20 bg-blue-500/5 shadow-sm">
+            <div className="flex items-start gap-2.5">
+              <div className="p-2 bg-blue-500/20 rounded-lg flex-shrink-0">
+                <Lock className="h-4 w-4 text-blue-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm mb-1">Protection des données</h3>
+                <p className="text-sm leading-relaxed text-foreground/80">
+                  Vos données personnelles sont traitées de manière <strong className="text-foreground">strictement confidentielle</strong> et sécurisée. Elles ne seront utilisées que dans le cadre du traitement de votre demande et partagées uniquement avec les <strong className="text-foreground">autorités cadastrales compétentes</strong>.
                 </p>
               </div>
             </div>
           </Card>
 
           {/* Assistance */}
-          <Card className="p-3 rounded-xl border-blue-500/20 bg-blue-500/5 shadow-sm">
+          <Card className="p-3 rounded-xl border-green-500/20 bg-green-500/5 shadow-sm">
             <div className="flex items-start gap-2.5">
-              <div className="p-2 bg-blue-500/20 rounded-lg flex-shrink-0">
-                <MessageCircle className="h-4 w-4 text-blue-500" />
+              <div className="p-2 bg-green-500/20 rounded-lg flex-shrink-0">
+                <MessageCircle className="h-4 w-4 text-green-600" />
               </div>
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-sm mb-2">Assistance disponible</h3>
+                <p className="text-sm leading-relaxed text-foreground/80 mb-2">
+                  Notre équipe est à votre disposition pour vous accompagner :
+                </p>
                 <div className="space-y-1.5 text-sm text-foreground/80">
                   <div className="flex items-start gap-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 flex-shrink-0"></div>
-                    <span><strong className="text-foreground">Bulles d'aide</strong> sur chaque champ</span>
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+                    <span><strong className="text-foreground">Bulles d'aide interactives</strong> disponibles sur chaque champ du formulaire</span>
                   </div>
                   <div className="flex items-start gap-1.5">
                     <FaWhatsapp className="h-3.5 w-3.5 text-green-500 mt-0.5 flex-shrink-0" />
-                    <span><strong className="text-foreground">Support WhatsApp</strong> 24h/24</span>
+                    <span><strong className="text-foreground">Support WhatsApp</strong> disponible 24h/24 et 7j/7 pour répondre à vos questions</span>
+                  </div>
+                  <div className="flex items-start gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 mt-1.5 flex-shrink-0"></div>
+                    <span><strong className="text-foreground">Suivi en temps réel</strong> de l'état de votre demande dans votre espace personnel</span>
                   </div>
                 </div>
               </div>
