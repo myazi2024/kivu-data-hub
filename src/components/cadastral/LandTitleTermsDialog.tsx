@@ -108,24 +108,24 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[9998]" />
-        <DialogContent className="z-[9999] max-w-xs max-h-[85vh] p-0 overflow-hidden bg-background border-border rounded-2xl flex flex-col">
+        <DialogContent className="z-[9999] w-[95vw] max-w-sm max-h-[90vh] p-0 overflow-hidden bg-background border-border rounded-2xl flex flex-col">
           {/* Header avec gradient */}
-          <DialogHeader className="p-4 sm:p-6 pb-4 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/15 rounded-xl shadow-sm">
-                <FileText className="h-6 w-6 text-primary" />
+          <DialogHeader className="p-3 sm:p-4 pb-3 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent flex-shrink-0">
+            <div className="flex items-center gap-3">
+              <div className="p-2 sm:p-3 bg-primary/15 rounded-xl shadow-sm flex-shrink-0">
+                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
               </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <DialogTitle className="text-lg sm:text-xl font-bold">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <DialogTitle className="text-base sm:text-lg font-bold">
                     Demande de Titre Foncier
                   </DialogTitle>
                   <Badge variant="secondary" className="text-xs">
                     RDC
                   </Badge>
                 </div>
-                <DialogDescription className="text-sm text-muted-foreground mt-1">
-                  Conditions d'utilisation et informations importantes
+                <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  Conditions et informations importantes
                 </DialogDescription>
               </div>
             </div>
@@ -133,165 +133,151 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
 
           {/* Content */}
           <ScrollArea 
-            className="flex-1 max-h-[calc(85vh-220px)]"
+            className="flex-1 min-h-0"
             onScrollCapture={handleScroll}
             ref={scrollRef}
           >
-            <div className="p-4 sm:p-6 space-y-5">
+            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
               {/* Introduction Card */}
               <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/15 rounded-lg">
-                      <Info className="h-5 w-5 text-primary" />
+                <CardContent className="p-3">
+                  <div className="flex items-start gap-2">
+                    <div className="p-1.5 bg-primary/15 rounded-lg flex-shrink-0">
+                      <Info className="h-4 w-4 text-primary" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-foreground">À propos de ce service</p>
-                      <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                        Ce service vous permet de soumettre une demande de titre foncier 
-                        auprès des autorités compétentes de la République Démocratique du Congo. 
-                        Votre dossier sera traité selon les procédures légales en vigueur.
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs sm:text-sm font-medium text-foreground">À propos</p>
+                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
+                        Soumettez votre demande de titre foncier auprès des autorités de la RDC.
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Points clés */}
-              <div className="space-y-3">
+              {/* Points clés - version compacte */}
+              <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <Scale className="h-4 w-4 text-primary" />
-                  <h3 className="font-semibold text-foreground">Points essentiels</h3>
+                  <Scale className="h-3.5 w-3.5 text-primary" />
+                  <h3 className="text-xs sm:text-sm font-semibold text-foreground">Points essentiels</h3>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2">
                   {keyPoints.map((point, index) => (
-                    <Card key={index} className="border-muted hover:border-primary/30 transition-colors">
-                      <CardContent className="p-3 flex items-start gap-3">
-                        <div className={`p-2 ${point.iconBg} rounded-lg flex-shrink-0`}>
-                          <point.icon className={`h-4 w-4 ${point.iconColor}`} />
+                    <div key={index} className="p-2 rounded-lg border border-muted bg-card hover:border-primary/30 transition-colors">
+                      <div className="flex items-center gap-1.5 mb-1">
+                        <div className={`p-1 ${point.iconBg} rounded`}>
+                          <point.icon className={`h-3 w-3 ${point.iconColor}`} />
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-foreground truncate">{point.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                            {point.description}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        <p className="text-xs font-medium text-foreground truncate">{point.title}</p>
+                      </div>
+                      <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2">
+                        {point.description}
+                      </p>
+                    </div>
                   ))}
                 </div>
               </div>
 
-              <Separator className="my-4" />
+              <Separator className="my-2" />
 
-              {/* Conditions */}
-              <Card className="border-muted">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                    <Shield className="h-4 w-4 text-primary" />
-                    Conditions d'utilisation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <ul className="space-y-2.5">
-                    {conditions.map((condition, index) => (
-                      <li key={index} className="flex items-start gap-2.5">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm text-muted-foreground">{condition}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
+              {/* Conditions - version compacte */}
+              <div className="p-2.5 rounded-lg border border-muted bg-card">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <Shield className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-xs font-semibold text-foreground">Conditions</span>
+                </div>
+                <ul className="space-y-1.5">
+                  {conditions.map((condition, index) => (
+                    <li key={index} className="flex items-start gap-1.5">
+                      <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0 mt-0.5" />
+                      <span className="text-[10px] sm:text-xs text-muted-foreground">{condition}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-              {/* Avertissement */}
-              <Card className="border-destructive/40 bg-gradient-to-br from-destructive/5 to-destructive/10">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-destructive/15 rounded-lg">
-                      <AlertTriangle className="h-5 w-5 text-destructive" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-destructive">Avertissement légal</p>
-                      <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                        Toute fausse déclaration ou falsification de documents est passible 
-                        de poursuites judiciaires conformément aux articles pertinents du 
-                        Code pénal congolais.
-                      </p>
-                    </div>
+              {/* Avertissement - version compacte */}
+              <div className="p-2.5 rounded-lg border border-destructive/40 bg-gradient-to-br from-destructive/5 to-destructive/10">
+                <div className="flex items-start gap-2">
+                  <div className="p-1.5 bg-destructive/15 rounded flex-shrink-0">
+                    <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Protection des données */}
-              <Card className="border-muted bg-muted/30">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                      <Lock className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">Protection des données</p>
-                      <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                        Vos informations personnelles sont traitées de manière confidentielle 
-                        et sécurisée. Elles ne seront partagées qu'avec les autorités 
-                        administratives compétentes dans le cadre de votre demande.
-                      </p>
-                    </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-destructive">Avertissement</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                      Toute fausse déclaration est passible de poursuites judiciaires.
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
+
+              {/* Protection des données - version compacte */}
+              <div className="p-2.5 rounded-lg border border-muted bg-muted/30">
+                <div className="flex items-start gap-2">
+                  <div className="p-1.5 bg-primary/10 rounded flex-shrink-0">
+                    <Lock className="h-3.5 w-3.5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-foreground">Protection des données</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+                      Vos informations sont traitées de manière confidentielle et sécurisée.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
               {/* Spacer pour le scroll */}
-              <div className="h-6" />
+              <div className="h-4" />
             </div>
           </ScrollArea>
 
-          {/* Footer */}
-          <DialogFooter className="p-4 sm:p-6 pt-4 border-t bg-gradient-to-r from-muted/50 to-muted/30">
-            <div className="w-full space-y-4">
-              {/* Checkbox avec meilleur style */}
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border">
+          {/* Footer - version compacte */}
+          <DialogFooter className="p-3 sm:p-4 pt-3 border-t bg-gradient-to-r from-muted/50 to-muted/30 flex-shrink-0">
+            <div className="w-full space-y-3">
+              {/* Checkbox */}
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border">
                 <Checkbox
                   id="terms"
                   checked={termsAccepted}
                   onCheckedChange={(checked) => setTermsAccepted(checked === true)}
                   disabled={!hasScrolledToBottom}
-                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary h-4 w-4"
                 />
                 <label 
                   htmlFor="terms" 
-                  className={`text-sm cursor-pointer select-none flex-1 ${
+                  className={`text-xs cursor-pointer select-none flex-1 ${
                     !hasScrolledToBottom ? 'text-muted-foreground' : 'text-foreground font-medium'
                   }`}
                 >
-                  J'ai lu et j'accepte les conditions d'utilisation
+                  J'accepte les conditions
                 </label>
               </div>
 
               {!hasScrolledToBottom && (
-                <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-                  <ArrowRight className="h-3 w-3 rotate-90" />
-                  Faites défiler jusqu'en bas pour accepter les conditions
+                <p className="text-[10px] text-muted-foreground text-center flex items-center justify-center gap-1">
+                  <ArrowRight className="h-2.5 w-2.5 rotate-90" />
+                  Défiler pour accepter
                 </p>
               )}
 
               {/* Boutons */}
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <Button
                   variant="outline"
                   onClick={() => onOpenChange(false)}
-                  className="flex-1"
+                  className="flex-1 h-9 text-xs sm:text-sm"
+                  size="sm"
                 >
                   Annuler
                 </Button>
                 <Button
                   onClick={handleAccept}
                   disabled={!termsAccepted}
-                  className="flex-1 gap-2"
+                  className="flex-1 gap-1.5 h-9 text-xs sm:text-sm"
+                  size="sm"
                 >
                   Continuer
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
