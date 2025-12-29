@@ -524,7 +524,7 @@ const CadastralMap = () => {
           <div 
             className={cn(
               "fixed z-[1001] animate-fade-in",
-              isMobile ? "left-3 right-3 bottom-32" : "left-3 bottom-36"
+              isMobile ? "left-3 right-3 bottom-36" : "left-3 bottom-40"
             )}
           >
             <Button
