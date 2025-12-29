@@ -230,7 +230,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     if (deduced) {
       toast({
         title: "Données validées",
-        description: `Type de titre recommandé : ${deduced.label}`,
+        description: `Vous pourrez obtenir : ${deduced.label}`,
       });
     }
   };
@@ -1207,8 +1207,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               )} />
                             </div>
                             <div>
-                              <Label className="text-sm font-semibold">Type de titre recommandé</Label>
-                              <p className="text-xs text-muted-foreground">Selon le droit foncier congolais</p>
+                              <Label className="text-sm font-semibold">Type de titre foncier qui pourra vous être délivré</Label>
+                              <p className="text-xs text-muted-foreground">Selon le droit foncier congolais et l'état actuel de votre parcelle</p>
                             </div>
                           </div>
                           <div className={cn(
@@ -1219,9 +1219,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               ? "bg-amber-500/20 text-amber-700 dark:text-amber-400"
                               : "bg-blue-500/20 text-blue-700 dark:text-blue-400"
                           )}>
-                            {deducedTitleType.confidence === 'high' ? 'Confiance élevée' : 
-                             deducedTitleType.confidence === 'medium' ? 'Confiance moyenne' : 
-                             'À confirmer'}
+                            {deducedTitleType.confidence === 'high' ? 'Estimation fiable' : 
+                             deducedTitleType.confidence === 'medium' ? 'Estimation probable' : 
+                             'À préciser par les services'}
                           </div>
                         </div>
 
@@ -1252,7 +1252,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg">
                             <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                             <p className="text-xs text-muted-foreground">
-                              Le type exact sera confirmé par les services cadastraux après examen complet de votre dossier.
+                              Cette estimation vous donne une idée du titre que vous pourrez obtenir. Le type définitif sera confirmé par les services cadastraux après examen de votre dossier.
                             </p>
                           </div>
                         )}
