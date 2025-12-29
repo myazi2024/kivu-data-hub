@@ -66,6 +66,8 @@ const CadastralMap = () => {
   const [isSearchBarActive, setIsSearchBarActive] = useState(false);
   const [showLandTitleDialog, setShowLandTitleDialog] = useState(false);
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [showLandTitleNotification, setShowLandTitleNotification] = useState(false);
+  const landTitleNotificationTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Advanced search hooks
   const advancedSearch = useAdvancedCadastralSearch();
@@ -81,6 +83,7 @@ const CadastralMap = () => {
 
   // Ref pour tracker si l'utilisateur a cliqué sur le bouton (empêche réapparition)
   const notificationDismissedRef = useRef(false);
+  const landTitleNotificationDismissedRef = useRef(false);
 
   // Timer d'inactivité pour afficher la notification sur le bouton "Recherche manuelle"
   useEffect(() => {
@@ -97,6 +100,40 @@ const CadastralMap = () => {
       }
     };
   }, [searchQuery, filteredParcels.length, showManualSearchNotification]);
+
+  // Timer d'inactivité pour afficher la notification du bouton "Obtenir titre foncier"
+  useEffect(() => {
+    // Afficher la notification après 5 secondes d'inactivité quand le bouton est visible
+    if (!isSearchBarActive && !selectedParcel && !showLandTitleNotification && !landTitleNotificationDismissedRef.current) {
+      landTitleNotificationTimerRef.current = setTimeout(() => {
+        setShowLandTitleNotification(true);
+      }, 5000);
+    }
+
+    return () => {
+      if (landTitleNotificationTimerRef.current) {
+        clearTimeout(landTitleNotificationTimerRef.current);
+      }
+    };
+  }, [isSearchBarActive, selectedParcel, showLandTitleNotification]);
+
+  // Gestionnaire de clic global pour fermer la notification "Obtenir titre foncier"
+  useEffect(() => {
+    const handleGlobalClick = () => {
+      if (showLandTitleNotification) {
+        landTitleNotificationDismissedRef.current = true;
+        setShowLandTitleNotification(false);
+      }
+    };
+
+    if (showLandTitleNotification) {
+      document.addEventListener('click', handleGlobalClick);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+    };
+  }, [showLandTitleNotification]);
 
   // Reset le flag quand la recherche change
   useEffect(() => {
@@ -527,6 +564,26 @@ const CadastralMap = () => {
               isMobile ? "left-3 bottom-48" : "left-3 bottom-52"
             )}
           >
+            {/* Notification intelligente */}
+            {showLandTitleNotification && (
+              <div 
+                className={cn(
+                  "absolute bottom-full left-0 mb-2 animate-fade-in",
+                  isMobile ? "max-w-[280px]" : "max-w-[320px]"
+                )}
+              >
+                <div className="bg-destructive text-destructive-foreground rounded-xl px-3 py-2 shadow-lg text-xs leading-relaxed">
+                  <div className="flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                    <span>
+                      Vous n'avez pas encore de titre de propriété pour une parcelle ? Faites votre demande directement ici en cliquant sur ce bouton.
+                    </span>
+                  </div>
+                  {/* Flèche pointant vers le bouton */}
+                  <div className="absolute -bottom-1.5 left-6 w-3 h-3 bg-destructive transform rotate-45" />
+                </div>
+              </div>
+            )}
             <Button
               variant="default"
               size={isMobile ? "default" : "sm"}
