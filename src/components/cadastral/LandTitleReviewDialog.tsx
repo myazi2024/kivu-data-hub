@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { 
@@ -88,17 +88,19 @@ const LandTitleReviewDialog: React.FC<LandTitleReviewDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[340px] max-h-[85vh] overflow-hidden p-0 rounded-2xl z-[9999]">
-        <div className="px-4 pt-8 pb-2">
-          <DialogHeader className="space-y-1">
-            <DialogTitle className="text-lg font-bold text-center text-primary">
-              Récapitulatif de la demande
-            </DialogTitle>
-            <p className="text-sm text-muted-foreground text-center">
-              Vérifiez les informations avant de procéder au paiement
-            </p>
-          </DialogHeader>
-        </div>
+      <DialogPortal>
+        <DialogOverlay className="z-[9998]" />
+        <DialogContent className="max-w-[340px] max-h-[85vh] overflow-hidden p-0 rounded-2xl z-[9999]">
+          <div className="px-4 pt-8 pb-2">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-lg font-bold text-center text-primary">
+                Récapitulatif de la demande
+              </DialogTitle>
+              <p className="text-sm text-muted-foreground text-center">
+                Vérifiez les informations avant de procéder au paiement
+              </p>
+            </DialogHeader>
+          </div>
 
         <div 
           ref={contentRef}
@@ -441,7 +443,8 @@ const LandTitleReviewDialog: React.FC<LandTitleReviewDialogProps> = ({
             Vos données sont traitées de manière confidentielle
           </p>
         </div>
-      </DialogContent>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
   );
 };
