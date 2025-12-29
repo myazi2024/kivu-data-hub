@@ -69,6 +69,11 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
   const isCongolais = nationality === 'congolais';
   const isEtranger = nationality === 'etranger';
   
+  // Durée d'occupation
+  const wantsPerpetuel = occupationDuration === 'perpetuel';
+  const wantsLongTerme = occupationDuration === 'long_terme';
+  const wantsTemporaire = occupationDuration === 'temporaire';
+  
   // États de mise en valeur
   const hasDurableConstruction = constructionNature === 'Durable';
   const hasSemiDurableConstruction = constructionNature === 'Semi-durable';
@@ -86,28 +91,207 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
   const isLargeArea = areaSqm && areaSqm > SURFACE_THRESHOLDS.GRAND_TERRAIN;
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // RÈGLE 1: CONCESSION PERPÉTUELLE
-  // Conditions: Nationalité congolaise + Mise en valeur complète (construction durable)
-  // + Respect des conditions de la concession provisoire
+  // RÈGLE FONDAMENTALE: DURÉE TEMPORAIRE (≤25 ANS)
+  // ⚠️ En RDC, les titres de 25 ans ou moins NE SONT PAS des titres définitifs
+  // Ce sont des concessions temporaires ou des baux fonciers
   // ═══════════════════════════════════════════════════════════════════════════
-  if (isCongolais && hasDurableConstruction && !isNonBati) {
-    if (isResidential || isCommercial || isMixed) {
+
+  if (wantsTemporaire) {
+    // Pour une durée ≤25 ans, JAMAIS de certificat d'enregistrement
+    // Options: Concession ordinaire, Bail foncier, ou Bail emphytéotique court
+    
+    // Cas 1: Étranger avec durée temporaire
+    if (isEtranger) {
+      if (hasDurableConstruction || hasSemiDurableConstruction) {
+        return {
+          type: 'Bail emphytéotique',
+          label: 'Bail emphytéotique court (20-25 ans)',
+          description: 'Bail de durée limitée pour les non-nationaux. Ce n\'est PAS un titre de propriété définitif mais un droit réel limité dans le temps, renouvelable sous conditions.',
+          conditions: [
+            'Durée fixée entre 20 et 25 ans',
+            'Paiement du canon emphytéotique annuel',
+            'Respect du plan de mise en valeur',
+            'Possibilité de renouvellement après expiration'
+          ],
+          nextSteps: [
+            'Déposer la demande de bail emphytéotique',
+            'Négocier la durée (20-25 ans) et le canon',
+            'Signer le contrat de bail emphytéotique',
+            'Prévoir le renouvellement avant expiration'
+          ],
+          legalBasis: 'Art. 110-114 de la Loi n° 73-021 du 20 juillet 1973',
+          confidence: 'high'
+        };
+      } else {
+        return {
+          type: 'Bail foncier',
+          label: 'Bail foncier (9-25 ans)',
+          description: 'Contrat de location du domaine privé de l\'État. Ce n\'est PAS un droit réel de propriété mais un droit personnel de jouissance, renouvelable par avenant.',
+          conditions: [
+            'Durée variable de 9 à 25 ans',
+            'Contrat de location avec l\'État ou le propriétaire',
+            'Paiement du loyer foncier convenu',
+            'Respect des conditions d\'utilisation'
+          ],
+          nextSteps: [
+            'Négocier le contrat de bail foncier',
+            'Faire enregistrer le contrat',
+            'Respecter les obligations du bail',
+            'Prévoir le renouvellement avant expiration'
+          ],
+          legalBasis: 'Code civil congolais et Loi foncière n° 73-021',
+          confidence: 'high'
+        };
+      }
+    }
+    
+    // Cas 2: Congolais avec durée temporaire
+    if (isCongolais) {
+      if (hasDurableConstruction) {
+        // Même avec construction durable, si durée temporaire demandée
+        return {
+          type: 'Concession ordinaire',
+          label: 'Concession ordinaire (25 ans renouvelables)',
+          description: 'Droit de jouissance temporaire sur le domaine privé de l\'État. ⚠️ Ce n\'est PAS un titre de propriété définitif. L\'État peut retirer la concession si le terrain n\'est pas valorisé.',
+          conditions: [
+            'Durée fixée par l\'État (généralement 25 ans)',
+            'Paiement de la redevance annuelle obligatoire',
+            'Mise en valeur effective du terrain',
+            'Risque de retrait si obligations non respectées'
+          ],
+          nextSteps: [
+            'Obtenir l\'acte de concession ordinaire',
+            'Respecter le délai de mise en valeur',
+            'Payer les redevances annuelles',
+            'Demander le renouvellement avant expiration'
+          ],
+          legalBasis: 'Art. 61-79 de la Loi n° 73-021 du 20 juillet 1973',
+          confidence: 'high',
+          conversionPossible: {
+            targetTitle: 'Certificat d\'enregistrement (Concession perpétuelle)',
+            requirements: [
+              'Demander la conversion AVANT expiration des 25 ans',
+              'Construction en matériaux durables achevée',
+              'Procès-verbal de constat de mise en valeur',
+              'Paiement des frais de conversion'
+            ]
+          }
+        };
+      } else if (hasSemiDurableConstruction || isPrecaire) {
+        return {
+          type: 'Concession ordinaire',
+          label: 'Concession ordinaire (25 ans renouvelables)',
+          description: 'Droit d\'usage temporaire permettant la mise en valeur progressive. ⚠️ Ce n\'est PAS un titre définitif. Doit être converti avant expiration pour sécuriser vos droits.',
+          conditions: [
+            'Engagement de mise en valeur dans le délai imparti',
+            'Paiement de la redevance annuelle',
+            'Construction au minimum semi-durable requise',
+            'Risque de perte si non valorisé'
+          ],
+          nextSteps: [
+            'Obtenir l\'acte de concession ordinaire',
+            'Entreprendre la mise en valeur rapidement',
+            'Évoluer vers une construction durable',
+            'Demander la conversion en titre perpétuel'
+          ],
+          legalBasis: 'Art. 61-79 de la Loi n° 73-021 du 20 juillet 1973',
+          confidence: 'medium',
+          conversionPossible: {
+            targetTitle: 'Certificat d\'enregistrement (Concession perpétuelle)',
+            requirements: [
+              'Achèvement d\'une construction durable',
+              'Constat de mise en valeur officiel',
+              'Demande de conversion avant l\'expiration'
+            ]
+          }
+        };
+      } else if (isNonBati) {
+        // Terrain non bâti avec durée temporaire
+        if (isUrban) {
+          return {
+            type: 'Permis d\'occupation urbain',
+            label: 'Permis d\'occupation urbain (temporaire)',
+            description: 'Autorisation administrative d\'occuper un terrain en zone urbaine. Titre PRÉCAIRE imposant une mise en valeur dans les délais fixés.',
+            conditions: [
+              'Terrain en zone urbaine lotie',
+              'Conformité au plan d\'urbanisme',
+              'Délai de mise en valeur imposé',
+              'Risque de retrait si non valorisé'
+            ],
+            nextSteps: [
+              'Obtenir le permis d\'occupation',
+              'Construire dans le délai imparti',
+              'Évoluer vers une concession ordinaire',
+              'Puis vers un titre perpétuel'
+            ],
+            legalBasis: 'Ordonnance n° 74-148 d\'exécution de la loi foncière',
+            confidence: 'high',
+            conversionPossible: {
+              targetTitle: 'Concession ordinaire puis perpétuelle',
+              requirements: [
+                'Construction en matériaux durables',
+                'Respect des délais de mise en valeur',
+                'Nationalité congolaise pour le perpétuel'
+              ]
+            }
+          };
+        } else {
+          return {
+            type: 'Permis d\'occupation rural',
+            label: 'Permis d\'occupation rural (temporaire)',
+            description: 'Permet l\'occupation d\'une terre rurale. Titre PRÉCAIRE nécessitant la mise en valeur pour évoluer vers un titre plus stable.',
+            conditions: [
+              'Terrain en zone rurale',
+              'Accord des autorités coutumières',
+              'Projet d\'exploitation ou d\'habitation',
+              'Mise en valeur dans les délais'
+            ],
+            nextSteps: [
+              'Obtenir l\'attestation coutumière',
+              'Demander le permis d\'occupation',
+              'Mettre en valeur le terrain',
+              'Évoluer vers une concession'
+            ],
+            legalBasis: 'Art. 387-389 de la Loi n° 73-021',
+            confidence: 'high',
+            conversionPossible: {
+              targetTitle: 'Concession ordinaire',
+              requirements: [
+                'Mise en valeur effective',
+                'Bornage officiel',
+                'Demande formelle de concession'
+              ]
+            }
+          };
+        }
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RÈGLE 1: CERTIFICAT D'ENREGISTREMENT (CONCESSION PERPÉTUELLE)
+  // Seul titre foncier DÉFINITIF en RDC - Perpétuel et inattaquable
+  // Conditions strictes: Congolais + Mise en valeur complète + Durée perpétuelle
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  if (isCongolais && hasDurableConstruction && !isNonBati && (wantsPerpetuel || !occupationDuration)) {
+    if (isResidential || isCommercial || isMixed || isIndustrial) {
       return {
-        type: 'Concession perpétuelle',
-        label: 'Concession perpétuelle',
-        description: 'Droit de jouissance perpétuel sur le sol, accordé exclusivement aux Congolais ayant effectivement mis en valeur le terrain avec une construction en matériaux durables.',
+        type: 'Certificat d\'enregistrement',
+        label: 'Certificat d\'enregistrement (Concession perpétuelle)',
+        description: 'Seul titre foncier DÉFINITIF en RDC. Droit de propriété PERPÉTUEL et INATTAQUABLE, transmissible, cessible et hypothécable. Accordé exclusivement aux Congolais ayant mis en valeur le terrain.',
         conditions: [
-          'Nationalité congolaise obligatoire',
-          'Mise en valeur effective et complète du terrain',
-          'Construction en matériaux durables achevée',
-          'Respect des délais de mise en valeur fixés',
+          'Nationalité congolaise OBLIGATOIRE',
+          'Mise en valeur COMPLÈTE et effective du terrain',
+          'Construction en matériaux durables ACHEVÉE',
+          'Respect des délais de mise en valeur initiaux',
           'Enregistrement auprès du Conservateur des Titres Immobiliers'
         ],
         nextSteps: [
           'Obtenir le procès-verbal de constat de mise en valeur',
-          'Déposer la demande de conversion auprès du Conservateur',
-          'Payer les frais d\'enregistrement et de conversion',
-          'Recevoir le certificat d\'enregistrement de la concession perpétuelle'
+          'Déposer la demande de conversion/enregistrement',
+          'Payer les frais d\'enregistrement définitif',
+          'Recevoir le certificat d\'enregistrement - Titre perpétuel'
         ],
         legalBasis: 'Art. 80 et suivants de la Loi n° 73-021 du 20 juillet 1973',
         confidence: 'high'
@@ -117,41 +301,42 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RÈGLE 2: BAIL EMPHYTÉOTIQUE (18-99 ans)
-  // Cas 1: Étrangers avec construction durable
-  // Cas 2: Terrains agricoles ou industriels de grande superficie
-  // Cas 3: Projets commerciaux/industriels majeurs
+  // Droit réel limité dans le temps - Pour étrangers ou projets majeurs
   // ═══════════════════════════════════════════════════════════════════════════
   
   // Cas 2a: Étranger avec construction durable - bail emphytéotique obligatoire
   if (isEtranger && hasDurableConstruction) {
+    const duration = wantsLongTerme ? '18-99 ans' : wantsPerpetuel ? 'maximum 99 ans' : '18-99 ans';
     return {
       type: 'Bail emphytéotique',
-      label: 'Bail emphytéotique (18-99 ans)',
-      description: 'Bail de longue durée accordé aux personnes non congolaises. Confère des droits réels étendus incluant la possibilité de construire, planter et hypothéquer.',
+      label: `Bail emphytéotique (${duration})`,
+      description: 'Bail de longue durée pour les non-nationaux. Confère des droits réels étendus (construire, planter, hypothéquer) mais LIMITÉS DANS LE TEMPS. Ce n\'est pas un titre de propriété définitif.',
       conditions: [
         'Statut de non-national (étranger ou personne morale étrangère)',
         'Projet de mise en valeur substantiel',
         'Durée minimale de 18 ans, maximale de 99 ans',
-        'Paiement du canon emphytéotique annuel'
+        'Paiement du canon emphytéotique annuel',
+        '⚠️ Pas de conversion possible en titre perpétuel pour les étrangers'
       ],
       nextSteps: [
         'Constituer le dossier de demande de bail emphytéotique',
-        'Soumettre le plan de mise en valeur',
+        'Soumettre le plan de mise en valeur détaillé',
         'Négocier la durée et le canon avec l\'administration',
-        'Signer le contrat de bail emphytéotique'
+        'Signer le contrat de bail emphytéotique',
+        'Prévoir le renouvellement avant expiration'
       ],
       legalBasis: 'Art. 110 et suivants de la Loi n° 73-021 du 20 juillet 1973',
       confidence: 'high'
     };
   }
 
-  // Cas 2b: Terrain agricole de grande superficie
-  if (isAgricultural && (isLargeArea || isRural)) {
+  // Cas 2b: Terrain agricole de grande superficie (long terme)
+  if (isAgricultural && (isLargeArea || isRural) && wantsLongTerme) {
     if (hasDurableConstruction || hasSemiDurableConstruction) {
       return {
         type: 'Bail emphytéotique',
-        label: 'Bail emphytéotique agricole',
-        description: 'Bail de longue durée pour l\'exploitation agricole. Permet l\'installation d\'infrastructures durables et la transformation progressive du terrain.',
+        label: 'Bail emphytéotique agricole (18-99 ans)',
+        description: 'Bail de longue durée pour l\'exploitation agricole. Permet l\'installation d\'infrastructures durables. Droit réel LIMITÉ dans le temps.',
         conditions: [
           'Usage agricole ou d\'élevage démontré',
           'Plan d\'exploitation agricole validé',
@@ -167,23 +352,24 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
         legalBasis: 'Art. 110-114 de la Loi n° 73-021 modifiée',
         confidence: 'high',
         conversionPossible: isCongolais ? {
-          targetTitle: 'Concession perpétuelle',
+          targetTitle: 'Certificat d\'enregistrement (Concession perpétuelle)',
           requirements: [
             'Mise en valeur agricole complète',
             'Construction d\'infrastructures durables',
-            'Nationalité congolaise'
+            'Nationalité congolaise obligatoire',
+            'Demande de conversion avant expiration'
           ]
         } : undefined
       };
     }
   }
 
-  // Cas 2c: Terrain industriel/commercial de grande envergure
-  if (isIndustrial && hasDurableConstruction) {
+  // Cas 2c: Terrain industriel/commercial de grande envergure (long terme)
+  if (isIndustrial && hasDurableConstruction && wantsLongTerme) {
     return {
       type: 'Bail emphytéotique',
-      label: 'Bail emphytéotique industriel',
-      description: 'Bail de longue durée pour projet industriel ou manufacture. Adapté aux investissements nécessitant une stabilité juridique sur plusieurs décennies.',
+      label: 'Bail emphytéotique industriel (18-99 ans)',
+      description: 'Bail de longue durée pour projet industriel majeur. Adapté aux investissements nécessitant une stabilité sur plusieurs décennies.',
       conditions: [
         'Projet industriel ou commercial d\'envergure',
         'Plan d\'investissement validé',
@@ -197,23 +383,31 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
         'Procéder à l\'enregistrement auprès du Conservateur'
       ],
       legalBasis: 'Art. 110-114 de la Loi n° 73-021 du 20 juillet 1973',
-      confidence: 'high'
+      confidence: 'high',
+      conversionPossible: isCongolais ? {
+        targetTitle: 'Certificat d\'enregistrement',
+        requirements: [
+          'Mise en valeur industrielle complète',
+          'Nationalité congolaise',
+          'Demande de conversion'
+        ]
+      } : undefined
     };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RÈGLE 3: CONCESSION ORDINAIRE (25 ans renouvelables)
-  // Pour terrains en cours de mise en valeur (construction semi-durable ou précaire)
-  // Ou terrains non bâtis avec engagement de mise en valeur
+  // Pour terrains en cours de mise en valeur - Titre TEMPORAIRE
   // ═══════════════════════════════════════════════════════════════════════════
   
   if (hasSemiDurableConstruction || (isPrecaire && !isNonBati)) {
     const conversionInfo = isCongolais ? {
-      targetTitle: 'Concession perpétuelle',
+      targetTitle: 'Certificat d\'enregistrement (Concession perpétuelle)',
       requirements: [
         'Achèvement d\'une construction en matériaux durables',
         'Constat de mise en valeur par les services compétents',
-        'Demande de conversion avant l\'expiration du délai'
+        'Demande de conversion AVANT l\'expiration des 25 ans',
+        'Paiement des frais de conversion'
       ]
     } : {
       targetTitle: 'Bail emphytéotique',
@@ -226,18 +420,18 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
     return {
       type: 'Concession ordinaire',
       label: 'Concession ordinaire (25 ans renouvelables)',
-      description: 'Droit d\'usage temporaire accordé pour permettre la mise en valeur progressive du terrain. Convertible en titre plus stable après achèvement des travaux.',
+      description: 'Droit d\'usage TEMPORAIRE accordé pour permettre la mise en valeur progressive. ⚠️ Ce n\'est PAS un titre de propriété définitif. L\'État peut retirer la concession si le terrain n\'est pas valorisé.',
       conditions: [
         'Engagement de mise en valeur dans un délai défini',
-        'Paiement de la redevance annuelle',
+        'Paiement de la redevance annuelle obligatoire',
         'Respect du plan de mise en valeur approuvé',
-        'Construction semi-durable ou en cours'
+        'Risque de retrait si non valorisé dans les délais'
       ],
       nextSteps: [
         'Déposer le plan de mise en valeur auprès du cadastre',
         'Obtenir l\'approbation du plan',
         'Commencer les travaux de mise en valeur',
-        'Demander la conversion après achèvement'
+        'Demander la conversion AVANT expiration des 25 ans'
       ],
       legalBasis: 'Art. 61-79 de la Loi n° 73-021 du 20 juillet 1973',
       confidence: 'medium',
@@ -247,7 +441,7 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RÈGLE 4: PERMIS D'OCCUPATION
-  // Pour terrains non bâtis selon la zone (urbaine ou rurale)
+  // Pour terrains non bâtis - Titre PRÉCAIRE
   // ═══════════════════════════════════════════════════════════════════════════
   
   if (isNonBati) {
@@ -255,26 +449,29 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
       return {
         type: 'Permis d\'occupation urbain',
         label: 'Permis d\'occupation urbain',
-        description: 'Autorisation administrative d\'occuper un terrain en zone urbaine. Constitue la première étape vers l\'obtention d\'un titre foncier définitif.',
+        description: 'Autorisation administrative d\'occuper un terrain en zone urbaine. Titre PRÉCAIRE - première étape vers un titre plus stable. Impose une mise en valeur dans les délais fixés.',
         conditions: [
           'Terrain situé en zone urbaine lotie',
           'Pas de litige foncier en cours',
           'Conformité avec le plan d\'urbanisme',
-          'Paiement des frais d\'attribution'
+          'Paiement des frais d\'attribution',
+          'Délai de mise en valeur imposé'
         ],
         nextSteps: [
           'Obtenir le permis d\'occupation auprès de la commune',
           'Respecter le délai de mise en valeur imposé',
           'Construire selon les normes urbanistiques',
-          'Demander la concession après mise en valeur'
+          'Demander la concession après mise en valeur',
+          'Évoluer vers le titre perpétuel (si Congolais)'
         ],
         legalBasis: 'Ordonnance n° 74-148 relative aux mesures d\'exécution de la loi foncière',
         confidence: 'high',
         conversionPossible: {
-          targetTitle: isCongolais ? 'Concession perpétuelle' : 'Bail emphytéotique',
+          targetTitle: isCongolais ? 'Certificat d\'enregistrement (via concession)' : 'Bail emphytéotique',
           requirements: [
             'Construction en matériaux durables',
             'Respect des délais de mise en valeur',
+            'Passage par la concession ordinaire',
             'Enregistrement auprès du Conservateur'
           ]
         }
@@ -283,7 +480,7 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
       return {
         type: 'Permis d\'occupation rural',
         label: 'Permis d\'occupation rural',
-        description: 'Permet l\'occupation et l\'exploitation d\'une terre en zone rurale. Reconnaît les droits d\'usage tout en maintenant le domaine de l\'État.',
+        description: 'Permet l\'occupation et l\'exploitation d\'une terre en zone rurale. Titre PRÉCAIRE reconnaissant les droits d\'usage tout en maintenant le domaine de l\'État.',
         conditions: [
           'Terrain en zone rurale',
           'Accord des autorités coutumières locales',
@@ -294,16 +491,18 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
           'Obtenir l\'attestation des autorités coutumières',
           'Demander le permis auprès de l\'administration territoriale',
           'Mettre en valeur le terrain (agriculture ou construction)',
-          'Évoluer vers un titre plus stable si nécessaire'
+          'Évoluer vers une concession ordinaire',
+          'Puis vers un titre perpétuel (si Congolais)'
         ],
         legalBasis: 'Art. 387-389 de la Loi n° 73-021 et textes d\'application',
         confidence: 'high',
         conversionPossible: {
-          targetTitle: 'Concession ordinaire puis perpétuelle (si congolais)',
+          targetTitle: 'Concession ordinaire puis perpétuelle (si Congolais)',
           requirements: [
             'Mise en valeur agricole ou construction',
             'Bornage officiel du terrain',
-            'Demande formelle de concession'
+            'Demande formelle de concession',
+            'Nationalité congolaise pour le perpétuel'
           ]
         }
       };
@@ -312,25 +511,26 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RÈGLE 5: AUTORISATION D'OCCUPATION PROVISOIRE (AOP)
-  // Pour construction précaire sans mise en valeur substantielle
+  // Pour construction précaire - Titre TRÈS PRÉCAIRE
   // ═══════════════════════════════════════════════════════════════════════════
   
   if (isPrecaire) {
     return {
       type: 'Autorisation d\'occupation provisoire',
       label: 'Autorisation d\'occupation provisoire (AOP)',
-      description: 'Titre précaire accordé temporairement. Impose au titulaire d\'entreprendre la régularisation et la mise en valeur dans les délais fixés.',
+      description: 'Titre TRÈS PRÉCAIRE accordé temporairement. ⚠️ Impose au titulaire d\'entreprendre la régularisation et la mise en valeur dans les délais fixés sous peine de retrait.',
       conditions: [
         'Occupation de fait d\'un terrain',
         'Construction précaire (matériaux non durables)',
-        'Engagement de régularisation',
-        'Paiement de la redevance provisoire'
+        'Engagement de régularisation obligatoire',
+        'Paiement de la redevance provisoire',
+        'Risque de retrait imminent si non régularisé'
       ],
       nextSteps: [
-        'Régulariser la situation foncière',
+        'Régulariser la situation foncière en urgence',
         'Entreprendre la mise en valeur (construction semi-durable ou durable)',
         'Demander la conversion en concession ordinaire',
-        'Évoluer vers un titre définitif'
+        'Évoluer vers un titre plus stable'
       ],
       legalBasis: 'Pratique administrative découlant de la Loi foncière',
       confidence: 'medium',
@@ -347,20 +547,21 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
 
   // ═══════════════════════════════════════════════════════════════════════════
   // RÈGLE 6: ÉTRANGER SANS CONSTRUCTION DURABLE
-  // Droit d'usage limité via certificat de location ou AOP
+  // Options limitées - Bail ou location
   // ═══════════════════════════════════════════════════════════════════════════
   
   if (isEtranger && !hasDurableConstruction) {
-    if (occupationDuration === 'long_terme') {
+    if (wantsLongTerme || wantsPerpetuel) {
       return {
         type: 'Bail emphytéotique',
-        label: 'Bail emphytéotique (projet)',
-        description: 'Bail de longue durée recommandé pour sécuriser votre investissement. Vous devrez présenter un plan de mise en valeur substantiel.',
+        label: 'Bail emphytéotique (projet - 18-99 ans)',
+        description: 'Bail de longue durée recommandé pour sécuriser votre investissement. Nécessite un plan de mise en valeur substantiel. Ce n\'est PAS un titre de propriété définitif.',
         conditions: [
           'Projet de mise en valeur documenté',
           'Capacité financière démontrée',
           'Engagement de construction durable',
-          'Paiement du canon emphytéotique'
+          'Paiement du canon emphytéotique annuel',
+          '⚠️ Les étrangers ne peuvent PAS obtenir de titre perpétuel'
         ],
         nextSteps: [
           'Préparer le plan d\'investissement détaillé',
@@ -373,49 +574,59 @@ export function deduceLandTitleType(input: LandTitleDeductionInput): DeducedLand
       };
     } else {
       return {
-        type: 'Certificat de location',
-        label: 'Certificat de location',
-        description: 'Document attestant d\'un contrat de location régulier. Adapté pour une occupation temporaire sans engagement de mise en valeur majeure.',
+        type: 'Bail foncier',
+        label: 'Bail foncier (9-25 ans)',
+        description: 'Contrat de location du domaine privé de l\'État ou d\'un particulier. Ce n\'est PAS un droit réel de propriété mais un droit personnel de jouissance.',
         conditions: [
-          'Contrat de location avec le concessionnaire',
-          'Durée déterminée de la location',
-          'Enregistrement du contrat',
-          'Paiement du loyer convenu'
+          'Contrat de location avec l\'État ou le propriétaire',
+          'Durée déterminée de la location (9-25 ans)',
+          'Enregistrement du contrat obligatoire',
+          'Paiement du loyer foncier convenu'
         ],
         nextSteps: [
-          'Négocier un contrat de location avec le propriétaire',
+          'Négocier un contrat de bail foncier',
           'Faire enregistrer le contrat auprès des services compétents',
-          'Obtenir le certificat de location',
+          'Obtenir le certificat de bail',
           'Envisager un bail emphytéotique pour plus de stabilité'
         ],
-        legalBasis: 'Code civil congolais et pratique administrative',
-        confidence: 'medium'
+        legalBasis: 'Code civil congolais et Loi foncière n° 73-021',
+        confidence: 'high'
       };
     }
   }
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // FALLBACK: CERTIFICAT D'ENREGISTREMENT
+  // FALLBACK: CONCESSION ORDINAIRE (jamais certificat d'enregistrement par défaut)
   // Quand les informations ne permettent pas une déduction précise
   // ═══════════════════════════════════════════════════════════════════════════
   
   return {
-    type: 'Certificat d\'enregistrement',
-    label: 'Certificat d\'enregistrement',
-    description: 'Document administratif attestant l\'enregistrement de votre droit. Le type exact de titre sera déterminé après examen complet de votre dossier par les services cadastraux.',
+    type: 'Concession ordinaire',
+    label: 'Concession ordinaire (à préciser)',
+    description: 'En l\'absence d\'informations complètes, la concession ordinaire est recommandée comme point de départ. Elle permet de sécuriser vos droits tout en préparant l\'évolution vers un titre plus stable.',
     conditions: [
       'Dossier complet à soumettre',
       'Vérification de la situation foncière',
-      'Examen par le Conservateur des Titres Immobiliers'
+      'Plan de mise en valeur à établir',
+      'Examen par les services cadastraux'
     ],
     nextSteps: [
-      'Compléter les informations manquantes',
+      'Compléter les informations manquantes ci-dessus',
       'Soumettre le dossier aux services cadastraux',
-      'Attendre l\'analyse et la recommandation officielle',
-      'Recevoir le certificat d\'enregistrement approprié'
+      'Obtenir les recommandations officielles',
+      'Évoluer vers le titre approprié selon votre situation'
     ],
     legalBasis: 'Loi n° 73-021 du 20 juillet 1973',
-    confidence: 'low'
+    confidence: 'low',
+    conversionPossible: isCongolais ? {
+      targetTitle: 'Certificat d\'enregistrement (Concession perpétuelle)',
+      requirements: [
+        'Mise en valeur complète',
+        'Construction durable achevée',
+        'Nationalité congolaise',
+        'Enregistrement auprès du Conservateur'
+      ]
+    } : undefined
   };
 }
 
@@ -431,9 +642,21 @@ export const NATIONALITY_OPTIONS = [
  * Obtenir les options de durée d'occupation
  */
 export const OCCUPATION_DURATION_OPTIONS = [
-  { value: 'perpetuel', label: 'Perpétuel', description: 'Droit transmissible sans limite de durée' },
-  { value: 'long_terme', label: 'Long terme (18-99 ans)', description: 'Bail emphytéotique ou concession longue durée' },
-  { value: 'temporaire', label: 'Temporaire (≤25 ans)', description: 'Concession ordinaire ou location' }
+  { 
+    value: 'perpetuel', 
+    label: 'Perpétuel (Certificat d\'enregistrement)', 
+    description: 'Seul titre DÉFINITIF en RDC - Congolais uniquement avec mise en valeur complète' 
+  },
+  { 
+    value: 'long_terme', 
+    label: 'Long terme (18-99 ans)', 
+    description: 'Bail emphytéotique - Droit réel limité dans le temps, renouvelable' 
+  },
+  { 
+    value: 'temporaire', 
+    label: 'Temporaire (≤25 ans)', 
+    description: '⚠️ Concession ordinaire ou bail foncier - Titre NON définitif, risque de retrait' 
+  }
 ];
 
 /**
