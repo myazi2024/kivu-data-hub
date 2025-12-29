@@ -524,7 +524,7 @@ const CadastralMap = () => {
           <div 
             className={cn(
               "fixed z-[1001] animate-fade-in",
-              isMobile ? "left-3 right-3 bottom-48" : "left-3 bottom-52"
+              isMobile ? "left-3 bottom-48" : "left-3 bottom-52"
             )}
           >
             <Button
@@ -533,7 +533,7 @@ const CadastralMap = () => {
               className={cn(
                 "font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300",
                 "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary",
-                isMobile ? "w-full h-11 text-sm" : "h-10 px-4 text-xs"
+                isMobile ? "h-11 text-sm px-4" : "h-10 px-4 text-xs"
               )}
               onClick={() => setShowLandTitleDialog(true)}
             >
