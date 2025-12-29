@@ -1178,90 +1178,84 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                   {/* Bloc Type de titre déduit */}
                   {valorisationValidated && deducedTitleType && (
-                    <Card className={cn(
-                      "border-2 rounded-lg animate-fade-in",
+                    <div className={cn(
+                      "relative overflow-hidden rounded-xl border-2 p-5 animate-fade-in",
                       deducedTitleType.confidence === 'high' 
-                        ? "border-green-500/50 bg-green-50/50 dark:bg-green-950/20" 
+                        ? "border-green-500/40 bg-gradient-to-br from-green-500/10 via-green-500/5 to-transparent" 
                         : deducedTitleType.confidence === 'medium'
-                        ? "border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20"
-                        : "border-blue-500/50 bg-blue-50/50 dark:bg-blue-950/20"
+                        ? "border-amber-500/40 bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-transparent"
+                        : "border-blue-500/40 bg-gradient-to-br from-blue-500/10 via-blue-500/5 to-transparent"
                     )}>
-                      <CardContent className="p-3 space-y-3">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className={cn(
-                              "p-1.5 rounded-lg",
-                              deducedTitleType.confidence === 'high' 
-                                ? "bg-green-500/20" 
-                                : deducedTitleType.confidence === 'medium'
-                                ? "bg-amber-500/20"
-                                : "bg-blue-500/20"
-                            )}>
-                              <Award className={cn(
-                                "h-4 w-4",
-                                deducedTitleType.confidence === 'high' 
-                                  ? "text-green-600" 
-                                  : deducedTitleType.confidence === 'medium'
-                                  ? "text-amber-600"
-                                  : "text-blue-600"
-                              )} />
-                            </div>
-                            <div>
-                              <Label className="text-sm font-semibold">Type de titre foncier qui pourra vous être délivré</Label>
-                              <p className="text-xs text-muted-foreground">Selon le droit foncier congolais et l'état actuel de votre parcelle</p>
-                            </div>
-                          </div>
-                          <div className={cn(
-                            "px-2 py-0.5 rounded-full text-[10px] font-medium",
-                            deducedTitleType.confidence === 'high' 
-                              ? "bg-green-500/20 text-green-700 dark:text-green-400" 
-                              : deducedTitleType.confidence === 'medium'
-                              ? "bg-amber-500/20 text-amber-700 dark:text-amber-400"
-                              : "bg-blue-500/20 text-blue-700 dark:text-blue-400"
-                          )}>
-                            {deducedTitleType.confidence === 'high' ? 'Estimation fiable' : 
-                             deducedTitleType.confidence === 'medium' ? 'Estimation probable' : 
-                             'À préciser par les services'}
-                          </div>
-                        </div>
+                      {/* Badge de confiance en haut à droite */}
+                      <div className={cn(
+                        "absolute top-3 right-3 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wide shadow-sm",
+                        deducedTitleType.confidence === 'high' 
+                          ? "bg-green-500 text-white" 
+                          : deducedTitleType.confidence === 'medium'
+                          ? "bg-amber-500 text-white"
+                          : "bg-blue-500 text-white"
+                      )}>
+                        {deducedTitleType.confidence === 'high' ? '✓ Fiable' : 
+                         deducedTitleType.confidence === 'medium' ? 'Probable' : 
+                         'À préciser'}
+                      </div>
 
+                      {/* En-tête avec icône */}
+                      <div className="flex items-center gap-3 mb-3">
                         <div className={cn(
-                          "p-3 rounded-lg",
+                          "p-2.5 rounded-xl shadow-sm",
                           deducedTitleType.confidence === 'high' 
-                            ? "bg-green-500/10" 
+                            ? "bg-green-500/20" 
                             : deducedTitleType.confidence === 'medium'
-                            ? "bg-amber-500/10"
-                            : "bg-blue-500/10"
+                            ? "bg-amber-500/20"
+                            : "bg-blue-500/20"
                         )}>
-                          <h4 className={cn(
-                            "font-semibold text-sm mb-1",
+                          <Award className={cn(
+                            "h-5 w-5",
                             deducedTitleType.confidence === 'high' 
-                              ? "text-green-700 dark:text-green-400" 
+                              ? "text-green-600" 
                               : deducedTitleType.confidence === 'medium'
-                              ? "text-amber-700 dark:text-amber-400"
-                              : "text-blue-700 dark:text-blue-400"
-                          )}>
-                            {deducedTitleType.label}
-                          </h4>
+                              ? "text-amber-600"
+                              : "text-blue-600"
+                          )} />
+                        </div>
+                        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide pr-16">
+                          Titre foncier que vous pourrez obtenir
+                        </p>
+                      </div>
+
+                      {/* Titre principal mis en évidence */}
+                      <div className={cn(
+                        "text-xl font-bold mb-2 leading-tight",
+                        deducedTitleType.confidence === 'high' 
+                          ? "text-green-700 dark:text-green-400" 
+                          : deducedTitleType.confidence === 'medium'
+                          ? "text-amber-700 dark:text-amber-400"
+                          : "text-blue-700 dark:text-blue-400"
+                      )}>
+                        {deducedTitleType.label}
+                      </div>
+
+                      {/* Description */}
+                      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+                        {deducedTitleType.description}
+                      </p>
+
+                      {/* Note d'avertissement pour confiance non-élevée */}
+                      {deducedTitleType.confidence !== 'high' && (
+                        <div className="flex items-start gap-2.5 p-3 bg-background/70 backdrop-blur-sm rounded-lg border border-border/50 mb-3">
+                          <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
                           <p className="text-xs text-muted-foreground leading-relaxed">
-                            {deducedTitleType.description}
+                            Cette estimation vous donne une idée du titre que vous pourrez obtenir. Le type définitif sera confirmé par les services cadastraux après examen de votre dossier.
                           </p>
                         </div>
+                      )}
 
-                        {deducedTitleType.confidence !== 'high' && (
-                          <div className="flex items-start gap-2 p-2 bg-muted/50 rounded-lg">
-                            <AlertCircle className="h-4 w-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                            <p className="text-xs text-muted-foreground">
-                              Cette estimation vous donne une idée du titre que vous pourrez obtenir. Le type définitif sera confirmé par les services cadastraux après examen de votre dossier.
-                            </p>
-                          </div>
-                        )}
-
-                        <div className="text-xs text-muted-foreground border-t border-border/50 pt-2">
-                          <span className="font-medium">Base légale :</span> Loi n° 73-021 du 20 juillet 1973 portant régime général des biens, régime foncier et immobilier et régime des sûretés.
-                        </div>
-                      </CardContent>
-                    </Card>
+                      {/* Base légale */}
+                      <div className="text-[11px] text-muted-foreground/70 pt-3 border-t border-border/30">
+                        <span className="font-medium">Base légale :</span> Loi n° 73-021 du 20 juillet 1973
+                      </div>
+                    </div>
                   )}
 
                   <div className="flex gap-2 pt-4">
