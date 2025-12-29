@@ -12,9 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Badge } from '@/components/ui/badge';
 import { 
   FileText, 
   Shield, 
@@ -24,10 +23,7 @@ import {
   ArrowRight,
   Scale,
   Lock,
-  Info,
-  FileCheck,
-  Landmark,
-  CreditCard
+  Info
 } from 'lucide-react';
 
 interface LandTitleTermsDialogProps {
@@ -65,67 +61,23 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
     onAccept();
   };
 
-  const keyPoints = [
-    {
-      icon: Clock,
-      iconBg: 'bg-blue-500/10',
-      iconColor: 'text-blue-500',
-      title: 'Délai de traitement',
-      description: '30 à 90 jours selon la complexité du dossier'
-    },
-    {
-      icon: FileCheck,
-      iconBg: 'bg-emerald-500/10',
-      iconColor: 'text-emerald-500',
-      title: 'Documents requis',
-      description: 'Pièce d\'identité, preuve de propriété, documents terrain'
-    },
-    {
-      icon: CreditCard,
-      iconBg: 'bg-amber-500/10',
-      iconColor: 'text-amber-500',
-      title: 'Frais administratifs',
-      description: 'Calculés selon le type de titre et la superficie'
-    },
-    {
-      icon: Landmark,
-      iconBg: 'bg-purple-500/10',
-      iconColor: 'text-purple-500',
-      title: 'Autorité compétente',
-      description: 'Conservation des Titres Immobiliers de la RDC'
-    }
-  ];
-
-  const conditions = [
-    'Fournir des informations exactes et vérifiables',
-    'Soumettre uniquement des documents authentiques',
-    'Respecter les lois foncières de la RDC',
-    'Payer les frais requis dans les délais impartis',
-    'Répondre aux demandes de compléments dans les 30 jours'
-  ];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>
         <DialogOverlay className="z-[9998]" />
-        <DialogContent className="z-[9999] w-[95vw] max-w-sm max-h-[90vh] p-0 overflow-hidden bg-background border-border rounded-2xl flex flex-col">
-          {/* Header avec gradient */}
-          <DialogHeader className="p-3 sm:p-4 pb-3 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent flex-shrink-0">
+        <DialogContent className="z-[9999] max-w-2xl max-h-[90vh] p-0 overflow-hidden bg-background border-border">
+          {/* Header */}
+          <DialogHeader className="p-4 sm:p-6 pb-4 border-b bg-gradient-to-r from-primary/5 to-primary/10">
             <div className="flex items-center gap-3">
-              <div className="p-2 sm:p-3 bg-primary/15 rounded-xl shadow-sm flex-shrink-0">
-                <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FileText className="h-5 w-5 text-primary" />
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <DialogTitle className="text-base sm:text-lg font-bold">
-                    Demande de Titre Foncier
-                  </DialogTitle>
-                  <Badge variant="secondary" className="text-xs">
-                    RDC
-                  </Badge>
-                </div>
-                <DialogDescription className="text-xs sm:text-sm text-muted-foreground mt-0.5">
-                  Conditions et informations importantes
+              <div>
+                <DialogTitle className="text-lg sm:text-xl font-semibold">
+                  Demande de Titre Foncier
+                </DialogTitle>
+                <DialogDescription className="text-sm text-muted-foreground">
+                  Conditions d'utilisation du service
                 </DialogDescription>
               </div>
             </div>
@@ -133,151 +85,186 @@ const LandTitleTermsDialog: React.FC<LandTitleTermsDialogProps> = ({
 
           {/* Content */}
           <ScrollArea 
-            className="flex-1 min-h-0"
+            className="h-[400px] sm:h-[450px]"
             onScrollCapture={handleScroll}
             ref={scrollRef}
           >
-            <div className="p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <div className="p-4 sm:p-6 space-y-4">
               {/* Introduction Card */}
-              <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 shadow-sm">
-                <CardContent className="p-3">
-                  <div className="flex items-start gap-2">
-                    <div className="p-1.5 bg-primary/15 rounded-lg flex-shrink-0">
-                      <Info className="h-4 w-4 text-primary" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs sm:text-sm font-medium text-foreground">À propos</p>
-                      <p className="text-xs text-muted-foreground mt-0.5 leading-relaxed">
-                        Soumettez votre demande de titre foncier auprès des autorités de la RDC.
+              <Card className="border-primary/20 bg-primary/5">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Info className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <p className="text-sm text-foreground leading-relaxed">
+                      Ce service permet de soumettre une demande de titre foncier 
+                      auprès des autorités de la RDC. Votre dossier sera traité 
+                      selon les procédures légales en vigueur.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Points clés */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-foreground flex items-center gap-2">
+                  <Scale className="h-4 w-4 text-primary" />
+                  Points essentiels
+                </h3>
+                <div className="grid gap-3">
+                  <Card className="border-muted">
+                    <CardContent className="p-3 flex items-start gap-3">
+                      <div className="p-1.5 bg-blue-500/10 rounded">
+                        <Clock className="h-4 w-4 text-blue-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Délai: 30 à 90 jours</p>
+                        <p className="text-xs text-muted-foreground">
+                          Selon la complexité du dossier
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-muted">
+                    <CardContent className="p-3 flex items-start gap-3">
+                      <div className="p-1.5 bg-green-500/10 rounded">
+                        <Shield className="h-4 w-4 text-green-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Documents requis</p>
+                        <p className="text-xs text-muted-foreground">
+                          Pièce d'identité, preuve de propriété, documents terrain
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border-muted">
+                    <CardContent className="p-3 flex items-start gap-3">
+                      <div className="p-1.5 bg-amber-500/10 rounded">
+                        <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">Frais administratifs</p>
+                        <p className="text-xs text-muted-foreground">
+                          Calculés selon le type de titre demandé
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Conditions */}
+              <div className="space-y-3">
+                <h3 className="font-medium text-foreground">Conditions d'utilisation</h3>
+                <Card className="border-muted">
+                  <CardContent className="p-4">
+                    <ul className="text-sm text-muted-foreground space-y-2">
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                        Fournir des informations exactes et vérifiables
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                        Soumettre uniquement des documents authentiques
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                        Respecter les lois foncières de la RDC
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <CheckCircle2 className="h-3.5 w-3.5 text-green-500 flex-shrink-0" />
+                        Payer les frais requis dans les délais
+                      </li>
+                    </ul>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Avertissement */}
+              <Card className="border-destructive/30 bg-destructive/5">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-destructive mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-destructive">Avertissement légal</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Toute fausse déclaration est passible de poursuites 
+                        conformément au Code pénal congolais.
                       </p>
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              {/* Points clés - version compacte */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Scale className="h-3.5 w-3.5 text-primary" />
-                  <h3 className="text-xs sm:text-sm font-semibold text-foreground">Points essentiels</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {keyPoints.map((point, index) => (
-                    <div key={index} className="p-2 rounded-lg border border-muted bg-card hover:border-primary/30 transition-colors">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <div className={`p-1 ${point.iconBg} rounded`}>
-                          <point.icon className={`h-3 w-3 ${point.iconColor}`} />
-                        </div>
-                        <p className="text-xs font-medium text-foreground truncate">{point.title}</p>
-                      </div>
-                      <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-2">
-                        {point.description}
+              {/* Protection des données */}
+              <Card className="border-muted">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Lock className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium">Protection des données</p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Vos données sont traitées de manière confidentielle 
+                        et partagées uniquement avec les autorités compétentes.
                       </p>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              <Separator className="my-2" />
-
-              {/* Conditions - version compacte */}
-              <div className="p-2.5 rounded-lg border border-muted bg-card">
-                <div className="flex items-center gap-1.5 mb-2">
-                  <Shield className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-foreground">Conditions</span>
-                </div>
-                <ul className="space-y-1.5">
-                  {conditions.map((condition, index) => (
-                    <li key={index} className="flex items-start gap-1.5">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-[10px] sm:text-xs text-muted-foreground">{condition}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              {/* Avertissement - version compacte */}
-              <div className="p-2.5 rounded-lg border border-destructive/40 bg-gradient-to-br from-destructive/5 to-destructive/10">
-                <div className="flex items-start gap-2">
-                  <div className="p-1.5 bg-destructive/15 rounded flex-shrink-0">
-                    <AlertTriangle className="h-3.5 w-3.5 text-destructive" />
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-destructive">Avertissement</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                      Toute fausse déclaration est passible de poursuites judiciaires.
-                    </p>
-                  </div>
-                </div>
-              </div>
+                </CardContent>
+              </Card>
 
-              {/* Protection des données - version compacte */}
-              <div className="p-2.5 rounded-lg border border-muted bg-muted/30">
-                <div className="flex items-start gap-2">
-                  <div className="p-1.5 bg-primary/10 rounded flex-shrink-0">
-                    <Lock className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-semibold text-foreground">Protection des données</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">
-                      Vos informations sont traitées de manière confidentielle et sécurisée.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Spacer pour le scroll */}
+              {/* Spacer */}
               <div className="h-4" />
             </div>
           </ScrollArea>
 
-          {/* Footer - version compacte */}
-          <DialogFooter className="p-3 sm:p-4 pt-3 border-t bg-gradient-to-r from-muted/50 to-muted/30 flex-shrink-0">
-            <div className="w-full space-y-3">
+          {/* Footer */}
+          <DialogFooter className="p-4 sm:p-6 pt-4 border-t bg-muted/30">
+            <div className="w-full space-y-4">
               {/* Checkbox */}
-              <div className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border">
+              <div className="flex items-start gap-3">
                 <Checkbox
                   id="terms"
                   checked={termsAccepted}
                   onCheckedChange={(checked) => setTermsAccepted(checked === true)}
                   disabled={!hasScrolledToBottom}
-                  className="data-[state=checked]:bg-primary data-[state=checked]:border-primary h-4 w-4"
+                  className="mt-0.5"
                 />
                 <label 
                   htmlFor="terms" 
-                  className={`text-xs cursor-pointer select-none flex-1 ${
-                    !hasScrolledToBottom ? 'text-muted-foreground' : 'text-foreground font-medium'
+                  className={`text-sm leading-relaxed cursor-pointer ${
+                    !hasScrolledToBottom ? 'text-muted-foreground' : 'text-foreground'
                   }`}
                 >
-                  J'accepte les conditions
+                  J'ai lu et j'accepte les conditions
                 </label>
               </div>
 
               {!hasScrolledToBottom && (
-                <p className="text-[10px] text-muted-foreground text-center flex items-center justify-center gap-1">
-                  <ArrowRight className="h-2.5 w-2.5 rotate-90" />
-                  Défiler pour accepter
+                <p className="text-xs text-muted-foreground text-center">
+                  Faites défiler pour accepter
                 </p>
               )}
 
               {/* Boutons */}
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <Button
                   variant="outline"
                   onClick={() => onOpenChange(false)}
-                  className="flex-1 h-9 text-xs sm:text-sm"
-                  size="sm"
+                  className="flex-1"
                 >
                   Annuler
                 </Button>
                 <Button
                   onClick={handleAccept}
                   disabled={!termsAccepted}
-                  className="flex-1 gap-1.5 h-9 text-xs sm:text-sm"
-                  size="sm"
+                  className="flex-1 gap-2"
                 >
+                  <ArrowRight className="h-4 w-4" />
                   Continuer
-                  <ArrowRight className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
