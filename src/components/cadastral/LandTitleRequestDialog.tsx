@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, Clock, Smartphone, ClipboardList, ArrowRight, Edit } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -61,7 +61,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     submitRequest 
   } = useLandTitleRequest();
   
-  const [activeTab, setActiveTab] = useState('requester');
+  const [activeTab, setActiveTab] = useState('intro');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -424,7 +424,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setRequesterIdFile(null);
     setOwnerIdFile(null);
     setProofOfOwnershipFile(null);
-    setActiveTab('requester');
+    setActiveTab('intro');
     setShowPayment(false);
     setShowSuccess(false);
     onOpenChange(false);
@@ -536,7 +536,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             <ScrollArea className="h-[65vh] sm:h-[70vh]">
               <div className="space-y-4 pr-2">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-5 mb-4">
+                  <TabsList className="grid w-full grid-cols-7 mb-4">
+                    <TabsTrigger value="intro" className="text-xs gap-1">
+                      <Info className="h-3 w-3" />
+                      <span className="hidden sm:inline">Intro</span>
+                    </TabsTrigger>
                     <TabsTrigger value="requester" className="text-xs gap-1">
                       <User className="h-3 w-3" />
                       <span className="hidden sm:inline">Demandeur</span>
@@ -547,11 +551,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </TabsTrigger>
                     <TabsTrigger value="valorisation" className="text-xs gap-1">
                       <Home className="h-3 w-3" />
-                      <span className="hidden sm:inline">Mise en valeur</span>
+                      <span className="hidden sm:inline">Valeur</span>
                     </TabsTrigger>
                     <TabsTrigger value="documents" className="text-xs gap-1">
                       <FileText className="h-3 w-3" />
-                      <span className="hidden sm:inline">Documents</span>
+                      <span className="hidden sm:inline">Docs</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="review" className="text-xs gap-1">
+                      <ClipboardList className="h-3 w-3" />
+                      <span className="hidden sm:inline">Révision</span>
                     </TabsTrigger>
                     <TabsTrigger value="payment" className="text-xs gap-1">
                       <CreditCard className="h-3 w-3" />
@@ -559,6 +567,78 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </TabsTrigger>
                   </TabsList>
 
+
+                {/* Tab: Introduction */}
+                <TabsContent value="intro" className="space-y-4">
+                  <Card className="border-2 rounded-lg">
+                    <CardContent className="p-4 space-y-4">
+                      <div className="text-center space-y-2">
+                        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                          <Building className="h-6 w-6 text-primary" />
+                        </div>
+                        <h3 className="font-semibold text-sm">Demande de titre foncier</h3>
+                        <p className="text-xs text-muted-foreground">
+                          Obtenez votre certificat d'enregistrement en quelques étapes
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 bg-muted/50 rounded-lg flex items-start gap-2">
+                          <Clock className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium">Durée estimée</p>
+                            <p className="text-[10px] text-muted-foreground">10-15 minutes</p>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-muted/50 rounded-lg flex items-start gap-2">
+                          <Smartphone className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="text-xs font-medium">Appareil</p>
+                            <p className="text-[10px] text-muted-foreground">Mobile ou PC</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold flex items-center gap-2">
+                          <ClipboardList className="h-3.5 w-3.5 text-primary" />
+                          Informations demandées
+                        </p>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <User className="h-3 w-3" />
+                            <span>Identité du demandeur/propriétaire</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <MapPin className="h-3 w-3" />
+                            <span>Localisation de la parcelle</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Home className="h-3 w-3" />
+                            <span>Type de construction et usage</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <FileText className="h-3 w-3" />
+                            <span>Documents justificatifs</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <p className="text-xs text-amber-700 dark:text-amber-400 flex items-start gap-2">
+                          <Info className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
+                          <span>Préparez vos pièces d'identité et preuves de propriété avant de commencer.</span>
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="flex justify-end pt-2">
+                    <Button onClick={() => setActiveTab('requester')} className="h-9 text-xs rounded-lg gap-2">
+                      Commencer <ArrowRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TabsContent>
 
                 {/* Tab: Requester */}
                 <TabsContent value="requester" className="space-y-4">
@@ -726,8 +806,11 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </Card>
                   )}
 
-                  <div className="flex justify-end pt-4">
-                    <Button onClick={() => setActiveTab('location')} className="h-8 text-xs rounded-lg gap-2">
+                  <div className="flex gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setActiveTab('intro')} className="flex-1 h-8 text-xs rounded-lg">
+                      Précédent
+                    </Button>
+                    <Button onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-lg gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -1391,11 +1474,233 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-lg">
+                    <Button variant="outline" onClick={() => setActiveTab('valorisation')} className="flex-1 h-8 text-xs rounded-lg">
+                      Précédent
+                    </Button>
+                    <Button onClick={() => setActiveTab('review')} className="flex-1 h-8 text-xs rounded-lg gap-2">
+                      Suivant <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* Tab: Review */}
+                <TabsContent value="review" className="space-y-4">
+                  <Card className="border-2 rounded-lg">
+                    <CardContent className="p-3 space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1.5 bg-primary/10 rounded-lg">
+                          <ClipboardList className="h-4 w-4 text-primary" />
+                        </div>
+                        <Label className="text-sm font-semibold">Révision des informations</Label>
+                      </div>
+
+                      {/* Demandeur */}
+                      <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold flex items-center gap-1.5">
+                            <User className="h-3 w-3" /> Demandeur
+                          </p>
+                          <Button variant="ghost" size="sm" onClick={() => setActiveTab('requester')} className="h-6 px-2 text-[10px]">
+                            <Edit className="h-3 w-3 mr-1" /> Modifier
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Nom:</span>
+                            <span className={cn(!formData.requesterLastName && "text-destructive")}>
+                              {formData.requesterLastName || "Non renseigné"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Prénom:</span>
+                            <span className={cn(!formData.requesterFirstName && "text-destructive")}>
+                              {formData.requesterFirstName || "Non renseigné"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Téléphone:</span>
+                            <span className={cn(!formData.requesterPhone && "text-destructive")}>
+                              {formData.requesterPhone || "Non renseigné"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Type:</span>
+                            <span>{formData.requesterType === 'owner' ? 'Propriétaire' : 'Mandataire'}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Localisation */}
+                      <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold flex items-center gap-1.5">
+                            <MapPin className="h-3 w-3" /> Localisation
+                          </p>
+                          <Button variant="ghost" size="sm" onClick={() => setActiveTab('location')} className="h-6 px-2 text-[10px]">
+                            <Edit className="h-3 w-3 mr-1" /> Modifier
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Section:</span>
+                            <span className={cn(!formData.sectionType && "text-destructive")}>
+                              {formData.sectionType ? (formData.sectionType === 'urbaine' ? 'Urbaine' : 'Rurale') : "Non renseigné"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Province:</span>
+                            <span className={cn(!formData.province && "text-destructive")}>
+                              {formData.province || "Non renseigné"}
+                            </span>
+                          </div>
+                          {formData.sectionType === 'urbaine' && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Ville:</span>
+                                <span className={cn(!formData.ville && "text-destructive")}>
+                                  {formData.ville || "Non renseigné"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Commune:</span>
+                                <span className={cn(!formData.commune && "text-destructive")}>
+                                  {formData.commune || "Non renseigné"}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                          {formData.sectionType === 'rurale' && (
+                            <>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Territoire:</span>
+                                <span className={cn(!formData.territoire && "text-destructive")}>
+                                  {formData.territoire || "Non renseigné"}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">Collectivité:</span>
+                                <span className={cn(!formData.collectivite && "text-destructive")}>
+                                  {formData.collectivite || "Non renseigné"}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Mise en valeur */}
+                      <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold flex items-center gap-1.5">
+                            <Home className="h-3 w-3" /> Mise en valeur
+                          </p>
+                          <Button variant="ghost" size="sm" onClick={() => setActiveTab('valorisation')} className="h-6 px-2 text-[10px]">
+                            <Edit className="h-3 w-3 mr-1" /> Modifier
+                          </Button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Type:</span>
+                            <span className={cn(!constructionType && "text-destructive")}>
+                              {constructionType || "Non renseigné"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Usage:</span>
+                            <span className={cn(!declaredUsage && "text-destructive")}>
+                              {declaredUsage || "Non renseigné"}
+                            </span>
+                          </div>
+                        </div>
+                        {deducedTitleType && (
+                          <div className="p-2 bg-green-50 dark:bg-green-950/30 rounded-md mt-2">
+                            <p className="text-xs font-medium text-green-700 dark:text-green-400 flex items-center gap-1.5">
+                              <Award className="h-3 w-3" />
+                              Titre suggéré: {deducedTitleType.label}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Documents */}
+                      <div className="p-3 bg-muted/30 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold flex items-center gap-1.5">
+                            <FileText className="h-3 w-3" /> Documents
+                          </p>
+                          <Button variant="ghost" size="sm" onClick={() => setActiveTab('documents')} className="h-6 px-2 text-[10px]">
+                            <Edit className="h-3 w-3 mr-1" /> Modifier
+                          </Button>
+                        </div>
+                        <div className="space-y-1 text-xs">
+                          <div className="flex items-center gap-2">
+                            {requesterIdFile ? (
+                              <Check className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <AlertCircle className="h-3 w-3 text-amber-500" />
+                            )}
+                            <span className={cn(!requesterIdFile && "text-muted-foreground")}>
+                              Pièce d'identité: {requesterIdFile ? requesterIdFile.name : "Non fourni"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {proofOfOwnershipFile ? (
+                              <Check className="h-3 w-3 text-green-600" />
+                            ) : (
+                              <AlertCircle className="h-3 w-3 text-amber-500" />
+                            )}
+                            <span className={cn(!proofOfOwnershipFile && "text-muted-foreground")}>
+                              Preuve propriété: {proofOfOwnershipFile ? proofOfOwnershipFile.name : "Non fourni"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Alertes champs manquants */}
+                      {(!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone || !formData.sectionType || !formData.province) && (
+                        <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+                          <p className="text-xs font-medium text-destructive flex items-center gap-2 mb-2">
+                            <AlertCircle className="h-3.5 w-3.5" />
+                            Champs obligatoires manquants
+                          </p>
+                          <div className="space-y-1">
+                            {!formData.requesterLastName && (
+                              <button onClick={() => setActiveTab('requester')} className="text-[10px] text-destructive hover:underline block">
+                                → Nom du demandeur
+                              </button>
+                            )}
+                            {!formData.requesterFirstName && (
+                              <button onClick={() => setActiveTab('requester')} className="text-[10px] text-destructive hover:underline block">
+                                → Prénom du demandeur
+                              </button>
+                            )}
+                            {!formData.requesterPhone && (
+                              <button onClick={() => setActiveTab('requester')} className="text-[10px] text-destructive hover:underline block">
+                                → Téléphone du demandeur
+                              </button>
+                            )}
+                            {!formData.sectionType && (
+                              <button onClick={() => setActiveTab('location')} className="text-[10px] text-destructive hover:underline block">
+                                → Type de section
+                              </button>
+                            )}
+                            {!formData.province && (
+                              <button onClick={() => setActiveTab('location')} className="text-[10px] text-destructive hover:underline block">
+                                → Province
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setActiveTab('documents')} className="flex-1 h-8 text-xs rounded-lg">
                       Précédent
                     </Button>
                     <Button onClick={() => setActiveTab('payment')} className="flex-1 h-8 text-xs rounded-lg gap-2">
-                      Suivant <ChevronRight className="h-4 w-4" />
+                      Continuer <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
                 </TabsContent>
@@ -1478,7 +1783,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('documents')} className="flex-1 h-8 text-xs rounded-lg">
+                    <Button variant="outline" onClick={() => setActiveTab('review')} className="flex-1 h-8 text-xs rounded-lg">
                       Précédent
                     </Button>
                     <Button
