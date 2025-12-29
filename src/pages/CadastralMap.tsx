@@ -68,6 +68,8 @@ const CadastralMap = () => {
   const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showLandTitleNotification, setShowLandTitleNotification] = useState(false);
   const landTitleNotificationTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [showLandTitleButton, setShowLandTitleButton] = useState(false);
+  const landTitleButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Advanced search hooks
   const advancedSearch = useAdvancedCadastralSearch();
@@ -101,10 +103,24 @@ const CadastralMap = () => {
     };
   }, [searchQuery, filteredParcels.length, showManualSearchNotification]);
 
+  // Timer pour afficher le bouton "Obtenir titre foncier" 10 secondes après l'ouverture de la page
+  useEffect(() => {
+    // Afficher le bouton après 10 secondes
+    landTitleButtonTimerRef.current = setTimeout(() => {
+      setShowLandTitleButton(true);
+    }, 10000);
+
+    return () => {
+      if (landTitleButtonTimerRef.current) {
+        clearTimeout(landTitleButtonTimerRef.current);
+      }
+    };
+  }, []);
+
   // Timer d'inactivité pour afficher la notification du bouton "Obtenir titre foncier"
   useEffect(() => {
-    // Afficher la notification après 5 secondes d'inactivité quand le bouton est visible
-    if (!isSearchBarActive && !selectedParcel && !showLandTitleNotification && !landTitleNotificationDismissedRef.current) {
+    // Afficher la notification 5 secondes après l'apparition du bouton
+    if (showLandTitleButton && !showLandTitleNotification && !landTitleNotificationDismissedRef.current) {
       landTitleNotificationTimerRef.current = setTimeout(() => {
         setShowLandTitleNotification(true);
       }, 5000);
@@ -115,7 +131,7 @@ const CadastralMap = () => {
         clearTimeout(landTitleNotificationTimerRef.current);
       }
     };
-  }, [isSearchBarActive, selectedParcel, showLandTitleNotification]);
+  }, [showLandTitleButton, showLandTitleNotification]);
 
   // Gestionnaire de clic global pour fermer la notification "Obtenir titre foncier"
   useEffect(() => {
@@ -556,8 +572,8 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Bouton Obtenir titre foncier - au-dessus de la barre de recherche quand inactive */}
-        {!isSearchBarActive && !selectedParcel && (
+        {/* Bouton Obtenir titre foncier - apparaît 10 secondes après l'ouverture de la page */}
+        {showLandTitleButton && !isSearchBarActive && !selectedParcel && (
           <div 
             className={cn(
               "fixed z-[1001] animate-fade-in",
