@@ -465,7 +465,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             <ScrollArea className="h-[65vh] sm:h-[70vh]">
               <div className="space-y-4 pr-2">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-4 mb-4">
+                  <TabsList className="grid w-full grid-cols-5 mb-4">
                     <TabsTrigger value="requester" className="text-xs gap-1">
                       <User className="h-3 w-3" />
                       <span className="hidden sm:inline">Demandeur</span>
@@ -473,6 +473,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     <TabsTrigger value="location" className="text-xs gap-1">
                       <MapPin className="h-3 w-3" />
                       <span className="hidden sm:inline">Lieu</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="valorisation" className="text-xs gap-1">
+                      <Home className="h-3 w-3" />
+                      <span className="hidden sm:inline">Mise en valeur</span>
                     </TabsTrigger>
                     <TabsTrigger value="documents" className="text-xs gap-1">
                       <FileText className="h-3 w-3" />
@@ -878,136 +882,145 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     </div>
                   )}
 
-                  {/* Type de construction */}
-                  {formData.sectionType && formData.province && (
-                    <Card className="border-2 rounded-lg animate-fade-in">
-                      <CardContent className="p-3 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <div className="p-1.5 bg-primary/10 rounded-lg">
-                              <Home className="h-4 w-4 text-primary" />
-                            </div>
-                            <Label className="text-sm font-semibold">Mise en valeur de la parcelle</Label>
+                  <div className="flex gap-2 pt-4">
+                    <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-8 text-xs rounded-lg">
+                      Précédent
+                    </Button>
+                    <Button onClick={() => setActiveTab('valorisation')} className="flex-1 h-8 text-xs rounded-lg gap-2">
+                      Suivant <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </TabsContent>
+
+                {/* Tab: Valorisation */}
+                <TabsContent value="valorisation" className="space-y-4">
+                  <Card className="border-2 rounded-lg">
+                    <CardContent className="p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-primary/10 rounded-lg">
+                            <Home className="h-4 w-4 text-primary" />
                           </div>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-                                <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-72 rounded-lg" align="end">
-                              <div className="space-y-2 text-xs">
-                                <h4 className="font-semibold text-sm">Mise en valeur</h4>
-                                <p className="text-muted-foreground">
-                                  Renseignez les informations sur la construction existante ou le type de terrain.
-                                </p>
-                              </div>
-                            </PopoverContent>
-                          </Popover>
+                          <Label className="text-sm font-semibold">Mise en valeur de la parcelle</Label>
+                        </div>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                              <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-72 rounded-lg" align="end">
+                            <div className="space-y-2 text-xs">
+                              <h4 className="font-semibold text-sm">Mise en valeur</h4>
+                              <p className="text-muted-foreground">
+                                Renseignez les informations sur la construction existante ou le type de terrain.
+                              </p>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+
+                      {/* Type et Nature - côte-à-côte */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-sm font-medium">Type</Label>
+                          <Select 
+                            value={constructionType}
+                            onValueChange={(value) => {
+                              setConstructionType(value);
+                              if (value === 'Terrain nu') {
+                                setConstructionMaterials('');
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectValue placeholder="Sélectionner" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-lg">
+                              <SelectItem value="Résidentielle">Résidentielle</SelectItem>
+                              <SelectItem value="Commerciale">Commerciale</SelectItem>
+                              <SelectItem value="Industrielle">Industrielle</SelectItem>
+                              <SelectItem value="Agricole">Agricole</SelectItem>
+                              <SelectItem value="Terrain nu">Terrain nu</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
 
-                        {/* Type et Nature - côte-à-côte */}
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-sm font-medium">Nature</Label>
+                          <Select 
+                            value={constructionNature}
+                            onValueChange={setConstructionNature}
+                            disabled={!constructionType}
+                          >
+                            <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectValue placeholder={!constructionType ? "Type d'abord" : "Sélectionner"} />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-lg">
+                              {availableConstructionNatures.map((nature) => (
+                                <SelectItem key={nature} value={nature}>{nature}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+
+                      {/* Matériaux et Usage - côte-à-côte */}
+                      <div className="grid grid-cols-2 gap-2">
+                        {constructionType && constructionType !== 'Terrain nu' ? (
                           <div className="space-y-1.5">
-                            <Label className="text-sm font-medium">Type</Label>
+                            <Label className="text-sm font-medium">Matériaux</Label>
                             <Select 
-                              value={constructionType}
-                              onValueChange={(value) => {
-                                setConstructionType(value);
-                                if (value === 'Terrain nu') {
-                                  setConstructionMaterials('');
-                                }
-                              }}
+                              value={constructionMaterials}
+                              onValueChange={setConstructionMaterials}
                             >
                               <SelectTrigger className="h-9 text-sm rounded-lg border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
                               <SelectContent className="rounded-lg">
-                                <SelectItem value="Résidentielle">Résidentielle</SelectItem>
-                                <SelectItem value="Commerciale">Commerciale</SelectItem>
-                                <SelectItem value="Industrielle">Industrielle</SelectItem>
-                                <SelectItem value="Agricole">Agricole</SelectItem>
-                                <SelectItem value="Terrain nu">Terrain nu</SelectItem>
+                                <SelectItem value="Béton armé">Béton armé</SelectItem>
+                                <SelectItem value="Briques cuites">Briques cuites</SelectItem>
+                                <SelectItem value="Briques adobes">Briques adobes</SelectItem>
+                                <SelectItem value="Parpaings">Parpaings</SelectItem>
+                                <SelectItem value="Bois">Bois</SelectItem>
+                                <SelectItem value="Tôles">Tôles</SelectItem>
+                                <SelectItem value="Semi-dur">Semi-dur</SelectItem>
+                                <SelectItem value="Mixte">Mixte</SelectItem>
+                                <SelectItem value="Autre">Autre</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
+                        ) : (
+                          <div />
+                        )}
 
-                          <div className="space-y-1.5">
-                            <Label className="text-sm font-medium">Nature</Label>
-                            <Select 
-                              value={constructionNature}
-                              onValueChange={setConstructionNature}
-                              disabled={!constructionType}
-                            >
-                              <SelectTrigger className="h-9 text-sm rounded-lg border">
-                                <SelectValue placeholder={!constructionType ? "Type d'abord" : "Sélectionner"} />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-lg">
-                                {availableConstructionNatures.map((nature) => (
-                                  <SelectItem key={nature} value={nature}>{nature}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-sm font-medium">Usage</Label>
+                          <Select 
+                            value={declaredUsage}
+                            onValueChange={setDeclaredUsage}
+                            disabled={!constructionType || !constructionNature}
+                          >
+                            <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectValue placeholder={
+                                !constructionType || !constructionNature
+                                  ? "Type et nature d'abord" 
+                                  : "Sélectionner"
+                              } />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-lg">
+                              {availableDeclaredUsages.map((usage) => (
+                                <SelectItem key={usage} value={usage}>{usage}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
-
-                        {/* Matériaux et Usage - côte-à-côte */}
-                        <div className="grid grid-cols-2 gap-2">
-                          {constructionType && constructionType !== 'Terrain nu' ? (
-                            <div className="space-y-1.5">
-                              <Label className="text-sm font-medium">Matériaux</Label>
-                              <Select 
-                                value={constructionMaterials}
-                                onValueChange={setConstructionMaterials}
-                              >
-                                <SelectTrigger className="h-9 text-sm rounded-lg border">
-                                  <SelectValue placeholder="Sélectionner" />
-                                </SelectTrigger>
-                                <SelectContent className="rounded-lg">
-                                  <SelectItem value="Béton armé">Béton armé</SelectItem>
-                                  <SelectItem value="Briques cuites">Briques cuites</SelectItem>
-                                  <SelectItem value="Briques adobes">Briques adobes</SelectItem>
-                                  <SelectItem value="Parpaings">Parpaings</SelectItem>
-                                  <SelectItem value="Bois">Bois</SelectItem>
-                                  <SelectItem value="Tôles">Tôles</SelectItem>
-                                  <SelectItem value="Semi-dur">Semi-dur</SelectItem>
-                                  <SelectItem value="Mixte">Mixte</SelectItem>
-                                  <SelectItem value="Autre">Autre</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          ) : (
-                            <div />
-                          )}
-
-                          <div className="space-y-1.5">
-                            <Label className="text-sm font-medium">Usage</Label>
-                            <Select 
-                              value={declaredUsage}
-                              onValueChange={setDeclaredUsage}
-                              disabled={!constructionType || !constructionNature}
-                            >
-                              <SelectTrigger className="h-9 text-sm rounded-lg border">
-                                <SelectValue placeholder={
-                                  !constructionType || !constructionNature
-                                    ? "Type et nature d'abord" 
-                                    : "Sélectionner"
-                                } />
-                              </SelectTrigger>
-                              <SelectContent className="rounded-lg">
-                                {availableDeclaredUsages.map((usage) => (
-                                  <SelectItem key={usage} value={usage}>{usage}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                      </div>
+                    </CardContent>
+                  </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-8 text-xs rounded-lg">
+                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-lg">
                       Précédent
                     </Button>
                     <Button onClick={() => setActiveTab('documents')} className="flex-1 h-8 text-xs rounded-lg gap-2">
