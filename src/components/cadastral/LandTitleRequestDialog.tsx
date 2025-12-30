@@ -449,6 +449,46 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const totalAmount = calculateTotal(formData.selectedFees);
 
+  // Review dialog view
+  if (showReview) {
+    return (
+      <>
+        <LandTitleReviewDialog
+          open={showReview}
+          onOpenChange={setShowReview}
+          onConfirm={handleProceedToPayment}
+          onEdit={(tabId) => {
+            setShowReview(false);
+            setActiveTab(tabId);
+          }}
+          formData={formData}
+          constructionType={constructionType}
+          constructionNature={constructionNature}
+          declaredUsage={declaredUsage}
+          nationality={nationality}
+          occupationDuration={occupationDuration}
+          requesterIdFile={requesterIdFile}
+          ownerIdFile={ownerIdFile}
+          proofOfOwnershipFile={proofOfOwnershipFile}
+          gpsCoordinates={gpsCoordinates}
+          parcelSides={parcelSides}
+          totalAmount={totalAmount}
+          deducedTitleType={deducedTitleType}
+        />
+        
+        {/* Quick Auth Dialog */}
+        <QuickAuthDialog
+          open={showQuickAuth}
+          onOpenChange={setShowQuickAuth}
+          onAuthSuccess={() => {
+            setShowQuickAuth(false);
+            handleOpenReview();
+          }}
+        />
+      </>
+    );
+  }
+
   // Payment view
   if (showPayment) {
     const cartItem: CartItem = {
@@ -1520,27 +1560,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
           </DialogContent>
         </DialogPortal>
       </Dialog>
-
-      {/* Review Dialog */}
-      <LandTitleReviewDialog
-        open={showReview}
-        onOpenChange={setShowReview}
-        onConfirm={handleProceedToPayment}
-        onEdit={handleEditFromReview}
-        formData={formData}
-        constructionType={constructionType}
-        constructionNature={constructionNature}
-        declaredUsage={declaredUsage}
-        nationality={nationality}
-        occupationDuration={occupationDuration}
-        requesterIdFile={requesterIdFile}
-        ownerIdFile={ownerIdFile}
-        proofOfOwnershipFile={proofOfOwnershipFile}
-        gpsCoordinates={gpsCoordinates}
-        parcelSides={parcelSides}
-        totalAmount={totalAmount}
-        deducedTitleType={deducedTitleType}
-      />
 
       {/* Quick Auth Dialog */}
       <QuickAuthDialog
