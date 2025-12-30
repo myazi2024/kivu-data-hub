@@ -3224,7 +3224,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     <SelectTrigger className="h-9 text-sm rounded-xl border">
                       <SelectValue placeholder="Sélectionner la province" />
                     </SelectTrigger>
-                    <SelectContent className="rounded-xl">
+                    <SelectContent className="rounded-xl max-h-48 overflow-y-auto">
                       {getAllProvinces().map(province => (
                         <SelectItem key={province} value={province} className="text-sm py-2">{province}</SelectItem>
                       ))}
