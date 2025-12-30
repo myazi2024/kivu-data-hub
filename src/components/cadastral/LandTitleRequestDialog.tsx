@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
@@ -69,6 +70,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
+  const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState<LandTitleRequestData>({
@@ -415,7 +417,25 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   };
 
-  const handleClose = () => {
+  const handleCloseRequest = () => {
+    // If user has entered any data, show confirmation
+    const hasData = formData.requesterLastName || 
+                   formData.requesterFirstName || 
+                   formData.requesterPhone ||
+                   formData.province ||
+                   requesterIdFile || 
+                   ownerIdFile || 
+                   proofOfOwnershipFile;
+    
+    if (hasData) {
+      setShowCloseConfirmation(true);
+    } else {
+      handleConfirmClose();
+    }
+  };
+
+  const handleConfirmClose = () => {
+    setShowCloseConfirmation(false);
     setFormData({
       requesterType: 'owner',
       requesterLastName: '',
@@ -459,7 +479,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     };
 
     return (
-      <Dialog open={open} onOpenChange={handleClose}>
+      <Dialog open={open} onOpenChange={handleConfirmClose}>
         <DialogPortal>
           <DialogOverlay className="z-[1100]" />
           <DialogContent className={`z-[1100] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
@@ -496,7 +516,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   // Success view
   if (showSuccess) {
     return (
-      <Dialog open={open} onOpenChange={handleClose}>
+      <Dialog open={open} onOpenChange={handleConfirmClose}>
         <DialogPortal>
           <DialogOverlay className="z-[1100]" />
           <DialogContent className={`z-[1100] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
@@ -524,7 +544,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               <p className="text-[10px] text-muted-foreground">
                 Vous recevrez une notification dès que votre demande sera traitée.
               </p>
-              <Button onClick={handleClose} className="w-full h-8 text-xs rounded-lg">Fermer</Button>
+              <Button onClick={handleConfirmClose} className="w-full h-8 text-xs rounded-lg">Fermer</Button>
             </div>
           </DialogContent>
         </DialogPortal>
@@ -534,7 +554,25 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleClose}>
+      {/* Confirmation dialog for closing */}
+      <AlertDialog open={showCloseConfirmation} onOpenChange={setShowCloseConfirmation}>
+        <AlertDialogContent className="z-[1200]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Fermer le formulaire ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous avez des données non enregistrées. Êtes-vous sûr de vouloir fermer ce formulaire ? Toutes les informations saisies seront perdues.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmClose} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Fermer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <Dialog open={open} onOpenChange={handleCloseRequest}>
         <DialogPortal>
           <DialogOverlay className="z-[1100]" />
           <DialogContent className={`z-[1100] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
