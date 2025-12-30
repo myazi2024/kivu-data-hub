@@ -55,6 +55,7 @@ import AdminCCCUsage from '@/components/admin/AdminCCCUsage';
 import AdminPaymentReconciliation from '@/components/admin/AdminPaymentReconciliation';
 import AdminResellerCommissions from '@/components/admin/AdminResellerCommissions';
 import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
+import AdminLandTitleRequests from '@/components/admin/AdminLandTitleRequests';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -195,6 +196,8 @@ const Admin = () => {
         return <AdminTerritorialZones />;
       case 'permits':
         return <AdminBuildingPermits />;
+      case 'land-title-requests':
+        return <AdminLandTitleRequests />;
       case 'mutations':
         return <AdminMutationRequests />;
       case 'expertise-requests':

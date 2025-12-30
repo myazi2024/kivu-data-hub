@@ -267,16 +267,19 @@ const AdminValidation: React.FC = () => {
                 onClick={runSearchBarTest} 
                 disabled={searchBarTestLoading}
                 variant="outline"
+                size="sm"
+                className="text-xs"
               >
                 {searchBarTestLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Test...
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 animate-spin" />
+                    <span className="hidden sm:inline">Test...</span>
                   </>
                 ) : (
                   <>
-                    <Search className="h-4 w-4 mr-2" />
-                    Test Recherche
+                    <Search className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="hidden sm:inline">Recherche</span>
+                    <span className="sm:hidden">Rech.</span>
                   </>
                 )}
               </Button>
@@ -284,16 +287,19 @@ const AdminValidation: React.FC = () => {
                 onClick={runResultsTest} 
                 disabled={resultsTestLoading}
                 variant="outline"
+                size="sm"
+                className="text-xs"
               >
                 {resultsTestLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Test...
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 animate-spin" />
+                    <span className="hidden sm:inline">Test...</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircle className="h-4 w-4 mr-2" />
-                    Test Résultats
+                    <CheckCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="hidden sm:inline">Résultats</span>
+                    <span className="sm:hidden">Rés.</span>
                   </>
                 )}
               </Button>
@@ -301,16 +307,19 @@ const AdminValidation: React.FC = () => {
                 onClick={runContributionTest} 
                 disabled={contributionTestLoading}
                 variant="outline"
+                size="sm"
+                className="text-xs"
               >
                 {contributionTestLoading ? (
                   <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Test...
+                    <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 animate-spin" />
+                    <span className="hidden sm:inline">Test...</span>
                   </>
                 ) : (
                   <>
-                    <FileEdit className="h-4 w-4 mr-2" />
-                    Test Formulaire CCC
+                    <FileEdit className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                    <span className="hidden sm:inline">CCC</span>
+                    <span className="sm:hidden">CCC</span>
                   </>
                 )}
               </Button>

@@ -95,12 +95,12 @@ export function AdminDashboardHeader({ onMenuClick }: AdminDashboardHeaderProps)
         </Button>
 
         <div className="flex-1">
-          <div className="relative hidden md:block max-w-md">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="relative max-w-md">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Rechercher..."
-              className="pl-8 w-full"
+              placeholder="Rechercher dans l'admin..."
+              className="pl-8 w-full h-8 md:h-9 text-xs md:text-sm rounded-xl"
             />
           </div>
         </div>
