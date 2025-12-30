@@ -503,7 +503,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             <Button 
               variant="outline" 
               onClick={() => setShowPayment(false)} 
-              className="w-full h-8 text-xs rounded-lg mt-2"
+              className="w-full h-8 text-xs rounded-xl mt-2"
             >
               Annuler
             </Button>
@@ -544,7 +544,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               <p className="text-[10px] text-muted-foreground">
                 Vous recevrez une notification dès que votre demande sera traitée.
               </p>
-              <Button onClick={handleConfirmClose} className="w-full h-8 text-xs rounded-lg">Fermer</Button>
+              <Button onClick={handleConfirmClose} className="w-full h-8 text-xs rounded-xl">Fermer</Button>
             </div>
           </DialogContent>
         </DialogPortal>
@@ -605,28 +605,28 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               <div className="space-y-4 pr-2">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                   <TabsList className="grid w-full grid-cols-6 mb-4">
-                    <TabsTrigger value="requester" className="text-xs gap-1">
-                      <User className="h-3 w-3" />
+                    <TabsTrigger value="requester" className="text-xs gap-1.5">
+                      <User className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Demandeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="location" className="text-xs gap-1">
-                      <MapPin className="h-3 w-3" />
+                    <TabsTrigger value="location" className="text-xs gap-1.5">
+                      <MapPin className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Lieu</span>
                     </TabsTrigger>
-                    <TabsTrigger value="valorisation" className="text-xs gap-1">
-                      <Home className="h-3 w-3" />
+                    <TabsTrigger value="valorisation" className="text-xs gap-1.5">
+                      <Home className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Mise en valeur</span>
                     </TabsTrigger>
-                    <TabsTrigger value="documents" className="text-xs gap-1">
-                      <FileText className="h-3 w-3" />
+                    <TabsTrigger value="documents" className="text-xs gap-1.5">
+                      <FileText className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Documents</span>
                     </TabsTrigger>
-                    <TabsTrigger value="payment" className="text-xs gap-1">
-                      <CreditCard className="h-3 w-3" />
+                    <TabsTrigger value="payment" className="text-xs gap-1.5">
+                      <CreditCard className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Frais</span>
                     </TabsTrigger>
-                    <TabsTrigger value="review" className="text-xs gap-1">
-                      <ClipboardCheck className="h-3 w-3" />
+                    <TabsTrigger value="review" className="text-xs gap-1.5">
+                      <ClipboardCheck className="h-4 w-4 stroke-[2.5]" />
                       <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
                   </TabsList>
@@ -799,7 +799,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   <div className="flex justify-end pt-4">
-                    <Button onClick={() => setActiveTab('location')} className="h-8 text-xs rounded-lg gap-2">
+                    <Button onClick={() => setActiveTab('location')} className="h-8 text-xs rounded-xl gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -1026,10 +1026,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-8 text-xs rounded-lg">
+                    <Button variant="outline" onClick={() => setActiveTab('requester')} className="flex-1 h-8 text-xs rounded-xl">
                       Précédent
                     </Button>
-                    <Button onClick={() => setActiveTab('valorisation')} className="flex-1 h-8 text-xs rounded-lg gap-2">
+                    <Button onClick={() => setActiveTab('valorisation')} className="flex-1 h-8 text-xs rounded-xl gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -1338,13 +1338,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   )}
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-lg">
+                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-xl">
                       Précédent
                     </Button>
                     <Button 
                       onClick={() => setActiveTab('documents')} 
                       disabled={!valorisationValidated}
-                      className="flex-1 h-8 text-xs rounded-lg gap-2"
+                      className="flex-1 h-8 text-xs rounded-xl gap-2"
                     >
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
@@ -1460,10 +1460,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-lg">
+                    <Button variant="outline" onClick={() => setActiveTab('location')} className="flex-1 h-8 text-xs rounded-xl">
                       Précédent
                     </Button>
-                    <Button onClick={() => setActiveTab('payment')} className="flex-1 h-8 text-xs rounded-lg gap-2">
+                    <Button onClick={() => setActiveTab('payment')} className="flex-1 h-8 text-xs rounded-xl gap-2">
                       Suivant <ChevronRight className="h-4 w-4" />
                     </Button>
                   </div>
@@ -1494,7 +1494,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            className="mt-3"
+                            className="mt-3 rounded-xl"
                             onClick={() => setActiveTab('valorisation')}
                           >
                             Aller à Mise en valeur
@@ -1586,13 +1586,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                   </Card>
 
                   <div className="flex gap-2 pt-4">
-                    <Button variant="outline" onClick={() => setActiveTab('documents')} className="flex-1 h-8 text-xs rounded-lg">
+                    <Button variant="outline" onClick={() => setActiveTab('documents')} className="flex-1 h-8 text-xs rounded-xl">
                       Précédent
                     </Button>
                     <Button
                       onClick={() => setActiveTab('review')}
                       disabled={loading}
-                      className="flex-1 h-8 text-xs rounded-lg"
+                      className="flex-1 h-8 text-xs rounded-xl"
                     >
                       {loading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
