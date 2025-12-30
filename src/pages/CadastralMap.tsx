@@ -677,14 +677,14 @@ const CadastralMap = () => {
                           align="end"
                           sideOffset={10}
                           className={cn(
-                            "w-[280px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg",
+                            "w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg",
                             "text-xs leading-relaxed"
                           )}
                         >
                           <div className="flex items-start gap-2">
                             <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
                             <span>
-                              Vous n'avez pas encore de titre foncier ? Cliquez ici pour faire votre demande officielle.
+                              Le numéro parcellaire, souvent appelé numéro SU ou SR, est le numéro unique attribué à une parcelle de terrain au sein d'une zone donnée (urbaine ou rurale) par le cadastre. Ce numéro figure sur le titre foncier délivré par le cadastre. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.
                             </span>
                           </div>
                         </PopoverContent>
