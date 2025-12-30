@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus, ScrollText } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus, FileCheck2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -637,15 +637,15 @@ const CadastralMap = () => {
                   <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
                 </Button>
 
-                {/* Bouton Obtenir titre foncier - Design compact avec icône */}
+                {/* Bouton Obtenir titre foncier - Design compact avec icône rouge */}
                 <Button 
                   variant="ghost" 
                   size="sm"
                   onClick={() => setShowLandTitleTermsDialog(true)}
-                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors relative`}
+                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors relative`}
                   title="Obtenir un titre foncier"
                 >
-                  <ScrollText className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                  <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
                   {/* Indicateur de notification */}
                   {showLandTitleNotification && (
                     <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-pulse" />
