@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Contribution {
   id: string;
@@ -47,6 +47,8 @@ export const UserContributions: React.FC = () => {
   const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [cccCode, setCccCode] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (user) {
@@ -206,43 +208,69 @@ export const UserContributions: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {contributions.slice(0, 8).map((contribution) => {
-                const typeInfo = getContributionTypeLabel(contribution);
-                return (
-                  <div 
-                    key={contribution.id} 
-                    className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => {
-                      setSelectedContribution(contribution);
-                      setIsDetailsOpen(true);
-                    }}
-                  >
-                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-lg">{typeInfo.icon}</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium truncate">{contribution.parcel_number}</p>
-                        <span className={`text-[10px] ${typeInfo.color} font-medium`}>{typeInfo.label}</span>
+              {contributions
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((contribution) => {
+                  const typeInfo = getContributionTypeLabel(contribution);
+                  return (
+                    <div 
+                      key={contribution.id} 
+                      className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                      onClick={() => {
+                        setSelectedContribution(contribution);
+                        setIsDetailsOpen(true);
+                      }}
+                    >
+                      <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                        <span className="text-lg">{typeInfo.icon}</span>
                       </div>
-                      <p className="text-[10px] text-muted-foreground">
-                        {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
-                      </p>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">{contribution.parcel_number}</p>
+                          <span className={`text-[10px] ${typeInfo.color} font-medium`}>{typeInfo.label}</span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground">
+                          {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {getStatusBadge(contribution.status, contribution.is_suspicious)}
+                        <p className="text-[9px] text-muted-foreground mt-0.5">
+                          {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      {getStatusBadge(contribution.status, contribution.is_suspicious)}
-                      <p className="text-[9px] text-muted-foreground mt-0.5">
-                        {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
               
-              {contributions.length > 8 && (
-                <p className="text-center text-xs text-muted-foreground pt-2">
-                  +{contributions.length - 8} autres contributions
-                </p>
+              {/* Pagination */}
+              {contributions.length > itemsPerPage && (
+                <div className="flex items-center justify-between pt-3 border-t mt-3">
+                  <p className="text-xs text-muted-foreground">
+                    {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, contributions.length)} sur {contributions.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="h-7 w-7 p-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs px-2">{currentPage}/{Math.ceil(contributions.length / itemsPerPage)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(contributions.length / itemsPerPage), p + 1))}
+                      disabled={currentPage >= Math.ceil(contributions.length / itemsPerPage)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
               )}
             </div>
           )}
