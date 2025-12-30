@@ -639,16 +639,16 @@ const CadastralMap = () => {
 
                 {/* Bouton Obtenir titre foncier - Design compact avec icône rouge */}
                 <Button 
-                  variant="ghost" 
+                  variant="destructive" 
                   size="sm"
                   onClick={() => setShowLandTitleTermsDialog(true)}
-                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors relative`}
+                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
                   title="Obtenir un titre foncier"
                 >
                   <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
                   {/* Indicateur de notification */}
                   {showLandTitleNotification && (
-                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-pulse" />
+                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-white rounded-full animate-pulse" />
                   )}
                 </Button>
               </div>
