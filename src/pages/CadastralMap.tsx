@@ -9,7 +9,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus, ScrollText } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -574,51 +574,7 @@ const CadastralMap = () => {
           />
         )}
 
-        {/* Bouton Obtenir titre foncier - apparaît 10 secondes après l'ouverture de la page */}
-        {showLandTitleButton && !isSearchBarActive && !selectedParcel && (
-          <div 
-            className={cn(
-              "fixed z-[1001] animate-fade-in",
-              isMobile ? "left-3 bottom-48" : "left-3 bottom-52"
-            )}
-          >
-            {/* Notification intelligente */}
-            {showLandTitleNotification && (
-              <div 
-                className={cn(
-                  "absolute bottom-full left-0 mb-2 animate-fade-in",
-                  isMobile ? "max-w-[280px]" : "max-w-[320px]"
-                )}
-              >
-                <div className="bg-destructive text-destructive-foreground rounded-xl px-3 py-2 shadow-lg text-xs leading-relaxed">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                    <span>
-                      Vous n'avez pas encore de titre de propriété pour une parcelle ? Faites votre demande directement ici en cliquant sur ce bouton.
-                    </span>
-                  </div>
-                  {/* Flèche pointant vers le bouton */}
-                  <div className="absolute -bottom-1.5 left-6 w-3 h-3 bg-destructive transform rotate-45" />
-                </div>
-              </div>
-            )}
-            <Button
-              variant="default"
-              size={isMobile ? "default" : "sm"}
-              className={cn(
-                "font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300",
-                "bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary",
-                isMobile ? "h-10 text-xs px-3" : "h-9 px-3 text-xs"
-              )}
-              onClick={() => setShowLandTitleTermsDialog(true)}
-            >
-              <div className="flex items-center gap-2">
-                <FileEdit className="h-4 w-4" />
-                <span>Obtenir titre foncier</span>
-              </div>
-            </Button>
-          </div>
-        )}
+        {/* La notification du bouton titre foncier est maintenant dans la barre de recherche */}
 
         {/* Overlay de recherche - Design moderne avec animation de rebond */}
         <div 
@@ -675,10 +631,25 @@ const CadastralMap = () => {
                     setIsSearchBarActive(true);
                     setShowAdvancedSearch(!showAdvancedSearch);
                   }}
-                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 px-3'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
+                  title="Recherche avancée"
                 >
                   <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
-                  {!(selectedParcel && isMobile) && !isMobile && <span className="ml-1.5 text-xs font-medium">Filtres</span>}
+                </Button>
+
+                {/* Bouton Obtenir titre foncier - Design compact avec icône */}
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowLandTitleTermsDialog(true)}
+                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 transition-colors relative`}
+                  title="Obtenir un titre foncier"
+                >
+                  <ScrollText className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                  {/* Indicateur de notification */}
+                  {showLandTitleNotification && (
+                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-destructive rounded-full animate-pulse" />
+                  )}
                 </Button>
               </div>
 
