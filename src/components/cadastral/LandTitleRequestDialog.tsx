@@ -1270,10 +1270,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         ? "border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20"
                         : "border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-950/20"
                     )}>
-                      <CardContent className="p-3 space-y-3">
-                        <div className="flex items-center gap-2">
+                      <CardContent className="p-4 space-y-4">
+                        <div className="flex items-center gap-3">
                           <Award className={cn(
-                            "h-4 w-4",
+                            "h-6 w-6",
                             deducedTitleType.confidence === 'high' 
                               ? "text-green-600" 
                               : deducedTitleType.confidence === 'medium'
@@ -1281,7 +1281,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               : "text-blue-600"
                           )} />
                           <h4 className={cn(
-                            "text-sm font-semibold",
+                            "text-base font-bold",
                             deducedTitleType.confidence === 'high' 
                               ? "text-green-700 dark:text-green-400" 
                               : deducedTitleType.confidence === 'medium'
@@ -1291,7 +1291,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                             {deducedTitleType.label}
                           </h4>
                           <span className={cn(
-                            "ml-auto text-[10px] px-2 py-0.5 rounded-full font-medium",
+                            "ml-auto text-xs px-2.5 py-1 rounded-full font-medium",
                             deducedTitleType.confidence === 'high' 
                               ? "bg-green-500 text-white" 
                               : deducedTitleType.confidence === 'medium'
@@ -1304,17 +1304,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </span>
                         </div>
                         
-                        <p className="text-xs text-muted-foreground leading-relaxed">
+                        <p className="text-sm text-muted-foreground leading-relaxed">
                           {deducedTitleType.description}
                         </p>
 
                         {deducedTitleType.conditions && deducedTitleType.conditions.length > 0 && (
-                          <div className="pt-2 border-t border-border/50">
-                            <p className="text-[10px] font-medium text-muted-foreground mb-1">Conditions :</p>
-                            <ul className="space-y-0.5">
+                          <div className="pt-3 border-t border-border/50">
+                            <p className="text-xs font-medium text-muted-foreground mb-2">Conditions :</p>
+                            <ul className="space-y-1.5">
                               {deducedTitleType.conditions.slice(0, 2).map((condition, idx) => (
-                                <li key={idx} className="text-[10px] text-muted-foreground flex items-start gap-1.5">
-                                  <Check className="h-3 w-3 text-green-600 mt-0.5 flex-shrink-0" />
+                                <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                  <Check className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
                                   {condition}
                                 </li>
                               ))}
@@ -1323,14 +1323,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         )}
 
                         {deducedTitleType.conversionPossible && (
-                          <div className="p-1.5 bg-primary/5 rounded-md">
-                            <p className="text-[10px] text-primary font-medium">
+                          <div className="p-2.5 bg-primary/5 rounded-md">
+                            <p className="text-sm text-primary font-medium">
                               → Évolution : {deducedTitleType.conversionPossible.targetTitle}
                             </p>
                           </div>
                         )}
 
-                        <p className="text-[10px] text-muted-foreground/60 pt-1 border-t border-border/30">
+                        <p className="text-xs text-muted-foreground/60 pt-2 border-t border-border/30">
                           Réf: {deducedTitleType.legalBasis}
                         </p>
                       </CardContent>
