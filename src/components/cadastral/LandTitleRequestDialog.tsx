@@ -37,7 +37,6 @@ import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { CartItem } from '@/hooks/useCart';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
-import LandTitleReviewDialog from './LandTitleReviewDialog';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -64,7 +63,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   
   const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
-  const [showReview, setShowReview] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
@@ -379,7 +377,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     return true;
   };
 
-  const handleProceedToReview = () => {
+  const handleProceedToPayment = () => {
     if (!user) {
       setShowQuickAuth(true);
       return;
@@ -390,17 +388,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
     
-    setShowReview(true);
-  };
-
-  const handleReviewConfirm = () => {
-    setShowReview(false);
     setShowPayment(true);
-  };
-
-  const handleEditFromReview = (tab: string) => {
-    setShowReview(false);
-    setActiveTab(tab);
   };
 
   const handlePaymentSuccess = async () => {
@@ -1494,7 +1482,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       Précédent
                     </Button>
                     <Button
-                      onClick={handleProceedToReview}
+                      onClick={handleProceedToPayment}
                       disabled={loading || !isFormValid()}
                       className="flex-1 h-8 text-xs rounded-lg"
                     >
@@ -1502,8 +1490,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          Réviser
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Payer ${totalAmount}
                         </>
                       )}
                     </Button>
@@ -1516,30 +1504,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
         </DialogPortal>
       </Dialog>
 
-      {/* Review Dialog */}
-      <LandTitleReviewDialog
-        open={showReview}
-        onOpenChange={setShowReview}
-        onConfirm={handleReviewConfirm}
-        onEdit={handleEditFromReview}
-        formData={formData}
-        fees={fees}
-        totalAmount={totalAmount}
-        requesterIdFile={requesterIdFile}
-        ownerIdFile={ownerIdFile}
-        proofOfOwnershipFile={proofOfOwnershipFile}
-        constructionType={constructionType}
-        constructionNature={constructionNature}
-        declaredUsage={declaredUsage}
-      />
-
       {/* Quick Auth Dialog */}
       <QuickAuthDialog
         open={showQuickAuth}
         onOpenChange={setShowQuickAuth}
         onAuthSuccess={() => {
           setShowQuickAuth(false);
-          setShowReview(true);
+          handleProceedToPayment();
         }}
       />
     </>
