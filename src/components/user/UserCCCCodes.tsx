@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Gift, Copy, DollarSign, Eye } from 'lucide-react';
+import { Gift, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { UserCCCCodeDetailsDialog } from './UserCCCCodeDetailsDialog';
+import { getCodeStatus } from '@/utils/cccCodeUtils';
 
 interface CCCCode {
   id: string;
@@ -29,6 +28,8 @@ export const UserCCCCodes: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCode, setSelectedCode] = useState<CCCCode | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (user) {
@@ -58,16 +59,6 @@ export const UserCCCCodes: React.FC = () => {
   const copyToClipboard = (code: string) => {
     navigator.clipboard.writeText(code);
     toast.success('Code copié dans le presse-papier');
-  };
-
-  const getCodeStatus = (code: CCCCode): 'valid' | 'used' | 'expired' | 'invalidated' => {
-    const now = new Date();
-    const isExpired = new Date(code.expires_at) <= now;
-    
-    if (!code.is_valid) return 'invalidated';
-    if (code.is_used) return 'used';
-    if (isExpired) return 'expired';
-    return 'valid';
   };
 
   const getStats = () => {
@@ -130,42 +121,75 @@ export const UserCCCCodes: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {codes.slice(0, 5).map((code) => (
-                <div 
-                  key={code.id} 
-                  className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
-                >
-                  <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Gift className="h-4 w-4 text-primary" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-mono font-medium truncate">{code.code}</p>
-                    <p className="text-[10px] text-muted-foreground">
-                      {code.parcel_number}
-                    </p>
-                  </div>
-                  <div className="text-right shrink-0 space-y-1">
-                    <div className="flex items-center gap-1">
-                      <StatusBadge status={getCodeStatus(code)} />
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyToClipboard(code.code)}
-                        disabled={!code.is_valid || code.is_used}
-                        className="h-6 w-6 p-0"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </Button>
+              {codes
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((code) => (
+                  <div 
+                    key={code.id} 
+                    className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
+                    onClick={() => {
+                      setSelectedCode(code);
+                      setIsDetailsOpen(true);
+                    }}
+                  >
+                    <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                      <Gift className="h-4 w-4 text-primary" />
                     </div>
-                    <p className="text-xs font-semibold text-green-600">${Number(code.value_usd).toFixed(2)}</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-mono font-medium truncate">{code.code}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {code.parcel_number}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0 space-y-1">
+                      <div className="flex items-center gap-1">
+                        <StatusBadge status={getCodeStatus(code)} />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(code.code);
+                          }}
+                          disabled={!code.is_valid || code.is_used}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Copy className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <p className="text-xs font-semibold text-green-600">${Number(code.value_usd).toFixed(2)}</p>
+                    </div>
+                  </div>
+                ))}
+              
+              {/* Pagination */}
+              {codes.length > itemsPerPage && (
+                <div className="flex items-center justify-between pt-3 border-t mt-3">
+                  <p className="text-xs text-muted-foreground">
+                    {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, codes.length)} sur {codes.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="h-7 w-7 p-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs px-2">{currentPage}/{Math.ceil(codes.length / itemsPerPage)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(codes.length / itemsPerPage), p + 1))}
+                      disabled={currentPage >= Math.ceil(codes.length / itemsPerPage)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
-              ))}
-              
-              {codes.length > 5 && (
-                <p className="text-center text-xs text-muted-foreground pt-2">
-                  +{codes.length - 5} autres codes
-                </p>
               )}
             </div>
           )}

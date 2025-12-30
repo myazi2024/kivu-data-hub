@@ -9,7 +9,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { 
   ScrollText, 
-  Eye, 
   Clock, 
   CheckCircle, 
   XCircle, 
@@ -17,8 +16,12 @@ import {
   MapPin,
   Calendar,
   DollarSign,
-  FileText
+  FileText,
+  ChevronLeft,
+  ChevronRight,
+  Plus
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -49,6 +52,8 @@ export const UserLandTitleRequests: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<LandTitleRequest | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   useEffect(() => {
     if (user) {
@@ -170,13 +175,18 @@ export const UserLandTitleRequests: React.FC = () => {
                 <ScrollText className="h-6 w-6 text-muted-foreground" />
               </div>
               <p className="text-sm text-muted-foreground">Aucune demande de titre foncier</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Vous pouvez faire une demande depuis la page cadastrale
-              </p>
+              <Link to="/carte-cadastrale">
+                <Button size="sm" className="mt-3 gap-2 rounded-xl">
+                  <Plus className="h-3.5 w-3.5" />
+                  Faire une demande
+                </Button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-2">
-              {requests.map((request) => (
+              {requests
+                .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
+                .map((request) => (
                 <div 
                   key={request.id} 
                   className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
@@ -205,6 +215,36 @@ export const UserLandTitleRequests: React.FC = () => {
                   </div>
                 </div>
               ))}
+              
+              {/* Pagination */}
+              {requests.length > itemsPerPage && (
+                <div className="flex items-center justify-between pt-3 border-t mt-3">
+                  <p className="text-xs text-muted-foreground">
+                    {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, requests.length)} sur {requests.length}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="h-7 w-7 p-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <span className="text-xs px-2">{currentPage}/{Math.ceil(requests.length / itemsPerPage)}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(requests.length / itemsPerPage), p + 1))}
+                      disabled={currentPage >= Math.ceil(requests.length / itemsPerPage)}
+                      className="h-7 w-7 p-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

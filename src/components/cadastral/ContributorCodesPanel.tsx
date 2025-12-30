@@ -1,16 +1,19 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useCadastralContribution } from '@/hooks/useCadastralContribution';
-import { Gift, Clock, CheckCircle2, Copy } from 'lucide-react';
+import { Gift, Clock, CheckCircle2, Copy, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { getCodeStatus } from '@/utils/cccCodeUtils';
 
 const ContributorCodesPanel: React.FC = () => {
   const { codes, fetchUserCodes } = useCadastralContribution();
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   useEffect(() => {
     fetchUserCodes();
@@ -27,6 +30,13 @@ const ContributorCodesPanel: React.FC = () => {
   const activeCodes = codes.filter(c => !c.is_used && new Date(c.expires_at) > new Date());
   const usedCodes = codes.filter(c => c.is_used);
   const expiredCodes = codes.filter(c => !c.is_used && new Date(c.expires_at) <= new Date());
+
+  // Paginated active codes
+  const paginatedActiveCodes = activeCodes.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+  const totalPages = Math.ceil(activeCodes.length / itemsPerPage);
 
   return (
     <Card>
@@ -58,7 +68,7 @@ const ContributorCodesPanel: React.FC = () => {
                   <Badge variant="secondary" className="rounded-full">{activeCodes.length}</Badge>
                 </h3>
                 <div className="grid gap-3 md:grid-cols-2">
-                  {activeCodes.map((code) => (
+                  {paginatedActiveCodes.map((code) => (
                     <Card key={code.id} className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent hover:border-primary/40 transition-all">
                       <CardContent className="p-4">
                         <div className="space-y-3">
@@ -94,6 +104,36 @@ const ContributorCodesPanel: React.FC = () => {
                     </Card>
                   ))}
                 </div>
+                
+                {/* Pagination for active codes */}
+                {activeCodes.length > itemsPerPage && (
+                  <div className="flex items-center justify-between pt-3 mt-3 border-t">
+                    <p className="text-xs text-muted-foreground">
+                      {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, activeCodes.length)} sur {activeCodes.length}
+                    </p>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="h-7 w-7 p-0"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-xs px-2">{currentPage}/{totalPages}</span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage >= totalPages}
+                        className="h-7 w-7 p-0"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
