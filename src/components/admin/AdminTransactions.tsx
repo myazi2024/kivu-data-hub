@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Search, Download, Filter, ArrowUpDown } from 'lucide-react';
+import { Search, Download, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
 
 interface Transaction {
   id: string;
@@ -40,7 +42,7 @@ const AdminTransactions = () => {
     try {
       setLoading(true);
       
-      // Fetch payments
+      // Fetch payments with user_ids
       const { data: payments, error: paymentsError } = await supabase
         .from('payments')
         .select('id, amount_usd, status, payment_method, created_at, transaction_id, user_id')
@@ -48,31 +50,33 @@ const AdminTransactions = () => {
 
       if (paymentsError) throw paymentsError;
 
-      // Fetch user profiles separately
-      const transactionData: Transaction[] = await Promise.all(
-        (payments || []).map(async (payment) => {
-          let userEmail = 'N/A';
-          if (payment.user_id) {
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('email')
-              .eq('user_id', payment.user_id)
-              .single();
-            userEmail = profile?.email || 'N/A';
-          }
+      // Get unique user_ids and fetch profiles in one query (fix N+1)
+      const userIds = [...new Set((payments || []).map(p => p.user_id).filter(Boolean))];
+      
+      let profilesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, email')
+          .in('user_id', userIds);
+        
+        profilesMap = (profiles || []).reduce((acc, p) => {
+          acc[p.user_id] = p.email || 'N/A';
+          return acc;
+        }, {} as Record<string, string>);
+      }
 
-          return {
-            id: payment.id,
-            type: 'payment' as const,
-            amount: Number(payment.amount_usd),
-            status: payment.status,
-            user_email: userEmail,
-            description: `Paiement ${payment.payment_method}`,
-            created_at: payment.created_at,
-            reference: payment.transaction_id || payment.id
-          };
-        })
-      );
+      // Map transactions with cached emails
+      const transactionData: Transaction[] = (payments || []).map((payment) => ({
+        id: payment.id,
+        type: 'payment' as const,
+        amount: Number(payment.amount_usd),
+        status: payment.status,
+        user_email: payment.user_id ? (profilesMap[payment.user_id] || 'N/A') : 'N/A',
+        description: `Paiement ${payment.payment_method}`,
+        created_at: payment.created_at,
+        reference: payment.transaction_id || payment.id
+      }));
 
       setTransactions(transactionData);
     } catch (error: any) {
@@ -87,27 +91,44 @@ const AdminTransactions = () => {
     }
   };
 
-  const filteredAndSortedTransactions = transactions
-    .filter(tx => {
-      const matchesSearch = 
-        tx.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tx.user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        tx.description.toLowerCase().includes(searchTerm.toLowerCase());
-      
-      const matchesType = typeFilter === 'all' || tx.type === typeFilter;
-      const matchesStatus = statusFilter === 'all' || tx.status === statusFilter;
-      
-      return matchesSearch && matchesType && matchesStatus;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'date') {
-        const dateA = new Date(a.created_at).getTime();
-        const dateB = new Date(b.created_at).getTime();
-        return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
-      } else {
-        return sortOrder === 'asc' ? a.amount - b.amount : b.amount - a.amount;
-      }
-    });
+  const filteredAndSortedTransactions = useMemo(() => {
+    return transactions
+      .filter(tx => {
+        const matchesSearch = 
+          tx.reference.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          tx.user_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          tx.description.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        const matchesType = typeFilter === 'all' || tx.type === typeFilter;
+        const matchesStatus = statusFilter === 'all' || tx.status === statusFilter;
+        
+        return matchesSearch && matchesType && matchesStatus;
+      })
+      .sort((a, b) => {
+        if (sortBy === 'date') {
+          const dateA = new Date(a.created_at).getTime();
+          const dateB = new Date(b.created_at).getTime();
+          return sortOrder === 'asc' ? dateA - dateB : dateB - dateA;
+        } else {
+          return sortOrder === 'asc' ? a.amount - b.amount : b.amount - a.amount;
+        }
+      });
+  }, [transactions, searchTerm, typeFilter, statusFilter, sortBy, sortOrder]);
+
+  // Add pagination
+  const {
+    paginatedData,
+    currentPage,
+    pageSize,
+    totalPages,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    changePageSize,
+    hasNextPage,
+    hasPreviousPage,
+    totalItems
+  } = usePagination(filteredAndSortedTransactions, { initialPageSize: 20 });
 
   const totalAmount = filteredAndSortedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
   const successfulTransactions = filteredAndSortedTransactions.filter(tx => 
@@ -182,7 +203,7 @@ const AdminTransactions = () => {
             <CardTitle className="text-sm font-medium">Total Transactions</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{filteredAndSortedTransactions.length}</div>
+            <div className="text-2xl font-bold">{totalItems}</div>
           </CardContent>
         </Card>
 
@@ -201,8 +222,8 @@ const AdminTransactions = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {filteredAndSortedTransactions.length > 0
-                ? ((successfulTransactions / filteredAndSortedTransactions.length) * 100).toFixed(1)
+              {totalItems > 0
+                ? ((successfulTransactions / totalItems) * 100).toFixed(1)
                 : 0}%
             </div>
           </CardContent>
@@ -291,14 +312,14 @@ const AdminTransactions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredAndSortedTransactions.length === 0 ? (
+                {paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground">
                       Aucune transaction trouvée
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredAndSortedTransactions.map((transaction) => (
+                  paginatedData.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>
                         {format(new Date(transaction.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
@@ -314,6 +335,22 @@ const AdminTransactions = () => {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination */}
+          <div className="mt-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
+              onPageChange={goToPage}
+              onPageSizeChange={changePageSize}
+              onNextPage={goToNextPage}
+              onPreviousPage={goToPreviousPage}
+            />
           </div>
         </CardContent>
       </Card>
