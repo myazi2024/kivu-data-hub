@@ -34,6 +34,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface AdminSidebarProps {
   pendingCount?: number;
+  pendingLandTitleCount?: number;
+  pendingPermitsCount?: number;
   onNavigate?: () => void;
 }
 
@@ -93,9 +95,9 @@ const menuItems = [
       { icon: Search, label: 'Config Recherche', value: 'search-config', badge: null },
       { icon: FileText, label: 'Config Résultats', value: 'results-config', badge: null },
       { icon: MapPin, label: 'Zones Territoriales', value: 'zones', badge: null },
-      { icon: Building2, label: 'Permis de Construire', value: 'permits', badge: null },
+      { icon: Building2, label: 'Permis de Construire', value: 'permits', badge: 'permits' },
       { icon: FileText, label: 'Config Frais Permis', value: 'permit-fees-config', badge: null },
-      { icon: FileText, label: 'Demandes Titres Fonciers', value: 'land-title-requests', badge: null },
+      { icon: FileText, label: 'Demandes Titres Fonciers', value: 'land-title-requests', badge: 'landTitle' },
       { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: null },
       { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null },
       { icon: FileCheck, label: 'Expertises Immob.', value: 'expertise-requests', badge: null },
@@ -126,7 +128,7 @@ const menuItems = [
   },
 ];
 
-export function AdminSidebar({ pendingCount, onNavigate }: AdminSidebarProps) {
+export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, onNavigate }: AdminSidebarProps) {
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
@@ -146,7 +148,12 @@ export function AdminSidebar({ pendingCount, onNavigate }: AdminSidebarProps) {
               {section.items.map((item) => {
                 const isActive = currentTab === item.value;
                 const Icon = item.icon;
-                const showPendingBadge = item.badge === 'pending' && pendingCount && pendingCount > 0;
+                const showPendingBadge = (item.badge === 'pending' && pendingCount && pendingCount > 0) ||
+                  (item.badge === 'landTitle' && pendingLandTitleCount && pendingLandTitleCount > 0) ||
+                  (item.badge === 'permits' && pendingPermitsCount && pendingPermitsCount > 0);
+                const badgeCount = item.badge === 'pending' ? pendingCount : 
+                  item.badge === 'landTitle' ? pendingLandTitleCount : 
+                  item.badge === 'permits' ? pendingPermitsCount : 0;
 
                 return (
                   <Link
@@ -164,7 +171,7 @@ export function AdminSidebar({ pendingCount, onNavigate }: AdminSidebarProps) {
                     <span className="flex-1 truncate">{item.label}</span>
                     {showPendingBadge && (
                       <Badge variant="destructive" className="ml-auto text-[10px] md:text-xs px-1 md:px-1.5 py-0 md:py-0.5 h-4 md:h-5">
-                        {pendingCount}
+                        {badgeCount}
                       </Badge>
                     )}
                     {item.badge === 'new' && (

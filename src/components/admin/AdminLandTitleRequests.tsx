@@ -86,8 +86,8 @@ const AdminLandTitleRequests: React.FC = () => {
   const [requests, setRequests] = useState<LandTitleRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('_all');
-  const [paymentFilter, setPaymentFilter] = useState<string>('_all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [paymentFilter, setPaymentFilter] = useState<string>('all');
   
   // Dialog states
   const [selectedRequest, setSelectedRequest] = useState<LandTitleRequest | null>(null);
@@ -147,8 +147,8 @@ const AdminLandTitleRequests: React.FC = () => {
       request.requester_last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.province.toLowerCase().includes(searchQuery.toLowerCase());
     
-    const matchesStatus = statusFilter === '_all' || request.status === statusFilter;
-    const matchesPayment = paymentFilter === '_all' || request.payment_status === paymentFilter;
+    const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
+    const matchesPayment = paymentFilter === 'all' || request.payment_status === paymentFilter;
     
     return matchesSearch && matchesStatus && matchesPayment;
   });
@@ -329,7 +329,7 @@ const AdminLandTitleRequests: React.FC = () => {
             <SelectValue placeholder="Statut" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
-            <SelectItem value="_all" className="rounded-lg">Tous les statuts</SelectItem>
+            <SelectItem value="all" className="rounded-lg">Tous les statuts</SelectItem>
             <SelectItem value="pending" className="rounded-lg">En attente</SelectItem>
             <SelectItem value="in_review" className="rounded-lg">En examen</SelectItem>
             <SelectItem value="approved" className="rounded-lg">Approuvée</SelectItem>
@@ -341,7 +341,7 @@ const AdminLandTitleRequests: React.FC = () => {
             <SelectValue placeholder="Paiement" />
           </SelectTrigger>
           <SelectContent className="rounded-xl">
-            <SelectItem value="_all" className="rounded-lg">Tous</SelectItem>
+            <SelectItem value="all" className="rounded-lg">Tous</SelectItem>
             <SelectItem value="pending" className="rounded-lg">Non payé</SelectItem>
             <SelectItem value="paid" className="rounded-lg">Payé</SelectItem>
             <SelectItem value="failed" className="rounded-lg">Échoué</SelectItem>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, ExternalLink, Play, FileText, Building2, MessageSquare, Route, BrickWall } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, ExternalLink, Play, FileText, Building2, MessageSquare, Route, BrickWall, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
@@ -109,6 +109,10 @@ const AdminCCCContributions: React.FC = () => {
   const [isValidating, setIsValidating] = useState(false);
   const [showPermitDialog, setShowPermitDialog] = useState(false);
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     fetchContributions();
@@ -544,11 +548,49 @@ const AdminCCCContributions: React.FC = () => {
     }
   };
 
-  const filteredContributions = contributions.filter(c => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'suspicious') return c.is_suspicious;
-    return c.status === activeTab;
-  });
+  const filteredContributions = useMemo(() => {
+    return contributions.filter(c => {
+      if (activeTab === 'all') return true;
+      if (activeTab === 'suspicious') return c.is_suspicious;
+      return c.status === activeTab;
+    });
+  }, [contributions, activeTab]);
+
+  // Pagination logic
+  const paginatedContributions = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredContributions.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredContributions, currentPage, itemsPerPage]);
+
+  const totalPages = Math.ceil(filteredContributions.length / itemsPerPage);
+
+  // Reset to page 1 when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [activeTab]);
+
+  const exportToCSV = () => {
+    const headers = ['Numéro Parcelle', 'Statut', 'Suspect', 'Score Fraude', 'Province', 'Ville', 'Commune', 'Type Propriété', 'Date Création'];
+    const csvData = filteredContributions.map(c => [
+      c.parcel_number,
+      c.status,
+      c.is_suspicious ? 'Oui' : 'Non',
+      c.fraud_score?.toString() || '0',
+      c.province || '',
+      c.ville || '',
+      c.commune || '',
+      c.property_title_type || '',
+      new Date(c.created_at).toLocaleDateString('fr-FR')
+    ]);
+    
+    const csvContent = [headers.join(','), ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `contributions_ccc_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    toast.success('Export CSV téléchargé');
+  };
 
   if (loading) {
     return (
@@ -644,10 +686,16 @@ const AdminCCCContributions: React.FC = () => {
               <Gift className="h-4 w-4 md:h-5 md:w-5" />
               <span className="truncate">Contributions CCC</span>
             </CardTitle>
-            <Button variant="outline" size="sm" onClick={runIntegrityTests} className="w-full sm:w-auto">
-              <Play className="h-3 w-3 md:h-4 md:w-4 mr-2" />
-              Tester
-            </Button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button variant="outline" size="sm" onClick={exportToCSV} className="flex-1 sm:flex-none">
+                <Download className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                Exporter
+              </Button>
+              <Button variant="outline" size="sm" onClick={runIntegrityTests} className="flex-1 sm:flex-none">
+                <Play className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                Tester
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-2 md:p-6">
@@ -675,7 +723,7 @@ const AdminCCCContributions: React.FC = () => {
                     </ResponsiveTableRow>
                   </ResponsiveTableHeader>
                   <ResponsiveTableBody>
-                  {filteredContributions.map((contribution) => {
+                  {paginatedContributions.map((contribution) => {
                     const completeness = calculateCompleteness(contribution);
                     return (
                       <ResponsiveTableRow key={contribution.id}>
@@ -731,6 +779,36 @@ const AdminCCCContributions: React.FC = () => {
                   })}
                   </ResponsiveTableBody>
                 </ResponsiveTable>
+                
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between px-2 py-3 border-t">
+                    <p className="text-xs text-muted-foreground">
+                      {filteredContributions.length} résultat(s) - Page {currentPage}/{totalPages}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm font-medium">{currentPage}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                        disabled={currentPage === totalPages}
+                        className="h-8 w-8 p-0"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>

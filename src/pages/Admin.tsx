@@ -64,6 +64,8 @@ const Admin = () => {
   const activeTab = searchParams.get('tab') || 'dashboard';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingLandTitleCount, setPendingLandTitleCount] = useState(0);
+  const [pendingPermitsCount, setPendingPermitsCount] = useState(0);
   const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
 
   // Verify admin role from user_roles table
@@ -100,6 +102,8 @@ const Admin = () => {
   useEffect(() => {
     if (hasAdminRole) {
       fetchPendingCount();
+      fetchPendingLandTitleCount();
+      fetchPendingPermitsCount();
     }
   }, [hasAdminRole]);
 
@@ -112,14 +116,43 @@ const Admin = () => {
       
       if (error) {
         console.error('Erreur lors du chargement des contributions:', error);
-        toast.error('Erreur lors du chargement des contributions en attente');
         return;
       }
       
       setPendingCount(count || 0);
     } catch (error) {
       console.error('Erreur lors du chargement des contributions en attente:', error);
-      toast.error('Erreur lors du chargement des statistiques');
+    }
+  };
+
+  const fetchPendingLandTitleCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('land_title_requests')
+        .select('*', { count: 'exact', head: true })
+        .in('status', ['pending', 'in_review']);
+      
+      if (!error) {
+        setPendingLandTitleCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur titres fonciers:', error);
+    }
+  };
+
+  const fetchPendingPermitsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('cadastral_contributions')
+        .select('*', { count: 'exact', head: true })
+        .not('permit_request_data', 'is', null)
+        .eq('status', 'pending');
+      
+      if (!error) {
+        setPendingPermitsCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur permis:', error);
     }
   };
 
@@ -132,7 +165,6 @@ const Admin = () => {
   }
 
   if (!user || !hasAdminRole) {
-    toast.error('Accès refusé. Vous devez avoir un rôle administrateur.');
     return <Navigate to="/auth" replace />;
   }
 
@@ -253,7 +285,11 @@ const Admin = () => {
           <h2 className="text-sm lg:text-base font-bold">Admin</h2>
           <p className="text-[10px] text-muted-foreground">Gestion complète</p>
         </div>
-        <AdminSidebar pendingCount={pendingCount} />
+        <AdminSidebar 
+          pendingCount={pendingCount} 
+          pendingLandTitleCount={pendingLandTitleCount}
+          pendingPermitsCount={pendingPermitsCount}
+        />
       </aside>
 
       {/* Mobile Sidebar */}
@@ -264,7 +300,9 @@ const Admin = () => {
             <p className="text-[10px] text-muted-foreground">Gestion complète</p>
           </div>
           <AdminSidebar 
-            pendingCount={pendingCount} 
+            pendingCount={pendingCount}
+            pendingLandTitleCount={pendingLandTitleCount}
+            pendingPermitsCount={pendingPermitsCount}
             onNavigate={() => setMobileMenuOpen(false)}
           />
         </SheetContent>
