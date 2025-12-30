@@ -10,8 +10,8 @@ import {
   Clock, 
   RefreshCw, 
   AlertTriangle,
-  TrendingUp,
-  DollarSign
+  DollarSign,
+  Download
 } from 'lucide-react';
 import {
   Table,
@@ -21,6 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface Transaction {
   id: string;
@@ -49,11 +53,11 @@ export const AdminPaymentMonitoring = () => {
 
   const loadTransactions = async () => {
     try {
+      setLoading(true);
       const { data, error } = await supabase
         .from('payment_transactions')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+        .order('created_at', { ascending: false });
 
       if (error) throw error;
 
@@ -84,9 +88,23 @@ export const AdminPaymentMonitoring = () => {
     }
   };
 
+  // Pagination
+  const {
+    paginatedData,
+    currentPage,
+    pageSize,
+    totalPages,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    changePageSize,
+    hasNextPage,
+    hasPreviousPage,
+    totalItems
+  } = usePagination(transactions, { initialPageSize: 20 });
+
   const retryPayment = async (transactionId: string) => {
     try {
-      // Here you would implement retry logic
       toast({
         title: "Fonctionnalité en développement",
         description: "Le réessai automatique sera disponible prochainement",
@@ -98,6 +116,27 @@ export const AdminPaymentMonitoring = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const exportToCSV = () => {
+    const headers = ['Date', 'Fournisseur', 'Téléphone', 'Montant', 'Statut', 'Mode Test', 'Référence'];
+    const rows = transactions.map(tx => [
+      format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm'),
+      tx.provider,
+      tx.phone_number,
+      `$${tx.amount_usd.toFixed(2)}`,
+      tx.status,
+      tx.metadata?.test_mode ? 'Oui' : 'Non',
+      tx.transaction_reference || 'N/A'
+    ]);
+
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `payment_monitoring_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
   };
 
   useEffect(() => {
@@ -202,10 +241,16 @@ export const AdminPaymentMonitoring = () => {
         <CardHeader>
           <div className="flex justify-between items-center">
             <CardTitle>Transactions récentes</CardTitle>
-            <Button onClick={loadTransactions} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Actualiser
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={exportToCSV} variant="outline" size="sm">
+                <Download className="h-4 w-4 mr-2" />
+                Exporter
+              </Button>
+              <Button onClick={loadTransactions} variant="outline" size="sm">
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Actualiser
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -222,10 +267,10 @@ export const AdminPaymentMonitoring = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {transactions.map((tx) => (
+              {paginatedData.map((tx) => (
                 <TableRow key={tx.id}>
                   <TableCell>
-                    {new Date(tx.created_at).toLocaleString('fr-FR')}
+                    {format(new Date(tx.created_at), 'dd/MM/yyyy HH:mm', { locale: fr })}
                   </TableCell>
                   <TableCell className="capitalize">{tx.provider}</TableCell>
                   <TableCell>{tx.phone_number}</TableCell>
@@ -251,6 +296,22 @@ export const AdminPaymentMonitoring = () => {
               ))}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          <div className="mt-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
+              onPageChange={goToPage}
+              onPageSizeChange={changePageSize}
+              onNextPage={goToNextPage}
+              onPreviousPage={goToPreviousPage}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>

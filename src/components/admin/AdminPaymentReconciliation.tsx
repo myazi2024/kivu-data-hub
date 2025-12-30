@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, CreditCard, Search, CheckCircle2, XCircle, AlertTriangle, DollarSign } from 'lucide-react';
+import { RefreshCw, CreditCard, Search, CheckCircle2, XCircle, AlertTriangle, DollarSign, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
 
 interface PaymentTransaction {
   id: string;
@@ -105,9 +107,45 @@ const AdminPaymentReconciliation = () => {
     return matchesSearch && matchesStatus && matchesProvider;
   });
 
+  // Pagination
+  const {
+    paginatedData,
+    currentPage,
+    pageSize,
+    totalPages,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    changePageSize,
+    hasNextPage,
+    hasPreviousPage,
+    totalItems
+  } = usePagination(filteredTransactions, { initialPageSize: 20 });
+
   const pendingCount = transactions.filter(t => t.status === 'pending').length;
   const completedTotal = transactions.filter(t => t.status === 'completed').reduce((sum, t) => sum + t.amount_usd, 0);
   const failedCount = transactions.filter(t => t.status === 'failed').length;
+
+  const exportToCSV = () => {
+    const headers = ['Date', 'Fournisseur', 'Référence', 'Téléphone', 'Montant', 'Statut', 'Erreur'];
+    const rows = filteredTransactions.map(t => [
+      format(new Date(t.created_at), 'dd/MM/yyyy HH:mm'),
+      getProviderLabel(t.provider),
+      t.transaction_reference || 'N/A',
+      t.phone_number || 'N/A',
+      `$${t.amount_usd.toFixed(2)}`,
+      t.status,
+      t.error_message || ''
+    ]);
+
+    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reconciliation_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+  };
 
   return (
     <div className="space-y-3 md:space-y-4">
@@ -118,10 +156,16 @@ const AdminPaymentReconciliation = () => {
             <h2 className="text-sm md:text-base font-bold">Réconciliation Paiements</h2>
             <p className="text-[10px] md:text-xs text-muted-foreground">Vérification et rapprochement des transactions</p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchTransactions} disabled={loading} className="h-8 text-xs">
-            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={exportToCSV} className="h-8 text-xs">
+              <Download className="h-3 w-3 mr-1" />
+              Exporter
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchTransactions} disabled={loading} className="h-8 text-xs">
+              <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -175,19 +219,19 @@ const AdminPaymentReconciliation = () => {
 
       {/* Transactions List */}
       <Card className="p-3 md:p-4 bg-background rounded-2xl shadow-sm border">
-        <h3 className="text-xs font-semibold mb-3">Transactions ({filteredTransactions.length})</h3>
+        <h3 className="text-xs font-semibold mb-3">Transactions ({totalItems})</h3>
         {loading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
-        ) : filteredTransactions.length === 0 ? (
+        ) : paginatedData.length === 0 ? (
           <div className="text-center py-8">
             <CreditCard className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
             <p className="text-xs text-muted-foreground">Aucune transaction</p>
           </div>
         ) : (
           <div className="space-y-2">
-            {filteredTransactions.slice(0, 50).map((transaction) => (
+            {paginatedData.map((transaction) => (
               <div key={transaction.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
@@ -222,6 +266,24 @@ const AdminPaymentReconciliation = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {!loading && totalItems > 0 && (
+          <div className="mt-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
+              onPageChange={goToPage}
+              onPageSizeChange={changePageSize}
+              onNextPage={goToNextPage}
+              onPreviousPage={goToPreviousPage}
+            />
           </div>
         )}
       </Card>
