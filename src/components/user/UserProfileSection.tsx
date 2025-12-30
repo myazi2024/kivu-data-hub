@@ -16,10 +16,11 @@ import {
 import { Link } from 'react-router-dom';
 
 const UserProfileSection: React.FC = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile, resendConfirmationEmail } = useAuth();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resendingEmail, setResendingEmail] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || "");
   const [organization, setOrganization] = useState(profile?.organization || "");
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || "");
@@ -120,7 +121,7 @@ const UserProfileSection: React.FC = () => {
         description: "Vos informations ont été enregistrées.",
       });
       setIsEditing(false);
-      window.location.reload();
+      await refreshProfile();
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -164,7 +165,7 @@ const UserProfileSection: React.FC = () => {
       toast({
         title: "Avatar mis à jour",
       });
-      window.location.reload();
+      await refreshProfile();
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -173,6 +174,25 @@ const UserProfileSection: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendConfirmationEmail = async () => {
+    setResendingEmail(true);
+    const success = await resendConfirmationEmail();
+    setResendingEmail(false);
+    
+    if (success) {
+      toast({
+        title: "Email envoyé",
+        description: "Un email de confirmation a été envoyé à votre adresse.",
+      });
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: "Impossible d'envoyer l'email de confirmation.",
+      });
     }
   };
 
@@ -268,7 +288,14 @@ const UserProfileSection: React.FC = () => {
                       {isEmailConfirmed ? (
                         <CheckCircle2 className="h-3 w-3 text-green-500 shrink-0" />
                       ) : (
-                        <XCircle className="h-3 w-3 text-muted-foreground shrink-0" />
+                        <button 
+                          onClick={handleResendConfirmationEmail}
+                          disabled={resendingEmail}
+                          className="flex items-center gap-1 text-[10px] text-primary hover:underline disabled:opacity-50"
+                        >
+                          <XCircle className="h-3 w-3 text-muted-foreground shrink-0" />
+                          {resendingEmail ? 'Envoi...' : 'Vérifier'}
+                        </button>
                       )}
                     </div>
                     {profile?.organization && (

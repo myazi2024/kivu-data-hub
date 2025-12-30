@@ -5,13 +5,14 @@ import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserPreferences } from '@/components/user/UserPreferences';
-import { UserCCCCodes } from '@/components/user/UserCCCCodes';
 import { UserContributions } from '@/components/user/UserContributions';
 import CadastralDashboardTabs from '@/components/cadastral/CadastralDashboardTabs';
 import { UserBuildingPermits } from '@/components/user/UserBuildingPermits';
 import { UserAccountSecurity } from '@/components/user/UserAccountSecurity';
 import UserProfileSection from '@/components/user/UserProfileSection';
-import { User, FileText, Building, CreditCard, Settings } from 'lucide-react';
+import { UserLandTitleRequests } from '@/components/user/UserLandTitleRequests';
+import { NotificationBell } from '@/components/user/NotificationBell';
+import { User, FileText, Building, CreditCard, Settings, ScrollText } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
@@ -34,9 +35,15 @@ const UserDashboard = () => {
       
       <main className="flex-grow px-3 py-4">
         <div className="max-w-[360px] sm:max-w-md lg:max-w-2xl mx-auto">
+          {/* Header with notification bell */}
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-lg font-semibold">Mon compte</h1>
+            <NotificationBell />
+          </div>
+
           <Tabs defaultValue="profile" className="w-full">
             {/* Navigation compacte */}
-            <TabsList className="w-full h-auto p-1 grid grid-cols-5 gap-1 bg-background shadow-sm rounded-2xl border">
+            <TabsList className="w-full h-auto p-1 grid grid-cols-6 gap-1 bg-background shadow-sm rounded-2xl border">
               <TabsTrigger 
                 value="profile" 
                 className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
@@ -50,6 +57,13 @@ const UserDashboard = () => {
               >
                 <FileText className="h-4 w-4" />
                 <span className="text-[10px] font-medium">Données</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="titles" 
+                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+              >
+                <ScrollText className="h-4 w-4" />
+                <span className="text-[10px] font-medium">Titres</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="permits" 
@@ -80,7 +94,10 @@ const UserDashboard = () => {
 
             <TabsContent value="contributions" className="mt-4 space-y-4">
               <UserContributions />
-              <UserCCCCodes />
+            </TabsContent>
+
+            <TabsContent value="titles" className="mt-4">
+              <UserLandTitleRequests />
             </TabsContent>
 
             <TabsContent value="permits" className="mt-4">

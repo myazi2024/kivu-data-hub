@@ -20,6 +20,8 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
+  resendConfirmationEmail: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -35,12 +37,14 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true);
   const [profileCache, setProfileCache] = useState<Map<string, Profile>>(new Map());
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, forceRefresh = false) => {
     // Check cache first to avoid redundant fetches
-    const cached = profileCache.get(userId);
-    if (cached) {
-      setProfile(cached);
-      return;
+    if (!forceRefresh) {
+      const cached = profileCache.get(userId);
+      if (cached) {
+        setProfile(cached);
+        return;
+      }
     }
 
     try {
@@ -128,6 +132,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   };
 
+  const refreshProfile = async () => {
+    if (user?.id) {
+      // Clear cache and force refresh
+      setProfileCache(prev => {
+        const newCache = new Map(prev);
+        newCache.delete(user.id);
+        return newCache;
+      });
+      await fetchProfile(user.id, true);
+    }
+  };
+
+  const resendConfirmationEmail = async (): Promise<boolean> => {
+    if (!user?.email) return false;
+    
+    try {
+      const { error } = await supabase.auth.resend({
+        type: 'signup',
+        email: user.email,
+      });
+      
+      if (error) {
+        console.error('Error resending confirmation email:', error);
+        return false;
+      }
+      return true;
+    } catch (error) {
+      console.error('Error resending confirmation email:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -177,6 +213,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     profile,
     loading,
     signOut,
+    refreshProfile,
+    resendConfirmationEmail,
   };
 
   return (
@@ -195,5 +233,7 @@ export const useAuth = () => {
     profile: null,
     loading: false,
     signOut: async () => {},
+    refreshProfile: async () => {},
+    resendConfirmationEmail: async () => false,
   };
 };
