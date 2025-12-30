@@ -584,7 +584,7 @@ const CadastralMap = () => {
               : 'translate-y-[calc(100dvh-12rem)]'
           }`}
         >
-          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+          <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-visible">
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
               {/* Barre de recherche */}
               <div className="flex items-center gap-2">
@@ -638,12 +638,12 @@ const CadastralMap = () => {
                 </Button>
 
                 {/* Bouton Obtenir titre foncier - Design compact avec icône rouge */}
-                <div className="relative z-[1010]">
+                <div className="relative z-[1500]">
                   {/* Notification intelligente */}
                   {showLandTitleNotification && (
                     <div 
                       className={cn(
-                        "absolute top-full right-0 mt-2 animate-fade-in z-[1020]",
+                        "absolute bottom-full right-0 mb-2 animate-fade-in z-[1510]",
                         isMobile ? "w-[260px]" : "w-[280px]"
                       )}
                     >
@@ -655,7 +655,7 @@ const CadastralMap = () => {
                           </span>
                         </div>
                         {/* Flèche pointant vers le bouton */}
-                        <div className="absolute -top-1.5 right-3 w-3 h-3 bg-destructive transform rotate-45" />
+                        <div className="absolute -bottom-1.5 right-3 w-3 h-3 bg-destructive transform rotate-45" />
                       </div>
                     </div>
                   )}
@@ -675,8 +675,8 @@ const CadastralMap = () => {
                     {showLandTitleNotification && (
                       <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
                     )}
-                    {/* Tooltip au survol/click prolongé */}
-                    <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-foreground text-background text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity z-[1030] pointer-events-none shadow-lg">
+                    {/* Label au survol/click prolongé */}
+                    <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-foreground text-background text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity z-[1520] pointer-events-none shadow-lg">
                       Obtenir un titre foncier
                     </span>
                   </Button>
