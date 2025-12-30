@@ -822,10 +822,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           value={formData.province}
                           onValueChange={(value) => handleInputChange('province', value)}
                         >
-                          <SelectTrigger className="h-9 text-sm rounded-lg border">
+                          <SelectTrigger className="h-9 text-sm rounded-xl border">
                             <SelectValue placeholder="Sélectionner la province" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-lg">
+                          <SelectContent className="rounded-xl">
                             {getAllProvinces().map(province => (
                               <SelectItem key={province} value={province} className="text-sm py-2">{province}</SelectItem>
                             ))}
@@ -880,10 +880,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('ville', value)}
                               disabled={availableVilles.length === 0}
                             >
-                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectTrigger className="h-9 text-sm rounded-xl border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-lg">
+                              <SelectContent className="rounded-xl">
                                 {availableVilles.map(ville => (
                                   <SelectItem key={ville} value={ville} className="text-sm py-2">{ville}</SelectItem>
                                 ))}
@@ -897,10 +897,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('commune', value)}
                               disabled={!formData.ville || availableCommunes.length === 0}
                             >
-                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectTrigger className="h-9 text-sm rounded-xl border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-lg">
+                              <SelectContent className="rounded-xl">
                                 {availableCommunes.map(commune => (
                                   <SelectItem key={commune} value={commune} className="text-sm py-2">{commune}</SelectItem>
                                 ))}
@@ -917,10 +917,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('quartier', value)}
                               disabled={!formData.commune}
                             >
-                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectTrigger className="h-9 text-sm rounded-xl border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-lg">
+                              <SelectContent className="rounded-xl">
                                 {availableQuartiers.map(quartier => (
                                   <SelectItem key={quartier} value={quartier} className="text-sm py-2">{quartier}</SelectItem>
                                 ))}
@@ -955,10 +955,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('territoire', value)}
                               disabled={availableTerritoires.length === 0}
                             >
-                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectTrigger className="h-9 text-sm rounded-xl border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-lg">
+                              <SelectContent className="rounded-xl">
                                 {availableTerritoires.map(territoire => (
                                   <SelectItem key={territoire} value={territoire} className="text-sm py-2">{territoire}</SelectItem>
                                 ))}
@@ -972,10 +972,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               onValueChange={(value) => handleInputChange('collectivite', value)}
                               disabled={!formData.territoire || availableCollectivites.length === 0}
                             >
-                              <SelectTrigger className="h-9 text-sm rounded-lg border">
+                              <SelectTrigger className="h-9 text-sm rounded-xl border">
                                 <SelectValue placeholder="Sélectionner" />
                               </SelectTrigger>
-                              <SelectContent className="rounded-lg">
+                              <SelectContent className="rounded-xl">
                                 {availableCollectivites.map(collectivite => (
                                   <SelectItem key={collectivite} value={collectivite} className="text-sm py-2">{collectivite}</SelectItem>
                                 ))}
