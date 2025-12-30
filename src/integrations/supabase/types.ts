@@ -1381,6 +1381,69 @@ export type Database = {
           },
         ]
       }
+      land_title_fees_by_type: {
+        Row: {
+          applies_to_rural: boolean
+          applies_to_urban: boolean
+          area_multiplier: number | null
+          base_amount_usd: number
+          created_at: string
+          description: string | null
+          display_order: number
+          fee_category: string
+          fee_name: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          max_area_sqm: number | null
+          min_area_sqm: number | null
+          rural_discount_usd: number | null
+          title_type: string
+          updated_at: string
+          urban_surcharge_usd: number | null
+        }
+        Insert: {
+          applies_to_rural?: boolean
+          applies_to_urban?: boolean
+          area_multiplier?: number | null
+          base_amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_category: string
+          fee_name: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          max_area_sqm?: number | null
+          min_area_sqm?: number | null
+          rural_discount_usd?: number | null
+          title_type: string
+          updated_at?: string
+          urban_surcharge_usd?: number | null
+        }
+        Update: {
+          applies_to_rural?: boolean
+          applies_to_urban?: boolean
+          area_multiplier?: number | null
+          base_amount_usd?: number
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_category?: string
+          fee_name?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          max_area_sqm?: number | null
+          min_area_sqm?: number | null
+          rural_discount_usd?: number | null
+          title_type?: string
+          updated_at?: string
+          urban_surcharge_usd?: number | null
+        }
+        Relationships: []
+      }
       land_title_fees_config: {
         Row: {
           amount_usd: number
