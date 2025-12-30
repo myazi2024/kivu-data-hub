@@ -556,16 +556,29 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     <>
       {/* Confirmation dialog for closing */}
       <AlertDialog open={showCloseConfirmation} onOpenChange={setShowCloseConfirmation}>
-        <AlertDialogContent className="z-[1200]">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Fermer le formulaire ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Vous avez des données non enregistrées. Êtes-vous sûr de vouloir fermer ce formulaire ? Toutes les informations saisies seront perdues.
+        <AlertDialogContent className={cn(
+          "z-[99999]",
+          isMobile && "w-[90vw] max-w-[320px] rounded-2xl p-4"
+        )}>
+          <AlertDialogHeader className={isMobile ? "space-y-1" : ""}>
+            <AlertDialogTitle className={isMobile ? "text-base" : ""}>
+              Fermer le formulaire ?
+            </AlertDialogTitle>
+            <AlertDialogDescription className={isMobile ? "text-xs" : ""}>
+              Vous avez des données non enregistrées. Êtes-vous sûr de vouloir fermer ? Toutes les informations seront perdues.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmClose} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+          <AlertDialogFooter className={isMobile ? "flex-row gap-2 mt-3" : ""}>
+            <AlertDialogCancel className={isMobile ? "flex-1 h-9 text-xs rounded-xl mt-0" : ""}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmClose} 
+              className={cn(
+                "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+                isMobile && "flex-1 h-9 text-xs rounded-xl"
+              )}
+            >
               Fermer
             </AlertDialogAction>
           </AlertDialogFooter>
