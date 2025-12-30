@@ -31,7 +31,7 @@ const CadastralDashboardTabs: React.FC = () => {
     });
   };
 
-  const getCodeStatus = (code: any) => {
+  const getDiscountCodeStatus = (code: any) => {
     if (!code.is_active) return { label: 'Inactif', variant: 'secondary' as const };
     if (code.expires_at && new Date(code.expires_at) < new Date()) {
       return { label: 'Expiré', variant: 'destructive' as const };
@@ -96,7 +96,7 @@ const CadastralDashboardTabs: React.FC = () => {
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {codes.map((code) => {
-                    const status = getCodeStatus(code);
+                    const status = getDiscountCodeStatus(code);
                     return (
                       <Card key={code.id} className="border-primary/20 hover:border-primary/40 transition-colors">
                         <CardContent className="p-4">

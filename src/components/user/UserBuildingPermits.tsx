@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { Building2, FileEdit } from "lucide-react";
 import { toast } from "sonner";
 import { PermitSection } from "./building-permits/PermitSection";
@@ -126,6 +127,12 @@ export function UserBuildingPermits() {
             <p className="text-xs text-muted-foreground mt-1">
               Demandez un permis depuis la Carte cadastrale
             </p>
+            <a href="/carte-cadastrale">
+              <Button size="sm" className="mt-3 gap-2 rounded-xl">
+                <Building2 className="h-3.5 w-3.5" />
+                Faire une demande
+              </Button>
+            </a>
           </div>
         </div>
       ) : (

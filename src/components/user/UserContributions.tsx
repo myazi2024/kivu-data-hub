@@ -1,14 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight, Search, Plus } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Contribution {
   id: string;
@@ -48,6 +50,7 @@ export const UserContributions: React.FC = () => {
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [cccCode, setCccCode] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -162,6 +165,23 @@ export const UserContributions: React.FC = () => {
 
   const stats = getStats();
 
+  // Filter contributions based on search query
+  const filteredContributions = React.useMemo(() => {
+    if (!searchQuery.trim()) return contributions;
+    const query = searchQuery.toLowerCase();
+    return contributions.filter(c => 
+      c.parcel_number.toLowerCase().includes(query) ||
+      c.ville?.toLowerCase().includes(query) ||
+      c.province?.toLowerCase().includes(query) ||
+      c.current_owner_name?.toLowerCase().includes(query)
+    );
+  }, [contributions, searchQuery]);
+
+  // Reset to page 1 when search changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   if (loading) {
     return (
       <Card>
@@ -193,22 +213,47 @@ export const UserContributions: React.FC = () => {
 
       {/* Liste des contributions */}
       <div className="bg-background rounded-2xl shadow-sm border overflow-hidden">
-        <div className="p-3 border-b flex items-center gap-2">
-          <FileText className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-semibold">Mes contributions CCC</h3>
+        <div className="p-3 border-b flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            <h3 className="text-sm font-semibold">Mes contributions CCC</h3>
+          </div>
+          <Link to="/carte-cadastrale">
+            <Button size="sm" variant="outline" className="h-7 gap-1 text-xs rounded-lg">
+              <Plus className="h-3 w-3" />
+              <span className="hidden sm:inline">Contribuer</span>
+            </Button>
+          </Link>
         </div>
         
+        {/* Search bar */}
+        {contributions.length > 0 && (
+          <div className="px-3 pt-3">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par parcelle, ville, propriétaire..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 pl-8 text-xs rounded-xl"
+              />
+            </div>
+          </div>
+        )}
+        
         <div className="p-3">
-          {contributions.length === 0 ? (
+          {filteredContributions.length === 0 ? (
             <div className="text-center py-8">
               <div className="h-12 w-12 mx-auto rounded-2xl bg-muted/50 flex items-center justify-center mb-3">
                 <FileText className="h-6 w-6 text-muted-foreground" />
               </div>
-              <p className="text-sm text-muted-foreground">Aucune contribution</p>
+              <p className="text-sm text-muted-foreground">
+                {searchQuery ? 'Aucun résultat' : 'Aucune contribution'}
+              </p>
             </div>
           ) : (
             <div className="space-y-2">
-              {contributions
+              {filteredContributions
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((contribution) => {
                   const typeInfo = getContributionTypeLabel(contribution);
@@ -244,10 +289,10 @@ export const UserContributions: React.FC = () => {
                 })}
               
               {/* Pagination */}
-              {contributions.length > itemsPerPage && (
+              {filteredContributions.length > itemsPerPage && (
                 <div className="flex items-center justify-between pt-3 border-t mt-3">
                   <p className="text-xs text-muted-foreground">
-                    {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, contributions.length)} sur {contributions.length}
+                    {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, filteredContributions.length)} sur {filteredContributions.length}
                   </p>
                   <div className="flex items-center gap-1">
                     <Button
@@ -259,12 +304,12 @@ export const UserContributions: React.FC = () => {
                     >
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
-                    <span className="text-xs px-2">{currentPage}/{Math.ceil(contributions.length / itemsPerPage)}</span>
+                    <span className="text-xs px-2">{currentPage}/{Math.ceil(filteredContributions.length / itemsPerPage)}</span>
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(contributions.length / itemsPerPage), p + 1))}
-                      disabled={currentPage >= Math.ceil(contributions.length / itemsPerPage)}
+                      onClick={() => setCurrentPage(p => Math.min(Math.ceil(filteredContributions.length / itemsPerPage), p + 1))}
+                      disabled={currentPage >= Math.ceil(filteredContributions.length / itemsPerPage)}
                       className="h-7 w-7 p-0"
                     >
                       <ChevronRight className="h-4 w-4" />
