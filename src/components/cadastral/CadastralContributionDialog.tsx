@@ -3203,101 +3203,101 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="location" className="space-y-3 md:space-y-6 mt-4 md:mt-6 animate-fade-in">
-            {/* Type de section et Province - Design moderne compact */}
+            {/* Localisation de la parcelle - Aligné avec LandTitleRequestDialog */}
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
-                {/* Type de section */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="sectionType" className="text-sm font-medium">Type de section</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
-                          <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-72 text-sm rounded-xl">
-                        <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
-                        <p className="text-xs text-muted-foreground leading-relaxed">
-                          SU (Urbain): Ville → Commune → Quartier<br/>
-                          SR (Rural): Territoire → Collectivité → Village
-                        </p>
-                      </PopoverContent>
-                    </Popover>
+                {/* Header */}
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="p-1.5 bg-primary/10 rounded-lg">
+                    <MdLocationOn className="h-4 w-4 text-primary" />
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('urbaine')}
-                      disabled={sectionTypeAutoDetected}
-                      className={cn(
-                        "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
-                        sectionType === 'urbaine'
-                          ? 'bg-primary text-primary-foreground shadow-md'
-                          : 'bg-muted/50 text-muted-foreground hover:bg-muted',
-                        sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
-                      )}
-                    >
-                      SU - Urbaine
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('rurale')}
-                      disabled={sectionTypeAutoDetected}
-                      className={cn(
-                        "flex-1 py-2 px-3 rounded-xl text-sm font-medium transition-all",
-                        sectionType === 'rurale'
-                          ? 'bg-primary text-primary-foreground shadow-md'
-                          : 'bg-muted/50 text-muted-foreground hover:bg-muted',
-                        sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
-                      )}
-                    >
-                      SR - Rurale
-                    </button>
-                  </div>
-                  {sectionTypeAutoDetected && (
-                    <p className="text-xs text-primary flex items-center gap-1 justify-center">
-                      <CheckCircle2 className="h-3 w-3" />
-                      Type auto-détecté depuis le numéro
-                    </p>
-                  )}
+                  <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
                 </div>
 
-                {/* Province */}
-                {sectionType && (
-                  <div className="space-y-1.5 pt-2 border-t border-border/50">
-                    <Label htmlFor="province" className="text-sm font-medium">Province</Label>
-                    <Select 
-                      value={formData.province} 
-                      onValueChange={(value) => handleInputChange('province', value)}
-                    >
-                      <SelectTrigger className="h-9 text-sm rounded-xl">
-                        <SelectValue placeholder="Sélectionner la province" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {getAllProvinces().map(province => (
-                          <SelectItem key={province} value={province} className="text-sm">{province}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                {/* Province - toujours visible en premier */}
+                <div className="space-y-1.5">
+                  <Label htmlFor="province" className="text-sm">Province *</Label>
+                  <Select 
+                    value={formData.province} 
+                    onValueChange={(value) => handleInputChange('province', value)}
+                  >
+                    <SelectTrigger className="h-9 text-sm rounded-xl border">
+                      <SelectValue placeholder="Sélectionner la province" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {getAllProvinces().map(province => (
+                        <SelectItem key={province} value={province} className="text-sm py-2">{province}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Zone urbaine ou rurale - visible après province */}
+                {formData.province && (
+                  <div className="space-y-2 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm">Zone urbaine ou Zone rurale ? *</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
+                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 text-sm rounded-xl">
+                          <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            SU (Urbain): Ville → Commune → Quartier<br/>
+                            SR (Rural): Territoire → Collectivité → Village
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('urbaine')}
+                        disabled={sectionTypeAutoDetected}
+                        className={cn(
+                          "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                          sectionType === 'urbaine'
+                            ? 'bg-primary text-primary-foreground shadow-md'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                          sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
+                        )}
+                      >
+                        SU - Urbaine
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => !sectionTypeAutoDetected && handleSectionTypeChange('rurale')}
+                        disabled={sectionTypeAutoDetected}
+                        className={cn(
+                          "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                          sectionType === 'rurale'
+                            ? 'bg-primary text-primary-foreground shadow-md'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80',
+                          sectionTypeAutoDetected && 'cursor-not-allowed opacity-70'
+                        )}
+                      >
+                        SR - Rurale
+                      </button>
+                    </div>
+                    {sectionTypeAutoDetected && (
+                      <p className="text-xs text-primary flex items-center gap-1 justify-center">
+                        <CheckCircle2 className="h-3 w-3" />
+                        Type auto-détecté depuis le numéro
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* Section Urbaine (SU) - visible uniquement si type urbain sélectionné */}
-            {sectionType === 'urbaine' && (
+            {sectionType === 'urbaine' && formData.province && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 animate-fade-in">
                 <CardContent className="p-3 space-y-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <MdLocationOn className="h-4 w-4 text-primary" />
-                    </div>
-                    <h4 className="text-sm font-semibold">Section Urbaine (SU)</h4>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Champs pour les zones urbaines.
-                  </p>
+                  <Label className="text-sm font-semibold">Section Urbaine (SU)</Label>
                   
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1.5">
@@ -3307,7 +3307,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         onValueChange={(value) => handleInputChange('ville', value)}
                         disabled={!formData.province || availableVilles.length === 0}
                       >
-                        <SelectTrigger className="h-9 text-sm rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl border">
                           <SelectValue placeholder={
                             !formData.province 
                             ? "Province d'abord" 
@@ -3316,9 +3316,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             : "Sélectionner"
                           } />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl">
                           {availableVilles.map(ville => (
-                            <SelectItem key={ville} value={ville} className="text-sm">{ville}</SelectItem>
+                            <SelectItem key={ville} value={ville} className="text-sm py-2">{ville}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -3331,7 +3331,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         onValueChange={(value) => handleInputChange('commune', value)}
                         disabled={!formData.ville || availableCommunes.length === 0}
                       >
-                        <SelectTrigger className="h-9 text-sm rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl border">
                           <SelectValue placeholder={
                             !formData.ville 
                             ? "Ville d'abord" 
@@ -3340,9 +3340,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             : "Sélectionner"
                           } />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl">
                           {availableCommunes.map(commune => (
-                            <SelectItem key={commune} value={commune} className="text-sm">{commune}</SelectItem>
+                            <SelectItem key={commune} value={commune} className="text-sm py-2">{commune}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -3357,7 +3357,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         onValueChange={(value) => handleInputChange('quartier', value)}
                         disabled={!formData.commune || availableQuartiers.length === 0}
                       >
-                        <SelectTrigger className="h-9 text-sm rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl border">
                           <SelectValue placeholder={
                             !formData.commune 
                             ? "Commune d'abord" 
@@ -3366,9 +3366,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             : "Sélectionner"
                           } />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl">
                           {availableQuartiers.map(quartier => (
-                            <SelectItem key={quartier} value={quartier} className="text-sm">{quartier}</SelectItem>
+                            <SelectItem key={quartier} value={quartier} className="text-sm py-2">{quartier}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -3402,18 +3402,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             )}
 
             {/* Section Rurale (SR) - visible uniquement si type rural sélectionné */}
-            {sectionType === 'rurale' && (
+            {sectionType === 'rurale' && formData.province && (
               <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 animate-fade-in">
                 <CardContent className="p-3 space-y-3">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="h-6 w-6 rounded-lg bg-primary/10 flex items-center justify-center">
-                      <MdLocationOn className="h-4 w-4 text-primary" />
-                    </div>
-                    <h4 className="text-sm font-semibold">Section Rurale (SR)</h4>
-                  </div>
-                  <p className="text-xs text-muted-foreground leading-relaxed">
-                    Champs pour les zones rurales.
-                  </p>
+                  <Label className="text-sm font-semibold">Section Rurale (SR)</Label>
                   
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1.5">
@@ -3423,7 +3415,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         onValueChange={(value) => handleInputChange('territoire', value)}
                         disabled={!formData.province || availableTerritoires.length === 0}
                       >
-                        <SelectTrigger className="h-9 text-sm rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl border">
                           <SelectValue placeholder={
                             !formData.province 
                             ? "Province d'abord" 
@@ -3432,9 +3424,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             : "Sélectionner"
                           } />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl">
                           {availableTerritoires.map(territoire => (
-                            <SelectItem key={territoire} value={territoire} className="text-sm">{territoire}</SelectItem>
+                            <SelectItem key={territoire} value={territoire} className="text-sm py-2">{territoire}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -3447,7 +3439,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         onValueChange={(value) => handleInputChange('collectivite', value)}
                         disabled={!formData.territoire || availableCollectivites.length === 0}
                       >
-                        <SelectTrigger className="h-9 text-sm rounded-xl">
+                        <SelectTrigger className="h-9 text-sm rounded-xl border">
                           <SelectValue placeholder={
                             !formData.territoire 
                             ? "Territoire d'abord" 
@@ -3456,9 +3448,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             : "Sélectionner"
                           } />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent className="rounded-xl">
                           {availableCollectivites.map(collectivite => (
-                            <SelectItem key={collectivite} value={collectivite} className="text-sm">{collectivite}</SelectItem>
+                            <SelectItem key={collectivite} value={collectivite} className="text-sm py-2">{collectivite}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
