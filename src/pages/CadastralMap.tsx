@@ -638,19 +638,45 @@ const CadastralMap = () => {
                 </Button>
 
                 {/* Bouton Obtenir titre foncier - Design compact avec icône rouge */}
-                <Button 
-                  variant="destructive" 
-                  size="sm"
-                  onClick={() => setShowLandTitleTermsDialog(true)}
-                  className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
-                  title="Obtenir un titre foncier"
-                >
-                  <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                  {/* Indicateur de notification */}
+                <div className="relative">
+                  {/* Notification intelligente */}
                   {showLandTitleNotification && (
-                    <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-white rounded-full animate-pulse" />
+                    <div 
+                      className={cn(
+                        "absolute top-full right-0 mt-2 animate-fade-in z-50",
+                        isMobile ? "w-[260px]" : "w-[280px]"
+                      )}
+                    >
+                      <div className="bg-destructive text-destructive-foreground rounded-xl px-3 py-2 shadow-lg text-xs leading-relaxed">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <span>
+                            Vous n'avez pas encore de titre foncier ? Cliquez ici pour faire votre demande officielle.
+                          </span>
+                        </div>
+                        {/* Flèche pointant vers le bouton */}
+                        <div className="absolute -top-1.5 right-3 w-3 h-3 bg-destructive transform rotate-45" />
+                      </div>
+                    </div>
                   )}
-                </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => {
+                      landTitleNotificationDismissedRef.current = true;
+                      setShowLandTitleNotification(false);
+                      setShowLandTitleTermsDialog(true);
+                    }}
+                    className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
+                    title="Obtenir un titre foncier"
+                  >
+                    <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                    {/* Indicateur de notification pulsant */}
+                    {showLandTitleNotification && (
+                      <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-white rounded-full animate-pulse" />
+                    )}
+                  </Button>
+                </div>
               </div>
 
               {/* Section Recherche Avancée - Déroulée dans la barre */}
