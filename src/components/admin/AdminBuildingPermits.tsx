@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,7 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Building2, FileText, CheckCircle, XCircle, Clock, AlertCircle, Filter } from 'lucide-react';
+import { Search, Building2, FileText, CheckCircle, XCircle, Clock, AlertCircle, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -37,6 +37,8 @@ const AdminBuildingPermits = () => {
   const [filterType, setFilterType] = useState<'all' | 'construction' | 'regularization'>('all');
   const [selectedPermit, setSelectedPermit] = useState<PermitRequest | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   useEffect(() => {
     fetchPermits();
@@ -61,7 +63,7 @@ const AdminBuildingPermits = () => {
     }
   };
 
-  const filteredPermits = permits.filter((permit) => {
+  const filteredPermits = useMemo(() => permits.filter((permit) => {
     const permitData = permit.permit_request_data;
     const matchesSearch = 
       permit.parcel_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -75,7 +77,18 @@ const AdminBuildingPermits = () => {
       filterType === 'all' ? true : permitData?.permitType === filterType;
     
     return matchesSearch && matchesStatus && matchesType;
-  });
+  }), [permits, searchTerm, filterStatus, filterType]);
+
+  const totalPages = Math.ceil(filteredPermits.length / itemsPerPage);
+  const paginatedPermits = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredPermits.slice(start, start + itemsPerPage);
+  }, [filteredPermits, currentPage, itemsPerPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus, filterType]);
 
   const stats = {
     total: permits.length,
@@ -84,6 +97,27 @@ const AdminBuildingPermits = () => {
     rejected: permits.filter(p => p.permit_request_data?.status === 'rejected').length,
     construction: permits.filter(p => p.permit_request_data?.permitType === 'construction').length,
     regularization: permits.filter(p => p.permit_request_data?.permitType === 'regularization').length,
+  };
+
+  const exportToCSV = () => {
+    const csv = [
+      ['Parcelle', 'Type', 'Demandeur', 'Téléphone', 'Date', 'Statut'].join(','),
+      ...filteredPermits.map(p => [
+        p.parcel_number,
+        p.permit_request_data?.permitType === 'construction' ? 'Construction' : 'Régularisation',
+        p.permit_request_data?.applicantName || 'N/A',
+        p.permit_request_data?.applicantPhone || '',
+        format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr }),
+        p.permit_request_data?.status || 'pending'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `permis-construire-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
   };
 
   const handleViewPermit = (permit: PermitRequest) => {
@@ -187,10 +221,18 @@ const AdminBuildingPermits = () => {
       {/* Main Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Gestion des Demandes de Permis</CardTitle>
-          <CardDescription>
-            Examinez et traitez les demandes de permis de construire et de régularisation
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Gestion des Demandes de Permis</CardTitle>
+              <CardDescription>
+                Examinez et traitez les demandes de permis de construire et de régularisation
+              </CardDescription>
+            </div>
+            <Button variant="outline" onClick={exportToCSV} className="gap-2">
+              <Download className="h-4 w-4" />
+              Exporter CSV
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {/* Filters */}
@@ -248,7 +290,7 @@ const AdminBuildingPermits = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPermits.map((permit) => {
+                  {paginatedPermits.map((permit) => {
                     const permitData = permit.permit_request_data;
                     const status = permitData?.status || 'pending';
                     
@@ -281,6 +323,33 @@ const AdminBuildingPermits = () => {
                   })}
                 </TableBody>
               </Table>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Page {currentPage} sur {totalPages} ({filteredPermits.length} demandes)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

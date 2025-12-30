@@ -56,6 +56,8 @@ import AdminPaymentReconciliation from '@/components/admin/AdminPaymentReconcili
 import AdminResellerCommissions from '@/components/admin/AdminResellerCommissions';
 import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
 import AdminLandTitleRequests from '@/components/admin/AdminLandTitleRequests';
+import { AdminPermissions } from '@/components/admin/AdminPermissions';
+
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -144,6 +146,8 @@ const Admin = () => {
         return <AdminUsers onRefresh={fetchPendingCount} />;
       case 'roles':
         return <AdminUserRolesEnhanced />;
+      case 'permissions':
+        return <AdminPermissions />;
       case 'fraud':
         return <AdminFraudDetection />;
       case 'ccc':

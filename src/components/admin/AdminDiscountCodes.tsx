@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Tag, Eye, Power, Pencil, Trash2, TrendingUp, Users, DollarSign, Calendar, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Tag, Eye, Power, Pencil, TrendingUp, DollarSign, Calendar, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
@@ -39,6 +39,8 @@ const AdminDiscountCodes = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState<any>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 15;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -56,6 +58,11 @@ const AdminDiscountCodes = () => {
     fetchResellers();
   }, []);
 
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, filterStatus]);
+
   const filteredCodes = codes.filter((code) => {
     const matchesSearch = code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (code.resellers?.business_name || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -65,6 +72,12 @@ const AdminDiscountCodes = () => {
       !code.is_active;
     return matchesSearch && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredCodes.length / itemsPerPage);
+  const paginatedCodes = filteredCodes.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const stats = {
     total: codes.length,
@@ -373,7 +386,7 @@ const AdminDiscountCodes = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCodes.map((code) => (
+                  {paginatedCodes.map((code) => (
                     <TableRow key={code.id}>
                       <TableCell className="font-mono font-medium">{code.code}</TableCell>
                       <TableCell>
@@ -448,6 +461,33 @@ const AdminDiscountCodes = () => {
                   ))}
                 </TableBody>
               </Table>
+              
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    Page {currentPage} sur {totalPages} ({filteredCodes.length} codes)
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

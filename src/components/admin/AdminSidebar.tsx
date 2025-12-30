@@ -26,7 +26,8 @@ import {
   Receipt,
   TrendingUp,
   Smartphone,
-  TestTube
+  TestTube,
+  Key
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -48,7 +49,8 @@ const menuItems = [
     category: 'Gestion des utilisateurs',
     items: [
       { icon: Users, label: 'Utilisateurs', value: 'users', badge: null },
-      { icon: Shield, label: 'Rôles & Permissions', value: 'roles', badge: null },
+      { icon: Shield, label: 'Rôles', value: 'roles', badge: null },
+      { icon: Key, label: 'Permissions', value: 'permissions', badge: null },
       { icon: AlertTriangle, label: 'Détection Fraude', value: 'fraud', badge: null },
     ]
   },
