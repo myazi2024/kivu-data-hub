@@ -53,8 +53,13 @@ const AdminSystemHealth = () => {
       setDbStats({
         totalTables: tables.length,
         totalRecords,
-        connectionPool: Math.floor(Math.random() * 30) + 70, // Simulated
+        connectionPool: 85, // Note: valeur estimée, monitoring réel à implémenter
       });
+
+      // Test real latency for storage
+      const storageStart = Date.now();
+      const { error: storageError } = await supabase.storage.getBucket('avatars');
+      const storageLatency = Date.now() - storageStart;
 
       setServices([
         {
@@ -71,20 +76,20 @@ const AdminSystemHealth = () => {
         },
         {
           name: 'API REST',
-          status: 'online',
-          latency: dbLatency + 10,
+          status: dbError ? 'offline' : 'online',
+          latency: dbLatency,
           lastCheck: new Date(),
         },
         {
           name: 'Stockage fichiers',
-          status: 'online',
-          latency: 45,
+          status: storageError ? 'degraded' : storageLatency > 500 ? 'degraded' : 'online',
+          latency: storageLatency,
           lastCheck: new Date(),
         },
         {
           name: 'Edge Functions',
-          status: 'online',
-          latency: 120,
+          status: 'online', // Note: monitoring réel à implémenter via health check endpoint
+          latency: undefined,
           lastCheck: new Date(),
         },
       ]);
@@ -218,7 +223,7 @@ const AdminSystemHealth = () => {
                     <div>
                       <p className="text-xs font-medium">{service.name}</p>
                       <p className="text-[10px] text-muted-foreground">
-                        Latence: {service.latency}ms
+                        {service.latency !== undefined ? `Latence: ${service.latency}ms` : 'Statut estimé'}
                       </p>
                     </div>
                   </div>
@@ -243,7 +248,7 @@ const AdminSystemHealth = () => {
             </div>
             <Progress value={dbStats.connectionPool} className="h-2" />
             <p className="text-[10px] text-muted-foreground">
-              Pool de connexions en bonne santé
+              Valeur estimée - monitoring avancé à venir
             </p>
           </div>
         </CardContent>
