@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -37,6 +37,7 @@ import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { CartItem } from '@/hooks/useCart';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
+import LandTitleReviewDialog from './LandTitleReviewDialog';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -64,6 +65,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
   
@@ -377,6 +379,15 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     return true;
   };
 
+  const handleOpenReview = () => {
+    if (!user) {
+      setShowQuickAuth(true);
+      return;
+    }
+    
+    setShowReview(true);
+  };
+
   const handleProceedToPayment = () => {
     if (!user) {
       setShowQuickAuth(true);
@@ -388,6 +399,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
     
+    setShowReview(false);
     setShowPayment(true);
   };
 
@@ -426,8 +438,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setProofOfOwnershipFile(null);
     setActiveTab('requester');
     setShowPayment(false);
+    setShowReview(false);
     setShowSuccess(false);
     onOpenChange(false);
+  };
+
+  const handleEditFromReview = (tabId: string) => {
+    setActiveTab(tabId);
   };
 
   const totalAmount = calculateTotal(formData.selectedFees);
@@ -1482,16 +1499,16 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       Précédent
                     </Button>
                     <Button
-                      onClick={handleProceedToPayment}
-                      disabled={loading || !isFormValid()}
+                      onClick={handleOpenReview}
+                      disabled={loading}
                       className="flex-1 h-8 text-xs rounded-lg"
                     >
                       {loading ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          Payer ${totalAmount}
+                          <ClipboardCheck className="h-4 w-4 mr-2" />
+                          Vérifier et payer
                         </>
                       )}
                     </Button>
@@ -1504,13 +1521,34 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
         </DialogPortal>
       </Dialog>
 
+      {/* Review Dialog */}
+      <LandTitleReviewDialog
+        open={showReview}
+        onOpenChange={setShowReview}
+        onConfirm={handleProceedToPayment}
+        onEdit={handleEditFromReview}
+        formData={formData}
+        constructionType={constructionType}
+        constructionNature={constructionNature}
+        declaredUsage={declaredUsage}
+        nationality={nationality}
+        occupationDuration={occupationDuration}
+        requesterIdFile={requesterIdFile}
+        ownerIdFile={ownerIdFile}
+        proofOfOwnershipFile={proofOfOwnershipFile}
+        gpsCoordinates={gpsCoordinates}
+        parcelSides={parcelSides}
+        totalAmount={totalAmount}
+        deducedTitleType={deducedTitleType}
+      />
+
       {/* Quick Auth Dialog */}
       <QuickAuthDialog
         open={showQuickAuth}
         onOpenChange={setShowQuickAuth}
         onAuthSuccess={() => {
           setShowQuickAuth(false);
-          handleProceedToPayment();
+          handleOpenReview();
         }}
       />
     </>
