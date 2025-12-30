@@ -1052,7 +1052,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                       <div className="grid grid-cols-2 gap-2">
                         <div className="space-y-1.5">
-                          <Label className="text-sm">Type *</Label>
+                          <Label className="text-sm">Type de construct. *</Label>
                           <Select 
                             value={constructionType}
                             onValueChange={(value) => {
