@@ -638,12 +638,12 @@ const CadastralMap = () => {
                 </Button>
 
                 {/* Bouton Obtenir titre foncier - Design compact avec icône rouge */}
-                <div className="relative">
+                <div className="relative z-[1010]">
                   {/* Notification intelligente */}
                   {showLandTitleNotification && (
                     <div 
                       className={cn(
-                        "absolute top-full right-0 mt-2 animate-fade-in z-50",
+                        "absolute top-full right-0 mt-2 animate-fade-in z-[1020]",
                         isMobile ? "w-[260px]" : "w-[280px]"
                       )}
                     >
@@ -667,7 +667,7 @@ const CadastralMap = () => {
                       setShowLandTitleNotification(false);
                       setShowLandTitleTermsDialog(true);
                     }}
-                    className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
+                    className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative group`}
                     title="Obtenir un titre foncier"
                   >
                     <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
@@ -675,6 +675,10 @@ const CadastralMap = () => {
                     {showLandTitleNotification && (
                       <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
                     )}
+                    {/* Tooltip au survol/click prolongé */}
+                    <span className="absolute top-full left-1/2 -translate-x-1/2 mt-2 px-2 py-1 bg-foreground text-background text-xs rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity z-[1030] pointer-events-none shadow-lg">
+                      Obtenir un titre foncier
+                    </span>
                   </Button>
                 </div>
               </div>
