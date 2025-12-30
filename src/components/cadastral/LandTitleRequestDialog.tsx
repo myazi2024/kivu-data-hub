@@ -835,7 +835,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                       {formData.province && (
                         <div className="space-y-2 animate-fade-in">
-                          <Label className="text-sm">Type de section *</Label>
+                          <Label className="text-sm">Zone urbaine ou Zone rurale ? *</Label>
                           <div className="flex gap-2">
                             <button
                               type="button"
