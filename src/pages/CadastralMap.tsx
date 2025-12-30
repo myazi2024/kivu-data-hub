@@ -671,9 +671,9 @@ const CadastralMap = () => {
                     title="Obtenir un titre foncier"
                   >
                     <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                    {/* Indicateur de notification pulsant */}
+                    {/* Indicateur de notification pulsant jaune */}
                     {showLandTitleNotification && (
-                      <span className="absolute -top-1 -right-1 h-2.5 w-2.5 bg-white rounded-full animate-pulse" />
+                      <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
                     )}
                   </Button>
                 </div>
