@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,23 +7,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { 
   Plus, 
   Search, 
   Users, 
-  DollarSign, 
   TrendingUp, 
-  Eye,
-  Edit,
   Tag,
-  MoreVertical
+  Download,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useResellers } from '@/hooks/useResellers';
 import { useDiscountCodes } from '@/hooks/useDiscountCodes';
 import { useResellerSales } from '@/hooks/useResellerSales';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface AdminResellersProps {
   onRefresh?: () => void;
@@ -34,6 +33,8 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [selectedReseller, setSelectedReseller] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
   const [newResellerData, setNewResellerData] = useState({
     business_name: '',
     contact_phone: '',
@@ -48,15 +49,51 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
     max_usage: ''
   });
 
-  const { resellers, loading, createReseller, updateReseller, toggleResellerStatus } = useResellers();
+  const { resellers, loading, createReseller, toggleResellerStatus } = useResellers();
   const { codes, createDiscountCode } = useDiscountCodes();
   const { sales } = useResellerSales();
   const { toast } = useToast();
 
-  const filteredResellers = resellers.filter(reseller =>
+  const filteredResellers = useMemo(() => resellers.filter(reseller =>
     reseller.business_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     reseller.reseller_code.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ), [resellers, searchQuery]);
+
+  const totalPages = Math.ceil(filteredResellers.length / itemsPerPage);
+  const paginatedResellers = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return filteredResellers.slice(start, start + itemsPerPage);
+  }, [filteredResellers, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
+  const exportToCSV = () => {
+    const csv = [
+      ['Code', 'Entreprise', 'Contact', 'Commission %', 'Commission Fixe', 'Ventes', 'Statut', 'Créé le'].join(','),
+      ...filteredResellers.map(r => {
+        const stats = getResellerStats(r.id);
+        return [
+          r.reseller_code,
+          r.business_name || 'Non renseigné',
+          r.contact_phone || '',
+          r.commission_rate,
+          r.fixed_commission_usd,
+          stats.salesCount,
+          r.is_active ? 'Actif' : 'Inactif',
+          format(new Date(r.created_at), 'dd/MM/yyyy', { locale: fr })
+        ].join(',');
+      })
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `revendeurs-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+  };
 
   const handleCreateReseller = async () => {
     const result = await createReseller(newResellerData);
@@ -175,6 +212,11 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
               <Users className="h-5 w-5" />
               Gestion des Revendeurs
             </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={exportToCSV} className="gap-2">
+                <Download className="h-4 w-4" />
+                Exporter
+              </Button>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
                 <Button>
@@ -234,6 +276,7 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
         </CardHeader>
         
@@ -262,7 +305,7 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredResellers.map((reseller) => {
+              {paginatedResellers.map((reseller) => {
                 const stats = getResellerStats(reseller.id);
                 const resellerCodes = getResellerCodes(reseller.id);
                 
@@ -337,6 +380,33 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
           {filteredResellers.length === 0 && (
             <div className="text-center py-6 text-muted-foreground">
               {searchQuery ? 'Aucun revendeur trouvé' : 'Aucun revendeur enregistré'}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
+                Page {currentPage} sur {totalPages} ({filteredResellers.length} revendeurs)
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
