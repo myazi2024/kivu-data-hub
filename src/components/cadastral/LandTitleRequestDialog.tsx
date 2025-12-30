@@ -825,9 +825,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           <SelectTrigger className="h-9 text-sm rounded-xl border">
                             <SelectValue placeholder="Sélectionner la province" />
                           </SelectTrigger>
-                          <SelectContent className="rounded-xl max-h-48 overflow-y-auto">
+                          <SelectContent className="rounded-xl max-h-48 overflow-y-auto w-56">
                             {getAllProvinces().map(province => (
-                              <SelectItem key={province} value={province} className="text-sm py-2">{province}</SelectItem>
+                              <SelectItem key={province} value={province} className="text-sm py-2 rounded-lg">{province}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
