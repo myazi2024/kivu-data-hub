@@ -167,7 +167,15 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
                 </div>
               </div>
             )}
-            {!requesterComplete && <div className="text-amber-700 dark:text-amber-400">Champs requis manquants</div>}
+            {!requesterComplete && (
+              <button
+                type="button"
+                onClick={() => onEditTab("requester")}
+                className="text-amber-700 dark:text-amber-400 hover:underline cursor-pointer text-left"
+              >
+                Champs requis manquants →
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -254,7 +262,15 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
               </div>
             )}
 
-            {!locationComplete && <div className="text-amber-700 dark:text-amber-400">Champs requis manquants</div>}
+            {!locationComplete && (
+              <button
+                type="button"
+                onClick={() => onEditTab("location")}
+                className="text-amber-700 dark:text-amber-400 hover:underline cursor-pointer text-left"
+              >
+                Champs requis manquants →
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -291,7 +307,15 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
                 <span className="font-medium">Titre déduit:</span> {deducedTitleType.label}
               </div>
             )}
-            {!valorisationComplete && <div className="text-amber-700 dark:text-amber-400">Veuillez valider l’éligibilité</div>}
+            {!valorisationComplete && (
+              <button
+                type="button"
+                onClick={() => onEditTab("valorisation")}
+                className="text-amber-700 dark:text-amber-400 hover:underline cursor-pointer text-left"
+              >
+                Veuillez valider l'éligibilité →
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -309,12 +333,12 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
           </div>
           <div className="space-y-1 text-xs">
             <div>
-              <span className="font-medium">Pièce d’identité (demandeur):</span>{" "}
+              <span className="font-medium">Pièce d'identité (demandeur):</span>{" "}
               {requesterIdFile ? requesterIdFile.name : <span className="italic text-muted-foreground">Non jointe</span>}
             </div>
             {formData.requesterType === "representative" && (
               <div>
-                <span className="font-medium">Pièce d’identité (propriétaire):</span>{" "}
+                <span className="font-medium">Pièce d'identité (propriétaire):</span>{" "}
                 {ownerIdFile ? ownerIdFile.name : <span className="italic text-muted-foreground">Non jointe</span>}
               </div>
             )}
@@ -322,7 +346,15 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
               <span className="font-medium">Preuve de propriété:</span>{" "}
               {proofOfOwnershipFile ? proofOfOwnershipFile.name : <span className="italic text-muted-foreground">Non jointe</span>}
             </div>
-            {!documentsComplete && <div className="text-amber-700 dark:text-amber-400">Pièce d’identité du demandeur requise</div>}
+            {!documentsComplete && (
+              <button
+                type="button"
+                onClick={() => onEditTab("documents")}
+                className="text-amber-700 dark:text-amber-400 hover:underline cursor-pointer text-left"
+              >
+                Pièce d'identité du demandeur requise →
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -377,7 +409,7 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
             )}
           </Button>
         </div>
-        <p className="text-[10px] text-center text-muted-foreground mt-2">En procédant au paiement, vous confirmez l’exactitude des informations.</p>
+        <p className="text-[10px] text-center text-muted-foreground mt-2">En procédant au paiement, vous confirmez l'exactitude des informations.</p>
       </div>
     </div>
   );
