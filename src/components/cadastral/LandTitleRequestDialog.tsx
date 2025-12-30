@@ -816,52 +816,52 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label className="text-sm">Type de section *</Label>
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleInputChange('sectionType', 'urbaine')}
-                            className={cn(
-                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                              formData.sectionType === 'urbaine'
-                                ? 'bg-primary text-primary-foreground shadow-md'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
-                          >
-                            SU - Urbaine
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleInputChange('sectionType', 'rurale')}
-                            className={cn(
-                              "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
-                              formData.sectionType === 'rurale'
-                                ? 'bg-primary text-primary-foreground shadow-md'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                            )}
-                          >
-                            SR - Rurale
-                          </button>
-                        </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-sm">Province *</Label>
+                        <Select
+                          value={formData.province}
+                          onValueChange={(value) => handleInputChange('province', value)}
+                        >
+                          <SelectTrigger className="h-9 text-sm rounded-lg border">
+                            <SelectValue placeholder="Sélectionner la province" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-lg">
+                            {getAllProvinces().map(province => (
+                              <SelectItem key={province} value={province} className="text-sm py-2">{province}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
-                      {formData.sectionType && (
-                        <div className="space-y-1.5 animate-fade-in">
-                          <Label className="text-sm">Province *</Label>
-                          <Select
-                            value={formData.province}
-                            onValueChange={(value) => handleInputChange('province', value)}
-                          >
-                            <SelectTrigger className="h-9 text-sm rounded-lg border">
-                              <SelectValue placeholder="Sélectionner la province" />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-lg">
-                              {getAllProvinces().map(province => (
-                                <SelectItem key={province} value={province} className="text-sm py-2">{province}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                      {formData.province && (
+                        <div className="space-y-2 animate-fade-in">
+                          <Label className="text-sm">Type de section *</Label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleInputChange('sectionType', 'urbaine')}
+                              className={cn(
+                                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                formData.sectionType === 'urbaine'
+                                  ? 'bg-primary text-primary-foreground shadow-md'
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              )}
+                            >
+                              SU - Urbaine
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleInputChange('sectionType', 'rurale')}
+                              className={cn(
+                                "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                                formData.sectionType === 'rurale'
+                                  ? 'bg-primary text-primary-foreground shadow-md'
+                                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                              )}
+                            >
+                              SR - Rurale
+                            </button>
+                          </div>
                         </div>
                       )}
                     </CardContent>
