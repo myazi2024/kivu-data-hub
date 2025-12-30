@@ -37,7 +37,7 @@ import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
 import { CartItem } from '@/hooks/useCart';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
-import LandTitleReviewDialog from './LandTitleReviewDialog';
+import LandTitleReviewTab from './LandTitleReviewTab';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -65,7 +65,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [activeTab, setActiveTab] = useState('requester');
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
-  const [showReview, setShowReview] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
   
@@ -379,27 +378,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     return true;
   };
 
-  const handleOpenReview = () => {
-    if (!user) {
-      setShowQuickAuth(true);
-      return;
-    }
-    
-    setShowReview(true);
-  };
-
   const handleProceedToPayment = () => {
     if (!user) {
       setShowQuickAuth(true);
       return;
     }
-    
+
     if (!isFormValid()) {
-      toast({ title: "Formulaire incomplet", description: "Veuillez remplir tous les champs obligatoires", variant: "destructive" });
+      toast({
+        title: "Formulaire incomplet",
+        description: "Veuillez remplir tous les champs obligatoires",
+        variant: "destructive",
+      });
       return;
     }
-    
-    setShowReview(false);
+
     setShowPayment(true);
   };
 
@@ -438,56 +431,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setProofOfOwnershipFile(null);
     setActiveTab('requester');
     setShowPayment(false);
-    setShowReview(false);
     setShowSuccess(false);
     onOpenChange(false);
   };
 
-  const handleEditFromReview = (tabId: string) => {
-    setActiveTab(tabId);
-  };
 
   const totalAmount = calculateTotal(formData.selectedFees);
 
-  // Review dialog view
-  if (showReview) {
-    return (
-      <>
-        <LandTitleReviewDialog
-          open={showReview}
-          onOpenChange={setShowReview}
-          onConfirm={handleProceedToPayment}
-          onEdit={(tabId) => {
-            setShowReview(false);
-            setActiveTab(tabId);
-          }}
-          formData={formData}
-          constructionType={constructionType}
-          constructionNature={constructionNature}
-          declaredUsage={declaredUsage}
-          nationality={nationality}
-          occupationDuration={occupationDuration}
-          requesterIdFile={requesterIdFile}
-          ownerIdFile={ownerIdFile}
-          proofOfOwnershipFile={proofOfOwnershipFile}
-          gpsCoordinates={gpsCoordinates}
-          parcelSides={parcelSides}
-          totalAmount={totalAmount}
-          deducedTitleType={deducedTitleType}
-        />
-        
-        {/* Quick Auth Dialog */}
-        <QuickAuthDialog
-          open={showQuickAuth}
-          onOpenChange={setShowQuickAuth}
-          onAuthSuccess={() => {
-            setShowQuickAuth(false);
-            handleOpenReview();
-          }}
-        />
-      </>
-    );
-  }
 
   // Payment view
   if (showPayment) {
@@ -593,7 +543,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
             <ScrollArea className="h-[65vh] sm:h-[70vh]">
               <div className="space-y-4 pr-2">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                  <TabsList className="grid w-full grid-cols-5 mb-4">
+                  <TabsList className="grid w-full grid-cols-6 mb-4">
                     <TabsTrigger value="requester" className="text-xs gap-1">
                       <User className="h-3 w-3" />
                       <span className="hidden sm:inline">Demandeur</span>
@@ -613,6 +563,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                     <TabsTrigger value="payment" className="text-xs gap-1">
                       <CreditCard className="h-3 w-3" />
                       <span className="hidden sm:inline">Frais</span>
+                    </TabsTrigger>
+                    <TabsTrigger value="review" className="text-xs gap-1">
+                      <ClipboardCheck className="h-3 w-3" />
+                      <span className="hidden sm:inline">Envoi</span>
                     </TabsTrigger>
                   </TabsList>
 
@@ -1539,7 +1493,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       Précédent
                     </Button>
                     <Button
-                      onClick={handleOpenReview}
+                      onClick={() => setActiveTab('review')}
                       disabled={loading}
                       className="flex-1 h-8 text-xs rounded-lg"
                     >
@@ -1548,12 +1502,35 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       ) : (
                         <>
                           <ClipboardCheck className="h-4 w-4 mr-2" />
-                          Vérifier et payer
+                          Réviser
                         </>
                       )}
                     </Button>
                   </div>
-                </TabsContent>
+                  </TabsContent>
+
+                  {/* Tab: Review / Envoi */}
+                  <TabsContent value="review" className="space-y-4">
+                    <LandTitleReviewTab
+                      formData={formData}
+                      constructionType={constructionType}
+                      constructionNature={constructionNature}
+                      declaredUsage={declaredUsage}
+                      nationality={nationality}
+                      occupationDuration={occupationDuration}
+                      valorisationValidated={valorisationValidated}
+                      deducedTitleType={deducedTitleType}
+                      requesterIdFile={requesterIdFile}
+                      ownerIdFile={ownerIdFile}
+                      proofOfOwnershipFile={proofOfOwnershipFile}
+                      gpsCoordinates={gpsCoordinates}
+                      parcelSides={parcelSides}
+                      totalAmount={totalAmount}
+                      loading={loading}
+                      onEditTab={(tabId) => setActiveTab(tabId)}
+                      onProceedToPayment={handleProceedToPayment}
+                    />
+                  </TabsContent>
                 </Tabs>
               </div>
             </ScrollArea>
@@ -1567,7 +1544,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
         onOpenChange={setShowQuickAuth}
         onAuthSuccess={() => {
           setShowQuickAuth(false);
-          handleOpenReview();
+          handleProceedToPayment();
         }}
       />
     </>
