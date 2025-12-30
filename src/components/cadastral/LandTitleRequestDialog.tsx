@@ -1165,10 +1165,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                               <SelectContent className="rounded-xl">
                                 {NATIONALITY_OPTIONS.map((option) => (
                                   <SelectItem key={option.value} value={option.value} className="text-sm py-2">
-                                    <div className="flex items-center gap-2">
-                                      <span>{option.value === 'congolais' ? '🇨🇩' : '🌍'}</span>
-                                      <span>{option.label}</span>
-                                    </div>
+                                    {option.label}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
