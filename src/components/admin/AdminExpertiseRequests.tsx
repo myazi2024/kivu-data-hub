@@ -65,7 +65,7 @@ export const AdminExpertiseRequests: React.FC = () => {
   const [requests, setRequests] = useState<ExpertiseRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const itemsPerPage = 10;
@@ -91,7 +91,7 @@ export const AdminExpertiseRequests: React.FC = () => {
         .select('*', { count: 'exact' })
         .order('created_at', { ascending: false });
 
-      if (statusFilter !== 'all') {
+      if (statusFilter !== '_all') {
         query = query.eq('status', statusFilter);
       }
 
@@ -279,7 +279,7 @@ export const AdminExpertiseRequests: React.FC = () => {
                 <SelectValue placeholder="Filtrer par statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="_all">Tous les statuts</SelectItem>
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="assigned">Assigné</SelectItem>
                 <SelectItem value="in_progress">En cours</SelectItem>

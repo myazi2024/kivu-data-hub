@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -10,10 +9,10 @@ import {
   AlertTriangle, 
   Shield, 
   Eye,
-  TrendingUp,
   Users,
   Ban,
-  CheckCircle
+  CheckCircle,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -26,6 +25,9 @@ import {
   ResponsiveTableHead
 } from '@/components/ui/responsive-table';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface FraudAttempt {
   id: string;
@@ -67,12 +69,12 @@ export default function AdminFraudDetection() {
         .from('fraud_attempts')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(500);
 
       if (attemptsError) throw attemptsError;
       setFraudAttempts(attempts || []);
 
-      // Fetch suspicious users
+      // Fetch suspicious users with contribution stats in a single optimized query
       const { data: users, error: usersError } = await supabase
         .from('profiles')
         .select(`
@@ -89,21 +91,31 @@ export default function AdminFraudDetection() {
 
       if (usersError) throw usersError;
 
-      // Enrichir avec les stats de contributions
-      const enrichedUsers = await Promise.all(
-        (users || []).map(async (user) => {
-          const { data: contributions } = await supabase
-            .from('cadastral_contributions')
-            .select('id, is_suspicious')
-            .eq('user_id', user.user_id);
+      // Fetch all contributions for suspicious users in ONE query (fix N+1)
+      const userIds = (users || []).map(u => u.user_id);
+      let contributionStats: Record<string, { total: number; suspicious: number }> = {};
+      
+      if (userIds.length > 0) {
+        const { data: allContributions } = await supabase
+          .from('cadastral_contributions')
+          .select('user_id, is_suspicious')
+          .in('user_id', userIds);
 
-          return {
-            ...user,
-            total_contributions: contributions?.length || 0,
-            suspicious_contributions: contributions?.filter(c => c.is_suspicious).length || 0
-          };
-        })
-      );
+        // Aggregate contributions by user
+        (allContributions || []).forEach(c => {
+          if (!contributionStats[c.user_id]) {
+            contributionStats[c.user_id] = { total: 0, suspicious: 0 };
+          }
+          contributionStats[c.user_id].total++;
+          if (c.is_suspicious) contributionStats[c.user_id].suspicious++;
+        });
+      }
+
+      const enrichedUsers = (users || []).map(user => ({
+        ...user,
+        total_contributions: contributionStats[user.user_id]?.total || 0,
+        suspicious_contributions: contributionStats[user.user_id]?.suspicious || 0
+      }));
 
       setSuspiciousUsers(enrichedUsers);
     } catch (error: any) {
@@ -174,6 +186,51 @@ export default function AdminFraudDetection() {
     highSeverity: fraudAttempts.filter(a => a.severity === 'high').length,
     blockedUsers: suspiciousUsers.filter(u => u.is_blocked).length,
     usersWithStrikes: suspiciousUsers.filter(u => u.fraud_strikes > 0).length
+  };
+
+  // Pagination for fraud attempts
+  const {
+    currentPage: fraudPage,
+    pageSize: fraudPageSize,
+    totalPages: fraudTotalPages,
+    paginatedData: paginatedFraudAttempts,
+    goToPage: goToFraudPage,
+    goToNextPage: goToNextFraudPage,
+    goToPreviousPage: goToPreviousFraudPage,
+    changePageSize: changeFraudPageSize,
+    hasNextPage: hasNextFraudPage,
+    hasPreviousPage: hasPreviousFraudPage,
+    totalItems: totalFraudItems
+  } = usePagination(fraudAttempts, { initialPageSize: 20 });
+
+  // Pagination for suspicious users
+  const {
+    currentPage: userPage,
+    pageSize: userPageSize,
+    totalPages: userTotalPages,
+    paginatedData: paginatedUsers,
+    goToPage: goToUserPage,
+    goToNextPage: goToNextUserPage,
+    goToPreviousPage: goToPreviousUserPage,
+    changePageSize: changeUserPageSize,
+    hasNextPage: hasNextUserPage,
+    hasPreviousPage: hasPreviousUserPage,
+    totalItems: totalUserItems
+  } = usePagination(suspiciousUsers, { initialPageSize: 10 });
+
+  const handleExportCSV = () => {
+    exportToCSV({
+      filename: `fraud_detection_${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      headers: ['Date', 'Type', 'Gravité', 'Description', 'ID Utilisateur'],
+      data: fraudAttempts.map(a => [
+        format(new Date(a.created_at), 'dd/MM/yyyy HH:mm'),
+        a.fraud_type,
+        a.severity,
+        a.description || '',
+        a.user_id
+      ])
+    });
+    toast.success('Export CSV téléchargé');
   };
 
   if (loading) {
@@ -275,7 +332,7 @@ export default function AdminFraudDetection() {
                 </ResponsiveTableRow>
               </ResponsiveTableHeader>
               <ResponsiveTableBody>
-                {suspiciousUsers.length === 0 ? (
+                {paginatedUsers.length === 0 ? (
                   <ResponsiveTableRow>
                     <ResponsiveTableCell priority="high" label="">
                       <div className="text-center py-8 text-muted-foreground col-span-full">
@@ -284,7 +341,7 @@ export default function AdminFraudDetection() {
                     </ResponsiveTableCell>
                   </ResponsiveTableRow>
                 ) : (
-                  suspiciousUsers.map((user) => (
+                  paginatedUsers.map((user) => (
                     <ResponsiveTableRow key={user.user_id}>
                       <ResponsiveTableCell priority="high" label="Utilisateur">
                         <div className="font-medium text-sm">
@@ -346,16 +403,37 @@ export default function AdminFraudDetection() {
               </ResponsiveTableBody>
             </ResponsiveTable>
           </div>
+          {/* Pagination for users */}
+          {totalUserItems > 10 && (
+            <div className="p-2">
+              <PaginationControls
+                currentPage={userPage}
+                totalPages={userTotalPages}
+                pageSize={userPageSize}
+                totalItems={totalUserItems}
+                hasNextPage={hasNextUserPage}
+                hasPreviousPage={hasPreviousUserPage}
+                onPageChange={goToUserPage}
+                onPageSizeChange={changeUserPageSize}
+                onNextPage={goToNextUserPage}
+                onPreviousPage={goToPreviousUserPage}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 
       {/* Fraud Attempts */}
       <Card>
-        <CardHeader className="p-2 md:p-3">
+        <CardHeader className="p-2 md:p-3 flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-1.5 text-sm md:text-base">
             <AlertTriangle className="w-3.5 h-3.5 md:w-4 md:h-4" />
             Tentatives de Fraude Récentes
           </CardTitle>
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="h-3 w-3 mr-1" />
+            CSV
+          </Button>
         </CardHeader>
         <CardContent className="p-0 md:p-2">
           <div className="overflow-x-auto">
@@ -370,7 +448,7 @@ export default function AdminFraudDetection() {
                 </ResponsiveTableRow>
               </ResponsiveTableHeader>
               <ResponsiveTableBody>
-                {fraudAttempts.length === 0 ? (
+                {paginatedFraudAttempts.length === 0 ? (
                   <ResponsiveTableRow>
                     <ResponsiveTableCell priority="high" label="">
                       <div className="text-center py-8 text-muted-foreground col-span-full">
@@ -379,7 +457,7 @@ export default function AdminFraudDetection() {
                     </ResponsiveTableCell>
                   </ResponsiveTableRow>
                 ) : (
-                  fraudAttempts.map((attempt) => (
+                  paginatedFraudAttempts.map((attempt) => (
                     <ResponsiveTableRow key={attempt.id}>
                       <ResponsiveTableCell priority="low" label="Date">
                         <span className="text-xs md:text-sm">
@@ -443,6 +521,23 @@ export default function AdminFraudDetection() {
               </ResponsiveTableBody>
             </ResponsiveTable>
           </div>
+          {/* Pagination for fraud attempts */}
+          {totalFraudItems > 20 && (
+            <div className="p-2">
+              <PaginationControls
+                currentPage={fraudPage}
+                totalPages={fraudTotalPages}
+                pageSize={fraudPageSize}
+                totalItems={totalFraudItems}
+                hasNextPage={hasNextFraudPage}
+                hasPreviousPage={hasPreviousFraudPage}
+                onPageChange={goToFraudPage}
+                onPageSizeChange={changeFraudPageSize}
+                onNextPage={goToNextFraudPage}
+                onPreviousPage={goToPreviousFraudPage}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
