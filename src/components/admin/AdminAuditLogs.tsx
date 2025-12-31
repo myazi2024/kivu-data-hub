@@ -10,19 +10,20 @@ import { toast } from 'sonner';
 import { 
   Shield, 
   Search, 
-  Filter,
   Eye,
-  AlertCircle,
-  CheckCircle,
   Edit,
   Trash,
   Plus,
-  FileText
+  FileText,
+  Download
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { ResponsiveTable } from '@/components/ui/responsive-table';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface AuditLog {
   id: string;
@@ -44,6 +45,34 @@ export default function AdminAuditLogs() {
   const [actionFilter, setActionFilter] = useState('all');
   const [tableFilter, setTableFilter] = useState('all');
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+
+  // Filtered logs
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = !searchQuery || 
+      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.table_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.record_id?.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesAction = actionFilter === 'all' || log.action === actionFilter;
+    const matchesTable = tableFilter === 'all' || log.table_name === tableFilter;
+    
+    return matchesSearch && matchesAction && matchesTable;
+  });
+
+  // Pagination
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    paginatedData,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    changePageSize,
+    hasNextPage,
+    hasPreviousPage,
+    totalItems
+  } = usePagination(filteredLogs, { initialPageSize: 20 });
 
   useEffect(() => {
     fetchLogs();
@@ -91,20 +120,24 @@ export default function AdminAuditLogs() {
     );
   };
 
-  const filteredLogs = logs.filter(log => {
-    const matchesSearch = !searchQuery || 
-      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.table_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.record_id?.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesAction = actionFilter === 'all' || log.action === actionFilter;
-    const matchesTable = tableFilter === 'all' || log.table_name === tableFilter;
-    
-    return matchesSearch && matchesAction && matchesTable;
-  });
-
   const uniqueTables = Array.from(new Set(logs.map(l => l.table_name).filter(Boolean)));
   const uniqueActions = Array.from(new Set(logs.map(l => l.action)));
+
+  const handleExportCSV = () => {
+    exportToCSV({
+      filename: `audit_logs_${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      headers: ['Date', 'Action', 'Table', 'ID Enregistrement', 'Utilisateur', 'Adresse IP'],
+      data: filteredLogs.map(log => [
+        format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss'),
+        log.action,
+        log.table_name || '',
+        log.record_id || '',
+        log.user_id || 'System',
+        String(log.ip_address || '')
+      ])
+    });
+    toast.success('Export CSV téléchargé');
+  };
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">Chargement...</div>;
@@ -191,6 +224,10 @@ export default function AdminAuditLogs() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button variant="outline" size="sm" onClick={handleExportCSV}>
+                <Download className="h-4 w-4 mr-1" />
+                CSV
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -208,14 +245,14 @@ export default function AdminAuditLogs() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredLogs.length === 0 ? (
+                {paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       Aucun log trouvé
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredLogs.map((log) => (
+                  paginatedData.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="hidden lg:table-cell text-sm">
                         {format(new Date(log.created_at), 'dd/MM/yyyy HH:mm:ss', { locale: fr })}
@@ -312,6 +349,22 @@ export default function AdminAuditLogs() {
               </TableBody>
             </Table>
           </ResponsiveTable>
+          
+          {/* Pagination */}
+          <div className="mt-4">
+            <PaginationControls
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalItems={totalItems}
+              hasNextPage={hasNextPage}
+              hasPreviousPage={hasPreviousPage}
+              onPageChange={goToPage}
+              onPageSizeChange={changePageSize}
+              onNextPage={goToNextPage}
+              onPreviousPage={goToPreviousPage}
+            />
+          </div>
         </CardContent>
       </Card>
     </div>
