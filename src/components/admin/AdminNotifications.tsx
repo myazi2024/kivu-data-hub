@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Bell, Send, Trash2, Eye, Check, AlertCircle } from 'lucide-react';
+import { Loader2, Bell, Send, Trash2, Eye, Check, AlertCircle, Search, Download } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +27,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface Notification {
   id: string;
@@ -58,6 +62,9 @@ export const AdminNotifications: React.FC = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [notificationToDelete, setNotificationToDelete] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>('_all');
+  const [statusFilter, setStatusFilter] = useState<string>('_all');
   
   // Formulaire pour nouvelle notification
   const [newNotification, setNewNotification] = useState({
@@ -68,6 +75,47 @@ export const AdminNotifications: React.FC = () => {
     target: 'all' as 'all' | 'specific'
   });
 
+  // Filtered notifications
+  const filteredNotifications = useMemo(() => {
+    return notifications.filter(notification => {
+      const matchesSearch = 
+        notification.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        notification.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        notification.profiles?.full_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        notification.profiles?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesType = typeFilter === '_all' || notification.type === typeFilter;
+      const matchesStatus = statusFilter === '_all' || 
+        (statusFilter === 'read' && notification.is_read) ||
+        (statusFilter === 'unread' && !notification.is_read);
+      return matchesSearch && matchesType && matchesStatus;
+    });
+  }, [notifications, searchQuery, typeFilter, statusFilter]);
+
+  // Pagination
+  const pagination = usePagination(filteredNotifications, { initialPageSize: 20 });
+
+  // CSV Export
+  const exportToCSV = () => {
+    const csv = [
+      ['Date', 'Utilisateur', 'Type', 'Titre', 'Message', 'Statut'].join(','),
+      ...filteredNotifications.map(n => [
+        format(new Date(n.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+        n.profiles?.full_name || n.profiles?.email || 'N/A',
+        n.type,
+        `"${n.title.replace(/"/g, '""')}"`,
+        `"${n.message.replace(/"/g, '""')}"`,
+        n.is_read ? 'Lu' : 'Non lu'
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `notifications-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+  };
+
   useEffect(() => {
     fetchNotifications();
     fetchUsers();
@@ -77,12 +125,11 @@ export const AdminNotifications: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch notifications
+      // Fetch notifications without limit
       const { data: notifData, error: notifError } = await supabase
         .from('notifications')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .order('created_at', { ascending: false });
 
       if (notifError) throw notifError;
 
@@ -389,21 +436,60 @@ export const AdminNotifications: React.FC = () => {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Bell className="h-5 w-5" />
-            Historique des notifications ({notifications.length})
+            Historique des notifications ({filteredNotifications.length})
           </CardTitle>
           <CardDescription>
             Gérer et consulter toutes les notifications système envoyées
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
+          {/* Filters */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par titre, message, utilisateur..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-9"
+              />
+            </div>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full sm:w-[140px] h-9">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Tous types</SelectItem>
+                <SelectItem value="info">Info</SelectItem>
+                <SelectItem value="success">Succès</SelectItem>
+                <SelectItem value="warning">Avertissement</SelectItem>
+                <SelectItem value="error">Erreur</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[140px] h-9">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Tous statuts</SelectItem>
+                <SelectItem value="read">Lus</SelectItem>
+                <SelectItem value="unread">Non lus</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button variant="outline" size="sm" onClick={exportToCSV} className="h-9 gap-1">
+              <Download className="h-4 w-4" />
+              Exporter
+            </Button>
+          </div>
+
           {loading && notifications.length === 0 ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : notifications.length === 0 ? (
+          ) : filteredNotifications.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Bell className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>Aucune notification envoyée</p>
+              <p>Aucune notification trouvée</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -420,15 +506,10 @@ export const AdminNotifications: React.FC = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {notifications.map((notification) => (
+                  {pagination.paginatedData.map((notification) => (
                     <TableRow key={notification.id}>
                       <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                        {new Date(notification.created_at).toLocaleDateString('fr-FR', {
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
+                        {format(new Date(notification.created_at), 'dd MMM HH:mm', { locale: fr })}
                       </TableCell>
                       <TableCell className="text-sm">
                         {notification.profiles?.full_name || notification.profiles?.email || 'N/A'}
@@ -470,6 +551,19 @@ export const AdminNotifications: React.FC = () => {
                   ))}
                 </TableBody>
               </Table>
+              
+              <PaginationControls
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                hasNextPage={pagination.hasNextPage}
+                hasPreviousPage={pagination.hasPreviousPage}
+                onPageChange={pagination.goToPage}
+                onPageSizeChange={pagination.changePageSize}
+                onNextPage={pagination.goToNextPage}
+                onPreviousPage={pagination.goToPreviousPage}
+              />
             </div>
           )}
         </CardContent>

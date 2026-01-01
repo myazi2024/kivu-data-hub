@@ -8,11 +8,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Gift, Eye, Ban, TrendingUp, DollarSign, AlertCircle, Search, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Gift, Eye, Ban, TrendingUp, DollarSign, AlertCircle, Search, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { getCodeStatus } from '@/utils/cccCodeUtils';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
 
 interface CCCCode {
   id: string;
@@ -48,8 +50,6 @@ export default function AdminCCCCodes() {
   const [selectedCode, setSelectedCode] = useState<CCCCode | null>(null);
   const [showInvalidateDialog, setShowInvalidateDialog] = useState(false);
   const [invalidationReason, setInvalidationReason] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
 
   useEffect(() => {
     fetchCodes();
@@ -142,16 +142,8 @@ export default function AdminCCCCodes() {
     code.parcel_number.toLowerCase().includes(searchQuery.toLowerCase())
   ), [codes, searchQuery]);
 
-  const totalPages = Math.ceil(filteredCodes.length / itemsPerPage);
-  const paginatedCodes = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredCodes.slice(start, start + itemsPerPage);
-  }, [filteredCodes, currentPage, itemsPerPage]);
-
-  // Reset to page 1 when search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+  // Use usePagination hook
+  const pagination = usePagination(filteredCodes, { initialPageSize: 15 });
 
   if (loading) {
     return <div className="flex items-center justify-center h-64">Chargement...</div>;
@@ -268,14 +260,14 @@ export default function AdminCCCCodes() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {paginatedCodes.length === 0 ? (
+                {pagination.paginatedData.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-6 text-xs text-muted-foreground">
                       Aucun code trouvé
                     </TableCell>
                   </TableRow>
                 ) : (
-                  paginatedCodes.map((code) => (
+                  pagination.paginatedData.map((code) => (
                     <TableRow key={code.id} className="text-xs">
                       <TableCell className="font-mono font-semibold p-2">{code.code}</TableCell>
                       <TableCell className="hidden sm:table-cell p-2 text-xs">{code.parcel_number}</TableCell>
@@ -363,31 +355,20 @@ export default function AdminCCCCodes() {
           </div>
           
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t">
-              <p className="text-xs text-muted-foreground">
-                Page {currentPage} sur {totalPages} ({filteredCodes.length} codes)
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="h-8"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="h-8"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
+          {pagination.totalPages > 1 && (
+            <div className="px-3 sm:px-6 pb-4">
+              <PaginationControls
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                hasNextPage={pagination.hasNextPage}
+                hasPreviousPage={pagination.hasPreviousPage}
+                onPageChange={pagination.goToPage}
+                onPageSizeChange={pagination.changePageSize}
+                onNextPage={pagination.goToNextPage}
+                onPreviousPage={pagination.goToPreviousPage}
+              />
             </div>
           )}
         </CardContent>
