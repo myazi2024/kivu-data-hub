@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +13,7 @@ import {
   Users, 
   TrendingUp, 
   Tag,
-  Download,
-  ChevronLeft,
-  ChevronRight
+  Download
 } from 'lucide-react';
 import { useResellers } from '@/hooks/useResellers';
 import { useDiscountCodes } from '@/hooks/useDiscountCodes';
@@ -23,6 +21,8 @@ import { useResellerSales } from '@/hooks/useResellerSales';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
 
 interface AdminResellersProps {
   onRefresh?: () => void;
@@ -33,8 +33,6 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCodeDialog, setShowCodeDialog] = useState(false);
   const [selectedReseller, setSelectedReseller] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
   const [newResellerData, setNewResellerData] = useState({
     business_name: '',
     contact_phone: '',
@@ -59,15 +57,8 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
     reseller.reseller_code.toLowerCase().includes(searchQuery.toLowerCase())
   ), [resellers, searchQuery]);
 
-  const totalPages = Math.ceil(filteredResellers.length / itemsPerPage);
-  const paginatedResellers = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return filteredResellers.slice(start, start + itemsPerPage);
-  }, [filteredResellers, currentPage, itemsPerPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+  // Use usePagination hook
+  const pagination = usePagination(filteredResellers, { initialPageSize: 10 });
 
   const exportToCSV = () => {
     const csv = [
@@ -305,7 +296,7 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedResellers.map((reseller) => {
+              {pagination.paginatedData.map((reseller) => {
                 const stats = getResellerStats(reseller.id);
                 const resellerCodes = getResellerCodes(reseller.id);
                 
@@ -384,30 +375,19 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
           )}
 
           {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Page {currentPage} sur {totalPages} ({filteredResellers.length} revendeurs)
-              </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          {pagination.totalPages > 1 && (
+            <PaginationControls
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+              hasNextPage={pagination.hasNextPage}
+              hasPreviousPage={pagination.hasPreviousPage}
+              onPageChange={pagination.goToPage}
+              onPageSizeChange={pagination.changePageSize}
+              onNextPage={pagination.goToNextPage}
+              onPreviousPage={pagination.goToPreviousPage}
+            />
           )}
         </CardContent>
       </Card>

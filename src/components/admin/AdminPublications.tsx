@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, Eye, FileText, DollarSign } from 'lucide-react';
+import { Plus, Edit, Trash2, FileText, Search, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface Publication {
   id: string;
@@ -34,6 +38,9 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
   const [loading, setLoading] = useState(true);
   const [editingPublication, setEditingPublication] = useState<Publication | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('_all');
+  const [categoryFilter, setCategoryFilter] = useState<string>('_all');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -43,6 +50,42 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
     status: 'draft',
     featured: false
   });
+
+  // Filtered publications
+  const filteredPublications = useMemo(() => {
+    return publications.filter(pub => {
+      const matchesSearch = pub.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (pub.description && pub.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      const matchesStatus = statusFilter === '_all' || pub.status === statusFilter;
+      const matchesCategory = categoryFilter === '_all' || pub.category === categoryFilter;
+      return matchesSearch && matchesStatus && matchesCategory;
+    });
+  }, [publications, searchQuery, statusFilter, categoryFilter]);
+
+  // Pagination
+  const pagination = usePagination(filteredPublications, { initialPageSize: 10 });
+
+  // CSV Export
+  const exportToCSV = () => {
+    const csv = [
+      ['Titre', 'Catégorie', 'Prix USD', 'Statut', 'Téléchargements', 'Date'].join(','),
+      ...filteredPublications.map(p => [
+        `"${p.title.replace(/"/g, '""')}"`,
+        p.category,
+        p.price_usd,
+        p.status,
+        p.download_count,
+        format(new Date(p.created_at), 'dd/MM/yyyy', { locale: fr })
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `publications-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+  };
 
   useEffect(() => {
     fetchPublications();
@@ -151,24 +194,30 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
   };
 
   if (loading) {
-    return <div>Chargement...</div>;
+    return <div className="flex items-center justify-center h-64">Chargement...</div>;
   }
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5" />
-            Gestion des Publications
-          </CardTitle>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-            <DialogTrigger asChild>
-              <Button onClick={resetForm}>
-                <Plus className="w-4 h-4 mr-2" />
-                Nouvelle Publication
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Gestion des Publications ({filteredPublications.length})
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={exportToCSV} className="gap-1">
+                <Download className="h-4 w-4" />
+                Exporter
               </Button>
-            </DialogTrigger>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={resetForm}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nouvelle Publication
+                  </Button>
+                </DialogTrigger>
             <DialogContent className="max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
@@ -247,8 +296,46 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
                   </Button>
                 </div>
               </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+            </div>
+          </div>
+          
+          {/* Search and Filters */}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par titre ou description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 h-9"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-[140px] h-9">
+                <SelectValue placeholder="Statut" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Tous statuts</SelectItem>
+                <SelectItem value="draft">Brouillon</SelectItem>
+                <SelectItem value="published">Publié</SelectItem>
+                <SelectItem value="archived">Archivé</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="w-full sm:w-[140px] h-9">
+                <SelectValue placeholder="Catégorie" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="_all">Toutes catégories</SelectItem>
+                <SelectItem value="research">Recherche</SelectItem>
+                <SelectItem value="report">Rapport</SelectItem>
+                <SelectItem value="analysis">Analyse</SelectItem>
+                <SelectItem value="guide">Guide</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -265,36 +352,61 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {publications.map((publication) => (
-              <TableRow key={publication.id}>
-                <TableCell className="font-medium">{publication.title}</TableCell>
-                <TableCell>{publication.category}</TableCell>
-                <TableCell>${publication.price_usd}</TableCell>
-                <TableCell>{getStatusBadge(publication.status)}</TableCell>
-                <TableCell>{publication.download_count}</TableCell>
-                <TableCell>{new Date(publication.created_at).toLocaleDateString()}</TableCell>
-                <TableCell>
-                  <div className="flex space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => openEditDialog(publication)}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(publication.id)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+            {pagination.paginatedData.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  {searchQuery || statusFilter !== '_all' || categoryFilter !== '_all' 
+                    ? 'Aucune publication trouvée avec ces filtres' 
+                    : 'Aucune publication'}
                 </TableCell>
               </TableRow>
-            ))}
+            ) : (
+              pagination.paginatedData.map((publication) => (
+                <TableRow key={publication.id}>
+                  <TableCell className="font-medium">{publication.title}</TableCell>
+                  <TableCell>{publication.category}</TableCell>
+                  <TableCell>${publication.price_usd}</TableCell>
+                  <TableCell>{getStatusBadge(publication.status)}</TableCell>
+                  <TableCell>{publication.download_count}</TableCell>
+                  <TableCell>{format(new Date(publication.created_at), 'dd/MM/yyyy', { locale: fr })}</TableCell>
+                  <TableCell>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openEditDialog(publication)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDelete(publication.id)}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
+        
+        {pagination.totalPages > 1 && (
+          <PaginationControls
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalItems}
+            hasNextPage={pagination.hasNextPage}
+            hasPreviousPage={pagination.hasPreviousPage}
+            onPageChange={pagination.goToPage}
+            onPageSizeChange={pagination.changePageSize}
+            onNextPage={pagination.goToNextPage}
+            onPreviousPage={pagination.goToPreviousPage}
+          />
+        )}
       </CardContent>
     </Card>
   );
