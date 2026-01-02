@@ -5,14 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useDiscountCodes } from '@/hooks/useDiscountCodes';
 import { useResellers } from '@/hooks/useResellers';
+import { usePagination } from '@/hooks/usePagination';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  ResponsiveTable,
+  ResponsiveTableBody,
+  ResponsiveTableCell,
+  ResponsiveTableHead,
+  ResponsiveTableHeader,
+  ResponsiveTableRow,
+} from '@/components/ui/responsive-table';
 import {
   Dialog,
   DialogContent,
@@ -24,22 +25,23 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Search, Tag, Eye, Power, Pencil, TrendingUp, DollarSign, Calendar, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Tag, Eye, Power, Pencil, TrendingUp, DollarSign, Calendar, AlertTriangle, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 const AdminDiscountCodes = () => {
   const { codes, loading, fetchAllCodes, createDiscountCode, updateDiscountCode, toggleCodeStatus } = useDiscountCodes();
   const { resellers, fetchResellers } = useResellers();
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
+  const [filterStatus, setFilterStatus] = useState<'_all' | 'active' | 'inactive'>('_all');
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedCode, setSelectedCode] = useState<any>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
 
   // Form state
@@ -58,26 +60,34 @@ const AdminDiscountCodes = () => {
     fetchResellers();
   }, []);
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchTerm, filterStatus]);
-
   const filteredCodes = codes.filter((code) => {
     const matchesSearch = code.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (code.resellers?.business_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = 
-      filterStatus === 'all' ? true :
+      filterStatus === '_all' ? true :
       filterStatus === 'active' ? code.is_active :
       !code.is_active;
     return matchesSearch && matchesStatus;
   });
 
-  const totalPages = Math.ceil(filteredCodes.length / itemsPerPage);
-  const paginatedCodes = filteredCodes.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const {
+    currentPage,
+    pageSize,
+    paginatedData: paginatedCodes,
+    totalPages,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    changePageSize,
+    hasNextPage,
+    hasPreviousPage,
+    totalItems
+  } = usePagination(filteredCodes, { initialPageSize: 15 });
+
+  // Reset page when filters change
+  useEffect(() => {
+    goToPage(1);
+  }, [searchTerm, filterStatus]);
 
   const stats = {
     total: codes.length,
@@ -86,6 +96,21 @@ const AdminDiscountCodes = () => {
     totalDiscount: codes.reduce((sum, c) => {
       return sum + ((c.discount_amount_usd || 0) * c.usage_count);
     }, 0)
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['Code', 'Revendeur', 'Remise', 'Utilisations', 'Expiration', 'Statut', 'Créé le'];
+    const data = filteredCodes.map(code => [
+      code.code,
+      code.resellers?.business_name || 'Non configuré',
+      code.discount_percentage > 0 ? `${code.discount_percentage}%` : `$${code.discount_amount_usd}`,
+      `${code.usage_count}${code.max_usage ? ` / ${code.max_usage}` : ''}`,
+      code.expires_at ? format(new Date(code.expires_at), 'dd/MM/yyyy', { locale: fr }) : 'Jamais',
+      code.is_active ? 'Actif' : 'Inactif',
+      format(new Date(code.created_at), 'dd/MM/yyyy', { locale: fr })
+    ]);
+    exportToCSV({ headers, data, filename: `codes-remise-${format(new Date(), 'yyyy-MM-dd')}.csv` });
+    toast.success('Export CSV réussi');
   };
 
   const handleCreate = async () => {
@@ -230,12 +255,18 @@ const AdminDiscountCodes = () => {
       {/* Main Card */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
               <CardTitle>Gestion des Codes de Remise</CardTitle>
               <CardDescription>
                 Créez et gérez les codes de remise pour les revendeurs
               </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={handleExportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Exporter CSV
+              </Button>
             </div>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
               <DialogTrigger asChild>
@@ -354,12 +385,12 @@ const AdminDiscountCodes = () => {
                 />
               </div>
             </div>
-            <Select value={filterStatus} onValueChange={(value: any) => setFilterStatus(value)}>
+            <Select value={filterStatus} onValueChange={(value: '_all' | 'active' | 'inactive') => setFilterStatus(value)}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les codes</SelectItem>
+                <SelectItem value="_all">Tous les codes</SelectItem>
                 <SelectItem value="active">Actifs</SelectItem>
                 <SelectItem value="inactive">Inactifs</SelectItem>
               </SelectContent>
@@ -372,24 +403,24 @@ const AdminDiscountCodes = () => {
               <AlertDescription>Aucun code de remise trouvé.</AlertDescription>
             </Alert>
           ) : (
-            <div className="border rounded-lg">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Code</TableHead>
-                    <TableHead>Revendeur</TableHead>
-                    <TableHead>Remise</TableHead>
-                    <TableHead>Utilisations</TableHead>
-                    <TableHead>Expiration</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+            <div className="border rounded-lg overflow-x-auto">
+              <ResponsiveTable>
+                <ResponsiveTableHeader>
+                  <ResponsiveTableRow>
+                    <ResponsiveTableHead>Code</ResponsiveTableHead>
+                    <ResponsiveTableHead>Revendeur</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="low">Remise</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="low">Utilisations</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="low">Expiration</ResponsiveTableHead>
+                    <ResponsiveTableHead>Statut</ResponsiveTableHead>
+                    <ResponsiveTableHead className="text-right">Actions</ResponsiveTableHead>
+                  </ResponsiveTableRow>
+                </ResponsiveTableHeader>
+                <ResponsiveTableBody>
                   {paginatedCodes.map((code) => (
-                    <TableRow key={code.id}>
-                      <TableCell className="font-mono font-medium">{code.code}</TableCell>
-                      <TableCell>
+                    <ResponsiveTableRow key={code.id}>
+                      <ResponsiveTableCell label="Code" className="font-mono font-medium">{code.code}</ResponsiveTableCell>
+                      <ResponsiveTableCell label="Revendeur">
                         <div className="flex flex-col">
                           <span className="font-medium">
                             {code.resellers?.business_name || 'Non configuré'}
@@ -405,19 +436,19 @@ const AdminDiscountCodes = () => {
                             </span>
                           )}
                         </div>
-                      </TableCell>
-                      <TableCell>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell label="Remise" priority="low">
                         {code.discount_percentage > 0 
                           ? `${code.discount_percentage}%` 
                           : `$${code.discount_amount_usd}`}
-                      </TableCell>
-                      <TableCell>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell label="Utilisations" priority="low">
                         <Badge variant="outline">
                           {code.usage_count}
                           {code.max_usage && ` / ${code.max_usage}`}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell label="Expiration" priority="low">
                         {code.expires_at ? (
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
@@ -426,13 +457,13 @@ const AdminDiscountCodes = () => {
                         ) : (
                           <span className="text-muted-foreground">Aucune</span>
                         )}
-                      </TableCell>
-                      <TableCell>
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell label="Statut">
                         <Badge variant={code.is_active ? 'default' : 'secondary'}>
                           {code.is_active ? 'Actif' : 'Inactif'}
                         </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell label="Actions" className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
                             variant="ghost"
@@ -456,38 +487,25 @@ const AdminDiscountCodes = () => {
                             <Power className={`h-4 w-4 ${code.is_active ? 'text-green-600' : 'text-muted-foreground'}`} />
                           </Button>
                         </div>
-                      </TableCell>
-                    </TableRow>
+                      </ResponsiveTableCell>
+                    </ResponsiveTableRow>
                   ))}
-                </TableBody>
-              </Table>
+                </ResponsiveTableBody>
+              </ResponsiveTable>
               
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between mt-4 pt-4 border-t">
-                  <p className="text-sm text-muted-foreground">
-                    Page {currentPage} sur {totalPages} ({filteredCodes.length} codes)
-                  </p>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                      disabled={currentPage === 1}
-                    >
-                      <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                      disabled={currentPage === totalPages}
-                    >
-                      <ChevronRight className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <PaginationControls
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                onPageSizeChange={changePageSize}
+                onNextPage={goToNextPage}
+                onPreviousPage={goToPreviousPage}
+                onPageChange={goToPage}
+                hasNextPage={hasNextPage}
+                hasPreviousPage={hasPreviousPage}
+                totalItems={totalItems}
+              />
             </div>
           )}
         </CardContent>
