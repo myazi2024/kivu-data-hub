@@ -66,6 +66,8 @@ const Admin = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingLandTitleCount, setPendingLandTitleCount] = useState(0);
   const [pendingPermitsCount, setPendingPermitsCount] = useState(0);
+  const [pendingMutationsCount, setPendingMutationsCount] = useState(0);
+  const [pendingExpertiseCount, setPendingExpertiseCount] = useState(0);
   const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
 
   // Verify admin role from user_roles table
@@ -104,6 +106,8 @@ const Admin = () => {
       fetchPendingCount();
       fetchPendingLandTitleCount();
       fetchPendingPermitsCount();
+      fetchPendingMutationsCount();
+      fetchPendingExpertiseCount();
     }
   }, [hasAdminRole]);
 
@@ -153,6 +157,36 @@ const Admin = () => {
       }
     } catch (error) {
       console.error('Erreur compteur permis:', error);
+    }
+  };
+
+  const fetchPendingMutationsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('mutation_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (!error) {
+        setPendingMutationsCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur mutations:', error);
+    }
+  };
+
+  const fetchPendingExpertiseCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('real_estate_expertise_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (!error) {
+        setPendingExpertiseCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur expertises:', error);
     }
   };
 
@@ -289,6 +323,8 @@ const Admin = () => {
           pendingCount={pendingCount} 
           pendingLandTitleCount={pendingLandTitleCount}
           pendingPermitsCount={pendingPermitsCount}
+          pendingMutationsCount={pendingMutationsCount}
+          pendingExpertiseCount={pendingExpertiseCount}
         />
       </aside>
 
@@ -303,6 +339,8 @@ const Admin = () => {
             pendingCount={pendingCount}
             pendingLandTitleCount={pendingLandTitleCount}
             pendingPermitsCount={pendingPermitsCount}
+            pendingMutationsCount={pendingMutationsCount}
+            pendingExpertiseCount={pendingExpertiseCount}
             onNavigate={() => setMobileMenuOpen(false)}
           />
         </SheetContent>

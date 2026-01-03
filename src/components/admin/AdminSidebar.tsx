@@ -36,6 +36,8 @@ interface AdminSidebarProps {
   pendingCount?: number;
   pendingLandTitleCount?: number;
   pendingPermitsCount?: number;
+  pendingMutationsCount?: number;
+  pendingExpertiseCount?: number;
   onNavigate?: () => void;
 }
 
@@ -98,9 +100,9 @@ const menuItems = [
       { icon: Building2, label: 'Permis de Construire', value: 'permits', badge: 'permits' },
       { icon: FileText, label: 'Config Frais Permis', value: 'permit-fees-config', badge: null },
       { icon: FileText, label: 'Demandes Titres Fonciers', value: 'land-title-requests', badge: 'landTitle' },
-      { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: null },
+      { icon: FileText, label: 'Demandes Mutation', value: 'mutations', badge: 'mutations' },
       { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null },
-      { icon: FileCheck, label: 'Expertises Immob.', value: 'expertise-requests', badge: null },
+      { icon: FileCheck, label: 'Expertises Immob.', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
       { icon: AlertTriangle, label: 'Conflits Limites', value: 'boundary-conflicts', badge: null },
       { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },
@@ -128,12 +130,23 @@ const menuItems = [
   },
 ];
 
-export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, onNavigate }: AdminSidebarProps) {
+export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, onNavigate }: AdminSidebarProps) {
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
   const handleClick = () => {
     if (onNavigate) onNavigate();
+  };
+
+  const getBadgeCount = (badge: string | null) => {
+    switch (badge) {
+      case 'pending': return pendingCount || 0;
+      case 'landTitle': return pendingLandTitleCount || 0;
+      case 'permits': return pendingPermitsCount || 0;
+      case 'mutations': return pendingMutationsCount || 0;
+      case 'expertise': return pendingExpertiseCount || 0;
+      default: return 0;
+    }
   };
 
   return (
@@ -148,12 +161,8 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
               {section.items.map((item) => {
                 const isActive = currentTab === item.value;
                 const Icon = item.icon;
-                const showPendingBadge = (item.badge === 'pending' && pendingCount && pendingCount > 0) ||
-                  (item.badge === 'landTitle' && pendingLandTitleCount && pendingLandTitleCount > 0) ||
-                  (item.badge === 'permits' && pendingPermitsCount && pendingPermitsCount > 0);
-                const badgeCount = item.badge === 'pending' ? pendingCount : 
-                  item.badge === 'landTitle' ? pendingLandTitleCount : 
-                  item.badge === 'permits' ? pendingPermitsCount : 0;
+                const badgeCount = getBadgeCount(item.badge);
+                const showPendingBadge = badgeCount > 0;
 
                 return (
                   <Link
