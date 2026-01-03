@@ -6,9 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Receipt, Search, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { RefreshCw, Receipt, Search, CheckCircle2, XCircle, Clock, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface TaxRecord {
   id: string;
@@ -25,8 +28,8 @@ const AdminTaxHistory = () => {
   const [records, setRecords] = useState<TaxRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterYear, setFilterYear] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('_all');
+  const [filterYear, setFilterYear] = useState<string>('_all');
 
   useEffect(() => {
     fetchRecords();
@@ -73,18 +76,46 @@ const AdminTaxHistory = () => {
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'paid': return 'Payé';
+      case 'pending': return 'En attente';
+      case 'overdue': return 'Impayé';
+      default: return status;
+    }
+  };
+
   const years = [...new Set(records.map(r => r.tax_year))].sort((a, b) => b - a);
   
   const filteredRecords = records.filter(r => {
-    const matchesSearch = r.parcel_number?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === 'all' || r.payment_status === filterStatus;
-    const matchesYear = filterYear === 'all' || r.tax_year.toString() === filterYear;
+    const matchesSearch = searchTerm === '' || r.parcel_number?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === '_all' || r.payment_status === filterStatus;
+    const matchesYear = filterYear === '_all' || r.tax_year.toString() === filterYear;
     return matchesSearch && matchesStatus && matchesYear;
   });
+
+  const pagination = usePagination(filteredRecords, { initialPageSize: 15 });
+
+  const paginatedRecords = pagination.paginatedData;
 
   const paidTotal = records.filter(r => r.payment_status === 'paid').reduce((sum, r) => sum + r.amount_usd, 0);
   const pendingTotal = records.filter(r => r.payment_status !== 'paid').reduce((sum, r) => sum + r.amount_usd, 0);
   const currentYearPaid = records.filter(r => r.tax_year === new Date().getFullYear() && r.payment_status === 'paid').length;
+
+  const handleExportCSV = () => {
+    const headers = ['Parcelle', 'Année fiscale', 'Montant USD', 'Statut', 'Date paiement', 'Date création'];
+    const data = filteredRecords.map(r => [
+      r.parcel_number || '',
+      r.tax_year,
+      r.amount_usd,
+      getStatusLabel(r.payment_status),
+      r.payment_date || '',
+      r.created_at
+    ]);
+    exportToCSV({ filename: 'historique_taxes.csv', headers, data });
+  };
+
+  const resetPagination = () => pagination.goToPage(1);
 
   return (
     <div className="space-y-3 md:space-y-4">
@@ -95,10 +126,16 @@ const AdminTaxHistory = () => {
             <h2 className="text-sm md:text-base font-bold">Historique Taxes Foncières</h2>
             <p className="text-[10px] md:text-xs text-muted-foreground">Suivi des paiements de taxes</p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchRecords} disabled={loading} className="h-8 text-xs">
-            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-8 text-xs">
+              <Download className="h-3 w-3 mr-1" />
+              Exporter CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchRecords} disabled={loading} className="h-8 text-xs">
+              <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -123,25 +160,30 @@ const AdminTaxHistory = () => {
         <div className="flex flex-col sm:flex-row gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Rechercher parcelle..." className="h-8 text-xs pl-8" />
+            <Input 
+              value={searchTerm} 
+              onChange={(e) => { setSearchTerm(e.target.value); resetPagination(); }} 
+              placeholder="Rechercher parcelle..." 
+              className="h-8 text-xs pl-8" 
+            />
           </div>
-          <Select value={filterYear} onValueChange={setFilterYear}>
+          <Select value={filterYear} onValueChange={(v) => { setFilterYear(v); resetPagination(); }}>
             <SelectTrigger className="h-8 text-xs w-full sm:w-24">
               <SelectValue placeholder="Année" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Toutes</SelectItem>
+              <SelectItem value="_all">Toutes</SelectItem>
               {years.map(year => (
                 <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); resetPagination(); }}>
             <SelectTrigger className="h-8 text-xs w-full sm:w-28">
               <SelectValue placeholder="Statut" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Tous</SelectItem>
+              <SelectItem value="_all">Tous</SelectItem>
               <SelectItem value="paid">Payé</SelectItem>
               <SelectItem value="pending">En attente</SelectItem>
               <SelectItem value="overdue">Impayé</SelectItem>
@@ -157,39 +199,56 @@ const AdminTaxHistory = () => {
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
-        ) : filteredRecords.length === 0 ? (
+        ) : paginatedRecords.length === 0 ? (
           <div className="text-center py-8">
             <Receipt className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
             <p className="text-xs text-muted-foreground">Aucun enregistrement</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filteredRecords.slice(0, 50).map((record) => (
-              <div key={record.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Receipt className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="text-xs font-medium truncate">{record.parcel_number}</span>
-                      {getStatusBadge(record.payment_status)}
+          <>
+            <div className="space-y-2">
+              {paginatedRecords.map((record) => (
+                <div key={record.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Receipt className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="text-xs font-medium truncate">{record.parcel_number}</span>
+                        {getStatusBadge(record.payment_status)}
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        <span>Année: {record.tax_year}</span>
+                        {record.payment_date && (
+                          <>
+                            <span>•</span>
+                            <span>Payé le {format(new Date(record.payment_date), 'dd/MM/yy', { locale: fr })}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      <span>Année: {record.tax_year}</span>
-                      {record.payment_date && (
-                        <>
-                          <span>•</span>
-                          <span>Payé le {format(new Date(record.payment_date), 'dd/MM/yy', { locale: fr })}</span>
-                        </>
-                      )}
+                    <div className="text-right shrink-0">
+                      <p className="text-sm font-semibold text-primary">${record.amount_usd}</p>
                     </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="text-sm font-semibold text-primary">${record.amount_usd}</p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            
+            <div className="mt-4">
+              <PaginationControls
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                hasPreviousPage={pagination.hasPreviousPage}
+                hasNextPage={pagination.hasNextPage}
+                onPageChange={pagination.goToPage}
+                onPageSizeChange={pagination.changePageSize}
+                onNextPage={pagination.goToNextPage}
+                onPreviousPage={pagination.goToPreviousPage}
+              />
+            </div>
+          </>
         )}
       </Card>
     </div>

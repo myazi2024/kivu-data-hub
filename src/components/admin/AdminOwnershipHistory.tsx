@@ -3,12 +3,16 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Users, Search, Eye, Calendar, ArrowRight } from 'lucide-react';
+import { RefreshCw, Users, Search, Eye, Calendar, ArrowRight, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface OwnershipRecord {
   id: string;
@@ -26,6 +30,8 @@ const AdminOwnershipHistory = () => {
   const [records, setRecords] = useState<OwnershipRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterMutation, setFilterMutation] = useState<string>('_all');
+  const [filterStatus, setFilterStatus] = useState<string>('_all');
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<OwnershipRecord | null>(null);
 
@@ -87,10 +93,31 @@ const AdminOwnershipHistory = () => {
     }
   };
 
-  const filteredRecords = records.filter(r => 
-    r.parcel_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.owner_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getMutationLabel = (type: string | null) => {
+    if (!type) return '-';
+    switch (type) {
+      case 'sale': return 'Vente';
+      case 'inheritance': return 'Héritage';
+      case 'donation': return 'Donation';
+      case 'court_order': return 'Décision judiciaire';
+      default: return type;
+    }
+  };
+
+  const filteredRecords = records.filter(r => {
+    const matchesSearch = searchTerm === '' ||
+      r.parcel_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      r.owner_name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesMutation = filterMutation === '_all' || r.mutation_type === filterMutation;
+    const matchesStatus = filterStatus === '_all' ||
+      (filterStatus === 'current' && !r.ownership_end_date) ||
+      (filterStatus === 'past' && r.ownership_end_date);
+    return matchesSearch && matchesMutation && matchesStatus;
+  });
+
+  const pagination = usePagination(filteredRecords, { initialPageSize: 15 });
+
+  const paginatedRecords = pagination.paginatedData;
 
   const totalRecords = records.length;
   const currentOwners = records.filter(r => !r.ownership_end_date).length;
@@ -101,6 +128,22 @@ const AdminOwnershipHistory = () => {
     return date >= thirtyDaysAgo;
   }).length;
 
+  const handleExportCSV = () => {
+    const headers = ['Parcelle', 'Propriétaire', 'Statut juridique', 'Type mutation', 'Date début', 'Date fin', 'Date création'];
+    const data = filteredRecords.map(r => [
+      r.parcel_number || '',
+      r.owner_name,
+      getLegalStatusLabel(r.legal_status),
+      getMutationLabel(r.mutation_type),
+      r.ownership_start_date,
+      r.ownership_end_date || 'Actuel',
+      r.created_at
+    ]);
+    exportToCSV({ filename: 'historique_propriete.csv', headers, data });
+  };
+
+  const resetPagination = () => pagination.goToPage(1);
+
   return (
     <div className="space-y-3 md:space-y-4">
       {/* Header */}
@@ -110,10 +153,16 @@ const AdminOwnershipHistory = () => {
             <h2 className="text-sm md:text-base font-bold">Historique des Propriétaires</h2>
             <p className="text-[10px] md:text-xs text-muted-foreground">Traçabilité des mutations de propriété</p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchRecords} disabled={loading} className="h-8 text-xs">
-            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-8 text-xs">
+              <Download className="h-3 w-3 mr-1" />
+              Exporter CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchRecords} disabled={loading} className="h-8 text-xs">
+              <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -133,11 +182,40 @@ const AdminOwnershipHistory = () => {
         </Card>
       </div>
 
-      {/* Search */}
+      {/* Filters */}
       <Card className="p-2.5 bg-background rounded-xl shadow-sm border">
-        <div className="relative">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Rechercher par parcelle ou propriétaire..." className="h-8 text-xs pl-8" />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input 
+              value={searchTerm} 
+              onChange={(e) => { setSearchTerm(e.target.value); resetPagination(); }} 
+              placeholder="Rechercher par parcelle ou propriétaire..." 
+              className="h-8 text-xs pl-8" 
+            />
+          </div>
+          <Select value={filterMutation} onValueChange={(v) => { setFilterMutation(v); resetPagination(); }}>
+            <SelectTrigger className="h-8 text-xs w-full sm:w-32">
+              <SelectValue placeholder="Mutation" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">Toutes</SelectItem>
+              <SelectItem value="sale">Vente</SelectItem>
+              <SelectItem value="inheritance">Héritage</SelectItem>
+              <SelectItem value="donation">Donation</SelectItem>
+              <SelectItem value="court_order">Judiciaire</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); resetPagination(); }}>
+            <SelectTrigger className="h-8 text-xs w-full sm:w-28">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="_all">Tous</SelectItem>
+              <SelectItem value="current">Actuels</SelectItem>
+              <SelectItem value="past">Anciens</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </Card>
 
@@ -148,46 +226,63 @@ const AdminOwnershipHistory = () => {
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
           </div>
-        ) : filteredRecords.length === 0 ? (
+        ) : paginatedRecords.length === 0 ? (
           <div className="text-center py-8">
             <Users className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
             <p className="text-xs text-muted-foreground">Aucun enregistrement</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filteredRecords.slice(0, 50).map((record) => (
-              <div key={record.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Users className="h-3.5 w-3.5 text-primary shrink-0" />
-                      <span className="text-xs font-medium truncate">{record.owner_name}</span>
-                      {getMutationTypeBadge(record.mutation_type)}
-                      {!record.ownership_end_date && (
-                        <Badge variant="outline" className="text-[9px] bg-green-100 text-green-700 border-green-200">Actuel</Badge>
-                      )}
+          <>
+            <div className="space-y-2">
+              {paginatedRecords.map((record) => (
+                <div key={record.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Users className="h-3.5 w-3.5 text-primary shrink-0" />
+                        <span className="text-xs font-medium truncate">{record.owner_name}</span>
+                        {getMutationTypeBadge(record.mutation_type)}
+                        {!record.ownership_end_date && (
+                          <Badge variant="outline" className="text-[9px] bg-green-100 text-green-700 border-green-200">Actuel</Badge>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground truncate">
+                        Parcelle: {record.parcel_number}
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
+                        <Calendar className="h-2.5 w-2.5" />
+                        <span>{format(new Date(record.ownership_start_date), 'dd/MM/yyyy', { locale: fr })}</span>
+                        {record.ownership_end_date && (
+                          <>
+                            <ArrowRight className="h-2.5 w-2.5" />
+                            <span>{format(new Date(record.ownership_end_date), 'dd/MM/yyyy', { locale: fr })}</span>
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-[10px] text-muted-foreground truncate">
-                      Parcelle: {record.parcel_number}
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] text-muted-foreground mt-1">
-                      <Calendar className="h-2.5 w-2.5" />
-                      <span>{format(new Date(record.ownership_start_date), 'dd/MM/yyyy', { locale: fr })}</span>
-                      {record.ownership_end_date && (
-                        <>
-                          <ArrowRight className="h-2.5 w-2.5" />
-                          <span>{format(new Date(record.ownership_end_date), 'dd/MM/yyyy', { locale: fr })}</span>
-                        </>
-                      )}
-                    </div>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { setSelectedRecord(record); setDetailsOpen(true); }}>
+                      <Eye className="h-3 w-3" />
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={() => { setSelectedRecord(record); setDetailsOpen(true); }}>
-                    <Eye className="h-3 w-3" />
-                  </Button>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+            
+            <div className="mt-4">
+              <PaginationControls
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                hasPreviousPage={pagination.hasPreviousPage}
+                hasNextPage={pagination.hasNextPage}
+                onPageChange={pagination.goToPage}
+                onPageSizeChange={pagination.changePageSize}
+                onNextPage={pagination.goToNextPage}
+                onPreviousPage={pagination.goToPreviousPage}
+              />
+            </div>
+          </>
         )}
       </Card>
 

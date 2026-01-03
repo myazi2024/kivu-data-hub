@@ -2,14 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Building, Eye, DollarSign, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { RefreshCw, Building, Eye, DollarSign, Clock, CheckCircle2, Search, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface Mortgage {
   id: string;
@@ -43,9 +47,9 @@ const AdminMortgages = () => {
   const [pendingDetailsOpen, setPendingDetailsOpen] = useState(false);
   const [selectedMortgage, setSelectedMortgage] = useState<Mortgage | null>(null);
   const [selectedPending, setSelectedPending] = useState<PendingMortgage | null>(null);
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('_all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<string>('approved');
-  const [processing, setProcessing] = useState(false);
 
   useEffect(() => {
     fetchMortgages();
@@ -54,7 +58,6 @@ const AdminMortgages = () => {
   const fetchMortgages = async () => {
     setLoading(true);
     try {
-      // Récupérer les hypothèques validées
       const { data: approvedData, error: approvedError } = await supabase
         .from('cadastral_mortgages')
         .select(`
@@ -72,7 +75,6 @@ const AdminMortgages = () => {
       
       setMortgages(mortgagesWithParcel);
 
-      // Récupérer les hypothèques en attente de validation (contributions)
       const { data: pendingData, error: pendingError } = await supabase
         .from('cadastral_contributions')
         .select('id, parcel_number, mortgage_history, status, created_at, user_id, original_parcel_id')
@@ -82,7 +84,6 @@ const AdminMortgages = () => {
 
       if (pendingError) throw pendingError;
       
-      // Filtrer les contributions qui ont des hypothèques valides
       const validPending = (pendingData || []).filter(item => {
         const history = item.mortgage_history;
         return Array.isArray(history) && history.length > 0;
@@ -131,14 +132,41 @@ const AdminMortgages = () => {
     }
   };
 
-  const filteredMortgages = filterStatus === 'all' 
-    ? mortgages 
-    : mortgages.filter(m => m.mortgage_status?.toLowerCase() === filterStatus);
+  const filteredMortgages = mortgages.filter(m => {
+    const matchesSearch = searchTerm === '' || 
+      m.creditor_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.parcel_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.reference_number?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = filterStatus === '_all' || m.mortgage_status?.toLowerCase() === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
+
+  const pagination = usePagination(filteredMortgages, { initialPageSize: 15 });
+
+  const paginatedMortgages = pagination.paginatedData;
 
   const activeCount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'active').length;
   const paidCount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'paid').length;
   const pendingCount = pendingMortgages.filter(m => m.status === 'pending').length;
   const totalAmount = mortgages.filter(m => m.mortgage_status?.toLowerCase() === 'active').reduce((sum, m) => sum + (m.mortgage_amount_usd || 0), 0);
+
+  const handleExportCSV = () => {
+    const headers = ['Référence', 'Parcelle', 'Créancier', 'Type créancier', 'Montant USD', 'Durée (mois)', 'Statut', 'Date contrat', 'Date création'];
+    const data = filteredMortgages.map(m => [
+      m.reference_number || '',
+      m.parcel_number || '',
+      m.creditor_name,
+      getCreditorTypeLabel(m.creditor_type),
+      m.mortgage_amount_usd,
+      m.duration_months,
+      m.mortgage_status,
+      m.contract_date,
+      m.created_at
+    ]);
+    exportToCSV({ filename: 'hypotheques.csv', headers, data });
+  };
+
+  const resetPagination = () => pagination.goToPage(1);
 
   return (
     <div className="space-y-3 md:space-y-4">
@@ -149,10 +177,16 @@ const AdminMortgages = () => {
             <h2 className="text-sm md:text-base font-bold">Gestion des Hypothèques</h2>
             <p className="text-[10px] md:text-xs text-muted-foreground">Suivi des hypothèques sur les parcelles</p>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchMortgages} disabled={loading} className="h-8 text-xs">
-            <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
-            Actualiser
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-8 text-xs">
+              <Download className="h-3 w-3 mr-1" />
+              Exporter CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={fetchMortgages} disabled={loading} className="h-8 text-xs">
+              <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
+              Actualiser
+            </Button>
+          </div>
         </div>
       </Card>
 
@@ -190,19 +224,30 @@ const AdminMortgages = () => {
         </TabsList>
 
         <TabsContent value="approved" className="mt-3">
-          {/* Filter */}
+          {/* Filters */}
           <Card className="p-2.5 bg-background rounded-xl shadow-sm border mb-3">
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder="Filtrer par statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Toutes les hypothèques</SelectItem>
-                <SelectItem value="active">Actives</SelectItem>
-                <SelectItem value="paid">Soldées</SelectItem>
-                <SelectItem value="defaulted">En défaut</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input 
+                  value={searchTerm} 
+                  onChange={(e) => { setSearchTerm(e.target.value); resetPagination(); }} 
+                  placeholder="Rechercher par créancier, parcelle, référence..." 
+                  className="h-8 text-xs pl-8" 
+                />
+              </div>
+              <Select value={filterStatus} onValueChange={(v) => { setFilterStatus(v); resetPagination(); }}>
+                <SelectTrigger className="h-8 text-xs w-full sm:w-40">
+                  <SelectValue placeholder="Filtrer par statut" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="_all">Toutes les hypothèques</SelectItem>
+                  <SelectItem value="active">Actives</SelectItem>
+                  <SelectItem value="paid">Soldées</SelectItem>
+                  <SelectItem value="defaulted">En défaut</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </Card>
 
           {/* Approved Mortgages List */}
@@ -212,50 +257,67 @@ const AdminMortgages = () => {
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
               </div>
-            ) : filteredMortgages.length === 0 ? (
+            ) : paginatedMortgages.length === 0 ? (
               <div className="text-center py-8">
                 <Building className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                 <p className="text-xs text-muted-foreground">Aucune hypothèque validée trouvée</p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredMortgages.map((mortgage) => (
-                  <div key={mortgage.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Building className="h-3.5 w-3.5 text-primary shrink-0" />
-                          <span className="text-xs font-medium truncate">{mortgage.creditor_name}</span>
-                          {getStatusBadge(mortgage.mortgage_status)}
-                        </div>
-                        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                          <span className="truncate">Parcelle: {mortgage.parcel_number}</span>
-                          <span>•</span>
-                          <span>{getCreditorTypeLabel(mortgage.creditor_type)}</span>
-                        </div>
-                        {mortgage.reference_number && (
-                          <div className="mt-1 text-[10px] font-mono text-primary">
-                            Réf: {mortgage.reference_number}
+              <>
+                <div className="space-y-2">
+                  {paginatedMortgages.map((mortgage) => (
+                    <div key={mortgage.id} className="p-2.5 md:p-3 rounded-xl border bg-card">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Building className="h-3.5 w-3.5 text-primary shrink-0" />
+                            <span className="text-xs font-medium truncate">{mortgage.creditor_name}</span>
+                            {getStatusBadge(mortgage.mortgage_status)}
                           </div>
-                        )}
-                        <div className="flex items-center gap-2 mt-1 text-[10px]">
-                          <DollarSign className="h-2.5 w-2.5 text-green-500" />
-                          <span className="font-semibold">${(mortgage.mortgage_amount_usd || 0).toLocaleString()}</span>
-                          <span className="text-muted-foreground">• {mortgage.duration_months} mois</span>
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span className="truncate">Parcelle: {mortgage.parcel_number}</span>
+                            <span>•</span>
+                            <span>{getCreditorTypeLabel(mortgage.creditor_type)}</span>
+                          </div>
+                          {mortgage.reference_number && (
+                            <div className="mt-1 text-[10px] font-mono text-primary">
+                              Réf: {mortgage.reference_number}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 mt-1 text-[10px]">
+                            <DollarSign className="h-2.5 w-2.5 text-green-500" />
+                            <span className="font-semibold">${(mortgage.mortgage_amount_usd || 0).toLocaleString()}</span>
+                            <span className="text-muted-foreground">• {mortgage.duration_months} mois</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-[9px] text-muted-foreground">
-                          {format(new Date(mortgage.contract_date), 'dd/MM/yy', { locale: fr })}
-                        </span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setSelectedMortgage(mortgage); setDetailsOpen(true); }}>
-                          <Eye className="h-3 w-3" />
-                        </Button>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="text-[9px] text-muted-foreground">
+                            {format(new Date(mortgage.contract_date), 'dd/MM/yy', { locale: fr })}
+                          </span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => { setSelectedMortgage(mortgage); setDetailsOpen(true); }}>
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+                
+                <div className="mt-4">
+                  <PaginationControls
+                    currentPage={pagination.currentPage}
+                    totalPages={pagination.totalPages}
+                    pageSize={pagination.pageSize}
+                    totalItems={pagination.totalItems}
+                    hasPreviousPage={pagination.hasPreviousPage}
+                    hasNextPage={pagination.hasNextPage}
+                    onPageChange={pagination.goToPage}
+                    onPageSizeChange={pagination.changePageSize}
+                    onNextPage={pagination.goToNextPage}
+                    onPreviousPage={pagination.goToPreviousPage}
+                  />
+                </div>
+              </>
             )}
           </Card>
         </TabsContent>
@@ -379,169 +441,41 @@ const AdminMortgages = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Pending Mortgage Details Dialog */}
+      {/* Pending Details Dialog */}
       <Dialog open={pendingDetailsOpen} onOpenChange={setPendingDetailsOpen}>
-        <DialogContent className="max-w-[380px] rounded-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-[340px] rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-sm">Traitement de l'hypothèque en attente</DialogTitle>
+            <DialogTitle className="text-sm">Détails hypothèque en attente</DialogTitle>
           </DialogHeader>
-          {selectedPending && (() => {
-            const mortgage = selectedPending.mortgage_history[0];
-            return (
-              <div className="space-y-3 py-2">
-                <div className="p-2.5 rounded-lg bg-yellow-50 border border-yellow-200">
-                  <p className="text-[10px] text-yellow-700 font-medium mb-1">Statut actuel</p>
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(selectedPending.status)}
-                    <span className="text-xs text-yellow-800">
-                      {selectedPending.status === 'pending' ? 'En attente de validation' : 'Rejeté - Peut être révisé'}
-                    </span>
-                  </div>
-                </div>
-
+          {selectedPending && selectedPending.mortgage_history[0] && (
+            <div className="space-y-3 py-2">
+              <div className="p-2.5 rounded-lg bg-muted/50">
+                <p className="text-[10px] text-muted-foreground mb-1">Parcelle</p>
+                <p className="text-xs font-medium">{selectedPending.parcel_number}</p>
+              </div>
+              <div className="p-2.5 rounded-lg bg-muted/50">
+                <p className="text-[10px] text-muted-foreground mb-1">Créancier</p>
+                <p className="text-xs font-medium">
+                  {selectedPending.mortgage_history[0]?.creditor_name || selectedPending.mortgage_history[0]?.creditorName}
+                </p>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
                 <div className="p-2.5 rounded-lg bg-muted/50">
-                  <p className="text-[10px] text-muted-foreground mb-1">Parcelle concernée</p>
-                  <p className="text-sm font-bold text-primary">{selectedPending.parcel_number}</p>
+                  <p className="text-[10px] text-muted-foreground mb-1">Montant</p>
+                  <p className="text-sm font-bold text-primary">
+                    ${(selectedPending.mortgage_history[0]?.mortgage_amount_usd || selectedPending.mortgage_history[0]?.mortgageAmountUsd || 0).toLocaleString()}
+                  </p>
                 </div>
-
                 <div className="p-2.5 rounded-lg bg-muted/50">
-                  <p className="text-[10px] text-muted-foreground mb-1">Créancier</p>
-                  <p className="text-xs font-medium">{mortgage?.creditor_name || mortgage?.creditorName || 'Non spécifié'}</p>
-                  <p className="text-[10px] text-muted-foreground">{getCreditorTypeLabel(mortgage?.creditor_type || mortgage?.creditorType)}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-lg bg-muted/50">
-                    <p className="text-[10px] text-muted-foreground mb-1">Montant</p>
-                    <p className="text-sm font-bold text-primary">
-                      ${(mortgage?.mortgage_amount_usd || mortgage?.mortgageAmountUsd || 0).toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-muted/50">
-                    <p className="text-[10px] text-muted-foreground mb-1">Durée</p>
-                    <p className="text-sm font-bold">{mortgage?.duration_months || mortgage?.durationMonths || 0} mois</p>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="p-2.5 rounded-lg bg-muted/50">
-                    <p className="text-[10px] text-muted-foreground mb-1">Date contrat</p>
-                    <p className="text-xs font-medium">
-                      {mortgage?.contract_date || mortgage?.contractDate 
-                        ? format(new Date(mortgage?.contract_date || mortgage?.contractDate), 'dd/MM/yyyy', { locale: fr })
-                        : 'Non spécifié'
-                      }
-                    </p>
-                  </div>
-                  <div className="p-2.5 rounded-lg bg-muted/50">
-                    <p className="text-[10px] text-muted-foreground mb-1">Soumis le</p>
-                    <p className="text-xs font-medium">{format(new Date(selectedPending.created_at), 'dd/MM/yyyy', { locale: fr })}</p>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t space-y-2">
-                  <p className="text-[10px] font-medium text-muted-foreground">Actions de traitement</p>
-                  <div className="flex gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="flex-1 h-9 text-xs border-red-200 text-red-600 hover:bg-red-50"
-                      disabled={processing}
-                      onClick={async () => {
-                        setProcessing(true);
-                        try {
-                          await supabase
-                            .from('cadastral_contributions')
-                            .update({ status: 'rejected', reviewed_at: new Date().toISOString() })
-                            .eq('id', selectedPending.id);
-                          toast.success('Hypothèque rejetée');
-                          setPendingDetailsOpen(false);
-                          fetchMortgages();
-                        } catch (error) {
-                          toast.error('Erreur lors du rejet');
-                        } finally {
-                          setProcessing(false);
-                        }
-                      }}
-                    >
-                      <XCircle className="h-3.5 w-3.5 mr-1" />
-                      Rejeter
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      className="flex-1 h-9 text-xs bg-green-600 hover:bg-green-700"
-                      disabled={processing}
-                      onClick={async () => {
-                        setProcessing(true);
-                        try {
-                          let parcelId: string | null = null;
-
-                          // Si on a un original_parcel_id (contribution de type update), l'utiliser directement
-                          if (selectedPending.original_parcel_id) {
-                            parcelId = selectedPending.original_parcel_id;
-                          } else {
-                            // Sinon, chercher par parcel_number
-                            const { data: parcelData } = await supabase
-                              .from('cadastral_parcels')
-                              .select('id')
-                              .eq('parcel_number', selectedPending.parcel_number)
-                              .maybeSingle();
-
-                            if (parcelData) {
-                              parcelId = parcelData.id;
-                            }
-                          }
-
-                          if (!parcelId) {
-                            toast.error('Parcelle non trouvée. Veuillez d\'abord valider la contribution CCC de cette parcelle.');
-                            setProcessing(false);
-                            return;
-                          }
-
-                          // Générer un numéro de référence
-                          const referenceNumber = `HYP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
-
-                          // Créer l'hypothèque validée
-                          const { error: insertError } = await supabase
-                            .from('cadastral_mortgages')
-                            .insert({
-                              parcel_id: parcelId,
-                              creditor_name: mortgage?.creditor_name || mortgage?.creditorName || 'Non spécifié',
-                              creditor_type: mortgage?.creditor_type || mortgage?.creditorType || 'Banque',
-                              mortgage_amount_usd: mortgage?.mortgage_amount_usd || mortgage?.mortgageAmountUsd || 0,
-                              duration_months: mortgage?.duration_months || mortgage?.durationMonths || 12,
-                              contract_date: mortgage?.contract_date || mortgage?.contractDate || new Date().toISOString().split('T')[0],
-                              mortgage_status: 'active',
-                              reference_number: referenceNumber
-                            });
-
-                          if (insertError) throw insertError;
-
-                          // Mettre à jour la contribution
-                          await supabase
-                            .from('cadastral_contributions')
-                            .update({ status: 'approved', reviewed_at: new Date().toISOString() })
-                            .eq('id', selectedPending.id);
-
-                          toast.success(`Hypothèque validée avec le numéro ${referenceNumber}`);
-                          setPendingDetailsOpen(false);
-                          fetchMortgages();
-                        } catch (error) {
-                          console.error('Error approving mortgage:', error);
-                          toast.error('Erreur lors de la validation');
-                        } finally {
-                          setProcessing(false);
-                        }
-                      }}
-                    >
-                      <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
-                      {processing ? 'Traitement...' : 'Valider'}
-                    </Button>
-                  </div>
+                  <p className="text-[10px] text-muted-foreground mb-1">Statut</p>
+                  {getStatusBadge(selectedPending.status)}
                 </div>
               </div>
-            );
-          })()}
+              <p className="text-[10px] text-muted-foreground text-center">
+                Validez cette hypothèque depuis "Contributions CCC"
+              </p>
+            </div>
+          )}
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setPendingDetailsOpen(false)} className="h-8 text-xs">Fermer</Button>
           </DialogFooter>
