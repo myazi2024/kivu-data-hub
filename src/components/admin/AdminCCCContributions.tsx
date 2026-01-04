@@ -3,17 +3,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ResponsiveTable, ResponsiveTableBody, ResponsiveTableCell, ResponsiveTableHead, ResponsiveTableHeader, ResponsiveTableRow } from '@/components/ui/responsive-table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, ExternalLink, Play, FileText, Building2, MessageSquare, Route, BrickWall, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
 import { DocumentsGalleryDialog } from './documents/DocumentsGalleryDialog';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface ValidationResult {
   valid: boolean;
@@ -110,9 +114,7 @@ const AdminCCCContributions: React.FC = () => {
   const [showPermitDialog, setShowPermitDialog] = useState(false);
   const [showDocumentsDialog, setShowDocumentsDialog] = useState(false);
   
-  // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 15;
+  // Pagination - sera initialisée après filteredContributions
 
   useEffect(() => {
     fetchContributions();
@@ -502,18 +504,7 @@ const AdminCCCContributions: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Badge variant="secondary">En attente</Badge>;
-      case 'approved':
-        return <Badge variant="default">Approuvé</Badge>;
-      case 'rejected':
-        return <Badge variant="destructive">Rejeté</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
-    }
-  };
+  // Utiliser StatusBadge partagé pour les statuts
 
   const calculateCompleteness = (contribution: Contribution) => {
     let filled = 0;
@@ -556,39 +547,42 @@ const AdminCCCContributions: React.FC = () => {
     });
   }, [contributions, activeTab]);
 
-  // Pagination logic
-  const paginatedContributions = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredContributions.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredContributions, currentPage, itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredContributions.length / itemsPerPage);
+  // Pagination avec usePagination
+  const {
+    currentPage,
+    pageSize,
+    totalPages,
+    paginatedData: paginatedContributions,
+    goToPage,
+    goToNextPage,
+    goToPreviousPage,
+    changePageSize,
+    hasNextPage,
+    hasPreviousPage,
+    totalItems
+  } = usePagination(filteredContributions, { initialPageSize: 15 });
 
   // Reset to page 1 when filter changes
   useEffect(() => {
-    setCurrentPage(1);
+    goToPage(1);
   }, [activeTab]);
 
-  const exportToCSV = () => {
-    const headers = ['Numéro Parcelle', 'Statut', 'Suspect', 'Score Fraude', 'Province', 'Ville', 'Commune', 'Type Propriété', 'Date Création'];
-    const csvData = filteredContributions.map(c => [
-      c.parcel_number,
-      c.status,
-      c.is_suspicious ? 'Oui' : 'Non',
-      c.fraud_score?.toString() || '0',
-      c.province || '',
-      c.ville || '',
-      c.commune || '',
-      c.property_title_type || '',
-      new Date(c.created_at).toLocaleDateString('fr-FR')
-    ]);
-    
-    const csvContent = [headers.join(','), ...csvData.map(row => row.map(cell => `"${cell}"`).join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `contributions_ccc_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+  const handleExportCSV = () => {
+    exportToCSV({
+      filename: `contributions_ccc_${new Date().toISOString().split('T')[0]}.csv`,
+      headers: ['Numéro Parcelle', 'Statut', 'Suspect', 'Score Fraude', 'Province', 'Ville', 'Commune', 'Type Propriété', 'Date Création'],
+      data: filteredContributions.map(c => [
+        c.parcel_number,
+        c.status,
+        c.is_suspicious ? 'Oui' : 'Non',
+        c.fraud_score?.toString() || '0',
+        c.province || '',
+        c.ville || '',
+        c.commune || '',
+        c.property_title_type || '',
+        new Date(c.created_at).toLocaleDateString('fr-FR')
+      ])
+    });
     toast.success('Export CSV téléchargé');
   };
 
@@ -687,7 +681,7 @@ const AdminCCCContributions: React.FC = () => {
               <span className="truncate">Contributions CCC</span>
             </CardTitle>
             <div className="flex gap-2 w-full sm:w-auto">
-              <Button variant="outline" size="sm" onClick={exportToCSV} className="flex-1 sm:flex-none">
+              <Button variant="outline" size="sm" onClick={handleExportCSV} className="flex-1 sm:flex-none">
                 <Download className="h-3 w-3 md:h-4 md:w-4 mr-2" />
                 Exporter
               </Button>
@@ -745,7 +739,7 @@ const AdminCCCContributions: React.FC = () => {
                           </div>
                         </ResponsiveTableCell>
                         <ResponsiveTableCell priority="high" label="Statut">
-                          {getStatusBadge(contribution.status)}
+                          <StatusBadge status={contribution.status as StatusType} />
                         </ResponsiveTableCell>
                         <ResponsiveTableCell priority="low" label="Score">
                           {contribution.is_suspicious ? (
@@ -782,32 +776,18 @@ const AdminCCCContributions: React.FC = () => {
                 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between px-2 py-3 border-t">
-                    <p className="text-xs text-muted-foreground">
-                      {filteredContributions.length} résultat(s) - Page {currentPage}/{totalPages}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                        disabled={currentPage === 1}
-                        className="h-8 w-8 p-0"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-sm font-medium">{currentPage}</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                        disabled={currentPage === totalPages}
-                        className="h-8 w-8 p-0"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
+                  <PaginationControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    pageSize={pageSize}
+                    totalItems={totalItems}
+                    hasPreviousPage={hasPreviousPage}
+                    hasNextPage={hasNextPage}
+                    onPageChange={goToPage}
+                    onPreviousPage={goToPreviousPage}
+                    onNextPage={goToNextPage}
+                    onPageSizeChange={changePageSize}
+                  />
                 )}
               </div>
             </TabsContent>
@@ -830,7 +810,7 @@ const AdminCCCContributions: React.FC = () => {
                 </div>
                 <div>
                   <Label className="text-xs md:text-sm">Statut</Label>
-                  <div className="mt-1">{getStatusBadge(selectedContribution.status)}</div>
+                  <div className="mt-1"><StatusBadge status={selectedContribution.status as StatusType} /></div>
                 </div>
               </div>
 
