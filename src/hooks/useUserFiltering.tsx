@@ -30,8 +30,8 @@ export const useUserFiltering = ({
           user.email?.toLowerCase().includes(debouncedSearchQuery.toLowerCase()) ||
           user.organization?.toLowerCase().includes(debouncedSearchQuery.toLowerCase());
         
-        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-        const matchesStatus = statusFilter === 'all' || 
+        const matchesRole = roleFilter === '_all' || user.role === roleFilter;
+        const matchesStatus = statusFilter === '_all' || 
           (statusFilter === 'active' && !user.is_blocked) ||
           (statusFilter === 'blocked' && user.is_blocked) ||
           (statusFilter === 'suspicious' && user.fraud_strikes > 0);

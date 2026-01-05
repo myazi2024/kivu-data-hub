@@ -44,7 +44,7 @@ const AdminInvoices = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const { toast } = useToast();
 
@@ -94,7 +94,7 @@ const AdminInvoices = () => {
       invoice.client_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (invoice.client_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = statusFilter === 'all' || invoice.status === statusFilter;
+    const matchesStatus = statusFilter === '_all' || invoice.status === statusFilter;
     
     return matchesSearch && matchesStatus;
   });
@@ -195,7 +195,7 @@ const AdminInvoices = () => {
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
+                <SelectItem value="_all">Tous les statuts</SelectItem>
                 <SelectItem value="paid">Payée</SelectItem>
                 <SelectItem value="pending">En attente</SelectItem>
                 <SelectItem value="failed">Échouée</SelectItem>
