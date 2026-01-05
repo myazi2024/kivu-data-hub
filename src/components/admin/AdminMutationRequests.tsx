@@ -26,8 +26,12 @@ import { fr } from 'date-fns/locale';
 import { 
   FileEdit, Search, Filter, Eye, CheckCircle, XCircle, Clock, 
   Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
-  Settings, Plus, Trash2, Edit2, Save
+  Settings, Plus, Trash2, Edit2, Save, Download
 } from 'lucide-react';
+import { usePagination } from '@/hooks/usePagination';
+import { PaginationControls } from '@/components/shared/PaginationControls';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface MutationRequest {
   id: string;
@@ -90,8 +94,6 @@ const AdminMutationRequests: React.FC = () => {
   const [feeDescription, setFeeDescription] = useState('');
   const [feeMandatory, setFeeMandatory] = useState(true);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
 
   const fetchRequests = async () => {
     try {
@@ -144,11 +146,30 @@ const AdminMutationRequests: React.FC = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const totalPages = Math.ceil(filteredRequests.length / itemsPerPage);
-  const paginatedRequests = filteredRequests.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+  const pagination = usePagination(filteredRequests, { initialPageSize: 15 });
+
+  const handleExportCSV = () => {
+    const statusLabels: Record<string, string> = {
+      pending: 'En attente',
+      in_review: 'En cours',
+      approved: 'Approuvée',
+      rejected: 'Rejetée',
+      on_hold: 'Suspendue'
+    };
+    exportToCSV({
+      filename: `mutations_${format(new Date(), 'yyyy-MM-dd')}.csv`,
+      headers: ['Référence', 'Parcelle', 'Demandeur', 'Montant USD', 'Paiement', 'Statut', 'Date'],
+      data: filteredRequests.map(r => [
+        r.reference_number,
+        r.parcel_number,
+        r.requester_name,
+        r.total_amount_usd.toString(),
+        r.payment_status === 'paid' ? 'Payé' : 'Non payé',
+        statusLabels[r.status] || r.status,
+        format(new Date(r.created_at), 'dd/MM/yyyy'),
+      ])
+    });
+  };
 
   const handleProcessRequest = async () => {
     if (!selectedRequest || !user) return;
@@ -410,10 +431,16 @@ const AdminMutationRequests: React.FC = () => {
           <FileEdit className="h-5 w-5 text-primary" />
           Demandes de mutation
         </h2>
-        <Button variant="outline" size="sm" onClick={fetchRequests}>
-          <RefreshCw className="h-4 w-4 mr-1" />
-          Actualiser
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-1" />
+            CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={fetchRequests}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -495,7 +522,7 @@ const AdminMutationRequests: React.FC = () => {
                   </ResponsiveTableRow>
                 </ResponsiveTableHeader>
                 <ResponsiveTableBody>
-                  {paginatedRequests.map(request => (
+                  {pagination.paginatedData.map(request => (
                     <ResponsiveTableRow key={request.id}>
                       {columns.map(col => (
                         <ResponsiveTableCell 
@@ -511,37 +538,18 @@ const AdminMutationRequests: React.FC = () => {
                 </ResponsiveTableBody>
               </ResponsiveTable>
 
-              {/* Pagination */}
-              <div className="flex items-center justify-between px-2 py-3">
-                <span className="text-xs text-muted-foreground">
-                  {filteredRequests.length > 0 
-                    ? `${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, filteredRequests.length)} sur ${filteredRequests.length}`
-                    : 'Aucun résultat'}
-                </span>
-                <div className="flex gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                    disabled={currentPage <= 1}
-                    className="h-7 w-7 p-0"
-                  >
-                    ‹
-                  </Button>
-                  <span className="text-xs px-2 py-1">
-                    {currentPage} / {totalPages || 1}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                    disabled={currentPage >= totalPages}
-                    className="h-7 w-7 p-0"
-                  >
-                    ›
-                  </Button>
-                </div>
-              </div>
+              <PaginationControls
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                pageSize={pagination.pageSize}
+                totalItems={pagination.totalItems}
+                hasNextPage={pagination.hasNextPage}
+                hasPreviousPage={pagination.hasPreviousPage}
+                onPageChange={pagination.goToPage}
+                onPageSizeChange={pagination.changePageSize}
+                onNextPage={pagination.goToNextPage}
+                onPreviousPage={pagination.goToPreviousPage}
+              />
             </>
           )}
         </TabsContent>

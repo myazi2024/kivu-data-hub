@@ -26,8 +26,8 @@ interface AdminUsersProps {
 const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
   const { users, loading, fetchUsers, blockUser, unblockUser } = useUserManagement();
   const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [roleFilter, setRoleFilter] = useState<string>('_all');
+  const [statusFilter, setStatusFilter] = useState<string>('_all');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'email'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
@@ -179,7 +179,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
                 <SelectValue placeholder="Rôle" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
+                <SelectItem value="_all">Tous</SelectItem>
                 <SelectItem value="super_admin">Super Admin</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="partner">Partenaire</SelectItem>
@@ -192,7 +192,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous</SelectItem>
+                <SelectItem value="_all">Tous</SelectItem>
                 <SelectItem value="active">Actifs</SelectItem>
                 <SelectItem value="blocked">Bloqués</SelectItem>
                 <SelectItem value="suspicious">Suspects</SelectItem>
