@@ -20,6 +20,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ResponsiveTable, ResponsiveTableHeader, ResponsiveTableBody, ResponsiveTableRow, ResponsiveTableCell, ResponsiveTableHead } from '@/components/ui/responsive-table';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface ExpertiseRequest {
   id: string;
@@ -52,12 +55,13 @@ interface ExpertiseRequest {
   updated_at: string;
 }
 
-const statusConfig: Record<string, { label: string; color: string }> = {
-  pending: { label: 'En attente', color: 'bg-amber-100 text-amber-800' },
-  assigned: { label: 'Assigné', color: 'bg-blue-100 text-blue-800' },
-  in_progress: { label: 'En cours', color: 'bg-purple-100 text-purple-800' },
-  completed: { label: 'Terminé', color: 'bg-green-100 text-green-800' },
-  rejected: { label: 'Rejeté', color: 'bg-red-100 text-red-800' },
+// Status config kept for dialog display only
+const statusLabels: Record<string, string> = {
+  pending: 'En attente',
+  assigned: 'Assigné',
+  in_progress: 'En cours',
+  completed: 'Terminé',
+  rejected: 'Rejeté',
 };
 
 export const AdminExpertiseRequests: React.FC = () => {
@@ -226,10 +230,34 @@ export const AdminExpertiseRequests: React.FC = () => {
             Gérez les demandes d'évaluation de valeur vénale
           </p>
         </div>
-        <Button onClick={fetchRequests} variant="outline" size="sm">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Actualiser
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={fetchRequests} variant="outline" size="sm">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Actualiser
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              exportToCSV({
+                filename: `expertises_${format(new Date(), 'yyyy-MM-dd')}.csv`,
+                headers: ['Référence', 'Parcelle', 'Demandeur', 'Email', 'Statut', 'Valeur USD', 'Date'],
+                data: requests.map(r => [
+                  r.reference_number,
+                  r.parcel_number,
+                  r.requester_name,
+                  r.requester_email || '',
+                  statusLabels[r.status] || r.status,
+                  r.market_value_usd?.toString() || '',
+                  format(new Date(r.created_at), 'dd/MM/yyyy'),
+                ])
+              });
+            }}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exporter CSV
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -304,81 +332,77 @@ export const AdminExpertiseRequests: React.FC = () => {
               <p>Aucune demande d'expertise trouvée</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-muted/50">
-                  <tr>
-                    <th className="text-left p-4 text-sm font-medium">Référence</th>
-                    <th className="text-left p-4 text-sm font-medium">Parcelle</th>
-                    <th className="text-left p-4 text-sm font-medium">Demandeur</th>
-                    <th className="text-left p-4 text-sm font-medium">Date</th>
-                    <th className="text-left p-4 text-sm font-medium">Statut</th>
-                    <th className="text-left p-4 text-sm font-medium">Valeur</th>
-                    <th className="text-right p-4 text-sm font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {requests.map((request) => (
-                    <tr key={request.id} className="border-t hover:bg-muted/30">
-                      <td className="p-4">
-                        <span className="font-mono text-sm">{request.reference_number}</span>
-                      </td>
-                      <td className="p-4">
-                        <span className="font-medium">{request.parcel_number}</span>
-                      </td>
-                      <td className="p-4">
-                        <div>
-                          <p className="text-sm font-medium">{request.requester_name}</p>
-                          {request.requester_email && (
-                            <p className="text-xs text-muted-foreground">{request.requester_email}</p>
-                          )}
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm">
-                          {format(new Date(request.created_at), 'dd/MM/yyyy', { locale: fr })}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <Badge className={statusConfig[request.status]?.color}>
-                          {statusConfig[request.status]?.label}
-                        </Badge>
-                      </td>
-                      <td className="p-4">
-                        {request.market_value_usd ? (
-                          <span className="font-bold text-green-600">
-                            ${request.market_value_usd.toLocaleString()}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">-</span>
+            <ResponsiveTable>
+              <ResponsiveTableHeader>
+                <ResponsiveTableRow>
+                  <ResponsiveTableHead>Référence</ResponsiveTableHead>
+                  <ResponsiveTableHead>Parcelle</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="low">Demandeur</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="low">Date</ResponsiveTableHead>
+                  <ResponsiveTableHead>Statut</ResponsiveTableHead>
+                  <ResponsiveTableHead priority="low">Valeur</ResponsiveTableHead>
+                  <ResponsiveTableHead className="text-right">Actions</ResponsiveTableHead>
+                </ResponsiveTableRow>
+              </ResponsiveTableHeader>
+              <ResponsiveTableBody>
+                {requests.map((request) => (
+                  <ResponsiveTableRow key={request.id}>
+                    <ResponsiveTableCell>
+                      <span className="font-mono text-sm">{request.reference_number}</span>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell>
+                      <span className="font-medium">{request.parcel_number}</span>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell label="Demandeur" priority="low">
+                      <div>
+                        <p className="text-sm font-medium">{request.requester_name}</p>
+                        {request.requester_email && (
+                          <p className="text-xs text-muted-foreground">{request.requester_email}</p>
                         )}
-                      </td>
-                      <td className="p-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                      </div>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell label="Date" priority="low">
+                      <span className="text-sm">
+                        {format(new Date(request.created_at), 'dd/MM/yyyy', { locale: fr })}
+                      </span>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell>
+                      <StatusBadge status={request.status as any} />
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell label="Valeur" priority="low">
+                      {request.market_value_usd ? (
+                        <span className="font-bold text-green-600">
+                          ${request.market_value_usd.toLocaleString()}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(request)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {request.status !== 'completed' && request.status !== 'rejected' && (
                           <Button
-                            variant="ghost"
+                            variant="outline"
                             size="sm"
-                            onClick={() => handleViewDetails(request)}
+                            onClick={() => handleOpenProcess(request)}
                           >
-                            <Eye className="h-4 w-4" />
+                            <UserCheck className="h-4 w-4 mr-1" />
+                            Traiter
                           </Button>
-                          {request.status !== 'completed' && request.status !== 'rejected' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleOpenProcess(request)}
-                            >
-                              <UserCheck className="h-4 w-4 mr-1" />
-                              Traiter
-                            </Button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        )}
+                      </div>
+                    </ResponsiveTableCell>
+                  </ResponsiveTableRow>
+                ))}
+              </ResponsiveTableBody>
+            </ResponsiveTable>
           )}
         </CardContent>
       </Card>
@@ -432,9 +456,7 @@ export const AdminExpertiseRequests: React.FC = () => {
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Statut</Label>
-                    <Badge className={statusConfig[selectedRequest.status]?.color}>
-                      {statusConfig[selectedRequest.status]?.label}
-                    </Badge>
+                    <StatusBadge status={selectedRequest.status as any} />
                   </div>
                 </div>
 
