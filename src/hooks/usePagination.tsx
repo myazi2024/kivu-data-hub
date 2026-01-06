@@ -9,7 +9,7 @@ export function usePagination<T>(
   data: T[],
   options: PaginationOptions = {}
 ) {
-  const { initialPage = 1, initialPageSize = 10 } = options;
+  const { initialPage = 1, initialPageSize = 15 } = options;
   
   const [currentPage, setCurrentPage] = useState(initialPage);
   const [pageSize, setPageSize] = useState(initialPageSize);

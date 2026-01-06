@@ -201,7 +201,7 @@ export default function AdminFraudDetection() {
     hasNextPage: hasNextFraudPage,
     hasPreviousPage: hasPreviousFraudPage,
     totalItems: totalFraudItems
-  } = usePagination(fraudAttempts, { initialPageSize: 20 });
+  } = usePagination(fraudAttempts, { initialPageSize: 15 });
 
   // Pagination for suspicious users
   const {
@@ -216,7 +216,7 @@ export default function AdminFraudDetection() {
     hasNextPage: hasNextUserPage,
     hasPreviousPage: hasPreviousUserPage,
     totalItems: totalUserItems
-  } = usePagination(suspiciousUsers, { initialPageSize: 10 });
+  } = usePagination(suspiciousUsers, { initialPageSize: 15 });
 
   const handleExportCSV = () => {
     exportToCSV({

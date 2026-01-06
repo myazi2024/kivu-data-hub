@@ -99,7 +99,7 @@ const AdminInvoices = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const pagination = usePagination(filteredInvoices, { initialPageSize: 10 });
+  const pagination = usePagination(filteredInvoices, { initialPageSize: 15 });
 
   const handleExportCSV = () => {
     exportToCSV({

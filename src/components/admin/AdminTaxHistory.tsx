@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { RefreshCw, Receipt, Search, CheckCircle2, XCircle, Clock, Download } from 'lucide-react';
+import { RefreshCw, Receipt, Search, Download } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 
 interface TaxRecord {
@@ -63,16 +63,12 @@ const AdminTaxHistory = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getTaxStatusType = (status: string): StatusType => {
     switch (status) {
-      case 'paid':
-        return <Badge variant="outline" className="text-[9px] bg-green-100 text-green-700 border-green-200"><CheckCircle2 className="h-2 w-2 mr-0.5" />Payé</Badge>;
-      case 'pending':
-        return <Badge variant="outline" className="text-[9px] bg-amber-100 text-amber-700 border-amber-200"><Clock className="h-2 w-2 mr-0.5" />En attente</Badge>;
-      case 'overdue':
-        return <Badge variant="outline" className="text-[9px] bg-red-100 text-red-700 border-red-200"><XCircle className="h-2 w-2 mr-0.5" />Impayé</Badge>;
-      default:
-        return <Badge variant="outline" className="text-[9px]">{status}</Badge>;
+      case 'paid': return 'paid';
+      case 'pending': return 'pending';
+      case 'overdue': return 'overdue';
+      default: return 'pending';
     }
   };
 
@@ -214,7 +210,7 @@ const AdminTaxHistory = () => {
                       <div className="flex items-center gap-2 mb-1">
                         <Receipt className="h-3.5 w-3.5 text-primary shrink-0" />
                         <span className="text-xs font-medium truncate">{record.parcel_number}</span>
-                        {getStatusBadge(record.payment_status)}
+                        <StatusBadge status={getTaxStatusType(record.payment_status)} compact />
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                         <span>Année: {record.tax_year}</span>

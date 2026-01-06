@@ -41,7 +41,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
     sortOrder
   });
 
-  const pagination = usePagination(filteredUsers, { initialPageSize: 20 });
+  const pagination = usePagination(filteredUsers, { initialPageSize: 15 });
 
   useEffect(() => {
     fetchUsers();

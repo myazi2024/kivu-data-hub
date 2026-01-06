@@ -63,7 +63,7 @@ const AdminPublications: React.FC<AdminPublicationsProps> = ({ onRefresh }) => {
   }, [publications, searchQuery, statusFilter, categoryFilter]);
 
   // Pagination
-  const pagination = usePagination(filteredPublications, { initialPageSize: 10 });
+  const pagination = usePagination(filteredPublications, { initialPageSize: 15 });
 
   // CSV Export
   const exportToCSV = () => {

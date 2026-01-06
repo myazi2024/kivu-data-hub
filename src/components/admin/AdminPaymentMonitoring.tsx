@@ -101,7 +101,7 @@ export const AdminPaymentMonitoring = () => {
     hasNextPage,
     hasPreviousPage,
     totalItems
-  } = usePagination(transactions, { initialPageSize: 20 });
+  } = usePagination(transactions, { initialPageSize: 15 });
 
   const retryPayment = async (transactionId: string) => {
     try {

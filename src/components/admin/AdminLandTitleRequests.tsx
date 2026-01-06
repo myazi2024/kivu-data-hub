@@ -153,7 +153,7 @@ const AdminLandTitleRequests: React.FC = () => {
     return matchesSearch && matchesStatus && matchesPayment;
   });
 
-  const pagination = usePagination(filteredRequests, { initialPageSize: 10 });
+  const pagination = usePagination(filteredRequests, { initialPageSize: 15 });
 
   const handleProcessRequest = async () => {
     if (!selectedRequest || !user) return;
