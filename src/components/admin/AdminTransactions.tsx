@@ -128,7 +128,7 @@ const AdminTransactions = () => {
     hasNextPage,
     hasPreviousPage,
     totalItems
-  } = usePagination(filteredAndSortedTransactions, { initialPageSize: 20 });
+  } = usePagination(filteredAndSortedTransactions, { initialPageSize: 15 });
 
   const totalAmount = filteredAndSortedTransactions.reduce((sum, tx) => sum + tx.amount, 0);
   const successfulTransactions = filteredAndSortedTransactions.filter(tx => 

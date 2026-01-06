@@ -120,7 +120,7 @@ const AdminPaymentReconciliation = () => {
     hasNextPage,
     hasPreviousPage,
     totalItems
-  } = usePagination(filteredTransactions, { initialPageSize: 20 });
+  } = usePagination(filteredTransactions, { initialPageSize: 15 });
 
   const pendingCount = transactions.filter(t => t.status === 'pending').length;
   const completedTotal = transactions.filter(t => t.status === 'completed').reduce((sum, t) => sum + t.amount_usd, 0);

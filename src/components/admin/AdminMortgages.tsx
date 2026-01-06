@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +12,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 
 interface Mortgage {
@@ -101,22 +101,16 @@ const AdminMortgages = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getMortgageStatusType = (status: string): StatusType => {
     const normalizedStatus = status?.toLowerCase();
     switch (normalizedStatus) {
-      case 'active':
-        return <Badge variant="outline" className="text-[9px] bg-blue-100 text-blue-700 border-blue-200">Actif</Badge>;
-      case 'paid':
-        return <Badge variant="outline" className="text-[9px] bg-green-100 text-green-700 border-green-200">Soldé</Badge>;
+      case 'active': return 'active';
+      case 'paid': return 'paid';
       case 'defaulted':
-      case 'en défaut':
-        return <Badge variant="outline" className="text-[9px] bg-red-100 text-red-700 border-red-200">Défaut</Badge>;
-      case 'pending':
-        return <Badge variant="outline" className="text-[9px] bg-yellow-100 text-yellow-700 border-yellow-200">En attente</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="text-[9px] bg-red-100 text-red-700 border-red-200">Rejeté</Badge>;
-      default:
-        return <Badge variant="outline" className="text-[9px]">{status}</Badge>;
+      case 'en défaut': return 'defaulted';
+      case 'pending': return 'pending';
+      case 'rejected': return 'rejected';
+      default: return 'pending';
     }
   };
 
@@ -272,7 +266,7 @@ const AdminMortgages = () => {
                           <div className="flex items-center gap-2 mb-1">
                             <Building className="h-3.5 w-3.5 text-primary shrink-0" />
                             <span className="text-xs font-medium truncate">{mortgage.creditor_name}</span>
-                            {getStatusBadge(mortgage.mortgage_status)}
+                            <StatusBadge status={getMortgageStatusType(mortgage.mortgage_status)} compact />
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                             <span className="truncate">Parcelle: {mortgage.parcel_number}</span>
@@ -355,7 +349,7 @@ const AdminMortgages = () => {
                             <span className="text-xs font-medium truncate">
                               {mortgage?.creditor_name || mortgage?.creditorName || 'Non spécifié'}
                             </span>
-                            {getStatusBadge(pending.status)}
+                            <StatusBadge status={getMortgageStatusType(pending.status)} compact />
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                             <span className="truncate">Parcelle: {pending.parcel_number}</span>
@@ -426,7 +420,7 @@ const AdminMortgages = () => {
                 </div>
                 <div className="p-2.5 rounded-lg bg-muted/50">
                   <p className="text-[10px] text-muted-foreground mb-1">Statut</p>
-                  {getStatusBadge(selectedMortgage.mortgage_status)}
+                  <StatusBadge status={getMortgageStatusType(selectedMortgage.mortgage_status)} />
                 </div>
               </div>
               <div className="p-2.5 rounded-lg bg-muted/50">
@@ -468,7 +462,7 @@ const AdminMortgages = () => {
                 </div>
                 <div className="p-2.5 rounded-lg bg-muted/50">
                   <p className="text-[10px] text-muted-foreground mb-1">Statut</p>
-                  {getStatusBadge(selectedPending.status)}
+                  <StatusBadge status={getMortgageStatusType(selectedPending.status)} />
                 </div>
               </div>
               <p className="text-[10px] text-muted-foreground text-center">

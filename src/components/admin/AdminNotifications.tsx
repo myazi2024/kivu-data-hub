@@ -7,8 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, Bell, Send, Trash2, Eye, Check, AlertCircle, Search, Download } from 'lucide-react';
+import { Loader2, Bell, Send, Trash2, Eye, Search, Download } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,15 +19,17 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  ResponsiveTable,
+  ResponsiveTableBody,
+  ResponsiveTableCell,
+  ResponsiveTableHead,
+  ResponsiveTableHeader,
+  ResponsiveTableRow,
+} from '@/components/ui/responsive-table';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
+import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
+import { exportToCSV } from '@/utils/csvExport';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -92,28 +93,20 @@ export const AdminNotifications: React.FC = () => {
   }, [notifications, searchQuery, typeFilter, statusFilter]);
 
   // Pagination
-  const pagination = usePagination(filteredNotifications, { initialPageSize: 20 });
+  const pagination = usePagination(filteredNotifications, { initialPageSize: 15 });
 
   // CSV Export
-  const exportToCSV = () => {
-    const csv = [
-      ['Date', 'Utilisateur', 'Type', 'Titre', 'Message', 'Statut'].join(','),
-      ...filteredNotifications.map(n => [
-        format(new Date(n.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
-        n.profiles?.full_name || n.profiles?.email || 'N/A',
-        n.type,
-        `"${n.title.replace(/"/g, '""')}"`,
-        `"${n.message.replace(/"/g, '""')}"`,
-        n.is_read ? 'Lu' : 'Non lu'
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `notifications-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
+  const handleExportCSV = () => {
+    const headers = ['Date', 'Utilisateur', 'Type', 'Titre', 'Message', 'Statut'];
+    const data = filteredNotifications.map(n => [
+      format(new Date(n.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+      n.profiles?.full_name || n.profiles?.email || 'N/A',
+      n.type,
+      n.title,
+      n.message,
+      n.is_read ? 'Lu' : 'Non lu'
+    ]);
+    exportToCSV({ filename: 'notifications.csv', headers, data });
   };
 
   useEffect(() => {
@@ -292,21 +285,12 @@ export const AdminNotifications: React.FC = () => {
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getNotificationStatusType = (type: string): StatusType => {
     switch (type) {
-      case 'success': return 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20';
-      case 'warning': return 'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/20';
-      case 'error': return 'bg-destructive/10 text-destructive dark:text-red-400 border-destructive/20';
-      default: return 'bg-primary/10 text-primary dark:text-blue-400 border-primary/20';
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'success': return <Check className="h-4 w-4" />;
-      case 'warning': return <AlertCircle className="h-4 w-4" />;
-      case 'error': return <AlertCircle className="h-4 w-4" />;
-      default: return <Bell className="h-4 w-4" />;
+      case 'success': return 'success';
+      case 'warning': return 'warning';
+      case 'error': return 'error';
+      default: return 'info';
     }
   };
 
@@ -476,7 +460,7 @@ export const AdminNotifications: React.FC = () => {
                 <SelectItem value="unread">Non lus</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={exportToCSV} className="h-9 gap-1">
+            <Button variant="outline" size="sm" onClick={handleExportCSV} className="h-9 gap-1">
               <Download className="h-4 w-4" />
               Exporter
             </Button>
@@ -493,52 +477,40 @@ export const AdminNotifications: React.FC = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Utilisateur</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Titre</TableHead>
-                    <TableHead>Message</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+              <ResponsiveTable>
+                <ResponsiveTableHeader>
+                  <ResponsiveTableRow>
+                    <ResponsiveTableHead priority="high">Date</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="high">Utilisateur</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="medium">Type</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="high">Titre</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="low">Message</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="medium">Statut</ResponsiveTableHead>
+                    <ResponsiveTableHead priority="high" className="text-right">Actions</ResponsiveTableHead>
+                  </ResponsiveTableRow>
+                </ResponsiveTableHeader>
+                <ResponsiveTableBody>
                   {pagination.paginatedData.map((notification) => (
-                    <TableRow key={notification.id}>
-                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    <ResponsiveTableRow key={notification.id}>
+                      <ResponsiveTableCell priority="high" label="Date" className="text-xs text-muted-foreground whitespace-nowrap">
                         {format(new Date(notification.created_at), 'dd MMM HH:mm', { locale: fr })}
-                      </TableCell>
-                      <TableCell className="text-sm">
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="high" label="Utilisateur" className="text-sm">
                         {notification.profiles?.full_name || notification.profiles?.email || 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`${getTypeColor(notification.type)} flex items-center gap-1 w-fit`}>
-                          {getTypeIcon(notification.type)}
-                          {notification.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="font-medium max-w-[200px] truncate">
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="medium" label="Type">
+                        <StatusBadge status={getNotificationStatusType(notification.type)} compact />
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="high" label="Titre" className="font-medium max-w-[200px] truncate">
                         {notification.title}
-                      </TableCell>
-                      <TableCell className="max-w-[300px] truncate text-sm text-muted-foreground">
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="low" label="Message" className="max-w-[300px] truncate text-sm text-muted-foreground">
                         {notification.message}
-                      </TableCell>
-                      <TableCell>
-                        {notification.is_read ? (
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-                            <Eye className="mr-1 h-3 w-3" />
-                            Lu
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">
-                            Non lu
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="medium" label="Statut">
+                        <StatusBadge status={notification.is_read ? 'completed' : 'pending'} compact />
+                      </ResponsiveTableCell>
+                      <ResponsiveTableCell priority="high" className="text-right">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -546,11 +518,11 @@ export const AdminNotifications: React.FC = () => {
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
-                      </TableCell>
-                    </TableRow>
+                      </ResponsiveTableCell>
+                    </ResponsiveTableRow>
                   ))}
-                </TableBody>
-              </Table>
+                </ResponsiveTableBody>
+              </ResponsiveTable>
               
               <PaginationControls
                 currentPage={pagination.currentPage}

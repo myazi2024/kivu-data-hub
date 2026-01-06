@@ -121,7 +121,7 @@ const AdminPayments: React.FC<AdminPaymentsProps> = ({ onRefresh }) => {
     ? payments 
     : payments.filter(payment => payment.status === filterStatus);
 
-  const pagination = usePagination(filteredPayments, { initialPageSize: 10 });
+  const pagination = usePagination(filteredPayments, { initialPageSize: 15 });
 
   const handleExport = () => {
     exportToCSV({

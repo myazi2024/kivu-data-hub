@@ -72,7 +72,7 @@ export default function AdminAuditLogs() {
     hasNextPage,
     hasPreviousPage,
     totalItems
-  } = usePagination(filteredLogs, { initialPageSize: 20 });
+  } = usePagination(filteredLogs, { initialPageSize: 15 });
 
   useEffect(() => {
     fetchLogs();

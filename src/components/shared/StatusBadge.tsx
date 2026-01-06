@@ -13,7 +13,15 @@ export type StatusType =
   | 'paid'
   | 'cancelled'
   | 'failed'
-  | 'processing';
+  | 'processing'
+  | 'active'
+  | 'overdue'
+  | 'defaulted'
+  | 'in_review'
+  | 'info'
+  | 'success'
+  | 'warning'
+  | 'error';
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -106,6 +114,62 @@ export const StatusBadge = ({ status, compact = false, className = '' }: StatusB
       label: 'Traitement',
       shortLabel: 'Trait.',
       color: 'text-blue-600'
+    },
+    active: {
+      variant: 'default',
+      icon: CheckCircle,
+      label: 'Actif',
+      shortLabel: 'Act.',
+      color: 'text-blue-600'
+    },
+    overdue: {
+      variant: 'destructive',
+      icon: XCircle,
+      label: 'Impayé',
+      shortLabel: 'Imp.',
+      color: 'text-red-600'
+    },
+    defaulted: {
+      variant: 'destructive',
+      icon: Ban,
+      label: 'En défaut',
+      shortLabel: 'Déf.',
+      color: 'text-red-600'
+    },
+    in_review: {
+      variant: 'outline',
+      icon: Clock,
+      label: 'En révision',
+      shortLabel: 'Rév.',
+      color: 'text-orange-600'
+    },
+    info: {
+      variant: 'secondary',
+      icon: AlertCircle,
+      label: 'Information',
+      shortLabel: 'Info',
+      color: 'text-blue-600'
+    },
+    success: {
+      variant: 'default',
+      icon: CheckCircle,
+      label: 'Succès',
+      shortLabel: 'Succ.',
+      color: 'text-green-600'
+    },
+    warning: {
+      variant: 'outline',
+      icon: AlertCircle,
+      label: 'Avertissement',
+      shortLabel: 'Avert.',
+      color: 'text-yellow-600'
+    },
+    error: {
+      variant: 'destructive',
+      icon: XCircle,
+      label: 'Erreur',
+      shortLabel: 'Err.',
+      color: 'text-red-600'
     }
   };
 

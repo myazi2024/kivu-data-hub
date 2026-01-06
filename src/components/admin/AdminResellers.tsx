@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -15,6 +14,14 @@ import {
   Tag,
   Download
 } from 'lucide-react';
+import {
+  ResponsiveTable,
+  ResponsiveTableBody,
+  ResponsiveTableCell,
+  ResponsiveTableHead,
+  ResponsiveTableHeader,
+  ResponsiveTableRow,
+} from '@/components/ui/responsive-table';
 import { useResellers } from '@/hooks/useResellers';
 import { useDiscountCodes } from '@/hooks/useDiscountCodes';
 import { useResellerSales } from '@/hooks/useResellerSales';
@@ -23,6 +30,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
+import { exportToCSV } from '@/utils/csvExport';
 
 interface AdminResellersProps {
   onRefresh?: () => void;
@@ -58,32 +66,24 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
   ), [resellers, searchQuery]);
 
   // Use usePagination hook
-  const pagination = usePagination(filteredResellers, { initialPageSize: 10 });
+  const pagination = usePagination(filteredResellers, { initialPageSize: 15 });
 
-  const exportToCSV = () => {
-    const csv = [
-      ['Code', 'Entreprise', 'Contact', 'Commission %', 'Commission Fixe', 'Ventes', 'Statut', 'Créé le'].join(','),
-      ...filteredResellers.map(r => {
-        const stats = getResellerStats(r.id);
-        return [
-          r.reseller_code,
-          r.business_name || 'Non renseigné',
-          r.contact_phone || '',
-          r.commission_rate,
-          r.fixed_commission_usd,
-          stats.salesCount,
-          r.is_active ? 'Actif' : 'Inactif',
-          format(new Date(r.created_at), 'dd/MM/yyyy', { locale: fr })
-        ].join(',');
-      })
-    ].join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `revendeurs-${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    a.click();
+  const handleExportCSV = () => {
+    const headers = ['Code', 'Entreprise', 'Contact', 'Commission %', 'Commission Fixe', 'Ventes', 'Statut', 'Créé le'];
+    const data = filteredResellers.map(r => {
+      const stats = getResellerStats(r.id);
+      return [
+        r.reseller_code,
+        r.business_name || 'Non renseigné',
+        r.contact_phone || '',
+        r.commission_rate,
+        r.fixed_commission_usd,
+        stats.salesCount,
+        r.is_active ? 'Actif' : 'Inactif',
+        format(new Date(r.created_at), 'dd/MM/yyyy', { locale: fr })
+      ];
+    });
+    exportToCSV({ filename: 'revendeurs.csv', headers, data });
   };
 
   const handleCreateReseller = async () => {
@@ -204,7 +204,7 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
               Gestion des Revendeurs
             </CardTitle>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={exportToCSV} className="gap-2">
+              <Button variant="outline" onClick={handleExportCSV} className="gap-2">
                 <Download className="h-4 w-4" />
                 Exporter
               </Button>
@@ -282,41 +282,41 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
             />
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Code</TableHead>
-                <TableHead>Entreprise</TableHead>
-                <TableHead>Contact</TableHead>
-                <TableHead>Commission</TableHead>
-                <TableHead>Ventes</TableHead>
-                <TableHead>Codes</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <ResponsiveTable>
+            <ResponsiveTableHeader>
+              <ResponsiveTableRow>
+                <ResponsiveTableHead priority="high">Code</ResponsiveTableHead>
+                <ResponsiveTableHead priority="high">Entreprise</ResponsiveTableHead>
+                <ResponsiveTableHead priority="low">Contact</ResponsiveTableHead>
+                <ResponsiveTableHead priority="medium">Commission</ResponsiveTableHead>
+                <ResponsiveTableHead priority="medium">Ventes</ResponsiveTableHead>
+                <ResponsiveTableHead priority="low">Codes</ResponsiveTableHead>
+                <ResponsiveTableHead priority="high">Statut</ResponsiveTableHead>
+                <ResponsiveTableHead priority="high">Actions</ResponsiveTableHead>
+              </ResponsiveTableRow>
+            </ResponsiveTableHeader>
+            <ResponsiveTableBody>
               {pagination.paginatedData.map((reseller) => {
                 const stats = getResellerStats(reseller.id);
                 const resellerCodes = getResellerCodes(reseller.id);
                 
                 return (
-                  <TableRow key={reseller.id}>
-                    <TableCell>
+                  <ResponsiveTableRow key={reseller.id}>
+                    <ResponsiveTableCell priority="high" label="Code">
                       <Badge variant="outline" className="font-mono">
                         {reseller.reseller_code}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="high" label="Entreprise">
                       <div>
                         <div className="font-medium">{reseller.business_name || 'Non renseigné'}</div>
                         <div className="text-sm text-muted-foreground">
                           Créé le {new Date(reseller.created_at).toLocaleDateString()}
                         </div>
                       </div>
-                    </TableCell>
-                    <TableCell>{reseller.contact_phone || '-'}</TableCell>
-                    <TableCell>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="low" label="Contact">{reseller.contact_phone || '-'}</ResponsiveTableCell>
+                    <ResponsiveTableCell priority="medium" label="Commission">
                       <div className="text-sm">
                         {reseller.fixed_commission_usd > 0 ? (
                           <span>${reseller.fixed_commission_usd} fixe</span>
@@ -324,19 +324,19 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
                           <span>{reseller.commission_rate}%</span>
                         )}
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="medium" label="Ventes">
                       <div className="text-sm">
                         <div>{stats.salesCount} ventes</div>
                         <div className="text-muted-foreground">${stats.totalSales.toFixed(2)}</div>
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="low" label="Codes">
                       <Badge variant="secondary">
                         {resellerCodes.length} codes
                       </Badge>
-                    </TableCell>
-                    <TableCell>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="high" label="Statut">
                       <div className="flex items-center space-x-2">
                         <Switch
                           checked={reseller.is_active}
@@ -346,8 +346,8 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
                           {reseller.is_active ? 'Actif' : 'Inactif'}
                         </span>
                       </div>
-                    </TableCell>
-                    <TableCell>
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell priority="high" label="Actions">
                       <div className="flex items-center space-x-2">
                         <Button
                           variant="outline"
@@ -361,12 +361,12 @@ const AdminResellers: React.FC<AdminResellersProps> = ({ onRefresh }) => {
                           Code
                         </Button>
                       </div>
-                    </TableCell>
-                  </TableRow>
+                    </ResponsiveTableCell>
+                  </ResponsiveTableRow>
                 );
               })}
-            </TableBody>
-          </Table>
+            </ResponsiveTableBody>
+          </ResponsiveTable>
 
           {filteredResellers.length === 0 && (
             <div className="text-center py-6 text-muted-foreground">
