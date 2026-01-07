@@ -7,9 +7,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Card } from '@/components/ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Filter, X, ChevronDown, MapPin, Home, AlertCircle } from 'lucide-react';
+import { Filter, X, ChevronDown, MapPin, Home, AlertCircle, Info } from 'lucide-react';
 import { SearchFilters } from '@/hooks/useAdvancedCadastralSearch';
-import { supabase } from '@/integrations/supabase/client';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import { 
+  getAllProvinces, 
+  getVillesForProvince, 
+  getCommunesForVille,
+  getTerritoiresForProvince,
+  getCollectivitesForTerritoire
+} from '@/lib/geographicData';
 
 interface AdvancedSearchFiltersProps {
   filters: SearchFilters;
@@ -27,90 +35,64 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
   isCompact = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [provinces, setProvinces] = useState<string[]>([]);
-  const [villes, setVilles] = useState<string[]>([]);
-  const [communes, setCommunes] = useState<string[]>([]);
-  const [quartiers, setQuartiers] = useState<string[]>([]);
+  
+  // Options géographiques basées sur la structure hiérarchique
+  const provinces = getAllProvinces();
+  const [availableVilles, setAvailableVilles] = useState<string[]>([]);
+  const [availableCommunes, setAvailableCommunes] = useState<string[]>([]);
+  const [availableTerritoires, setAvailableTerritoires] = useState<string[]>([]);
+  const [availableCollectivites, setAvailableCollectivites] = useState<string[]>([]);
 
-  // Charger les options géographiques dynamiquement
-  useEffect(() => {
-    const loadGeographicOptions = async () => {
-      const { data } = await supabase
-        .from('cadastral_parcels')
-        .select('province, ville, commune, quartier')
-        .not('province', 'is', null);
-      
-      if (data) {
-        const uniqueProvinces = [...new Set(data.map(d => d.province).filter(Boolean))] as string[];
-        setProvinces(uniqueProvinces);
-      }
-    };
-    
-    loadGeographicOptions();
-  }, []);
-
-  // Charger villes quand province change
+  // Charger villes et territoires quand province change
   useEffect(() => {
     if (filters.province) {
-      const loadVilles = async () => {
-        const { data } = await supabase
-          .from('cadastral_parcels')
-          .select('ville')
-          .eq('province', filters.province)
-          .not('ville', 'is', null);
-        
-        if (data) {
-          const uniqueVilles = [...new Set(data.map(d => d.ville).filter(Boolean))] as string[];
-          setVilles(uniqueVilles);
-        }
-      };
-      loadVilles();
+      setAvailableVilles(getVillesForProvince(filters.province));
+      setAvailableTerritoires(getTerritoiresForProvince(filters.province));
     } else {
-      setVilles([]);
+      setAvailableVilles([]);
+      setAvailableTerritoires([]);
     }
   }, [filters.province]);
 
   // Charger communes quand ville change
   useEffect(() => {
-    if (filters.ville) {
-      const loadCommunes = async () => {
-        const { data } = await supabase
-          .from('cadastral_parcels')
-          .select('commune')
-          .eq('ville', filters.ville)
-          .not('commune', 'is', null);
-        
-        if (data) {
-          const uniqueCommunes = [...new Set(data.map(d => d.commune).filter(Boolean))] as string[];
-          setCommunes(uniqueCommunes);
-        }
-      };
-      loadCommunes();
+    if (filters.province && filters.ville) {
+      setAvailableCommunes(getCommunesForVille(filters.province, filters.ville));
     } else {
-      setCommunes([]);
+      setAvailableCommunes([]);
     }
-  }, [filters.ville]);
+  }, [filters.province, filters.ville]);
 
-  // Charger quartiers quand commune change
+  // Charger collectivités quand territoire change
   useEffect(() => {
-    if (filters.commune) {
-      const loadQuartiers = async () => {
-        const { data } = await supabase
-          .from('cadastral_parcels')
-          .select('quartier')
-          .eq('commune', filters.commune)
-          .not('quartier', 'is', null);
-        
-        if (data) {
-          const uniqueQuartiers = [...new Set(data.map(d => d.quartier).filter(Boolean))] as string[];
-          setQuartiers(uniqueQuartiers);
-        }
-      };
-      loadQuartiers();
+    if (filters.province && filters.territoire) {
+      setAvailableCollectivites(getCollectivitesForTerritoire(filters.province, filters.territoire));
     } else {
-      setQuartiers([]);
+      setAvailableCollectivites([]);
     }
-  }, [filters.commune]);
+  }, [filters.province, filters.territoire]);
+
+  // Handler pour changer le type de section
+  const handleSectionTypeChange = (type: 'urbaine' | 'rurale') => {
+    // Réinitialiser les champs de l'autre section
+    if (type === 'urbaine') {
+      onFiltersChange({ 
+        sectionType: type,
+        territoire: undefined,
+        collectivite: undefined,
+        groupement: undefined,
+        village: undefined
+      });
+    } else {
+      onFiltersChange({ 
+        sectionType: type,
+        ville: undefined,
+        commune: undefined,
+        quartier: undefined,
+        avenue: undefined
+      });
+    }
+  };
 
   const activeFiltersCount = Object.values(filters).filter(v => v !== undefined && v !== '').length;
 
@@ -138,74 +120,247 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
         </CollapsibleTrigger>
 
         <CollapsibleContent className="mt-3">
-          <ScrollArea className="h-[280px] pr-3">
+          <ScrollArea className="h-[340px] pr-3">
             <div className="space-y-4">
-              {/* Filtres géographiques */}
+              {/* Localisation de la parcelle - Aligné avec CadastralContributionDialog */}
               <div className="p-3 rounded-xl bg-muted/30 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
                     <MapPin className="h-3.5 w-3.5 text-primary" />
                   </div>
-                  <Label className="text-sm font-semibold">Localisation</Label>
+                  <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
                 </div>
-                <div className="grid grid-cols-2 gap-2.5">
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Province</Label>
-                    <Select value={filters.province || '_all'} onValueChange={(v) => onFiltersChange({ province: v === '_all' ? undefined : v })}>
-                      <SelectTrigger className="h-10 text-sm rounded-xl">
-                        <SelectValue placeholder="Toutes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_all">Toutes</SelectItem>
-                        {provinces.map(p => (
-                          <SelectItem key={p} value={p}>{p}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Ville</Label>
-                    <Select value={filters.ville || '_all'} onValueChange={(v) => onFiltersChange({ ville: v === '_all' ? undefined : v })} disabled={!filters.province}>
-                      <SelectTrigger className="h-10 text-sm rounded-xl">
-                        <SelectValue placeholder="Toutes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_all">Toutes</SelectItem>
-                        {villes.map(v => (
-                          <SelectItem key={v} value={v}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Commune</Label>
-                    <Select value={filters.commune || '_all'} onValueChange={(v) => onFiltersChange({ commune: v === '_all' ? undefined : v })} disabled={!filters.ville}>
-                      <SelectTrigger className="h-10 text-sm rounded-xl">
-                        <SelectValue placeholder="Toutes" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_all">Toutes</SelectItem>
-                        {communes.map(c => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-sm text-muted-foreground">Quartier</Label>
-                    <Select value={filters.quartier || '_all'} onValueChange={(v) => onFiltersChange({ quartier: v === '_all' ? undefined : v })} disabled={!filters.commune}>
-                      <SelectTrigger className="h-10 text-sm rounded-xl">
-                        <SelectValue placeholder="Tous" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="_all">Tous</SelectItem>
-                        {quartiers.map(q => (
-                          <SelectItem key={q} value={q}>{q}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+
+                {/* Province - toujours visible en premier */}
+                <div className="space-y-1.5">
+                  <Label className="text-sm text-muted-foreground">Province</Label>
+                  <Select 
+                    value={filters.province || '_all'} 
+                    onValueChange={(v) => onFiltersChange({ 
+                      province: v === '_all' ? undefined : v,
+                      sectionType: undefined,
+                      ville: undefined,
+                      commune: undefined,
+                      quartier: undefined,
+                      avenue: undefined,
+                      territoire: undefined,
+                      collectivite: undefined,
+                      groupement: undefined,
+                      village: undefined
+                    })}
+                  >
+                    <SelectTrigger className="h-9 text-sm rounded-xl">
+                      <SelectValue placeholder="Toutes" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl max-h-48">
+                      <SelectItem value="_all">Toutes</SelectItem>
+                      {provinces.map(p => (
+                        <SelectItem key={p} value={p}>{p}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
+
+                {/* Zone urbaine ou rurale - visible après province */}
+                {filters.province && (
+                  <div className="space-y-2 animate-fade-in">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm text-muted-foreground">Zone</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button type="button" variant="ghost" size="sm" className="h-5 w-5 p-0 hover:bg-primary/10 rounded-full">
+                            <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-72 text-sm rounded-xl">
+                          <h4 className="font-semibold mb-1.5 text-sm">Section cadastrale</h4>
+                          <p className="text-xs text-muted-foreground leading-relaxed">
+                            SU (Urbain): Ville → Commune → Quartier<br/>
+                            SR (Rural): Territoire → Collectivité → Village
+                          </p>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleSectionTypeChange('urbaine')}
+                        className={cn(
+                          "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                          filters.sectionType === 'urbaine'
+                            ? 'bg-primary text-primary-foreground shadow-md'
+                            : 'bg-background text-muted-foreground hover:bg-muted/80'
+                        )}
+                      >
+                        SU - Urbaine
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSectionTypeChange('rurale')}
+                        className={cn(
+                          "flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all",
+                          filters.sectionType === 'rurale'
+                            ? 'bg-primary text-primary-foreground shadow-md'
+                            : 'bg-background text-muted-foreground hover:bg-muted/80'
+                        )}
+                      >
+                        SR - Rurale
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Section Urbaine (SU) */}
+                {filters.sectionType === 'urbaine' && filters.province && (
+                  <div className="space-y-2.5 pt-2 border-t border-border/30 animate-fade-in">
+                    <Label className="text-xs font-semibold text-primary">Section Urbaine (SU)</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Ville</Label>
+                        <Select 
+                          value={filters.ville || '_all'} 
+                          onValueChange={(v) => onFiltersChange({ 
+                            ville: v === '_all' ? undefined : v,
+                            commune: undefined,
+                            quartier: undefined,
+                            avenue: undefined
+                          })}
+                          disabled={availableVilles.length === 0}
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-xl">
+                            <SelectValue placeholder={availableVilles.length === 0 ? "Aucune" : "Toutes"} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="_all">Toutes</SelectItem>
+                            {availableVilles.map(v => (
+                              <SelectItem key={v} value={v}>{v}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Commune</Label>
+                        <Select 
+                          value={filters.commune || '_all'} 
+                          onValueChange={(v) => onFiltersChange({ 
+                            commune: v === '_all' ? undefined : v,
+                            quartier: undefined,
+                            avenue: undefined
+                          })}
+                          disabled={!filters.ville || availableCommunes.length === 0}
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-xl">
+                            <SelectValue placeholder={!filters.ville ? "Ville d'abord" : "Toutes"} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="_all">Toutes</SelectItem>
+                            {availableCommunes.map(c => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Quartier</Label>
+                        <Input
+                          placeholder="Saisir..."
+                          value={filters.quartier || ''}
+                          onChange={(e) => onFiltersChange({ quartier: e.target.value || undefined })}
+                          className="h-8 text-xs rounded-xl"
+                          disabled={!filters.commune}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Avenue</Label>
+                        <Input
+                          placeholder="Saisir..."
+                          value={filters.avenue || ''}
+                          onChange={(e) => onFiltersChange({ avenue: e.target.value || undefined })}
+                          className="h-8 text-xs rounded-xl"
+                          disabled={!filters.quartier}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Section Rurale (SR) */}
+                {filters.sectionType === 'rurale' && filters.province && (
+                  <div className="space-y-2.5 pt-2 border-t border-border/30 animate-fade-in">
+                    <Label className="text-xs font-semibold text-primary">Section Rurale (SR)</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Territoire</Label>
+                        <Select 
+                          value={filters.territoire || '_all'} 
+                          onValueChange={(v) => onFiltersChange({ 
+                            territoire: v === '_all' ? undefined : v,
+                            collectivite: undefined,
+                            groupement: undefined,
+                            village: undefined
+                          })}
+                          disabled={availableTerritoires.length === 0}
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-xl">
+                            <SelectValue placeholder={availableTerritoires.length === 0 ? "Aucun" : "Tous"} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="_all">Tous</SelectItem>
+                            {availableTerritoires.map(t => (
+                              <SelectItem key={t} value={t}>{t}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Collectivité</Label>
+                        <Select 
+                          value={filters.collectivite || '_all'} 
+                          onValueChange={(v) => onFiltersChange({ 
+                            collectivite: v === '_all' ? undefined : v,
+                            groupement: undefined,
+                            village: undefined
+                          })}
+                          disabled={!filters.territoire || availableCollectivites.length === 0}
+                        >
+                          <SelectTrigger className="h-8 text-xs rounded-xl">
+                            <SelectValue placeholder={!filters.territoire ? "Territoire d'abord" : "Toutes"} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="_all">Toutes</SelectItem>
+                            {availableCollectivites.map(c => (
+                              <SelectItem key={c} value={c}>{c}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Groupement</Label>
+                        <Input
+                          placeholder="Optionnel"
+                          value={filters.groupement || ''}
+                          onChange={(e) => onFiltersChange({ groupement: e.target.value || undefined })}
+                          className="h-8 text-xs rounded-xl"
+                          disabled={!filters.collectivite}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-xs text-muted-foreground">Village</Label>
+                        <Input
+                          placeholder="Optionnel"
+                          value={filters.village || ''}
+                          onChange={(e) => onFiltersChange({ village: e.target.value || undefined })}
+                          className="h-8 text-xs rounded-xl"
+                          disabled={!filters.collectivite}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Critères de recherche */}

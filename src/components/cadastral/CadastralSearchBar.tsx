@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Search, X, Loader2 } from 'lucide-react';
+import { Search, X, Loader2, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -11,8 +11,12 @@ import { useCatalogConfig } from '@/hooks/useCatalogConfig';
 import CadastralResultsDialog from './CadastralResultsDialog';
 import CadastralContributionDialog from './CadastralContributionDialog';
 import CCCIntroDialog from './CCCIntroDialog';
+import { cn } from '@/lib/utils';
 
 const FIXED_TEXT = "Ex: ";
+
+// Caractères autorisés: lettres, chiffres, /, -, _
+const ALLOWED_CHARS_REGEX = /^[a-zA-Z0-9\/\-_\s]*$/;
 
 interface ParcelSuggestion {
   id: string;
@@ -34,6 +38,11 @@ const CadastralSearchBar = () => {
   const [fromMap, setFromMap] = useState(false);
   const [searchSuggestions, setSearchSuggestions] = useState<ParcelSuggestion[]>([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  
+  // Animation shake pour caractères invalides
+  const [isShaking, setIsShaking] = useState(false);
+  const [showInvalidCharWarning, setShowInvalidCharWarning] = useState(false);
+  const warningTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   const {
     searchQuery,
@@ -139,10 +148,33 @@ const CadastralSearchBar = () => {
     return () => clearInterval(cursorInterval);
   }, []);
 
+  const triggerShakeAnimation = () => {
+    setIsShaking(true);
+    setShowInvalidCharWarning(true);
+    
+    // Arrêter le shake après l'animation
+    setTimeout(() => setIsShaking(false), 500);
+    
+    // Masquer l'avertissement après 3 secondes
+    if (warningTimeoutRef.current) {
+      clearTimeout(warningTimeoutRef.current);
+    }
+    warningTimeoutRef.current = setTimeout(() => {
+      setShowInvalidCharWarning(false);
+    }, 3000);
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    // Accepter tous les caractères
     const value = e.target.value;
+    
+    // Vérifier si les caractères sont autorisés
+    if (!ALLOWED_CHARS_REGEX.test(value)) {
+      triggerShakeAnimation();
+      return; // Ne pas mettre à jour la valeur si caractères invalides
+    }
+    
     setSearchQuery(value);
+    setShowInvalidCharWarning(false);
   };
 
   const handleSelectSuggestion = (parcelNumber: string) => {
@@ -164,9 +196,28 @@ const CadastralSearchBar = () => {
     }
   }, [searchResult, showResultsDialog]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (warningTimeoutRef.current) {
+        clearTimeout(warningTimeoutRef.current);
+      }
+    };
+  }, []);
+
   return (
     <>
-      <Card className="relative overflow-visible bg-white/95 backdrop-blur-sm border-white/20 shadow-2xl">
+      <Card className={cn(
+        "relative overflow-visible bg-white/95 backdrop-blur-sm border-white/20 shadow-2xl transition-transform",
+        isShaking && "animate-[shake_0.5s_ease-in-out]"
+      )}>
+        <style>{`
+          @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+            20%, 40%, 60%, 80% { transform: translateX(4px); }
+          }
+        `}</style>
         <div className="p-4 sm:p-6">
           <div className="flex items-center gap-2 sm:gap-3 relative">
             <div className="h-11 w-11 shrink-0 flex items-center justify-center text-seloger-red">
@@ -184,11 +235,14 @@ const CadastralSearchBar = () => {
                   setTimeout(() => setSearchSuggestions([]), 200);
                 }}
                 placeholder=""
-                className={`h-11 pr-10 text-base font-medium transition-all duration-200
-                  ${inputStatus === 'loading' ? 'border-blue-400 ring-2 ring-blue-100' : ''}
-                  ${inputStatus === 'error' ? 'border-red-400 ring-2 ring-red-100' : ''}
-                  ${inputStatus === 'success' ? 'border-green-400 ring-2 ring-green-100' : ''}
-                  ${!searchQuery && !isFocused ? 'border-gray-200' : ''}`}
+                className={cn(
+                  "h-11 pr-10 text-base font-medium transition-all duration-200",
+                  inputStatus === 'loading' && 'border-blue-400 ring-2 ring-blue-100',
+                  inputStatus === 'error' && 'border-red-400 ring-2 ring-red-100',
+                  inputStatus === 'success' && 'border-green-400 ring-2 ring-green-100',
+                  !searchQuery && !isFocused && 'border-gray-200',
+                  isShaking && 'border-amber-400 ring-2 ring-amber-100'
+                )}
                 disabled={loading}
               />
 
@@ -238,6 +292,21 @@ const CadastralSearchBar = () => {
               )}
             </div>
           </div>
+
+          {/* Notification contextuelle pour caractères invalides */}
+          {showInvalidCharWarning && (
+            <div className="mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 animate-fade-in">
+              <div className="flex items-start gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-medium text-amber-800">Caractère non autorisé</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Caractères acceptés : lettres (A-Z), chiffres (0-9), / , - , _
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="mt-4 p-3 sm:p-4 rounded-lg bg-red-50 border border-red-200">
