@@ -3,9 +3,18 @@ import { supabase } from '@/integrations/supabase/client';
 
 export interface SearchFilters {
   province?: string;
+  sectionType?: 'urbaine' | 'rurale';
+  // Champs urbains
   ville?: string;
   commune?: string;
   quartier?: string;
+  avenue?: string;
+  // Champs ruraux
+  territoire?: string;
+  collectivite?: string;
+  groupement?: string;
+  village?: string;
+  // Autres critères
   ownerName?: string;
   areaSqmMin?: number;
   areaSqmMax?: number;
@@ -74,6 +83,7 @@ export const useAdvancedCadastralSearch = () => {
       if (activeFilters.province) {
         query = query.ilike('province', `%${activeFilters.province}%`);
       }
+      // Filtres urbains
       if (activeFilters.ville) {
         query = query.ilike('ville', `%${activeFilters.ville}%`);
       }
@@ -82,6 +92,22 @@ export const useAdvancedCadastralSearch = () => {
       }
       if (activeFilters.quartier) {
         query = query.ilike('quartier', `%${activeFilters.quartier}%`);
+      }
+      if (activeFilters.avenue) {
+        query = query.ilike('avenue', `%${activeFilters.avenue}%`);
+      }
+      // Filtres ruraux
+      if (activeFilters.territoire) {
+        query = query.ilike('territoire', `%${activeFilters.territoire}%`);
+      }
+      if (activeFilters.collectivite) {
+        query = query.ilike('collectivite', `%${activeFilters.collectivite}%`);
+      }
+      if (activeFilters.groupement) {
+        query = query.ilike('groupement', `%${activeFilters.groupement}%`);
+      }
+      if (activeFilters.village) {
+        query = query.ilike('village', `%${activeFilters.village}%`);
       }
 
       // Filtres de propriétaire
