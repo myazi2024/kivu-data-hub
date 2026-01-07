@@ -1942,9 +1942,9 @@ export const ParcelMapPreview = ({
           </div>
         )}
         
-        {/* Panneau de contrôle parcelle compact (déplacement + rotation) - aligné avec zoom, au-dessus de l'attribution */}
+        {/* Panneau de contrôle parcelle compact (déplacement + rotation) - aligné avec zoom, au-dessus de l'attribution - taille réduite sur desktop */}
         {!isDrawingMode && !selectedBorne && validCoords.length >= 3 && (
-          <div className="absolute bottom-8 right-14 z-[1000]">
+          <div className="absolute bottom-8 right-14 z-[1000] md:scale-[0.65] md:origin-bottom-right">
             <div className="flex flex-col items-end gap-0.5">
               {/* Indicateurs compacts */}
               <div className="flex items-center gap-1 bg-white/90 dark:bg-card/90 backdrop-blur-sm rounded-lg px-1 py-0.5 shadow-sm border border-blue-400/30">
