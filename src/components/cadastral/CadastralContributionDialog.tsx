@@ -2341,7 +2341,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent 
         ref={dialogContentRef} 
-        className="sm:max-w-3xl w-[calc(100%-1rem)] max-w-[380px] sm:max-w-3xl max-h-[92vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-2xl z-[9999]"
+        className="sm:max-w-xl w-[calc(100%-1rem)] max-w-[380px] sm:max-w-xl max-h-[92vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-2xl z-[9999]"
         onInteractOutside={(e) => {
           // Empêcher la fermeture si le clic est sur le bouton WhatsApp
           const target = e.target as HTMLElement;
@@ -2403,6 +2403,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               onValueChange={(value) => handleInputChange('propertyTitleType', value)}
               leaseType={formData.leaseType}
               onLeaseTypeChange={(type) => handleInputChange('leaseType', type)}
+              disabled={formData.isTitleInCurrentOwnerName === true}
             />
 
             {formData.propertyTitleType && (
@@ -2515,72 +2516,84 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               </Card>
             )}
 
-            {/* Le titre foncier est-il au nom du propriétaire actuel? */}
-            <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">
-                    Ce titre de type "{formData.propertyTitleType || 'non sélectionné'}" est-il au nom du propriétaire actuel ?
-                  </Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
-                        <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-72 rounded-xl text-xs">
-                      <p className="text-muted-foreground">
-                        Il est essentiel que le titre foncier soit enregistré au nom du véritable propriétaire afin de prévenir d'éventuelles complications légales, fiscales ou administratives.
-                      </p>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('isTitleInCurrentOwnerName', true)}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                      formData.isTitleInCurrentOwnerName === true
-                        ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
-                    }`}
-                  >
-                    Oui
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
-                    className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                      formData.isTitleInCurrentOwnerName === false
-                        ? 'bg-primary text-primary-foreground shadow-md'
-                        : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
-                    }`}
-                  >
-                    Non
-                  </button>
-                </div>
-                {formData.isTitleInCurrentOwnerName === false && (() => {
-                  const ownerSinceDate = currentOwners[0]?.since;
-                  if (!ownerSinceDate) return null;
-                  
-                  const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
-                  
-                  if (daysDiff >= 20) {
-                    return (
-                      <p className="text-xs text-amber-700 dark:text-amber-400">
-                        ⚠️ Hors délai légal de mutation (De 1 à 20 jours après acquisition).
-                      </p>
-                    );
-                  } else {
-                    return (
-                      <p className="text-xs text-green-700 dark:text-green-400">
-                        ✓ Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (De 1 à 20 jours après acquisition).
-                      </p>
-                    );
-                  }
-                })()}
-              </CardContent>
-            </Card>
+            {/* Le titre foncier est-il au nom du propriétaire actuel? - Affiché uniquement si N° Titre foncier est rempli */}
+            {formData.titleReferenceNumber && formData.titleReferenceNumber.trim() !== '' && (
+              <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30 overflow-hidden">
+                <CardContent className="p-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-medium text-amber-900 dark:text-amber-100">
+                      Ce titre de type "{formData.propertyTitleType || 'non sélectionné'}" est-il au nom du propriétaire actuel ?
+                    </Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 rounded-full hover:bg-transparent">
+                          <Info className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 rounded-xl text-xs">
+                        <p className="text-muted-foreground">
+                          Il est essentiel que le titre foncier soit enregistré au nom du véritable propriétaire afin de prévenir d'éventuelles complications légales, fiscales ou administratives.
+                        </p>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleInputChange('isTitleInCurrentOwnerName', true);
+                        // Si "Oui" sélectionné, synchroniser la date "Propriétaire depuis" avec "Date délivrance"
+                        if (formData.titleIssueDate) {
+                          const updatedOwners = [...currentOwners];
+                          if (updatedOwners.length > 0) {
+                            updatedOwners[0] = { ...updatedOwners[0], since: formData.titleIssueDate };
+                            setCurrentOwners(updatedOwners);
+                          }
+                        }
+                      }}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                        formData.isTitleInCurrentOwnerName === true
+                          ? 'bg-primary text-primary-foreground shadow-md'
+                          : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
+                      }`}
+                    >
+                      Oui
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleInputChange('isTitleInCurrentOwnerName', false)}
+                      className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
+                        formData.isTitleInCurrentOwnerName === false
+                          ? 'bg-primary text-primary-foreground shadow-md'
+                          : 'bg-background text-muted-foreground hover:bg-background/80 border border-border'
+                      }`}
+                    >
+                      Non
+                    </button>
+                  </div>
+                  {formData.isTitleInCurrentOwnerName === false && (() => {
+                    const ownerSinceDate = currentOwners[0]?.since;
+                    if (!ownerSinceDate) return null;
+                    
+                    const daysDiff = Math.floor((new Date().getTime() - new Date(ownerSinceDate).getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysDiff >= 20) {
+                      return (
+                        <p className="text-xs text-amber-700 dark:text-amber-400">
+                          ⚠️ Hors délai légal de mutation (De 1 à 20 jours après acquisition).
+                        </p>
+                      );
+                    } else {
+                      return (
+                        <p className="text-xs text-green-700 dark:text-green-400">
+                          ✓ Pensez à faire la mutation dès que possible, vous êtes encore dans le délai légal (De 1 à 20 jours après acquisition).
+                        </p>
+                      );
+                    }
+                  })()}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Section Propriétaire(s) actuel(s) */}
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
@@ -2697,8 +2710,15 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           max={new Date().toISOString().split('T')[0]}
                           value={owner.since}
                           onChange={(e) => updateCurrentOwner(index, 'since', e.target.value)}
-                          className="h-10 text-sm rounded-xl"
+                          className={`h-10 text-sm rounded-xl ${formData.isTitleInCurrentOwnerName === true && index === 0 ? 'cursor-not-allowed opacity-70' : ''}`}
+                          disabled={formData.isTitleInCurrentOwnerName === true && index === 0}
+                          title={formData.isTitleInCurrentOwnerName === true && index === 0 ? 'Cette date est synchronisée avec la date de délivrance du titre' : undefined}
                         />
+                        {formData.isTitleInCurrentOwnerName === true && index === 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Synchronisée avec la date de délivrance
+                          </p>
+                        )}
                       </div>
                     </div>
 

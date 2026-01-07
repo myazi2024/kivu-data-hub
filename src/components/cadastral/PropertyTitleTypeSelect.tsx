@@ -91,13 +91,15 @@ interface PropertyTitleTypeSelectProps {
   onValueChange: (value: string) => void;
   leaseType?: 'initial' | 'renewal';
   onLeaseTypeChange?: (type: 'initial' | 'renewal') => void;
+  disabled?: boolean;
 }
 
 const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({ 
   value, 
   onValueChange, 
   leaseType, 
-  onLeaseTypeChange 
+  onLeaseTypeChange,
+  disabled = false
 }) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
   
@@ -133,8 +135,8 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
         </div>
         
         {/* Select */}
-        <Select value={value} onValueChange={onValueChange}>
-          <SelectTrigger className="h-10 rounded-xl text-sm">
+        <Select value={value} onValueChange={onValueChange} disabled={disabled}>
+          <SelectTrigger className={`h-10 rounded-xl text-sm ${disabled ? 'cursor-not-allowed opacity-70' : ''}`}>
             <SelectValue placeholder="Sélectionner le type de titre" />
           </SelectTrigger>
           <SelectContent className="max-h-[400px] rounded-xl">
