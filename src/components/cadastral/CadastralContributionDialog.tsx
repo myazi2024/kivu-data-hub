@@ -2403,7 +2403,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               onValueChange={(value) => handleInputChange('propertyTitleType', value)}
               leaseType={formData.leaseType}
               onLeaseTypeChange={(type) => handleInputChange('leaseType', type)}
-              disabled={formData.isTitleInCurrentOwnerName === true}
             />
 
             {formData.propertyTitleType && (
