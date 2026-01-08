@@ -14,6 +14,7 @@ import MortgageCancellationDialog from './MortgageCancellationDialog';
 import BuildingPermitFormDialog from './BuildingPermitFormDialog';
 import TaxFormDialog from './TaxFormDialog';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
+import SubdivisionRequestDialog from './SubdivisionRequestDialog';
 
 interface ParcelActionsDropdownProps {
   parcelNumber: string;
@@ -33,6 +34,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const [showRegularizationPermitDialog, setShowRegularizationPermitDialog] = useState(false);
   const [showTaxDialog, setShowTaxDialog] = useState(false);
   const [showPermitRequestDialog, setShowPermitRequestDialog] = useState(false);
+  const [showSubdivisionDialog, setShowSubdivisionDialog] = useState(false);
 
   return (
     <>
