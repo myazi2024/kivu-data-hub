@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn } from '@/lib/utils';
 
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus, FileCheck2 } from 'lucide-react';
+import { MapPin, Loader2, Search, X, MessageCircle, AlertTriangle, Settings2, Star, Sparkles, FileEdit, HelpCircle, MapPinPlus, FileCheck2, AlertCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import CCCIntroDialog from '@/components/cadastral/CCCIntroDialog';
@@ -74,6 +74,11 @@ const CadastralMap = () => {
   const landTitleNotificationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showLandTitleButton, setShowLandTitleButton] = useState(false);
   const landTitleButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Animation shake et notification caractères invalides
+  const [isShaking, setIsShaking] = useState(false);
+  const [showInvalidCharNotification, setShowInvalidCharNotification] = useState(false);
+  const invalidCharTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Advanced search hooks
   const advancedSearch = useAdvancedCadastralSearch();
@@ -591,15 +596,36 @@ const CadastralMap = () => {
               {/* Barre de recherche */}
               <div className="flex items-center gap-2">
                 <div className={`relative ${isMobile ? 'flex-1 max-w-[220px]' : 'flex-1'}`}>
-                  <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground`}>
+                  <div className={`absolute left-2.5 top-1/2 -translate-y-1/2 ${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} text-muted-foreground z-10`}>
                     <Search className="h-full w-full" />
                   </div>
                   <Input
                     placeholder={selectedParcel && isMobile ? "N°..." : "N° parcelle..."}
                     value={searchQuery}
                     onChange={(e) => {
+                      const inputValue = e.target.value;
+                      // Vérifier si l'utilisateur essaie d'entrer des caractères non autorisés
+                      const hasInvalidChars = /[^0-9]/.test(inputValue);
+                      
+                      if (hasInvalidChars) {
+                        // Déclencher l'animation shake
+                        setIsShaking(true);
+                        setTimeout(() => setIsShaking(false), 500);
+                        
+                        // Afficher la notification contextuelle
+                        setShowInvalidCharNotification(true);
+                        
+                        // Masquer automatiquement après 3 secondes
+                        if (invalidCharTimeoutRef.current) {
+                          clearTimeout(invalidCharTimeoutRef.current);
+                        }
+                        invalidCharTimeoutRef.current = setTimeout(() => {
+                          setShowInvalidCharNotification(false);
+                        }, 3000);
+                      }
+                      
                       // Accepter seulement les caractères numériques
-                      const numericValue = e.target.value.replace(/[^0-9]/g, '');
+                      const numericValue = inputValue.replace(/[^0-9]/g, '');
                       setSearchQuery(numericValue);
                     }}
                     onFocus={() => setIsSearchBarActive(true)}
@@ -611,8 +637,26 @@ const CadastralMap = () => {
                     type="tel"
                     inputMode="numeric"
                     pattern="[0-9]*"
-                    className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all`}
+                    className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
+                  
+                  {/* Notification contextuelle pour caractères invalides */}
+                  {showInvalidCharNotification && (
+                    <div className="absolute left-0 top-full mt-2 z-50 w-full max-w-xs animate-fade-in">
+                      <div className="bg-destructive text-destructive-foreground text-xs p-3 rounded-lg shadow-lg border border-destructive/20">
+                        <div className="flex items-start gap-2">
+                          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                          <div>
+                            <p className="font-medium mb-1">Caractère non autorisé</p>
+                            <p className="text-destructive-foreground/90">
+                              Seuls les chiffres (0-9) sont acceptés pour le numéro de parcelle.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
                   {searchQuery && (
                     <Button
                       variant="ghost"
