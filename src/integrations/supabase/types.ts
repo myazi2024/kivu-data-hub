@@ -2717,6 +2717,155 @@ export type Database = {
           },
         ]
       }
+      subdivision_requests: {
+        Row: {
+          additional_documents: Json | null
+          approved_at: string | null
+          created_at: string
+          estimated_processing_days: number | null
+          fee_items: Json | null
+          final_paid_at: string | null
+          final_payment_id: string | null
+          final_payment_status: string | null
+          id: string
+          intended_use_per_lot: Json | null
+          lots_data: Json
+          number_of_lots: number
+          parcel_id: string | null
+          parcel_number: string
+          parent_parcel_area_sqm: number
+          parent_parcel_gps_coordinates: Json | null
+          parent_parcel_location: string | null
+          parent_parcel_owner_name: string
+          parent_parcel_title_reference: string | null
+          processing_notes: string | null
+          proof_of_ownership_url: string | null
+          purpose_of_subdivision: string | null
+          reference_number: string
+          rejection_reason: string | null
+          remaining_fee_usd: number | null
+          requester_email: string | null
+          requester_first_name: string
+          requester_id_document_url: string | null
+          requester_last_name: string
+          requester_middle_name: string | null
+          requester_phone: string
+          requester_type: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string | null
+          subdivision_plan_data: Json | null
+          subdivision_sketch_url: string | null
+          submission_fee_usd: number | null
+          submission_paid_at: string | null
+          submission_payment_id: string | null
+          submission_payment_status: string | null
+          total_amount_usd: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          additional_documents?: Json | null
+          approved_at?: string | null
+          created_at?: string
+          estimated_processing_days?: number | null
+          fee_items?: Json | null
+          final_paid_at?: string | null
+          final_payment_id?: string | null
+          final_payment_status?: string | null
+          id?: string
+          intended_use_per_lot?: Json | null
+          lots_data?: Json
+          number_of_lots: number
+          parcel_id?: string | null
+          parcel_number: string
+          parent_parcel_area_sqm: number
+          parent_parcel_gps_coordinates?: Json | null
+          parent_parcel_location?: string | null
+          parent_parcel_owner_name: string
+          parent_parcel_title_reference?: string | null
+          processing_notes?: string | null
+          proof_of_ownership_url?: string | null
+          purpose_of_subdivision?: string | null
+          reference_number: string
+          rejection_reason?: string | null
+          remaining_fee_usd?: number | null
+          requester_email?: string | null
+          requester_first_name: string
+          requester_id_document_url?: string | null
+          requester_last_name: string
+          requester_middle_name?: string | null
+          requester_phone: string
+          requester_type?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          subdivision_plan_data?: Json | null
+          subdivision_sketch_url?: string | null
+          submission_fee_usd?: number | null
+          submission_paid_at?: string | null
+          submission_payment_id?: string | null
+          submission_payment_status?: string | null
+          total_amount_usd?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          additional_documents?: Json | null
+          approved_at?: string | null
+          created_at?: string
+          estimated_processing_days?: number | null
+          fee_items?: Json | null
+          final_paid_at?: string | null
+          final_payment_id?: string | null
+          final_payment_status?: string | null
+          id?: string
+          intended_use_per_lot?: Json | null
+          lots_data?: Json
+          number_of_lots?: number
+          parcel_id?: string | null
+          parcel_number?: string
+          parent_parcel_area_sqm?: number
+          parent_parcel_gps_coordinates?: Json | null
+          parent_parcel_location?: string | null
+          parent_parcel_owner_name?: string
+          parent_parcel_title_reference?: string | null
+          processing_notes?: string | null
+          proof_of_ownership_url?: string | null
+          purpose_of_subdivision?: string | null
+          reference_number?: string
+          rejection_reason?: string | null
+          remaining_fee_usd?: number | null
+          requester_email?: string | null
+          requester_first_name?: string
+          requester_id_document_url?: string | null
+          requester_last_name?: string
+          requester_middle_name?: string | null
+          requester_phone?: string
+          requester_type?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string | null
+          subdivision_plan_data?: Json | null
+          subdivision_sketch_url?: string | null
+          submission_fee_usd?: number | null
+          submission_paid_at?: string | null
+          submission_payment_id?: string | null
+          submission_payment_status?: string | null
+          total_amount_usd?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subdivision_requests_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       territorial_zones: {
         Row: {
           coordinates: Json
