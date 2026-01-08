@@ -608,6 +608,27 @@ const CadastralMap = () => {
                       const hasInvalidChars = /[^0-9]/.test(inputValue);
                       
                       if (hasInvalidChars) {
+                        // Jouer un son discret avec Web Audio API
+                        try {
+                          const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+                          const oscillator = audioContext.createOscillator();
+                          const gainNode = audioContext.createGain();
+                          
+                          oscillator.connect(gainNode);
+                          gainNode.connect(audioContext.destination);
+                          
+                          oscillator.frequency.value = 400; // Fréquence basse pour un son doux
+                          oscillator.type = 'sine';
+                          
+                          gainNode.gain.setValueAtTime(0.08, audioContext.currentTime);
+                          gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
+                          
+                          oscillator.start(audioContext.currentTime);
+                          oscillator.stop(audioContext.currentTime + 0.15);
+                        } catch (e) {
+                          // Ignorer si Web Audio n'est pas disponible
+                        }
+                        
                         // Déclencher l'animation shake
                         setIsShaking(true);
                         setTimeout(() => setIsShaking(false), 500);
@@ -639,23 +660,6 @@ const CadastralMap = () => {
                     pattern="[0-9]*"
                     className={`${selectedParcel && isMobile ? 'h-8 text-xs pl-8' : 'h-9 text-sm pl-9'} pr-8 rounded-xl border-0 bg-muted/50 focus-visible:ring-1 focus-visible:ring-primary/50 transition-all ${isShaking ? 'animate-shake border-destructive' : ''}`}
                   />
-                  
-                  {/* Notification contextuelle pour caractères invalides */}
-                  {showInvalidCharNotification && (
-                    <div className="absolute left-0 top-full mt-2 z-50 w-full max-w-xs animate-fade-in">
-                      <div className="bg-destructive text-destructive-foreground text-xs p-3 rounded-lg shadow-lg border border-destructive/20">
-                        <div className="flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <p className="font-medium mb-1">Caractère non autorisé</p>
-                            <p className="text-destructive-foreground/90">
-                              Seuls les chiffres (0-9) sont acceptés pour le numéro de parcelle.
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
                   
                   {searchQuery && (
                     <Button
@@ -797,6 +801,23 @@ const CadastralMap = () => {
               )}
             </div>
           </div>
+          
+          {/* Notification contextuelle pour caractères invalides - Positionnée en dehors de l'overflow-hidden */}
+          {showInvalidCharNotification && (
+            <div className="mt-2 animate-fade-in">
+              <div className="bg-destructive text-destructive-foreground text-xs p-3 rounded-xl shadow-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium mb-0.5">Caractère non autorisé</p>
+                    <p className="text-destructive-foreground/90 text-[11px]">
+                      Seuls les chiffres (0-9) sont acceptés.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Bouton Contribuer détaché - Animation élégante */}
