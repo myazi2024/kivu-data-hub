@@ -57,6 +57,7 @@ import AdminResellerCommissions from '@/components/admin/AdminResellerCommission
 import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
 import AdminLandTitleRequests from '@/components/admin/AdminLandTitleRequests';
 import { AdminPermissions } from '@/components/admin/AdminPermissions';
+import AdminSubdivisionRequests from '@/components/admin/AdminSubdivisionRequests';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -272,6 +273,8 @@ const Admin = () => {
         return <AdminMutationRequests />;
       case 'expertise-requests':
         return <AdminExpertiseRequests />;
+      case 'subdivision-requests':
+        return <AdminSubdivisionRequests />;
       case 'expertise-fees-config':
         return <AdminExpertiseFeesConfig />;
       case 'permit-fees-config':
