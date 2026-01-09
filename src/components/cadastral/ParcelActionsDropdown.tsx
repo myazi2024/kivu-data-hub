@@ -132,18 +132,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
               <div className="text-xs text-muted-foreground">Introduire une demande d'un Permis de construire ou de régularisation.</div>
             </div>
           </DropdownMenuItem>
-          
-          <DropdownMenuSeparator />
-          
-          <DropdownMenuItem 
-            onClick={() => setShowSubdivisionDialog(true)}
-            className="cursor-pointer rounded-lg"
-          >
-            <div>
-              <div className="font-medium text-sm">Demande de Lotissement</div>
-              <div className="text-xs text-muted-foreground">Diviser cette parcelle en plusieurs lots</div>
-            </div>
-          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -203,14 +191,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         open={showPermitRequestDialog}
         onOpenChange={setShowPermitRequestDialog}
         hasExistingConstruction={false}
-      />
-
-      {/* Dialog Demande de lotissement */}
-      <SubdivisionRequestDialog
-        parcelNumber={parcelNumber}
-        parcelId={parcelId}
-        open={showSubdivisionDialog}
-        onOpenChange={setShowSubdivisionDialog}
       />
     </>
   );
