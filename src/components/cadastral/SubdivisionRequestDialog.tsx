@@ -84,7 +84,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // États pour les étapes
-  const [currentStep, setCurrentStep] = useState<'parcel' | 'lots' | 'sketch' | 'requester' | 'summary' | 'payment' | 'confirmation'>('parcel');
+  const [currentStep, setCurrentStep] = useState<'intro' | 'parcel' | 'lots' | 'sketch' | 'requester' | 'summary' | 'payment' | 'confirmation'>('intro');
   
   // États parcelle mère
   const [parentParcelArea, setParentParcelArea] = useState(parcelData?.area_sqm?.toString() || '');
@@ -178,6 +178,8 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   // Validation des étapes
   const canProceedToNext = () => {
     switch (currentStep) {
+      case 'intro':
+        return true;
       case 'parcel':
         return parentParcelArea && parentParcelOwner;
       case 'lots':
@@ -197,7 +199,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   
   // Navigation
   const goToNextStep = () => {
-    const steps: typeof currentStep[] = ['parcel', 'lots', 'sketch', 'requester', 'summary', 'payment', 'confirmation'];
+    const steps: typeof currentStep[] = ['intro', 'parcel', 'lots', 'sketch', 'requester', 'summary', 'payment', 'confirmation'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex < steps.length - 1) {
       setCurrentStep(steps[currentIndex + 1]);
@@ -205,7 +207,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   };
   
   const goToPreviousStep = () => {
-    const steps: typeof currentStep[] = ['parcel', 'lots', 'sketch', 'requester', 'summary', 'payment', 'confirmation'];
+    const steps: typeof currentStep[] = ['intro', 'parcel', 'lots', 'sketch', 'requester', 'summary', 'payment', 'confirmation'];
     const currentIndex = steps.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(steps[currentIndex - 1]);
@@ -336,6 +338,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   }, [currentStep, lots, selectedLotIndex, zoomLevel]);
   
   const stepLabels = {
+    intro: 'Introduction',
     parcel: 'Parcelle mère',
     lots: 'Définition des lots',
     sketch: 'Croquis',
@@ -391,6 +394,124 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
         
         <ScrollArea className="flex-1 max-h-[calc(90vh-200px)]">
           <div className="p-6">
+            {/* Étape 0: Introduction */}
+            {currentStep === 'intro' && (
+              <div className="space-y-6">
+                <div className="text-center space-y-4">
+                  <div className="mx-auto h-20 w-20 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                    <Grid3X3 className="h-10 w-10 text-primary" />
+                  </div>
+                  <h2 className="text-2xl font-bold">Demande de Lotissement</h2>
+                  <p className="text-muted-foreground max-w-lg mx-auto">
+                    Bienvenue dans l'assistant de demande de lotissement. Ce service vous permet de diviser votre parcelle en plusieurs lots distincts.
+                  </p>
+                </div>
+                
+                <Separator />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Card className="border-primary/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <FileText className="h-4 w-4 text-primary" />
+                        Documents requis
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-2">
+                      <ul className="space-y-1.5">
+                        <li className="flex items-start gap-2">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                          <span>Titre de propriété ou certificat d'enregistrement</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                          <span>Plan cadastral existant (si disponible)</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                          <span>Pièce d'identité du propriétaire</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
+                          <span>Croquis du lotissement souhaité</span>
+                        </li>
+                      </ul>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="border-amber-500/20">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CreditCard className="h-4 w-4 text-amber-500" />
+                        Frais de service
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="text-sm space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span>Frais de dossier (à la soumission)</span>
+                        <Badge className="bg-amber-500">${SUBMISSION_FEE}</Badge>
+                      </div>
+                      <div className="flex justify-between items-center text-muted-foreground">
+                        <span>Frais de traitement (si approuvé)</span>
+                        <span className="text-xs">Variable selon surface</span>
+                      </div>
+                      <Alert className="mt-3 bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-amber-700 dark:text-amber-300 text-xs">
+                          Les frais de dossier de {SUBMISSION_FEE}$ ne sont pas remboursables en cas de rejet.
+                        </AlertDescription>
+                      </Alert>
+                    </CardContent>
+                  </Card>
+                </div>
+                
+                <Card className="bg-muted/30">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-primary" />
+                      Étapes du processus
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center space-y-2">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                          <span className="text-sm font-bold text-primary">1</span>
+                        </div>
+                        <p className="text-xs font-medium">Infos parcelle mère</p>
+                      </div>
+                      <div className="text-center space-y-2">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                          <span className="text-sm font-bold text-primary">2</span>
+                        </div>
+                        <p className="text-xs font-medium">Définition des lots</p>
+                      </div>
+                      <div className="text-center space-y-2">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                          <span className="text-sm font-bold text-primary">3</span>
+                        </div>
+                        <p className="text-xs font-medium">Croquis & demandeur</p>
+                      </div>
+                      <div className="text-center space-y-2">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                          <span className="text-sm font-bold text-primary">4</span>
+                        </div>
+                        <p className="text-xs font-medium">Paiement & soumission</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                  <Info className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-700 dark:text-blue-300">
+                    <strong>Important :</strong> Assurez-vous d'avoir tous les documents nécessaires avant de commencer. 
+                    Le processus prend environ 10-15 minutes. Vous pouvez utiliser notre outil de croquis interactif pour visualiser votre lotissement.
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+            
             {/* Étape 1: Informations de la parcelle mère */}
             {currentStep === 'parcel' && (
               <div className="space-y-6">

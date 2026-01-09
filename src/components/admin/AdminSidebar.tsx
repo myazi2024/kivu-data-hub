@@ -27,7 +27,8 @@ import {
   TrendingUp,
   Smartphone,
   TestTube,
-  Key
+  Key,
+  Grid3X3
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -38,6 +39,7 @@ interface AdminSidebarProps {
   pendingPermitsCount?: number;
   pendingMutationsCount?: number;
   pendingExpertiseCount?: number;
+  pendingSubdivisionsCount?: number;
   onNavigate?: () => void;
 }
 
@@ -104,6 +106,7 @@ const menuItems = [
       { icon: DollarSign, label: 'Config Frais Mutation', value: 'mutation-fees-config', badge: null },
       { icon: FileCheck, label: 'Expertises Immob.', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
+      { icon: Grid3X3, label: 'Demandes Lotissement', value: 'subdivision-requests', badge: 'subdivisions' },
       { icon: AlertTriangle, label: 'Conflits Limites', value: 'boundary-conflicts', badge: null },
       { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },
       { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
@@ -130,7 +133,7 @@ const menuItems = [
   },
 ];
 
-export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, onNavigate }: AdminSidebarProps) {
+export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermitsCount, pendingMutationsCount, pendingExpertiseCount, pendingSubdivisionsCount, onNavigate }: AdminSidebarProps) {
   const location = useLocation();
   const currentTab = new URLSearchParams(location.search).get('tab') || 'dashboard';
 
@@ -145,6 +148,7 @@ export function AdminSidebar({ pendingCount, pendingLandTitleCount, pendingPermi
       case 'permits': return pendingPermitsCount || 0;
       case 'mutations': return pendingMutationsCount || 0;
       case 'expertise': return pendingExpertiseCount || 0;
+      case 'subdivisions': return pendingSubdivisionsCount || 0;
       default: return 0;
     }
   };
