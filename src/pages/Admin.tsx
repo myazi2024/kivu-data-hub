@@ -57,6 +57,7 @@ import AdminResellerCommissions from '@/components/admin/AdminResellerCommission
 import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
 import AdminLandTitleRequests from '@/components/admin/AdminLandTitleRequests';
 import { AdminPermissions } from '@/components/admin/AdminPermissions';
+import AdminSubdivisionRequests from '@/components/admin/AdminSubdivisionRequests';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -68,6 +69,7 @@ const Admin = () => {
   const [pendingPermitsCount, setPendingPermitsCount] = useState(0);
   const [pendingMutationsCount, setPendingMutationsCount] = useState(0);
   const [pendingExpertiseCount, setPendingExpertiseCount] = useState(0);
+  const [pendingSubdivisionsCount, setPendingSubdivisionsCount] = useState(0);
   const [hasAdminRole, setHasAdminRole] = useState<boolean | null>(null);
 
   // Verify admin role from user_roles table
@@ -108,6 +110,7 @@ const Admin = () => {
       fetchPendingPermitsCount();
       fetchPendingMutationsCount();
       fetchPendingExpertiseCount();
+      fetchPendingSubdivisionsCount();
     }
   }, [hasAdminRole]);
 
@@ -187,6 +190,21 @@ const Admin = () => {
       }
     } catch (error) {
       console.error('Erreur compteur expertises:', error);
+    }
+  };
+
+  const fetchPendingSubdivisionsCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('subdivision_requests' as any)
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      
+      if (!error) {
+        setPendingSubdivisionsCount(count || 0);
+      }
+    } catch (error) {
+      console.error('Erreur compteur lotissements:', error);
     }
   };
 
@@ -270,6 +288,8 @@ const Admin = () => {
         return <AdminLandTitleRequests />;
       case 'mutations':
         return <AdminMutationRequests />;
+      case 'subdivision-requests':
+        return <AdminSubdivisionRequests />;
       case 'expertise-requests':
         return <AdminExpertiseRequests />;
       case 'expertise-fees-config':
@@ -325,6 +345,7 @@ const Admin = () => {
           pendingPermitsCount={pendingPermitsCount}
           pendingMutationsCount={pendingMutationsCount}
           pendingExpertiseCount={pendingExpertiseCount}
+          pendingSubdivisionsCount={pendingSubdivisionsCount}
         />
       </aside>
 
@@ -341,6 +362,7 @@ const Admin = () => {
             pendingPermitsCount={pendingPermitsCount}
             pendingMutationsCount={pendingMutationsCount}
             pendingExpertiseCount={pendingExpertiseCount}
+            pendingSubdivisionsCount={pendingSubdivisionsCount}
             onNavigate={() => setMobileMenuOpen(false)}
           />
         </SheetContent>

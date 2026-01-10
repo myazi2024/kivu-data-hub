@@ -360,9 +360,63 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        {/* Indicateur d'étapes */}
-        <div className="px-6 py-3 border-b bg-muted/30">
-          <div className="flex items-center justify-between text-xs">
+        {/* Indicateur d'étapes avec navigation mobile */}
+        <div className="px-4 md:px-6 py-3 border-b bg-muted/30">
+          {/* Navigation rapide mobile */}
+          <div className="flex md:hidden items-center justify-between mb-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={goToPreviousStep}
+              disabled={currentStep === 'parcel' || currentStep === 'confirmation'}
+              className="h-8 px-2"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+                <span className="text-xs font-bold text-primary-foreground">
+                  {Object.keys(stepLabels).indexOf(currentStep) + 1}
+                </span>
+              </div>
+              <div className="text-sm font-medium">
+                {stepLabels[currentStep]}
+              </div>
+            </div>
+            
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={goToNextStep}
+              disabled={!canProceedToNext() || currentStep === 'payment' || currentStep === 'confirmation'}
+              className="h-8 px-2"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Indicateur de progression mobile */}
+          <div className="flex md:hidden items-center gap-1 mb-2">
+            {Object.keys(stepLabels).map((key, index) => {
+              const stepKeys = Object.keys(stepLabels);
+              const currentIndex = stepKeys.indexOf(currentStep);
+              const isActive = key === currentStep;
+              const isPast = index < currentIndex;
+              
+              return (
+                <div
+                  key={key}
+                  className={`h-1.5 flex-1 rounded-full transition-colors ${
+                    isActive ? 'bg-primary' : isPast ? 'bg-primary/50' : 'bg-muted'
+                  }`}
+                />
+              );
+            })}
+          </div>
+          
+          {/* Indicateur desktop */}
+          <div className="hidden md:flex items-center justify-between text-xs">
             {Object.entries(stepLabels).map(([key, label], index) => {
               const stepKeys = Object.keys(stepLabels);
               const currentIndex = stepKeys.indexOf(currentStep);
@@ -372,14 +426,23 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
               
               return (
                 <React.Fragment key={key}>
-                  <div className={`flex items-center gap-1.5 ${isActive ? 'text-primary font-medium' : isPast ? 'text-muted-foreground' : 'text-muted-foreground/50'}`}>
-                    <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold ${
-                      isActive ? 'bg-primary text-primary-foreground' : isPast ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
+                  <button
+                    onClick={() => {
+                      // Permettre la navigation vers les étapes précédentes
+                      if (isPast) {
+                        setCurrentStep(key as typeof currentStep);
+                      }
+                    }}
+                    disabled={!isPast}
+                    className={`flex items-center gap-1.5 ${isActive ? 'text-primary font-medium' : isPast ? 'text-muted-foreground hover:text-primary cursor-pointer' : 'text-muted-foreground/50 cursor-default'}`}
+                  >
+                    <div className={`h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${
+                      isActive ? 'bg-primary text-primary-foreground' : isPast ? 'bg-primary/20 text-primary hover:bg-primary/30' : 'bg-muted text-muted-foreground'
                     }`}>
                       {isPast ? <Check className="h-3 w-3" /> : index + 1}
                     </div>
                     <span className="hidden sm:inline">{label}</span>
-                  </div>
+                  </button>
                   {index < Object.keys(stepLabels).length - 1 && (
                     <div className={`flex-1 h-0.5 mx-2 ${isPast ? 'bg-primary/30' : 'bg-muted'}`} />
                   )}
