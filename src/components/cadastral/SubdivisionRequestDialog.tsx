@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -347,7 +347,9 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0">
+      <DialogPortal>
+        <DialogOverlay className="z-[1100]" />
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 z-[1100]">
         <DialogHeader className="px-6 pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2 text-xl">
             <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -1291,7 +1293,8 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             )}
           </div>
         )}
-      </DialogContent>
+        </DialogContent>
+      </DialogPortal>
     </Dialog>
   );
 };
