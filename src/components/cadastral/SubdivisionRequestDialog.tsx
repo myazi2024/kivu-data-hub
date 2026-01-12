@@ -1,104 +1,33 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import {
-  Grid3X3,
-  MapPin,
-  User,
-  FileText,
-  CreditCard,
-  Check,
-  Plus,
-  Trash2,
-  Ruler,
-  Square,
-  Home,
-  Building2,
-  Fence,
-  AlertTriangle,
-  Info,
-  Loader2,
-  ChevronRight,
-  ChevronLeft,
-  Upload,
-  X,
-  Pencil,
-  Move,
-  ZoomIn,
-  ZoomOut,
-  RotateCcw,
-  Layers,
-  Compass,
-  ArrowRightLeft,
-  Route,
-  CornerUpRight,
-  Maximize2
+  Grid3X3, MapPin, User, FileText, CreditCard, Check, Plus, Trash2,
+  Ruler, Square, Home, Building2, Fence, AlertTriangle, Info, Loader2,
+  ChevronRight, ChevronLeft, Upload, Compass, Route, Download
 } from 'lucide-react';
-
-// Types pour les dimensions de chaque côté
-interface SideDimension {
-  length: number;
-  isShared: boolean; // Côté mitoyen
-  isRoadBordering: boolean;
-  roadType?: 'existing' | 'created' | 'none';
-  roadName?: string;
-  roadWidth?: number;
-  adjacentLotNumber?: string; // Pour côtés mitoyens
-  notes?: string;
-}
-
-// Angles des coins en degrés
-interface CornerAngles {
-  topLeft: number;
-  topRight: number;
-  bottomRight: number;
-  bottomLeft: number;
-}
-
-interface LotData {
-  id: string;
-  lotNumber: string;
-  // Dimensions détaillées pour chaque côté
-  northSide: SideDimension;
-  southSide: SideDimension;
-  eastSide: SideDimension;
-  westSide: SideDimension;
-  // Angles des coins
-  cornerAngles: CornerAngles;
-  // Calculs automatiques
-  areaSqm: number;
-  perimeter: number;
-  // Caractéristiques
-  isBuilt: boolean;
-  hasFence: boolean;
-  fenceType?: string;
-  constructionType?: string;
-  intendedUse?: string;
-  notes?: string;
-  // Coordonnées pour le croquis
-  coordinates?: { x: number; y: number; points: { x: number; y: number }[] };
-}
-
-interface ParentParcelSides {
-  north: { length: number; description?: string };
-  south: { length: number; description?: string };
-  east: { length: number; description?: string };
-  west: { length: number; description?: string };
-}
+import {
+  LotData, SideDimension, InternalRoad, EnvironmentFeature,
+  SketchSettings, DEFAULT_SKETCH_SETTINGS
+} from './subdivision/types';
+import { LotGeometryEditor } from './subdivision/LotGeometryEditor';
+import { EnvironmentEditor } from './subdivision/EnvironmentEditor';
+import { InternalRoadsEditor } from './subdivision/InternalRoadsEditor';
+import { ProfessionalSketchCanvas } from './subdivision/ProfessionalSketchCanvas';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
