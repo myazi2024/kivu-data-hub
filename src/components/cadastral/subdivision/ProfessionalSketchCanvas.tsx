@@ -27,26 +27,38 @@ import {
 import { LotData, InternalRoad, EnvironmentFeature, SketchSettings, DEFAULT_SKETCH_SETTINGS, SURFACE_TYPES, ENVIRONMENT_ICONS } from './types';
 import { SideDimension } from './types';
 
+interface ParentParcelData {
+  area: number;
+  location: string;
+  owner: string;
+  titleRef: string;
+  titleType: string;
+  titleIssueDate: string;
+  gps: { lat: string; lng: string };
+  sides: SideDimension[];
+  numberOfSides: number;
+}
+
 interface ProfessionalSketchCanvasProps {
   lots: LotData[];
-  roads: InternalRoad[];
-  environment: EnvironmentFeature[];
-  parentParcelSides: SideDimension[];
-  parentParcelArea: number;
+  internalRoads: InternalRoad[];
+  environmentFeatures: EnvironmentFeature[];
+  parentParcel: ParentParcelData;
   settings: SketchSettings;
   onSettingsChange: (settings: SketchSettings) => void;
-  onExport: (format: 'pdf' | 'png' | 'svg', resolution: 'standard' | 'hd' | 'print') => void;
+  onLotSelect?: (index: number | null) => void;
+  selectedLotIndex?: number | null;
 }
 
 export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> = ({
   lots,
-  roads,
-  environment,
-  parentParcelSides,
-  parentParcelArea,
+  internalRoads,
+  environmentFeatures,
+  parentParcel,
   settings,
   onSettingsChange,
-  onExport
+  onLotSelect,
+  selectedLotIndex
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
