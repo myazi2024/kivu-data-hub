@@ -12,17 +12,21 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Grid3X3, MapPin, User, FileText, CreditCard, Check, Plus, Trash2,
   Ruler, Square, Home, Building2, Fence, AlertTriangle, Info, Loader2,
-  ChevronRight, ChevronLeft, Upload, Compass, Route, Download
+  ChevronRight, ChevronLeft, Upload, Compass, Route, Download, Copy,
+  Layers, ZoomIn, ZoomOut, RotateCcw, Maximize2, ArrowUp, ArrowDown,
+  ArrowLeft, ArrowRight
 } from 'lucide-react';
 import {
   LotData, SideDimension, InternalRoad, EnvironmentFeature,
-  SketchSettings, DEFAULT_SKETCH_SETTINGS
+  SketchSettings, DEFAULT_SKETCH_SETTINGS, ParentParcelData,
+  SURFACE_TYPES, FENCE_TYPES
 } from './subdivision/types';
 import { LotGeometryEditor } from './subdivision/LotGeometryEditor';
 import { EnvironmentEditor } from './subdivision/EnvironmentEditor';
@@ -39,6 +43,19 @@ interface SubdivisionRequestDialogProps {
 
 const SUBMISSION_FEE = 20;
 
+// Interface pour les côtés de la parcelle mère (simple)
+interface ParentParcelSideSimple {
+  length: number;
+  description: string;
+}
+
+interface ParentParcelSides {
+  north: ParentParcelSideSimple;
+  south: ParentParcelSideSimple;
+  east: ParentParcelSideSimple;
+  west: ParentParcelSideSimple;
+}
+
 const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   parcelNumber,
   parcelId,
@@ -50,7 +67,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const { user } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // États pour les étapes (suppression de 'requester')
+  // États pour les étapes
   const [currentStep, setCurrentStep] = useState<'parcel' | 'lots' | 'sketch' | 'summary' | 'payment' | 'confirmation'>('parcel');
   
   // États parcelle mère - pré-remplis depuis parcelData
@@ -77,12 +94,16 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const [requesterType, setRequesterType] = useState('particulier');
   const [isRequesterOwner, setIsRequesterOwner] = useState(true);
   
-  // États lots
+  // États lots - utilisant le nouveau type LotData
   const [lots, setLots] = useState<LotData[]>([]);
   const [purposeOfSubdivision, setPurposeOfSubdivision] = useState('');
   
+  // États pour les routes internes et environnement
+  const [internalRoads, setInternalRoads] = useState<InternalRoad[]>([]);
+  const [environmentFeatures, setEnvironmentFeatures] = useState<EnvironmentFeature[]>([]);
+  const [sketchSettings, setSketchSettings] = useState<SketchSettings>(DEFAULT_SKETCH_SETTINGS);
+  
   // États croquis
-  const [selectedTool, setSelectedTool] = useState<'select' | 'draw' | 'erase'>('select');
   const [zoomLevel, setZoomLevel] = useState(1);
   const [selectedLotIndex, setSelectedLotIndex] = useState<number | null>(null);
   
@@ -153,31 +174,37 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const fencedLots = lots.filter(l => l.hasFence).length;
   
   // Créer un nouveau côté par défaut
-  const createDefaultSide = (): SideDimension => ({
+  const createDefaultSide = (index: number): SideDimension => ({
+    id: crypto.randomUUID(),
     length: 0,
+    angle: 90,
     isShared: false,
     isRoadBordering: false,
     roadType: 'none'
   });
   
-  // Créer les angles par défaut (90 degrés pour un rectangle)
-  const createDefaultAngles = (): CornerAngles => ({
-    topLeft: 90,
-    topRight: 90,
-    bottomRight: 90,
-    bottomLeft: 90
-  });
+  // Créer des côtés par défaut (4 côtés pour un rectangle)
+  const createDefaultSides = (numberOfSides: number = 4): SideDimension[] => {
+    const defaultAngle = 360 / numberOfSides;
+    return Array.from({ length: numberOfSides }, (_, i) => ({
+      id: crypto.randomUUID(),
+      length: 0,
+      angle: defaultAngle,
+      isShared: false,
+      isRoadBordering: false,
+      roadType: 'none' as const
+    }));
+  };
   
   // Ajouter un lot
   const addLot = () => {
     const newLot: LotData = {
       id: crypto.randomUUID(),
       lotNumber: `LOT-${(lots.length + 1).toString().padStart(3, '0')}`,
-      northSide: createDefaultSide(),
-      southSide: createDefaultSide(),
-      eastSide: createDefaultSide(),
-      westSide: createDefaultSide(),
-      cornerAngles: createDefaultAngles(),
+      sides: createDefaultSides(4),
+      numberOfSides: 4,
+      position: { x: 50 + (lots.length % 3) * 120, y: 50 + Math.floor(lots.length / 3) * 100 },
+      rotation: 0,
       areaSqm: 0,
       perimeter: 0,
       isBuilt: false,
@@ -187,22 +214,53 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     setLots([...lots, newLot]);
   };
   
+  // Dupliquer un lot
+  const duplicateLot = (lot: LotData, count: number = 1) => {
+    const newLots: LotData[] = [];
+    for (let i = 0; i < count; i++) {
+      newLots.push({
+        ...lot,
+        id: crypto.randomUUID(),
+        lotNumber: `LOT-${(lots.length + i + 1).toString().padStart(3, '0')}`,
+        sides: lot.sides.map(s => ({ ...s, id: crypto.randomUUID() })),
+        position: { 
+          x: lot.position.x + (i + 1) * 30, 
+          y: lot.position.y + (i + 1) * 30 
+        }
+      });
+    }
+    setLots([...lots, ...newLots]);
+    toast({
+      title: 'Lots dupliqués',
+      description: `${count} lot(s) ont été créés avec les mêmes dimensions.`
+    });
+  };
+  
   // Supprimer un lot
   const removeLot = (id: string) => {
     setLots(lots.filter(l => l.id !== id));
   };
   
-  // Calculer l'aire à partir des dimensions et angles
+  // Calculer l'aire à partir des dimensions des côtés
   const calculateLotArea = (lot: LotData): number => {
+    if (lot.sides.length < 3) return 0;
+    
     // Pour un quadrilatère simple, on utilise la moyenne des côtés opposés
-    const avgLength = (lot.northSide.length + lot.southSide.length) / 2;
-    const avgWidth = (lot.eastSide.length + lot.westSide.length) / 2;
-    return avgLength * avgWidth;
+    if (lot.sides.length === 4) {
+      const avgLength = (lot.sides[0].length + lot.sides[2].length) / 2;
+      const avgWidth = (lot.sides[1].length + lot.sides[3].length) / 2;
+      return avgLength * avgWidth;
+    }
+    
+    // Pour un polygone quelconque, formule approchée
+    const avgSide = lot.sides.reduce((sum, s) => sum + s.length, 0) / lot.sides.length;
+    const n = lot.sides.length;
+    return (n * avgSide * avgSide) / (4 * Math.tan(Math.PI / n));
   };
   
   // Calculer le périmètre
   const calculatePerimeter = (lot: LotData): number => {
-    return lot.northSide.length + lot.southSide.length + lot.eastSide.length + lot.westSide.length;
+    return lot.sides.reduce((sum, side) => sum + side.length, 0);
   };
   
   // Mettre à jour un lot
@@ -220,13 +278,12 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   };
   
   // Mettre à jour un côté spécifique d'un lot
-  const updateLotSide = (id: string, side: 'northSide' | 'southSide' | 'eastSide' | 'westSide', updates: Partial<SideDimension>) => {
+  const updateLotSide = (lotId: string, sideIndex: number, updates: Partial<SideDimension>) => {
     setLots(lots.map(lot => {
-      if (lot.id === id) {
-        const updated = {
-          ...lot,
-          [side]: { ...lot[side], ...updates }
-        };
+      if (lot.id === lotId) {
+        const newSides = [...lot.sides];
+        newSides[sideIndex] = { ...newSides[sideIndex], ...updates };
+        const updated = { ...lot, sides: newSides };
         // Recalculer surface et périmètre
         updated.areaSqm = calculateLotArea(updated);
         updated.perimeter = calculatePerimeter(updated);
@@ -236,14 +293,32 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     }));
   };
   
-  // Mettre à jour les angles d'un lot
-  const updateLotAngles = (id: string, corner: keyof CornerAngles, value: number) => {
+  // Changer le nombre de côtés d'un lot
+  const changeLotSidesCount = (lotId: string, newCount: number) => {
     setLots(lots.map(lot => {
-      if (lot.id === id) {
-        return {
-          ...lot,
-          cornerAngles: { ...lot.cornerAngles, [corner]: value }
-        };
+      if (lot.id === lotId) {
+        const currentSides = lot.sides;
+        let newSides: SideDimension[];
+        
+        if (newCount > currentSides.length) {
+          // Ajouter des côtés
+          newSides = [
+            ...currentSides,
+            ...Array.from({ length: newCount - currentSides.length }, () => createDefaultSide(currentSides.length))
+          ];
+        } else {
+          // Réduire le nombre de côtés
+          newSides = currentSides.slice(0, newCount);
+        }
+        
+        // Recalculer les angles par défaut
+        const defaultAngle = 360 / newCount;
+        newSides = newSides.map(s => ({ ...s, angle: defaultAngle }));
+        
+        const updated = { ...lot, sides: newSides, numberOfSides: newCount };
+        updated.areaSqm = calculateLotArea(updated);
+        updated.perimeter = calculatePerimeter(updated);
+        return updated;
       }
       return lot;
     }));
@@ -265,7 +340,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
         return parentParcelArea && parentParcelOwner && requesterFirstName && requesterLastName && requesterPhone;
       case 'lots':
         return lots.length >= 2 && lots.every(l => 
-          l.northSide.length > 0 || l.southSide.length > 0 || l.eastSide.length > 0 || l.westSide.length > 0
+          l.sides.some(side => side.length > 0)
         );
       case 'sketch':
         return true;
@@ -336,6 +411,8 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           is_requester_owner: isRequesterOwner,
           number_of_lots: lots.length,
           lots_data: lots,
+          internal_roads: internalRoads,
+          environment_features: environmentFeatures,
           purpose_of_subdivision: purposeOfSubdivision,
           submission_fee_usd: SUBMISSION_FEE,
           total_amount_usd: SUBMISSION_FEE,
@@ -373,230 +450,24 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     }
   };
   
-  // Génération automatique du croquis depuis les données des lots
-  useEffect(() => {
-    if (currentStep === 'sketch' && canvasRef.current && lots.length > 0) {
-      const canvas = canvasRef.current;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
-      
-      // Effacer le canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      // Appliquer le zoom
-      ctx.save();
-      ctx.scale(zoomLevel, zoomLevel);
-      
-      // Calculer l'échelle basée sur la surface de la parcelle mère
-      const parentArea = parseFloat(parentParcelArea) || 1000;
-      const parentPerimeter = 
-        parentParcelSides.north.length + 
-        parentParcelSides.south.length + 
-        parentParcelSides.east.length + 
-        parentParcelSides.west.length;
-      
-      const canvasWidth = canvas.width / zoomLevel;
-      const canvasHeight = canvas.height / zoomLevel;
-      const margin = 50;
-      const drawableWidth = canvasWidth - margin * 2;
-      const drawableHeight = canvasHeight - margin * 2;
-      
-      // Dessiner la grille
-      ctx.strokeStyle = '#e5e7eb';
-      ctx.lineWidth = 0.5;
-      for (let i = 0; i <= canvasWidth; i += 30) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, canvasHeight);
-        ctx.stroke();
-      }
-      for (let i = 0; i <= canvasHeight; i += 30) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(canvasWidth, i);
-        ctx.stroke();
-      }
-      
-      // Dessiner la parcelle mère
-      const parentNorth = parentParcelSides.north.length || Math.sqrt(parentArea);
-      const parentWest = parentParcelSides.west.length || Math.sqrt(parentArea);
-      const scale = Math.min(drawableWidth / parentNorth, drawableHeight / parentWest);
-      
-      const parentWidth = parentNorth * scale;
-      const parentHeight = parentWest * scale;
-      const startX = margin + (drawableWidth - parentWidth) / 2;
-      const startY = margin + (drawableHeight - parentHeight) / 2;
-      
-      // Contour parcelle mère
-      ctx.strokeStyle = '#1e40af';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([]);
-      ctx.strokeRect(startX, startY, parentWidth, parentHeight);
-      
-      // Étiquettes des côtés de la parcelle mère
-      ctx.fillStyle = '#1e40af';
-      ctx.font = 'bold 11px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      
-      // Nord
-      if (parentParcelSides.north.length > 0) {
-        ctx.fillText(`${parentParcelSides.north.length}m`, startX + parentWidth / 2, startY - 8);
-      }
-      // Sud
-      if (parentParcelSides.south.length > 0) {
-        ctx.fillText(`${parentParcelSides.south.length}m`, startX + parentWidth / 2, startY + parentHeight + 16);
-      }
-      // Est
-      if (parentParcelSides.east.length > 0) {
-        ctx.save();
-        ctx.translate(startX + parentWidth + 16, startY + parentHeight / 2);
-        ctx.rotate(Math.PI / 2);
-        ctx.fillText(`${parentParcelSides.east.length}m`, 0, 0);
-        ctx.restore();
-      }
-      // Ouest
-      if (parentParcelSides.west.length > 0) {
-        ctx.save();
-        ctx.translate(startX - 8, startY + parentHeight / 2);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText(`${parentParcelSides.west.length}m`, 0, 0);
-        ctx.restore();
-      }
-      
-      // Indicateur Nord
-      ctx.beginPath();
-      ctx.moveTo(margin + 20, margin - 25);
-      ctx.lineTo(margin + 15, margin - 10);
-      ctx.lineTo(margin + 25, margin - 10);
-      ctx.closePath();
-      ctx.fillStyle = '#dc2626';
-      ctx.fill();
-      ctx.fillStyle = '#1f2937';
-      ctx.font = 'bold 10px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('N', margin + 20, margin - 30);
-      
-      // Dessiner les lots
-      const lotsPerRow = Math.ceil(Math.sqrt(lots.length));
-      const lotWidth = (parentWidth - 10) / lotsPerRow;
-      const lotHeight = (parentHeight - 10) / Math.ceil(lots.length / lotsPerRow);
-      
-      lots.forEach((lot, index) => {
-        const row = Math.floor(index / lotsPerRow);
-        const col = index % lotsPerRow;
-        const x = startX + 5 + col * lotWidth;
-        const y = startY + 5 + row * lotHeight;
-        
-        const isSelected = selectedLotIndex === index;
-        
-        // Fond du lot
-        ctx.fillStyle = isSelected ? 'rgba(59, 130, 246, 0.3)' : lot.isBuilt ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)';
-        ctx.fillRect(x, y, lotWidth - 4, lotHeight - 4);
-        
-        // Contour du lot
-        ctx.strokeStyle = isSelected ? '#3b82f6' : lot.isBuilt ? '#ef4444' : '#22c55e';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([]);
-        ctx.strokeRect(x, y, lotWidth - 4, lotHeight - 4);
-        
-        // Indiquer les côtés mitoyens avec des traits pointillés
-        if (lot.northSide.isShared) {
-          ctx.setLineDash([4, 4]);
-          ctx.strokeStyle = '#f59e0b';
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + lotWidth - 4, y);
-          ctx.stroke();
-        }
-        if (lot.southSide.isShared) {
-          ctx.setLineDash([4, 4]);
-          ctx.strokeStyle = '#f59e0b';
-          ctx.beginPath();
-          ctx.moveTo(x, y + lotHeight - 4);
-          ctx.lineTo(x + lotWidth - 4, y + lotHeight - 4);
-          ctx.stroke();
-        }
-        
-        // Indiquer les côtés bordant une route
-        ctx.setLineDash([]);
-        if (lot.northSide.isRoadBordering) {
-          ctx.strokeStyle = '#8b5cf6';
-          ctx.lineWidth = 4;
-          ctx.beginPath();
-          ctx.moveTo(x, y);
-          ctx.lineTo(x + lotWidth - 4, y);
-          ctx.stroke();
-        }
-        if (lot.southSide.isRoadBordering) {
-          ctx.strokeStyle = '#8b5cf6';
-          ctx.lineWidth = 4;
-          ctx.beginPath();
-          ctx.moveTo(x, y + lotHeight - 4);
-          ctx.lineTo(x + lotWidth - 4, y + lotHeight - 4);
-          ctx.stroke();
-        }
-        
-        // Numéro et infos du lot
-        ctx.fillStyle = '#1f2937';
-        ctx.font = 'bold 12px Inter, sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(lot.lotNumber, x + (lotWidth - 4) / 2, y + (lotHeight - 4) / 2 - 8);
-        
-        // Surface
-        ctx.font = '10px Inter, sans-serif';
-        ctx.fillText(`${lot.areaSqm.toLocaleString()} m²`, x + (lotWidth - 4) / 2, y + (lotHeight - 4) / 2 + 6);
-        
-        // Dimensions si disponibles
-        if (lot.northSide.length > 0 && lot.westSide.length > 0) {
-          ctx.font = '9px Inter, sans-serif';
-          ctx.fillStyle = '#6b7280';
-          ctx.fillText(`${lot.northSide.length}×${lot.westSide.length}m`, x + (lotWidth - 4) / 2, y + (lotHeight - 4) / 2 + 18);
-        }
-        
-        // Icône construction
-        if (lot.isBuilt) {
-          ctx.font = '14px';
-          ctx.fillText('🏠', x + (lotWidth - 4) / 2, y + (lotHeight - 4) - 8);
-        }
-      });
-      
-      // Légende
-      const legendY = canvasHeight - 35;
-      ctx.fillStyle = '#1f2937';
-      ctx.font = '10px Inter, sans-serif';
-      ctx.textAlign = 'left';
-      
-      ctx.fillStyle = 'rgba(34, 197, 94, 0.5)';
-      ctx.fillRect(10, legendY, 12, 12);
-      ctx.fillStyle = '#1f2937';
-      ctx.fillText('Terrain nu', 26, legendY + 10);
-      
-      ctx.fillStyle = 'rgba(239, 68, 68, 0.5)';
-      ctx.fillRect(90, legendY, 12, 12);
-      ctx.fillStyle = '#1f2937';
-      ctx.fillText('Construit', 106, legendY + 10);
-      
-      ctx.strokeStyle = '#f59e0b';
-      ctx.setLineDash([4, 4]);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(170, legendY + 6);
-      ctx.lineTo(185, legendY + 6);
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillText('Mitoyen', 190, legendY + 10);
-      
-      ctx.strokeStyle = '#8b5cf6';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(250, legendY + 6);
-      ctx.lineTo(265, legendY + 6);
-      ctx.stroke();
-      ctx.fillText('Route', 270, legendY + 10);
-      
-      ctx.restore();
+  // Labels des côtés
+  const getSideLabel = (index: number, total: number): string => {
+    if (total === 4) {
+      return ['Nord', 'Est', 'Sud', 'Ouest'][index] || `Côté ${index + 1}`;
     }
-  }, [currentStep, lots, selectedLotIndex, zoomLevel, parentParcelArea, parentParcelSides]);
+    return `Côté ${index + 1}`;
+  };
+  
+  // Icône de direction pour les côtés
+  const getSideIcon = (index: number, total: number) => {
+    if (total === 4) {
+      return [<ArrowUp key="n" className="h-3 w-3" />, 
+              <ArrowRight key="e" className="h-3 w-3" />,
+              <ArrowDown key="s" className="h-3 w-3" />,
+              <ArrowLeft key="w" className="h-3 w-3" />][index] || null;
+    }
+    return null;
+  };
   
   const stepLabels = {
     parcel: 'Parcelle mère & Demandeur',
@@ -610,22 +481,21 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   // Composant pour éditer un côté
   const SideEditor = ({ 
     lot, 
-    sideName, 
-    sideKey, 
-    icon 
+    sideIndex,
+    side
   }: { 
     lot: LotData; 
-    sideName: string; 
-    sideKey: 'northSide' | 'southSide' | 'eastSide' | 'westSide';
-    icon: React.ReactNode;
+    sideIndex: number;
+    side: SideDimension;
   }) => {
-    const side = lot[sideKey];
+    const sideLabel = getSideLabel(sideIndex, lot.numberOfSides);
+    const sideIcon = getSideIcon(sideIndex, lot.numberOfSides);
     
     return (
       <div className="space-y-3 p-3 bg-muted/30 rounded-lg border">
         <div className="flex items-center gap-2 text-sm font-medium">
-          {icon}
-          {sideName}
+          {sideIcon}
+          {sideLabel}
         </div>
         
         <div className="grid grid-cols-2 gap-2">
@@ -634,29 +504,42 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             <Input
               type="number"
               value={side.length || ''}
-              onChange={(e) => updateLotSide(lot.id, sideKey, { length: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => updateLotSide(lot.id, sideIndex, { length: parseFloat(e.target.value) || 0 })}
               placeholder="0"
               className="h-8 text-sm"
             />
           </div>
           
-          <div className="flex flex-col justify-end gap-1">
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={side.isShared}
-                onCheckedChange={(checked) => updateLotSide(lot.id, sideKey, { isShared: checked })}
-                className="scale-75"
-              />
-              <Label className="text-xs">Mitoyen</Label>
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch
-                checked={side.isRoadBordering}
-                onCheckedChange={(checked) => updateLotSide(lot.id, sideKey, { isRoadBordering: checked })}
-                className="scale-75"
-              />
-              <Label className="text-xs">Borde route</Label>
-            </div>
+          <div className="space-y-1">
+            <Label className="text-xs">Angle (°)</Label>
+            <Input
+              type="number"
+              value={side.angle || 90}
+              onChange={(e) => updateLotSide(lot.id, sideIndex, { angle: parseFloat(e.target.value) || 90 })}
+              placeholder="90"
+              className="h-8 text-sm"
+              min={0}
+              max={180}
+            />
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={side.isShared}
+              onCheckedChange={(checked) => updateLotSide(lot.id, sideIndex, { isShared: checked })}
+              className="scale-75"
+            />
+            <Label className="text-xs">Mitoyen</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={side.isRoadBordering}
+              onCheckedChange={(checked) => updateLotSide(lot.id, sideIndex, { isRoadBordering: checked })}
+              className="scale-75"
+            />
+            <Label className="text-xs">Borde route</Label>
           </div>
         </div>
         
@@ -665,7 +548,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             <Label className="text-xs">Lot adjacent</Label>
             <Input
               value={side.adjacentLotNumber || ''}
-              onChange={(e) => updateLotSide(lot.id, sideKey, { adjacentLotNumber: e.target.value })}
+              onChange={(e) => updateLotSide(lot.id, sideIndex, { adjacentLotNumber: e.target.value })}
               placeholder="N° du lot voisin"
               className="h-8 text-sm"
             />
@@ -678,7 +561,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
               <Label className="text-xs">Type de route</Label>
               <Select
                 value={side.roadType || 'existing'}
-                onValueChange={(v) => updateLotSide(lot.id, sideKey, { roadType: v as SideDimension['roadType'] })}
+                onValueChange={(v) => updateLotSide(lot.id, sideIndex, { roadType: v as SideDimension['roadType'] })}
               >
                 <SelectTrigger className="h-8 text-xs">
                   <SelectValue />
@@ -686,6 +569,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 <SelectContent>
                   <SelectItem value="existing">Route existante</SelectItem>
                   <SelectItem value="created">Route créée</SelectItem>
+                  <SelectItem value="none">Aucune</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -694,8 +578,17 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
               <Input
                 type="number"
                 value={side.roadWidth || ''}
-                onChange={(e) => updateLotSide(lot.id, sideKey, { roadWidth: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => updateLotSide(lot.id, sideIndex, { roadWidth: parseFloat(e.target.value) || 0 })}
                 placeholder="0"
+                className="h-8 text-sm"
+              />
+            </div>
+            <div className="space-y-1 col-span-2">
+              <Label className="text-xs">Nom de la route</Label>
+              <Input
+                value={side.roadName || ''}
+                onChange={(e) => updateLotSide(lot.id, sideIndex, { roadName: e.target.value })}
+                placeholder="Avenue / Route"
                 className="h-8 text-sm"
               />
             </div>
@@ -892,13 +785,13 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                             className="h-10 flex-1"
                           />
                           <Select value={parentParcelTitleType} onValueChange={setParentParcelTitleType}>
-                            <SelectTrigger className="h-10 w-[140px]">
+                            <SelectTrigger className="h-10 w-32">
                               <SelectValue placeholder="Type" />
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="certificat_enregistrement">Certificat</SelectItem>
                               <SelectItem value="titre_foncier">Titre foncier</SelectItem>
-                              <SelectItem value="contrat_location">Contrat</SelectItem>
+                              <SelectItem value="attestation">Attestation</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -909,11 +802,13 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                     <div className="pt-4 border-t">
                       <Label className="flex items-center gap-2 mb-3 text-sm font-medium">
                         <Ruler className="h-4 w-4" />
-                        Dimensions des côtés de la parcelle
+                        Dimensions des côtés de la parcelle mère
                       </Label>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Côté Nord (m)</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs flex items-center gap-1">
+                            <ArrowUp className="h-3 w-3" /> Nord (m)
+                          </Label>
                           <Input
                             type="number"
                             value={parentParcelSides.north.length || ''}
@@ -921,12 +816,14 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                               ...prev,
                               north: { ...prev.north, length: parseFloat(e.target.value) || 0 }
                             }))}
-                            placeholder="0"
                             className="h-9"
+                            placeholder="0"
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Côté Sud (m)</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs flex items-center gap-1">
+                            <ArrowDown className="h-3 w-3" /> Sud (m)
+                          </Label>
                           <Input
                             type="number"
                             value={parentParcelSides.south.length || ''}
@@ -934,12 +831,14 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                               ...prev,
                               south: { ...prev.south, length: parseFloat(e.target.value) || 0 }
                             }))}
-                            placeholder="0"
                             className="h-9"
+                            placeholder="0"
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Côté Est (m)</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs flex items-center gap-1">
+                            <ArrowRight className="h-3 w-3" /> Est (m)
+                          </Label>
                           <Input
                             type="number"
                             value={parentParcelSides.east.length || ''}
@@ -947,12 +846,14 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                               ...prev,
                               east: { ...prev.east, length: parseFloat(e.target.value) || 0 }
                             }))}
-                            placeholder="0"
                             className="h-9"
+                            placeholder="0"
                           />
                         </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs text-muted-foreground">Côté Ouest (m)</Label>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs flex items-center gap-1">
+                            <ArrowLeft className="h-3 w-3" /> Ouest (m)
+                          </Label>
                           <Input
                             type="number"
                             value={parentParcelSides.west.length || ''}
@@ -960,31 +861,11 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                               ...prev,
                               west: { ...prev.west, length: parseFloat(e.target.value) || 0 }
                             }))}
-                            placeholder="0"
                             className="h-9"
+                            placeholder="0"
                           />
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Motif du lotissement */}
-                    <div className="space-y-2 pt-2">
-                      <Label htmlFor="purpose" className="flex items-center gap-1 text-sm">
-                        <Info className="h-3.5 w-3.5" />
-                        Motif du lotissement
-                      </Label>
-                      <Select value={purposeOfSubdivision} onValueChange={setPurposeOfSubdivision}>
-                        <SelectTrigger className="h-10">
-                          <SelectValue placeholder="Sélectionner le motif" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="vente">Vente de terrains</SelectItem>
-                          <SelectItem value="succession">Partage successoral</SelectItem>
-                          <SelectItem value="donation">Donation</SelectItem>
-                          <SelectItem value="investissement">Investissement immobilier</SelectItem>
-                          <SelectItem value="autre">Autre</SelectItem>
-                        </SelectContent>
-                      </Select>
                     </div>
                   </CardContent>
                 </Card>
@@ -1137,7 +1018,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                           <div className="flex-1 text-left">
                             <div className="font-medium text-sm">{lot.lotNumber}</div>
                             <div className="text-xs text-muted-foreground">
-                              {lot.areaSqm > 0 ? `${lot.areaSqm.toLocaleString()} m² • P: ${lot.perimeter.toLocaleString()} m` : 'Dimensions à définir'}
+                              {lot.areaSqm > 0 ? `${lot.areaSqm.toLocaleString()} m² • P: ${lot.perimeter.toLocaleString()} m • ${lot.numberOfSides} côtés` : 'Dimensions à définir'}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 mr-2">
@@ -1149,7 +1030,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                       <AccordionContent className="px-4 pb-4 pt-2">
                         <div className="space-y-4">
                           {/* Numéro et caractéristiques */}
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                             <div className="space-y-1.5">
                               <Label className="text-xs">N° du lot</Label>
                               <Input
@@ -1159,8 +1040,27 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                               />
                             </div>
                             <div className="space-y-1.5">
+                              <Label className="text-xs">Nombre de côtés</Label>
+                              <Select 
+                                value={lot.numberOfSides.toString()} 
+                                onValueChange={(v) => changeLotSidesCount(lot.id, parseInt(v))}
+                              >
+                                <SelectTrigger className="h-9 text-sm">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {[3, 4, 5, 6, 7, 8].map(n => (
+                                    <SelectItem key={n} value={n.toString()}>{n} côtés</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="space-y-1.5">
                               <Label className="text-xs">Usage prévu</Label>
-                              <Select value={lot.intendedUse || 'residential'} onValueChange={(v) => updateLot(lot.id, { intendedUse: v })}>
+                              <Select 
+                                value={lot.intendedUse} 
+                                onValueChange={(v: LotData['intendedUse']) => updateLot(lot.id, { intendedUse: v })}
+                              >
                                 <SelectTrigger className="h-9 text-sm">
                                   <SelectValue />
                                 </SelectTrigger>
@@ -1173,95 +1073,99 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                                 </SelectContent>
                               </Select>
                             </div>
-                            <div className="flex items-end gap-4">
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  checked={lot.isBuilt}
-                                  onCheckedChange={(checked) => updateLot(lot.id, { isBuilt: checked })}
-                                />
-                                <Label className="text-xs"><Building2 className="h-3 w-3 inline mr-1" />Construit</Label>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  checked={lot.hasFence}
-                                  onCheckedChange={(checked) => updateLot(lot.id, { hasFence: checked })}
-                                />
-                                <Label className="text-xs"><Fence className="h-3 w-3 inline mr-1" />Clôturé</Label>
-                              </div>
+                            <div className="flex items-end gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => duplicateLot(lot, 1)}
+                                className="gap-1 flex-1"
+                              >
+                                <Copy className="h-3 w-3" />
+                                Dupliquer
+                              </Button>
                             </div>
                           </div>
                           
-                          {/* Dimensions des 4 côtés */}
+                          <div className="flex flex-wrap gap-4">
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={lot.isBuilt}
+                                onCheckedChange={(checked) => updateLot(lot.id, { isBuilt: checked })}
+                              />
+                              <Label className="text-xs"><Building2 className="h-3 w-3 inline mr-1" />Construit</Label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={lot.hasFence}
+                                onCheckedChange={(checked) => updateLot(lot.id, { hasFence: checked })}
+                              />
+                              <Label className="text-xs"><Fence className="h-3 w-3 inline mr-1" />Clôturé</Label>
+                            </div>
+                            {lot.hasFence && (
+                              <Select 
+                                value={lot.fenceType || 'wall'} 
+                                onValueChange={(v: LotData['fenceType']) => updateLot(lot.id, { fenceType: v })}
+                              >
+                                <SelectTrigger className="h-8 w-32 text-xs">
+                                  <SelectValue placeholder="Type clôture" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {FENCE_TYPES.map(t => (
+                                    <SelectItem key={t.value} value={t.value}>
+                                      {t.icon} {t.label}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                          </div>
+                          
+                          {/* Dimensions des côtés */}
                           <div className="pt-3 border-t">
                             <Label className="flex items-center gap-2 mb-3 text-sm font-medium">
                               <Ruler className="h-4 w-4" />
                               Dimensions et caractéristiques des côtés
                             </Label>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              <SideEditor lot={lot} sideName="Côté Nord" sideKey="northSide" icon={<CornerUpRight className="h-3 w-3" />} />
-                              <SideEditor lot={lot} sideName="Côté Sud" sideKey="southSide" icon={<CornerUpRight className="h-3 w-3 rotate-180" />} />
-                              <SideEditor lot={lot} sideName="Côté Est" sideKey="eastSide" icon={<CornerUpRight className="h-3 w-3 rotate-90" />} />
-                              <SideEditor lot={lot} sideName="Côté Ouest" sideKey="westSide" icon={<CornerUpRight className="h-3 w-3 -rotate-90" />} />
+                              {lot.sides.map((side, sideIndex) => (
+                                <SideEditor 
+                                  key={side.id} 
+                                  lot={lot} 
+                                  sideIndex={sideIndex}
+                                  side={side}
+                                />
+                              ))}
                             </div>
                           </div>
                           
-                          {/* Angles des coins */}
+                          {/* Résumé des angles */}
                           <div className="pt-3 border-t">
-                            <Label className="flex items-center gap-2 mb-3 text-sm font-medium">
-                              <Compass className="h-4 w-4" />
-                              Angles des coins (en degrés)
-                            </Label>
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Nord-Ouest</Label>
-                                <Input
-                                  type="number"
-                                  value={lot.cornerAngles.topLeft}
-                                  onChange={(e) => updateLotAngles(lot.id, 'topLeft', parseFloat(e.target.value) || 90)}
-                                  className="h-8 text-sm"
-                                  min={0}
-                                  max={180}
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Nord-Est</Label>
-                                <Input
-                                  type="number"
-                                  value={lot.cornerAngles.topRight}
-                                  onChange={(e) => updateLotAngles(lot.id, 'topRight', parseFloat(e.target.value) || 90)}
-                                  className="h-8 text-sm"
-                                  min={0}
-                                  max={180}
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Sud-Est</Label>
-                                <Input
-                                  type="number"
-                                  value={lot.cornerAngles.bottomRight}
-                                  onChange={(e) => updateLotAngles(lot.id, 'bottomRight', parseFloat(e.target.value) || 90)}
-                                  className="h-8 text-sm"
-                                  min={0}
-                                  max={180}
-                                />
-                              </div>
-                              <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Sud-Ouest</Label>
-                                <Input
-                                  type="number"
-                                  value={lot.cornerAngles.bottomLeft}
-                                  onChange={(e) => updateLotAngles(lot.id, 'bottomLeft', parseFloat(e.target.value) || 90)}
-                                  className="h-8 text-sm"
-                                  min={0}
-                                  max={180}
-                                />
-                              </div>
+                            <div className="flex items-center justify-between">
+                              <Label className="flex items-center gap-2 text-sm font-medium">
+                                <Compass className="h-4 w-4" />
+                                Somme des angles
+                              </Label>
+                              <span className={`text-sm font-medium ${
+                                Math.abs(lot.sides.reduce((sum, s) => sum + (s.angle || 0), 0) - (lot.numberOfSides - 2) * 180) < 1 
+                                  ? 'text-green-600' 
+                                  : 'text-amber-600'
+                              }`}>
+                                {lot.sides.reduce((sum, s) => sum + (s.angle || 0), 0)}° 
+                                (attendu: {(lot.numberOfSides - 2) * 180}°)
+                              </span>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              La somme des angles doit être égale à 360°. Actuel: {
-                                lot.cornerAngles.topLeft + lot.cornerAngles.topRight + lot.cornerAngles.bottomRight + lot.cornerAngles.bottomLeft
-                              }°
-                            </p>
+                          </div>
+                          
+                          {/* Notes */}
+                          <div className="pt-3 border-t">
+                            <Label className="text-xs mb-2 block">Notes sur le lot</Label>
+                            <Textarea
+                              value={lot.notes || ''}
+                              onChange={(e) => updateLot(lot.id, { notes: e.target.value })}
+                              placeholder="Informations supplémentaires..."
+                              rows={2}
+                              className="text-sm"
+                            />
                           </div>
                           
                           {/* Bouton supprimer */}
@@ -1292,6 +1196,43 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                     </Button>
                   </div>
                 )}
+                
+                {/* Section Routes internes */}
+                {lots.length > 0 && (
+                  <Card className="mt-6">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Route className="h-4 w-4 text-primary" />
+                        Routes internes (optionnel)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <InternalRoadsEditor
+                        roads={internalRoads}
+                        onRoadsChange={setInternalRoads}
+                        lots={lots}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
+                
+                {/* Section Environnement */}
+                {lots.length > 0 && (
+                  <Card className="mt-4">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Layers className="h-4 w-4 text-primary" />
+                        Éléments environnants (optionnel)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <EnvironmentEditor
+                        features={environmentFeatures}
+                        onFeaturesChange={setEnvironmentFeatures}
+                      />
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
             
@@ -1301,108 +1242,35 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                 <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
                   <Layers className="h-4 w-4 text-blue-600" />
                   <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
-                    Le croquis est généré automatiquement à partir des données saisies. Vous pouvez zoomer et sélectionner les lots.
+                    Le croquis professionnel est généré automatiquement à partir des données saisies. Vous pouvez l'exporter en PDF ou PNG haute résolution.
                   </AlertDescription>
                 </Alert>
                 
-                {/* Barre d'outils */}
-                <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/50 rounded-lg">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setZoomLevel(z => Math.min(z + 0.25, 2))}
-                    className="gap-1"
-                  >
-                    <ZoomIn className="h-4 w-4" />
-                    <span className="hidden sm:inline">Zoom +</span>
-                  </Button>
-                  <span className="text-xs text-muted-foreground min-w-[40px] text-center">
-                    {Math.round(zoomLevel * 100)}%
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setZoomLevel(z => Math.max(z - 0.25, 0.5))}
-                    className="gap-1"
-                  >
-                    <ZoomOut className="h-4 w-4" />
-                    <span className="hidden sm:inline">Zoom -</span>
-                  </Button>
-                  
-                  <Separator orientation="vertical" className="h-6 hidden sm:block" />
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setZoomLevel(1)}
-                    className="gap-1"
-                  >
-                    <RotateCcw className="h-4 w-4" />
-                    <span className="hidden sm:inline">Réinitialiser</span>
-                  </Button>
-                  
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedLotIndex(null)}
-                    className="gap-1"
-                  >
-                    <Maximize2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Tout voir</span>
-                  </Button>
-                </div>
-                
-                {/* Canvas */}
-                <div className="relative bg-white dark:bg-gray-900 rounded-xl border overflow-hidden">
-                  <canvas
-                    ref={canvasRef}
-                    width={600}
-                    height={450}
-                    className="w-full h-auto cursor-crosshair"
-                    onClick={(e) => {
-                      // Permettre la sélection d'un lot en cliquant
-                      const rect = canvasRef.current?.getBoundingClientRect();
-                      if (!rect) return;
-                      const x = (e.clientX - rect.left) * (600 / rect.width);
-                      const y = (e.clientY - rect.top) * (450 / rect.height);
-                      // Pour l'instant, on fait défiler les lots sélectionnés
-                      setSelectedLotIndex(prev => 
-                        prev === null ? 0 : (prev + 1) % lots.length
-                      );
-                    }}
-                  />
-                  
-                  {lots.length === 0 && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
-                      <p className="text-muted-foreground">Définissez d'abord les lots pour voir le croquis</p>
-                    </div>
-                  )}
-                </div>
-                
-                {/* Info lot sélectionné */}
-                {selectedLotIndex !== null && lots[selectedLotIndex] && (
-                  <Card className="p-4 bg-primary/5 border-primary/20">
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary-foreground">{selectedLotIndex + 1}</span>
-                      </div>
-                      <div className="flex-1">
-                        <div className="font-medium">{lots[selectedLotIndex].lotNumber}</div>
-                        <div className="text-sm text-muted-foreground">
-                          Surface: {lots[selectedLotIndex].areaSqm.toLocaleString()} m² • 
-                          Périmètre: {lots[selectedLotIndex].perimeter.toLocaleString()} m
-                        </div>
-                      </div>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setCurrentStep('lots')}
-                      >
-                        Modifier
-                      </Button>
-                    </div>
-                  </Card>
-                )}
+                <ProfessionalSketchCanvas
+                  lots={lots}
+                  internalRoads={internalRoads}
+                  environmentFeatures={environmentFeatures}
+                  parentParcel={{
+                    area: parseFloat(parentParcelArea) || 0,
+                    location: parentParcelLocation,
+                    owner: parentParcelOwner,
+                    titleRef: parentParcelTitleRef,
+                    titleType: parentParcelTitleType,
+                    titleIssueDate: parentParcelTitleIssueDate,
+                    gps: parentParcelGPS,
+                    sides: [
+                      { id: 'n', length: parentParcelSides.north.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                      { id: 'e', length: parentParcelSides.east.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                      { id: 's', length: parentParcelSides.south.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                      { id: 'w', length: parentParcelSides.west.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' }
+                    ],
+                    numberOfSides: 4
+                  }}
+                  settings={sketchSettings}
+                  onSettingsChange={setSketchSettings}
+                  onLotSelect={setSelectedLotIndex}
+                  selectedLotIndex={selectedLotIndex}
+                />
               </div>
             )}
             
@@ -1417,33 +1285,23 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                       Parcelle mère
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Numéro:</span>
-                      <span className="ml-2 font-mono font-medium">{parcelNumber}</span>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">N° Parcelle:</span>
+                      <span className="font-mono font-medium">{parcelNumber}</span>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Surface:</span>
-                      <span className="ml-2 font-medium">{parseFloat(parentParcelArea).toLocaleString()} m²</span>
-                    </div>
-                    <div>
+                    <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Propriétaire:</span>
-                      <span className="ml-2 font-medium">{parentParcelOwner}</span>
+                      <span className="font-medium">{parentParcelOwner}</span>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Titre foncier:</span>
-                      <span className="ml-2 font-medium">{parentParcelTitleRef || 'Non renseigné'}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Surface totale:</span>
+                      <span className="font-medium">{parseFloat(parentParcelArea).toLocaleString()} m²</span>
                     </div>
-                    <div className="sm:col-span-2">
+                    <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Localisation:</span>
-                      <span className="ml-2 font-medium">{parentParcelLocation || 'Non renseignée'}</span>
+                      <span className="font-medium text-right max-w-[200px] truncate">{parentParcelLocation}</span>
                     </div>
-                    {parentParcelGPS.lat && (
-                      <div className="sm:col-span-2">
-                        <span className="text-muted-foreground">GPS:</span>
-                        <span className="ml-2 font-mono text-xs">{parentParcelGPS.lat}, {parentParcelGPS.lng}</span>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
                 
@@ -1455,29 +1313,31 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                       Demandeur
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                    <div>
+                  <CardContent className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Nom complet:</span>
-                      <span className="ml-2 font-medium">
-                        {requesterLastName} {requesterFirstName} {requesterMiddleName}
-                      </span>
+                      <span className="font-medium">{requesterLastName} {requesterFirstName} {requesterMiddleName}</span>
                     </div>
-                    <div>
+                    <div className="flex items-center justify-between">
                       <span className="text-muted-foreground">Téléphone:</span>
-                      <span className="ml-2 font-medium">{requesterPhone}</span>
+                      <span className="font-medium">{requesterPhone}</span>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Email:</span>
-                      <span className="ml-2 font-medium">{requesterEmail || 'Non renseigné'}</span>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Type:</span>
-                      <span className="ml-2 font-medium capitalize">{requesterType}</span>
+                    {requesterEmail && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Email:</span>
+                        <span className="font-medium">{requesterEmail}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Est propriétaire:</span>
+                      <Badge variant={isRequesterOwner ? 'default' : 'secondary'}>
+                        {isRequesterOwner ? 'Oui' : 'Non'}
+                      </Badge>
                     </div>
                   </CardContent>
                 </Card>
                 
-                {/* Lots créés */}
+                {/* Lots */}
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
@@ -1485,15 +1345,13 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                       Lots créés ({lots.length})
                     </CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {lots.map((lot) => (
-                        <div key={lot.id} className="flex flex-wrap items-center justify-between gap-2 p-2 bg-muted/50 rounded-lg text-sm">
+                  <CardContent className="space-y-2">
+                    <div className="grid gap-2 max-h-40 overflow-y-auto">
+                      {lots.map((lot, index) => (
+                        <div key={lot.id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-sm">
                           <div className="flex items-center gap-2">
-                            <Badge variant="outline">{lot.lotNumber}</Badge>
-                            <span className="text-xs text-muted-foreground">
-                              N:{lot.northSide.length}m S:{lot.southSide.length}m E:{lot.eastSide.length}m O:{lot.westSide.length}m
-                            </span>
+                            <span className="font-medium">{lot.lotNumber}</span>
+                            <span className="text-muted-foreground">({lot.numberOfSides} côtés)</span>
                           </div>
                           <div className="flex items-center gap-2">
                             {lot.isBuilt && <Badge variant="secondary" className="text-xs">Construit</Badge>}
