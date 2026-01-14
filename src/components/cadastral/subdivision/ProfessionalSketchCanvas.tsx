@@ -75,13 +75,13 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
   
   // Calculer l'échelle basée sur la parcelle mère
   const calculateScale = useCallback(() => {
-    const parentPerimeter = parentParcelSides.reduce((sum, s) => sum + s.length, 0);
-    const avgSide = parentPerimeter / parentParcelSides.length || Math.sqrt(parentParcelArea);
+    const parentPerimeter = parentParcel.sides.reduce((sum, s) => sum + s.length, 0);
+    const avgSide = parentPerimeter / parentParcel.sides.length || Math.sqrt(parentParcel.area);
     const margin = 80;
     const availableWidth = canvasWidth - margin * 2;
     const availableHeight = canvasHeight - margin * 2;
     return Math.min(availableWidth, availableHeight) / (avgSide * 1.5);
-  }, [parentParcelSides, parentParcelArea]);
+  }, [parentParcel.sides, parentParcel.area]);
   
   // Dessiner le croquis
   const drawSketch = useCallback(() => {
@@ -122,8 +122,8 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
     }
     
     // Parcelle mère
-    const parentWidth = (parentParcelSides[0]?.length || Math.sqrt(parentParcelArea)) * scale;
-    const parentHeight = (parentParcelSides[1]?.length || Math.sqrt(parentParcelArea)) * scale;
+    const parentWidth = (parentParcel.sides[0]?.length || Math.sqrt(parentParcel.area)) * scale;
+    const parentHeight = (parentParcel.sides[1]?.length || Math.sqrt(parentParcel.area)) * scale;
     const startX = (canvasWidth - parentWidth) / 2;
     const startY = (canvasHeight - parentHeight) / 2;
     
@@ -139,7 +139,7 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
       ctx.font = 'bold 11px Inter, sans-serif';
       ctx.textAlign = 'center';
       
-      parentParcelSides.forEach((side, index) => {
+      parentParcel.sides.forEach((side, index) => {
         if (side.length <= 0) return;
         
         if (index === 0) { // Nord
@@ -163,8 +163,8 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
     }
     
     // Éléments d'environnement
-    if (settings.showEnvironment && environment.length > 0) {
-      environment.forEach(feature => {
+    if (settings.showEnvironment && environmentFeatures.length > 0) {
+      environmentFeatures.forEach(feature => {
         const icon = ENVIRONMENT_ICONS[feature.type] || '📍';
         let featureX = startX;
         let featureY = startY;
@@ -201,8 +201,8 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
     }
     
     // Routes internes
-    if (settings.showRoads && roads.length > 0) {
-      roads.forEach(road => {
+    if (settings.showRoads && internalRoads.length > 0) {
+      internalRoads.forEach(road => {
         const surfaceInfo = SURFACE_TYPES.find(s => s.value === road.surfaceType);
         ctx.strokeStyle = surfaceInfo?.color || '#6b7280';
         ctx.lineWidth = road.width * scale / 5;
@@ -426,7 +426,7 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
     }
     
     ctx.restore();
-  }, [lots, roads, environment, parentParcelSides, parentParcelArea, settings, zoom, pan, selectedLotId, calculateScale]);
+  }, [lots, internalRoads, environmentFeatures, parentParcel.sides, parentParcel.area, settings, zoom, pan, selectedLotId, calculateScale]);
   
   useEffect(() => {
     drawSketch();
@@ -460,7 +460,49 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
   };
   
   const handleExportClick = (format: 'pdf' | 'png' | 'svg', resolution: 'standard' | 'hd' | 'print') => {
-    onExport(format, resolution);
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    if (format === 'png') {
+      const multiplier = resolution === 'hd' ? 2 : resolution === 'print' ? 4 : 1;
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = canvasWidth * multiplier;
+      exportCanvas.height = canvasHeight * multiplier;
+      const exportCtx = exportCanvas.getContext('2d');
+      if (exportCtx) {
+        exportCtx.scale(multiplier, multiplier);
+        exportCtx.drawImage(canvas, 0, 0);
+        const link = document.createElement('a');
+        link.download = `croquis-lotissement-${resolution}.png`;
+        link.href = exportCanvas.toDataURL('image/png');
+        link.click();
+      }
+    } else if (format === 'pdf') {
+      import('jspdf').then(({ jsPDF }) => {
+        const multiplier = resolution === 'print' ? 4 : 2;
+        const exportCanvas = document.createElement('canvas');
+        exportCanvas.width = canvasWidth * multiplier;
+        exportCanvas.height = canvasHeight * multiplier;
+        const exportCtx = exportCanvas.getContext('2d');
+        if (exportCtx) {
+          exportCtx.scale(multiplier, multiplier);
+          exportCtx.drawImage(canvas, 0, 0);
+          
+          const pdf = new jsPDF({
+            orientation: 'landscape',
+            unit: 'mm',
+            format: resolution === 'print' ? 'a3' : 'a4'
+          });
+          
+          const imgData = exportCanvas.toDataURL('image/png');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (canvasHeight / canvasWidth) * pdfWidth;
+          
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save(`croquis-lotissement-${resolution}.pdf`);
+        }
+      });
+    }
   };
   
   return (
@@ -621,7 +663,7 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
             {lots.length} lots
           </Badge>
           <Badge variant="secondary" className="text-[10px]">
-            {parentParcelArea.toLocaleString('fr-FR')} m² total
+            {parentParcel.area.toLocaleString('fr-FR')} m² total
           </Badge>
         </div>
       </div>
