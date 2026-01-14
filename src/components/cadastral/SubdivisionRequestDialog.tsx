@@ -32,6 +32,7 @@ import { LotGeometryEditor } from './subdivision/LotGeometryEditor';
 import { EnvironmentEditor } from './subdivision/EnvironmentEditor';
 import { InternalRoadsEditor } from './subdivision/InternalRoadsEditor';
 import { ProfessionalSketchCanvas } from './subdivision/ProfessionalSketchCanvas';
+import { SubdivisionAssistant } from './subdivision/SubdivisionAssistant';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
@@ -118,40 +119,157 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   
   // Loading
   const [submitting, setSubmitting] = useState(false);
+  const [loadingParcelData, setLoadingParcelData] = useState(false);
+  const [dataSource, setDataSource] = useState<'props' | 'database' | 'manual'>('manual');
   
-  // Initialiser les données depuis parcelData au montage
-  useEffect(() => {
-    if (parcelData) {
-      setParentParcelArea(parcelData.area_sqm?.toString() || '');
-      setParentParcelLocation(parcelData.location || '');
-      setParentParcelOwner(parcelData.current_owner_name || '');
-      setParentParcelTitleRef(parcelData.title_reference_number || '');
-      setParentParcelTitleType(parcelData.property_title_type || '');
-      setParentParcelTitleIssueDate(parcelData.title_issue_date || '');
+  // Fonction pour récupérer les données de la parcelle depuis la base de données
+  const fetchParcelData = useCallback(async () => {
+    if (!parcelNumber) return;
+    
+    setLoadingParcelData(true);
+    try {
+      // Rechercher dans cadastral_parcels
+      const { data: parcel, error } = await supabase
+        .from('cadastral_parcels')
+        .select('*')
+        .eq('parcel_number', parcelNumber)
+        .is('deleted_at', null)
+        .single();
       
-      // GPS
-      if (parcelData.gps_coordinates) {
-        const gps = parcelData.gps_coordinates;
+      if (parcel && !error) {
+        applyParcelData(parcel, 'database');
+        return;
+      }
+      
+      // Si non trouvé, chercher dans les contributions validées
+      const { data: contribution } = await supabase
+        .from('cadastral_contributions')
+        .select('*')
+        .eq('parcel_number', parcelNumber)
+        .eq('status', 'validated')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (contribution) {
+        applyParcelData({
+          area_sqm: contribution.area_sqm,
+          location: [contribution.commune, contribution.quartier, contribution.avenue].filter(Boolean).join(', '),
+          current_owner_name: contribution.current_owner_name,
+          current_owners_details: contribution.current_owners_details,
+          title_reference_number: contribution.title_reference_number,
+          property_title_type: contribution.property_title_type,
+          title_issue_date: contribution.title_issue_date,
+          gps_coordinates: contribution.gps_coordinates,
+          parcel_sides: contribution.parcel_sides,
+          province: contribution.province,
+          ville: contribution.ville,
+          commune: contribution.commune,
+          quartier: contribution.quartier,
+          avenue: contribution.avenue
+        }, 'database');
+      }
+    } catch (err) {
+      console.error('Error fetching parcel data:', err);
+    } finally {
+      setLoadingParcelData(false);
+    }
+  }, [parcelNumber]);
+  
+  // Appliquer les données de la parcelle (depuis props ou database)
+  const applyParcelData = useCallback((data: any, source: 'props' | 'database') => {
+    setDataSource(source);
+    
+    setParentParcelArea(data.area_sqm?.toString() || '');
+    setParentParcelLocation(data.location || '');
+    
+    // Gérer les propriétaires multiples si disponibles
+    if (data.current_owners_details && Array.isArray(data.current_owners_details)) {
+      const ownersNames = data.current_owners_details
+        .map((o: any) => `${o.lastName || ''} ${o.middleName || ''} ${o.firstName || ''}`.trim())
+        .filter(Boolean)
+        .join('; ');
+      setParentParcelOwner(ownersNames || data.current_owner_name || '');
+    } else {
+      setParentParcelOwner(data.current_owner_name || '');
+    }
+    
+    setParentParcelTitleRef(data.title_reference_number || '');
+    setParentParcelTitleType(data.property_title_type || '');
+    setParentParcelTitleIssueDate(data.title_issue_date || '');
+    
+    // GPS - gérer les différents formats
+    if (data.gps_coordinates) {
+      const gps = data.gps_coordinates;
+      if (Array.isArray(gps) && gps.length > 0) {
+        // Format tableau de bornes [{lat, lng, borne}]
+        const firstPoint = gps[0];
+        setParentParcelGPS({
+          lat: firstPoint.lat?.toString() || '',
+          lng: firstPoint.lng?.toString() || ''
+        });
+      } else if (typeof gps === 'object') {
         setParentParcelGPS({
           lat: gps.latitude?.toString() || gps.lat?.toString() || '',
           lng: gps.longitude?.toString() || gps.lng?.toString() || ''
         });
-      } else if (parcelData.latitude && parcelData.longitude) {
-        setParentParcelGPS({
-          lat: parcelData.latitude.toString(),
-          lng: parcelData.longitude.toString()
-        });
       }
+    } else if (data.latitude && data.longitude) {
+      setParentParcelGPS({
+        lat: data.latitude.toString(),
+        lng: data.longitude.toString()
+      });
+    }
+    
+    // Dimensions des côtés - gérer plusieurs formats CCC
+    if (data.parcel_sides) {
+      const sides = data.parcel_sides;
       
-      // Dimensions des côtés si disponibles
-      if (parcelData.parcel_sides) {
-        const sides = parcelData.parcel_sides;
+      // Format tableau [{name, length}] utilisé par le formulaire CCC
+      if (Array.isArray(sides)) {
+        const findSide = (names: string[]) => {
+          return sides.find((s: any) => 
+            names.some(n => s.name?.toLowerCase().includes(n.toLowerCase()))
+          );
+        };
+        
+        const north = findSide(['nord', 'north', 'n']);
+        const south = findSide(['sud', 'south', 's']);
+        const east = findSide(['est', 'east', 'e']);
+        const west = findSide(['ouest', 'west', 'o', 'w']);
+        
+        setParentParcelSides({
+          north: { length: parseFloat(north?.length) || 0, description: north?.name || 'Nord' },
+          south: { length: parseFloat(south?.length) || 0, description: south?.name || 'Sud' },
+          east: { length: parseFloat(east?.length) || 0, description: east?.name || 'Est' },
+          west: { length: parseFloat(west?.length) || 0, description: west?.name || 'Ouest' }
+        });
+      } else {
+        // Format objet {north: {length}, south: {length}, ...}
         setParentParcelSides({
           north: { length: sides.north?.length || sides.cote_nord || 0, description: sides.north?.description || '' },
           south: { length: sides.south?.length || sides.cote_sud || 0, description: sides.south?.description || '' },
           east: { length: sides.east?.length || sides.cote_est || 0, description: sides.east?.description || '' },
           west: { length: sides.west?.length || sides.cote_ouest || 0, description: sides.west?.description || '' }
         });
+      }
+    }
+    
+    toast({
+      title: 'Données synchronisées',
+      description: `Les informations de la parcelle ont été ${source === 'database' ? 'récupérées depuis la base de données CCC' : 'chargées'}.`,
+    });
+  }, [toast]);
+  
+  // Initialiser les données depuis parcelData ou depuis la base de données
+  useEffect(() => {
+    if (open) {
+      if (parcelData && Object.keys(parcelData).length > 0) {
+        // Données passées en props
+        applyParcelData(parcelData, 'props');
+      } else if (parcelNumber) {
+        // Pas de données passées, récupérer depuis la base
+        fetchParcelData();
       }
       
       // Pré-remplir les infos du demandeur si l'utilisateur est connecté
@@ -165,7 +283,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
         }
       }
     }
-  }, [parcelData, user]);
+  }, [open, parcelData, parcelNumber, user, applyParcelData, fetchParcelData]);
   
   // Calculer les statistiques
   const totalLotsArea = lots.reduce((sum, lot) => sum + lot.areaSqm, 0);
@@ -690,12 +808,28 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             {currentStep === 'parcel' && (
               <div className="space-y-6">
                 {/* Info auto-remplissage */}
-                <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                  <Check className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-700 dark:text-green-300 text-sm">
-                    Les données de la parcelle ont été automatiquement pré-remplies depuis la base de données. Vérifiez et complétez si nécessaire.
-                  </AlertDescription>
-                </Alert>
+                {loadingParcelData ? (
+                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+                    <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
+                    <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
+                      Synchronisation des données depuis la base CCC en cours...
+                    </AlertDescription>
+                  </Alert>
+                ) : dataSource !== 'manual' ? (
+                  <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                    <Check className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-700 dark:text-green-300 text-sm">
+                      Les données ont été synchronisées depuis {dataSource === 'database' ? 'la base de données CCC' : 'les informations de la parcelle'}. Vérifiez et complétez si nécessaire.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
+                      Remplissez les informations de la parcelle mère manuellement.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 
                 {/* Section Parcelle mère */}
                 <Card>
@@ -962,11 +1096,37 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
             {/* Étape 2: Définition des lots */}
             {currentStep === 'lots' && (
               <div className="space-y-4">
+                {/* Assistant de création automatique */}
+                {lots.length === 0 && parseFloat(parentParcelArea) > 0 && (
+                  <SubdivisionAssistant
+                    parentParcel={{
+                      area: parseFloat(parentParcelArea) || 0,
+                      location: parentParcelLocation,
+                      owner: parentParcelOwner,
+                      titleRef: parentParcelTitleRef,
+                      titleType: parentParcelTitleType,
+                      titleIssueDate: parentParcelTitleIssueDate,
+                      gps: parentParcelGPS,
+                      sides: [
+                        { id: 'north', length: parentParcelSides.north.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                        { id: 'east', length: parentParcelSides.east.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                        { id: 'south', length: parentParcelSides.south.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                        { id: 'west', length: parentParcelSides.west.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' }
+                      ],
+                      numberOfSides: 4
+                    }}
+                    onGenerateLots={(generatedLots) => setLots(generatedLots)}
+                    existingLots={lots}
+                  />
+                )}
+                
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <h3 className="font-semibold">Lots à créer</h3>
                     <p className="text-sm text-muted-foreground">
-                      Définissez au minimum 2 lots avec leurs dimensions exactes
+                      {lots.length > 0 
+                        ? `${lots.length} lot(s) défini(s) - Modifiez ou ajoutez des lots`
+                        : 'Utilisez l\'assistant ou ajoutez des lots manuellement'}
                     </p>
                   </div>
                   <Button onClick={addLot} size="sm" className="gap-1 self-start sm:self-auto">

@@ -19,12 +19,14 @@ import SubdivisionRequestDialog from './SubdivisionRequestDialog';
 interface ParcelActionsDropdownProps {
   parcelNumber: string;
   parcelId?: string;
+  parcelData?: any; // Données complètes de la parcelle provenant du CCC
   className?: string;
 }
 
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   parcelNumber,
   parcelId,
+  parcelData,
   className
 }) => {
   const [showMutationDialog, setShowMutationDialog] = useState(false);
@@ -209,6 +211,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       <SubdivisionRequestDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
+        parcelData={parcelData}
         open={showSubdivisionDialog}
         onOpenChange={setShowSubdivisionDialog}
       />
