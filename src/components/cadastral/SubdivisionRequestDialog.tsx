@@ -33,6 +33,9 @@ import { EnvironmentEditor } from './subdivision/EnvironmentEditor';
 import { InternalRoadsEditor } from './subdivision/InternalRoadsEditor';
 import { ProfessionalSketchCanvas } from './subdivision/ProfessionalSketchCanvas';
 import { SubdivisionAssistant } from './subdivision/SubdivisionAssistant';
+import { ParentParcelSummary } from './subdivision/ParentParcelSummary';
+import { ParcelSketchCreator } from './subdivision/ParcelSketchCreator';
+import { SubdivisionValidations } from './subdivision/SubdivisionValidations';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
@@ -116,6 +119,15 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   
   // Documents
   const [proofOfOwnership, setProofOfOwnership] = useState<File | null>(null);
+  
+  // Sketch créé pour la parcelle mère
+  const [parentParcelSketch, setParentParcelSketch] = useState<{
+    sides: SideDimension[];
+    gpsPoints?: Array<{ lat: number; lng: number; borne: string }>;
+  } | null>(null);
+  const [hasExistingSketch, setHasExistingSketch] = useState(false);
+  const [showSketchCreator, setShowSketchCreator] = useState(false);
+  const [showRequesterEditor, setShowRequesterEditor] = useState(false);
   
   // Loading
   const [submitting, setSubmitting] = useState(false);
@@ -804,292 +816,271 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
         
         <ScrollArea className="flex-1 max-h-[calc(90vh-240px)] md:max-h-[calc(90vh-200px)]">
           <div className="p-4 md:p-6">
-            {/* Étape 1: Parcelle mère + Demandeur */}
+            {/* Étape 1: Parcelle mère + Demandeur - Vue optimisée */}
             {currentStep === 'parcel' && (
               <div className="space-y-6">
-                {/* Info auto-remplissage */}
-                {loadingParcelData ? (
-                  <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
-                    <Loader2 className="h-4 w-4 text-blue-600 animate-spin" />
-                    <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
-                      Synchronisation des données depuis la base CCC en cours...
-                    </AlertDescription>
-                  </Alert>
-                ) : dataSource !== 'manual' ? (
-                  <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                    <Check className="h-4 w-4 text-green-600" />
-                    <AlertDescription className="text-green-700 dark:text-green-300 text-sm">
-                      Les données ont été synchronisées depuis {dataSource === 'database' ? 'la base de données CCC' : 'les informations de la parcelle'}. Vérifiez et complétez si nécessaire.
-                    </AlertDescription>
-                  </Alert>
-                ) : (
-                  <Alert className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
-                    <Info className="h-4 w-4 text-amber-600" />
-                    <AlertDescription className="text-amber-700 dark:text-amber-300 text-sm">
-                      Remplissez les informations de la parcelle mère manuellement.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                
-                {/* Section Parcelle mère */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      Informations de la parcelle mère
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="parentOwner" className="flex items-center gap-1 text-sm">
-                          <User className="h-3.5 w-3.5" />
-                          Propriétaire actuel *
-                        </Label>
-                        <Input
-                          id="parentOwner"
-                          value={parentParcelOwner}
-                          onChange={(e) => setParentParcelOwner(e.target.value)}
-                          placeholder="Nom complet du propriétaire"
-                          className="h-10"
+                {/* Vue résumé avec les nouveaux composants */}
+                {!showSketchCreator && !showRequesterEditor ? (
+                  <>
+                    <ParentParcelSummary
+                      parcelData={{
+                        parcelNumber,
+                        owner: parentParcelOwner,
+                        area: parseFloat(parentParcelArea) || 0,
+                        location: parentParcelLocation,
+                        titleType: parentParcelTitleType,
+                        titleRef: parentParcelTitleRef,
+                        titleIssueDate: parentParcelTitleIssueDate,
+                        gps: parentParcelGPS,
+                        sides: [
+                          { id: 'north', length: parentParcelSides.north.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                          { id: 'east', length: parentParcelSides.east.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                          { id: 'south', length: parentParcelSides.south.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                          { id: 'west', length: parentParcelSides.west.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' }
+                        ],
+                        hasSketch: hasExistingSketch || parentParcelSketch !== null
+                      }}
+                      requesterData={{
+                        firstName: requesterFirstName,
+                        lastName: requesterLastName,
+                        middleName: requesterMiddleName,
+                        phone: requesterPhone,
+                        email: requesterEmail,
+                        type: requesterType,
+                        isOwner: isRequesterOwner
+                      }}
+                      dataSource={loadingParcelData ? 'loading' : dataSource !== 'manual' ? 'synced' : 'manual'}
+                      onRefreshData={fetchParcelData}
+                      onCreateSketch={() => setShowSketchCreator(true)}
+                      onEditRequester={() => setShowRequesterEditor(true)}
+                      isMandataryValid={isRequesterOwner ? undefined : true}
+                    />
+                    
+                    {/* Section formulaire demandeur si en mode édition ou si données manquantes */}
+                    {(!requesterFirstName || !requesterLastName || !requesterPhone) && (
+                      <Card>
+                        <CardHeader className="pb-3">
+                          <CardTitle className="text-base flex items-center gap-2">
+                            <User className="h-4 w-4 text-primary" />
+                            Informations du demandeur
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                            <Switch
+                              checked={isRequesterOwner}
+                              onCheckedChange={setIsRequesterOwner}
+                            />
+                            <Label className="text-sm">Le demandeur est le propriétaire de la parcelle</Label>
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm">Nom *</Label>
+                              <Input
+                                value={requesterLastName}
+                                onChange={(e) => setRequesterLastName(e.target.value)}
+                                placeholder="Nom de famille"
+                                className="h-10"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm">Prénom *</Label>
+                              <Input
+                                value={requesterFirstName}
+                                onChange={(e) => setRequesterFirstName(e.target.value)}
+                                placeholder="Prénom"
+                                className="h-10"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm">Post-nom</Label>
+                              <Input
+                                value={requesterMiddleName}
+                                onChange={(e) => setRequesterMiddleName(e.target.value)}
+                                placeholder="Post-nom"
+                                className="h-10"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm">Téléphone *</Label>
+                              <Input
+                                value={requesterPhone}
+                                onChange={(e) => setRequesterPhone(e.target.value)}
+                                placeholder="+243..."
+                                className="h-10"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm">Email</Label>
+                              <Input
+                                type="email"
+                                value={requesterEmail}
+                                onChange={(e) => setRequesterEmail(e.target.value)}
+                                placeholder="email@exemple.com"
+                                className="h-10"
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm">Type de demandeur</Label>
+                              <Select value={requesterType} onValueChange={setRequesterType}>
+                                <SelectTrigger className="h-10">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="particulier">Particulier</SelectItem>
+                                  <SelectItem value="entreprise">Entreprise</SelectItem>
+                                  <SelectItem value="promoteur">Promoteur immobilier</SelectItem>
+                                  <SelectItem value="cooperative">Coopérative</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+                  </>
+                ) : showSketchCreator ? (
+                  /* Créateur de croquis */
+                  <ParcelSketchCreator
+                    initialSides={[
+                      { id: 'north', length: parentParcelSides.north.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                      { id: 'east', length: parentParcelSides.east.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                      { id: 'south', length: parentParcelSides.south.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
+                      { id: 'west', length: parentParcelSides.west.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' }
+                    ]}
+                    initialArea={parseFloat(parentParcelArea) || 0}
+                    onSave={(sides, gpsPoints) => {
+                      // Mettre à jour les côtés depuis le sketch
+                      if (sides.length >= 4) {
+                        setParentParcelSides({
+                          north: { length: sides[0]?.length || 0, description: 'Nord' },
+                          east: { length: sides[1]?.length || 0, description: 'Est' },
+                          south: { length: sides[2]?.length || 0, description: 'Sud' },
+                          west: { length: sides[3]?.length || 0, description: 'Ouest' }
+                        });
+                      }
+                      // Stocker le sketch complet
+                      setParentParcelSketch({ sides, gpsPoints });
+                      setHasExistingSketch(true);
+                      // Mettre à jour GPS si disponible
+                      if (gpsPoints && gpsPoints.length > 0) {
+                        setParentParcelGPS({
+                          lat: gpsPoints[0].lat.toString(),
+                          lng: gpsPoints[0].lng.toString()
+                        });
+                      }
+                      setShowSketchCreator(false);
+                      toast({
+                        title: 'Croquis enregistré',
+                        description: 'Les dimensions de la parcelle ont été mises à jour.'
+                      });
+                    }}
+                    onCancel={() => setShowSketchCreator(false)}
+                  />
+                ) : showRequesterEditor ? (
+                  /* Éditeur de demandeur */
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <User className="h-4 w-4 text-primary" />
+                        Modifier les informations du demandeur
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
+                        <Switch
+                          checked={isRequesterOwner}
+                          onCheckedChange={setIsRequesterOwner}
                         />
+                        <Label className="text-sm">Le demandeur est le propriétaire de la parcelle</Label>
                       </div>
                       
-                      <div className="space-y-2">
-                        <Label htmlFor="parentArea" className="flex items-center gap-1 text-sm">
-                          <Square className="h-3.5 w-3.5" />
-                          Surface totale (m²) *
-                        </Label>
-                        <Input
-                          id="parentArea"
-                          type="number"
-                          value={parentParcelArea}
-                          onChange={(e) => setParentParcelArea(e.target.value)}
-                          placeholder="Ex: 5000"
-                          className="h-10"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="parentLocation" className="flex items-center gap-1 text-sm">
-                          <MapPin className="h-3.5 w-3.5" />
-                          Localisation
-                        </Label>
-                        <Textarea
-                          id="parentLocation"
-                          value={parentParcelLocation}
-                          onChange={(e) => setParentParcelLocation(e.target.value)}
-                          placeholder="Adresse ou description de l'emplacement"
-                          rows={2}
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-1 text-sm">
-                          <Compass className="h-3.5 w-3.5" />
-                          Coordonnées GPS (optionnel)
-                        </Label>
-                        <div className="flex gap-2">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm">Nom *</Label>
                           <Input
-                            value={parentParcelGPS.lat}
-                            onChange={(e) => setParentParcelGPS(prev => ({ ...prev, lat: e.target.value }))}
-                            placeholder="Latitude"
-                            className="h-10"
-                          />
-                          <Input
-                            value={parentParcelGPS.lng}
-                            onChange={(e) => setParentParcelGPS(prev => ({ ...prev, lng: e.target.value }))}
-                            placeholder="Longitude"
+                            value={requesterLastName}
+                            onChange={(e) => setRequesterLastName(e.target.value)}
+                            placeholder="Nom de famille"
                             className="h-10"
                           />
                         </div>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="parentTitleRef" className="flex items-center gap-1 text-sm">
-                          <FileText className="h-3.5 w-3.5" />
-                          Titre foncier
-                        </Label>
-                        <div className="flex gap-2">
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">Prénom *</Label>
                           <Input
-                            id="parentTitleRef"
-                            value={parentParcelTitleRef}
-                            onChange={(e) => setParentParcelTitleRef(e.target.value)}
-                            placeholder="N° certificat"
-                            className="h-10 flex-1"
+                            value={requesterFirstName}
+                            onChange={(e) => setRequesterFirstName(e.target.value)}
+                            placeholder="Prénom"
+                            className="h-10"
                           />
-                          <Select value={parentParcelTitleType} onValueChange={setParentParcelTitleType}>
-                            <SelectTrigger className="h-10 w-32">
-                              <SelectValue placeholder="Type" />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">Post-nom</Label>
+                          <Input
+                            value={requesterMiddleName}
+                            onChange={(e) => setRequesterMiddleName(e.target.value)}
+                            placeholder="Post-nom"
+                            className="h-10"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">Téléphone *</Label>
+                          <Input
+                            value={requesterPhone}
+                            onChange={(e) => setRequesterPhone(e.target.value)}
+                            placeholder="+243..."
+                            className="h-10"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">Email</Label>
+                          <Input
+                            type="email"
+                            value={requesterEmail}
+                            onChange={(e) => setRequesterEmail(e.target.value)}
+                            placeholder="email@exemple.com"
+                            className="h-10"
+                          />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Label className="text-sm">Type de demandeur</Label>
+                          <Select value={requesterType} onValueChange={setRequesterType}>
+                            <SelectTrigger className="h-10">
+                              <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="certificat_enregistrement">Certificat</SelectItem>
-                              <SelectItem value="titre_foncier">Titre foncier</SelectItem>
-                              <SelectItem value="attestation">Attestation</SelectItem>
+                              <SelectItem value="particulier">Particulier</SelectItem>
+                              <SelectItem value="entreprise">Entreprise</SelectItem>
+                              <SelectItem value="promoteur">Promoteur immobilier</SelectItem>
+                              <SelectItem value="cooperative">Coopérative</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
-                    </div>
-                    
-                    {/* Dimensions des côtés de la parcelle mère */}
-                    <div className="pt-4 border-t">
-                      <Label className="flex items-center gap-2 mb-3 text-sm font-medium">
-                        <Ruler className="h-4 w-4" />
-                        Dimensions des côtés de la parcelle mère
-                      </Label>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                        <div className="space-y-1.5">
-                          <Label className="text-xs flex items-center gap-1">
-                            <ArrowUp className="h-3 w-3" /> Nord (m)
-                          </Label>
-                          <Input
-                            type="number"
-                            value={parentParcelSides.north.length || ''}
-                            onChange={(e) => setParentParcelSides(prev => ({
-                              ...prev,
-                              north: { ...prev.north, length: parseFloat(e.target.value) || 0 }
-                            }))}
-                            className="h-9"
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs flex items-center gap-1">
-                            <ArrowDown className="h-3 w-3" /> Sud (m)
-                          </Label>
-                          <Input
-                            type="number"
-                            value={parentParcelSides.south.length || ''}
-                            onChange={(e) => setParentParcelSides(prev => ({
-                              ...prev,
-                              south: { ...prev.south, length: parseFloat(e.target.value) || 0 }
-                            }))}
-                            className="h-9"
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs flex items-center gap-1">
-                            <ArrowRight className="h-3 w-3" /> Est (m)
-                          </Label>
-                          <Input
-                            type="number"
-                            value={parentParcelSides.east.length || ''}
-                            onChange={(e) => setParentParcelSides(prev => ({
-                              ...prev,
-                              east: { ...prev.east, length: parseFloat(e.target.value) || 0 }
-                            }))}
-                            className="h-9"
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-xs flex items-center gap-1">
-                            <ArrowLeft className="h-3 w-3" /> Ouest (m)
-                          </Label>
-                          <Input
-                            type="number"
-                            value={parentParcelSides.west.length || ''}
-                            onChange={(e) => setParentParcelSides(prev => ({
-                              ...prev,
-                              west: { ...prev.west, length: parseFloat(e.target.value) || 0 }
-                            }))}
-                            className="h-9"
-                            placeholder="0"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                
-                {/* Section Demandeur */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <User className="h-4 w-4 text-primary" />
-                      Informations du demandeur
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                      <Switch
-                        checked={isRequesterOwner}
-                        onCheckedChange={setIsRequesterOwner}
-                      />
-                      <Label className="text-sm">Le demandeur est le propriétaire de la parcelle</Label>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm">Nom *</Label>
-                        <Input
-                          value={requesterLastName}
-                          onChange={(e) => setRequesterLastName(e.target.value)}
-                          placeholder="Nom de famille"
-                          className="h-10"
-                        />
-                      </div>
                       
-                      <div className="space-y-2">
-                        <Label className="text-sm">Prénom *</Label>
-                        <Input
-                          value={requesterFirstName}
-                          onChange={(e) => setRequesterFirstName(e.target.value)}
-                          placeholder="Prénom"
-                          className="h-10"
-                        />
+                      <div className="flex gap-2 pt-4">
+                        <Button variant="outline" onClick={() => setShowRequesterEditor(false)}>
+                          Annuler
+                        </Button>
+                        <Button onClick={() => setShowRequesterEditor(false)}>
+                          <Check className="h-4 w-4 mr-2" />
+                          Enregistrer
+                        </Button>
                       </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-sm">Post-nom</Label>
-                        <Input
-                          value={requesterMiddleName}
-                          onChange={(e) => setRequesterMiddleName(e.target.value)}
-                          placeholder="Post-nom"
-                          className="h-10"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-sm">Téléphone *</Label>
-                        <Input
-                          value={requesterPhone}
-                          onChange={(e) => setRequesterPhone(e.target.value)}
-                          placeholder="+243..."
-                          className="h-10"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-sm">Email</Label>
-                        <Input
-                          type="email"
-                          value={requesterEmail}
-                          onChange={(e) => setRequesterEmail(e.target.value)}
-                          placeholder="email@exemple.com"
-                          className="h-10"
-                        />
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label className="text-sm">Type de demandeur</Label>
-                        <Select value={requesterType} onValueChange={setRequesterType}>
-                          <SelectTrigger className="h-10">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="particulier">Particulier</SelectItem>
-                            <SelectItem value="entreprise">Entreprise</SelectItem>
-                            <SelectItem value="promoteur">Promoteur immobilier</SelectItem>
-                            <SelectItem value="cooperative">Coopérative</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                ) : null}
               </div>
             )}
             
