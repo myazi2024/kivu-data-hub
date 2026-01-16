@@ -6,12 +6,16 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Slider } from '@/components/ui/slider';
 import { 
   Ruler, Upload, Pencil, Plus, Trash2, Save, RotateCcw, 
   Info, ArrowUp, ArrowDown, ArrowLeft, ArrowRight, Navigation,
-  FileImage, FileText, Check
+  FileImage, FileText, Check, MousePointer, Move, ZoomIn, ZoomOut,
+  Grid3X3, Compass, Mountain, Undo, Redo, Download, Eye, EyeOff
 } from 'lucide-react';
-import { SideDimension } from './types';
+import { SideDimension, PolygonPoint, DEFAULT_SKETCH_SETTINGS, SketchSettings } from './types';
 import { useToast } from '@/hooks/use-toast';
 
 interface ParcelSketchCreatorProps {
@@ -22,6 +26,45 @@ interface ParcelSketchCreatorProps {
 }
 
 type CreationMode = 'draw' | 'import' | 'simple';
+type DrawingTool = 'select' | 'draw' | 'move' | 'measure';
+type PrecisionLevel = 'simple' | 'angles' | 'gps' | 'topo';
+
+interface CanvasPoint {
+  x: number;
+  y: number;
+}
+
+interface DrawingState {
+  points: CanvasPoint[];
+  isDrawing: boolean;
+  scale: number;
+  offset: CanvasPoint;
+  history: CanvasPoint[][];
+  historyIndex: number;
+}
+
+const PRECISION_DESCRIPTIONS: Record<PrecisionLevel, { title: string; description: string; icon: React.ReactNode }> = {
+  simple: {
+    title: 'Forme + dimensions',
+    description: 'Longueur de chaque côté uniquement',
+    icon: <Ruler className="h-4 w-4" />
+  },
+  angles: {
+    title: 'Dimensions + angles',
+    description: 'Avec angles aux sommets (±0.1°)',
+    icon: <Compass className="h-4 w-4" />
+  },
+  gps: {
+    title: 'Géolocalisation GPS',
+    description: 'Coordonnées de chaque borne (±5m)',
+    icon: <Navigation className="h-4 w-4" />
+  },
+  topo: {
+    title: 'Plan topographique',
+    description: 'Altimétrie et courbes de niveau',
+    icon: <Mountain className="h-4 w-4" />
+  }
+};
 
 export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
   initialSides,
@@ -31,8 +74,14 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
 }) => {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Mode et état principal
   const [mode, setMode] = useState<CreationMode>('simple');
+  const [precisionLevel, setPrecisionLevel] = useState<PrecisionLevel>('simple');
   const [numberOfSides, setNumberOfSides] = useState(4);
+  
+  // Dimensions des côtés
   const [sides, setSides] = useState<SideDimension[]>(() => {
     if (initialSides && initialSides.length > 0) {
       return initialSides;
@@ -46,9 +95,44 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
       roadType: 'none' as const
     }));
   });
+  
+  // Points GPS
   const [gpsPoints, setGpsPoints] = useState<Array<{ lat: string; lng: string; borne: string }>>([]);
-  const [precisionLevel, setPrecisionLevel] = useState<'simple' | 'angles' | 'gps' | 'topo'>('simple');
+  
+  // Altimétrie (niveau topo)
+  const [altimetryPoints, setAltimetryPoints] = useState<Array<{ borne: string; altitude: string }>>([]);
+  
+  // Import fichier
   const [importedFile, setImportedFile] = useState<File | null>(null);
+  const [importPreviewUrl, setImportPreviewUrl] = useState<string>('');
+  
+  // État du dessin canvas
+  const [drawingState, setDrawingState] = useState<DrawingState>({
+    points: [],
+    isDrawing: false,
+    scale: 1,
+    offset: { x: 0, y: 0 },
+    history: [],
+    historyIndex: -1
+  });
+  const [activeTool, setActiveTool] = useState<DrawingTool>('draw');
+  const [showGrid, setShowGrid] = useState(true);
+  const [showDimensions, setShowDimensions] = useState(true);
+  const [metersPerPixel, setMetersPerPixel] = useState(0.1); // 10 pixels = 1 mètre
+
+  // Initialiser les points GPS quand le nombre de côtés change
+  useEffect(() => {
+    setGpsPoints(Array.from({ length: numberOfSides }, (_, i) => ({
+      lat: gpsPoints[i]?.lat || '',
+      lng: gpsPoints[i]?.lng || '',
+      borne: `Borne ${i + 1}`
+    })));
+    
+    setAltimetryPoints(Array.from({ length: numberOfSides }, (_, i) => ({
+      borne: `Borne ${i + 1}`,
+      altitude: altimetryPoints[i]?.altitude || ''
+    })));
+  }, [numberOfSides]);
 
   // Mettre à jour le nombre de côtés
   const updateNumberOfSides = (newCount: number) => {
@@ -56,7 +140,6 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
     const currentSides = [...sides];
     
     if (newCount > currentSides.length) {
-      // Ajouter des côtés
       const newSides = Array.from({ length: newCount - currentSides.length }, () => ({
         id: crypto.randomUUID(),
         length: 0,
@@ -67,16 +150,8 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
       }));
       setSides([...currentSides, ...newSides]);
     } else {
-      // Réduire le nombre
       setSides(currentSides.slice(0, newCount));
     }
-    
-    // Mettre à jour les bornes GPS
-    setGpsPoints(Array.from({ length: newCount }, (_, i) => ({
-      lat: gpsPoints[i]?.lat || '',
-      lng: gpsPoints[i]?.lng || '',
-      borne: `Borne ${i + 1}`
-    })));
   };
 
   // Mettre à jour un côté
@@ -84,8 +159,8 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
     setSides(sides.map((side, i) => i === index ? { ...side, ...updates } : side));
   };
 
-  // Calculer la surface approximative
-  const calculateApproxArea = () => {
+  // Calculs géométriques
+  const calculateApproxArea = useCallback(() => {
     if (sides.length < 3) return 0;
     
     const validSides = sides.filter(s => s.length > 0);
@@ -102,18 +177,316 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
     const avgSide = validSides.reduce((sum, s) => sum + s.length, 0) / validSides.length;
     const n = sides.length;
     return Math.round((n * avgSide * avgSide) / (4 * Math.tan(Math.PI / n)));
+  }, [sides]);
+
+  const calculatePerimeter = useCallback(() => {
+    return sides.reduce((sum, side) => sum + (side.length || 0), 0);
+  }, [sides]);
+
+  // Calcul de surface à partir des points du dessin
+  const calculateAreaFromPoints = useCallback((points: CanvasPoint[]): number => {
+    if (points.length < 3) return 0;
+    
+    let area = 0;
+    for (let i = 0; i < points.length; i++) {
+      const j = (i + 1) % points.length;
+      area += points[i].x * points[j].y;
+      area -= points[j].x * points[i].y;
+    }
+    area = Math.abs(area) / 2;
+    
+    // Convertir en mètres carrés
+    return Math.round(area * metersPerPixel * metersPerPixel);
+  }, [metersPerPixel]);
+
+  // Calcul du périmètre à partir des points
+  const calculatePerimeterFromPoints = useCallback((points: CanvasPoint[]): number => {
+    if (points.length < 2) return 0;
+    
+    let perimeter = 0;
+    for (let i = 0; i < points.length; i++) {
+      const j = (i + 1) % points.length;
+      const dx = points[j].x - points[i].x;
+      const dy = points[j].y - points[i].y;
+      perimeter += Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    return Math.round(perimeter * metersPerPixel);
+  }, [metersPerPixel]);
+
+  // === GESTION DU CANVAS ===
+  
+  const drawCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Clear
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Dessiner la grille
+    if (showGrid) {
+      ctx.strokeStyle = '#e5e7eb';
+      ctx.lineWidth = 0.5;
+      const gridSpacing = 20 * drawingState.scale;
+      
+      for (let x = 0; x <= canvas.width; x += gridSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += gridSpacing) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+    }
+    
+    // Dessiner les points et lignes
+    const points = drawingState.points;
+    if (points.length > 0) {
+      // Remplir le polygone
+      if (points.length >= 3) {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for (let i = 1; i < points.length; i++) {
+          ctx.lineTo(points[i].x, points[i].y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(34, 197, 94, 0.2)';
+        ctx.fill();
+      }
+      
+      // Dessiner les lignes
+      ctx.beginPath();
+      ctx.strokeStyle = '#16a34a';
+      ctx.lineWidth = 2;
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let i = 1; i < points.length; i++) {
+        ctx.lineTo(points[i].x, points[i].y);
+      }
+      if (points.length >= 3) {
+        ctx.closePath();
+      }
+      ctx.stroke();
+      
+      // Dessiner les sommets
+      points.forEach((point, i) => {
+        ctx.beginPath();
+        ctx.arc(point.x, point.y, 6, 0, Math.PI * 2);
+        ctx.fillStyle = '#16a34a';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        
+        // Numéro du sommet
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText((i + 1).toString(), point.x, point.y);
+      });
+      
+      // Afficher les dimensions
+      if (showDimensions && points.length >= 2) {
+        ctx.fillStyle = '#374151';
+        ctx.font = '12px sans-serif';
+        
+        for (let i = 0; i < points.length; i++) {
+          const j = (i + 1) % points.length;
+          if (j === 0 && points.length < 3) continue;
+          
+          const midX = (points[i].x + points[j].x) / 2;
+          const midY = (points[i].y + points[j].y) / 2;
+          const dx = points[j].x - points[i].x;
+          const dy = points[j].y - points[i].y;
+          const distance = Math.sqrt(dx * dx + dy * dy) * metersPerPixel;
+          
+          ctx.save();
+          ctx.translate(midX, midY);
+          
+          // Fond blanc pour la lisibilité
+          const text = `${distance.toFixed(1)}m`;
+          const metrics = ctx.measureText(text);
+          ctx.fillStyle = 'rgba(255,255,255,0.9)';
+          ctx.fillRect(-metrics.width / 2 - 4, -8, metrics.width + 8, 16);
+          
+          ctx.fillStyle = '#374151';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(text, 0, 0);
+          ctx.restore();
+        }
+      }
+    }
+    
+    // Indicateur nord
+    ctx.save();
+    ctx.translate(canvas.width - 30, 30);
+    ctx.beginPath();
+    ctx.moveTo(0, -15);
+    ctx.lineTo(5, 5);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(-5, 5);
+    ctx.closePath();
+    ctx.fillStyle = '#ef4444';
+    ctx.fill();
+    ctx.fillStyle = '#374151';
+    ctx.font = 'bold 10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('N', 0, -20);
+    ctx.restore();
+    
+    // Échelle
+    ctx.save();
+    ctx.translate(20, canvas.height - 20);
+    const scaleLength = 50;
+    const scaleMeters = Math.round(scaleLength * metersPerPixel);
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.lineTo(scaleLength, 0);
+    ctx.moveTo(0, -5);
+    ctx.lineTo(0, 5);
+    ctx.moveTo(scaleLength, -5);
+    ctx.lineTo(scaleLength, 5);
+    ctx.stroke();
+    ctx.fillStyle = '#374151';
+    ctx.font = '10px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`${scaleMeters}m`, scaleLength / 2, 15);
+    ctx.restore();
+    
+  }, [drawingState.points, drawingState.scale, showGrid, showDimensions, metersPerPixel]);
+
+  useEffect(() => {
+    if (mode === 'draw') {
+      drawCanvas();
+    }
+  }, [mode, drawCanvas]);
+
+  // Gestionnaires d'événements canvas
+  const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (activeTool !== 'draw') return;
+    
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    const newPoints = [...drawingState.points, { x, y }];
+    const newHistory = [...drawingState.history.slice(0, drawingState.historyIndex + 1), newPoints];
+    
+    setDrawingState(prev => ({
+      ...prev,
+      points: newPoints,
+      history: newHistory,
+      historyIndex: newHistory.length - 1
+    }));
   };
 
-  // Calculer le périmètre
-  const calculatePerimeter = () => {
-    return sides.reduce((sum, side) => sum + (side.length || 0), 0);
+  const handleUndo = () => {
+    if (drawingState.historyIndex > 0) {
+      setDrawingState(prev => ({
+        ...prev,
+        points: prev.history[prev.historyIndex - 1] || [],
+        historyIndex: prev.historyIndex - 1
+      }));
+    } else if (drawingState.historyIndex === 0) {
+      setDrawingState(prev => ({
+        ...prev,
+        points: [],
+        historyIndex: -1
+      }));
+    }
   };
+
+  const handleRedo = () => {
+    if (drawingState.historyIndex < drawingState.history.length - 1) {
+      setDrawingState(prev => ({
+        ...prev,
+        points: prev.history[prev.historyIndex + 1],
+        historyIndex: prev.historyIndex + 1
+      }));
+    }
+  };
+
+  const handleClearCanvas = () => {
+    setDrawingState({
+      points: [],
+      isDrawing: false,
+      scale: 1,
+      offset: { x: 0, y: 0 },
+      history: [],
+      historyIndex: -1
+    });
+  };
+
+  const handleZoom = (delta: number) => {
+    setDrawingState(prev => ({
+      ...prev,
+      scale: Math.max(0.5, Math.min(3, prev.scale + delta))
+    }));
+  };
+
+  // Convertir les points du canvas en dimensions
+  const convertPointsToSides = useCallback(() => {
+    const points = drawingState.points;
+    if (points.length < 3) return;
+    
+    const newSides: SideDimension[] = points.map((point, i) => {
+      const nextPoint = points[(i + 1) % points.length];
+      const dx = nextPoint.x - point.x;
+      const dy = nextPoint.y - point.y;
+      const length = Math.sqrt(dx * dx + dy * dy) * metersPerPixel;
+      
+      // Calculer l'angle
+      const prevPoint = points[(i - 1 + points.length) % points.length];
+      const v1 = { x: point.x - prevPoint.x, y: point.y - prevPoint.y };
+      const v2 = { x: nextPoint.x - point.x, y: nextPoint.y - point.y };
+      const angle = Math.atan2(v1.x * v2.y - v1.y * v2.x, v1.x * v2.x + v1.y * v2.y);
+      const angleDegrees = 180 - (angle * 180 / Math.PI);
+      
+      return {
+        id: crypto.randomUUID(),
+        length: Math.round(length * 10) / 10,
+        angle: Math.round(angleDegrees * 10) / 10,
+        isShared: false,
+        isRoadBordering: false,
+        roadType: 'none' as const
+      };
+    });
+    
+    setSides(newSides);
+    setNumberOfSides(newSides.length);
+    
+    toast({
+      title: 'Dimensions extraites',
+      description: `${newSides.length} côtés détectés avec une surface de ${calculateAreaFromPoints(points)} m²`
+    });
+  }, [drawingState.points, metersPerPixel, calculateAreaFromPoints, toast]);
 
   // Gérer l'import de fichier
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setImportedFile(file);
+      
+      // Créer preview pour les images
+      if (file.type.startsWith('image/')) {
+        const url = URL.createObjectURL(file);
+        setImportPreviewUrl(url);
+      }
+      
       toast({
         title: 'Fichier importé',
         description: `${file.name} sera analysé pour extraire les dimensions.`
@@ -123,7 +496,15 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
 
   // Sauvegarder
   const handleSave = () => {
-    const validSides = sides.filter(s => s.length > 0);
+    let finalSides = sides;
+    
+    // Si on est en mode dessin, convertir les points
+    if (mode === 'draw' && drawingState.points.length >= 3) {
+      convertPointsToSides();
+      finalSides = sides;
+    }
+    
+    const validSides = finalSides.filter(s => s.length > 0);
     if (validSides.length < 3) {
       toast({
         title: 'Dimensions insuffisantes',
@@ -141,7 +522,7 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
         borne: p.borne
       }));
     
-    onSave(sides, gpsPointsFormatted.length > 0 ? gpsPointsFormatted : undefined);
+    onSave(finalSides, gpsPointsFormatted.length > 0 ? gpsPointsFormatted : undefined);
     toast({
       title: 'Croquis enregistré',
       description: 'Les dimensions de la parcelle ont été sauvegardées.'
@@ -188,20 +569,31 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
 
           {/* Mode Saisie Simple */}
           <TabsContent value="simple" className="space-y-4 mt-4">
-            {/* Niveau de précision */}
-            <div className="space-y-2">
-              <Label className="text-sm">Niveau de précision</Label>
-              <Select value={precisionLevel} onValueChange={(v) => setPrecisionLevel(v as typeof precisionLevel)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="simple">Forme + dimensions des côtés</SelectItem>
-                  <SelectItem value="angles">Dimensions + angles aux sommets</SelectItem>
-                  <SelectItem value="gps">Géolocalisation GPS des bornes</SelectItem>
-                  <SelectItem value="topo">Plan topographique complet</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Niveau de précision - Cards visuelles */}
+            <div className="space-y-3">
+              <Label className="text-sm font-medium">Niveau de précision</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(Object.keys(PRECISION_DESCRIPTIONS) as PrecisionLevel[]).map((level) => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setPrecisionLevel(level)}
+                    className={`p-3 rounded-lg border-2 text-left transition-all ${
+                      precisionLevel === level 
+                        ? 'border-primary bg-primary/5' 
+                        : 'border-muted hover:border-primary/50'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={precisionLevel === level ? 'text-primary' : 'text-muted-foreground'}>
+                        {PRECISION_DESCRIPTIONS[level].icon}
+                      </span>
+                      <span className="font-medium text-sm">{PRECISION_DESCRIPTIONS[level].title}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{PRECISION_DESCRIPTIONS[level].description}</p>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Nombre de côtés */}
@@ -236,16 +628,19 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
                       placeholder="0"
                       className="h-9 flex-1"
                     />
-                    {precisionLevel !== 'simple' && (
-                      <Input
-                        type="number"
-                        value={side.angle || 90}
-                        onChange={(e) => updateSide(index, { angle: parseFloat(e.target.value) || 90 })}
-                        placeholder="90"
-                        className="h-9 w-16"
-                        min={0}
-                        max={180}
-                      />
+                    {(precisionLevel === 'angles' || precisionLevel === 'gps' || precisionLevel === 'topo') && (
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          value={side.angle || 90}
+                          onChange={(e) => updateSide(index, { angle: parseFloat(e.target.value) || 90 })}
+                          placeholder="90"
+                          className="h-9 w-16"
+                          min={0}
+                          max={180}
+                        />
+                        <span className="text-xs text-muted-foreground">°</span>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -256,13 +651,31 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
             {(precisionLevel === 'gps' || precisionLevel === 'topo') && (
               <div className="space-y-3 pt-4 border-t">
                 <Label className="text-sm font-medium flex items-center gap-2">
-                  <Navigation className="h-4 w-4" />
+                  <Navigation className="h-4 w-4 text-primary" />
                   Coordonnées GPS des bornes
                 </Label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {gpsPoints.map((point, index) => (
-                    <div key={index} className="p-2 bg-muted/30 rounded-lg space-y-2">
-                      <div className="text-xs font-medium">{point.borne}</div>
+                    <div key={index} className="p-3 bg-muted/30 rounded-lg space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium">{point.borne}</span>
+                        {precisionLevel === 'topo' && (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              value={altimetryPoints[index]?.altitude || ''}
+                              onChange={(e) => {
+                                const newPoints = [...altimetryPoints];
+                                newPoints[index] = { ...altimetryPoints[index], altitude: e.target.value };
+                                setAltimetryPoints(newPoints);
+                              }}
+                              placeholder="Alt."
+                              className="h-7 w-16 text-xs"
+                            />
+                            <span className="text-xs text-muted-foreground">m</span>
+                          </div>
+                        )}
+                      </div>
                       <div className="grid grid-cols-2 gap-2">
                         <Input
                           type="number"
@@ -308,20 +721,141 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
             </div>
           </TabsContent>
 
-          {/* Mode Dessin */}
+          {/* Mode Dessin Interactif */}
           <TabsContent value="draw" className="space-y-4 mt-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Le mode dessin interactif sera disponible prochainement. Utilisez la saisie simple en attendant.
-              </AlertDescription>
-            </Alert>
-            <div className="aspect-video bg-muted/30 rounded-lg border-2 border-dashed flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <Pencil className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                <p>Zone de dessin</p>
+            {/* Barre d'outils */}
+            <div className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 rounded-lg">
+              <div className="flex gap-1">
+                <Button
+                  size="sm"
+                  variant={activeTool === 'draw' ? 'default' : 'outline'}
+                  onClick={() => setActiveTool('draw')}
+                  className="h-8 w-8 p-0"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={activeTool === 'select' ? 'default' : 'outline'}
+                  onClick={() => setActiveTool('select')}
+                  className="h-8 w-8 p-0"
+                >
+                  <MousePointer className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant={activeTool === 'move' ? 'default' : 'outline'}
+                  onClick={() => setActiveTool('move')}
+                  className="h-8 w-8 p-0"
+                >
+                  <Move className="h-4 w-4" />
+                </Button>
               </div>
+              
+              <div className="h-6 w-px bg-border" />
+              
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" onClick={handleUndo} className="h-8 w-8 p-0" disabled={drawingState.historyIndex < 0}>
+                  <Undo className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={handleRedo} className="h-8 w-8 p-0" disabled={drawingState.historyIndex >= drawingState.history.length - 1}>
+                  <Redo className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="h-6 w-px bg-border" />
+              
+              <div className="flex gap-1">
+                <Button size="sm" variant="outline" onClick={() => handleZoom(0.25)} className="h-8 w-8 p-0">
+                  <ZoomIn className="h-4 w-4" />
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => handleZoom(-0.25)} className="h-8 w-8 p-0">
+                  <ZoomOut className="h-4 w-4" />
+                </Button>
+              </div>
+              
+              <div className="h-6 w-px bg-border" />
+              
+              <Button
+                size="sm"
+                variant={showGrid ? 'secondary' : 'outline'}
+                onClick={() => setShowGrid(!showGrid)}
+                className="h-8 w-8 p-0"
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </Button>
+              
+              <Button
+                size="sm"
+                variant={showDimensions ? 'secondary' : 'outline'}
+                onClick={() => setShowDimensions(!showDimensions)}
+                className="h-8 w-8 p-0"
+              >
+                <Ruler className="h-4 w-4" />
+              </Button>
+              
+              <div className="flex-1" />
+              
+              <Button size="sm" variant="destructive" onClick={handleClearCanvas} className="h-8">
+                <Trash2 className="h-4 w-4 mr-1" />
+                Effacer
+              </Button>
             </div>
+            
+            {/* Échelle */}
+            <div className="flex items-center gap-3">
+              <Label className="text-xs whitespace-nowrap">Échelle: 1px =</Label>
+              <Slider
+                value={[metersPerPixel * 100]}
+                onValueChange={([v]) => setMetersPerPixel(v / 100)}
+                min={5}
+                max={50}
+                step={1}
+                className="flex-1"
+              />
+              <span className="text-xs font-medium w-16">{metersPerPixel.toFixed(2)} m</span>
+            </div>
+            
+            {/* Canvas */}
+            <div ref={containerRef} className="relative border rounded-lg overflow-hidden bg-white">
+              <canvas
+                ref={canvasRef}
+                width={600}
+                height={400}
+                onClick={handleCanvasClick}
+                className="w-full cursor-crosshair"
+                style={{ cursor: activeTool === 'draw' ? 'crosshair' : activeTool === 'move' ? 'move' : 'default' }}
+              />
+            </div>
+            
+            {/* Indicateurs */}
+            <div className="flex flex-wrap gap-3">
+              <Badge variant="outline" className="gap-1">
+                <span className="text-muted-foreground">Points:</span>
+                {drawingState.points.length}
+              </Badge>
+              {drawingState.points.length >= 3 && (
+                <>
+                  <Badge variant="outline" className="gap-1">
+                    <span className="text-muted-foreground">Surface:</span>
+                    {calculateAreaFromPoints(drawingState.points).toLocaleString()} m²
+                  </Badge>
+                  <Badge variant="outline" className="gap-1">
+                    <span className="text-muted-foreground">Périmètre:</span>
+                    {calculatePerimeterFromPoints(drawingState.points).toLocaleString()} m
+                  </Badge>
+                </>
+              )}
+            </div>
+            
+            {drawingState.points.length >= 3 && (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Cliquez pour ajouter des sommets. Les dimensions seront automatiquement calculées lors de l'enregistrement.
+                </AlertDescription>
+              </Alert>
+            )}
           </TabsContent>
 
           {/* Mode Import */}
@@ -367,10 +901,17 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
                 </div>
               </label>
             </div>
+            
+            {/* Preview de l'image importée */}
+            {importPreviewUrl && (
+              <div className="border rounded-lg overflow-hidden">
+                <img src={importPreviewUrl} alt="Preview" className="w-full h-auto max-h-64 object-contain bg-muted/30" />
+              </div>
+            )}
 
             {importedFile && (
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setImportedFile(null)} className="flex-1">
+                <Button variant="outline" onClick={() => { setImportedFile(null); setImportPreviewUrl(''); }} className="flex-1">
                   <RotateCcw className="h-4 w-4 mr-2" />
                   Changer de fichier
                 </Button>
