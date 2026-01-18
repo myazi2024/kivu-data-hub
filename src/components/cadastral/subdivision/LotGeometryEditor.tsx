@@ -233,7 +233,8 @@ export const LotGeometryEditor: React.FC<LotGeometryEditorProps> = ({
         </Card>
         <Card className="p-2 md:p-3">
           <div className="text-xl md:text-2xl font-bold text-blue-600">
-            {((totalLotsArea / parentParcelArea) * 100).toFixed(1)}%
+            {/* Protection contre division par zéro */}
+            {parentParcelArea > 0 ? ((totalLotsArea / parentParcelArea) * 100).toFixed(1) : '0.0'}%
           </div>
           <div className="text-xs text-muted-foreground">Utilisé</div>
         </Card>

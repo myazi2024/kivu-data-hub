@@ -212,16 +212,19 @@ export const SubdivisionValidations: React.FC<SubdivisionValidationsProps> = ({
 
     // ============ ACCESS VALIDATIONS ============
     
-    // V5: Road access check
+    // V5: Road access check - avec meilleure logique pour roadType
     const lotsWithRoadAccess = lots.filter(lot => 
-      lot.sides.some(side => side.isRoadBordering)
+      lot.sides.some(side => side.isRoadBordering && side.roadType !== 'none')
     );
     const lotsWithoutRoadAccess = lots.filter(lot => 
-      !lot.sides.some(side => side.isRoadBordering)
+      !lot.sides.some(side => side.isRoadBordering && side.roadType !== 'none')
     );
     const accessPercent = lots.length > 0 
       ? (lotsWithRoadAccess.length / lots.length) * 100 
       : 0;
+    
+    // Calcul du seuil maximum de lots sans accès
+    const maxLotsWithoutAccess = Math.ceil(lots.length * (config.maxRoadAccesslessPercent / 100));
     
     results.push({
       id: 'road-access',
@@ -231,7 +234,7 @@ export const SubdivisionValidations: React.FC<SubdivisionValidationsProps> = ({
         ? 'pending'
         : lotsWithoutRoadAccess.length === 0 
           ? 'valid' 
-          : lotsWithoutRoadAccess.length <= Math.ceil(lots.length * (config.maxRoadAccesslessPercent / 100))
+          : lotsWithoutRoadAccess.length <= maxLotsWithoutAccess
             ? 'warning'
             : config.requireRoadAccess 
               ? 'invalid' 
@@ -240,15 +243,17 @@ export const SubdivisionValidations: React.FC<SubdivisionValidationsProps> = ({
       message: lots.length === 0
         ? 'Ajoutez des lots pour valider'
         : lotsWithoutRoadAccess.length === 0
-          ? 'Tous les lots ont un accès direct'
+          ? 'Tous les lots ont un accès direct à la voirie'
           : `${lotsWithoutRoadAccess.length} lot(s) sans accès direct (${(100 - accessPercent).toFixed(0)}%)`,
       details: lotsWithoutRoadAccess.length > 0
-        ? `Lots sans accès: ${lotsWithoutRoadAccess.map(l => l.lotNumber).join(', ')} - Prévoir des servitudes de passage`
-        : `${lotsWithRoadAccess.length} lots desservis`,
+        ? `Lots sans accès: ${lotsWithoutRoadAccess.map(l => l.lotNumber).join(', ')} - Prévoir des servitudes de passage ou voirie interne`
+        : `${lotsWithRoadAccess.length} lot(s) desservi(s) par voirie`,
       value: lotsWithRoadAccess.length,
       expected: lots.length,
       icon: <Route className="h-4 w-4" />,
-      fixSuggestion: 'Créez une voirie interne ou réorganisez la disposition des lots',
+      fixSuggestion: lotsWithoutRoadAccess.length > 0 
+        ? 'Créez une voirie interne ou marquez les côtés bordant une route existante'
+        : undefined,
       autoFixable: false,
     });
 

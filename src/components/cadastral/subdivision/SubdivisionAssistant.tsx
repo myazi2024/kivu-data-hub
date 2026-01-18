@@ -179,22 +179,60 @@ export const SubdivisionAssistant: React.FC<SubdivisionAssistantProps> = ({
           const x = col * (lotWidth + roadOffset) + lotWidth / 2;
           const y = row * (lotHeight + roadOffset) + lotHeight / 2;
           
-          // Créer les côtés du lot
+          // Créer les côtés du lot avec une logique cohérente pour roadType
+          // roadType doit être cohérent avec isRoadBordering
+          const isNorthBorder = row === 0;
+          const isSouthBorder = row === rows - 1;
+          const isEastBorder = col === cols - 1;
+          const isWestBorder = col === 0;
+          
           const sides: SideDimension[] = [
-            { id: crypto.randomUUID(), length: lotWidth, angle: 90, isShared: row > 0, isRoadBordering: row === 0, roadType: row === 0 && col === 0 ? 'existing' : 'none' },
-            { id: crypto.randomUUID(), length: lotHeight, angle: 90, isShared: col < cols - 1 || (col === cols - 1 && lotIndex < numberOfLots - 1), isRoadBordering: col === cols - 1, roadType: col === cols - 1 ? 'existing' : 'none' },
-            { id: crypto.randomUUID(), length: lotWidth, angle: 90, isShared: row < rows - 1, isRoadBordering: row === rows - 1, roadType: row === rows - 1 ? 'existing' : 'none' },
-            { id: crypto.randomUUID(), length: lotHeight, angle: 90, isShared: col > 0, isRoadBordering: col === 0, roadType: col === 0 ? 'existing' : 'none' }
+            { 
+              id: crypto.randomUUID(), 
+              length: lotWidth, 
+              angle: 90, 
+              isShared: row > 0, 
+              isRoadBordering: isNorthBorder, 
+              roadType: isNorthBorder ? 'existing' : 'none' 
+            },
+            { 
+              id: crypto.randomUUID(), 
+              length: lotHeight, 
+              angle: 90, 
+              isShared: !isEastBorder, 
+              isRoadBordering: isEastBorder, 
+              roadType: isEastBorder ? 'existing' : 'none' 
+            },
+            { 
+              id: crypto.randomUUID(), 
+              length: lotWidth, 
+              angle: 90, 
+              isShared: !isSouthBorder, 
+              isRoadBordering: isSouthBorder, 
+              roadType: isSouthBorder ? 'existing' : 'none' 
+            },
+            { 
+              id: crypto.randomUUID(), 
+              length: lotHeight, 
+              angle: 90, 
+              isShared: !isWestBorder, 
+              isRoadBordering: isWestBorder, 
+              roadType: isWestBorder ? 'existing' : 'none' 
+            }
           ];
           
           // Ajouter les infos de route interne si applicable
           if (includeInternalRoads) {
+            // Côté Nord - si pas au bord nord, c'est une voie interne
             if (row > 0) {
+              sides[0].isRoadBordering = true;
               sides[0].roadType = 'created';
               sides[0].roadWidth = internalRoadWidth;
-              sides[0].roadName = `Voie ${row}`;
+              sides[0].roadName = `Voie interne ${row}`;
             }
+            // Côté Ouest - si pas au bord ouest, c'est une allée interne
             if (col > 0) {
+              sides[3].isRoadBordering = true;
               sides[3].roadType = 'created';
               sides[3].roadWidth = internalRoadWidth;
               sides[3].roadName = `Allée ${col}`;
