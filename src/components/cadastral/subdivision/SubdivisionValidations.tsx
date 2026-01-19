@@ -212,12 +212,13 @@ export const SubdivisionValidations: React.FC<SubdivisionValidationsProps> = ({
 
     // ============ ACCESS VALIDATIONS ============
     
-    // V5: Road access check - avec meilleure logique pour roadType
+    // V5: Road access check - considère isRoadBordering uniquement (pas besoin de vérifier roadType !== 'none')
+    // Si isRoadBordering est true, le lot a un accès à une route
     const lotsWithRoadAccess = lots.filter(lot => 
-      lot.sides.some(side => side.isRoadBordering && side.roadType !== 'none')
+      lot.sides.some(side => side.isRoadBordering)
     );
     const lotsWithoutRoadAccess = lots.filter(lot => 
-      !lot.sides.some(side => side.isRoadBordering && side.roadType !== 'none')
+      !lot.sides.some(side => side.isRoadBordering)
     );
     const accessPercent = lots.length > 0 
       ? (lotsWithRoadAccess.length / lots.length) * 100 

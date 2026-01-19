@@ -179,65 +179,59 @@ export const SubdivisionAssistant: React.FC<SubdivisionAssistantProps> = ({
           const x = col * (lotWidth + roadOffset) + lotWidth / 2;
           const y = row * (lotHeight + roadOffset) + lotHeight / 2;
           
-          // Créer les côtés du lot avec une logique cohérente pour roadType
-          // roadType doit être cohérent avec isRoadBordering
+          // Créer les côtés du lot avec une logique cohérente pour roadType et isShared
+          // isShared = true si le côté est partagé avec un lot adjacent (pas au bord)
+          // isRoadBordering = true si le côté donne sur une route
           const isNorthBorder = row === 0;
           const isSouthBorder = row === rows - 1;
           const isEastBorder = col === cols - 1;
           const isWestBorder = col === 0;
           
+          // Angles intérieurs d'un rectangle = 90°
+          const interiorAngle = 90;
+          
           const sides: SideDimension[] = [
+            // Nord
             { 
               id: crypto.randomUUID(), 
               length: lotWidth, 
-              angle: 90, 
-              isShared: row > 0, 
-              isRoadBordering: isNorthBorder, 
-              roadType: isNorthBorder ? 'existing' : 'none' 
+              angle: interiorAngle, 
+              isShared: !isNorthBorder && !includeInternalRoads, // Partagé seulement si adjacent sans route
+              isRoadBordering: isNorthBorder || (row > 0 && includeInternalRoads), 
+              roadType: isNorthBorder ? 'existing' : (row > 0 && includeInternalRoads ? 'created' : 'none'),
+              roadWidth: (row > 0 && includeInternalRoads) ? internalRoadWidth : undefined,
+              roadName: (row > 0 && includeInternalRoads) ? `Voie interne ${row}` : undefined
             },
+            // Est
             { 
               id: crypto.randomUUID(), 
               length: lotHeight, 
-              angle: 90, 
-              isShared: !isEastBorder, 
+              angle: interiorAngle, 
+              isShared: !isEastBorder, // Partagé si pas au bord est
               isRoadBordering: isEastBorder, 
-              roadType: isEastBorder ? 'existing' : 'none' 
+              roadType: isEastBorder ? 'existing' : 'none'
             },
+            // Sud
             { 
               id: crypto.randomUUID(), 
               length: lotWidth, 
-              angle: 90, 
-              isShared: !isSouthBorder, 
+              angle: interiorAngle, 
+              isShared: !isSouthBorder, // Partagé si pas au bord sud
               isRoadBordering: isSouthBorder, 
-              roadType: isSouthBorder ? 'existing' : 'none' 
+              roadType: isSouthBorder ? 'existing' : 'none'
             },
+            // Ouest
             { 
               id: crypto.randomUUID(), 
               length: lotHeight, 
-              angle: 90, 
-              isShared: !isWestBorder, 
-              isRoadBordering: isWestBorder, 
-              roadType: isWestBorder ? 'existing' : 'none' 
+              angle: interiorAngle, 
+              isShared: !isWestBorder && !includeInternalRoads, // Partagé seulement si adjacent sans route
+              isRoadBordering: isWestBorder || (col > 0 && includeInternalRoads), 
+              roadType: isWestBorder ? 'existing' : (col > 0 && includeInternalRoads ? 'created' : 'none'),
+              roadWidth: (col > 0 && includeInternalRoads) ? internalRoadWidth : undefined,
+              roadName: (col > 0 && includeInternalRoads) ? `Allée ${col}` : undefined
             }
           ];
-          
-          // Ajouter les infos de route interne si applicable
-          if (includeInternalRoads) {
-            // Côté Nord - si pas au bord nord, c'est une voie interne
-            if (row > 0) {
-              sides[0].isRoadBordering = true;
-              sides[0].roadType = 'created';
-              sides[0].roadWidth = internalRoadWidth;
-              sides[0].roadName = `Voie interne ${row}`;
-            }
-            // Côté Ouest - si pas au bord ouest, c'est une allée interne
-            if (col > 0) {
-              sides[3].isRoadBordering = true;
-              sides[3].roadType = 'created';
-              sides[3].roadWidth = internalRoadWidth;
-              sides[3].roadName = `Allée ${col}`;
-            }
-          }
           
           const lot: LotData = {
             id: crypto.randomUUID(),
