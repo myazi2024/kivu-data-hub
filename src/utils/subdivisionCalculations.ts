@@ -15,16 +15,19 @@ export const calculatePolygonArea = (sides: SideDimension[]): number => {
   const n = sides.length;
   
   if (n === 3) {
-    // Triangle: Heron's formula
+    // Triangle: Heron's formula with validation
     const a = sides[0].length || 0;
     const b = sides[1].length || 0;
     const c = sides[2].length || 0;
     
+    // Validate triangle inequality
     if (a <= 0 || b <= 0 || c <= 0) return 0;
+    if (a + b <= c || b + c <= a || a + c <= b) return 0;
     
     const s = (a + b + c) / 2;
     const areaSquared = s * (s - a) * (s - b) * (s - c);
     
+    // Protect against negative values (floating point errors)
     return areaSquared > 0 ? Math.sqrt(areaSquared) : 0;
   }
   
@@ -60,24 +63,31 @@ export const calculatePerimeter = (sides: SideDimension[]): number => {
 /**
  * Create a default side with a unique ID
  */
-export const createDefaultSide = (index: number, totalSides: number = 4): SideDimension => ({
-  id: crypto.randomUUID(),
-  length: 0,
-  angle: 360 / totalSides,
-  isShared: false,
-  isRoadBordering: false,
-  roadType: 'none'
-});
+export const createDefaultSide = (index: number, totalSides: number = 4): SideDimension => {
+  // Interior angles of a regular polygon = (n-2) * 180 / n
+  const interiorAngle = totalSides >= 3 ? ((totalSides - 2) * 180) / totalSides : 90;
+  return {
+    id: crypto.randomUUID(),
+    length: 0,
+    angle: Math.round(interiorAngle * 10) / 10,
+    isShared: false,
+    isRoadBordering: false,
+    roadType: 'none'
+  };
+};
 
 /**
  * Create an array of default sides for a polygon
  */
 export const createDefaultSides = (numberOfSides: number = 4): SideDimension[] => {
-  const defaultAngle = 360 / numberOfSides;
+  // Interior angles of a regular polygon = (n-2) * 180 / n
+  const interiorAngle = numberOfSides >= 3 ? ((numberOfSides - 2) * 180) / numberOfSides : 90;
+  const roundedAngle = Math.round(interiorAngle * 10) / 10;
+  
   return Array.from({ length: numberOfSides }, (_, i) => ({
     id: crypto.randomUUID(),
     length: 0,
-    angle: defaultAngle,
+    angle: roundedAngle,
     isShared: false,
     isRoadBordering: false,
     roadType: 'none' as const
@@ -110,7 +120,7 @@ export const validateLotSides = (lot: LotData): boolean => {
  * Check if a lot has road access (at least one side borders a road)
  */
 export const lotHasRoadAccess = (lot: LotData): boolean => {
-  return lot.sides.some(side => side.isRoadBordering && side.roadType !== 'none');
+  return lot.sides.some(side => side.isRoadBordering);
 };
 
 /**

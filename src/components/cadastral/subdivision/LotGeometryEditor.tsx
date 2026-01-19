@@ -34,14 +34,18 @@ interface LotGeometryEditorProps {
 
 const generateSideId = () => crypto.randomUUID().slice(0, 8);
 
-const createDefaultSide = (index: number, total: number): SideDimension => ({
-  id: generateSideId(),
-  length: 0,
-  angle: 360 / total,
-  isShared: false,
-  isRoadBordering: false,
-  roadType: 'none'
-});
+const createDefaultSide = (index: number, total: number): SideDimension => {
+  // Angles intérieurs d'un polygone régulier = (n-2) * 180 / n
+  const interiorAngle = total >= 3 ? ((total - 2) * 180) / total : 90;
+  return {
+    id: generateSideId(),
+    length: 0,
+    angle: Math.round(interiorAngle * 10) / 10,
+    isShared: false,
+    isRoadBordering: false,
+    roadType: 'none'
+  };
+};
 
 const createDefaultLot = (lotNumber: number, numberOfSides: number = 4): LotData => {
   const sides: SideDimension[] = [];
@@ -49,53 +53,68 @@ const createDefaultLot = (lotNumber: number, numberOfSides: number = 4): LotData
     sides.push(createDefaultSide(i, numberOfSides));
   }
   
+  // Couleurs différentes pour différencier les lots
+  const lotColors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
+  
   return {
     id: crypto.randomUUID(),
     lotNumber: `LOT-${lotNumber.toString().padStart(3, '0')}`,
     sides,
     numberOfSides,
-    position: { x: 50 + (lotNumber % 3) * 100, y: 50 + Math.floor(lotNumber / 3) * 100 },
+    position: { x: 50 + ((lotNumber - 1) % 3) * 100, y: 50 + Math.floor((lotNumber - 1) / 3) * 100 },
     rotation: 0,
     areaSqm: 0,
     perimeter: 0,
     isBuilt: false,
     hasFence: false,
     intendedUse: 'residential',
-    color: '#22c55e'
+    color: lotColors[(lotNumber - 1) % lotColors.length]
   };
 };
 
-// Calculer l'aire d'un polygone régulier ou irrégulier
+// Calculer l'aire d'un polygone régulier ou irrégulier - avec protection division par zéro
 const calculatePolygonArea = (sides: SideDimension[]): number => {
   if (sides.length < 3) return 0;
   
-  // Pour un polygone simple, utiliser la formule du lacet (shoelace)
-  // Approximation basée sur les longueurs des côtés et les angles
   const n = sides.length;
-  const totalAngle = sides.reduce((sum, s) => sum + s.angle, 0);
   
-  if (n === 4) {
-    // Quadrilatère: moyenne des côtés opposés
-    const avgLength = (sides[0].length + sides[2].length) / 2;
-    const avgWidth = (sides[1].length + sides[3].length) / 2;
-    return avgLength * avgWidth;
-  } else if (n === 3) {
-    // Triangle: formule de Héron
-    const a = sides[0].length;
-    const b = sides[1].length;
-    const c = sides[2].length;
+  if (n === 3) {
+    // Triangle: formule de Héron avec protection
+    const a = sides[0].length || 0;
+    const b = sides[1].length || 0;
+    const c = sides[2].length || 0;
+    
+    // Vérifier que les longueurs forment un triangle valide
+    if (a <= 0 || b <= 0 || c <= 0) return 0;
+    if (a + b <= c || b + c <= a || a + c <= b) return 0;
+    
     const s = (a + b + c) / 2;
-    return Math.sqrt(s * (s - a) * (s - b) * (s - c));
+    const areaSquared = s * (s - a) * (s - b) * (s - c);
+    
+    // Protection contre racine de nombre négatif
+    return areaSquared > 0 ? Math.sqrt(areaSquared) : 0;
+  } else if (n === 4) {
+    // Quadrilatère: moyenne des côtés opposés
+    const side0 = sides[0].length || 0;
+    const side1 = sides[1].length || 0;
+    const side2 = sides[2].length || 0;
+    const side3 = sides[3].length || 0;
+    
+    const avgLength = (side0 + side2) / 2;
+    const avgWidth = (side1 + side3) / 2;
+    return avgLength * avgWidth;
   } else {
     // Polygone régulier approximatif
-    const perimeter = sides.reduce((sum, s) => sum + s.length, 0);
+    const perimeter = sides.reduce((sum, s) => sum + (s.length || 0), 0);
+    if (perimeter <= 0) return 0;
+    
     const sideLength = perimeter / n;
     return (n * sideLength * sideLength) / (4 * Math.tan(Math.PI / n));
   }
 };
 
 const calculatePerimeter = (sides: SideDimension[]): number => {
-  return sides.reduce((sum, s) => sum + s.length, 0);
+  return sides.reduce((sum, s) => sum + (s.length || 0), 0);
 };
 
 const SIDE_LABELS = ['Nord', 'Est', 'Sud', 'Ouest', 'Nord-Est', 'Sud-Est', 'Sud-Ouest', 'Nord-Ouest'];
@@ -144,6 +163,9 @@ export const LotGeometryEditor: React.FC<LotGeometryEditorProps> = ({
   };
   
   const changeNumberOfSides = (lotId: string, newCount: number) => {
+    // Angles intérieurs d'un polygone régulier
+    const interiorAngle = newCount >= 3 ? ((newCount - 2) * 180) / newCount : 90;
+    
     onLotsChange(lots.map(lot => {
       if (lot.id === lotId) {
         const currentSides = [...lot.sides];
@@ -151,7 +173,8 @@ export const LotGeometryEditor: React.FC<LotGeometryEditorProps> = ({
         
         for (let i = 0; i < newCount; i++) {
           if (i < currentSides.length) {
-            newSides.push({ ...currentSides[i], angle: 360 / newCount });
+            // Mettre à jour l'angle pour correspondre au nouveau polygone
+            newSides.push({ ...currentSides[i], angle: Math.round(interiorAngle * 10) / 10 });
           } else {
             newSides.push(createDefaultSide(i, newCount));
           }

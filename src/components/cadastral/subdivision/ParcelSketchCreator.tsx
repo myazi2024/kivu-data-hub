@@ -122,15 +122,15 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
 
   // Initialiser les points GPS quand le nombre de côtés change
   useEffect(() => {
-    setGpsPoints(Array.from({ length: numberOfSides }, (_, i) => ({
-      lat: gpsPoints[i]?.lat || '',
-      lng: gpsPoints[i]?.lng || '',
+    setGpsPoints(prev => Array.from({ length: numberOfSides }, (_, i) => ({
+      lat: prev[i]?.lat || '',
+      lng: prev[i]?.lng || '',
       borne: `Borne ${i + 1}`
     })));
     
-    setAltimetryPoints(Array.from({ length: numberOfSides }, (_, i) => ({
+    setAltimetryPoints(prev => Array.from({ length: numberOfSides }, (_, i) => ({
       borne: `Borne ${i + 1}`,
-      altitude: altimetryPoints[i]?.altitude || ''
+      altitude: prev[i]?.altitude || ''
     })));
   }, [numberOfSides]);
 
@@ -438,23 +438,45 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
     }));
   };
 
-  // Convertir les points du canvas en dimensions
-  const convertPointsToSides = useCallback(() => {
+  // Convertir les points du canvas en dimensions - retourne les nouveaux côtés
+  const convertPointsToSides = useCallback((): SideDimension[] => {
     const points = drawingState.points;
-    if (points.length < 3) return;
+    if (points.length < 3) return [];
     
+    const n = points.length;
     const newSides: SideDimension[] = points.map((point, i) => {
-      const nextPoint = points[(i + 1) % points.length];
+      const nextPoint = points[(i + 1) % n];
+      const prevPoint = points[(i - 1 + n) % n];
+      
+      // Longueur du côté
       const dx = nextPoint.x - point.x;
       const dy = nextPoint.y - point.y;
       const length = Math.sqrt(dx * dx + dy * dy) * metersPerPixel;
       
-      // Calculer l'angle
-      const prevPoint = points[(i - 1 + points.length) % points.length];
-      const v1 = { x: point.x - prevPoint.x, y: point.y - prevPoint.y };
-      const v2 = { x: nextPoint.x - point.x, y: nextPoint.y - point.y };
-      const angle = Math.atan2(v1.x * v2.y - v1.y * v2.x, v1.x * v2.x + v1.y * v2.y);
-      const angleDegrees = 180 - (angle * 180 / Math.PI);
+      // Calculer l'angle intérieur au sommet i
+      // Vecteur vers le point précédent
+      const v1x = prevPoint.x - point.x;
+      const v1y = prevPoint.y - point.y;
+      // Vecteur vers le point suivant
+      const v2x = nextPoint.x - point.x;
+      const v2y = nextPoint.y - point.y;
+      
+      // Produit scalaire et cross product pour l'angle
+      const dot = v1x * v2x + v1y * v2y;
+      const cross = v1x * v2y - v1y * v2x;
+      const magnitude1 = Math.sqrt(v1x * v1x + v1y * v1y);
+      const magnitude2 = Math.sqrt(v2x * v2x + v2y * v2y);
+      
+      let angleDegrees = 90; // default
+      if (magnitude1 > 0 && magnitude2 > 0) {
+        const cosAngle = Math.max(-1, Math.min(1, dot / (magnitude1 * magnitude2)));
+        const angleRad = Math.acos(cosAngle);
+        angleDegrees = angleRad * (180 / Math.PI);
+        // Ajuster pour l'angle intérieur si le polygone est orienté dans le sens horaire
+        if (cross < 0) {
+          angleDegrees = 360 - angleDegrees;
+        }
+      }
       
       return {
         id: crypto.randomUUID(),
@@ -473,18 +495,27 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
       title: 'Dimensions extraites',
       description: `${newSides.length} côtés détectés avec une surface de ${calculateAreaFromPoints(points)} m²`
     });
+    
+    return newSides;
   }, [drawingState.points, metersPerPixel, calculateAreaFromPoints, toast]);
 
   // Gérer l'import de fichier
   const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Nettoyer l'ancienne URL si elle existe
+      if (importPreviewUrl) {
+        URL.revokeObjectURL(importPreviewUrl);
+      }
+      
       setImportedFile(file);
       
       // Créer preview pour les images
       if (file.type.startsWith('image/')) {
         const url = URL.createObjectURL(file);
         setImportPreviewUrl(url);
+      } else {
+        setImportPreviewUrl('');
       }
       
       toast({
@@ -492,16 +523,35 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
         description: `${file.name} sera analysé pour extraire les dimensions.`
       });
     }
+    
+    // Reset le champ pour permettre de réimporter le même fichier
+    event.target.value = '';
   };
+  
+  // Cleanup URL on unmount
+  React.useEffect(() => {
+    return () => {
+      if (importPreviewUrl) {
+        URL.revokeObjectURL(importPreviewUrl);
+      }
+    };
+  }, [importPreviewUrl]);
 
   // Sauvegarder
   const handleSave = () => {
     let finalSides = sides;
     
-    // Si on est en mode dessin, convertir les points
+    // Si on est en mode dessin, convertir les points et utiliser le résultat directement
     if (mode === 'draw' && drawingState.points.length >= 3) {
-      convertPointsToSides();
-      finalSides = sides;
+      finalSides = convertPointsToSides();
+      if (finalSides.length === 0) {
+        toast({
+          title: 'Erreur',
+          description: 'Impossible de convertir les points en côtés.',
+          variant: 'destructive'
+        });
+        return;
+      }
     }
     
     const validSides = finalSides.filter(s => s.length > 0);
