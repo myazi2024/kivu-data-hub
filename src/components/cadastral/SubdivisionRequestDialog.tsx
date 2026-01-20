@@ -303,23 +303,30 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const builtLots = lots.filter(l => l.isBuilt).length;
   const fencedLots = lots.filter(l => l.hasFence).length;
   
-  // Créer un nouveau côté par défaut
-  const createDefaultSide = (index: number): SideDimension => ({
-    id: crypto.randomUUID(),
-    length: 0,
-    angle: 90,
-    isShared: false,
-    isRoadBordering: false,
-    roadType: 'none'
-  });
+  // Importer les fonctions centralisées pour éviter la duplication
+  // Utiliser les utilitaires de subdivisionCalculations.ts
+  const createDefaultSideLocal = (index: number, totalSides: number = 4): SideDimension => {
+    // Angles intérieurs d'un polygone régulier = (n-2) * 180 / n
+    const interiorAngle = totalSides >= 3 ? ((totalSides - 2) * 180) / totalSides : 90;
+    return {
+      id: crypto.randomUUID(),
+      length: 0,
+      angle: Math.round(interiorAngle * 10) / 10,
+      isShared: false,
+      isRoadBordering: false,
+      roadType: 'none'
+    };
+  };
   
   // Créer des côtés par défaut (4 côtés pour un rectangle)
-  const createDefaultSides = (numberOfSides: number = 4): SideDimension[] => {
-    const defaultAngle = 360 / numberOfSides;
+  const createDefaultSidesLocal = (numberOfSides: number = 4): SideDimension[] => {
+    // Angles intérieurs d'un polygone régulier = (n-2) * 180 / n
+    const interiorAngle = numberOfSides >= 3 ? ((numberOfSides - 2) * 180) / numberOfSides : 90;
+    const roundedAngle = Math.round(interiorAngle * 10) / 10;
     return Array.from({ length: numberOfSides }, (_, i) => ({
       id: crypto.randomUUID(),
       length: 0,
-      angle: defaultAngle,
+      angle: roundedAngle,
       isShared: false,
       isRoadBordering: false,
       roadType: 'none' as const
@@ -331,7 +338,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     const newLot: LotData = {
       id: crypto.randomUUID(),
       lotNumber: `LOT-${(lots.length + 1).toString().padStart(3, '0')}`,
-      sides: createDefaultSides(4),
+      sides: createDefaultSidesLocal(4),
       numberOfSides: 4,
       position: { x: 50 + (lots.length % 3) * 120, y: 50 + Math.floor(lots.length / 3) * 100 },
       rotation: 0,
@@ -425,6 +432,10 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   
   // Changer le nombre de côtés d'un lot
   const changeLotSidesCount = (lotId: string, newCount: number) => {
+    // Angles intérieurs d'un polygone régulier = (n-2) * 180 / n
+    const interiorAngle = newCount >= 3 ? ((newCount - 2) * 180) / newCount : 90;
+    const roundedAngle = Math.round(interiorAngle * 10) / 10;
+    
     setLots(lots.map(lot => {
       if (lot.id === lotId) {
         const currentSides = lot.sides;
@@ -434,16 +445,17 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           // Ajouter des côtés
           newSides = [
             ...currentSides,
-            ...Array.from({ length: newCount - currentSides.length }, () => createDefaultSide(currentSides.length))
+            ...Array.from({ length: newCount - currentSides.length }, (_, i) => 
+              createDefaultSideLocal(currentSides.length + i, newCount)
+            )
           ];
         } else {
           // Réduire le nombre de côtés
           newSides = currentSides.slice(0, newCount);
         }
         
-        // Recalculer les angles par défaut
-        const defaultAngle = 360 / newCount;
-        newSides = newSides.map(s => ({ ...s, angle: defaultAngle }));
+        // Recalculer les angles intérieurs corrects
+        newSides = newSides.map(s => ({ ...s, angle: roundedAngle }));
         
         const updated = { ...lot, sides: newSides, numberOfSides: newCount };
         updated.areaSqm = calculateLotArea(updated);

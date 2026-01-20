@@ -180,12 +180,18 @@ export const SubdivisionAssistant: React.FC<SubdivisionAssistantProps> = ({
           const y = row * (lotHeight + roadOffset) + lotHeight / 2;
           
           // Créer les côtés du lot avec une logique cohérente pour roadType et isShared
-          // isShared = true si le côté est partagé avec un lot adjacent (pas au bord)
-          // isRoadBordering = true si le côté donne sur une route
+          // isShared = true UNIQUEMENT si le côté est partagé avec un lot adjacent ET qu'il n'y a pas de route interne
+          // isRoadBordering = true si le côté donne sur une route (existante ou créée)
           const isNorthBorder = row === 0;
           const isSouthBorder = row === rows - 1;
           const isEastBorder = col === cols - 1;
           const isWestBorder = col === 0;
+          
+          // Déterminer les côtés adjacents à d'autres lots
+          const hasNorthNeighbor = row > 0;
+          const hasSouthNeighbor = row < rows - 1 && (row * cols + col + cols) < numberOfLots;
+          const hasEastNeighbor = col < cols - 1 && lotIndex + 1 < numberOfLots;
+          const hasWestNeighbor = col > 0;
           
           // Angles intérieurs d'un rectangle = 90°
           const interiorAngle = 90;
@@ -196,18 +202,20 @@ export const SubdivisionAssistant: React.FC<SubdivisionAssistantProps> = ({
               id: crypto.randomUUID(), 
               length: lotWidth, 
               angle: interiorAngle, 
-              isShared: !isNorthBorder && !includeInternalRoads, // Partagé seulement si adjacent sans route
-              isRoadBordering: isNorthBorder || (row > 0 && includeInternalRoads), 
-              roadType: isNorthBorder ? 'existing' : (row > 0 && includeInternalRoads ? 'created' : 'none'),
-              roadWidth: (row > 0 && includeInternalRoads) ? internalRoadWidth : undefined,
-              roadName: (row > 0 && includeInternalRoads) ? `Voie interne ${row}` : undefined
+              // Partagé seulement si adjacent à un lot ET pas de route interne entre les deux
+              isShared: hasNorthNeighbor && !includeInternalRoads,
+              isRoadBordering: isNorthBorder || (hasNorthNeighbor && includeInternalRoads), 
+              roadType: isNorthBorder ? 'existing' : (hasNorthNeighbor && includeInternalRoads ? 'created' : 'none'),
+              roadWidth: (hasNorthNeighbor && includeInternalRoads) ? internalRoadWidth : undefined,
+              roadName: (hasNorthNeighbor && includeInternalRoads) ? `Voie interne ${row}` : undefined
             },
             // Est
             { 
               id: crypto.randomUUID(), 
               length: lotHeight, 
               angle: interiorAngle, 
-              isShared: !isEastBorder, // Partagé si pas au bord est
+              // Partagé seulement si adjacent à un lot ET pas au bord externe
+              isShared: hasEastNeighbor && !isEastBorder,
               isRoadBordering: isEastBorder, 
               roadType: isEastBorder ? 'existing' : 'none'
             },
@@ -216,20 +224,24 @@ export const SubdivisionAssistant: React.FC<SubdivisionAssistantProps> = ({
               id: crypto.randomUUID(), 
               length: lotWidth, 
               angle: interiorAngle, 
-              isShared: !isSouthBorder, // Partagé si pas au bord sud
-              isRoadBordering: isSouthBorder, 
-              roadType: isSouthBorder ? 'existing' : 'none'
+              // Partagé seulement si adjacent à un lot (au sud)
+              isShared: hasSouthNeighbor && !includeInternalRoads,
+              isRoadBordering: isSouthBorder || (hasSouthNeighbor && includeInternalRoads), 
+              roadType: isSouthBorder ? 'existing' : (hasSouthNeighbor && includeInternalRoads ? 'created' : 'none'),
+              roadWidth: (hasSouthNeighbor && includeInternalRoads) ? internalRoadWidth : undefined,
+              roadName: (hasSouthNeighbor && includeInternalRoads) ? `Voie interne ${row + 1}` : undefined
             },
             // Ouest
             { 
               id: crypto.randomUUID(), 
               length: lotHeight, 
               angle: interiorAngle, 
-              isShared: !isWestBorder && !includeInternalRoads, // Partagé seulement si adjacent sans route
-              isRoadBordering: isWestBorder || (col > 0 && includeInternalRoads), 
-              roadType: isWestBorder ? 'existing' : (col > 0 && includeInternalRoads ? 'created' : 'none'),
-              roadWidth: (col > 0 && includeInternalRoads) ? internalRoadWidth : undefined,
-              roadName: (col > 0 && includeInternalRoads) ? `Allée ${col}` : undefined
+              // Partagé seulement si adjacent à un lot ET pas au bord externe
+              isShared: hasWestNeighbor && !isWestBorder,
+              isRoadBordering: isWestBorder || (hasWestNeighbor && includeInternalRoads), 
+              roadType: isWestBorder ? 'existing' : (hasWestNeighbor && includeInternalRoads ? 'created' : 'none'),
+              roadWidth: (hasWestNeighbor && includeInternalRoads) ? internalRoadWidth : undefined,
+              roadName: (hasWestNeighbor && includeInternalRoads) ? `Allée ${col}` : undefined
             }
           ];
           
