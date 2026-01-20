@@ -81,15 +81,16 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
   const [precisionLevel, setPrecisionLevel] = useState<PrecisionLevel>('simple');
   const [numberOfSides, setNumberOfSides] = useState(4);
   
-  // Dimensions des côtés
+  // Dimensions des côtés - quadrilatère = angles de 90° (car (4-2)*180/4 = 90)
   const [sides, setSides] = useState<SideDimension[]>(() => {
     if (initialSides && initialSides.length > 0) {
       return initialSides;
     }
+    // Pour un quadrilatère, l'angle intérieur = (4-2)*180/4 = 90°
     return Array.from({ length: 4 }, (_, i) => ({
       id: crypto.randomUUID(),
       length: 0,
-      angle: 90,
+      angle: 90, // Correct: angle intérieur d'un rectangle
       isShared: false,
       isRoadBordering: false,
       roadType: 'none' as const
@@ -139,18 +140,25 @@ export const ParcelSketchCreator: React.FC<ParcelSketchCreatorProps> = ({
     setNumberOfSides(newCount);
     const currentSides = [...sides];
     
+    // Angles intérieurs d'un polygone régulier = (n-2) * 180 / n
+    const interiorAngle = newCount >= 3 ? ((newCount - 2) * 180) / newCount : 90;
+    const roundedAngle = Math.round(interiorAngle * 10) / 10;
+    
     if (newCount > currentSides.length) {
       const newSides = Array.from({ length: newCount - currentSides.length }, () => ({
         id: crypto.randomUUID(),
         length: 0,
-        angle: 360 / newCount,
+        angle: roundedAngle,
         isShared: false,
         isRoadBordering: false,
         roadType: 'none' as const
       }));
-      setSides([...currentSides, ...newSides]);
+      // Mettre à jour les angles de tous les côtés
+      const allSides = [...currentSides.map(s => ({ ...s, angle: roundedAngle })), ...newSides];
+      setSides(allSides);
     } else {
-      setSides(currentSides.slice(0, newCount));
+      // Mettre à jour les angles des côtés restants
+      setSides(currentSides.slice(0, newCount).map(s => ({ ...s, angle: roundedAngle })));
     }
   };
 
