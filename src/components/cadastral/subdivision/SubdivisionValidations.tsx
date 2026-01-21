@@ -330,7 +330,32 @@ export const SubdivisionValidations: React.FC<SubdivisionValidationsProps> = ({
 
     // ============ TECHNICAL VALIDATIONS ============
     
-    // V9: Terrain visit requirement
+    // V9: Polygon angles validation
+    if (lots.length > 0) {
+      const lotsWithInvalidAngles = lots.filter(lot => {
+        const expectedSum = (lot.sides.length - 2) * 180;
+        const actualSum = lot.sides.reduce((sum, s) => sum + (s.angle || 0), 0);
+        return Math.abs(actualSum - expectedSum) > 10; // 10° tolerance
+      });
+      
+      results.push({
+        id: 'polygon-angles',
+        category: 'technical',
+        label: 'Angles des polygones',
+        status: lotsWithInvalidAngles.length === 0 ? 'valid' : 'warning',
+        priority: 3,
+        message: lotsWithInvalidAngles.length === 0
+          ? 'Tous les polygones ont des angles cohérents'
+          : `${lotsWithInvalidAngles.length} lot(s) avec des angles incorrects`,
+        details: lotsWithInvalidAngles.length > 0
+          ? `Lots à vérifier: ${lotsWithInvalidAngles.map(l => l.lotNumber).join(', ')} - La somme des angles intérieurs doit égaler (n-2)×180°`
+          : 'La somme des angles intérieurs de chaque polygone est correcte',
+        icon: <Ruler className="h-4 w-4" />,
+        fixSuggestion: 'Vérifiez les angles de chaque côté. Pour un quadrilatère, la somme doit être 360°',
+      });
+    }
+    
+    // V10: Terrain visit requirement
     results.push({
       id: 'terrain-visit',
       category: 'technical',
@@ -344,7 +369,7 @@ export const SubdivisionValidations: React.FC<SubdivisionValidationsProps> = ({
       icon: <Eye className="h-4 w-4" />,
     });
 
-    // V10: Data completeness
+    // V11: Data completeness
     const completenessScore = lots.length > 0
       ? lots.reduce((score, lot) => {
           let lotScore = 0;

@@ -24,6 +24,15 @@ import {
 } from 'lucide-react';
 import { LotData, SideDimension, FENCE_TYPES, SURFACE_TYPES } from './types';
 import { cn } from '@/lib/utils';
+import {
+  calculatePolygonArea,
+  calculatePerimeter,
+  createDefaultSide,
+  createDefaultSides,
+  updateSidesForNewPolygon,
+  getSideLabel,
+  getRegularPolygonInteriorAngle
+} from '@/utils/subdivisionCalculations';
 
 interface LotGeometryEditorProps {
   lots: LotData[];
@@ -32,34 +41,14 @@ interface LotGeometryEditorProps {
   onDuplicateLot: (lotId: string, count: number) => void;
 }
 
-const generateSideId = () => crypto.randomUUID().slice(0, 8);
-
-const createDefaultSide = (index: number, total: number): SideDimension => {
-  // Angles intérieurs d'un polygone régulier = (n-2) * 180 / n
-  const interiorAngle = total >= 3 ? ((total - 2) * 180) / total : 90;
-  return {
-    id: generateSideId(),
-    length: 0,
-    angle: Math.round(interiorAngle * 10) / 10,
-    isShared: false,
-    isRoadBordering: false,
-    roadType: 'none'
-  };
-};
+// Couleurs pour différencier les lots
+const LOT_COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
 const createDefaultLot = (lotNumber: number, numberOfSides: number = 4): LotData => {
-  const sides: SideDimension[] = [];
-  for (let i = 0; i < numberOfSides; i++) {
-    sides.push(createDefaultSide(i, numberOfSides));
-  }
-  
-  // Couleurs différentes pour différencier les lots
-  const lotColors = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
-  
   return {
     id: crypto.randomUUID(),
     lotNumber: `LOT-${lotNumber.toString().padStart(3, '0')}`,
-    sides,
+    sides: createDefaultSides(numberOfSides),
     numberOfSides,
     position: { x: 50 + ((lotNumber - 1) % 3) * 100, y: 50 + Math.floor((lotNumber - 1) / 3) * 100 },
     rotation: 0,
@@ -68,56 +57,9 @@ const createDefaultLot = (lotNumber: number, numberOfSides: number = 4): LotData
     isBuilt: false,
     hasFence: false,
     intendedUse: 'residential',
-    color: lotColors[(lotNumber - 1) % lotColors.length]
+    color: LOT_COLORS[(lotNumber - 1) % LOT_COLORS.length]
   };
 };
-
-// Calculer l'aire d'un polygone régulier ou irrégulier - avec protection division par zéro
-const calculatePolygonArea = (sides: SideDimension[]): number => {
-  if (sides.length < 3) return 0;
-  
-  const n = sides.length;
-  
-  if (n === 3) {
-    // Triangle: formule de Héron avec protection
-    const a = sides[0].length || 0;
-    const b = sides[1].length || 0;
-    const c = sides[2].length || 0;
-    
-    // Vérifier que les longueurs forment un triangle valide
-    if (a <= 0 || b <= 0 || c <= 0) return 0;
-    if (a + b <= c || b + c <= a || a + c <= b) return 0;
-    
-    const s = (a + b + c) / 2;
-    const areaSquared = s * (s - a) * (s - b) * (s - c);
-    
-    // Protection contre racine de nombre négatif
-    return areaSquared > 0 ? Math.sqrt(areaSquared) : 0;
-  } else if (n === 4) {
-    // Quadrilatère: moyenne des côtés opposés
-    const side0 = sides[0].length || 0;
-    const side1 = sides[1].length || 0;
-    const side2 = sides[2].length || 0;
-    const side3 = sides[3].length || 0;
-    
-    const avgLength = (side0 + side2) / 2;
-    const avgWidth = (side1 + side3) / 2;
-    return avgLength * avgWidth;
-  } else {
-    // Polygone régulier approximatif
-    const perimeter = sides.reduce((sum, s) => sum + (s.length || 0), 0);
-    if (perimeter <= 0) return 0;
-    
-    const sideLength = perimeter / n;
-    return (n * sideLength * sideLength) / (4 * Math.tan(Math.PI / n));
-  }
-};
-
-const calculatePerimeter = (sides: SideDimension[]): number => {
-  return sides.reduce((sum, s) => sum + (s.length || 0), 0);
-};
-
-const SIDE_LABELS = ['Nord', 'Est', 'Sud', 'Ouest', 'Nord-Est', 'Sud-Est', 'Sud-Ouest', 'Nord-Ouest'];
 
 export const LotGeometryEditor: React.FC<LotGeometryEditorProps> = ({
   lots,
@@ -163,22 +105,10 @@ export const LotGeometryEditor: React.FC<LotGeometryEditorProps> = ({
   };
   
   const changeNumberOfSides = (lotId: string, newCount: number) => {
-    // Angles intérieurs d'un polygone régulier
-    const interiorAngle = newCount >= 3 ? ((newCount - 2) * 180) / newCount : 90;
-    
     onLotsChange(lots.map(lot => {
       if (lot.id === lotId) {
-        const currentSides = [...lot.sides];
-        const newSides: SideDimension[] = [];
-        
-        for (let i = 0; i < newCount; i++) {
-          if (i < currentSides.length) {
-            // Mettre à jour l'angle pour correspondre au nouveau polygone
-            newSides.push({ ...currentSides[i], angle: Math.round(interiorAngle * 10) / 10 });
-          } else {
-            newSides.push(createDefaultSide(i, newCount));
-          }
-        }
+        // Use centralized utility for updating sides with correct angles
+        const newSides = updateSidesForNewPolygon(lot.sides, newCount);
         
         const updated = { ...lot, sides: newSides, numberOfSides: newCount };
         updated.areaSqm = calculatePolygonArea(updated.sides);
@@ -197,15 +127,7 @@ export const LotGeometryEditor: React.FC<LotGeometryEditorProps> = ({
   const totalLotsArea = lots.reduce((sum, lot) => sum + lot.areaSqm, 0);
   const remainingArea = parentParcelArea - totalLotsArea;
   
-  const getSideLabel = (index: number, total: number): string => {
-    if (total === 4) {
-      return SIDE_LABELS[index];
-    } else if (total === 3) {
-      return `Côté ${index + 1}`;
-    } else {
-      return `Côté ${index + 1}`;
-    }
-  };
+  // getSideLabel is now imported from subdivisionCalculations
   
   return (
     <div className="space-y-4">
@@ -245,17 +167,17 @@ export const LotGeometryEditor: React.FC<LotGeometryEditorProps> = ({
           <div className="text-xs text-muted-foreground">Lots créés</div>
         </Card>
         <Card className="p-2 md:p-3">
-          <div className="text-xl md:text-2xl font-bold text-green-600">{totalLotsArea.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</div>
+          <div className="text-xl md:text-2xl font-bold text-primary">{totalLotsArea.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</div>
           <div className="text-xs text-muted-foreground">m² attribués</div>
         </Card>
         <Card className="p-2 md:p-3">
-          <div className={cn("text-xl md:text-2xl font-bold", remainingArea < 0 ? 'text-destructive' : 'text-orange-600')}>
+          <div className={cn("text-xl md:text-2xl font-bold", remainingArea < 0 ? 'text-destructive' : 'text-accent-foreground')}>
             {remainingArea.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}
           </div>
           <div className="text-xs text-muted-foreground">m² restants</div>
         </Card>
         <Card className="p-2 md:p-3">
-          <div className="text-xl md:text-2xl font-bold text-blue-600">
+          <div className="text-xl md:text-2xl font-bold text-secondary-foreground">
             {/* Protection contre division par zéro */}
             {parentParcelArea > 0 ? ((totalLotsArea / parentParcelArea) * 100).toFixed(1) : '0.0'}%
           </div>
@@ -425,7 +347,7 @@ export const LotGeometryEditor: React.FC<LotGeometryEditorProps> = ({
                 </div>
                 
                 {/* Position et rotation */}
-                <div className="grid grid-cols-3 gap-3 p-3 bg-blue-50 dark:bg-blue-950/30 rounded-lg">
+                <div className="grid grid-cols-3 gap-3 p-3 bg-secondary/50 rounded-lg">
                   <div className="space-y-1">
                     <Label className="text-xs flex items-center gap-1">
                       <Move className="h-3 w-3" /> Position X
