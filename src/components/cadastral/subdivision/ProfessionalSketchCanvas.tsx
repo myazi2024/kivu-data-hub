@@ -69,9 +69,30 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
   const [selectedLotId, setSelectedLotId] = useState<string | null>(null);
   const [tool, setTool] = useState<'select' | 'pan' | 'move'>('select');
   const [showSettings, setShowSettings] = useState(false);
+  const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   
-  const canvasWidth = 800;
-  const canvasHeight = 600;
+  // Responsive canvas dimensions
+  useEffect(() => {
+    const updateCanvasSize = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        // Maintain 4:3 aspect ratio, but cap at max dimensions
+        const maxWidth = Math.min(containerWidth - 32, 1200);
+        const maxHeight = Math.min(maxWidth * 0.75, 700);
+        setCanvasSize({
+          width: Math.max(400, maxWidth),
+          height: Math.max(300, maxHeight)
+        });
+      }
+    };
+    
+    updateCanvasSize();
+    window.addEventListener('resize', updateCanvasSize);
+    return () => window.removeEventListener('resize', updateCanvasSize);
+  }, []);
+  
+  const canvasWidth = canvasSize.width;
+  const canvasHeight = canvasSize.height;
   
   // Calculer l'échelle basée sur la parcelle mère
   const calculateScale = useCallback(() => {
@@ -81,7 +102,7 @@ export const ProfessionalSketchCanvas: React.FC<ProfessionalSketchCanvasProps> =
     const availableWidth = canvasWidth - margin * 2;
     const availableHeight = canvasHeight - margin * 2;
     return Math.min(availableWidth, availableHeight) / (avgSide * 1.5);
-  }, [parentParcel.sides, parentParcel.area]);
+  }, [parentParcel.sides, parentParcel.area, canvasWidth, canvasHeight]);
   
   // Dessiner le croquis
   const drawSketch = useCallback(() => {

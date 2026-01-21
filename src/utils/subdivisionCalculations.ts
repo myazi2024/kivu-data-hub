@@ -1,6 +1,12 @@
 /**
  * Shared calculation utilities for subdivision forms
  * Centralizes area, perimeter, and validation calculations
+ * 
+ * Formulas:
+ * - Triangle: Heron's formula with triangle inequality validation
+ * - Quadrilateral: Bretschneider's formula (general case) with fallback to average sides
+ * - Regular n-gon: A = (n * s²) / (4 * tan(π/n))
+ * - Interior angles: (n-2) * 180° / n for regular polygons
  */
 
 import { SideDimension, LotData } from '@/components/cadastral/subdivision/types';
@@ -32,15 +38,38 @@ export const calculatePolygonArea = (sides: SideDimension[]): number => {
   }
   
   if (n === 4) {
-    // Quadrilateral: Use average of opposite sides
-    const side1 = sides[0].length || 0;
-    const side2 = sides[1].length || 0;
-    const side3 = sides[2].length || 0;
-    const side4 = sides[3].length || 0;
+    // Quadrilateral: Use Bretschneider's formula when angles are available
+    // Otherwise fallback to average of opposite sides
+    const a = sides[0].length || 0;
+    const b = sides[1].length || 0;
+    const c = sides[2].length || 0;
+    const d = sides[3].length || 0;
     
-    const avgLength = (side1 + side3) / 2;
-    const avgWidth = (side2 + side4) / 2;
+    if (a <= 0 || b <= 0 || c <= 0 || d <= 0) return 0;
     
+    // Check if we have valid angles (sum should be ~360°)
+    const angleSum = sides.reduce((sum, s) => sum + (s.angle || 0), 0);
+    const hasValidAngles = Math.abs(angleSum - 360) < 5;
+    
+    if (hasValidAngles) {
+      // Bretschneider's formula: K = sqrt((s-a)(s-b)(s-c)(s-d) - abcd*cos²((A+C)/2))
+      const s = (a + b + c + d) / 2;
+      const angleA = (sides[0].angle || 90) * Math.PI / 180;
+      const angleC = (sides[2].angle || 90) * Math.PI / 180;
+      const cosHalfSumAC = Math.cos((angleA + angleC) / 2);
+      
+      const term1 = (s - a) * (s - b) * (s - c) * (s - d);
+      const term2 = a * b * c * d * cosHalfSumAC * cosHalfSumAC;
+      const areaSquared = term1 - term2;
+      
+      if (areaSquared > 0) {
+        return Math.sqrt(areaSquared);
+      }
+    }
+    
+    // Fallback: Average of opposite sides (works well for near-rectangular shapes)
+    const avgLength = (a + c) / 2;
+    const avgWidth = (b + d) / 2;
     return avgLength * avgWidth;
   }
   
@@ -61,11 +90,19 @@ export const calculatePerimeter = (sides: SideDimension[]): number => {
 };
 
 /**
+ * Calculate the interior angle of a regular polygon
+ * Formula: (n-2) * 180 / n
+ */
+export const getRegularPolygonInteriorAngle = (numberOfSides: number): number => {
+  if (numberOfSides < 3) return 90;
+  return ((numberOfSides - 2) * 180) / numberOfSides;
+};
+
+/**
  * Create a default side with a unique ID
  */
 export const createDefaultSide = (index: number, totalSides: number = 4): SideDimension => {
-  // Interior angles of a regular polygon = (n-2) * 180 / n
-  const interiorAngle = totalSides >= 3 ? ((totalSides - 2) * 180) / totalSides : 90;
+  const interiorAngle = getRegularPolygonInteriorAngle(totalSides);
   return {
     id: crypto.randomUUID(),
     length: 0,
@@ -80,8 +117,7 @@ export const createDefaultSide = (index: number, totalSides: number = 4): SideDi
  * Create an array of default sides for a polygon
  */
 export const createDefaultSides = (numberOfSides: number = 4): SideDimension[] => {
-  // Interior angles of a regular polygon = (n-2) * 180 / n
-  const interiorAngle = numberOfSides >= 3 ? ((numberOfSides - 2) * 180) / numberOfSides : 90;
+  const interiorAngle = getRegularPolygonInteriorAngle(numberOfSides);
   const roundedAngle = Math.round(interiorAngle * 10) / 10;
   
   return Array.from({ length: numberOfSides }, (_, i) => ({
@@ -92,6 +128,32 @@ export const createDefaultSides = (numberOfSides: number = 4): SideDimension[] =
     isRoadBordering: false,
     roadType: 'none' as const
   }));
+};
+
+/**
+ * Recalculate angles for all sides when changing the number of sides
+ * Preserves lengths and other properties
+ */
+export const updateSidesForNewPolygon = (
+  currentSides: SideDimension[], 
+  newSideCount: number
+): SideDimension[] => {
+  const interiorAngle = getRegularPolygonInteriorAngle(newSideCount);
+  const roundedAngle = Math.round(interiorAngle * 10) / 10;
+  
+  const newSides: SideDimension[] = [];
+  
+  for (let i = 0; i < newSideCount; i++) {
+    if (i < currentSides.length) {
+      // Keep existing side but update angle
+      newSides.push({ ...currentSides[i], angle: roundedAngle });
+    } else {
+      // Create new side
+      newSides.push(createDefaultSide(i, newSideCount));
+    }
+  }
+  
+  return newSides;
 };
 
 /**
@@ -144,52 +206,167 @@ export const validatePolygonAngles = (sides: SideDimension[], tolerance: number 
 };
 
 /**
- * Get the label for a side based on index and total sides
+ * Get side labels based on the polygon type
  */
 export const getSideLabel = (index: number, totalSides: number): string => {
+  const CARDINAL_LABELS = ['Nord', 'Est', 'Sud', 'Ouest'];
+  const EXTENDED_LABELS = ['Nord', 'Est', 'Sud', 'Ouest', 'Nord-Est', 'Sud-Est', 'Sud-Ouest', 'Nord-Ouest'];
+  
   if (totalSides === 4) {
-    return ['Nord', 'Est', 'Sud', 'Ouest'][index] || `Côté ${index + 1}`;
+    return CARDINAL_LABELS[index] || `Côté ${index + 1}`;
+  } else if (totalSides <= 8) {
+    return EXTENDED_LABELS[index] || `Côté ${index + 1}`;
   }
   return `Côté ${index + 1}`;
 };
 
 /**
- * Generate a unique reference number for subdivision requests
+ * Generate a unique subdivision reference
  */
 export const generateSubdivisionReference = (): string => {
   const date = new Date();
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
-  const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
   return `LOT-${year}${month}-${random}`;
 };
 
 /**
- * Check if remaining area is valid (not negative and not exceeding a threshold)
+ * Validate remaining area with configurable tolerance
+ * @param parentParcelArea - Total area of parent parcel in m²
+ * @param totalLotsArea - Sum of all lots areas in m²
+ * @param tolerancePercent - Allowed tolerance (default 2%)
+ * @returns Validation result with remaining area and status
  */
 export const validateRemainingArea = (
-  parentParcelArea: number, 
-  totalLotsArea: number, 
-  tolerancePercent: number = 5
-): { isValid: boolean; remaining: number; message?: string } => {
-  const remaining = parentParcelArea - totalLotsArea;
-  const toleranceArea = (parentParcelArea * tolerancePercent) / 100;
+  parentParcelArea: number,
+  totalLotsArea: number,
+  tolerancePercent: number = 2
+): { isValid: boolean; remaining: number; percentDiff: number; message?: string } => {
+  if (parentParcelArea <= 0) {
+    return { 
+      isValid: false, 
+      remaining: 0, 
+      percentDiff: 0,
+      message: 'Surface de la parcelle mère invalide' 
+    };
+  }
   
-  if (remaining < -toleranceArea) {
+  const remaining = parentParcelArea - totalLotsArea;
+  const percentDiff = Math.abs(remaining / parentParcelArea) * 100;
+  
+  if (totalLotsArea > parentParcelArea) {
     return {
       isValid: false,
       remaining,
-      message: `La surface totale dépasse la parcelle mère de ${Math.abs(remaining).toLocaleString()} m² (${Math.abs((remaining / parentParcelArea) * 100).toFixed(1)}%)`
+      percentDiff,
+      message: `La surface totale des lots (${totalLotsArea.toLocaleString()} m²) dépasse la parcelle mère de ${Math.abs(remaining).toLocaleString()} m²`
     };
   }
   
-  if (remaining > toleranceArea && remaining > 100) {
+  if (percentDiff > tolerancePercent) {
     return {
-      isValid: true, // Valid but with warning
+      isValid: false,
       remaining,
-      message: `Surface non attribuée importante: ${remaining.toLocaleString()} m² (${((remaining / parentParcelArea) * 100).toFixed(1)}%)`
+      percentDiff,
+      message: `Écart de ${percentDiff.toFixed(1)}% - ${remaining.toLocaleString()} m² non attribués (tolérance: ${tolerancePercent}%)`
     };
   }
   
-  return { isValid: true, remaining };
+  return {
+    isValid: true,
+    remaining,
+    percentDiff,
+    message: percentDiff > 0 
+      ? `Surface correcte (écart: ${percentDiff.toFixed(2)}%)`
+      : 'Surface parfaitement attribuée'
+  };
+};
+
+/**
+ * Calculate internal roads area based on lot layout
+ * @param numberOfLots - Number of lots in subdivision
+ * @param parentWidth - Width of parent parcel in meters
+ * @param parentHeight - Height of parent parcel in meters  
+ * @param roadWidth - Width of internal roads in meters
+ */
+export const calculateInternalRoadsArea = (
+  numberOfLots: number,
+  parentWidth: number,
+  parentHeight: number,
+  roadWidth: number = 6
+): number => {
+  if (numberOfLots <= 1) return 0;
+  
+  // Estimate number of road segments based on grid layout
+  const cols = Math.ceil(Math.sqrt(numberOfLots));
+  const rows = Math.ceil(numberOfLots / cols);
+  
+  // Horizontal roads (cols - 1 segments across the width)
+  const horizontalRoadArea = (rows - 1) * parentWidth * roadWidth;
+  
+  // Vertical roads (rows - 1 segments across the height)
+  const verticalRoadArea = (cols - 1) * parentHeight * roadWidth;
+  
+  // Subtract intersections counted twice
+  const intersectionArea = (rows - 1) * (cols - 1) * roadWidth * roadWidth;
+  
+  return Math.max(0, horizontalRoadArea + verticalRoadArea - intersectionArea);
+};
+
+/**
+ * Duplicate a lot with proper ID regeneration
+ */
+export const duplicateLot = (lot: LotData, newLotNumber: string): LotData => {
+  return {
+    ...lot,
+    id: crypto.randomUUID(),
+    lotNumber: newLotNumber,
+    sides: lot.sides.map(side => ({
+      ...side,
+      id: crypto.randomUUID(),
+      // Reset sharing info since it's a new lot
+      isShared: false,
+      adjacentLotNumber: undefined
+    })),
+    // Offset position slightly
+    position: {
+      x: lot.position.x + 10,
+      y: lot.position.y + 10
+    }
+  };
+};
+
+/**
+ * Generate multiple duplicates of a lot
+ */
+export const duplicateLotMultiple = (
+  lot: LotData, 
+  count: number, 
+  startingNumber: number
+): LotData[] => {
+  const duplicates: LotData[] = [];
+  
+  for (let i = 0; i < count; i++) {
+    const newNumber = startingNumber + i;
+    const newLotNumber = `LOT-${String(newNumber).padStart(3, '0')}`;
+    
+    duplicates.push({
+      ...lot,
+      id: crypto.randomUUID(),
+      lotNumber: newLotNumber,
+      sides: lot.sides.map(side => ({
+        ...side,
+        id: crypto.randomUUID(),
+        isShared: false,
+        adjacentLotNumber: undefined
+      })),
+      position: {
+        x: lot.position.x + (i % 3 + 1) * 50,
+        y: lot.position.y + Math.floor(i / 3) * 50
+      }
+    });
+  }
+  
+  return duplicates;
 };
