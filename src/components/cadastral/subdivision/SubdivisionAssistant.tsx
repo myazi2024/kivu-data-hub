@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -8,10 +8,41 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Slider } from '@/components/ui/slider';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Wand2, Grid3X3, LayoutGrid, Rows, Columns, Info, Check, 
-  Sparkles, ArrowRight, Zap, Target, RefreshCw
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { 
+  Wand2, Grid3X3, LayoutGrid, Rows, Columns, Info, 
+  Sparkles, ArrowRight, Zap, Target, RefreshCw, Plus, Minus,
+  HelpCircle, CheckCircle2, AlertCircle, Undo2
 } from 'lucide-react';
-import { LotData, SideDimension, ParentParcelData } from './types';
+import { LotData, ParentParcelData } from './types';
+import { LayoutPreview } from './LayoutPreview';
+import {
+  LayoutType,
+  UsageType,
+  LayoutConfig,
+  LAYOUT_OPTIONS,
+  USAGE_TYPES,
+  DEFAULT_LAYOUT_CONFIG,
+  MIN_LOT_SURFACE_SQM,
+  getParentDimensions,
+  calculateAvailableArea,
+  generateLotLayout,
+  validateGeneratedLots
+} from '@/utils/lotLayoutGenerator';
 
 interface SubdivisionAssistantProps {
   parentParcel: ParentParcelData;
@@ -19,445 +50,428 @@ interface SubdivisionAssistantProps {
   existingLots?: LotData[];
 }
 
-type LayoutType = 'grid' | 'horizontal' | 'vertical' | 'custom';
-type UsageType = 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'mixed';
-
-interface LayoutOption {
-  id: LayoutType;
-  name: string;
-  description: string;
-  icon: React.ReactNode;
-  minLots: number;
-  maxLots: number;
-}
-
-const LAYOUT_OPTIONS: LayoutOption[] = [
-  { 
-    id: 'grid', 
-    name: 'Grille', 
-    description: 'Lots répartis en grille régulière',
-    icon: <Grid3X3 className="h-5 w-5" />,
-    minLots: 4,
-    maxLots: 100
-  },
-  { 
-    id: 'horizontal', 
-    name: 'Bandes horizontales', 
-    description: 'Lots alignés horizontalement',
-    icon: <Rows className="h-5 w-5" />,
-    minLots: 2,
-    maxLots: 50
-  },
-  { 
-    id: 'vertical', 
-    name: 'Bandes verticales', 
-    description: 'Lots alignés verticalement',
-    icon: <Columns className="h-5 w-5" />,
-    minLots: 2,
-    maxLots: 50
-  },
-  { 
-    id: 'custom', 
-    name: 'Personnalisé', 
-    description: 'Définir manuellement chaque lot',
-    icon: <LayoutGrid className="h-5 w-5" />,
-    minLots: 2,
-    maxLots: 200
-  }
-];
-
-const USAGE_TYPES: { id: UsageType; name: string; color: string }[] = [
-  { id: 'residential', name: 'Résidentiel', color: 'bg-green-500' },
-  { id: 'commercial', name: 'Commercial', color: 'bg-blue-500' },
-  { id: 'industrial', name: 'Industriel', color: 'bg-amber-500' },
-  { id: 'agricultural', name: 'Agricole', color: 'bg-lime-500' },
-  { id: 'mixed', name: 'Mixte', color: 'bg-purple-500' }
-];
+const LAYOUT_ICONS: Record<LayoutType, React.ReactNode> = {
+  grid: <Grid3X3 className="h-4 w-4" />,
+  horizontal: <Rows className="h-4 w-4" />,
+  vertical: <Columns className="h-4 w-4" />,
+  custom: <LayoutGrid className="h-4 w-4" />
+};
 
 export const SubdivisionAssistant: React.FC<SubdivisionAssistantProps> = ({
   parentParcel,
   onGenerateLots,
   existingLots = []
 }) => {
-  const [selectedLayout, setSelectedLayout] = useState<LayoutType>('grid');
-  const [numberOfLots, setNumberOfLots] = useState<number>(4);
-  const [defaultUsage, setDefaultUsage] = useState<UsageType>('residential');
-  const [internalRoadWidth, setInternalRoadWidth] = useState<number>(6);
-  const [includeInternalRoads, setIncludeInternalRoads] = useState<boolean>(true);
-  const [lotAspectRatio, setLotAspectRatio] = useState<number>(1.5); // Longueur/Largeur
+  // Configuration state
+  const [config, setConfig] = useState<LayoutConfig>({
+    ...DEFAULT_LAYOUT_CONFIG,
+    numberOfLots: Math.min(4, Math.floor(parentParcel.area / MIN_LOT_SURFACE_SQM))
+  });
+  
+  // UI state
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [previousLots, setPreviousLots] = useState<LotData[] | null>(null);
 
-  // Calculer les dimensions de la parcelle mère
-  const parentDimensions = useMemo(() => {
-    if (!parentParcel.sides || parentParcel.sides.length < 4) {
-      // Estimer à partir de la surface (parcelle carrée par défaut)
-      const sideLength = Math.sqrt(parentParcel.area);
-      return {
-        width: sideLength,
-        height: sideLength,
-        isEstimated: true
-      };
+  // Parent parcel dimensions
+  const parentDimensions = useMemo(() => 
+    getParentDimensions(parentParcel),
+    [parentParcel]
+  );
+
+  // Available area calculation
+  const availableArea = useMemo(() => 
+    calculateAvailableArea(
+      parentParcel.area,
+      config.numberOfLots,
+      parentDimensions.width,
+      parentDimensions.height,
+      config.includeInternalRoads,
+      config.internalRoadWidth
+    ),
+    [parentParcel.area, config.numberOfLots, parentDimensions, config.includeInternalRoads, config.internalRoadWidth]
+  );
+
+  // Average lot area
+  const avgLotArea = useMemo(() => 
+    availableArea / config.numberOfLots,
+    [availableArea, config.numberOfLots]
+  );
+
+  // Maximum number of lots based on minimum surface
+  const maxLots = useMemo(() => 
+    Math.floor(parentParcel.area / MIN_LOT_SURFACE_SQM),
+    [parentParcel.area]
+  );
+
+  // Preview lots (generated in real-time)
+  const previewLots = useMemo(() => {
+    if (config.layoutType === 'custom') return [];
+    return generateLotLayout(parentParcel, config);
+  }, [parentParcel, config]);
+
+  // Validation status
+  const validationStatus = useMemo(() => 
+    validateGeneratedLots(previewLots, parentParcel.area),
+    [previewLots, parentParcel.area]
+  );
+
+  // Update config helper
+  const updateConfig = useCallback((updates: Partial<LayoutConfig>) => {
+    setConfig(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Increment/decrement lots
+  const adjustLotCount = useCallback((delta: number) => {
+    setConfig(prev => ({
+      ...prev,
+      numberOfLots: Math.max(2, Math.min(maxLots, prev.numberOfLots + delta))
+    }));
+  }, [maxLots]);
+
+  // Generate lots
+  const handleGenerate = useCallback(() => {
+    if (existingLots.length > 0) {
+      setShowConfirmDialog(true);
+      return;
     }
-    
-    // Utiliser les dimensions réelles (Nord/Sud = largeur, Est/Ouest = hauteur)
-    const sides = parentParcel.sides;
-    const northSouth = sides.find(s => 
-      s.id?.includes('north') || s.id?.includes('nord') || 
-      sides.indexOf(s) === 0 || sides.indexOf(s) === 2
-    );
-    const eastWest = sides.find(s => 
-      s.id?.includes('east') || s.id?.includes('est') || 
-      sides.indexOf(s) === 1 || sides.indexOf(s) === 3
-    );
-    
-    return {
-      width: Math.max(sides[0]?.length || 0, sides[2]?.length || 0) || Math.sqrt(parentParcel.area),
-      height: Math.max(sides[1]?.length || 0, sides[3]?.length || 0) || Math.sqrt(parentParcel.area),
-      isEstimated: false
-    };
-  }, [parentParcel]);
+    executeGeneration();
+  }, [existingLots]);
 
-  // Calculer la surface disponible après routes internes
-  const availableArea = useMemo(() => {
-    if (!includeInternalRoads) return parentParcel.area;
-    
-    // Estimer la surface occupée par les routes (approximation)
-    const roadArea = numberOfLots > 1 
-      ? (Math.ceil(Math.sqrt(numberOfLots)) - 1) * internalRoadWidth * 
-        Math.max(parentDimensions.width, parentDimensions.height)
-      : 0;
-    
-    return Math.max(parentParcel.area - roadArea, parentParcel.area * 0.7);
-  }, [parentParcel.area, numberOfLots, internalRoadWidth, includeInternalRoads, parentDimensions]);
-
-  // Surface moyenne par lot
-  const avgLotArea = useMemo(() => {
-    return availableArea / numberOfLots;
-  }, [availableArea, numberOfLots]);
-
-  // Générer la disposition des lots
-  const generateLotLayout = () => {
+  const executeGeneration = useCallback(() => {
     setIsGenerating(true);
+    setPreviousLots(existingLots.length > 0 ? [...existingLots] : null);
     
     setTimeout(() => {
-      const lots: LotData[] = [];
-      
-      const { width: parentWidth, height: parentHeight } = parentDimensions;
-      const roadOffset = includeInternalRoads ? internalRoadWidth : 0;
-      
-      // Calculer la grille en fonction du layout
-      let cols: number, rows: number;
-      
-      switch (selectedLayout) {
-        case 'horizontal':
-          cols = numberOfLots;
-          rows = 1;
-          break;
-        case 'vertical':
-          cols = 1;
-          rows = numberOfLots;
-          break;
-        case 'grid':
-        default:
-          // Optimiser la grille en fonction de la forme de la parcelle
-          const aspectRatio = parentWidth / parentHeight;
-          cols = Math.max(1, Math.round(Math.sqrt(numberOfLots * aspectRatio)));
-          rows = Math.ceil(numberOfLots / cols);
-          break;
-      }
-      
-      // Dimensions de chaque lot
-      const lotWidth = (parentWidth - (cols - 1) * roadOffset) / cols;
-      const lotHeight = (parentHeight - (rows - 1) * roadOffset) / rows;
-      
-      let lotIndex = 0;
-      for (let row = 0; row < rows && lotIndex < numberOfLots; row++) {
-        for (let col = 0; col < cols && lotIndex < numberOfLots; col++) {
-          const lotNumber = `LOT-${String(lotIndex + 1).padStart(3, '0')}`;
-          
-          // Position du lot
-          const x = col * (lotWidth + roadOffset) + lotWidth / 2;
-          const y = row * (lotHeight + roadOffset) + lotHeight / 2;
-          
-          // Créer les côtés du lot avec une logique cohérente pour roadType et isShared
-          // isShared = true UNIQUEMENT si le côté est partagé avec un lot adjacent ET qu'il n'y a pas de route interne
-          // isRoadBordering = true si le côté donne sur une route (existante ou créée)
-          const isNorthBorder = row === 0;
-          const isSouthBorder = row === rows - 1;
-          const isEastBorder = col === cols - 1;
-          const isWestBorder = col === 0;
-          
-          // Déterminer les côtés adjacents à d'autres lots
-          const hasNorthNeighbor = row > 0;
-          const hasSouthNeighbor = row < rows - 1 && (row * cols + col + cols) < numberOfLots;
-          const hasEastNeighbor = col < cols - 1 && lotIndex + 1 < numberOfLots;
-          const hasWestNeighbor = col > 0;
-          
-          // Angles intérieurs d'un rectangle = 90°
-          const interiorAngle = 90;
-          
-          const sides: SideDimension[] = [
-            // Nord
-            { 
-              id: crypto.randomUUID(), 
-              length: lotWidth, 
-              angle: interiorAngle, 
-              // Partagé seulement si adjacent à un lot ET pas de route interne entre les deux
-              isShared: hasNorthNeighbor && !includeInternalRoads,
-              isRoadBordering: isNorthBorder || (hasNorthNeighbor && includeInternalRoads), 
-              roadType: isNorthBorder ? 'existing' : (hasNorthNeighbor && includeInternalRoads ? 'created' : 'none'),
-              roadWidth: (hasNorthNeighbor && includeInternalRoads) ? internalRoadWidth : undefined,
-              roadName: (hasNorthNeighbor && includeInternalRoads) ? `Voie interne ${row}` : undefined
-            },
-            // Est
-            { 
-              id: crypto.randomUUID(), 
-              length: lotHeight, 
-              angle: interiorAngle, 
-              // Partagé seulement si adjacent à un lot ET pas au bord externe
-              isShared: hasEastNeighbor && !isEastBorder,
-              isRoadBordering: isEastBorder, 
-              roadType: isEastBorder ? 'existing' : 'none'
-            },
-            // Sud
-            { 
-              id: crypto.randomUUID(), 
-              length: lotWidth, 
-              angle: interiorAngle, 
-              // Partagé seulement si adjacent à un lot (au sud)
-              isShared: hasSouthNeighbor && !includeInternalRoads,
-              isRoadBordering: isSouthBorder || (hasSouthNeighbor && includeInternalRoads), 
-              roadType: isSouthBorder ? 'existing' : (hasSouthNeighbor && includeInternalRoads ? 'created' : 'none'),
-              roadWidth: (hasSouthNeighbor && includeInternalRoads) ? internalRoadWidth : undefined,
-              roadName: (hasSouthNeighbor && includeInternalRoads) ? `Voie interne ${row + 1}` : undefined
-            },
-            // Ouest
-            { 
-              id: crypto.randomUUID(), 
-              length: lotHeight, 
-              angle: interiorAngle, 
-              // Partagé seulement si adjacent à un lot ET pas au bord externe
-              isShared: hasWestNeighbor && !isWestBorder,
-              isRoadBordering: isWestBorder || (hasWestNeighbor && includeInternalRoads), 
-              roadType: isWestBorder ? 'existing' : (hasWestNeighbor && includeInternalRoads ? 'created' : 'none'),
-              roadWidth: (hasWestNeighbor && includeInternalRoads) ? internalRoadWidth : undefined,
-              roadName: (hasWestNeighbor && includeInternalRoads) ? `Allée ${col}` : undefined
-            }
-          ];
-          
-          const lot: LotData = {
-            id: crypto.randomUUID(),
-            lotNumber,
-            sides,
-            numberOfSides: 4,
-            position: { x, y },
-            rotation: 0,
-            areaSqm: Math.round(lotWidth * lotHeight),
-            perimeter: Math.round(2 * (lotWidth + lotHeight)),
-            isBuilt: false,
-            hasFence: false,
-            intendedUse: defaultUsage,
-            color: USAGE_TYPES.find(u => u.id === defaultUsage)?.color
-          };
-          
-          lots.push(lot);
-          lotIndex++;
-        }
-      }
-      
+      const lots = generateLotLayout(parentParcel, config);
       onGenerateLots(lots);
       setIsGenerating(false);
-    }, 500);
-  };
+      setShowConfirmDialog(false);
+    }, 300);
+  }, [parentParcel, config, existingLots, onGenerateLots]);
+
+  // Undo generation
+  const handleUndo = useCallback(() => {
+    if (previousLots) {
+      onGenerateLots(previousLots);
+      setPreviousLots(null);
+    }
+  }, [previousLots, onGenerateLots]);
 
   return (
-    <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base">
-          <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Wand2 className="h-4 w-4 text-primary" />
-          </div>
-          Assistant de création de lotissement
-          <Badge variant="secondary" className="ml-auto text-xs">
-            <Sparkles className="h-3 w-3 mr-1" />
-            Automatique
-          </Badge>
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        {/* Info parcelle mère */}
-        <div className="p-3 bg-muted/50 rounded-lg border">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-muted-foreground">Parcelle mère:</span>
-            <span className="font-medium">{parentParcel.area.toLocaleString()} m²</span>
-          </div>
-          {parentDimensions.isEstimated ? (
-            <div className="flex items-center gap-1 text-xs text-amber-600 mt-1">
-              <Info className="h-3 w-3" />
-              Dimensions estimées (carrée)
+    <TooltipProvider>
+      <Card className="border-2 border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
+        <CardHeader className="pb-2 px-3 pt-3">
+          <CardTitle className="flex items-center gap-2 text-sm">
+            <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Wand2 className="h-3.5 w-3.5 text-primary" />
             </div>
-          ) : (
-            <div className="text-xs text-muted-foreground mt-1">
-              ≈ {Math.round(parentDimensions.width)}m × {Math.round(parentDimensions.height)}m
+            Assistant de création
+            <Badge variant="secondary" className="ml-auto text-[10px] h-5">
+              <Sparkles className="h-3 w-3 mr-0.5" />
+              Auto
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        
+        <CardContent className="space-y-4 px-3 pb-3">
+          {/* Parent parcel info */}
+          <div className="p-2.5 bg-muted/50 rounded-lg border text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">Parcelle mère:</span>
+              <span className="font-medium">{parentParcel.area.toLocaleString()} m²</span>
             </div>
-          )}
-        </div>
+            <div className="flex items-center justify-between mt-1">
+              <span className="text-muted-foreground">Dimensions:</span>
+              <span className="font-medium">
+                ≈ {Math.round(parentDimensions.width)}m × {Math.round(parentDimensions.height)}m
+                {parentDimensions.isEstimated && (
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Info className="h-3 w-3 inline ml-1 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Dimensions estimées (forme carrée)</p>
+                    </TooltipContent>
+                  </Tooltip>
+                )}
+              </span>
+            </div>
+          </div>
 
-        {/* Type de disposition */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Type de disposition</Label>
-          <div className="grid grid-cols-2 gap-2">
-            {LAYOUT_OPTIONS.map((layout) => (
+          {/* Real-time preview */}
+          <LayoutPreview
+            parentParcel={parentParcel}
+            lots={previewLots}
+            internalRoadWidth={config.internalRoadWidth}
+            includeInternalRoads={config.includeInternalRoads}
+          />
+
+          {/* Layout type selection */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <Label className="text-xs font-medium">Disposition</Label>
+              <Tooltip>
+                <TooltipTrigger>
+                  <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                </TooltipTrigger>
+                <TooltipContent className="max-w-[200px]">
+                  <p className="text-xs">Choisissez comment les lots seront répartis sur la parcelle</p>
+                </TooltipContent>
+              </Tooltip>
+            </div>
+            <div className="grid grid-cols-2 gap-1.5">
+              {LAYOUT_OPTIONS.filter(l => l.id !== 'custom').map((layout) => (
+                <button
+                  key={layout.id}
+                  onClick={() => updateConfig({ layoutType: layout.id })}
+                  className={`p-2 rounded-lg border transition-all text-left ${
+                    config.layoutType === layout.id 
+                      ? 'border-primary bg-primary/5 ring-1 ring-primary/20' 
+                      : 'border-muted hover:border-primary/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span className={config.layoutType === layout.id ? 'text-primary' : 'text-muted-foreground'}>
+                      {LAYOUT_ICONS[layout.id]}
+                    </span>
+                    <span className="font-medium text-xs">{layout.name}</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">{layout.description}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Number of lots */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs font-medium">Nombre de lots</Label>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[200px]">
+                    <p className="text-xs">Maximum {maxLots} lots pour respecter la surface minimum légale de {MIN_LOT_SURFACE_SQM} m²</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => adjustLotCount(-1)}
+                  disabled={config.numberOfLots <= 2}
+                >
+                  <Minus className="h-3 w-3" />
+                </Button>
+                <Input
+                  type="number"
+                  value={config.numberOfLots}
+                  onChange={(e) => updateConfig({ 
+                    numberOfLots: Math.max(2, Math.min(maxLots, parseInt(e.target.value) || 2))
+                  })}
+                  className="w-14 h-7 text-center text-xs"
+                  min={2}
+                  max={maxLots}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => adjustLotCount(1)}
+                  disabled={config.numberOfLots >= maxLots}
+                >
+                  <Plus className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
+            <Slider
+              value={[config.numberOfLots]}
+              onValueChange={([value]) => updateConfig({ numberOfLots: value })}
+              min={2}
+              max={Math.min(50, maxLots)}
+              step={1}
+              className="w-full"
+            />
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>2 lots</span>
+              <span className="text-primary font-medium">{config.numberOfLots} lots</span>
+              <span>{Math.min(50, maxLots)} lots</span>
+            </div>
+          </div>
+
+          {/* Usage type */}
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Usage prévu</Label>
+            <Select 
+              value={config.defaultUsage} 
+              onValueChange={(v: UsageType) => updateConfig({ defaultUsage: v })}
+            >
+              <SelectTrigger className="h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {USAGE_TYPES.map((usage) => (
+                  <SelectItem key={usage.id} value={usage.id} className="text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className={`h-2.5 w-2.5 rounded-full ${usage.color}`} />
+                      {usage.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Internal roads */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1">
+                <Label className="text-xs font-medium">Voies internes</Label>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <HelpCircle className="h-3 w-3 text-muted-foreground" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[200px]">
+                    <p className="text-xs">Les voies internes garantissent un accès à chaque lot</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
               <button
-                key={layout.id}
-                onClick={() => setSelectedLayout(layout.id)}
-                className={`p-3 rounded-lg border-2 transition-all text-left ${
-                  selectedLayout === layout.id 
-                    ? 'border-primary bg-primary/5' 
-                    : 'border-muted hover:border-primary/30'
+                onClick={() => updateConfig({ includeInternalRoads: !config.includeInternalRoads })}
+                className={`px-2.5 py-1 rounded-full text-[10px] font-medium transition-colors ${
+                  config.includeInternalRoads 
+                    ? 'bg-primary text-primary-foreground' 
+                    : 'bg-muted text-muted-foreground'
                 }`}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={selectedLayout === layout.id ? 'text-primary' : 'text-muted-foreground'}>
-                    {layout.icon}
-                  </span>
-                  <span className="font-medium text-sm">{layout.name}</span>
-                </div>
-                <p className="text-xs text-muted-foreground">{layout.description}</p>
+                {config.includeInternalRoads ? 'Incluses' : 'Non incluses'}
               </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Nombre de lots */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Nombre de lots</Label>
-            <Input
-              type="number"
-              value={numberOfLots}
-              onChange={(e) => setNumberOfLots(Math.max(2, parseInt(e.target.value) || 2))}
-              className="w-20 h-8 text-center"
-              min={2}
-              max={100}
-            />
-          </div>
-          <Slider
-            value={[numberOfLots]}
-            onValueChange={([value]) => setNumberOfLots(value)}
-            min={2}
-            max={Math.min(50, Math.floor(parentParcel.area / 100))}
-            step={1}
-            className="w-full"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>2 lots</span>
-            <span>{Math.min(50, Math.floor(parentParcel.area / 100))} lots</span>
-          </div>
-        </div>
-
-        {/* Usage par défaut */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Usage prévu (par défaut)</Label>
-          <Select value={defaultUsage} onValueChange={(v: UsageType) => setDefaultUsage(v)}>
-            <SelectTrigger className="h-9">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {USAGE_TYPES.map((usage) => (
-                <SelectItem key={usage.id} value={usage.id}>
-                  <div className="flex items-center gap-2">
-                    <div className={`h-3 w-3 rounded-full ${usage.color}`} />
-                    {usage.name}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Options routes internes */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <Label className="text-sm font-medium">Voies internes</Label>
-            <button
-              onClick={() => setIncludeInternalRoads(!includeInternalRoads)}
-              className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                includeInternalRoads 
-                  ? 'bg-primary text-primary-foreground' 
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {includeInternalRoads ? 'Incluses' : 'Non incluses'}
-            </button>
-          </div>
-          
-          {includeInternalRoads && (
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Largeur des voies:</Label>
+            </div>
+            
+            <div className={`flex items-center gap-2 transition-opacity ${config.includeInternalRoads ? 'opacity-100' : 'opacity-50'}`}>
+              <Label className="text-[10px] text-muted-foreground">Largeur:</Label>
               <Input
                 type="number"
-                value={internalRoadWidth}
-                onChange={(e) => setInternalRoadWidth(Math.max(3, parseFloat(e.target.value) || 6))}
-                className="w-16 h-7 text-xs text-center"
+                value={config.internalRoadWidth}
+                onChange={(e) => updateConfig({ 
+                  internalRoadWidth: Math.max(3, Math.min(15, parseFloat(e.target.value) || 6))
+                })}
+                className="w-14 h-6 text-[10px] text-center"
                 min={3}
                 max={15}
+                disabled={!config.includeInternalRoads}
               />
-              <span className="text-xs text-muted-foreground">m</span>
-            </div>
-          )}
-        </div>
-
-        {/* Aperçu des calculs */}
-        <div className="p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
-          <div className="flex items-center gap-2 mb-2">
-            <Target className="h-4 w-4 text-green-600" />
-            <span className="font-medium text-sm text-green-700 dark:text-green-300">Aperçu</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Surface disponible:</span>
-              <span className="font-medium">{Math.round(availableArea).toLocaleString()} m²</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Surface/lot:</span>
-              <span className="font-medium">≈ {Math.round(avgLotArea).toLocaleString()} m²</span>
+              <span className="text-[10px] text-muted-foreground">m</span>
             </div>
           </div>
-        </div>
 
-        {/* Avertissement si lots existants */}
-        {existingLots.length > 0 && (
-          <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
-            <Info className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
-              {existingLots.length} lot(s) existant(s) seront remplacés par la nouvelle disposition.
-            </AlertDescription>
-          </Alert>
-        )}
+          {/* Calculation preview */}
+          <div className={`p-2.5 rounded-lg border text-xs ${
+            validationStatus.isValid 
+              ? 'bg-secondary/50 border-border' 
+              : 'bg-accent/50 border-border'
+          }`}>
+            <div className="flex items-center gap-2 mb-1.5">
+              {validationStatus.isValid ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+              ) : (
+                <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+              )}
+              <span className="font-medium text-xs text-foreground">
+                {validationStatus.isValid ? 'Configuration valide' : 'À vérifier'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px]">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Surface disponible:</span>
+                <span className="font-medium">{Math.round(availableArea).toLocaleString()} m²</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Surface/lot:</span>
+                <span className={`font-medium ${avgLotArea < MIN_LOT_SURFACE_SQM ? 'text-destructive' : ''}`}>
+                  ≈ {Math.round(avgLotArea).toLocaleString()} m²
+                </span>
+              </div>
+            </div>
+            {validationStatus.issues.length > 0 && (
+              <div className="mt-1.5 pt-1.5 border-t border-border space-y-0.5">
+                {validationStatus.issues.map((issue, i) => (
+                  <p key={i} className="text-[10px] text-muted-foreground">
+                    • {issue}
+                  </p>
+                ))}
+              </div>
+            )}
+          </div>
 
-        {/* Bouton générer */}
-        <Button
-          onClick={generateLotLayout}
-          disabled={isGenerating}
-          className="w-full gap-2"
-          size="lg"
-        >
-          {isGenerating ? (
-            <>
-              <RefreshCw className="h-4 w-4 animate-spin" />
-              Génération en cours...
-            </>
-          ) : (
-            <>
-              <Zap className="h-4 w-4" />
-              Générer {numberOfLots} lots automatiquement
-              <ArrowRight className="h-4 w-4" />
-            </>
+          {/* Warning for existing lots */}
+          {existingLots.length > 0 && (
+            <Alert className="py-2 px-2.5 bg-accent/50 border-border">
+              <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+              <AlertDescription className="text-[10px] text-muted-foreground ml-2">
+                {existingLots.length} lot(s) existant(s) seront remplacés.
+              </AlertDescription>
+            </Alert>
           )}
-        </Button>
-      </CardContent>
-    </Card>
+
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            {previousLots && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleUndo}
+                className="gap-1 text-xs h-9"
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                Annuler
+              </Button>
+            )}
+            <Button
+              onClick={handleGenerate}
+              disabled={isGenerating || !validationStatus.isValid}
+              className="flex-1 gap-2 h-9"
+              size="sm"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin" />
+                  Génération...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-3.5 w-3.5" />
+                  Générer {config.numberOfLots} lots
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Confirmation dialog */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent className="max-w-xs">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Remplacer les lots existants ?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              Cette action remplacera les {existingLots.length} lot(s) existant(s) par une nouvelle disposition de {config.numberOfLots} lots.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="text-xs h-8">Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={executeGeneration} className="text-xs h-8">
+              Remplacer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </TooltipProvider>
   );
 };
 
