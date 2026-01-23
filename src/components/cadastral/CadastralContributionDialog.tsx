@@ -94,35 +94,48 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showUsageLockedWarning, setShowUsageLockedWarning] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
   
-  // Fonction pour vérifier si le formulaire est valide pour soumission
-  const isFormValidForSubmission = () => {
+  // Fonction pour obtenir les champs manquants avec détails pour la navigation
+  const getMissingFields = () => {
+    const missing: Array<{ field: string; label: string; tab: string }> = [];
+    
     // Vérifier Type de titre de propriété
-    if (!formData.propertyTitleType) return false;
+    if (!formData.propertyTitleType) {
+      missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
+    }
     
     // Vérifier qu'au moins un propriétaire actuel a lastName et firstName
     const hasValidOwner = currentOwners.some(owner => 
       owner.lastName && owner.lastName.trim() !== '' && 
       owner.firstName && owner.firstName.trim() !== ''
     );
-    if (!hasValidOwner) return false;
-    
-    // Vérifier les informations de lieu
-    if (!sectionType) return false;
-    if (!formData.province) return false;
-    
-    if (sectionType === 'urbaine') {
-      // Pour section urbaine : ville, commune, quartier, avenue requis
-      if (!formData.ville || !formData.commune || !formData.quartier || !formData.avenue) {
-        return false;
-      }
-    } else if (sectionType === 'rurale') {
-      // Pour section rurale : territoire et collectivite requis (groupement et village optionnels)
-      if (!formData.territoire || !formData.collectivite) {
-        return false;
-      }
+    if (!hasValidOwner) {
+      missing.push({ field: 'currentOwner', label: 'Nom et prénom du propriétaire', tab: 'general' });
     }
     
-    return true;
+    // Vérifier les informations de lieu
+    if (!sectionType) {
+      missing.push({ field: 'sectionType', label: 'Type de section (Urbaine/Rurale)', tab: 'location' });
+    }
+    if (!formData.province) {
+      missing.push({ field: 'province', label: 'Province', tab: 'location' });
+    }
+    
+    if (sectionType === 'urbaine') {
+      if (!formData.ville) missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
+      if (!formData.commune) missing.push({ field: 'commune', label: 'Commune', tab: 'location' });
+      if (!formData.quartier) missing.push({ field: 'quartier', label: 'Quartier', tab: 'location' });
+      if (!formData.avenue) missing.push({ field: 'avenue', label: 'Avenue', tab: 'location' });
+    } else if (sectionType === 'rurale') {
+      if (!formData.territoire) missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
+      if (!formData.collectivite) missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
+    }
+    
+    return missing;
+  };
+
+  // Fonction pour vérifier si le formulaire est valide pour soumission
+  const isFormValidForSubmission = () => {
+    return getMissingFields().length === 0;
   };
   
   // Fonction pour changer d'onglet avec scroll vers le haut
@@ -479,7 +492,30 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   }, [currentOwners]);
 
-  // Recalculer automatiquement la superficie quand les dimensions changent
+  // Auto-remplir le premier ancien propriétaire quand le titre n'est pas au nom du propriétaire actuel
+  // Ceci aide l'utilisateur à documenter correctement la chaîne de propriété
+  useEffect(() => {
+    if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
+      const firstOwnerSince = currentOwners[0]?.since;
+      
+      // Vérifier si le premier ancien propriétaire n'a pas encore de dates renseignées
+      if (previousOwners.length > 0 && previousOwners[0]) {
+        const shouldAutoFill = !previousOwners[0].startDate || !previousOwners[0].endDate;
+        
+        if (shouldAutoFill) {
+          const updated = [...previousOwners];
+          updated[0] = {
+            ...updated[0],
+            // La date de début est la date de délivrance du titre (quand le vendeur a acquis)
+            startDate: formData.titleIssueDate,
+            // La date de fin est la date "Propriétaire depuis" du premier propriétaire actuel (quand il a vendu)
+            endDate: firstOwnerSince || ''
+          };
+          setPreviousOwners(updated);
+        }
+      }
+    }
+  }, [formData.isTitleInCurrentOwnerName, formData.titleIssueDate, currentOwners[0]?.since]);
   useEffect(() => {
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     
@@ -3548,6 +3584,34 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           </TabsContent>
 
           <TabsContent value="history" className="space-y-3 mt-4 animate-fade-in">
+            {/* Alerte d'auto-remplissage si le titre n'est pas au nom du propriétaire actuel */}
+            {formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && (
+              <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30 overflow-hidden">
+                <CardContent className="p-3">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-4 w-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-medium text-blue-800 dark:text-blue-200">
+                        Remplissage automatique activé
+                      </p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        Conformément à votre indication que le titre foncier n'est pas au nom du propriétaire actuel, 
+                        le premier ancien propriétaire correspond à la personne qui a cédé le bien. Les dates sont 
+                        pré-remplies automatiquement :
+                      </p>
+                      <ul className="text-xs text-blue-700 dark:text-blue-300 list-disc list-inside space-y-0.5">
+                        <li><strong>Date début</strong> : Date de délivrance du titre ({formData.titleIssueDate ? new Date(formData.titleIssueDate).toLocaleDateString('fr-FR') : 'Non renseignée'})</li>
+                        <li><strong>Date fin</strong> : Date d'acquisition par le propriétaire actuel ({currentOwners[0]?.since ? new Date(currentOwners[0].since).toLocaleDateString('fr-FR') : 'Non renseignée'})</li>
+                      </ul>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 italic">
+                        Vous pouvez modifier ces informations si nécessaire.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Historique des anciens propriétaires - Design moderne compact */}
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
@@ -3565,14 +3629,23 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         <Info className="h-3.5 w-3.5 text-muted-foreground hover:text-foreground transition-colors" />
                       </Button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-72 rounded-xl" align="end">
+                    <PopoverContent className="w-80 rounded-xl" align="end">
                       <div className="space-y-2 text-xs">
-                        <h4 className="font-semibold text-sm">Historique (optionnel)</h4>
+                        <h4 className="font-semibold text-sm">Historique des propriétaires</h4>
                         <p className="text-muted-foreground">
-                          Documentez les anciens propriétaires pour établir la chaîne de propriété.
+                          Documentez les anciens propriétaires pour établir la chaîne de propriété complète.
                         </p>
+                        {formData.isTitleInCurrentOwnerName === false && (
+                          <div className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                            <p className="text-blue-700 dark:text-blue-300">
+                              <strong>📋 Auto-remplissage :</strong> Le premier ancien propriétaire est la personne 
+                              inscrite sur le titre foncier qui a vendu au propriétaire actuel. Les dates sont 
+                              calculées automatiquement.
+                            </p>
+                          </div>
+                        )}
                         <p className="text-muted-foreground">
-                          <strong>💡</strong> Ordonnez du plus récent au plus ancien.
+                          <strong>💡</strong> Ordonnez du plus récent au plus ancien (le 1er = le vendeur au propriétaire actuel).
                         </p>
                       </div>
                     </PopoverContent>
@@ -4556,9 +4629,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     )}
                   </Button>
                   {!isFormValidForSubmission() && (
-                    <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
-                      Complétez: Titre, Propriétaire, Localisation
-                    </p>
+                    <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
+                      <p className="text-xs font-medium text-amber-800 dark:text-amber-200 mb-2">
+                        Champs requis manquants :
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {getMissingFields().map((field, idx) => (
+                          <Button
+                            key={idx}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTabChange(field.tab)}
+                            className="h-6 px-2 text-xs font-normal text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-lg gap-1"
+                          >
+                            {field.label}
+                            <ChevronRight className="h-3 w-3" />
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                   <p className="text-xs text-center text-muted-foreground mt-2">
                     En soumettant, vous acceptez la vérification des données
@@ -4585,9 +4675,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     Soumettre
                   </Button>
                   {!isFormValidForSubmission() && (
-                    <p className="text-xs text-center text-amber-600 dark:text-amber-400 mt-2">
-                      Complétez: Titre, Propriétaire, Localisation
-                    </p>
+                    <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl">
+                      <p className="text-xs font-medium text-amber-800 dark:text-amber-200 mb-2">
+                        Champs requis manquants :
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {getMissingFields().map((field, idx) => (
+                          <Button
+                            key={idx}
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleTabChange(field.tab)}
+                            className="h-6 px-2 text-xs font-normal text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-700 hover:bg-amber-100 dark:hover:bg-amber-900/50 rounded-lg gap-1"
+                          >
+                            {field.label}
+                            <ChevronRight className="h-3 w-3" />
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
                   )}
                 </div>
               )}
