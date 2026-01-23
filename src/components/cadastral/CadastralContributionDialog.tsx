@@ -98,12 +98,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const getMissingFields = () => {
     const missing: Array<{ field: string; label: string; tab: string }> = [];
     
-    // Vérifier Type de titre de propriété
-    if (!formData.propertyTitleType) {
+    // Vérifier Type de titre de propriété (obligatoire)
+    if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') {
       missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
     }
     
-    // Vérifier qu'au moins un propriétaire actuel a lastName et firstName
+    // Vérifier qu'au moins un propriétaire actuel a lastName et firstName (obligatoire)
     const hasValidOwner = currentOwners.some(owner => 
       owner.lastName && owner.lastName.trim() !== '' && 
       owner.firstName && owner.firstName.trim() !== ''
@@ -112,23 +112,44 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       missing.push({ field: 'currentOwner', label: 'Nom et prénom du propriétaire', tab: 'general' });
     }
     
-    // Vérifier les informations de lieu
-    if (!sectionType) {
-      missing.push({ field: 'sectionType', label: 'Type de section (Urbaine/Rurale)', tab: 'location' });
-    }
-    if (!formData.province) {
+    // Vérifier les informations de lieu - Province toujours obligatoire
+    if (!formData.province || formData.province.trim() === '') {
       missing.push({ field: 'province', label: 'Province', tab: 'location' });
     }
     
-    if (sectionType === 'urbaine') {
-      if (!formData.ville) missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
-      if (!formData.commune) missing.push({ field: 'commune', label: 'Commune', tab: 'location' });
-      if (!formData.quartier) missing.push({ field: 'quartier', label: 'Quartier', tab: 'location' });
-      if (!formData.avenue) missing.push({ field: 'avenue', label: 'Avenue', tab: 'location' });
-    } else if (sectionType === 'rurale') {
-      if (!formData.territoire) missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
-      if (!formData.collectivite) missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
+    // Type de section obligatoire - vérifier si vide ou non défini
+    const isSectionTypeEmpty = !sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale');
+    if (isSectionTypeEmpty) {
+      missing.push({ field: 'sectionType', label: 'Type de section (Urbaine/Rurale)', tab: 'location' });
     }
+    
+    // Champs conditionnels selon le type de section
+    if (sectionType === 'urbaine') {
+      if (!formData.ville || formData.ville.trim() === '') missing.push({ field: 'ville', label: 'Ville', tab: 'location' });
+      if (!formData.commune || formData.commune.trim() === '') missing.push({ field: 'commune', label: 'Commune', tab: 'location' });
+      if (!formData.quartier || formData.quartier.trim() === '') missing.push({ field: 'quartier', label: 'Quartier', tab: 'location' });
+      if (!formData.avenue || formData.avenue.trim() === '') missing.push({ field: 'avenue', label: 'Avenue', tab: 'location' });
+    } else if (sectionType === 'rurale') {
+      if (!formData.territoire || formData.territoire.trim() === '') missing.push({ field: 'territoire', label: 'Territoire', tab: 'location' });
+      if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
+    }
+    
+    // DEBUG: Log les valeurs pour identifier le problème
+    console.log('Validation CCC - Champs manquants:', {
+      propertyTitleType: formData.propertyTitleType,
+      hasValidOwner,
+      currentOwners: currentOwners.map(o => ({ lastName: o.lastName, firstName: o.firstName })),
+      province: formData.province,
+      sectionType,
+      isSectionTypeEmpty,
+      ville: formData.ville,
+      commune: formData.commune,
+      quartier: formData.quartier,
+      avenue: formData.avenue,
+      territoire: formData.territoire,
+      collectivite: formData.collectivite,
+      missing
+    });
     
     return missing;
   };
