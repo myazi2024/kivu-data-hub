@@ -136,62 +136,31 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
     }
     
-    // ===== ONGLET PERMIS (si mode "Demander un permis" actif) =====
-    if (permitMode === 'request') {
-      // Champs communs obligatoires pour toute demande de permis
-      if (!permitRequest.constructionDescription || permitRequest.constructionDescription.trim() === '') {
-        missing.push({ field: 'constructionDescription', label: 'Description du projet', tab: 'permits' });
-      }
-      if (!permitRequest.plannedUsage || permitRequest.plannedUsage.trim() === '') {
-        missing.push({ field: 'plannedUsage', label: 'Usage prévu', tab: 'permits' });
-      }
-      if (!permitRequest.estimatedArea || permitRequest.estimatedArea.trim() === '') {
-        missing.push({ field: 'estimatedArea', label: 'Surface estimée', tab: 'permits' });
-      }
-      if (!permitRequest.applicantName || permitRequest.applicantName.trim() === '') {
-        missing.push({ field: 'applicantName', label: 'Nom du demandeur', tab: 'permits' });
-      }
-      if (!permitRequest.applicantPhone || permitRequest.applicantPhone.trim() === '') {
-        missing.push({ field: 'applicantPhone', label: 'Téléphone du demandeur', tab: 'permits' });
-      }
+    // ===== VALIDATION DU PERMIS DE CONSTRUIRE =====
+    // LOGIQUE DE DÉPENDANCE:
+    // 1. Si constructionType === "Terrain nu" → Pas de validation permis (terrain nu = valide sans permis)
+    // 2. Si constructionType !== "Terrain nu" ET permitMode === "request" (Pas de permis) → Valide, "Pas de permis" est une donnée valide
+    // 3. Si constructionType !== "Terrain nu" ET permitMode === "existing" (J'ai un permis) → Valider les données du permis existant
+    
+    const isTerrainNu = formData.constructionType === 'Terrain nu';
+    const hasNoPermitSelected = permitMode === 'request'; // "Pas de permis" button = permitMode 'request' 
+    
+    // Validation uniquement si: pas terrain nu ET l'utilisateur a dit "J'ai un permis"
+    if (!isTerrainNu && permitMode === 'existing') {
+      // Vérifier que les données du permis existant sont renseignées
+      const hasValidExistingPermit = buildingPermits.some(permit => 
+        permit.permitNumber && permit.permitNumber.trim() !== '' &&
+        permit.issuingService && permit.issuingService.trim() !== '' &&
+        permit.issueDate && permit.issueDate.trim() !== ''
+      );
       
-      // Validation spécifique au permis de construire
-      if (permitRequest.permitType === 'construction') {
-        if (!permitRequest.numberOfFloors || permitRequest.numberOfFloors.trim() === '') {
-          missing.push({ field: 'numberOfFloors', label: 'Nombre d\'étages', tab: 'permits' });
-        }
-        if (!permitRequest.buildingMaterials || permitRequest.buildingMaterials.trim() === '') {
-          missing.push({ field: 'buildingMaterials', label: 'Matériaux de construction', tab: 'permits' });
-        }
-        if (permitRequest.architecturalPlanImages.length === 0) {
-          missing.push({ field: 'architecturalPlanImages', label: 'Plans architecturaux (min. 1)', tab: 'permits' });
-        }
-      }
-      
-      // Validation spécifique au permis de régularisation
-      if (permitRequest.permitType === 'regularization') {
-        if (!permitRequest.constructionYear || permitRequest.constructionYear.trim() === '') {
-          missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'permits' });
-        }
-        if (!permitRequest.regularizationReason || permitRequest.regularizationReason.trim() === '') {
-          missing.push({ field: 'regularizationReason', label: 'Raison de la régularisation', tab: 'permits' });
-        }
-        
-        // Validation du numéro de permis précédent pour certaines raisons
-        const requiresPreviousPermit = 
-          permitRequest.regularizationReason === "Modifications non autorisées" || 
-          permitRequest.regularizationReason === "Extension non déclarée" ||
-          permitRequest.regularizationReason === "Changement d'usage";
-        
-        if (requiresPreviousPermit && (!permitRequest.previousPermitNumber || permitRequest.previousPermitNumber.trim() === '')) {
-          missing.push({ field: 'previousPermitNumber', label: 'N° permis précédent', tab: 'permits' });
-        }
-        
-        if (permitRequest.constructionPhotos.length < 4) {
-          missing.push({ field: 'constructionPhotos', label: 'Photos construction (min. 4)', tab: 'permits' });
-        }
+      if (!hasValidExistingPermit) {
+        missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
       }
     }
+    
+    // NOTE: Si "Pas de permis" (permitMode === 'request') est sélectionné,
+    // aucune validation n'est requise - c'est une donnée valide en soi
     
     return missing;
   };
@@ -4401,19 +4370,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
                     )}
                     {formData.constructionType && (
-                      <div className="pt-1 border-t border-border/50"><span className="font-medium">Construction:</span> {formData.constructionType}</div>
+                      <div className="pt-1 border-t border-border/50">
+                        <span className="font-medium">Construction:</span> {formData.constructionType}
+                        {formData.constructionType === 'Terrain nu' && (
+                          <span className="ml-2 text-xs text-muted-foreground italic">(permis non requis)</span>
+                        )}
+                      </div>
                     )}
                     {formData.declaredUsage && (
                       <div><span className="font-medium">Usage:</span> {formData.declaredUsage}</div>
                     )}
-                    {buildingPermits.some(p => p.permitNumber) && (
+                    {/* Affichage du statut du permis */}
+                    {formData.constructionType !== 'Terrain nu' && (
                       <div className="pt-1 border-t border-border/50">
-                        <div className="font-medium">Permis:</div>
-                        {buildingPermits.filter(p => p.permitNumber).map((permit, idx) => (
-                          <div key={idx} className="ml-2 text-muted-foreground">
-                            • N° {permit.permitNumber}
+                        <div className="font-medium">Permis de construire:</div>
+                        {permitMode === 'existing' && buildingPermits.some(p => p.permitNumber) ? (
+                          // L'utilisateur a des permis existants
+                          buildingPermits.filter(p => p.permitNumber).map((permit, idx) => (
+                            <div key={idx} className="ml-2 text-muted-foreground">
+                              • N° {permit.permitNumber} ({permit.permitType === 'regularization' ? 'Régularisation' : 'Construction'})
+                            </div>
+                          ))
+                        ) : permitMode === 'request' ? (
+                          // L'utilisateur a choisi "Pas de permis" - c'est une donnée valide
+                          <div className="ml-2 text-muted-foreground flex items-center gap-1">
+                            <span className="text-amber-600 dark:text-amber-400">⚠</span> Pas de permis
+                            <span className="text-xs italic">(demande possible après soumission)</span>
                           </div>
-                        ))}
+                        ) : (
+                          // Mode existing mais pas de permis renseigné
+                          <div className="ml-2 text-destructive text-xs italic">Non renseigné</div>
+                        )}
                       </div>
                     )}
                     {(!formData.propertyTitleType && !currentOwners.some(o => o.lastName || o.firstName)) && (
