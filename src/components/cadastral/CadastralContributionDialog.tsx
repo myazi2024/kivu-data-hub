@@ -98,6 +98,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const getMissingFields = () => {
     const missing: Array<{ field: string; label: string; tab: string }> = [];
     
+    // ===== ONGLET GÉNÉRAL (Infos) =====
     // Vérifier Type de titre de propriété (obligatoire)
     if (!formData.propertyTitleType || formData.propertyTitleType.trim() === '') {
       missing.push({ field: 'propertyTitleType', label: 'Type de titre de propriété', tab: 'general' });
@@ -112,7 +113,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       missing.push({ field: 'currentOwner', label: 'Nom et prénom du propriétaire', tab: 'general' });
     }
     
-    // Vérifier les informations de lieu - Province toujours obligatoire
+    // ===== ONGLET LOCALISATION =====
+    // Province toujours obligatoire
     if (!formData.province || formData.province.trim() === '') {
       missing.push({ field: 'province', label: 'Province', tab: 'location' });
     }
@@ -134,22 +136,62 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
     }
     
-    // DEBUG: Log les valeurs pour identifier le problème
-    console.log('Validation CCC - Champs manquants:', {
-      propertyTitleType: formData.propertyTitleType,
-      hasValidOwner,
-      currentOwners: currentOwners.map(o => ({ lastName: o.lastName, firstName: o.firstName })),
-      province: formData.province,
-      sectionType,
-      isSectionTypeEmpty,
-      ville: formData.ville,
-      commune: formData.commune,
-      quartier: formData.quartier,
-      avenue: formData.avenue,
-      territoire: formData.territoire,
-      collectivite: formData.collectivite,
-      missing
-    });
+    // ===== ONGLET PERMIS (si mode "Demander un permis" actif) =====
+    if (permitMode === 'request') {
+      // Champs communs obligatoires pour toute demande de permis
+      if (!permitRequest.constructionDescription || permitRequest.constructionDescription.trim() === '') {
+        missing.push({ field: 'constructionDescription', label: 'Description du projet', tab: 'permits' });
+      }
+      if (!permitRequest.plannedUsage || permitRequest.plannedUsage.trim() === '') {
+        missing.push({ field: 'plannedUsage', label: 'Usage prévu', tab: 'permits' });
+      }
+      if (!permitRequest.estimatedArea || permitRequest.estimatedArea.trim() === '') {
+        missing.push({ field: 'estimatedArea', label: 'Surface estimée', tab: 'permits' });
+      }
+      if (!permitRequest.applicantName || permitRequest.applicantName.trim() === '') {
+        missing.push({ field: 'applicantName', label: 'Nom du demandeur', tab: 'permits' });
+      }
+      if (!permitRequest.applicantPhone || permitRequest.applicantPhone.trim() === '') {
+        missing.push({ field: 'applicantPhone', label: 'Téléphone du demandeur', tab: 'permits' });
+      }
+      
+      // Validation spécifique au permis de construire
+      if (permitRequest.permitType === 'construction') {
+        if (!permitRequest.numberOfFloors || permitRequest.numberOfFloors.trim() === '') {
+          missing.push({ field: 'numberOfFloors', label: 'Nombre d\'étages', tab: 'permits' });
+        }
+        if (!permitRequest.buildingMaterials || permitRequest.buildingMaterials.trim() === '') {
+          missing.push({ field: 'buildingMaterials', label: 'Matériaux de construction', tab: 'permits' });
+        }
+        if (permitRequest.architecturalPlanImages.length === 0) {
+          missing.push({ field: 'architecturalPlanImages', label: 'Plans architecturaux (min. 1)', tab: 'permits' });
+        }
+      }
+      
+      // Validation spécifique au permis de régularisation
+      if (permitRequest.permitType === 'regularization') {
+        if (!permitRequest.constructionYear || permitRequest.constructionYear.trim() === '') {
+          missing.push({ field: 'constructionYear', label: 'Année de construction', tab: 'permits' });
+        }
+        if (!permitRequest.regularizationReason || permitRequest.regularizationReason.trim() === '') {
+          missing.push({ field: 'regularizationReason', label: 'Raison de la régularisation', tab: 'permits' });
+        }
+        
+        // Validation du numéro de permis précédent pour certaines raisons
+        const requiresPreviousPermit = 
+          permitRequest.regularizationReason === "Modifications non autorisées" || 
+          permitRequest.regularizationReason === "Extension non déclarée" ||
+          permitRequest.regularizationReason === "Changement d'usage";
+        
+        if (requiresPreviousPermit && (!permitRequest.previousPermitNumber || permitRequest.previousPermitNumber.trim() === '')) {
+          missing.push({ field: 'previousPermitNumber', label: 'N° permis précédent', tab: 'permits' });
+        }
+        
+        if (permitRequest.constructionPhotos.length < 4) {
+          missing.push({ field: 'constructionPhotos', label: 'Photos construction (min. 4)', tab: 'permits' });
+        }
+      }
+    }
     
     return missing;
   };
@@ -968,74 +1010,32 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
 
-    // Validation spécifique pour la demande de permis
-    if (permitMode === 'request') {
-      // Champs communs obligatoires
-      if (!permitRequest.constructionDescription || !permitRequest.plannedUsage || !permitRequest.estimatedArea ||
-          !permitRequest.applicantName || !permitRequest.applicantPhone) {
-        toast({
-          title: "Champs requis manquants",
-          description: "Veuillez remplir tous les champs obligatoires de la demande de permis",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Validation spécifique au permis de construire
-      if (permitRequest.permitType === 'construction') {
-        if (!permitRequest.numberOfFloors || !permitRequest.buildingMaterials) {
-          toast({
-            title: "Champs requis manquants",
-            description: "Veuillez remplir le nombre d'étages et les matériaux de construction",
-            variant: "destructive"
-          });
-          return;
-        }
-        if (permitRequest.architecturalPlanImages.length === 0) {
-          toast({
-            title: "Plans architecturaux requis",
-            description: "Veuillez joindre au moins un plan architectural",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-
-      // Validation spécifique au permis de régularisation
-      if (permitRequest.permitType === 'regularization') {
-        if (!permitRequest.constructionYear || !permitRequest.regularizationReason) {
-          toast({
-            title: "Champs requis manquants",
-            description: "Veuillez remplir l'année de construction et la raison de la régularisation",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        // Validation du numéro de permis précédent pour certaines raisons
-        const requiresPreviousPermit = 
-          permitRequest.regularizationReason === "Modifications non autorisées" || 
-          permitRequest.regularizationReason === "Extension non déclarée" ||
-          permitRequest.regularizationReason === "Changement d'usage";
-        
-        if (requiresPreviousPermit && !permitRequest.previousPermitNumber) {
-          toast({
-            title: "Numéro de permis précédent requis",
-            description: "Pour cette raison de régularisation, vous devez fournir le numéro du permis de construire initial",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        if (permitRequest.constructionPhotos.length < 4) {
-          toast({
-            title: "Photos de construction requises",
-            description: "Veuillez joindre au moins 4 photos de la construction (tous les angles)",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
+    // Validation centralisée - utilise getMissingFields() pour cohérence
+    const missingFields = getMissingFields();
+    if (missingFields.length > 0) {
+      // Regrouper les champs manquants par onglet pour un message clair
+      const fieldsByTab: { [key: string]: string[] } = {};
+      missingFields.forEach(f => {
+        if (!fieldsByTab[f.tab]) fieldsByTab[f.tab] = [];
+        fieldsByTab[f.tab].push(f.label);
+      });
+      
+      const tabNames: { [key: string]: string } = {
+        general: 'Infos',
+        location: 'Lieu',
+        permits: 'Permis'
+      };
+      
+      const summary = Object.entries(fieldsByTab)
+        .map(([tab, fields]) => `${tabNames[tab] || tab}: ${fields.join(', ')}`)
+        .join(' | ');
+      
+      toast({
+        title: "Champs requis manquants",
+        description: summary.length > 100 ? `${missingFields.length} champs manquants. Voir les détails dans l'onglet Envoi.` : summary,
+        variant: "destructive"
+      });
+      return;
     }
 
     setUploading(true);
