@@ -67,6 +67,7 @@ export interface CadastralContributionData {
   commune?: string;
   quartier?: string;
   avenue?: string;
+  numero?: string; // Numéro de parcelle sur l'avenue
   territoire?: string;
   collectivite?: string;
   groupement?: string;

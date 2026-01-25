@@ -1214,15 +1214,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         // Effacer les données sauvegardées après une soumission réussie
         clearSavedFormData();
         
-        // Vérifier si l'utilisateur a demandé un permis
-        if (permitMode === 'request' && permitRequestData) {
-          // Sauvegarder l'ID de la contribution et les données du permis pour le paiement
-          setSavedContributionId(result.contributionId);
-          setSavedPermitRequestData(permitRequestData);
-          setShowPermitPayment(true);
-        } else {
-          setShowSuccess(true);
-        }
+        // Afficher le succès directement (pas de page de paiement permis)
+        setShowSuccess(true);
       } else if (result && !result.success) {
         // La gestion d'erreur est déjà faite dans le hook useCadastralContribution
         // On ne fait rien ici pour éviter les doublons de messages
@@ -2643,7 +2636,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       {formData.isTitleInCurrentOwnerName === true 
                         ? `Ajouter le/la propriétaire figurant sur le ${formData.propertyTitleType || 'titre de propriété'}`
                         : formData.isTitleInCurrentOwnerName === false
-                        ? "Ajouter le/la propriétaire figurant sur tout acte prouvant son droit sur cette parcelle"
+                        ? "Alors, indiquer le nom du propriétaire actuel tel qu'il figure dans tout document prouvant son droit sur la parcelle."
                         : "Propriétaire(s) actuel(s)"}
                     </Label>
                   </div>
@@ -3452,6 +3445,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </p>
                     </div>
                   </div>
+
+                  {/* Champ Numéro - visible uniquement si l'avenue est renseignée */}
+                  {formData.avenue && formData.avenue.trim() !== '' && (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <Label htmlFor="numero" className="text-sm">Numéro</Label>
+                      <Input
+                        id="numero"
+                        className="h-9 text-sm rounded-xl"
+                        placeholder="Numéro de parcelle"
+                        value={formData.numero || ''}
+                        onChange={(e) => {
+                          // Accepter uniquement les chiffres
+                          const value = e.target.value.replace(/\D/g, '');
+                          handleInputChange('numero', value);
+                        }}
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
