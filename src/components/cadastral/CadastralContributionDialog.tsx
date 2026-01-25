@@ -113,6 +113,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       missing.push({ field: 'currentOwner', label: 'Nom et prénom du propriétaire', tab: 'general' });
     }
     
+    // Validation de la date "Propriétaire depuis" si le titre n'est pas au nom du propriétaire actuel
+    if (formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate) {
+      const firstOwner = currentOwners[0];
+      if (firstOwner?.since && new Date(firstOwner.since) < new Date(formData.titleIssueDate)) {
+        missing.push({ field: 'ownerSince', label: 'Date "Propriétaire depuis" doit être ≥ date de délivrance', tab: 'general' });
+      }
+    }
+    
     // ===== ONGLET LOCALISATION =====
     // Province toujours obligatoire
     if (!formData.province || formData.province.trim() === '') {
@@ -2732,19 +2740,45 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </Select>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-sm font-medium">Propriétaire depuis</Label>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-sm font-medium">Propriétaire depuis</Label>
+                          {formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && index === 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                                  <Info className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-72 rounded-xl text-xs">
+                                <p className="text-muted-foreground">
+                                  <strong>⚠️ Règle de cohérence :</strong> Le propriétaire actuel a acquis la parcelle après la délivrance du titre à l'ancien propriétaire. Cette date doit donc être postérieure ou égale à la date de délivrance du titre ({formData.titleIssueDate ? new Date(formData.titleIssueDate).toLocaleDateString('fr-FR') : 'non définie'}).
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
                         <Input
                           type="date"
                           max={new Date().toISOString().split('T')[0]}
+                          min={formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && index === 0 ? formData.titleIssueDate : undefined}
                           value={owner.since}
                           onChange={(e) => updateCurrentOwner(index, 'since', e.target.value)}
-                          className={`h-10 text-sm rounded-xl ${formData.isTitleInCurrentOwnerName === true && index === 0 ? 'cursor-not-allowed opacity-70' : ''}`}
+                          className={`h-10 text-sm rounded-xl ${formData.isTitleInCurrentOwnerName === true && index === 0 ? 'cursor-not-allowed opacity-70' : ''} ${
+                            formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && owner.since && index === 0 && new Date(owner.since) < new Date(formData.titleIssueDate) 
+                              ? 'border-destructive ring-1 ring-destructive' 
+                              : ''
+                          }`}
                           disabled={formData.isTitleInCurrentOwnerName === true && index === 0}
                           title={formData.isTitleInCurrentOwnerName === true && index === 0 ? 'Cette date est synchronisée avec la date de délivrance du titre' : undefined}
                         />
                         {formData.isTitleInCurrentOwnerName === true && index === 0 && (
                           <p className="text-xs text-muted-foreground">
                             Synchronisée avec la date de délivrance
+                          </p>
+                        )}
+                        {formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && owner.since && index === 0 && new Date(owner.since) < new Date(formData.titleIssueDate) && (
+                          <p className="text-xs text-destructive">
+                            ⚠️ Date invalide : doit être ≥ {new Date(formData.titleIssueDate).toLocaleDateString('fr-FR')}
                           </p>
                         )}
                       </div>
