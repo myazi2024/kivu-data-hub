@@ -1162,8 +1162,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         };
       }
       
-      // Transform GPS coordinates data
-      const gpsCoordinatesData = gpsCoordinates.length > 0 ? gpsCoordinates.map(coord => ({
+      // Transform GPS coordinates data - filter out invalid/empty coordinates
+      const validGpsCoordinates = gpsCoordinates.filter(coord => {
+        const lat = parseFloat(coord.lat);
+        const lng = parseFloat(coord.lng);
+        // Only include coordinates that are valid numbers within valid ranges
+        return !isNaN(lat) && !isNaN(lng) && 
+               lat >= -90 && lat <= 90 && 
+               lng >= -180 && lng <= 180 &&
+               coord.lat !== '' && coord.lng !== '';
+      });
+      
+      const gpsCoordinatesData = validGpsCoordinates.length > 0 ? validGpsCoordinates.map(coord => ({
         borne: coord.borne,
         lat: parseFloat(coord.lat),
         lng: parseFloat(coord.lng)
