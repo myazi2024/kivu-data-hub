@@ -283,8 +283,8 @@ const AdminCCCContributions: React.FC = () => {
             current_owner_legal_status: updatedContribution.current_owner_legal_status,
             current_owner_since: updatedContribution.current_owner_since,
             area_sqm: updatedContribution.area_sqm,
-            area_hectares: updatedContribution.area_sqm ? updatedContribution.area_sqm / 10000 : null,
-            parcel_type: updatedContribution.parcel_type || 'Propriété privée',
+            // area_hectares est une colonne GENERATED - ne pas l'inclure, elle est calculée automatiquement
+            parcel_type: updatedContribution.parcel_type || 'SU',
             property_title_type: updatedContribution.property_title_type,
             title_reference_number: updatedContribution.title_reference_number,
             lease_type: updatedContribution.lease_type,
