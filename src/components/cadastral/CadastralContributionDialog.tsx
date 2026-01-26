@@ -47,14 +47,16 @@ interface CadastralContributionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parcelNumber: string;
+  editingContributionId?: string; // ID of contribution being edited (for update mode)
 }
 
 const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = ({
   open,
   onOpenChange,
-  parcelNumber
+  parcelNumber,
+  editingContributionId
 }) => {
-  const { submitContribution, loading } = useCadastralContribution();
+  const { submitContribution, updateContribution, loading } = useCadastralContribution();
   const { getConfig } = useContributionConfig();
   const { config: mapConfig, loading: mapConfigLoading } = useMapConfig();
   const { toast } = useToast();
@@ -1216,7 +1218,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           : undefined, // Dimensions exactes des côtés
       };
 
-      const result = await submitContribution(dataToSubmit);
+      // Use update if editing, otherwise insert
+      const result = editingContributionId 
+        ? await updateContribution(editingContributionId, dataToSubmit)
+        : await submitContribution(dataToSubmit);
       
       if (result?.success) {
         // Effacer les données sauvegardées après une soumission réussie
