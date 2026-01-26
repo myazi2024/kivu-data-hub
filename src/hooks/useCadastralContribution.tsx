@@ -454,8 +454,129 @@ export const useCadastralContribution = () => {
     }
   };
 
+  // Update an existing contribution (only if pending)
+  const updateContribution = async (contributionId: string, data: CadastralContributionData) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!user && !session) {
+      toast({
+        title: "Authentification requise",
+        description: "Vous devez être connecté pour modifier une contribution",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
+    const authenticatedUserId = user?.id || session?.user?.id;
+    if (!authenticatedUserId) {
+      toast({
+        title: "Erreur d'authentification",
+        description: "Impossible de récupérer votre identifiant utilisateur",
+        variant: "destructive",
+      });
+      return { success: false };
+    }
+
+    setLoading(true);
+
+    try {
+      // Build update payload (same as insert but for update)
+      const contributionPayload: any = {
+        parcel_number: data.parcelNumber,
+        property_title_type: data.propertyTitleType,
+        lease_type: data.leaseType,
+        title_reference_number: data.titleReferenceNumber,
+        current_owners_details: data.currentOwners && data.currentOwners.length > 0 
+          ? data.currentOwners 
+          : null,
+        current_owner_name: data.currentOwners && data.currentOwners.length > 0 
+          ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
+          : undefined,
+        current_owner_legal_status: data.currentOwners && data.currentOwners.length > 0 
+          ? data.currentOwners[0].legalStatus 
+          : undefined,
+        current_owner_since: data.currentOwners && data.currentOwners.length > 0 
+          ? data.currentOwners[0].since 
+          : undefined,
+        area_sqm: data.areaSqm,
+        parcel_sides: data.parcelSides,
+        construction_type: data.constructionType,
+        construction_nature: data.constructionNature,
+        declared_usage: data.declaredUsage,
+        building_permits: data.buildingPermits,
+        previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
+        province: data.province,
+        ville: data.ville,
+        commune: data.commune,
+        quartier: data.quartier,
+        avenue: data.avenue,
+        territoire: data.territoire,
+        collectivite: data.collectivite,
+        groupement: data.groupement,
+        village: data.village,
+        circonscription_fonciere: data.circonscriptionFonciere,
+        gps_coordinates: data.gpsCoordinates,
+        ownership_history: data.ownershipHistory,
+        boundary_history: data.boundaryHistory,
+        tax_history: data.taxHistory,
+        mortgage_history: data.mortgageHistory,
+        whatsapp_number: data.whatsappNumber,
+        owner_document_url: data.ownerDocumentUrl,
+        property_title_document_url: data.titleDocumentUrl,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (data.permitRequest) {
+        contributionPayload.permit_request_data = data.permitRequest;
+      }
+
+      const { error: updateError } = await supabase
+        .from('cadastral_contributions')
+        .update(contributionPayload)
+        .eq('id', contributionId)
+        .eq('user_id', authenticatedUserId)
+        .eq('status', 'pending'); // Only allow updating pending contributions
+
+      if (updateError) {
+        console.error('Erreur lors de la mise à jour:', updateError);
+        toast({
+          title: "Erreur de mise à jour",
+          description: updateError.message || "Impossible de modifier votre contribution. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+
+      toast({
+        title: "Contribution mise à jour",
+        description: "Vos modifications ont été enregistrées avec succès.",
+      });
+
+      // Clean localStorage
+      try {
+        localStorage.removeItem(`ccc_form_draft_${data.parcelNumber}`);
+      } catch (storageError) {
+        console.warn('Impossible de nettoyer le localStorage:', storageError);
+      }
+
+      return { success: true, contributionId };
+    } catch (err) {
+      console.error('Erreur lors de la mise à jour:', err);
+      const errorMessage = err instanceof Error ? err.message : "Une erreur inattendue est survenue";
+      toast({
+        title: "Erreur",
+        description: `Impossible de modifier votre contribution: ${errorMessage}`,
+        variant: "destructive",
+      });
+      return { success: false };
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return {
     submitContribution,
+    updateContribution,
     validateCCCCode,
     fetchUserCodes,
     codes,

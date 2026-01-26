@@ -5,12 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight, Search, Plus } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
 
 interface Contribution {
   id: string;
@@ -44,6 +46,7 @@ interface Contribution {
 
 export const UserContributions: React.FC = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [contributions, setContributions] = useState<Contribution[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
@@ -51,6 +54,11 @@ export const UserContributions: React.FC = () => {
   const [cccCode, setCccCode] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
+  const [contributionToEdit, setContributionToEdit] = useState<Contribution | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [contributionToDelete, setContributionToDelete] = useState<Contribution | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const itemsPerPage = 10;
 
   useEffect(() => {
@@ -163,6 +171,93 @@ export const UserContributions: React.FC = () => {
     };
   };
 
+  // Handle edit contribution - store data in localStorage and open dialog
+  const handleEditContribution = (contribution: Contribution) => {
+    // Build the storage key for this parcel
+    const STORAGE_KEY = `ccc_form_draft_${contribution.parcel_number}`;
+    
+    // Convert contribution data to the format expected by the form
+    const formDataToSave = {
+      formData: {
+        parcelNumber: contribution.parcel_number,
+        propertyTitleType: contribution.property_title_type || '',
+        province: contribution.province || '',
+        ville: (contribution as any).ville || '',
+        commune: (contribution as any).commune || '',
+        quartier: (contribution as any).quartier || '',
+        avenue: (contribution as any).avenue || '',
+        numero: (contribution as any).numero || '',
+        territoire: (contribution as any).territoire || '',
+        collectivite: (contribution as any).collectivite || '',
+        groupement: (contribution as any).groupement || '',
+        village: (contribution as any).village || '',
+        area: contribution.area_sqm?.toString() || '',
+        titleReferenceNumber: (contribution as any).title_reference_number || '',
+        titleIssueDate: (contribution as any).title_issue_date || '',
+        leaseType: (contribution as any).lease_type || '',
+        currentOwnerLegalStatus: (contribution as any).current_owner_legal_status || '',
+        currentOwnerSince: (contribution as any).current_owner_since || '',
+        declaredUsage: (contribution as any).declared_usage || '',
+        constructionNature: (contribution as any).construction_nature || '',
+        constructionType: (contribution as any).construction_type || '',
+        whatsappNumber: (contribution as any).whatsapp_number || '',
+        circonscriptionFonciere: (contribution as any).circonscription_fonciere || '',
+        isTitleInCurrentOwnerName: (contribution as any).is_title_in_current_owner_name,
+      },
+      currentOwners: (contribution as any).current_owners_details || [{
+        lastName: contribution.current_owner_name?.split(' ')[0] || '',
+        middleName: '',
+        firstName: contribution.current_owner_name?.split(' ').slice(1).join(' ') || '',
+        legalStatus: (contribution as any).current_owner_legal_status || 'Personne physique',
+        since: (contribution as any).current_owner_since || ''
+      }],
+      previousOwners: (contribution as any).ownership_history || [],
+      taxRecords: contribution.tax_history || [],
+      mortgageRecords: contribution.mortgage_history || [],
+      buildingPermits: contribution.building_permits || [],
+      gpsCoordinates: (contribution as any).gps_coordinates || [],
+      parcelSides: (contribution as any).parcel_sides || [],
+      timestamp: new Date().toISOString(),
+      editingContributionId: contribution.id // Mark this as an edit
+    };
+    
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(formDataToSave));
+      setContributionToEdit(contribution);
+      setIsEditDialogOpen(true);
+    } catch (error) {
+      console.error('Error saving contribution for edit:', error);
+      toast.error('Erreur lors de la préparation de la modification');
+    }
+  };
+
+  // Handle delete contribution
+  const handleDeleteContribution = async () => {
+    if (!contributionToDelete) return;
+    
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('cadastral_contributions')
+        .delete()
+        .eq('id', contributionToDelete.id)
+        .eq('user_id', user?.id)
+        .eq('status', 'pending'); // Only delete pending contributions
+      
+      if (error) throw error;
+      
+      toast.success('Contribution supprimée avec succès');
+      setContributions(prev => prev.filter(c => c.id !== contributionToDelete.id));
+      setIsDeleteDialogOpen(false);
+      setContributionToDelete(null);
+    } catch (error: any) {
+      console.error('Error deleting contribution:', error);
+      toast.error('Erreur lors de la suppression de la contribution');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const stats = getStats();
 
   // Filter contributions based on search query
@@ -260,29 +355,65 @@ export const UserContributions: React.FC = () => {
                   return (
                     <div 
                       key={contribution.id} 
-                      className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer"
-                      onClick={() => {
-                        setSelectedContribution(contribution);
-                        setIsDetailsOpen(true);
-                      }}
+                      className="flex items-center gap-3 p-2.5 bg-muted/30 rounded-xl hover:bg-muted/50 transition-colors"
                     >
-                      <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-lg">{typeInfo.icon}</span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium truncate">{contribution.parcel_number}</p>
-                          <span className={`text-[10px] ${typeInfo.color} font-medium`}>{typeInfo.label}</span>
+                      <div 
+                        className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                        onClick={() => {
+                          setSelectedContribution(contribution);
+                          setIsDetailsOpen(true);
+                        }}
+                      >
+                        <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                          <span className="text-lg">{typeInfo.icon}</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground">
-                          {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
-                        </p>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-medium truncate">{contribution.parcel_number}</p>
+                            <span className={`text-[10px] ${typeInfo.color} font-medium`}>{typeInfo.label}</span>
+                          </div>
+                          <p className="text-[10px] text-muted-foreground">
+                            {[contribution.ville, contribution.province].filter(Boolean).join(', ') || 'Non spécifié'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="text-right shrink-0">
-                        {getStatusBadge(contribution.status, contribution.is_suspicious)}
-                        <p className="text-[9px] text-muted-foreground mt-0.5">
-                          {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                        </p>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          {getStatusBadge(contribution.status, contribution.is_suspicious)}
+                          <p className="text-[9px] text-muted-foreground mt-0.5">
+                            {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                          </p>
+                        </div>
+                        {/* Edit & Delete buttons for pending contributions */}
+                        {contribution.status === 'pending' && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditContribution(contribution);
+                              }}
+                              title="Modifier"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setContributionToDelete(contribution);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                              title="Supprimer"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -530,6 +661,49 @@ export const UserContributions: React.FC = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent className="max-w-[340px] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base">Supprimer cette contribution ?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm">
+              Vous êtes sur le point de supprimer la contribution pour la parcelle{' '}
+              <span className="font-medium text-foreground">{contributionToDelete?.parcel_number}</span>.
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="h-9 text-sm rounded-xl" disabled={deleting}>
+              Annuler
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteContribution}
+              className="h-9 text-sm rounded-xl bg-destructive hover:bg-destructive/90"
+              disabled={deleting}
+            >
+              {deleting ? 'Suppression...' : 'Supprimer'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Edit Contribution Dialog */}
+      {contributionToEdit && (
+        <CadastralContributionDialog
+          open={isEditDialogOpen}
+          onOpenChange={(open) => {
+            setIsEditDialogOpen(open);
+            if (!open) {
+              setContributionToEdit(null);
+              // Refresh contributions after editing
+              fetchContributions();
+            }
+          }}
+          parcelNumber={contributionToEdit.parcel_number}
+          editingContributionId={contributionToEdit.id}
+        />
+      )}
     </>
   );
 };
