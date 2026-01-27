@@ -10,9 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Eye, FileText, CheckCircle, XCircle, Clock, AlertTriangle, ChevronLeft, ChevronRight, Search, Plus, Pencil, Trash2, RotateCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import CadastralContributionDialog from '@/components/cadastral/CadastralContributionDialog';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import TaxFormDialog from '@/components/cadastral/TaxFormDialog';
+import MortgageFormDialog from '@/components/cadastral/MortgageFormDialog';
+import BuildingPermitFormDialog from '@/components/cadastral/BuildingPermitFormDialog';
 
 interface Contribution {
   id: string;
@@ -56,10 +60,51 @@ export const UserContributions: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [contributionToEdit, setContributionToEdit] = useState<Contribution | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editFormType, setEditFormType] = useState<'ccc' | 'tax' | 'mortgage' | 'permit'>('ccc');
   const [contributionToDelete, setContributionToDelete] = useState<Contribution | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const itemsPerPage = 10;
+
+  // Détecter le type de formulaire d'origine pour une contribution
+  const detectOriginalFormType = (contribution: Contribution): 'ccc' | 'tax' | 'mortgage' | 'permit' => {
+    // Vérifier les données spécifiques pour déterminer le formulaire d'origine
+    if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) {
+      // Si c'est uniquement un historique fiscal sans autres données complètes, c'est le formulaire Tax
+      const hasMortgage = contribution.mortgage_history && Array.isArray(contribution.mortgage_history) && contribution.mortgage_history.length > 0;
+      const hasPermit = contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0;
+      const hasOwnerDetails = contribution.current_owner_name && contribution.property_title_type;
+      
+      if (!hasMortgage && !hasPermit && !hasOwnerDetails) {
+        return 'tax';
+      }
+    }
+    
+    if (contribution.mortgage_history && Array.isArray(contribution.mortgage_history) && contribution.mortgage_history.length > 0) {
+      // Si c'est uniquement un historique hypothécaire
+      const hasTax = contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0;
+      const hasPermit = contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0;
+      const hasOwnerDetails = contribution.current_owner_name && contribution.property_title_type;
+      
+      if (!hasTax && !hasPermit && !hasOwnerDetails) {
+        return 'mortgage';
+      }
+    }
+    
+    if (contribution.building_permits && Array.isArray(contribution.building_permits) && contribution.building_permits.length > 0) {
+      // Si c'est uniquement un permis de bâtir
+      const hasTax = contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0;
+      const hasMortgage = contribution.mortgage_history && Array.isArray(contribution.mortgage_history) && contribution.mortgage_history.length > 0;
+      const hasOwnerDetails = contribution.current_owner_name && contribution.property_title_type;
+      
+      if (!hasTax && !hasMortgage && !hasOwnerDetails) {
+        return 'permit';
+      }
+    }
+    
+    // Par défaut, utiliser le formulaire CCC complet
+    return 'ccc';
+  };
 
   useEffect(() => {
     if (user) {
@@ -153,6 +198,11 @@ export const UserContributions: React.FC = () => {
           <XCircle className="h-3 w-3" />
           Rejetée
         </Badge>;
+      case 'returned':
+        return <Badge variant="outline" className="flex items-center gap-1 border-amber-500 text-amber-600">
+          <RotateCcw className="h-3 w-3" />
+          À corriger
+        </Badge>;
       case 'pending':
       default:
         return <Badge variant="secondary" className="flex items-center gap-1">
@@ -163,72 +213,81 @@ export const UserContributions: React.FC = () => {
   };
 
   const getStats = () => {
+    const returned = contributions.filter(c => c.status === 'returned').length;
     return {
       total: contributions.length,
-      pending: contributions.filter(c => c.status === 'pending').length,
+      pending: contributions.filter(c => c.status === 'pending').length + returned,
       approved: contributions.filter(c => c.status === 'approved').length,
       rejected: contributions.filter(c => c.status === 'rejected').length,
+      returned,
     };
   };
 
-  // Handle edit contribution - store data in localStorage and open dialog
+  // Handle edit contribution - detect form type and open appropriate dialog
   const handleEditContribution = (contribution: Contribution) => {
-    // Build the storage key for this parcel
-    const STORAGE_KEY = `ccc_form_draft_${contribution.parcel_number}`;
+    // Détecter le type de formulaire approprié
+    const formType = detectOriginalFormType(contribution);
+    setEditFormType(formType);
     
-    // Convert contribution data to the format expected by the form
-    const formDataToSave = {
-      formData: {
-        parcelNumber: contribution.parcel_number,
-        propertyTitleType: contribution.property_title_type || '',
-        province: contribution.province || '',
-        ville: (contribution as any).ville || '',
-        commune: (contribution as any).commune || '',
-        quartier: (contribution as any).quartier || '',
-        avenue: (contribution as any).avenue || '',
-        numero: (contribution as any).numero || '',
-        territoire: (contribution as any).territoire || '',
-        collectivite: (contribution as any).collectivite || '',
-        groupement: (contribution as any).groupement || '',
-        village: (contribution as any).village || '',
-        area: contribution.area_sqm?.toString() || '',
-        titleReferenceNumber: (contribution as any).title_reference_number || '',
-        titleIssueDate: (contribution as any).title_issue_date || '',
-        leaseType: (contribution as any).lease_type || '',
-        currentOwnerLegalStatus: (contribution as any).current_owner_legal_status || '',
-        currentOwnerSince: (contribution as any).current_owner_since || '',
-        declaredUsage: (contribution as any).declared_usage || '',
-        constructionNature: (contribution as any).construction_nature || '',
-        constructionType: (contribution as any).construction_type || '',
-        whatsappNumber: (contribution as any).whatsapp_number || '',
-        circonscriptionFonciere: (contribution as any).circonscription_fonciere || '',
-        isTitleInCurrentOwnerName: (contribution as any).is_title_in_current_owner_name,
-      },
-      currentOwners: (contribution as any).current_owners_details || [{
-        lastName: contribution.current_owner_name?.split(' ')[0] || '',
-        middleName: '',
-        firstName: contribution.current_owner_name?.split(' ').slice(1).join(' ') || '',
-        legalStatus: (contribution as any).current_owner_legal_status || 'Personne physique',
-        since: (contribution as any).current_owner_since || ''
-      }],
-      previousOwners: (contribution as any).ownership_history || [],
-      taxRecords: contribution.tax_history || [],
-      mortgageRecords: contribution.mortgage_history || [],
-      buildingPermits: contribution.building_permits || [],
-      gpsCoordinates: (contribution as any).gps_coordinates || [],
-      parcelSides: (contribution as any).parcel_sides || [],
-      timestamp: new Date().toISOString(),
-      editingContributionId: contribution.id // Mark this as an edit
-    };
-    
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(formDataToSave));
-      setContributionToEdit(contribution);
-      setIsEditDialogOpen(true);
-    } catch (error) {
-      console.error('Error saving contribution for edit:', error);
-      toast.error('Erreur lors de la préparation de la modification');
+    // Pour le formulaire CCC complet, stocker les données dans localStorage
+    if (formType === 'ccc') {
+      const STORAGE_KEY = `ccc_form_draft_${contribution.parcel_number}`;
+      
+      const formDataToSave = {
+        formData: {
+          parcelNumber: contribution.parcel_number,
+          propertyTitleType: contribution.property_title_type || '',
+          province: contribution.province || '',
+          ville: (contribution as any).ville || '',
+          commune: (contribution as any).commune || '',
+          quartier: (contribution as any).quartier || '',
+          avenue: (contribution as any).avenue || '',
+          numero: (contribution as any).numero || '',
+          territoire: (contribution as any).territoire || '',
+          collectivite: (contribution as any).collectivite || '',
+          groupement: (contribution as any).groupement || '',
+          village: (contribution as any).village || '',
+          area: contribution.area_sqm?.toString() || '',
+          titleReferenceNumber: (contribution as any).title_reference_number || '',
+          titleIssueDate: (contribution as any).title_issue_date || '',
+          leaseType: (contribution as any).lease_type || '',
+          currentOwnerLegalStatus: (contribution as any).current_owner_legal_status || '',
+          currentOwnerSince: (contribution as any).current_owner_since || '',
+          declaredUsage: (contribution as any).declared_usage || '',
+          constructionNature: (contribution as any).construction_nature || '',
+          constructionType: (contribution as any).construction_type || '',
+          whatsappNumber: (contribution as any).whatsapp_number || '',
+          circonscriptionFonciere: (contribution as any).circonscription_fonciere || '',
+          isTitleInCurrentOwnerName: (contribution as any).is_title_in_current_owner_name,
+        },
+        currentOwners: (contribution as any).current_owners_details || [{
+          lastName: contribution.current_owner_name?.split(' ')[0] || '',
+          middleName: '',
+          firstName: contribution.current_owner_name?.split(' ').slice(1).join(' ') || '',
+          legalStatus: (contribution as any).current_owner_legal_status || 'Personne physique',
+          since: (contribution as any).current_owner_since || ''
+        }],
+        previousOwners: (contribution as any).ownership_history || [],
+        taxRecords: contribution.tax_history || [],
+        mortgageRecords: contribution.mortgage_history || [],
+        buildingPermits: contribution.building_permits || [],
+        gpsCoordinates: (contribution as any).gps_coordinates || [],
+        parcelSides: (contribution as any).parcel_sides || [],
+        timestamp: new Date().toISOString(),
+        editingContributionId: contribution.id
+      };
+      
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(formDataToSave));
+      } catch (error) {
+        console.error('Error saving contribution for edit:', error);
+        toast.error('Erreur lors de la préparation de la modification');
+        return;
+      }
     }
+    
+    setContributionToEdit(contribution);
+    setIsEditDialogOpen(true);
   };
 
   // Handle delete contribution
@@ -242,7 +301,7 @@ export const UserContributions: React.FC = () => {
         .delete()
         .eq('id', contributionToDelete.id)
         .eq('user_id', user?.id)
-        .eq('status', 'pending'); // Only delete pending contributions
+        .in('status', ['pending', 'returned']); // Allow deleting pending and returned contributions
       
       if (error) throw error;
       
@@ -291,6 +350,17 @@ export const UserContributions: React.FC = () => {
 
   return (
     <>
+      {/* Alerte pour les contributions renvoyées */}
+      {stats.returned > 0 && (
+        <Alert className="mb-4 border-amber-500 bg-amber-50 dark:bg-amber-950/30">
+          <RotateCcw className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-amber-800 dark:text-amber-200">
+            <strong>{stats.returned} contribution(s) renvoyée(s)</strong> pour correction. 
+            Veuillez modifier et resoumettre vos contributions marquées "À corriger".
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Stats compactes */}
       <div className="grid grid-cols-4 gap-2 mb-4">
         {[
@@ -384,18 +454,18 @@ export const UserContributions: React.FC = () => {
                             {new Date(contribution.created_at).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
                           </p>
                         </div>
-                        {/* Edit & Delete buttons for pending contributions */}
-                        {contribution.status === 'pending' && (
+                        {/* Edit & Delete buttons for pending and returned contributions */}
+                        {(contribution.status === 'pending' || contribution.status === 'returned') && (
                           <div className="flex items-center gap-1">
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-primary"
+                              className={`h-7 w-7 p-0 ${contribution.status === 'returned' ? 'text-amber-600 hover:text-amber-700' : 'text-muted-foreground hover:text-primary'}`}
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleEditContribution(contribution);
                               }}
-                              title="Modifier"
+                              title={contribution.status === 'returned' ? 'Corriger' : 'Modifier'}
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -688,21 +758,62 @@ export const UserContributions: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Edit Contribution Dialog */}
-      {contributionToEdit && (
+      {/* Edit Contribution Dialog - Open appropriate form based on type */}
+      {contributionToEdit && editFormType === 'ccc' && (
         <CadastralContributionDialog
           open={isEditDialogOpen}
           onOpenChange={(open) => {
             setIsEditDialogOpen(open);
             if (!open) {
               setContributionToEdit(null);
-              // Refresh contributions after editing
               fetchContributions();
             }
           }}
           parcelNumber={contributionToEdit.parcel_number}
           editingContributionId={contributionToEdit.id}
         />
+      )}
+
+      {/* Note: Tax, Mortgage, and Permit forms require parcelId which we don't have here */}
+      {/* For these specialized forms, redirect user to the cadastral map to edit */}
+      {contributionToEdit && editFormType !== 'ccc' && (
+        <Dialog open={isEditDialogOpen} onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) {
+            setContributionToEdit(null);
+          }
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Modifier cette contribution</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Cette contribution a été soumise via un formulaire spécialisé 
+                ({editFormType === 'tax' ? 'Historique fiscal' : 
+                  editFormType === 'mortgage' ? 'Hypothèque' : 'Permis de bâtir'}).
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Pour la modifier, veuillez vous rendre sur la carte cadastrale, 
+                rechercher la parcelle <strong>{contributionToEdit.parcel_number}</strong>, 
+                et utiliser le menu d'actions correspondant.
+              </p>
+              <div className="flex justify-end gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsEditDialogOpen(false)}
+                >
+                  Fermer
+                </Button>
+                <Link to="/carte-cadastrale">
+                  <Button onClick={() => setIsEditDialogOpen(false)}>
+                    Aller à la carte
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </>
   );

@@ -1,10 +1,11 @@
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle, XCircle, Clock, AlertCircle, Ban, Gift, RefreshCw, CreditCard } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, AlertCircle, Ban, Gift, RefreshCw, CreditCard, RotateCcw } from 'lucide-react';
 
 export type StatusType = 
   | 'pending' 
   | 'approved' 
   | 'rejected' 
+  | 'returned'
   | 'valid' 
   | 'used' 
   | 'expired' 
@@ -51,6 +52,13 @@ export const StatusBadge = ({ status, compact = false, className = '' }: StatusB
       label: 'Rejeté',
       shortLabel: 'Rej.',
       color: 'text-red-600'
+    },
+    returned: { 
+      variant: 'outline', 
+      icon: RotateCcw, 
+      label: 'Renvoyé',
+      shortLabel: 'Renv.',
+      color: 'text-amber-600'
     },
     valid: {
       variant: 'default',

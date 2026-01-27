@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Eye, Gift, Users, Play, FileText, Building2, MessageSquare, Route, BrickWall, Download, ExternalLink, RotateCcw } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AppealManagementDialog } from './appeals/AppealManagementDialog';
 import { PermitRequestDialog } from './permits/PermitRequestDialog';
@@ -105,6 +105,7 @@ const AdminCCCContributions: React.FC = () => {
   const [selectedContribution, setSelectedContribution] = useState<Contribution | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
+  const [returnReason, setReturnReason] = useState('');
   const [activeTab, setActiveTab] = useState('pending');
   const [showTestDialog, setShowTestDialog] = useState(false);
   const [testResults, setTestResults] = useState<any[]>([]);
@@ -118,6 +119,28 @@ const AdminCCCContributions: React.FC = () => {
 
   useEffect(() => {
     fetchContributions();
+    
+    // Realtime subscription pour synchroniser les changements (suppressions, mises à jour)
+    const channel = supabase
+      .channel('admin-contributions-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'cadastral_contributions'
+        },
+        (payload) => {
+          console.log('Contribution change detected:', payload.eventType);
+          // Rafraîchir les données pour tous les types d'événements
+          fetchContributions();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchContributions = async () => {
@@ -520,6 +543,71 @@ const AdminCCCContributions: React.FC = () => {
     if (contribution.mortgage_history) filled++;
 
     return Math.round((filled / total) * 100);
+  };
+
+  // Renvoyer une contribution pour correction
+  const handleReturn = async (contributionId: string) => {
+    if (!returnReason.trim()) {
+      toast.error('Veuillez fournir le motif du renvoi');
+      return;
+    }
+
+    try {
+      const contribution = contributions.find(c => c.id === contributionId);
+      if (!contribution) {
+        toast.error('Contribution non trouvée');
+        return;
+      }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user?.id) {
+        toast.error('Vous devez être connecté pour renvoyer une contribution');
+        return;
+      }
+
+      console.log('Renvoi de la contribution:', contributionId);
+
+      const { error: updateError } = await supabase
+        .from('cadastral_contributions')
+        .update({ 
+          status: 'returned',
+          rejection_reason: returnReason, // On réutilise ce champ pour stocker le motif de renvoi
+          reviewed_by: user.id,
+          reviewed_at: new Date().toISOString()
+        })
+        .eq('id', contributionId);
+
+      if (updateError) {
+        console.error('Erreur lors du renvoi:', updateError);
+        toast.error(`Erreur lors du renvoi: ${updateError.message}`);
+        return;
+      }
+
+      // Créer notification pour l'utilisateur
+      const { error: notifError } = await supabase.from('notifications').insert({
+        user_id: contribution.user_id,
+        type: 'warning',
+        title: 'Contribution renvoyée pour correction',
+        message: `Votre contribution pour la parcelle ${contribution.parcel_number} a été renvoyée pour correction. Motif: ${returnReason}. Veuillez modifier votre contribution et la soumettre à nouveau.`,
+        action_url: '/user-dashboard?tab=contributions'
+      });
+
+      if (notifError) {
+        console.error('Erreur lors de la création de la notification:', notifError);
+      }
+
+      toast.success('Contribution renvoyée pour correction');
+      await fetchContributions();
+      setIsDetailsOpen(false);
+      setReturnReason('');
+    } catch (error: any) {
+      console.error('Erreur inattendue lors du renvoi:', error);
+      const errorMessage = error?.message 
+        ? `Erreur lors du renvoi: ${error.message}` 
+        : 'Erreur inattendue lors du renvoi';
+      toast.error(errorMessage);
+    }
   };
 
   const runIntegrityTests = async () => {
@@ -1202,19 +1290,41 @@ const AdminCCCContributions: React.FC = () => {
 
               {selectedContribution.status === 'pending' && (
                 <>
-                  <div>
-                    <Label htmlFor="rejection_reason" className="text-xs md:text-sm">Raison de rejet (optionnel)</Label>
-                    <Textarea
-                      id="rejection_reason"
-                      value={rejectionReason}
-                      onChange={(e) => setRejectionReason(e.target.value)}
-                      placeholder="Expliquez pourquoi cette contribution est rejetée..."
-                      rows={2}
-                      className="text-xs md:text-sm"
-                    />
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="return_reason" className="text-xs md:text-sm">Motif de renvoi pour correction (obligatoire si renvoi)</Label>
+                      <Textarea
+                        id="return_reason"
+                        value={returnReason}
+                        onChange={(e) => setReturnReason(e.target.value)}
+                        placeholder="Indiquez les corrections ou compléments nécessaires..."
+                        rows={2}
+                        className="text-xs md:text-sm"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="rejection_reason" className="text-xs md:text-sm">Raison de rejet définitif (obligatoire si rejet)</Label>
+                      <Textarea
+                        id="rejection_reason"
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="Expliquez pourquoi cette contribution est définitivement rejetée..."
+                        rows={2}
+                        className="text-xs md:text-sm"
+                      />
+                    </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => handleReturn(selectedContribution.id)}
+                      size="sm"
+                      className="w-full sm:w-auto border-amber-500 text-amber-600 hover:bg-amber-50"
+                    >
+                      <RotateCcw className="h-3 w-3 md:h-4 md:w-4 mr-2" />
+                      Renvoyer
+                    </Button>
                     <Button
                       variant="destructive"
                       onClick={() => handleReject(selectedContribution.id)}
@@ -1234,6 +1344,16 @@ const AdminCCCContributions: React.FC = () => {
                     </Button>
                   </div>
                 </>
+              )}
+
+              {selectedContribution.status === 'returned' && selectedContribution.rejection_reason && (
+                <Alert className="py-2 border-amber-500 bg-amber-50">
+                  <RotateCcw className="h-3 w-3 md:h-4 md:w-4 text-amber-600" />
+                  <AlertDescription className="text-xs md:text-sm text-amber-800">
+                    <strong>Motif du renvoi:</strong><br />
+                    <span className="text-xs md:text-sm">{selectedContribution.rejection_reason}</span>
+                  </AlertDescription>
+                </Alert>
               )}
 
               {selectedContribution.status === 'rejected' && selectedContribution.rejection_reason && (
