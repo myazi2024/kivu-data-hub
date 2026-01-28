@@ -26,25 +26,48 @@ interface ParcelActionsDropdownProps {
   className?: string;
 }
 
-// Create a reusable haptic sound feedback utility
-const createHapticSound = () => {
-  const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-  
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-  
-  oscillator.frequency.value = 1200;
-  oscillator.type = 'sine';
-  gainNode.gain.value = 0.08;
-  
-  oscillator.start();
-  oscillator.stop(audioContext.currentTime + 0.03);
-  
-  // Haptic vibration if available
+// Create a reusable haptic sound feedback utility with proper AudioContext handling
+const triggerHapticFeedback = async () => {
+  // Haptic vibration first (more reliable on mobile)
   if (navigator.vibrate) {
-    navigator.vibrate(10);
+    navigator.vibrate(15);
+  }
+  
+  try {
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
+    
+    const audioContext = new AudioContextClass();
+    
+    // Resume AudioContext if suspended (required for mobile browsers)
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+    
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 1200;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.1;
+    
+    // Quick fade out for smoother sound
+    gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.04);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.04);
+    
+    // Clean up after sound finishes
+    oscillator.onended = () => {
+      audioContext.close();
+    };
+  } catch (e) {
+    // Silent fallback - vibration already triggered above
+    console.log('Audio feedback not available');
   }
 };
 
@@ -69,11 +92,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
 
   const handleMenuItemFocus = useCallback((index: number) => {
     if (lastFocusedIndexRef.current !== null && lastFocusedIndexRef.current !== index) {
-      try {
-        createHapticSound();
-      } catch (e) {
-        // Audio context may fail on some browsers, silent fallback
-      }
+      triggerHapticFeedback();
     }
     lastFocusedIndexRef.current = index;
   }, []);
