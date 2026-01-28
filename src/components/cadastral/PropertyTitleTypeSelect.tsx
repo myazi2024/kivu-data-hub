@@ -143,10 +143,7 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
             {PROPERTY_TITLE_TYPES.map((type) => (
               <div key={type.value} className="flex items-center justify-between group">
                 <SelectItem value={type.value} className="flex-1 pr-2">
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm">{type.label}</span>
-                    <span className="text-xs text-muted-foreground hidden sm:block">{type.description}</span>
-                  </div>
+                  <span className="font-medium text-sm">{type.label}</span>
                 </SelectItem>
                 <Popover 
                   open={openPopoverId === type.value} 
