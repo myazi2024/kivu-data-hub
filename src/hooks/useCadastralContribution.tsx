@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export interface CadastralContributionData {
   parcelNumber: string;
+  parcelType?: 'SU' | 'SR'; // Type de parcelle (Section Urbaine/Rurale)
   
   // Informations générales
   propertyTitleType?: string;
@@ -273,9 +274,11 @@ export const useCadastralContribution = () => {
       const contributionPayload: any = {
         user_id: authenticatedUserId,
         parcel_number: data.parcelNumber,
+        parcel_type: data.parcelType, // Type de parcelle (SU/SR)
         property_title_type: data.propertyTitleType,
         lease_type: data.leaseType,
         title_reference_number: data.titleReferenceNumber,
+        title_issue_date: data.titleIssueDate, // Date de délivrance du titre foncier
         
         // ✅ NOUVEAU: Stocker les détails complets des propriétaires
         current_owners_details: data.currentOwners && data.currentOwners.length > 0 
@@ -483,9 +486,11 @@ export const useCadastralContribution = () => {
       // Build update payload (same as insert but for update)
       const contributionPayload: any = {
         parcel_number: data.parcelNumber,
+        parcel_type: data.parcelType, // Type de parcelle (SU/SR)
         property_title_type: data.propertyTitleType,
         lease_type: data.leaseType,
         title_reference_number: data.titleReferenceNumber,
+        title_issue_date: data.titleIssueDate, // Date de délivrance du titre foncier
         current_owners_details: data.currentOwners && data.currentOwners.length > 0 
           ? data.currentOwners 
           : null,
