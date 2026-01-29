@@ -534,16 +534,21 @@ const AdminCCCContributions: React.FC = () => {
 
   const calculateCompleteness = (contribution: Contribution) => {
     let filled = 0;
-    let total = 8;
+    const total = 10; // Total des champs vérifiés
 
+    // Champs obligatoires (alignés avec validate_contribution_completeness RPC)
     if (contribution.property_title_type) filled++;
-    if (contribution.current_owner_name) filled++;
-    if (contribution.area_sqm) filled++;
+    if (contribution.current_owner_name || contribution.current_owners_details) filled++;
+    if (contribution.area_sqm && contribution.area_sqm > 0) filled++;
     if (contribution.province) filled++;
-    if (contribution.ownership_history) filled++;
-    if (contribution.boundary_history) filled++;
-    if (contribution.tax_history) filled++;
-    if (contribution.mortgage_history) filled++;
+    
+    // Champs recommandés
+    if (contribution.ownership_history && Array.isArray(contribution.ownership_history) && contribution.ownership_history.length > 0) filled++;
+    if (contribution.boundary_history && Array.isArray(contribution.boundary_history) && contribution.boundary_history.length > 0) filled++;
+    if (contribution.tax_history && Array.isArray(contribution.tax_history) && contribution.tax_history.length > 0) filled++;
+    if (contribution.gps_coordinates && Array.isArray(contribution.gps_coordinates) && contribution.gps_coordinates.length > 0) filled++;
+    if (contribution.owner_document_url) filled++;
+    if (contribution.property_title_document_url) filled++;
 
     return Math.round((filled / total) * 100);
   };
