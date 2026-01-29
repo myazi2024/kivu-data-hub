@@ -3487,24 +3487,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
 
                   {/* Champ Numéro - visible uniquement si l'avenue est renseignée */}
-                  {formData.avenue && formData.avenue.trim() !== '' && (
-                    <div className="space-y-1.5 animate-fade-in">
-                      <Label htmlFor="numero" className="text-sm">Numéro</Label>
-                      <Input
-                        id="numero"
-                        className="h-9 text-sm rounded-xl"
-                        placeholder="Numéro de parcelle"
-                        value={formData.numero || ''}
-                        onChange={(e) => {
-                          // Accepter uniquement les chiffres
-                          const value = e.target.value.replace(/\D/g, '');
-                          handleInputChange('numero', value);
-                        }}
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                      />
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             )}
