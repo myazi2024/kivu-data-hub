@@ -30,6 +30,7 @@ interface Contribution {
   id: string;
   user_id: string;
   parcel_number: string;
+  parcel_type: string | null;
   status: string;
   is_suspicious: boolean;
   fraud_score: number;
@@ -42,6 +43,7 @@ interface Contribution {
   property_title_type: string | null;
   lease_type: string | null;
   title_reference_number: string | null;
+  title_issue_date: string | null; // Date de délivrance du titre foncier
   current_owner_name: string | null;
   current_owners_details: any;
   current_owner_legal_status: string | null;
@@ -306,10 +308,11 @@ const AdminCCCContributions: React.FC = () => {
             current_owner_legal_status: updatedContribution.current_owner_legal_status,
             current_owner_since: updatedContribution.current_owner_since,
             area_sqm: updatedContribution.area_sqm,
-            // area_hectares est une colonne GENERATED - ne pas l'inclure, elle est calculée automatiquement
+            // area_hectares est une colonne GENERATED - NE PAS L'INCLURE, elle est calculée automatiquement
             parcel_type: updatedContribution.parcel_type || 'SU',
             property_title_type: updatedContribution.property_title_type,
             title_reference_number: updatedContribution.title_reference_number,
+            title_issue_date: updatedContribution.title_issue_date, // Date de délivrance du titre foncier
             lease_type: updatedContribution.lease_type,
             construction_type: updatedContribution.construction_type,
             construction_nature: updatedContribution.construction_nature,
@@ -978,15 +981,23 @@ const AdminCCCContributions: React.FC = () => {
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Type de bail</Label>
-                      <p className="text-sm">{selectedContribution.lease_type || 'Non renseigné'}</p>
+                      <p className="text-sm">{selectedContribution.lease_type === 'initial' ? 'Bail initial' : selectedContribution.lease_type === 'renewal' ? 'Renouvellement' : 'Non renseigné'}</p>
                     </div>
                     <div>
-                      <Label className="text-xs text-muted-foreground">N° de référence</Label>
+                      <Label className="text-xs text-muted-foreground">N° de référence du titre</Label>
                       <p className="text-sm font-mono">{selectedContribution.title_reference_number || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Date de délivrance du titre</Label>
+                      <p className="text-sm">{selectedContribution.title_issue_date ? new Date(selectedContribution.title_issue_date).toLocaleDateString('fr-FR') : 'Non renseigné'}</p>
                     </div>
                     <div>
                       <Label className="text-xs text-muted-foreground">Circonscription foncière</Label>
                       <p className="text-sm">{selectedContribution.circonscription_fonciere || 'Non renseigné'}</p>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Type de parcelle</Label>
+                      <p className="text-sm">{selectedContribution.parcel_type === 'SU' ? 'Section Urbaine (SU)' : selectedContribution.parcel_type === 'SR' ? 'Section Rurale (SR)' : 'Non renseigné'}</p>
                     </div>
                   </div>
 
