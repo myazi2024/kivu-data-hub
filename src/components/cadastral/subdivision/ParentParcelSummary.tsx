@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,11 @@ import { Separator } from '@/components/ui/separator';
 import { 
   MapPin, User, FileText, Ruler, Square, Home, 
   Check, AlertTriangle, Loader2, RefreshCw, Pencil,
-  Navigation, ArrowUp, ArrowDown, ArrowLeft, ArrowRight
+  Navigation, ArrowUp, ArrowDown, ArrowLeft, ArrowRight,
+  Map
 } from 'lucide-react';
-import { ParentParcelData, SideDimension } from './types';
+import { SideDimension } from './types';
+import CadastralMap from '../CadastralMap';
 
 interface ParcelSummaryData {
   parcelNumber: string;
@@ -21,6 +23,7 @@ interface ParcelSummaryData {
   titleIssueDate: string;
   constructionType?: string;
   gps: { lat: string; lng: string };
+  gpsCoordinates?: Array<{ lat: number; lng: number; borne: string }>;
   sides: SideDimension[];
   hasSketch: boolean;
 }
@@ -70,6 +73,32 @@ export const ParentParcelSummary: React.FC<ParentParcelSummaryProps> = ({
   };
 
   const hasDimensions = parcelData.sides.some(s => s.length > 0);
+  
+  // Vérifier si on a des coordonnées GPS pour afficher la carte
+  const hasGpsCoordinates = useMemo(() => {
+    return parcelData.gpsCoordinates && 
+           Array.isArray(parcelData.gpsCoordinates) && 
+           parcelData.gpsCoordinates.length >= 3;
+  }, [parcelData.gpsCoordinates]);
+
+  // Calculer le centre de la carte depuis les coordonnées GPS
+  const mapCenter = useMemo(() => {
+    if (!hasGpsCoordinates || !parcelData.gpsCoordinates) {
+      // Fallback vers les coordonnées simples
+      const lat = parseFloat(parcelData.gps.lat) || -1.6777;
+      const lng = parseFloat(parcelData.gps.lng) || 29.2285;
+      return { lat, lng };
+    }
+    
+    // Calculer le centroïde des coordonnées GPS
+    const coords = parcelData.gpsCoordinates;
+    const sumLat = coords.reduce((sum, c) => sum + c.lat, 0);
+    const sumLng = coords.reduce((sum, c) => sum + c.lng, 0);
+    return {
+      lat: sumLat / coords.length,
+      lng: sumLng / coords.length
+    };
+  }, [parcelData.gpsCoordinates, parcelData.gps, hasGpsCoordinates]);
 
   return (
     <div className="space-y-4">
@@ -215,7 +244,7 @@ export const ParentParcelSummary: React.FC<ParentParcelSummaryProps> = ({
                 <Ruler className="h-4 w-4 text-primary" />
               </div>
               Croquis & Dimensions
-              {hasDimensions ? (
+              {(hasDimensions || hasGpsCoordinates) ? (
                 <Badge className="ml-auto bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
                   <Check className="h-3 w-3 mr-1" />
                   Disponible
@@ -229,9 +258,40 @@ export const ParentParcelSummary: React.FC<ParentParcelSummaryProps> = ({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {hasDimensions ? (
+            {hasGpsCoordinates && parcelData.gpsCoordinates ? (
+              // Afficher la carte interactive si les coordonnées GPS sont disponibles
               <div className="space-y-4">
-                {/* Visualisation du croquis simplifié */}
+                <div className="relative z-0">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <Map className="h-3.5 w-3.5 text-primary" />
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Croquis synchronisé depuis le résultat cadastral
+                    </span>
+                  </div>
+                  <CadastralMap 
+                    coordinates={parcelData.gpsCoordinates}
+                    center={mapCenter}
+                    parcelNumber={parcelData.parcelNumber}
+                  />
+                </div>
+
+                {/* Résumé dimensions */}
+                {hasDimensions && (
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="bg-muted/50 rounded-lg p-2 text-center">
+                      <div className="text-muted-foreground text-xs">Périmètre</div>
+                      <div className="font-bold">{calculatePerimeter().toLocaleString()} m</div>
+                    </div>
+                    <div className="bg-muted/50 rounded-lg p-2 text-center">
+                      <div className="text-muted-foreground text-xs">Nombre de côtés</div>
+                      <div className="font-bold">{parcelData.sides.length}</div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : hasDimensions ? (
+              <div className="space-y-4">
+                {/* Visualisation du croquis simplifié (sans coordonnées GPS) */}
                 <div className="relative aspect-square max-w-[200px] mx-auto bg-muted/30 rounded-lg border-2 border-dashed border-muted-foreground/20 p-2">
                   <div className="absolute inset-4 bg-primary/10 border-2 border-primary rounded flex items-center justify-center">
                     <span className="text-xs text-primary font-medium">Parcelle</span>

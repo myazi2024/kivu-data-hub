@@ -82,6 +82,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const [parentParcelTitleType, setParentParcelTitleType] = useState('');
   const [parentParcelTitleIssueDate, setParentParcelTitleIssueDate] = useState('');
   const [parentParcelGPS, setParentParcelGPS] = useState<{ lat: string; lng: string }>({ lat: '', lng: '' });
+  const [parentParcelGPSCoordinates, setParentParcelGPSCoordinates] = useState<Array<{ lat: number; lng: number; borne: string }>>([]);
   const [parentParcelSides, setParentParcelSides] = useState<ParentParcelSides>({
     north: { length: 0, description: '' },
     south: { length: 0, description: '' },
@@ -214,7 +215,14 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     if (data.gps_coordinates) {
       const gps = data.gps_coordinates;
       if (Array.isArray(gps) && gps.length > 0) {
-        // Format tableau de bornes [{lat, lng, borne}]
+        // Format tableau de bornes [{lat, lng, borne}] - stocker le tableau complet
+        setParentParcelGPSCoordinates(gps.map((coord: any, index: number) => ({
+          lat: parseFloat(coord.lat) || 0,
+          lng: parseFloat(coord.lng) || 0,
+          borne: coord.borne || `B${index + 1}`
+        })));
+        
+        // Garder le premier point pour la compatibilité
         const firstPoint = gps[0];
         setParentParcelGPS({
           lat: firstPoint.lat?.toString() || '',
@@ -225,12 +233,14 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           lat: gps.latitude?.toString() || gps.lat?.toString() || '',
           lng: gps.longitude?.toString() || gps.lng?.toString() || ''
         });
+        setParentParcelGPSCoordinates([]);
       }
     } else if (data.latitude && data.longitude) {
       setParentParcelGPS({
         lat: data.latitude.toString(),
         lng: data.longitude.toString()
       });
+      setParentParcelGPSCoordinates([]);
     }
     
     // Dimensions des côtés - gérer plusieurs formats CCC
@@ -882,6 +892,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                         titleRef: parentParcelTitleRef,
                         titleIssueDate: parentParcelTitleIssueDate,
                         gps: parentParcelGPS,
+                        gpsCoordinates: parentParcelGPSCoordinates.length > 0 ? parentParcelGPSCoordinates : undefined,
                         sides: [
                           { id: 'north', length: parentParcelSides.north.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
                           { id: 'east', length: parentParcelSides.east.length, angle: 90, isShared: false, isRoadBordering: false, roadType: 'none' },
