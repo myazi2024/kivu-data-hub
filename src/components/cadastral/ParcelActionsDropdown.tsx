@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, Sparkles } from 'lucide-react';
+import { ChevronDown, Sparkles, Clock } from 'lucide-react';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import MortgageCancellationDialog from './MortgageCancellationDialog';
@@ -235,10 +235,19 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
               <DropdownMenuItem 
                 onClick={() => setShowSubdivisionDialog(true)}
                 onFocus={() => handleMenuItemFocus(8)}
-                className="cursor-pointer rounded-lg"
+                className="cursor-pointer rounded-lg relative"
               >
-                <div>
-                  <div className="font-medium text-sm">Demande de Lotissement</div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm flex items-center gap-2">
+                    Demander un lotissement
+                    <Badge 
+                      variant="secondary" 
+                      className="h-4 px-1.5 text-[9px] font-bold bg-amber-500 text-white uppercase tracking-wide flex items-center gap-0.5"
+                    >
+                      <Clock className="h-2.5 w-2.5" />
+                      Bientôt
+                    </Badge>
+                  </div>
                   <div className="text-xs text-muted-foreground">Diviser cette parcelle en lots</div>
                 </div>
               </DropdownMenuItem>

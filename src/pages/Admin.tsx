@@ -58,6 +58,7 @@ import AdminSystemHealth from '@/components/admin/AdminSystemHealth';
 import AdminLandTitleRequests from '@/components/admin/AdminLandTitleRequests';
 import { AdminPermissions } from '@/components/admin/AdminPermissions';
 import AdminSubdivisionRequests from '@/components/admin/AdminSubdivisionRequests';
+import AdminParcelActionsConfig from '@/components/admin/AdminParcelActionsConfig';
 
 const Admin = () => {
   const { user, profile, loading } = useAuth();
@@ -324,6 +325,8 @@ const Admin = () => {
         return <AdminArticleThemes />;
       case 'notifications':
         return <AdminNotifications />;
+      case 'parcel-actions-config':
+        return <AdminParcelActionsConfig />;
       case 'audit-logs':
         return <AdminAuditLogs />;
       default:
