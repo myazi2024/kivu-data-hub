@@ -12,10 +12,12 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
-  CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone
+  CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone, Home,
+  Volume2, Layers, Building2, Camera
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
@@ -52,6 +54,19 @@ interface ExpertiseFee {
   display_order: number;
 }
 
+// Options de configuration
+const CONSTRUCTION_TYPE_OPTIONS = [
+  { value: 'villa', label: 'Villa / Maison individuelle' },
+  { value: 'appartement', label: 'Appartement' },
+  { value: 'immeuble', label: 'Immeuble / Bâtiment' },
+  { value: 'duplex', label: 'Duplex / Triplex' },
+  { value: 'studio', label: 'Studio' },
+  { value: 'commercial', label: 'Local commercial' },
+  { value: 'entrepot', label: 'Entrepôt / Hangar' },
+  { value: 'terrain_nu', label: 'Terrain nu (sans construction)' },
+  { value: 'autre', label: 'Autre' },
+];
+
 const CONSTRUCTION_QUALITY_OPTIONS = [
   { value: 'luxe', label: 'Luxe / Haut standing' },
   { value: 'standard', label: 'Standard / Moyen standing' },
@@ -72,6 +87,65 @@ const ROAD_ACCESS_OPTIONS = [
   { value: 'piste', label: 'Piste / Sentier' },
 ];
 
+const WALL_MATERIAL_OPTIONS = [
+  { value: 'beton', label: 'Béton armé' },
+  { value: 'briques_cuites', label: 'Briques cuites' },
+  { value: 'briques_adobe', label: 'Briques adobe' },
+  { value: 'parpaings', label: 'Parpaings / Blocs' },
+  { value: 'bois', label: 'Bois' },
+  { value: 'tole', label: 'Tôles métalliques' },
+  { value: 'mixte', label: 'Mixte' },
+];
+
+const ROOF_MATERIAL_OPTIONS = [
+  { value: 'tole_bac', label: 'Tôle bac / Ondulée' },
+  { value: 'tuiles', label: 'Tuiles' },
+  { value: 'dalle_beton', label: 'Dalle béton (terrasse)' },
+  { value: 'ardoise', label: 'Ardoise' },
+  { value: 'chaume', label: 'Chaume / Paille' },
+  { value: 'autre', label: 'Autre' },
+];
+
+const WINDOW_TYPE_OPTIONS = [
+  { value: 'aluminium', label: 'Aluminium' },
+  { value: 'bois', label: 'Bois' },
+  { value: 'pvc', label: 'PVC' },
+  { value: 'fer', label: 'Fer forgé' },
+  { value: 'sans_fenetres', label: 'Sans fenêtres' },
+];
+
+const FLOOR_MATERIAL_OPTIONS = [
+  { value: 'carrelage', label: 'Carrelage' },
+  { value: 'ciment_lisse', label: 'Ciment lissé' },
+  { value: 'parquet', label: 'Parquet / Bois' },
+  { value: 'marbre', label: 'Marbre / Granit' },
+  { value: 'terre_battue', label: 'Terre battue' },
+  { value: 'autre', label: 'Autre' },
+];
+
+const SOUND_ENVIRONMENT_OPTIONS = [
+  { value: 'tres_calme', label: 'Très calme (zone résidentielle)' },
+  { value: 'calme', label: 'Calme' },
+  { value: 'modere', label: 'Modéré (activité normale)' },
+  { value: 'bruyant', label: 'Bruyant (avenue passante)' },
+  { value: 'tres_bruyant', label: 'Très bruyant (zone commerciale/industrielle)' },
+];
+
+const BUILDING_POSITION_OPTIONS = [
+  { value: 'premiere_position', label: 'Première position (bordure de route)' },
+  { value: 'deuxieme_position', label: 'Deuxième position' },
+  { value: 'fond_parcelle', label: 'Fond de parcelle' },
+  { value: 'dans_servitude', label: 'Dans une servitude' },
+  { value: 'coin_parcelle', label: 'En coin de parcelle' },
+];
+
+const ACCESSIBILITY_OPTIONS = [
+  { value: 'escalier', label: 'Escalier uniquement' },
+  { value: 'ascenseur', label: 'Ascenseur disponible' },
+  { value: 'escalier_ascenseur', label: 'Escalier + Ascenseur' },
+  { value: 'plain_pied', label: 'Plain-pied (RDC)' },
+];
+
 const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialogProps> = ({
   parcelNumber,
   parcelId,
@@ -89,9 +163,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
   const { createExpertiseRequest, loading } = useRealEstateExpertise();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const parcelDocsInputRef = useRef<HTMLInputElement>(null);
+  const constructionImagesInputRef = useRef<HTMLInputElement>(null);
 
   const [step, setStep] = useState<'form' | 'payment' | 'confirmation'>('form');
+  const [activeTab, setActiveTab] = useState('general');
   const [createdRequest, setCreatedRequest] = useState<any>(null);
 
   // Payment state
@@ -103,15 +179,48 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [processingPayment, setProcessingPayment] = useState(false);
   const [formData, setFormData] = useState<any>(null);
 
-  // Form state
+  // === GÉNÉRAL ===
   const [propertyDescription, setPropertyDescription] = useState('');
+  const [constructionType, setConstructionType] = useState('villa');
   const [constructionYear, setConstructionYear] = useState('');
   const [constructionQuality, setConstructionQuality] = useState('standard');
   const [numberOfFloors, setNumberOfFloors] = useState('1');
   const [totalBuiltAreaSqm, setTotalBuiltAreaSqm] = useState('');
   const [propertyCondition, setPropertyCondition] = useState('bon');
+  const [numberOfRooms, setNumberOfRooms] = useState('');
+  const [numberOfBedrooms, setNumberOfBedrooms] = useState('');
+  const [numberOfBathrooms, setNumberOfBathrooms] = useState('');
 
-  // Équipements
+  // === MATÉRIAUX DE CONSTRUCTION ===
+  const [wallMaterial, setWallMaterial] = useState('parpaings');
+  const [roofMaterial, setRoofMaterial] = useState('tole_bac');
+  const [windowType, setWindowType] = useState('aluminium');
+  const [floorMaterial, setFloorMaterial] = useState('carrelage');
+  const [hasPlaster, setHasPlaster] = useState(true);
+  const [hasPainting, setHasPainting] = useState(true);
+  const [hasCeiling, setHasCeiling] = useState(true);
+
+  // === EMPLACEMENT & POSITION ===
+  const [buildingPosition, setBuildingPosition] = useState('premiere_position');
+  const [facadeOrientation, setFacadeOrientation] = useState('');
+  const [distanceFromRoad, setDistanceFromRoad] = useState('');
+  const [isCornerPlot, setIsCornerPlot] = useState(false);
+  const [hasDirectStreetAccess, setHasDirectStreetAccess] = useState(true);
+  
+  // === APPARTEMENT / IMMEUBLE ===
+  const [floorNumber, setFloorNumber] = useState('');
+  const [totalBuildingFloors, setTotalBuildingFloors] = useState('');
+  const [accessibility, setAccessibility] = useState('escalier');
+  const [apartmentNumber, setApartmentNumber] = useState('');
+  const [hasCommonAreas, setHasCommonAreas] = useState(false);
+  const [monthlyCharges, setMonthlyCharges] = useState('');
+
+  // === ENVIRONNEMENT SONORE ===
+  const [soundEnvironment, setSoundEnvironment] = useState('calme');
+  const [nearbyNoiseSources, setNearbyNoiseSources] = useState('');
+  const [hasDoubleGlazing, setHasDoubleGlazing] = useState(false);
+
+  // === ÉQUIPEMENTS ===
   const [hasWaterSupply, setHasWaterSupply] = useState(false);
   const [hasElectricity, setHasElectricity] = useState(false);
   const [hasSewageSystem, setHasSewageSystem] = useState(false);
@@ -121,8 +230,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [parkingSpaces, setParkingSpaces] = useState('');
   const [hasGarden, setHasGarden] = useState(false);
   const [gardenAreaSqm, setGardenAreaSqm] = useState('');
+  const [hasPool, setHasPool] = useState(false);
+  const [hasAirConditioning, setHasAirConditioning] = useState(false);
+  const [hasSolarPanels, setHasSolarPanels] = useState(false);
+  const [hasWaterTank, setHasWaterTank] = useState(false);
+  const [hasGenerator, setHasGenerator] = useState(false);
+  const [hasBorehole, setHasBorehole] = useState(false);
 
-  // Environnement
+  // === ENVIRONNEMENT & ACCESSIBILITÉ ===
   const [roadAccessType, setRoadAccessType] = useState('asphalte');
   const [distanceToMainRoad, setDistanceToMainRoad] = useState('');
   const [distanceToHospital, setDistanceToHospital] = useState('');
@@ -130,9 +245,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [distanceToMarket, setDistanceToMarket] = useState('');
   const [floodRiskZone, setFloodRiskZone] = useState(false);
   const [erosionRiskZone, setErosionRiskZone] = useState(false);
+  const [nearbyAmenities, setNearbyAmenities] = useState('');
 
+  // === NOTES & DOCUMENTS ===
   const [additionalNotes, setAdditionalNotes] = useState('');
-  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
+  const [parcelDocuments, setParcelDocuments] = useState<File[]>([]);
+  const [constructionImages, setConstructionImages] = useState<File[]>([]);
   const [uploadingFiles, setUploadingFiles] = useState(false);
 
   // Fetch expertise fees on mount
@@ -164,38 +282,59 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     return fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleParcelDocSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
     
     const newFiles = Array.from(files);
     const validFiles = newFiles.filter(file => {
-      const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
+      const isValid = file.type === 'application/pdf' || file.type.startsWith('image/');
       const isValidSize = file.size <= 10 * 1024 * 1024;
-      if (!isValid) toast.error(`${file.name}: Format non supporté`);
+      if (!isValid) toast.error(`${file.name}: Format non supporté (PDF ou image)`);
       if (!isValidSize) toast.error(`${file.name}: Fichier trop volumineux (max 10MB)`);
       return isValid && isValidSize;
     });
     
-    setAttachedFiles(prev => [...prev, ...validFiles]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setParcelDocuments(prev => [...prev, ...validFiles]);
+    if (parcelDocsInputRef.current) parcelDocsInputRef.current.value = '';
   };
 
-  const removeFile = (index: number) => {
-    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  const handleConstructionImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+    
+    const newFiles = Array.from(files);
+    const validFiles = newFiles.filter(file => {
+      const isValid = file.type.startsWith('image/');
+      const isValidSize = file.size <= 10 * 1024 * 1024;
+      if (!isValid) toast.error(`${file.name}: Seules les images sont acceptées`);
+      if (!isValidSize) toast.error(`${file.name}: Fichier trop volumineux (max 10MB)`);
+      return isValid && isValidSize;
+    });
+    
+    setConstructionImages(prev => [...prev, ...validFiles]);
+    if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
   };
 
-  const uploadFiles = async (): Promise<string[]> => {
-    if (attachedFiles.length === 0) return [];
+  const removeParcelDoc = (index: number) => {
+    setParcelDocuments(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removeConstructionImage = (index: number) => {
+    setConstructionImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const uploadFiles = async (): Promise<{ parcelDocs: string[], constructionImages: string[] }> => {
+    const result = { parcelDocs: [] as string[], constructionImages: [] as string[] };
     
     setUploadingFiles(true);
-    const urls: string[] = [];
     
     try {
-      for (const file of attachedFiles) {
+      // Upload parcel documents
+      for (const file of parcelDocuments) {
         const fileExt = file.name.split('.').pop();
-        const fileName = `expertise_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-        const filePath = `expertise-documents/${user?.id}/${fileName}`;
+        const fileName = `parcel_doc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const filePath = `expertise-documents/${user?.id}/parcels/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('cadastral-documents')
@@ -204,14 +343,30 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         if (uploadError) throw uploadError;
         
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-        urls.push(data.publicUrl);
+        result.parcelDocs.push(data.publicUrl);
+      }
+
+      // Upload construction images
+      for (const file of constructionImages) {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `construction_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+        const filePath = `expertise-documents/${user?.id}/constructions/${fileName}`;
+        
+        const { error: uploadError } = await supabase.storage
+          .from('cadastral-documents')
+          .upload(filePath, file);
+        
+        if (uploadError) throw uploadError;
+        
+        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
+        result.constructionImages.push(data.publicUrl);
       }
       
-      return urls;
+      return result;
     } catch (error: any) {
       console.error('Upload error:', error);
       toast.error('Erreur lors du téléchargement des fichiers');
-      return [];
+      return result;
     } finally {
       setUploadingFiles(false);
     }
@@ -223,7 +378,42 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       return;
     }
 
-    // Store form data for later submission
+    // Store form data for later submission (extended fields stored in additional_notes as JSON)
+    const extendedData = {
+      construction_type: constructionType,
+      number_of_rooms: numberOfRooms ? parseInt(numberOfRooms) : undefined,
+      number_of_bedrooms: numberOfBedrooms ? parseInt(numberOfBedrooms) : undefined,
+      number_of_bathrooms: numberOfBathrooms ? parseInt(numberOfBathrooms) : undefined,
+      wall_material: wallMaterial,
+      roof_material: roofMaterial,
+      window_type: windowType,
+      floor_material: floorMaterial,
+      has_plaster: hasPlaster,
+      has_painting: hasPainting,
+      has_ceiling: hasCeiling,
+      building_position: buildingPosition,
+      facade_orientation: facadeOrientation || undefined,
+      distance_from_road: distanceFromRoad ? parseFloat(distanceFromRoad) : undefined,
+      is_corner_plot: isCornerPlot,
+      has_direct_street_access: hasDirectStreetAccess,
+      floor_number: floorNumber ? parseInt(floorNumber) : undefined,
+      total_building_floors: totalBuildingFloors ? parseInt(totalBuildingFloors) : undefined,
+      accessibility: accessibility,
+      apartment_number: apartmentNumber || undefined,
+      has_common_areas: hasCommonAreas,
+      monthly_charges: monthlyCharges ? parseFloat(monthlyCharges) : undefined,
+      sound_environment: soundEnvironment,
+      nearby_noise_sources: nearbyNoiseSources || undefined,
+      has_double_glazing: hasDoubleGlazing,
+      has_pool: hasPool,
+      has_air_conditioning: hasAirConditioning,
+      has_solar_panels: hasSolarPanels,
+      has_water_tank: hasWaterTank,
+      has_generator: hasGenerator,
+      has_borehole: hasBorehole,
+      nearby_amenities: nearbyAmenities || undefined,
+    };
+
     setFormData({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
@@ -249,7 +439,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       distance_to_market_km: distanceToMarket ? parseFloat(distanceToMarket) : undefined,
       flood_risk_zone: floodRiskZone,
       erosion_risk_zone: erosionRiskZone,
-      additional_notes: additionalNotes || undefined,
+      additional_notes: JSON.stringify({ 
+        user_notes: additionalNotes,
+        extended_data: extendedData 
+      }),
       requester_name: profile?.full_name || user.email || 'Utilisateur',
       requester_phone: undefined,
       requester_email: profile?.email || user.email || undefined,
@@ -270,15 +463,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
     try {
       // Upload files first
-      let documentUrls: string[] = [];
-      if (attachedFiles.length > 0) {
-        documentUrls = await uploadFiles();
-      }
+      const uploadedFiles = await uploadFiles();
+      const allDocUrls = [...uploadedFiles.parcelDocs, ...uploadedFiles.constructionImages];
 
       // Create the expertise request
       const request = await createExpertiseRequest({
         ...formData,
-        supporting_documents: documentUrls,
+        supporting_documents: allDocUrls,
       });
 
       if (!request) {
@@ -311,7 +502,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       // Process payment
       if (paymentMethod === 'mobile_money') {
-        // Call mobile money edge function
         const { data: paymentResult, error: mmError } = await supabase.functions.invoke(
           'process-mobile-money-payment',
           {
@@ -327,10 +517,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
         if (mmError) throw mmError;
 
-        // Simulate payment confirmation (in production, this would be webhook-based)
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        // Update payment status
         await supabase
           .from('expertise_payments')
           .update({
@@ -340,14 +528,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           })
           .eq('id', paymentRecord.id);
 
-        // Update expertise request payment status
         await supabase
           .from('real_estate_expertise_requests')
           .update({ payment_status: 'paid' })
           .eq('id', request.id);
 
       } else if (paymentMethod === 'bank_card') {
-        // Stripe payment
         const { data: stripeSession, error: stripeError } = await supabase.functions.invoke(
           'create-payment',
           {
@@ -391,380 +577,815 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   const handleClose = () => {
     setStep('form');
+    setActiveTab('general');
     setCreatedRequest(null);
     setFormData(null);
     setPropertyDescription('');
     setConstructionYear('');
     setTotalBuiltAreaSqm('');
     setAdditionalNotes('');
-    setAttachedFiles([]);
+    setParcelDocuments([]);
+    setConstructionImages([]);
     setPaymentMethod('mobile_money');
     setPaymentProvider('');
     setPaymentPhone('');
     onOpenChange(false);
   };
 
+  const isApartmentOrBuilding = constructionType === 'appartement' || constructionType === 'immeuble' || constructionType === 'duplex';
+
   const renderForm = () => (
-    <ScrollArea className="h-[65vh] sm:h-[70vh]">
-      <div className="space-y-4 pr-2">
-        {/* Info parcelle */}
-        <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
-          <CardContent className="p-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-primary/10 rounded-lg">
-                <MapPin className="h-4 w-4 text-primary" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-mono font-bold text-sm truncate">{parcelNumber}</p>
-                {parcelData?.province && (
-                  <p className="text-xs text-muted-foreground truncate">
-                    {parcelData.province} {parcelData.ville && `• ${parcelData.ville}`}
-                  </p>
-                )}
-              </div>
+    <div className="space-y-3">
+      {/* Info parcelle */}
+      <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <MapPin className="h-4 w-4 text-primary" />
             </div>
-          </CardContent>
-        </Card>
-
-        <Alert className="rounded-xl bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-sm text-amber-800 dark:text-amber-200">
-            Veuillez renseigner toutes les informations pertinentes sur ce bien. 
-            Un expert analysera votre demande et vous délivrera un certificat d'expertise immobilière valable 6 mois.
-          </AlertDescription>
-        </Alert>
-
-        {/* Description du bien */}
-        <div className="space-y-2">
-          <Label className="text-sm font-semibold">Description du bien</Label>
-          <Textarea
-            value={propertyDescription}
-            onChange={(e) => setPropertyDescription(e.target.value)}
-            placeholder="Décrivez brièvement le bien (type, caractéristiques principales...)"
-            className="min-h-[80px] text-sm rounded-xl border-2"
-          />
-        </div>
-
-        {/* Informations construction */}
-        <Card className="border rounded-xl">
-          <CardContent className="p-3 space-y-3">
-            <h4 className="text-sm font-semibold flex items-center gap-2">
-              <Building className="h-4 w-4 text-muted-foreground" />
-              Informations sur la construction
-            </h4>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Année de construction</Label>
-                <Input
-                  type="number"
-                  value={constructionYear}
-                  onChange={(e) => setConstructionYear(e.target.value)}
-                  placeholder="Ex: 2015"
-                  className="h-10 text-sm rounded-xl border-2"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Nombre d'étages</Label>
-                <Input
-                  type="number"
-                  value={numberOfFloors}
-                  onChange={(e) => setNumberOfFloors(e.target.value)}
-                  placeholder="1"
-                  className="h-10 text-sm rounded-xl border-2"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Surface bâtie (m²)</Label>
-                <Input
-                  type="number"
-                  value={totalBuiltAreaSqm}
-                  onChange={(e) => setTotalBuiltAreaSqm(e.target.value)}
-                  placeholder="Ex: 150"
-                  className="h-10 text-sm rounded-xl border-2"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Qualité construction</Label>
-                <Select value={constructionQuality} onValueChange={setConstructionQuality}>
-                  <SelectTrigger className="h-10 text-sm rounded-xl border-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {CONSTRUCTION_QUALITY_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs">État du bien</Label>
-              <Select value={propertyCondition} onValueChange={setPropertyCondition}>
-                <SelectTrigger className="h-10 text-sm rounded-xl border-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROPERTY_CONDITION_OPTIONS.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Équipements */}
-        <Card className="border rounded-xl">
-          <CardContent className="p-3 space-y-3">
-            <h4 className="text-sm font-semibold">Équipements & commodités</h4>
-            
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                <Checkbox checked={hasWaterSupply} onCheckedChange={(c) => setHasWaterSupply(c === true)} />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Droplets className="h-3.5 w-3.5 text-blue-500" />
-                  Eau courante
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                <Checkbox checked={hasElectricity} onCheckedChange={(c) => setHasElectricity(c === true)} />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Zap className="h-3.5 w-3.5 text-yellow-500" />
-                  Électricité
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                <Checkbox checked={hasSewageSystem} onCheckedChange={(c) => setHasSewageSystem(c === true)} />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Droplets className="h-3.5 w-3.5 text-gray-500" />
-                  Assainissement
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                <Checkbox checked={hasInternet} onCheckedChange={(c) => setHasInternet(c === true)} />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Wifi className="h-3.5 w-3.5 text-green-500" />
-                  Internet
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                <Checkbox checked={hasSecuritySystem} onCheckedChange={(c) => setHasSecuritySystem(c === true)} />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Shield className="h-3.5 w-3.5 text-red-500" />
-                  Sécurité
-                </div>
-              </div>
-              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-                <Checkbox checked={hasGarden} onCheckedChange={(c) => setHasGarden(c === true)} />
-                <div className="flex items-center gap-1.5 text-sm">
-                  <Trees className="h-3.5 w-3.5 text-green-600" />
-                  Jardin
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
-              <Checkbox checked={hasParking} onCheckedChange={(c) => setHasParking(c === true)} />
-              <div className="flex items-center gap-1.5 text-sm flex-1">
-                <Car className="h-3.5 w-3.5 text-slate-500" />
-                Parking
-              </div>
-              {hasParking && (
-                <Input
-                  type="number"
-                  value={parkingSpaces}
-                  onChange={(e) => setParkingSpaces(e.target.value)}
-                  placeholder="Nb places"
-                  className="h-8 w-20 text-xs rounded-lg"
-                />
+            <div className="min-w-0 flex-1">
+              <p className="font-mono font-bold text-sm truncate">{parcelNumber}</p>
+              {parcelData?.province && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {parcelData.province} {parcelData.ville && `• ${parcelData.ville}`}
+                </p>
               )}
             </div>
+          </div>
+        </CardContent>
+      </Card>
 
-            {hasGarden && (
-              <div className="flex items-center gap-2 pl-6">
-                <Label className="text-xs">Surface jardin (m²)</Label>
-                <Input
-                  type="number"
-                  value={gardenAreaSqm}
-                  onChange={(e) => setGardenAreaSqm(e.target.value)}
-                  placeholder="Ex: 50"
-                  className="h-8 w-24 text-xs rounded-lg"
-                />
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full grid-cols-4 h-9 rounded-xl">
+          <TabsTrigger value="general" className="text-xs rounded-lg">Général</TabsTrigger>
+          <TabsTrigger value="materiaux" className="text-xs rounded-lg">Matériaux</TabsTrigger>
+          <TabsTrigger value="environnement" className="text-xs rounded-lg">Environ.</TabsTrigger>
+          <TabsTrigger value="documents" className="text-xs rounded-lg">Documents</TabsTrigger>
+        </TabsList>
 
-        {/* Environnement */}
-        <Card className="border rounded-xl">
-          <CardContent className="p-3 space-y-3">
-            <h4 className="text-sm font-semibold">Environnement & accessibilité</h4>
-            
-            <div className="space-y-1.5">
-              <Label className="text-xs">Type d'accès routier</Label>
-              <Select value={roadAccessType} onValueChange={setRoadAccessType}>
-                <SelectTrigger className="h-10 text-sm rounded-xl border-2">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ROAD_ACCESS_OPTIONS.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+        <ScrollArea className="h-[50vh] sm:h-[55vh] mt-3">
+          {/* === ONGLET GÉNÉRAL === */}
+          <TabsContent value="general" className="space-y-3 pr-2 mt-0">
+            {/* Type de construction */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Home className="h-4 w-4 text-muted-foreground" />
+                  Type de bien
+                </h4>
+                
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Type de construction</Label>
+                  <Select value={constructionType} onValueChange={setConstructionType}>
+                    <SelectTrigger className="h-10 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {CONSTRUCTION_TYPE_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs">Distance route principale (m)</Label>
-                <Input
-                  type="number"
-                  value={distanceToMainRoad}
-                  onChange={(e) => setDistanceToMainRoad(e.target.value)}
-                  placeholder="Ex: 50"
-                  className="h-10 text-sm rounded-xl border-2"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Distance hôpital (km)</Label>
-                <Input
-                  type="number"
-                  value={distanceToHospital}
-                  onChange={(e) => setDistanceToHospital(e.target.value)}
-                  placeholder="Ex: 2"
-                  className="h-10 text-sm rounded-xl border-2"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Distance école (km)</Label>
-                <Input
-                  type="number"
-                  value={distanceToSchool}
-                  onChange={(e) => setDistanceToSchool(e.target.value)}
-                  placeholder="Ex: 1"
-                  className="h-10 text-sm rounded-xl border-2"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs">Distance marché (km)</Label>
-                <Input
-                  type="number"
-                  value={distanceToMarket}
-                  onChange={(e) => setDistanceToMarket(e.target.value)}
-                  placeholder="Ex: 0.5"
-                  className="h-10 text-sm rounded-xl border-2"
-                />
-              </div>
-            </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Description du bien</Label>
+                  <Textarea
+                    value={propertyDescription}
+                    onChange={(e) => setPropertyDescription(e.target.value)}
+                    placeholder="Décrivez brièvement le bien..."
+                    className="min-h-[60px] text-sm rounded-xl border-2"
+                  />
+                </div>
+              </CardContent>
+            </Card>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Checkbox checked={floodRiskZone} onCheckedChange={(c) => setFloodRiskZone(c === true)} />
-                <span className="text-sm text-amber-600">Zone inondable</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Checkbox checked={erosionRiskZone} onCheckedChange={(c) => setErosionRiskZone(c === true)} />
-                <span className="text-sm text-amber-600">Zone d'érosion</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            {/* Infos construction */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                  Caractéristiques
+                </h4>
 
-        {/* Notes additionnelles */}
-        <div className="space-y-2">
-          <Label className="text-sm font-semibold">Notes additionnelles</Label>
-          <Textarea
-            value={additionalNotes}
-            onChange={(e) => setAdditionalNotes(e.target.value)}
-            placeholder="Autres informations pertinentes (servitudes, litiges, potentiel de développement...)"
-            className="min-h-[80px] text-sm rounded-xl border-2"
-          />
-        </div>
-
-        {/* Documents */}
-        <Card className="border rounded-xl">
-          <CardContent className="p-3 space-y-3">
-            <h4 className="text-sm font-semibold flex items-center gap-2">
-              <Upload className="h-4 w-4 text-muted-foreground" />
-              Documents justificatifs (optionnel)
-            </h4>
-            <p className="text-xs text-muted-foreground">
-              Photos du bien, plans, titre foncier... (max 10MB/fichier)
-            </p>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-11 text-sm rounded-xl border-2 border-dashed"
-            >
-              <Upload className="h-4 w-4 mr-2" />
-              Ajouter des fichiers
-            </Button>
-            
-            {attachedFiles.length > 0 && (
-              <div className="space-y-2">
-                {attachedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
-                    {file.type.startsWith('image/') ? (
-                      <Image className="h-4 w-4 text-primary flex-shrink-0" />
-                    ) : (
-                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                    )}
-                    <span className="flex-1 truncate text-sm">{file.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFile(index)}
-                      className="h-7 w-7 rounded-lg"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Année construction</Label>
+                    <Input
+                      type="number"
+                      value={constructionYear}
+                      onChange={(e) => setConstructionYear(e.target.value)}
+                      placeholder="Ex: 2015"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nombre d'étages</Label>
+                    <Input
+                      type="number"
+                      value={numberOfFloors}
+                      onChange={(e) => setNumberOfFloors(e.target.value)}
+                      placeholder="1"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                </div>
 
-        <Button 
-          onClick={handleProceedToPayment} 
-          className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
-          disabled={loading || uploadingFiles || loadingFees}
-        >
-          {loadingFees ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Chargement...
-            </>
-          ) : (
-            <>
-              <DollarSign className="h-4 w-4 mr-2" />
-              Continuer vers le paiement ({getTotalAmount()}$)
-            </>
-          )}
-        </Button>
-      </div>
-    </ScrollArea>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Surface bâtie (m²)</Label>
+                    <Input
+                      type="number"
+                      value={totalBuiltAreaSqm}
+                      onChange={(e) => setTotalBuiltAreaSqm(e.target.value)}
+                      placeholder="Ex: 150"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Qualité</Label>
+                    <Select value={constructionQuality} onValueChange={setConstructionQuality}>
+                      <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200]">
+                        {CONSTRUCTION_QUALITY_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Pièces</Label>
+                    <Input
+                      type="number"
+                      value={numberOfRooms}
+                      onChange={(e) => setNumberOfRooms(e.target.value)}
+                      placeholder="5"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Chambres</Label>
+                    <Input
+                      type="number"
+                      value={numberOfBedrooms}
+                      onChange={(e) => setNumberOfBedrooms(e.target.value)}
+                      placeholder="3"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">SDB</Label>
+                    <Input
+                      type="number"
+                      value={numberOfBathrooms}
+                      onChange={(e) => setNumberOfBathrooms(e.target.value)}
+                      placeholder="2"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">État du bien</Label>
+                  <Select value={propertyCondition} onValueChange={setPropertyCondition}>
+                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {PROPERTY_CONDITION_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Appartement / Immeuble - conditionnel */}
+            {isApartmentOrBuilding && (
+              <Card className="border rounded-xl border-blue-200 bg-blue-50/30 dark:border-blue-800 dark:bg-blue-950/20">
+                <CardContent className="p-3 space-y-3">
+                  <h4 className="text-sm font-semibold flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-blue-600" />
+                    Détails appartement/immeuble
+                  </h4>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">N° d'étage</Label>
+                      <Input
+                        type="number"
+                        value={floorNumber}
+                        onChange={(e) => setFloorNumber(e.target.value)}
+                        placeholder="Ex: 2"
+                        className="h-9 text-sm rounded-xl border-2"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Étages total</Label>
+                      <Input
+                        type="number"
+                        value={totalBuildingFloors}
+                        onChange={(e) => setTotalBuildingFloors(e.target.value)}
+                        placeholder="Ex: 5"
+                        className="h-9 text-sm rounded-xl border-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Accessibilité</Label>
+                    <Select value={accessibility} onValueChange={setAccessibility}>
+                      <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200]">
+                        {ACCESSIBILITY_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">N° appartement</Label>
+                      <Input
+                        value={apartmentNumber}
+                        onChange={(e) => setApartmentNumber(e.target.value)}
+                        placeholder="Ex: A12"
+                        className="h-9 text-sm rounded-xl border-2"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Charges/mois ($)</Label>
+                      <Input
+                        type="number"
+                        value={monthlyCharges}
+                        onChange={(e) => setMonthlyCharges(e.target.value)}
+                        placeholder="50"
+                        className="h-9 text-sm rounded-xl border-2"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasCommonAreas} onCheckedChange={(c) => setHasCommonAreas(c === true)} />
+                    <span className="text-sm">Parties communes (hall, parking commun...)</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Emplacement */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Layers className="h-4 w-4 text-muted-foreground" />
+                  Position sur la parcelle
+                </h4>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Emplacement construction</Label>
+                  <Select value={buildingPosition} onValueChange={setBuildingPosition}>
+                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {BUILDING_POSITION_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Orientation façade</Label>
+                    <Input
+                      value={facadeOrientation}
+                      onChange={(e) => setFacadeOrientation(e.target.value)}
+                      placeholder="Ex: Nord-Est"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Distance route (m)</Label>
+                    <Input
+                      type="number"
+                      value={distanceFromRoad}
+                      onChange={(e) => setDistanceFromRoad(e.target.value)}
+                      placeholder="Ex: 5"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={isCornerPlot} onCheckedChange={(c) => setIsCornerPlot(c === true)} />
+                    <span className="text-sm">Parcelle d'angle</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={hasDirectStreetAccess} onCheckedChange={(c) => setHasDirectStreetAccess(c === true)} />
+                    <span className="text-sm">Accès direct rue</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Équipements */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold">Équipements & commodités</h4>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasWaterSupply} onCheckedChange={(c) => setHasWaterSupply(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Droplets className="h-3.5 w-3.5 text-blue-500" />
+                      Eau courante
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasElectricity} onCheckedChange={(c) => setHasElectricity(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Zap className="h-3.5 w-3.5 text-yellow-500" />
+                      Électricité
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasSewageSystem} onCheckedChange={(c) => setHasSewageSystem(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Droplets className="h-3.5 w-3.5 text-gray-500" />
+                      Assainissement
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasInternet} onCheckedChange={(c) => setHasInternet(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Wifi className="h-3.5 w-3.5 text-green-500" />
+                      Internet
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasSecuritySystem} onCheckedChange={(c) => setHasSecuritySystem(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Shield className="h-3.5 w-3.5 text-red-500" />
+                      Sécurité
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasGarden} onCheckedChange={(c) => setHasGarden(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Trees className="h-3.5 w-3.5 text-green-600" />
+                      Jardin
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasPool} onCheckedChange={(c) => setHasPool(c === true)} />
+                    <span className="text-sm">Piscine</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasAirConditioning} onCheckedChange={(c) => setHasAirConditioning(c === true)} />
+                    <span className="text-sm">Climatisation</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasSolarPanels} onCheckedChange={(c) => setHasSolarPanels(c === true)} />
+                    <span className="text-sm">Panneaux solaires</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasGenerator} onCheckedChange={(c) => setHasGenerator(c === true)} />
+                    <span className="text-sm">Groupe électrogène</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasWaterTank} onCheckedChange={(c) => setHasWaterTank(c === true)} />
+                    <span className="text-sm">Citerne d'eau</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasBorehole} onCheckedChange={(c) => setHasBorehole(c === true)} />
+                    <span className="text-sm">Forage</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                  <Checkbox checked={hasParking} onCheckedChange={(c) => setHasParking(c === true)} />
+                  <div className="flex items-center gap-1.5 text-sm flex-1">
+                    <Car className="h-3.5 w-3.5 text-slate-500" />
+                    Parking
+                  </div>
+                  {hasParking && (
+                    <Input
+                      type="number"
+                      value={parkingSpaces}
+                      onChange={(e) => setParkingSpaces(e.target.value)}
+                      placeholder="Places"
+                      className="h-8 w-16 text-xs rounded-lg"
+                    />
+                  )}
+                </div>
+
+                {hasGarden && (
+                  <div className="flex items-center gap-2 pl-6">
+                    <Label className="text-xs">Surface jardin (m²)</Label>
+                    <Input
+                      type="number"
+                      value={gardenAreaSqm}
+                      onChange={(e) => setGardenAreaSqm(e.target.value)}
+                      placeholder="Ex: 50"
+                      className="h-8 w-24 text-xs rounded-lg"
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* === ONGLET MATÉRIAUX === */}
+          <TabsContent value="materiaux" className="space-y-3 pr-2 mt-0">
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Building className="h-4 w-4 text-muted-foreground" />
+                  Matériaux de construction
+                </h4>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Murs / Élévation</Label>
+                  <Select value={wallMaterial} onValueChange={setWallMaterial}>
+                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {WALL_MATERIAL_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Toiture</Label>
+                  <Select value={roofMaterial} onValueChange={setRoofMaterial}>
+                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {ROOF_MATERIAL_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Fenêtres</Label>
+                  <Select value={windowType} onValueChange={setWindowType}>
+                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {WINDOW_TYPE_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Sol / Revêtement</Label>
+                  <Select value={floorMaterial} onValueChange={setFloorMaterial}>
+                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {FLOOR_MATERIAL_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Separator className="my-2" />
+
+                <h5 className="text-xs font-semibold text-muted-foreground">Finitions</h5>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasPlaster} onCheckedChange={(c) => setHasPlaster(c === true)} />
+                    <span className="text-sm">Crépi</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasPainting} onCheckedChange={(c) => setHasPainting(c === true)} />
+                    <span className="text-sm">Peinture</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasCeiling} onCheckedChange={(c) => setHasCeiling(c === true)} />
+                    <span className="text-sm">Plafond</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                  <Checkbox checked={hasDoubleGlazing} onCheckedChange={(c) => setHasDoubleGlazing(c === true)} />
+                  <span className="text-sm">Double vitrage (isolation phonique)</span>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* === ONGLET ENVIRONNEMENT === */}
+          <TabsContent value="environnement" className="space-y-3 pr-2 mt-0">
+            {/* Environnement sonore */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Volume2 className="h-4 w-4 text-muted-foreground" />
+                  Environnement sonore
+                </h4>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Niveau sonore</Label>
+                  <Select value={soundEnvironment} onValueChange={setSoundEnvironment}>
+                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {SOUND_ENVIRONMENT_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Sources de bruit à proximité</Label>
+                  <Textarea
+                    value={nearbyNoiseSources}
+                    onChange={(e) => setNearbyNoiseSources(e.target.value)}
+                    placeholder="Ex: Marché, bar, école, route principale..."
+                    className="min-h-[50px] text-sm rounded-xl border-2"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Accessibilité */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold">Accessibilité & distances</h4>
+                
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Type d'accès routier</Label>
+                  <Select value={roadAccessType} onValueChange={setRoadAccessType}>
+                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="z-[1200]">
+                      {ROAD_ACCESS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Route principale (m)</Label>
+                    <Input
+                      type="number"
+                      value={distanceToMainRoad}
+                      onChange={(e) => setDistanceToMainRoad(e.target.value)}
+                      placeholder="Ex: 50"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Hôpital (km)</Label>
+                    <Input
+                      type="number"
+                      value={distanceToHospital}
+                      onChange={(e) => setDistanceToHospital(e.target.value)}
+                      placeholder="Ex: 2"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">École (km)</Label>
+                    <Input
+                      type="number"
+                      value={distanceToSchool}
+                      onChange={(e) => setDistanceToSchool(e.target.value)}
+                      placeholder="Ex: 1"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Marché (km)</Label>
+                    <Input
+                      type="number"
+                      value={distanceToMarket}
+                      onChange={(e) => setDistanceToMarket(e.target.value)}
+                      placeholder="Ex: 0.5"
+                      className="h-9 text-sm rounded-xl border-2"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Commodités à proximité</Label>
+                  <Textarea
+                    value={nearbyAmenities}
+                    onChange={(e) => setNearbyAmenities(e.target.value)}
+                    placeholder="Ex: Banque, pharmacie, supermarché, église..."
+                    className="min-h-[50px] text-sm rounded-xl border-2"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Risques */}
+            <Card className="border rounded-xl border-amber-200 bg-amber-50/30 dark:border-amber-800 dark:bg-amber-950/20">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                  <AlertTriangle className="h-4 w-4" />
+                  Zones à risque
+                </h4>
+                
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={floodRiskZone} onCheckedChange={(c) => setFloodRiskZone(c === true)} />
+                    <span className="text-sm text-amber-700 dark:text-amber-300">Zone inondable</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Checkbox checked={erosionRiskZone} onCheckedChange={(c) => setErosionRiskZone(c === true)} />
+                    <span className="text-sm text-amber-700 dark:text-amber-300">Zone d'érosion</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* === ONGLET DOCUMENTS === */}
+          <TabsContent value="documents" className="space-y-3 pr-2 mt-0">
+            {/* Documents parcelle */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-blue-600" />
+                  Documents de la parcelle
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Titre foncier, certificat d'enregistrement, PV de bornage, attestation de propriété...
+                </p>
+                
+                <input
+                  ref={parcelDocsInputRef}
+                  type="file"
+                  accept=".pdf,image/*"
+                  multiple
+                  onChange={handleParcelDocSelect}
+                  className="hidden"
+                />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => parcelDocsInputRef.current?.click()}
+                  className="w-full h-10 text-sm rounded-xl border-2 border-dashed"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Ajouter documents parcelle (PDF, images)
+                </Button>
+                
+                {parcelDocuments.length > 0 && (
+                  <div className="space-y-2">
+                    {parcelDocuments.map((file, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-950/30 rounded-xl">
+                        <FileText className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                        <span className="flex-1 truncate text-sm">{file.name}</span>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeParcelDoc(index)}
+                          className="h-7 w-7 rounded-lg"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Images construction */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-green-600" />
+                  Photos de la construction
+                </h4>
+                <p className="text-xs text-muted-foreground">
+                  Façade, intérieur, cuisine, chambres, salles de bain, jardin, terrasse...
+                </p>
+                
+                <input
+                  ref={constructionImagesInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleConstructionImageSelect}
+                  className="hidden"
+                />
+                
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => constructionImagesInputRef.current?.click()}
+                  className="w-full h-10 text-sm rounded-xl border-2 border-dashed"
+                >
+                  <Image className="h-4 w-4 mr-2" />
+                  Ajouter photos construction
+                </Button>
+                
+                {constructionImages.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2">
+                    {constructionImages.map((file, index) => (
+                      <div key={index} className="relative group">
+                        <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={file.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <Button
+                          variant="destructive"
+                          size="icon"
+                          onClick={() => removeConstructionImage(index)}
+                          className="absolute -top-1 -right-1 h-5 w-5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Notes additionnelles */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold">Notes additionnelles</h4>
+                <Textarea
+                  value={additionalNotes}
+                  onChange={(e) => setAdditionalNotes(e.target.value)}
+                  placeholder="Autres informations pertinentes : servitudes, litiges, potentiel de développement, travaux récents, historique du bien..."
+                  className="min-h-[100px] text-sm rounded-xl border-2"
+                />
+              </CardContent>
+            </Card>
+
+            <Alert className="rounded-xl bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-sm text-green-800 dark:text-green-200">
+                Plus vous fournissez d'informations et de photos, plus l'expertise sera précise et rapide !
+              </AlertDescription>
+            </Alert>
+          </TabsContent>
+        </ScrollArea>
+      </Tabs>
+
+      <Button 
+        onClick={handleProceedToPayment} 
+        className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg mt-3"
+        disabled={loading || uploadingFiles || loadingFees}
+      >
+        {loadingFees ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Chargement...
+          </>
+        ) : (
+          <>
+            <DollarSign className="h-4 w-4 mr-2" />
+            Continuer vers le paiement ({getTotalAmount()}$)
+          </>
+        )}
+      </Button>
+    </div>
   );
 
   const renderPayment = () => (
     <div className="space-y-3">
-      {/* Header compact avec montant */}
       <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 border border-primary/20">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 min-w-0">
@@ -783,7 +1404,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </div>
       </div>
 
-      {/* Détails des frais - compact */}
       <div className="bg-muted/30 rounded-2xl p-2.5">
         <p className="text-[11px] font-semibold text-muted-foreground mb-1.5 px-0.5">Détails des frais</p>
         <div className="space-y-1">
@@ -796,7 +1416,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </div>
       </div>
 
-      {/* Mode de paiement - boutons compacts */}
       <div>
         <p className="text-xs font-semibold mb-2">Mode de paiement</p>
         <div className="grid grid-cols-2 gap-2">
@@ -827,7 +1446,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </div>
       </div>
 
-      {/* Détails Mobile Money - optimisé mobile */}
       {paymentMethod === 'mobile_money' && (
         <div className="bg-muted/20 rounded-2xl p-2.5 space-y-2">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -837,7 +1455,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <SelectTrigger className="h-9 rounded-xl text-sm">
                   <SelectValue placeholder="Choisir..." />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[1200]">
                   <SelectItem value="airtel">Airtel Money</SelectItem>
                   <SelectItem value="orange">Orange Money</SelectItem>
                   <SelectItem value="mpesa">M-Pesa</SelectItem>
@@ -866,7 +1484,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </div>
       )}
 
-      {/* Boutons - responsive */}
       <div className="flex gap-2 pt-1">
         <Button 
           variant="outline" 
@@ -899,45 +1516,42 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   );
 
   const renderConfirmation = () => (
-    <div className="space-y-6 text-center py-6">
-      <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
-        <CheckCircle2 className="h-8 w-8 text-green-600 dark:text-green-400" />
+    <div className="space-y-4 text-center py-4">
+      <div className="h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto">
+        <CheckCircle2 className="h-8 w-8 text-green-600" />
       </div>
       
-      <div className="space-y-2">
-        <h3 className="text-xl font-bold">Demande envoyée !</h3>
-        <p className="text-muted-foreground text-sm">
-          Votre demande d'expertise immobilière a été soumise avec succès.
+      <div className="space-y-1">
+        <h3 className="font-bold text-lg">Demande envoyée !</h3>
+        <p className="text-sm text-muted-foreground">
+          Votre demande d'expertise immobilière a été enregistrée avec succès.
         </p>
       </div>
 
       {createdRequest && (
-        <Card className="bg-muted/50 rounded-xl">
-          <CardContent className="p-4 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">N° de référence</span>
-              <span className="font-mono font-bold">{createdRequest.reference_number}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Parcelle</span>
-              <span className="font-medium">{parcelNumber}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Montant payé</span>
-              <span className="font-medium text-green-600">{getTotalAmount()}$</span>
-            </div>
-          </CardContent>
-        </Card>
+        <div className="bg-muted/50 rounded-xl p-3 space-y-2 text-left">
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Référence</span>
+            <span className="font-mono font-bold">{createdRequest.reference_number}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-muted-foreground">Parcelle</span>
+            <span className="font-mono">{parcelNumber}</span>
+          </div>
+        </div>
       )}
 
-      <Alert className="text-left rounded-xl">
+      <Alert className="rounded-xl text-left">
         <AlertDescription className="text-sm">
-          Un expert immobilier examinera votre demande et vous contactera pour fixer un rendez-vous d'évaluation. 
-          Le certificat d'expertise sera valable pendant <strong>6 mois</strong> après son émission.
+          Un expert immobilier analysera votre demande et vous contactera prochainement. 
+          Vous pouvez suivre l'avancement depuis votre tableau de bord.
         </AlertDescription>
       </Alert>
 
-      <Button onClick={handleClose} className="w-full h-12 rounded-xl">
+      <Button 
+        onClick={handleClose}
+        className="w-full h-11 rounded-xl"
+      >
         Fermer
       </Button>
     </div>
@@ -946,17 +1560,21 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-lg'} p-4 rounded-2xl z-[1100]`}>
-        <DialogHeader className="space-y-1">
-          <DialogTitle className="text-lg font-bold flex items-center gap-2">
+      <DialogContent className="max-w-[95vw] sm:max-w-[420px] max-h-[90vh] p-4 rounded-2xl">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="text-base flex items-center gap-2">
             <FileSearch className="h-5 w-5 text-primary" />
-            Demande d'expertise immobilière
+            {step === 'form' && 'Expertise immobilière'}
+            {step === 'payment' && 'Paiement'}
+            {step === 'confirmation' && 'Confirmation'}
           </DialogTitle>
-          <DialogDescription className="text-sm">
-            Évaluation de la valeur vénale pour la parcelle {parcelNumber}
-          </DialogDescription>
+          {step === 'form' && (
+            <DialogDescription className="text-xs">
+              Renseignez les détails pour obtenir un certificat de valeur vénale
+            </DialogDescription>
+          )}
         </DialogHeader>
-        
+
         {step === 'form' && renderForm()}
         {step === 'payment' && renderPayment()}
         {step === 'confirmation' && renderConfirmation()}

@@ -10,143 +10,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { 
-  Settings, GripVertical, Plus, Trash2, Save, 
-  Eye, EyeOff, Sparkles, Clock, AlertTriangle,
-  ChevronUp, ChevronDown, RotateCcw
+  Settings, Plus, Save, 
+  Eye, EyeOff, Sparkles, Clock,
+  ChevronUp, ChevronDown, RotateCcw, Beaker, Tag
 } from 'lucide-react';
 import { toast } from 'sonner';
-
-// Types pour la configuration des actions
-interface ActionBadge {
-  type: 'nouveau' | 'bientot' | 'beta' | 'promo' | 'none';
-  label?: string;
-  color?: string;
-}
-
-interface ParcelAction {
-  id: string;
-  key: string;
-  label: string;
-  description: string;
-  isActive: boolean;
-  isVisible: boolean;
-  displayOrder: number;
-  badge: ActionBadge;
-  requiresAuth: boolean;
-  category: string;
-}
-
-// Configuration par défaut des actions (correspondant à ParcelActionsDropdown)
-const DEFAULT_ACTIONS: ParcelAction[] = [
-  {
-    id: '1',
-    key: 'expertise',
-    label: 'Expertise immobilière',
-    description: 'Obtenir un certificat de valeur vénale',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 1,
-    badge: { type: 'nouveau' },
-    requiresAuth: true,
-    category: 'expertise'
-  },
-  {
-    id: '2',
-    key: 'mutation',
-    label: 'Demander Mutation',
-    description: 'Transfert de propriété',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 2,
-    badge: { type: 'none' },
-    requiresAuth: true,
-    category: 'mutation'
-  },
-  {
-    id: '3',
-    key: 'mortgage_add',
-    label: 'Ajouter Hypothèque',
-    description: 'Ajouter une Hypothèque active',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 3,
-    badge: { type: 'none' },
-    requiresAuth: true,
-    category: 'mortgage'
-  },
-  {
-    id: '4',
-    key: 'mortgage_remove',
-    label: 'Retirer Hypothèque',
-    description: 'Demander la radiation',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 4,
-    badge: { type: 'none' },
-    requiresAuth: true,
-    category: 'mortgage'
-  },
-  {
-    id: '5',
-    key: 'permit_add',
-    label: 'Ajouter Permis',
-    description: 'Pour une nouvelle construction',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 5,
-    badge: { type: 'none' },
-    requiresAuth: true,
-    category: 'permit'
-  },
-  {
-    id: '6',
-    key: 'permit_regularization',
-    label: 'Ajouter P. Régularisation',
-    description: 'Régulariser une construction existante',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 6,
-    badge: { type: 'none' },
-    requiresAuth: true,
-    category: 'permit'
-  },
-  {
-    id: '7',
-    key: 'tax',
-    label: 'Ajouter Taxe foncière',
-    description: 'Signaler le paiement d\'une taxe',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 7,
-    badge: { type: 'none' },
-    requiresAuth: true,
-    category: 'tax'
-  },
-  {
-    id: '8',
-    key: 'permit_request',
-    label: 'Obtenir un permis',
-    description: 'Demande de permis de construire',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 8,
-    badge: { type: 'none' },
-    requiresAuth: true,
-    category: 'permit'
-  },
-  {
-    id: '9',
-    key: 'subdivision',
-    label: 'Demander un lotissement',
-    description: 'Diviser cette parcelle en lots',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 9,
-    badge: { type: 'bientot' },
-    requiresAuth: true,
-    category: 'subdivision'
-  }
-];
+import { useParcelActionsConfig, ParcelAction, ActionBadge } from '@/hooks/useParcelActionsConfig';
 
 const BADGE_TYPES = [
   { value: 'none', label: 'Aucun', color: 'bg-transparent' },
@@ -166,32 +35,26 @@ const CATEGORIES = [
 ];
 
 const AdminParcelActionsConfig: React.FC = () => {
+  const { actions: loadedActions, saveConfig, resetToDefaults, DEFAULT_ACTIONS, loading } = useParcelActionsConfig();
   const [actions, setActions] = useState<ParcelAction[]>(DEFAULT_ACTIONS);
   const [selectedAction, setSelectedAction] = useState<ParcelAction | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  // Charger la configuration depuis localStorage (en attendant la table Supabase)
+  // Sync with loaded actions from hook
   useEffect(() => {
-    const saved = localStorage.getItem('parcel_actions_config');
-    if (saved) {
-      try {
-        setActions(JSON.parse(saved));
-      } catch (e) {
-        console.error('Erreur chargement config actions:', e);
-      }
+    if (!loading && loadedActions.length > 0) {
+      setActions(loadedActions);
     }
-  }, []);
+  }, [loadedActions, loading]);
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Pour l'instant, sauvegarder dans localStorage
-      // TODO: Créer une migration Supabase pour persister cette config
-      localStorage.setItem('parcel_actions_config', JSON.stringify(actions));
+      saveConfig(actions);
       
       toast.success('Configuration sauvegardée', {
-        description: 'Les modifications seront appliquées immédiatement.'
+        description: 'Les modifications seront appliquées immédiatement dans le dropdown Actions.'
       });
       setHasChanges(false);
     } catch (error) {
@@ -202,9 +65,10 @@ const AdminParcelActionsConfig: React.FC = () => {
   };
 
   const handleReset = () => {
+    resetToDefaults();
     setActions(DEFAULT_ACTIONS);
     setSelectedAction(null);
-    setHasChanges(true);
+    setHasChanges(false);
     toast.info('Configuration réinitialisée aux valeurs par défaut');
   };
 
