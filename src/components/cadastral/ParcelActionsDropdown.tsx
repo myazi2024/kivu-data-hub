@@ -9,7 +9,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, Sparkles, Clock } from 'lucide-react';
+import { ChevronDown, Sparkles, Clock, Beaker, Tag } from 'lucide-react';
+import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import MortgageCancellationDialog from './MortgageCancellationDialog';
@@ -71,12 +72,62 @@ const triggerHapticFeedback = async () => {
   }
 };
 
+// Badge rendering component
+const ActionBadge: React.FC<{ badge: ParcelAction['badge'] }> = ({ badge }) => {
+  if (badge.type === 'none') return null;
+
+  const getBadgeConfig = () => {
+    switch (badge.type) {
+      case 'nouveau':
+        return { 
+          label: 'nouveau', 
+          className: 'bg-seloger-red text-white',
+          icon: <Sparkles className="h-2.5 w-2.5" />
+        };
+      case 'bientot':
+        return { 
+          label: 'Bientôt', 
+          className: 'bg-amber-500 text-white',
+          icon: <Clock className="h-2.5 w-2.5" />
+        };
+      case 'beta':
+        return { 
+          label: 'Bêta', 
+          className: 'bg-blue-500 text-white',
+          icon: <Beaker className="h-2.5 w-2.5" />
+        };
+      case 'promo':
+        return { 
+          label: 'Promo', 
+          className: 'bg-green-500 text-white',
+          icon: <Tag className="h-2.5 w-2.5" />
+        };
+      default:
+        return null;
+    }
+  };
+
+  const config = getBadgeConfig();
+  if (!config) return null;
+
+  return (
+    <Badge 
+      className={`h-4 px-1.5 text-[9px] font-bold uppercase tracking-wide flex items-center gap-0.5 ${config.className}`}
+    >
+      {config.icon}
+      {config.label}
+    </Badge>
+  );
+};
+
 const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   parcelNumber,
   parcelId,
   parcelData,
   className
 }) => {
+  const { actions, loading } = useParcelActionsConfig();
+  
   const [showMutationDialog, setShowMutationDialog] = useState(false);
   const [showMortgageDialog, setShowMortgageDialog] = useState(false);
   const [showMortgageCancellationDialog, setShowMortgageCancellationDialog] = useState(false);
@@ -101,6 +152,39 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     lastFocusedIndexRef.current = null;
   };
 
+  // Map action keys to their handlers
+  const getActionHandler = (key: string) => {
+    const handlers: Record<string, () => void> = {
+      'expertise': () => setShowExpertiseDialog(true),
+      'mutation': () => setShowMutationDialog(true),
+      'mortgage_add': () => setShowMortgageDialog(true),
+      'mortgage_remove': () => setShowMortgageCancellationDialog(true),
+      'permit_add': () => setShowBuildingPermitDialog(true),
+      'permit_regularization': () => setShowRegularizationPermitDialog(true),
+      'tax': () => setShowTaxDialog(true),
+      'permit_request': () => setShowPermitRequestDialog(true),
+      'subdivision': () => setShowSubdivisionDialog(true),
+    };
+    return handlers[key];
+  };
+
+  // Get sorted visible actions
+  const visibleActions = actions
+    .filter(a => a.isVisible)
+    .sort((a, b) => a.displayOrder - b.displayOrder);
+
+  // Group actions by category for separators
+  const groupedActions: (ParcelAction | 'separator')[] = [];
+  let lastCategory = '';
+  
+  visibleActions.forEach((action, index) => {
+    if (index > 0 && action.category !== lastCategory) {
+      groupedActions.push('separator');
+    }
+    groupedActions.push(action);
+    lastCategory = action.category;
+  });
+
   return (
     <>
       <DropdownMenu onOpenChange={(open) => !open && resetFocusTracking()}>
@@ -122,135 +206,32 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         >
           <ScrollArea className="h-[280px] sm:h-[320px]">
             <div className="p-1">
-              {/* Expertise Immobilière - NEW */}
-              <DropdownMenuItem 
-                onClick={() => setShowExpertiseDialog(true)}
-                onFocus={() => handleMenuItemFocus(0)}
-                className="cursor-pointer rounded-lg relative"
-              >
-                <div className="flex-1">
-                  <div className="font-medium text-sm flex items-center gap-2">
-                    Expertise immobilière
-                    <Badge 
-                      variant="default" 
-                      className="h-4 px-1.5 text-[9px] font-bold bg-seloger-red text-white uppercase tracking-wide flex items-center gap-0.5"
-                    >
-                      <Sparkles className="h-2.5 w-2.5" />
-                      nouveau
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">Obtenir un certificat de valeur vénale</div>
-                </div>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1" />
+              {groupedActions.map((item, index) => {
+                if (item === 'separator') {
+                  return <DropdownMenuSeparator key={`sep-${index}`} className="my-1" />;
+                }
 
-              <DropdownMenuItem 
-                onClick={() => setShowMutationDialog(true)}
-                onFocus={() => handleMenuItemFocus(1)}
-                className="cursor-pointer rounded-lg"
-              >
-                <div>
-                  <div className="font-medium text-sm">Demander Mutation</div>
-                  <div className="text-xs text-muted-foreground">Transfert de propriété</div>
-                </div>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1" />
-              
-              <DropdownMenuItem 
-                onClick={() => setShowMortgageDialog(true)}
-                onFocus={() => handleMenuItemFocus(2)}
-                className="cursor-pointer rounded-lg"
-              >
-                <div>
-                  <div className="font-medium text-sm">Ajouter Hypothèque</div>
-                  <div className="text-xs text-muted-foreground">Ajouter une Hypothèque active</div>
-                </div>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                onClick={() => setShowMortgageCancellationDialog(true)}
-                onFocus={() => handleMenuItemFocus(3)}
-                className="cursor-pointer rounded-lg"
-              >
-                <div>
-                  <div className="font-medium text-sm">Retirer Hypothèque</div>
-                  <div className="text-xs text-muted-foreground">Demander la radiation</div>
-                </div>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1" />
-              
-              <DropdownMenuItem 
-                onClick={() => setShowBuildingPermitDialog(true)}
-                onFocus={() => handleMenuItemFocus(4)}
-                className="cursor-pointer rounded-lg"
-              >
-                <div>
-                  <div className="font-medium text-sm">Ajouter Permis</div>
-                  <div className="text-xs text-muted-foreground">Pour une nouvelle construction</div>
-                </div>
-              </DropdownMenuItem>
-              
-              <DropdownMenuItem 
-                onClick={() => setShowRegularizationPermitDialog(true)}
-                onFocus={() => handleMenuItemFocus(5)}
-                className="cursor-pointer rounded-lg"
-              >
-                <div>
-                  <div className="font-medium text-sm">Ajouter P. Régularisation</div>
-                  <div className="text-xs text-muted-foreground">Régulariser une construction existante</div>
-                </div>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1" />
-              
-              <DropdownMenuItem 
-                onClick={() => setShowTaxDialog(true)}
-                onFocus={() => handleMenuItemFocus(6)}
-                className="cursor-pointer rounded-lg"
-              >
-                <div>
-                  <div className="font-medium text-sm">Ajouter Taxe foncière</div>
-                  <div className="text-xs text-muted-foreground">Signaler le paiement d'une taxe</div>
-                </div>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1" />
-              
-              <DropdownMenuItem 
-                onClick={() => setShowPermitRequestDialog(true)}
-                onFocus={() => handleMenuItemFocus(7)}
-                className="cursor-pointer rounded-lg"
-              >
-                <div>
-                  <div className="font-medium text-sm">Obtenir un permis</div>
-                  <div className="text-xs text-muted-foreground">Demande de permis de construire</div>
-                </div>
-              </DropdownMenuItem>
-              
-              <DropdownMenuSeparator className="my-1" />
-              
-              <DropdownMenuItem 
-                onClick={() => setShowSubdivisionDialog(true)}
-                onFocus={() => handleMenuItemFocus(8)}
-                className="cursor-pointer rounded-lg relative"
-              >
-                <div className="flex-1">
-                  <div className="font-medium text-sm flex items-center gap-2">
-                    Demander un lotissement
-                    <Badge 
-                      variant="secondary" 
-                      className="h-4 px-1.5 text-[9px] font-bold bg-amber-500 text-white uppercase tracking-wide flex items-center gap-0.5"
-                    >
-                      <Clock className="h-2.5 w-2.5" />
-                      Bientôt
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">Diviser cette parcelle en lots</div>
-                </div>
-              </DropdownMenuItem>
+                const action = item;
+                const handler = getActionHandler(action.key);
+
+                return (
+                  <DropdownMenuItem 
+                    key={action.id}
+                    onClick={handler}
+                    onFocus={() => handleMenuItemFocus(index)}
+                    disabled={!action.isActive}
+                    className={`cursor-pointer rounded-lg ${!action.isActive ? 'opacity-50' : ''}`}
+                  >
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{action.label}</span>
+                        <ActionBadge badge={action.badge} />
+                      </div>
+                      <div className="text-xs text-muted-foreground">{action.description}</div>
+                    </div>
+                  </DropdownMenuItem>
+                );
+              })}
             </div>
           </ScrollArea>
         </DropdownMenuContent>
