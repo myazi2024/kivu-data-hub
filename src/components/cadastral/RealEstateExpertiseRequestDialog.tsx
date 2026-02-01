@@ -1261,7 +1261,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   className="w-full h-10 text-sm rounded-xl border-2 border-dashed"
                 >
                   <Upload className="h-4 w-4 mr-2" />
-                  Ajouter documents parcelle (PDF, images)
+                  Documents parcelle (PDF, images)
                 </Button>
                 
                 {parcelDocuments.length > 0 && (
@@ -1312,7 +1312,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   className="w-full h-10 text-sm rounded-xl border-2 border-dashed"
                 >
                   <Image className="h-4 w-4 mr-2" />
-                  Ajouter photos construction
+                  Photos de la construction
                 </Button>
                 
                 {constructionImages.length > 0 && (
