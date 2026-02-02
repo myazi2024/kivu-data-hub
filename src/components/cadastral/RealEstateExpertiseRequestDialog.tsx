@@ -17,13 +17,14 @@ import {
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
   CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone, Home,
-  Volume2, Layers, Building2, Camera
+  Volume2, Layers, Building2, Camera, Info
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
@@ -166,6 +167,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const parcelDocsInputRef = useRef<HTMLInputElement>(null);
   const constructionImagesInputRef = useRef<HTMLInputElement>(null);
 
+  const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<'form' | 'payment' | 'confirmation'>('form');
   const [activeTab, setActiveTab] = useState('general');
   const [createdRequest, setCreatedRequest] = useState<any>(null);
@@ -626,6 +628,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         <ScrollArea className="h-[50vh] sm:h-[55vh] mt-3">
           {/* === ONGLET GÉNÉRAL === */}
           <TabsContent value="general" className="space-y-3 pr-2 mt-0">
+            {/* Notification importance des données exactes */}
+            <Alert className="border-amber-500/30 bg-amber-500/10 rounded-xl">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-xs text-amber-800 dark:text-amber-200">
+                <strong>Important :</strong> Les informations que vous fournissez serviront de base à l'expert pour définir les facteurs clés de l'évaluation et organiser la visite terrain de votre construction. Veillez à leur exactitude.
+              </AlertDescription>
+            </Alert>
+            
             {/* Type de construction */}
             <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
@@ -1556,6 +1566,28 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       </Button>
     </div>
   );
+
+  // Reset showIntro when dialog opens
+  useEffect(() => {
+    if (open) {
+      setShowIntro(true);
+    }
+  }, [open]);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
+  if (showIntro && open) {
+    return (
+      <FormIntroDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        onContinue={handleIntroComplete}
+        config={FORM_INTRO_CONFIGS.expertise}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

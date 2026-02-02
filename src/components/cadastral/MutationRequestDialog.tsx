@@ -21,6 +21,7 @@ import { format, differenceInDays, addMonths } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog';
+import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 
 interface MutationRequestDialogProps {
   parcelNumber: string;
@@ -82,6 +83,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const { loading, fees, createMutationRequest, updatePaymentStatus } = useMutationRequest();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<Step>('form');
   const [createdRequest, setCreatedRequest] = useState<MutationRequest | null>(null);
   
@@ -1601,6 +1603,28 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       default: return 'Demande de mutation';
     }
   };
+
+  // Reset showIntro when dialog opens
+  useEffect(() => {
+    if (open) {
+      setShowIntro(true);
+    }
+  }, [open]);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
+  if (showIntro && open) {
+    return (
+      <FormIntroDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        onContinue={handleIntroComplete}
+        config={FORM_INTRO_CONFIGS.mutation}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
