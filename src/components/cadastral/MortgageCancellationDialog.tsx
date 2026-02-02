@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 
 interface MortgageCancellationDialogProps {
   parcelNumber: string;
@@ -111,6 +112,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
+  const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -1272,6 +1274,28 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       </Button>
     </div>
   );
+
+  // Reset showIntro when dialog opens
+  useEffect(() => {
+    if (open) {
+      setShowIntro(true);
+    }
+  }, [open]);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
+  if (showIntro && open) {
+    return (
+      <FormIntroDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        onContinue={handleIntroComplete}
+        config={FORM_INTRO_CONFIGS.mortgage_remove}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

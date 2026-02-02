@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
+import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 
 interface BuildingPermitFormDialogProps {
   parcelNumber: string;
@@ -43,6 +44,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   
@@ -448,6 +450,30 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       </Button>
     </div>
   );
+
+  // Reset showIntro when dialog opens
+  useEffect(() => {
+    if (open) {
+      setShowIntro(true);
+    }
+  }, [open]);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
+  const introConfig = isConstruction ? FORM_INTRO_CONFIGS.permit_add : FORM_INTRO_CONFIGS.permit_regularization;
+
+  if (showIntro && open) {
+    return (
+      <FormIntroDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        onContinue={handleIntroComplete}
+        config={introConfig}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>

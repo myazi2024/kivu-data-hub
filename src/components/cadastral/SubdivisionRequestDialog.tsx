@@ -36,6 +36,7 @@ import { SubdivisionAssistant } from './subdivision/SubdivisionAssistant';
 import { ParentParcelSummary } from './subdivision/ParentParcelSummary';
 import { ParcelSketchCreator } from './subdivision/ParcelSketchCreator';
 import { SubdivisionValidations } from './subdivision/SubdivisionValidations';
+import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
@@ -72,6 +73,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // États pour les étapes
+  const [showIntro, setShowIntro] = useState(true);
   const [currentStep, setCurrentStep] = useState<'parcel' | 'lots' | 'sketch' | 'summary' | 'payment' | 'confirmation'>('parcel');
   
   // États parcelle mère - pré-remplis depuis parcelData
@@ -788,6 +790,28 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
     );
   };
   
+  // Reset showIntro when dialog opens
+  useEffect(() => {
+    if (open) {
+      setShowIntro(true);
+    }
+  }, [open]);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
+  if (showIntro && open) {
+    return (
+      <FormIntroDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        onContinue={handleIntroComplete}
+        config={FORM_INTRO_CONFIGS.subdivision}
+      />
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogPortal>

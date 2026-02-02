@@ -31,6 +31,7 @@ import { CartItem } from '@/hooks/useCart';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 
 interface BuildingPermitRequestDialogProps {
   open: boolean;
@@ -50,6 +51,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const isMobile = useIsMobile();
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
   
+  const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<'form' | 'preview' | 'payment' | 'confirmation'>('form');
   const [requestType, setRequestType] = useState<'new' | 'regularization'>(
     hasExistingConstruction ? 'regularization' : 'new'
@@ -1032,6 +1034,28 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       </Button>
     </div>
   );
+
+  // Reset showIntro when dialog opens
+  useEffect(() => {
+    if (open) {
+      setShowIntro(true);
+    }
+  }, [open]);
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+  };
+
+  if (showIntro && open) {
+    return (
+      <FormIntroDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        onContinue={handleIntroComplete}
+        config={FORM_INTRO_CONFIGS.permit_request}
+      />
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
