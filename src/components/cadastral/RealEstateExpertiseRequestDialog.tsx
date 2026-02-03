@@ -1374,23 +1374,25 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </ScrollArea>
       </Tabs>
 
-      <Button 
-        onClick={handleProceedToPayment} 
-        className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg mt-3"
-        disabled={loading || uploadingFiles || loadingFees}
-      >
-        {loadingFees ? (
-          <>
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-            Chargement...
-          </>
-        ) : (
-          <>
-            <DollarSign className="h-4 w-4 mr-2" />
-            Continuer vers le paiement ({getTotalAmount()}$)
-          </>
-        )}
-      </Button>
+      {activeTab === 'documents' && (
+        <Button 
+          onClick={handleProceedToPayment} 
+          className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg mt-3"
+          disabled={loading || uploadingFiles || loadingFees}
+        >
+          {loadingFees ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              Chargement...
+            </>
+          ) : (
+            <>
+              <DollarSign className="h-4 w-4 mr-2" />
+              Continuer vers le paiement ({getTotalAmount()}$)
+            </>
+          )}
+        </Button>
+      )}
     </div>
   );
 

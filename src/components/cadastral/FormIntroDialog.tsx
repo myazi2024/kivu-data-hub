@@ -196,175 +196,175 @@ const FormIntroDialog: React.FC<FormIntroDialogProps> = ({
 // Configurations prédéfinies pour chaque type de formulaire
 export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
   mutation: {
-    title: 'Demande de mutation',
-    subtitle: 'Transfert de propriété foncière',
-    estimatedTime: '5-8 minutes',
-    processingTime: '5-10 jours ouvrables',
+    title: 'Demande de mutation de propriété',
+    subtitle: 'Transfert légal de propriété foncière',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '5 à 10 jours ouvrables',
     requiredInfo: [
-      'Informations du bénéficiaire',
-      'Type de mutation (vente, donation, etc.)',
-      'Documents justificatifs',
-      'Certificat d\'expertise immobilière'
+      'Identité complète du bénéficiaire (nom, prénom, adresse, téléphone)',
+      'Nature de la mutation : vente, donation, succession, échange ou autre',
+      'Justificatif de la transaction (acte de vente, attestation notariée, etc.)',
+      'Certificat d\'expertise immobilière établissant la valeur vénale du bien'
     ],
-    userResponsibility: 'Vous êtes responsable de l\'exactitude des informations fournies. Toute fausse déclaration peut entraîner le rejet de votre demande et des poursuites légales.',
+    userResponsibility: 'En soumettant cette demande, vous certifiez sur l\'honneur que l\'ensemble des informations renseignées sont exactes, complètes et conformes à la réalité. Toute déclaration inexacte, incomplète ou frauduleuse expose le demandeur au rejet définitif de sa demande ainsi qu\'à d\'éventuelles poursuites judiciaires conformément à la législation foncière en vigueur.',
     helpInfo: [
-      'Bulles d\'aide sur chaque champ',
-      'Aperçu avant soumission',
-      'Support WhatsApp 24h/24'
+      'Des bulles d\'information contextuelle vous guident à chaque étape du formulaire',
+      'Un récapitulatif complet vous est présenté avant la soumission définitive',
+      'Notre équipe d\'assistance est disponible 24h/24 via WhatsApp pour répondre à vos questions'
     ],
-    buttonLabel: 'Commencer la demande'
+    buttonLabel: 'Démarrer ma demande'
   },
   mortgage_add: {
-    title: 'Ajout d\'hypothèque',
-    subtitle: 'Enregistrement d\'une garantie hypothécaire',
-    estimatedTime: '3-5 minutes',
-    processingTime: '3-7 jours ouvrables',
+    title: 'Enregistrement d\'hypothèque',
+    subtitle: 'Constitution d\'une garantie hypothécaire sur votre bien',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '3 à 7 jours ouvrables',
     requiredInfo: [
-      'Montant de l\'hypothèque',
-      'Informations du créancier',
-      'Date du contrat',
-      'Document de la convention'
+      'Montant exact de l\'hypothèque en dollars américains (USD)',
+      'Identité complète du créancier (établissement financier ou personne physique)',
+      'Date de signature du contrat de prêt ou de la convention hypothécaire',
+      'Document officiel de la convention (contrat notarié, accord de prêt bancaire)'
     ],
-    userResponsibility: 'Vous certifiez que les informations fournies sont exactes et que vous avez l\'autorisation du propriétaire pour enregistrer cette hypothèque.',
+    userResponsibility: 'En procédant à cet enregistrement, vous certifiez être le propriétaire légitime du bien concerné ou disposer d\'une procuration valide vous autorisant à constituer une hypothèque. Vous attestez également que les informations relatives au créancier et au montant de la garantie sont exactes et conformes aux documents contractuels.',
     helpInfo: [
-      'Guide des champs obligatoires',
-      'Vérification automatique',
-      'Support WhatsApp 24h/24'
+      'Un guide détaillé vous accompagne pour chaque champ obligatoire',
+      'Le système vérifie automatiquement la cohérence des informations saisies',
+      'Un conseiller est disponible 24h/24 via WhatsApp en cas de difficulté'
     ],
     buttonLabel: 'Enregistrer l\'hypothèque'
   },
   mortgage_remove: {
     title: 'Radiation d\'hypothèque',
-    subtitle: 'Demande de mainlevée hypothécaire',
-    estimatedTime: '5-7 minutes',
-    processingTime: '7-14 jours ouvrables',
+    subtitle: 'Demande officielle de mainlevée hypothécaire',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '7 à 14 jours ouvrables',
     requiredInfo: [
-      'Référence de l\'hypothèque',
-      'Motif de la radiation',
-      'Accord du créancier',
-      'Documents de règlement'
+      'Référence exacte de l\'hypothèque à radier (numéro d\'inscription)',
+      'Motif de la demande de radiation (remboursement intégral, accord amiable, décision judiciaire)',
+      'Attestation écrite du créancier confirmant son accord pour la mainlevée',
+      'Documents justifiant le règlement intégral de la dette ou l\'accord de désengagement'
     ],
-    userResponsibility: 'Vous attestez que la dette a été intégralement réglée ou qu\'un accord a été conclu avec le créancier pour la mainlevée.',
+    userResponsibility: 'Vous attestez sur l\'honneur que la dette garantie par cette hypothèque a été intégralement remboursée ou qu\'un accord formel a été conclu avec le créancier pour procéder à la mainlevée. Toute déclaration mensongère engage votre responsabilité civile et pénale.',
     helpInfo: [
-      'Liste des hypothèques actives',
-      'Calcul automatique des frais',
-      'Support WhatsApp 24h/24'
+      'La liste des hypothèques actives sur votre bien est disponible dans votre espace',
+      'Le calcul des frais de radiation est effectué automatiquement selon le barème en vigueur',
+      'Notre équipe d\'assistance reste joignable 24h/24 via WhatsApp'
     ],
-    buttonLabel: 'Demander la radiation'
+    buttonLabel: 'Soumettre la demande de radiation'
   },
   permit_add: {
-    title: 'Ajout permis de construire',
-    subtitle: 'Enregistrement d\'un permis existant',
-    estimatedTime: '3-4 minutes',
-    processingTime: '2-5 jours ouvrables',
+    title: 'Enregistrement d\'un permis de construire',
+    subtitle: 'Ajout d\'un permis de construire existant à votre dossier parcellaire',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '2 à 5 jours ouvrables',
     requiredInfo: [
-      'Numéro du permis',
-      'Date de délivrance',
-      'Service émetteur',
-      'Document du permis'
+      'Numéro officiel du permis de construire tel qu\'indiqué sur le document',
+      'Date exacte de délivrance du permis par l\'autorité compétente',
+      'Nom du service émetteur (Mairie, Division de l\'Urbanisme, etc.)',
+      'Scan ou photo lisible du document original du permis'
     ],
-    userResponsibility: 'Vous certifiez détenir un permis de construire valide délivré par l\'autorité compétente.',
+    userResponsibility: 'Vous certifiez être détenteur d\'un permis de construire authentique et valide, délivré par l\'autorité administrative compétente. L\'enregistrement de faux documents ou de permis falsifiés constitue un délit passible de sanctions pénales.',
     helpInfo: [
-      'Vérification du format',
-      'Aperçu avant soumission',
-      'Support WhatsApp 24h/24'
+      'Le système vérifie automatiquement le format et la validité des informations saisies',
+      'Vous pouvez prévisualiser votre saisie avant confirmation',
+      'Une assistance technique est disponible 24h/24 via WhatsApp'
     ],
-    buttonLabel: 'Ajouter le permis'
+    buttonLabel: 'Enregistrer le permis'
   },
   permit_regularization: {
     title: 'Permis de régularisation',
-    subtitle: 'Régularisation d\'une construction existante',
-    estimatedTime: '4-6 minutes',
-    processingTime: '10-20 jours ouvrables',
+    subtitle: 'Régularisation administrative d\'une construction existante',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '10 à 20 jours ouvrables',
     requiredInfo: [
-      'Numéro du permis',
-      'Date de délivrance',
-      'Service émetteur',
-      'Justificatifs de régularisation'
+      'Numéro du permis de régularisation obtenu auprès de l\'administration',
+      'Date de délivrance du permis de régularisation',
+      'Identification du service ayant procédé à la régularisation',
+      'Documents justificatifs (procès-verbal de constatation, attestation de conformité)'
     ],
-    userResponsibility: 'Vous reconnaissez que la construction a été réalisée avant l\'obtention du permis et demandez sa régularisation administrative.',
+    userResponsibility: 'Vous reconnaissez que la construction concernée a été réalisée antérieurement à l\'obtention d\'un permis et sollicitez sa régularisation administrative. Vous vous engagez à vous conformer aux prescriptions éventuelles formulées par l\'administration dans le cadre de cette régularisation.',
     helpInfo: [
-      'Guide de régularisation',
-      'Calcul des pénalités',
-      'Support WhatsApp 24h/24'
+      'Un guide complet vous explique la procédure de régularisation étape par étape',
+      'Le calcul des éventuelles pénalités est effectué selon le barème officiel',
+      'Notre équipe d\'accompagnement est joignable 24h/24 via WhatsApp'
     ],
-    buttonLabel: 'Régulariser le permis'
+    buttonLabel: 'Soumettre la régularisation'
   },
   tax: {
-    title: 'Ajout taxe foncière',
-    subtitle: 'Enregistrement d\'un paiement fiscal',
-    estimatedTime: '2-3 minutes',
-    processingTime: '1-3 jours ouvrables',
+    title: 'Enregistrement de taxe foncière',
+    subtitle: 'Ajout d\'un paiement fiscal à votre historique parcellaire',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '1 à 3 jours ouvrables',
     requiredInfo: [
-      'Année fiscale',
-      'Montant payé',
-      'Date de paiement',
-      'Reçu de paiement'
+      'Année fiscale concernée par le paiement (exercice budgétaire)',
+      'Montant exact versé en dollars américains (USD)',
+      'Date précise du règlement auprès de l\'administration fiscale',
+      'Scan ou photo du reçu de paiement délivré par le percepteur'
     ],
-    userResponsibility: 'Vous certifiez avoir effectué le paiement de la taxe foncière auprès de l\'administration fiscale compétente.',
+    userResponsibility: 'Vous certifiez avoir effectivement acquitté cette taxe foncière auprès de l\'administration fiscale compétente et que le reçu fourni est authentique. L\'enregistrement de faux justificatifs de paiement est susceptible de poursuites pour fraude fiscale.',
     helpInfo: [
-      'Calcul automatique',
-      'Historique des paiements',
-      'Support WhatsApp 24h/24'
+      'Le montant théorique de votre taxe peut être calculé automatiquement selon la superficie',
+      'L\'historique complet de vos paiements est consultable dans votre espace personnel',
+      'Pour toute question, notre support WhatsApp est disponible 24h/24'
     ],
     buttonLabel: 'Enregistrer le paiement'
   },
   permit_request: {
-    title: 'Demande de permis',
-    subtitle: 'Nouvelle demande de permis de construire',
-    estimatedTime: '8-12 minutes',
-    processingTime: '15-30 jours ouvrables',
+    title: 'Demande de permis de construire',
+    subtitle: 'Soumission d\'une nouvelle demande de permis de construire',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '15 à 30 jours ouvrables',
     requiredInfo: [
-      'Type de construction',
-      'Plans architecturaux',
-      'Étude d\'impact',
-      'Coordonnées du demandeur'
+      'Nature et type de construction projetée (habitation, commerce, industrie)',
+      'Plans architecturaux détaillés du projet (façades, coupes, implantation)',
+      'Étude d\'impact environnemental le cas échéant',
+      'Coordonnées complètes du demandeur et du maître d\'œuvre'
     ],
-    userResponsibility: 'Vous vous engagez à respecter les normes de construction en vigueur et les conditions du permis une fois délivré.',
+    userResponsibility: 'En déposant cette demande, vous vous engagez formellement à respecter l\'ensemble des normes de construction, d\'urbanisme et de sécurité en vigueur en République Démocratique du Congo. Le permis obtenu vous lie au respect strict des conditions et prescriptions qui y sont mentionnées.',
     helpInfo: [
-      'Guide étape par étape',
-      'Vérification des documents',
-      'Support WhatsApp 24h/24'
+      'Un assistant pas-à-pas vous guide tout au long de la procédure de demande',
+      'Le système vérifie la complétude de votre dossier avant soumission',
+      'Notre service d\'accompagnement est accessible 24h/24 via WhatsApp'
     ],
-    buttonLabel: 'Soumettre la demande'
+    buttonLabel: 'Déposer ma demande'
   },
   subdivision: {
     title: 'Demande de lotissement',
-    subtitle: 'Division d\'une parcelle en plusieurs lots',
-    estimatedTime: '15-25 minutes',
-    processingTime: '30-60 jours ouvrables',
+    subtitle: 'Division d\'une parcelle mère en plusieurs lots distincts',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '30 à 60 jours ouvrables',
     requiredInfo: [
-      'Dimensions de la parcelle mère',
-      'Plan de lotissement',
-      'Nombre et taille des lots',
-      'Voies d\'accès internes'
+      'Dimensions exactes et superficie de la parcelle mère à lotir',
+      'Plan de lotissement détaillé avec numérotation des lots',
+      'Caractéristiques de chaque lot (superficie, dimensions, usage prévu)',
+      'Tracé des voies d\'accès internes et espaces communs'
     ],
-    userResponsibility: 'Vous certifiez être le propriétaire légitime de la parcelle et respecter les règles d\'urbanisme pour le lotissement.',
+    userResponsibility: 'Vous certifiez être le propriétaire légitime et exclusif de la parcelle concernée et disposer de tous les droits nécessaires pour procéder à son lotissement. Vous vous engagez à respecter les règles d\'urbanisme applicables en matière de lotissement, notamment concernant les surfaces minimales, les voiries et les équipements collectifs.',
     helpInfo: [
-      'Assistant de création de lots',
-      'Prévisualisation du plan',
-      'Support WhatsApp 24h/24'
+      'Un assistant interactif vous aide à configurer le découpage de vos lots',
+      'Une prévisualisation graphique du plan de lotissement est générée en temps réel',
+      'Notre équipe technique est disponible 24h/24 via WhatsApp pour vous accompagner'
     ],
     buttonLabel: 'Créer le lotissement'
   },
   expertise: {
-    title: 'Expertise immobilière',
-    subtitle: 'Évaluation professionnelle de votre bien',
-    estimatedTime: '10-15 minutes',
-    processingTime: '7-14 jours ouvrables',
+    title: 'Demande d\'expertise immobilière',
+    subtitle: 'Évaluation professionnelle de la valeur vénale de votre bien',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '7 à 14 jours ouvrables',
     requiredInfo: [
-      'Description du bien',
-      'Matériaux de construction',
-      'Équipements et commodités',
-      'Photos de la construction'
+      'Description détaillée du bien : type de construction, année, superficie bâtie',
+      'Caractéristiques des matériaux de construction (murs, toiture, revêtements)',
+      'Inventaire des équipements et commodités (eau, électricité, sécurité, annexes)',
+      'Photographies récentes de la construction (extérieur, intérieur, environnement)'
     ],
-    userResponsibility: 'Les informations fournies serviront de base à l\'expert pour organiser la visite terrain et définir la valeur de votre bien. Toute inexactitude peut fausser l\'évaluation.',
+    userResponsibility: 'Les informations que vous fournissez constituent la base sur laquelle l\'expert immobilier définira les facteurs clés d\'évaluation et organisera la visite technique de votre bien. Toute information inexacte, incomplète ou trompeuse peut fausser significativement l\'estimation et engager votre responsabilité en cas de litige ultérieur.',
     helpInfo: [
-      'Formulaire guidé par onglets',
-      'Conseils sur chaque section',
-      'Support WhatsApp 24h/24'
+      'Le formulaire est organisé en onglets thématiques pour une saisie structurée',
+      'Des conseils et exemples vous sont proposés pour chaque section du formulaire',
+      'Notre équipe d\'assistance est joignable 24h/24 via WhatsApp pour vous guider'
     ],
-    buttonLabel: 'Demander l\'expertise'
+    buttonLabel: 'Démarrer ma demande d\'expertise'
   }
 };
 
