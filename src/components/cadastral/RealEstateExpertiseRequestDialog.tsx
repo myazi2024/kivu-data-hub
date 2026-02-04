@@ -168,7 +168,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const constructionImagesInputRef = useRef<HTMLInputElement>(null);
 
   const [showIntro, setShowIntro] = useState(true);
-  const [step, setStep] = useState<'form' | 'payment' | 'confirmation'>('form');
+  const [step, setStep] = useState<'form' | 'summary' | 'payment' | 'confirmation'>('form');
   const [activeTab, setActiveTab] = useState('general');
   const [createdRequest, setCreatedRequest] = useState<any>(null);
 
@@ -372,6 +372,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     } finally {
       setUploadingFiles(false);
     }
+  };
+
+  const handleProceedToSummary = () => {
+    if (!user) {
+      toast.error('Vous devez être connecté');
+      return;
+    }
+    setStep('summary');
   };
 
   const handleProceedToPayment = () => {
@@ -1376,7 +1384,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
       {activeTab === 'documents' && (
         <Button 
-          onClick={handleProceedToPayment} 
+          onClick={handleProceedToSummary} 
           className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg mt-3"
           disabled={loading || uploadingFiles || loadingFees}
         >
@@ -1387,14 +1395,252 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </>
           ) : (
             <>
-              <DollarSign className="h-4 w-4 mr-2" />
-              Continuer vers le paiement ({getTotalAmount()}$)
+              <Receipt className="h-4 w-4 mr-2" />
+              Récapitulatif
             </>
           )}
         </Button>
       )}
     </div>
   );
+
+  const renderSummary = () => {
+    const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
+      villa: 'Villa / Maison individuelle',
+      appartement: 'Appartement',
+      immeuble: 'Immeuble / Bâtiment',
+      duplex: 'Duplex / Triplex',
+      studio: 'Studio',
+      commercial: 'Local commercial',
+      entrepot: 'Entrepôt / Hangar',
+      terrain_nu: 'Terrain nu (sans construction)',
+      autre: 'Autre'
+    };
+
+    const getMissingFields = () => {
+      const missing: Array<{ label: string; tab: string }> = [];
+      // Champs obligatoires minimum
+      if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general' });
+      return missing;
+    };
+
+    const missingFields = getMissingFields();
+
+    return (
+      <div className="space-y-3">
+        {/* En-tête */}
+        <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 border border-primary/20">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 bg-primary/20 rounded-xl flex items-center justify-center">
+              <Receipt className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm">Récapitulatif de la demande</h3>
+              <p className="text-xs text-muted-foreground">Vérifiez les informations avant de continuer</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Avertissement */}
+        <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-xl">
+          <AlertTriangle className="h-4 w-4 text-amber-600" />
+          <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
+            Veuillez vérifier attentivement toutes les informations. Une fois soumise, la demande ne pourra plus être modifiée.
+          </AlertDescription>
+        </Alert>
+
+        {/* Erreurs de validation */}
+        {missingFields.length > 0 && (
+          <Alert className="bg-destructive/10 border-destructive/30 rounded-xl">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-xs text-destructive">
+              <p className="font-medium mb-1">Données manquantes :</p>
+              <ul className="space-y-1">
+                {missingFields.map((field, index) => (
+                  <li key={index} className="flex items-center justify-between">
+                    <span>• {field.label}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setActiveTab(field.tab);
+                        setStep('form');
+                      }}
+                      className="h-5 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      Compléter
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <ScrollArea className="max-h-[35vh]">
+          <div className="space-y-2 pr-2">
+            {/* Parcelle */}
+            <Card className="rounded-xl border-border/50">
+              <CardContent className="p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-xs font-semibold">Parcelle</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => setStep('form')} className="h-6 px-2 text-xs text-muted-foreground">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="flex justify-between text-xs border-b border-border/30 py-1">
+                  <span className="text-muted-foreground">Numéro</span>
+                  <span className="font-mono font-bold">{parcelNumber}</span>
+                </div>
+                {parcelData?.province && (
+                  <div className="flex justify-between text-xs py-1">
+                    <span className="text-muted-foreground">Localisation</span>
+                    <span className="text-right max-w-[60%]">{parcelData.province} {parcelData.ville && `• ${parcelData.ville}`}</span>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Informations générales */}
+            <Card className="rounded-xl border-border/50">
+              <CardContent className="p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Home className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-xs font-semibold">Construction</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="flex justify-between text-xs border-b border-border/30 py-1">
+                  <span className="text-muted-foreground">Type</span>
+                  <span>{CONSTRUCTION_TYPE_LABELS[constructionType] || constructionType}</span>
+                </div>
+                {constructionYear && (
+                  <div className="flex justify-between text-xs border-b border-border/30 py-1">
+                    <span className="text-muted-foreground">Année construction</span>
+                    <span>{constructionYear}</span>
+                  </div>
+                )}
+                {totalBuiltAreaSqm && (
+                  <div className="flex justify-between text-xs border-b border-border/30 py-1">
+                    <span className="text-muted-foreground">Surface construite</span>
+                    <span>{totalBuiltAreaSqm} m²</span>
+                  </div>
+                )}
+                {numberOfFloors && (
+                  <div className="flex justify-between text-xs border-b border-border/30 py-1">
+                    <span className="text-muted-foreground">Étages</span>
+                    <span>{numberOfFloors}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-xs py-1">
+                  <span className="text-muted-foreground">État</span>
+                  <span>{propertyCondition === 'neuf' ? 'Neuf' : propertyCondition === 'bon' ? 'Bon état' : propertyCondition === 'moyen' ? 'Moyen' : propertyCondition === 'mauvais' ? 'Mauvais' : 'À rénover'}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Équipements */}
+            <Card className="rounded-xl border-border/50">
+              <CardContent className="p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-xs font-semibold">Équipements</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {hasWaterSupply && <Badge variant="secondary" className="text-[10px]">Eau</Badge>}
+                  {hasElectricity && <Badge variant="secondary" className="text-[10px]">Électricité</Badge>}
+                  {hasSewageSystem && <Badge variant="secondary" className="text-[10px]">Assainissement</Badge>}
+                  {hasInternet && <Badge variant="secondary" className="text-[10px]">Internet</Badge>}
+                  {hasSecuritySystem && <Badge variant="secondary" className="text-[10px]">Sécurité</Badge>}
+                  {hasParking && <Badge variant="secondary" className="text-[10px]">Parking</Badge>}
+                  {hasGarden && <Badge variant="secondary" className="text-[10px]">Jardin</Badge>}
+                  {hasPool && <Badge variant="secondary" className="text-[10px]">Piscine</Badge>}
+                  {hasAirConditioning && <Badge variant="secondary" className="text-[10px]">Climatisation</Badge>}
+                  {!hasWaterSupply && !hasElectricity && !hasSewageSystem && !hasInternet && (
+                    <span className="text-xs text-muted-foreground">Aucun équipement renseigné</span>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Documents */}
+            <Card className="rounded-xl border-border/50">
+              <CardContent className="p-3 space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground" />
+                    <h4 className="text-xs font-semibold">Documents</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('documents'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="flex justify-between text-xs border-b border-border/30 py-1">
+                  <span className="text-muted-foreground">Documents parcelle</span>
+                  <span>{parcelDocuments.length} fichier(s)</span>
+                </div>
+                <div className="flex justify-between text-xs py-1">
+                  <span className="text-muted-foreground">Photos construction</span>
+                  <span>{constructionImages.length} photo(s)</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </ScrollArea>
+
+        {/* Montant total */}
+        <Card className="rounded-xl bg-primary/5 border-primary/20">
+          <CardContent className="p-3">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">Frais d'expertise</span>
+              </div>
+              <span className="text-lg font-bold text-primary">{getTotalAmount()} USD</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setStep('form')}
+            className="flex-1 h-10 rounded-xl"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Modifier
+          </Button>
+          <Button
+            onClick={handleProceedToPayment}
+            disabled={missingFields.length > 0 || loadingFees}
+            className="flex-1 h-10 rounded-xl"
+          >
+            <DollarSign className="h-4 w-4 mr-2" />
+            Payer
+          </Button>
+        </div>
+
+        {missingFields.length === 0 && (
+          <div className="flex items-center justify-center gap-2 text-xs text-green-600">
+            <CheckCircle2 className="h-4 w-4" />
+            <span>Informations complètes</span>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderPayment = () => (
     <div className="space-y-3">
@@ -1499,7 +1745,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       <div className="flex gap-2 pt-1">
         <Button 
           variant="outline" 
-          onClick={() => setStep('form')}
+          onClick={() => setStep('summary')}
           disabled={processingPayment}
           className="flex-1 h-10 rounded-2xl text-sm"
         >
@@ -1599,6 +1845,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           <DialogTitle className="text-base flex items-center gap-2">
             <FileSearch className="h-5 w-5 text-primary" />
             {step === 'form' && 'Expertise immobilière'}
+            {step === 'summary' && 'Récapitulatif'}
             {step === 'payment' && 'Paiement'}
             {step === 'confirmation' && 'Confirmation'}
           </DialogTitle>
@@ -1610,6 +1857,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </DialogHeader>
 
         {step === 'form' && renderForm()}
+        {step === 'summary' && renderSummary()}
         {step === 'payment' && renderPayment()}
         {step === 'confirmation' && renderConfirmation()}
       </DialogContent>
