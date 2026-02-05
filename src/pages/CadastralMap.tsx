@@ -687,63 +687,113 @@ const CadastralMap = () => {
                   <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
                 </Button>
 
-                {/* Bouton Obtenir titre foncier - Design compact avec icône rouge */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-flex">
-                      <Popover
-                        open={showLandTitleNotification}
-                        onOpenChange={(nextOpen) => {
-                          if (!nextOpen) {
-                            landTitleNotificationDismissedRef.current = true;
-                          }
-                          setShowLandTitleNotification(nextOpen);
-                        }}
-                      >
-                        <PopoverTrigger asChild>
-                          <Button 
-                            variant="destructive" 
-                            size="sm"
-                            onClick={() => {
+                {/* Bouton Obtenir titre foncier - Texte sur desktop, icône sur mobile */}
+                {isMobile ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="inline-flex">
+                        <Popover
+                          open={showLandTitleNotification}
+                          onOpenChange={(nextOpen) => {
+                            if (!nextOpen) {
                               landTitleNotificationDismissedRef.current = true;
-                              setShowLandTitleNotification(false);
-                              setShowLandTitleTermsDialog(true);
-                            }}
-                            className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
-                            title="Obtenir un titre foncier"
-                          >
-                            <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                            {/* Indicateur de notification pulsant jaune */}
-                            {showLandTitleNotification && (
-                              <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-
-                        <PopoverContent
-                          side="top"
-                          align="end"
-                          sideOffset={10}
-                          className={cn(
-                            "w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg",
-                            "text-xs leading-relaxed"
-                          )}
+                            }
+                            setShowLandTitleNotification(nextOpen);
+                          }}
                         >
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                            <span>
-                              Le numéro parcellaire, souvent appelé numéro SU ou SR, est le numéro unique attribué à une parcelle de terrain au sein d'une zone donnée (urbaine ou rurale) par le cadastre. Ce numéro figure sur le titre foncier délivré par le cadastre. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.
-                            </span>
-                          </div>
-                        </PopoverContent>
-                      </Popover>
-                    </span>
-                  </TooltipTrigger>
+                          <PopoverTrigger asChild>
+                            <Button 
+                              variant="destructive" 
+                              size="sm"
+                              onClick={() => {
+                                landTitleNotificationDismissedRef.current = true;
+                                setShowLandTitleNotification(false);
+                                setShowLandTitleTermsDialog(true);
+                              }}
+                              className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
+                              title="Demander un titre foncier"
+                            >
+                              <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
+                              {/* Indicateur de notification pulsant jaune */}
+                              {showLandTitleNotification && (
+                                <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
+                              )}
+                            </Button>
+                          </PopoverTrigger>
 
-                  <TooltipContent side="top" sideOffset={8}>
-                    Obtenir un titre foncier
-                  </TooltipContent>
-                </Tooltip>
+                          <PopoverContent
+                            side="top"
+                            align="end"
+                            sideOffset={10}
+                            className={cn(
+                              "w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg",
+                              "text-xs leading-relaxed"
+                            )}
+                          >
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                              <span>
+                                Le numéro parcellaire, souvent appelé numéro SU ou SR, est le numéro unique attribué à une parcelle de terrain au sein d'une zone donnée (urbaine ou rurale) par le cadastre. Ce numéro figure sur le titre foncier délivré par le cadastre. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.
+                              </span>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      </span>
+                    </TooltipTrigger>
+
+                    <TooltipContent side="top" sideOffset={8}>
+                      Demander un titre foncier
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
+                  /* Desktop - Bouton texte visible */
+                  <Popover
+                    open={showLandTitleNotification}
+                    onOpenChange={(nextOpen) => {
+                      if (!nextOpen) {
+                        landTitleNotificationDismissedRef.current = true;
+                      }
+                      setShowLandTitleNotification(nextOpen);
+                    }}
+                  >
+                    <PopoverTrigger asChild>
+                      <Button 
+                        variant="destructive" 
+                        size="sm"
+                        onClick={() => {
+                          landTitleNotificationDismissedRef.current = true;
+                          setShowLandTitleNotification(false);
+                          setShowLandTitleTermsDialog(true);
+                        }}
+                        className="h-9 px-3 shrink-0 rounded-xl transition-colors relative gap-1.5 text-xs font-medium"
+                      >
+                        <FileCheck2 className="h-4 w-4" />
+                        <span>Demander un titre foncier</span>
+                        {/* Indicateur de notification pulsant jaune */}
+                        {showLandTitleNotification && (
+                          <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+
+                    <PopoverContent
+                      side="top"
+                      align="end"
+                      sideOffset={10}
+                      className={cn(
+                        "w-[320px] rounded-xl border border-destructive/30 bg-destructive text-destructive-foreground p-3 shadow-lg",
+                        "text-xs leading-relaxed"
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                        <span>
+                          Le numéro parcellaire, souvent appelé numéro SU ou SR, est le numéro unique attribué à une parcelle de terrain au sein d'une zone donnée (urbaine ou rurale) par le cadastre. Ce numéro figure sur le titre foncier délivré par le cadastre. Si vous n'avez pas encore de titre foncier, cliquez ici pour faire votre demande.
+                        </span>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
 
               {/* Section Recherche Avancée - Déroulée dans la barre */}

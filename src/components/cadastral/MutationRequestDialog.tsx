@@ -1021,243 +1021,267 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Card>
         )}
 
-        {/* Frais liés au certificat d'expertise (affichés seulement si certificat confirmé) */}
+        {/* Tout le contenu suivant ne s'affiche que si hasExpertiseCertificate === 'yes' pour les mutations avec transfert */}
         {isTransferMutation && hasExpertiseCertificate === 'yes' && (
-          <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
-            <CardContent className="p-3 space-y-3">
-              <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Frais liés à l'expertise immobilière
-              </h4>
-              
-              <div className="space-y-2">
-                {/* Frais de dossier - 83$ obligatoire */}
-                {fees.filter(f => f.fee_name === 'Frais de dossier').map((fee) => (
-                  <div 
-                    key={fee.id}
-                    className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
-                  >
-                    <Checkbox
-                      id={fee.id}
-                      checked={true}
-                      disabled={true}
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
-                          {fee.fee_name}
-                          <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
-                            obligatoire
-                          </span>
-                        </label>
-                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
-                      </div>
-                      {fee.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Frais de vérification */}
-                {fees.filter(f => f.fee_name === 'Frais de vérification').map((fee) => (
-                  <div 
-                    key={fee.id}
-                    className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-                      selectedFees.includes(fee.id) ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700' : 'bg-muted/30 border-2 border-transparent'
-                    }`}
-                  >
-                    <Checkbox
-                      id={fee.id}
-                      checked={selectedFees.includes(fee.id)}
-                      onCheckedChange={() => handleFeeToggle(fee.id, false)}
-                      className="mt-0.5"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
-                          {fee.fee_name}
-                        </label>
-                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
-                      </div>
-                      {fee.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-
-                {/* Frais de mutation calculés */}
-                {mutationFeesCalculation.applicable && titleAge && (
-                  <>
+          <>
+            {/* Frais liés au certificat d'expertise */}
+            <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Frais liés à l'expertise immobilière
+                </h4>
+                
+                <div className="space-y-2">
+                  {/* Frais de dossier - 83$ obligatoire */}
+                  {fees.filter(f => f.fee_name === 'Frais de dossier').map((fee) => (
                     <div 
+                      key={fee.id}
                       className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
                     >
-                      <div className="p-1.5 bg-amber-100 dark:bg-amber-900/50 rounded-lg mt-0.5">
-                        <DollarSign className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                      <Checkbox
+                        id={fee.id}
+                        checked={true}
+                        disabled={true}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
+                            {fee.fee_name}
+                            <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
+                              obligatoire
+                            </span>
+                          </label>
+                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
+                        </div>
+                        {fee.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Frais de vérification */}
+                  {fees.filter(f => f.fee_name === 'Frais de vérification').map((fee) => (
+                    <div 
+                      key={fee.id}
+                      className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
+                        selectedFees.includes(fee.id) ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700' : 'bg-muted/30 border-2 border-transparent'
+                      }`}
+                    >
+                      <Checkbox
+                        id={fee.id}
+                        checked={selectedFees.includes(fee.id)}
+                        onCheckedChange={() => handleFeeToggle(fee.id, false)}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
+                            {fee.fee_name}
+                          </label>
+                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
+                        </div>
+                        {fee.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Frais de mutation calculés */}
+                  {mutationFeesCalculation.applicable && titleAge && (
+                    <>
+                      <div 
+                        className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
+                      >
+                        <div className="p-1.5 bg-amber-100 dark:bg-amber-900/50 rounded-lg mt-0.5">
+                          <DollarSign className="h-4 w-4 text-amber-700 dark:text-amber-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium">
+                              Frais de mutation ({mutationFeesCalculation.percentage}%)
+                              <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
+                                calculé
+                              </span>
+                            </span>
+                            <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
+                              ${mutationFeesCalculation.mutationFee.toFixed(2)}
+                            </span>
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Basé sur la valeur vénale de ${parseFloat(marketValueUsd).toLocaleString()} USD
+                          </p>
+                        </div>
+                      </div>
+
+                      {mutationFeesCalculation.bankFee > 0 && (
+                        <div 
+                          className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-100 dark:border-amber-800"
+                        >
+                          <div className="p-1.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg mt-0.5">
+                            <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="text-sm font-medium">Frais bancaires (0.5%)</span>
+                              <span className="text-sm font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap">
+                                ${mutationFeesCalculation.bankFee.toFixed(2)}
+                              </span>
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Commission bancaire estimée
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <p className="text-[10px] text-muted-foreground px-1">
+                        Circulaire n° 005/CAB/MIN/AFF.FONC/2013 • n°0076/2023 et 010/CAB/MIN.FINANCES/2023
+                      </p>
+                    </>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Frais de retard de mutation hors délai légal */}
+            <Card className="border-2 border-orange-200 dark:border-orange-700 rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Traitement de mutation hors délai légal
+                  </h4>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-100">
+                        <HelpCircle className="h-3.5 w-3.5" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-80 bg-background border shadow-lg" align="start" sideOffset={5}>
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                          <AlertTriangle className="h-4 w-4" />
+                          Frais de retard de mutation
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Le non-respect du délai légal de mutation immobilière (20 jours) entraîne des frais supplémentaires pour faire aboutir la mutation.
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          <span className="font-medium">Référence :</span> Note circulaire n°1.441/SG/AFF.F/003/2016 du 07 décembre 2016
+                        </p>
+                        <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
+                          Tarif : 0,45 USD par jour à partir du 21ème jour après l'acquisition.
+                        </p>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+
+                <div className="space-y-3">
+                  {/* Date d'acquisition du propriétaire */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                      Date d'acquisition par le propriétaire actuel
+                      {ownerAcquisitionDateAutoDetected && (
+                        <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">
+                          détectée automatiquement
+                        </span>
+                      )}
+                    </Label>
+                    {ownerAcquisitionDate ? (
+                      <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-lg">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">
+                          {format(new Date(ownerAcquisitionDate), 'd MMMM yyyy', { locale: fr })}
+                        </span>
+                      </div>
+                    ) : (
+                      <Input
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={manualAcquisitionDate}
+                        onChange={(e) => setManualAcquisitionDate(e.target.value)}
+                        className="h-9 text-sm"
+                        placeholder="Sélectionnez la date d'acquisition"
+                      />
+                    )}
+                  </div>
+
+                  {/* Calcul des frais de retard */}
+                  {lateFeesCalculation.applicable && (
+                    <div className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-700">
+                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
+                        <Clock className="h-4 w-4 text-orange-700 dark:text-orange-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-medium">
-                            Frais de mutation ({mutationFeesCalculation.percentage}%)
-                            <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
+                            Frais de retard ({lateFeesCalculation.days} jours)
+                            <span className="ml-1.5 text-[10px] text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/50 px-1.5 py-0.5 rounded">
                               calculé
                             </span>
                           </span>
-                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
-                            ${mutationFeesCalculation.mutationFee.toFixed(2)}
+                          <span className="text-sm font-bold text-orange-700 dark:text-orange-400 whitespace-nowrap">
+                            ${lateFeesCalculation.fee.toFixed(2)}
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Basé sur la valeur vénale de ${parseFloat(marketValueUsd).toLocaleString()} USD
+                          {lateFeesCalculation.days} jours × 0,45 USD/jour
                         </p>
                       </div>
                     </div>
-
-                    {mutationFeesCalculation.bankFee > 0 && (
-                      <div 
-                        className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-100 dark:border-amber-800"
-                      >
-                        <div className="p-1.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg mt-0.5">
-                          <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-medium">Frais bancaires (0.5%)</span>
-                            <span className="text-sm font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap">
-                              ${mutationFeesCalculation.bankFee.toFixed(2)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Commission bancaire estimée
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    <p className="text-[10px] text-muted-foreground px-1">
-                      Circulaire n° 005/CAB/MIN/AFF.FONC/2013 • n°0076/2023 et 010/CAB/MIN.FINANCES/2023
-                    </p>
-                  </>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Frais de retard de mutation hors délai légal */}
-        {isTransferMutation && (
-          <Card className="border-2 border-orange-200 dark:border-orange-700 rounded-xl">
-            <CardContent className="p-3 space-y-3">
-              <div className="flex items-center gap-2">
-                <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                  <Clock className="h-4 w-4" />
-                  Traitement de mutation hors délai légal
-                </h4>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-100">
-                      <HelpCircle className="h-3.5 w-3.5" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-80 bg-background border shadow-lg" align="start" sideOffset={5}>
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4" />
-                        Frais de retard de mutation
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Le non-respect du délai légal de mutation immobilière (20 jours) entraîne des frais supplémentaires pour faire aboutir la mutation.
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        <span className="font-medium">Référence :</span> Note circulaire n°1.441/SG/AFF.F/003/2016 du 07 décembre 2016
-                      </p>
-                      <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                        Tarif : 0,45 USD par jour à partir du 21ème jour après l'acquisition.
-                      </p>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </div>
-
-              <div className="space-y-3">
-                {/* Date d'acquisition du propriétaire */}
-                <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground flex items-center gap-2">
-                    Date d'acquisition par le propriétaire actuel
-                    {ownerAcquisitionDateAutoDetected && (
-                      <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">
-                        détectée automatiquement
-                      </span>
-                    )}
-                  </Label>
-                  {ownerAcquisitionDate ? (
-                    <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-lg">
-                      <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">
-                        {format(new Date(ownerAcquisitionDate), 'd MMMM yyyy', { locale: fr })}
-                      </span>
-                    </div>
-                  ) : (
-                    <Input
-                      type="date"
-                      max={new Date().toISOString().split('T')[0]}
-                      value={manualAcquisitionDate}
-                      onChange={(e) => setManualAcquisitionDate(e.target.value)}
-                      className="h-9 text-sm"
-                      placeholder="Sélectionnez la date d'acquisition"
-                    />
                   )}
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Calcul des frais de retard */}
-                {lateFeesCalculation.applicable && (
-                  <div className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-700">
-                    <div className="p-1.5 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
-                      <Clock className="h-4 w-4 text-orange-700 dark:text-orange-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-sm font-medium">
-                          Frais de retard ({lateFeesCalculation.days} jours)
-                          <span className="ml-1.5 text-[10px] text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/50 px-1.5 py-0.5 rounded">
-                            calculé
-                          </span>
-                        </span>
-                        <span className="text-sm font-bold text-orange-700 dark:text-orange-400 whitespace-nowrap">
-                          ${lateFeesCalculation.fee.toFixed(2)}
-                        </span>
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {lateFeesCalculation.days} jours × 0,45 USD/jour
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+            {/* Total à payer */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
+                  <span className="font-semibold text-sm">Total à payer</span>
+                  <span className="text-xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Button 
+              onClick={handlePreview} 
+              className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
+              disabled={selectedFees.length === 0}
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Aperçu avant soumission
+            </Button>
+          </>
         )}
 
-        {/* Total à payer */}
-        <Card className="border rounded-xl">
-          <CardContent className="p-3">
-            <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
-              <span className="font-semibold text-sm">Total à payer</span>
-              <span className="text-xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Pour les mutations non-transfert, afficher directement le bouton preview */}
+        {!isTransferMutation && (
+          <>
+            {/* Total à payer */}
+            <Card className="border rounded-xl">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
+                  <span className="font-semibold text-sm">Total à payer</span>
+                  <span className="text-xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
+                </div>
+              </CardContent>
+            </Card>
 
-        <Button 
-          onClick={handlePreview} 
-          className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
-          disabled={selectedFees.length === 0}
-        >
-          <Eye className="h-4 w-4 mr-2" />
-          Aperçu avant soumission
-        </Button>
+            <Button 
+              onClick={handlePreview} 
+              className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
+            >
+              <Eye className="h-4 w-4 mr-2" />
+              Aperçu avant soumission
+            </Button>
+          </>
+        )}
       </div>
     </ScrollArea>
   );

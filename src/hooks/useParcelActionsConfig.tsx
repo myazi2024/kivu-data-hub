@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 // Types pour la configuration des actions
 export interface ActionBadge {
@@ -18,9 +20,10 @@ export interface ParcelAction {
   badge: ActionBadge;
   requiresAuth: boolean;
   category: string;
+  iconName?: string;
 }
 
-// Configuration par défaut des actions
+// Configuration par défaut des actions (fallback si Supabase échoue)
 const DEFAULT_ACTIONS: ParcelAction[] = [
   {
     id: '1',
@@ -132,75 +135,154 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
   }
 ];
 
-const STORAGE_KEY = 'parcel_actions_config';
+// Helper pour convertir les données Supabase vers ParcelAction
+const mapDbToParcelAction = (dbRow: any): ParcelAction => ({
+  id: dbRow.id,
+  key: dbRow.action_key,
+  label: dbRow.label,
+  description: dbRow.description || '',
+  isActive: dbRow.is_active,
+  isVisible: dbRow.is_visible,
+  displayOrder: dbRow.display_order,
+  badge: {
+    type: dbRow.badge_type || 'none',
+    label: dbRow.badge_label,
+    color: dbRow.badge_color
+  },
+  requiresAuth: dbRow.requires_auth,
+  category: dbRow.category,
+  iconName: dbRow.icon_name
+});
+
+// Helper pour convertir ParcelAction vers les données Supabase
+const mapParcelActionToDb = (action: ParcelAction) => ({
+  id: action.id,
+  action_key: action.key,
+  label: action.label,
+  description: action.description,
+  is_active: action.isActive,
+  is_visible: action.isVisible,
+  display_order: action.displayOrder,
+  badge_type: action.badge.type,
+  badge_label: action.badge.label,
+  badge_color: action.badge.color,
+  requires_auth: action.requiresAuth,
+  category: action.category,
+  icon_name: action.iconName
+});
 
 // Hook pour utiliser la configuration des actions parcelle
 export const useParcelActionsConfig = () => {
   const [actions, setActions] = useState<ParcelAction[]>(DEFAULT_ACTIONS);
   const [loading, setLoading] = useState(true);
 
-  // Charger la configuration depuis localStorage
-  useEffect(() => {
-    const loadConfig = () => {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          // Merge with defaults to ensure new actions are included
-          const mergedActions = DEFAULT_ACTIONS.map(defaultAction => {
-            const savedAction = parsed.find((a: ParcelAction) => a.key === defaultAction.key);
-            return savedAction ? { ...defaultAction, ...savedAction } : defaultAction;
-          });
-          setActions(mergedActions);
-        }
-      } catch (e) {
-        console.error('Error loading parcel actions config:', e);
-      } finally {
-        setLoading(false);
+  // Charger la configuration depuis Supabase
+  const fetchConfig = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('parcel_actions_config')
+        .select('*')
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching parcel actions config:', error);
+        // Fallback vers les valeurs par défaut
+        setActions(DEFAULT_ACTIONS);
+      } else if (data && data.length > 0) {
+        setActions(data.map(mapDbToParcelAction));
+      } else {
+        // Si la table est vide, utiliser les valeurs par défaut
+        setActions(DEFAULT_ACTIONS);
       }
-    };
-
-    loadConfig();
-
-    // Listen for storage changes from other tabs/windows
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY && e.newValue) {
-        try {
-          const parsed = JSON.parse(e.newValue);
-          const mergedActions = DEFAULT_ACTIONS.map(defaultAction => {
-            const savedAction = parsed.find((a: ParcelAction) => a.key === defaultAction.key);
-            return savedAction ? { ...defaultAction, ...savedAction } : defaultAction;
-          });
-          setActions(mergedActions);
-        } catch (err) {
-          console.error('Error parsing storage change:', err);
-        }
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    
-    // Also listen for custom event for same-tab updates
-    const handleCustomUpdate = () => {
-      loadConfig();
-    };
-    window.addEventListener('parcel-actions-config-updated', handleCustomUpdate);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('parcel-actions-config-updated', handleCustomUpdate);
-    };
+    } catch (e) {
+      console.error('Error loading parcel actions config:', e);
+      setActions(DEFAULT_ACTIONS);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Save configuration
-  const saveConfig = useCallback((newActions: ParcelAction[]) => {
+  // Charger la configuration au montage
+  useEffect(() => {
+    fetchConfig();
+
+    // Écouter les changements en temps réel depuis Supabase
+    const channel = supabase
+      .channel('parcel_actions_config_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'parcel_actions_config'
+        },
+        () => {
+          // Recharger la config quand il y a des changements
+          fetchConfig();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchConfig]);
+
+  // Sauvegarder une action dans Supabase
+  const updateAction = useCallback(async (actionId: string, updates: Partial<ParcelAction>) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newActions));
+      const currentAction = actions.find(a => a.id === actionId);
+      if (!currentAction) return;
+
+      const updatedAction = { ...currentAction, ...updates };
+      const dbData = mapParcelActionToDb(updatedAction);
+      
+      // Supprimer l'id du payload car on l'utilise dans le WHERE
+      const { id: _, ...updatePayload } = dbData;
+
+      const { error } = await supabase
+        .from('parcel_actions_config')
+        .update(updatePayload)
+        .eq('id', actionId);
+
+      if (error) {
+        console.error('Error updating action:', error);
+        toast.error('Erreur lors de la mise à jour');
+      } else {
+        // Mettre à jour l'état local optimistically
+        setActions(prev => prev.map(a => a.id === actionId ? updatedAction : a));
+      }
+    } catch (e) {
+      console.error('Error updating action:', e);
+      toast.error('Erreur lors de la mise à jour');
+    }
+  }, [actions]);
+
+  // Sauvegarder toute la configuration
+  const saveConfig = useCallback(async (newActions: ParcelAction[]) => {
+    try {
+      // Mettre à jour chaque action
+      for (const action of newActions) {
+        const dbData = mapParcelActionToDb(action);
+        const { id: _, ...updatePayload } = dbData;
+
+        const { error } = await supabase
+          .from('parcel_actions_config')
+          .update(updatePayload)
+          .eq('id', action.id);
+
+        if (error) {
+          console.error('Error saving action:', error);
+          throw error;
+        }
+      }
+      
       setActions(newActions);
-      // Dispatch custom event for same-tab listeners
-      window.dispatchEvent(new CustomEvent('parcel-actions-config-updated'));
+      return true;
     } catch (e) {
       console.error('Error saving parcel actions config:', e);
+      return false;
     }
   }, []);
 
@@ -217,17 +299,39 @@ export const useParcelActionsConfig = () => {
   }, [actions]);
 
   // Reset to defaults
-  const resetToDefaults = useCallback(() => {
-    saveConfig(DEFAULT_ACTIONS);
-  }, [saveConfig]);
+  const resetToDefaults = useCallback(async () => {
+    try {
+      // Supprimer toutes les entrées existantes et réinsérer les valeurs par défaut
+      for (const defaultAction of DEFAULT_ACTIONS) {
+        const matchingAction = actions.find(a => a.key === defaultAction.key);
+        if (matchingAction) {
+          const dbData = mapParcelActionToDb({ ...defaultAction, id: matchingAction.id });
+          const { id: _, ...updatePayload } = dbData;
+
+          await supabase
+            .from('parcel_actions_config')
+            .update(updatePayload)
+            .eq('id', matchingAction.id);
+        }
+      }
+      
+      await fetchConfig();
+      toast.success('Configuration réinitialisée');
+    } catch (e) {
+      console.error('Error resetting to defaults:', e);
+      toast.error('Erreur lors de la réinitialisation');
+    }
+  }, [actions, fetchConfig]);
 
   return {
     actions,
     loading,
     saveConfig,
+    updateAction,
     getAction,
     getVisibleActions,
     resetToDefaults,
+    refetch: fetchConfig,
     DEFAULT_ACTIONS
   };
 };

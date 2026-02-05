@@ -1889,6 +1889,60 @@ export type Database = {
         }
         Relationships: []
       }
+      parcel_actions_config: {
+        Row: {
+          action_key: string
+          badge_color: string | null
+          badge_label: string | null
+          badge_type: string
+          category: string
+          created_at: string
+          description: string
+          display_order: number
+          icon_name: string | null
+          id: string
+          is_active: boolean
+          is_visible: boolean
+          label: string
+          requires_auth: boolean
+          updated_at: string
+        }
+        Insert: {
+          action_key: string
+          badge_color?: string | null
+          badge_label?: string | null
+          badge_type?: string
+          category?: string
+          created_at?: string
+          description?: string
+          display_order?: number
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_visible?: boolean
+          label: string
+          requires_auth?: boolean
+          updated_at?: string
+        }
+        Update: {
+          action_key?: string
+          badge_color?: string | null
+          badge_label?: string | null
+          badge_type?: string
+          category?: string
+          created_at?: string
+          description?: string
+          display_order?: number
+          icon_name?: string | null
+          id?: string
+          is_active?: boolean
+          is_visible?: boolean
+          label?: string
+          requires_auth?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payment_methods_config: {
         Row: {
           api_credentials: Json | null

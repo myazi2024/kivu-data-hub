@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { 
-  Settings, Plus, Save, 
+  Settings, Save, 
   Eye, EyeOff, Sparkles, Clock,
-  ChevronUp, ChevronDown, RotateCcw, Beaker, Tag
+  ChevronUp, ChevronDown, RotateCcw, Beaker, Tag,
+  Loader2, CheckCircle2, Database
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useParcelActionsConfig, ParcelAction, ActionBadge } from '@/hooks/useParcelActionsConfig';
@@ -35,8 +37,8 @@ const CATEGORIES = [
 ];
 
 const AdminParcelActionsConfig: React.FC = () => {
-  const { actions: loadedActions, saveConfig, resetToDefaults, DEFAULT_ACTIONS, loading } = useParcelActionsConfig();
-  const [actions, setActions] = useState<ParcelAction[]>(DEFAULT_ACTIONS);
+  const { actions: loadedActions, saveConfig, resetToDefaults, loading, refetch } = useParcelActionsConfig();
+  const [actions, setActions] = useState<ParcelAction[]>([]);
   const [selectedAction, setSelectedAction] = useState<ParcelAction | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -51,12 +53,16 @@ const AdminParcelActionsConfig: React.FC = () => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      saveConfig(actions);
+      const success = await saveConfig(actions);
       
-      toast.success('Configuration sauvegardée', {
-        description: 'Les modifications seront appliquées immédiatement dans le dropdown Actions.'
-      });
-      setHasChanges(false);
+      if (success) {
+        toast.success('Configuration sauvegardée', {
+          description: 'Les modifications sont synchronisées avec la base de données et appliquées immédiatement.'
+        });
+        setHasChanges(false);
+      } else {
+        toast.error('Erreur lors de la sauvegarde');
+      }
     } catch (error) {
       toast.error('Erreur lors de la sauvegarde');
     } finally {
@@ -64,12 +70,10 @@ const AdminParcelActionsConfig: React.FC = () => {
     }
   };
 
-  const handleReset = () => {
-    resetToDefaults();
-    setActions(DEFAULT_ACTIONS);
+  const handleReset = async () => {
+    await resetToDefaults();
     setSelectedAction(null);
     setHasChanges(false);
-    toast.info('Configuration réinitialisée aux valeurs par défaut');
   };
 
   const updateAction = (id: string, updates: Partial<ParcelAction>) => {
@@ -114,12 +118,22 @@ const AdminParcelActionsConfig: React.FC = () => {
       >
         {badge.type === 'nouveau' && <Sparkles className="h-2.5 w-2.5" />}
         {badge.type === 'bientot' && <Clock className="h-2.5 w-2.5" />}
+        {badge.type === 'beta' && <Beaker className="h-2.5 w-2.5" />}
+        {badge.type === 'promo' && <Tag className="h-2.5 w-2.5" />}
         {label}
       </Badge>
     );
   };
 
   const sortedActions = [...actions].sort((a, b) => a.displayOrder - b.displayOrder);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -130,8 +144,9 @@ const AdminParcelActionsConfig: React.FC = () => {
             <Settings className="h-5 w-5 text-primary" />
             Configuration Actions Parcelle
           </h2>
-          <p className="text-xs text-muted-foreground mt-1">
-            Gérez les actions disponibles dans le menu déroulant des résultats cadastraux
+          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1.5">
+            <Database className="h-3 w-3" />
+            Synchronisé avec Supabase en temps réel
           </p>
         </div>
         <div className="flex gap-2">
@@ -150,11 +165,23 @@ const AdminParcelActionsConfig: React.FC = () => {
             disabled={!hasChanges || isSaving}
             className="gap-1"
           >
-            <Save className="h-3.5 w-3.5" />
+            {isSaving ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Save className="h-3.5 w-3.5" />
+            )}
             {isSaving ? 'Sauvegarde...' : 'Sauvegarder'}
           </Button>
         </div>
       </div>
+
+      {/* Alerte de synchronisation */}
+      <Alert className="bg-primary/5 border-primary/20">
+        <CheckCircle2 className="h-4 w-4 text-primary" />
+        <AlertDescription className="text-xs">
+          Les modifications apportées ici sont enregistrées dans la base de données et synchronisées automatiquement avec le menu Actions de toutes les parcelles.
+        </AlertDescription>
+      </Alert>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Liste des actions */}
@@ -203,6 +230,7 @@ const AdminParcelActionsConfig: React.FC = () => {
                         {getBadgePreview(action.badge)}
                       </div>
                       <p className="text-xs text-muted-foreground truncate">{action.description}</p>
+                      <p className="text-[10px] text-muted-foreground/70 font-mono mt-0.5">key: {action.key}</p>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -235,112 +263,126 @@ const AdminParcelActionsConfig: React.FC = () => {
           </CardHeader>
           <CardContent>
             {selectedAction ? (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-xs">Libellé</Label>
-                  <Input
-                    value={selectedAction.label}
-                    onChange={(e) => updateAction(selectedAction.id, { label: e.target.value })}
-                    className="h-9"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs">Description</Label>
-                  <Textarea
-                    value={selectedAction.description}
-                    onChange={(e) => updateAction(selectedAction.id, { description: e.target.value })}
-                    className="h-16 resize-none text-sm"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs">Badge</Label>
-                  <Select
-                    value={selectedAction.badge.type}
-                    onValueChange={(value) => updateAction(selectedAction.id, { 
-                      badge: { ...selectedAction.badge, type: value as ActionBadge['type'] }
-                    })}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {BADGE_TYPES.map(badge => (
-                        <SelectItem key={badge.value} value={badge.value}>
-                          <div className="flex items-center gap-2">
-                            {badge.value !== 'none' && (
-                              <div className={`w-3 h-3 rounded-full ${badge.color}`} />
-                            )}
-                            {badge.label}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label className="text-xs">Catégorie</Label>
-                  <Select
-                    value={selectedAction.category}
-                    onValueChange={(value) => updateAction(selectedAction.id, { category: value })}
-                  >
-                    <SelectTrigger className="h-9">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CATEGORIES.map(cat => (
-                        <SelectItem key={cat.value} value={cat.value}>
-                          {cat.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator />
-
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">Visible dans le menu</Label>
-                    <Switch
-                      checked={selectedAction.isVisible}
-                      onCheckedChange={(checked) => updateAction(selectedAction.id, { isVisible: checked })}
+              <ScrollArea className="h-[350px] pr-2">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs">Clé technique</Label>
+                    <Input
+                      value={selectedAction.key}
+                      disabled
+                      className="h-9 bg-muted/50 font-mono text-xs"
                     />
+                    <p className="text-[10px] text-muted-foreground">
+                      Identifiant unique non modifiable
+                    </p>
                   </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">Actif (cliquable)</Label>
-                    <Switch
-                      checked={selectedAction.isActive}
-                      onCheckedChange={(checked) => updateAction(selectedAction.id, { isActive: checked })}
+
+                  <div className="space-y-2">
+                    <Label className="text-xs">Libellé</Label>
+                    <Input
+                      value={selectedAction.label}
+                      onChange={(e) => updateAction(selectedAction.id, { label: e.target.value })}
+                      className="h-9"
                     />
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs">Requiert authentification</Label>
-                    <Switch
-                      checked={selectedAction.requiresAuth}
-                      onCheckedChange={(checked) => updateAction(selectedAction.id, { requiresAuth: checked })}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Description</Label>
+                    <Textarea
+                      value={selectedAction.description}
+                      onChange={(e) => updateAction(selectedAction.id, { description: e.target.value })}
+                      className="h-16 resize-none text-sm"
                     />
                   </div>
-                </div>
 
-                <Separator />
+                  <div className="space-y-2">
+                    <Label className="text-xs">Badge</Label>
+                    <Select
+                      value={selectedAction.badge.type}
+                      onValueChange={(value) => updateAction(selectedAction.id, { 
+                        badge: { ...selectedAction.badge, type: value as ActionBadge['type'] }
+                      })}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {BADGE_TYPES.map(badge => (
+                          <SelectItem key={badge.value} value={badge.value}>
+                            <div className="flex items-center gap-2">
+                              {badge.value !== 'none' && (
+                                <div className={`w-3 h-3 rounded-full ${badge.color}`} />
+                              )}
+                              {badge.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                {/* Aperçu */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-muted-foreground">Aperçu</Label>
-                  <div className="p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm">{selectedAction.label}</span>
-                      {getBadgePreview(selectedAction.badge)}
+                  <div className="space-y-2">
+                    <Label className="text-xs">Catégorie</Label>
+                    <Select
+                      value={selectedAction.category}
+                      onValueChange={(value) => updateAction(selectedAction.id, { category: value })}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map(cat => (
+                          <SelectItem key={cat.value} value={cat.value}>
+                            {cat.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Visible dans le menu</Label>
+                      <Switch
+                        checked={selectedAction.isVisible}
+                        onCheckedChange={(checked) => updateAction(selectedAction.id, { isVisible: checked })}
+                      />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">{selectedAction.description}</p>
+                    
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Actif (cliquable)</Label>
+                      <Switch
+                        checked={selectedAction.isActive}
+                        onCheckedChange={(checked) => updateAction(selectedAction.id, { isActive: checked })}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs">Requiert authentification</Label>
+                      <Switch
+                        checked={selectedAction.requiresAuth}
+                        onCheckedChange={(checked) => updateAction(selectedAction.id, { requiresAuth: checked })}
+                      />
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* Aperçu */}
+                  <div className="space-y-2">
+                    <Label className="text-xs text-muted-foreground">Aperçu</Label>
+                    <div className="p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-sm">{selectedAction.label}</span>
+                        {getBadgePreview(selectedAction.badge)}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1">{selectedAction.description}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </ScrollArea>
             ) : (
               <div className="text-center py-8 text-muted-foreground">
                 <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
