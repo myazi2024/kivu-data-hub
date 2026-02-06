@@ -1405,6 +1405,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   );
 
   const renderSummary = () => {
+    // Labels pour affichage
     const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
       villa: 'Villa / Maison individuelle',
       appartement: 'Appartement',
@@ -1417,227 +1418,697 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       autre: 'Autre'
     };
 
+    const QUALITY_LABELS: Record<string, string> = {
+      luxe: 'Luxe / Haut standing',
+      standard: 'Standard / Moyen standing',
+      economique: 'Économique / Social'
+    };
+
+    const CONDITION_LABELS: Record<string, string> = {
+      neuf: 'Neuf (< 2 ans)',
+      bon: 'Bon état',
+      moyen: 'État moyen',
+      mauvais: 'Mauvais état',
+      a_renover: 'À rénover'
+    };
+
+    const WALL_LABELS: Record<string, string> = {
+      beton: 'Béton armé',
+      briques_cuites: 'Briques cuites',
+      briques_adobe: 'Briques adobe',
+      parpaings: 'Parpaings / Blocs',
+      bois: 'Bois',
+      tole: 'Tôles métalliques',
+      mixte: 'Mixte'
+    };
+
+    const ROOF_LABELS: Record<string, string> = {
+      tole_bac: 'Tôle bac / Ondulée',
+      tuiles: 'Tuiles',
+      dalle_beton: 'Dalle béton (terrasse)',
+      ardoise: 'Ardoise',
+      chaume: 'Chaume / Paille',
+      autre: 'Autre'
+    };
+
+    const FLOOR_LABELS: Record<string, string> = {
+      carrelage: 'Carrelage',
+      ciment_lisse: 'Ciment lissé',
+      parquet: 'Parquet / Bois',
+      marbre: 'Marbre / Granit',
+      terre_battue: 'Terre battue',
+      autre: 'Autre'
+    };
+
+    const WINDOW_LABELS: Record<string, string> = {
+      aluminium: 'Aluminium',
+      bois: 'Bois',
+      pvc: 'PVC',
+      fer: 'Fer forgé',
+      sans_fenetres: 'Sans fenêtres'
+    };
+
+    const ROAD_LABELS: Record<string, string> = {
+      asphalte: 'Route asphaltée',
+      terre: 'Route en terre',
+      piste: 'Piste / Sentier'
+    };
+
+    const SOUND_LABELS: Record<string, string> = {
+      tres_calme: 'Très calme',
+      calme: 'Calme',
+      modere: 'Modéré',
+      bruyant: 'Bruyant',
+      tres_bruyant: 'Très bruyant'
+    };
+
+    const POSITION_LABELS: Record<string, string> = {
+      premiere_position: 'Première position (bordure de route)',
+      deuxieme_position: 'Deuxième position',
+      fond_parcelle: 'Fond de parcelle',
+      dans_servitude: 'Dans une servitude',
+      coin_parcelle: 'En coin de parcelle'
+    };
+
+    const ACCESSIBILITY_LABELS: Record<string, string> = {
+      escalier: 'Escalier uniquement',
+      ascenseur: 'Ascenseur disponible',
+      escalier_ascenseur: 'Escalier + Ascenseur',
+      plain_pied: 'Plain-pied (RDC)'
+    };
+
+    // Validation des champs obligatoires et importants
     const getMissingFields = () => {
-      const missing: Array<{ label: string; tab: string }> = [];
-      // Champs obligatoires minimum
-      if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general' });
+      const missing: Array<{ label: string; tab: string; required: boolean }> = [];
+      
+      // Champs obligatoires
+      if (!constructionType) missing.push({ label: 'Type de construction', tab: 'general', required: true });
+      
+      // Champs importants (non obligatoires mais recommandés)
+      if (constructionType !== 'terrain_nu') {
+        if (!constructionYear) missing.push({ label: 'Année de construction', tab: 'general', required: false });
+        if (!totalBuiltAreaSqm) missing.push({ label: 'Surface construite', tab: 'general', required: false });
+        if (!numberOfRooms) missing.push({ label: 'Nombre de pièces', tab: 'general', required: false });
+      }
+      if (constructionImages.length === 0 && constructionType !== 'terrain_nu') {
+        missing.push({ label: 'Photos de la construction', tab: 'documents', required: false });
+      }
+      
       return missing;
     };
 
     const missingFields = getMissingFields();
+    const requiredMissing = missingFields.filter(f => f.required);
+    const recommendedMissing = missingFields.filter(f => !f.required);
+
+    // Comptage de la complétion
+    const allFields = [
+      constructionType, constructionYear, constructionQuality, numberOfFloors, 
+      totalBuiltAreaSqm, propertyCondition, numberOfRooms, numberOfBedrooms, numberOfBathrooms,
+      wallMaterial, roofMaterial, windowType, floorMaterial, buildingPosition, roadAccessType, soundEnvironment
+    ].filter(Boolean).length;
+    const totalPossibleFields = 16;
+    const completionPercentage = Math.round((allFields / totalPossibleFields) * 100);
+
+    // Liste des équipements sélectionnés
+    const selectedEquipments = [
+      hasWaterSupply && 'Eau courante',
+      hasElectricity && 'Électricité',
+      hasSewageSystem && 'Assainissement',
+      hasInternet && 'Internet',
+      hasSecuritySystem && 'Système de sécurité',
+      hasParking && `Parking${parkingSpaces ? ` (${parkingSpaces} places)` : ''}`,
+      hasGarden && `Jardin${gardenAreaSqm ? ` (${gardenAreaSqm} m²)` : ''}`,
+      hasPool && 'Piscine',
+      hasAirConditioning && 'Climatisation',
+      hasSolarPanels && 'Panneaux solaires',
+      hasWaterTank && 'Citerne d\'eau',
+      hasGenerator && 'Groupe électrogène',
+      hasBorehole && 'Forage'
+    ].filter(Boolean) as string[];
+
+    // Finitions sélectionnées
+    const selectedFinishes = [
+      hasPlaster && 'Crépissage',
+      hasPainting && 'Peinture',
+      hasCeiling && 'Plafond',
+      hasDoubleGlazing && 'Double vitrage'
+    ].filter(Boolean) as string[];
+
+    // Risques
+    const selectedRisks = [
+      floodRiskZone && 'Zone inondable',
+      erosionRiskZone && 'Zone d\'érosion'
+    ].filter(Boolean) as string[];
 
     return (
-      <div className="space-y-3">
-        {/* En-tête */}
-        <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 border border-primary/20">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-primary/20 rounded-xl flex items-center justify-center">
-              <Receipt className="h-5 w-5 text-primary" />
+      <div className="flex flex-col h-full max-h-[70vh]">
+        {/* En-tête fixe */}
+        <div className="shrink-0 space-y-3 pb-3">
+          <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 border border-primary/20">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-primary/20 rounded-xl flex items-center justify-center">
+                <Receipt className="h-5 w-5 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-semibold text-sm">Récapitulatif de la demande</h3>
+                <p className="text-xs text-muted-foreground">Vérifiez les informations avant de continuer</p>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold text-primary">{completionPercentage}%</div>
+                <div className="text-[10px] text-muted-foreground">complet</div>
+              </div>
             </div>
-            <div>
-              <h3 className="font-semibold text-sm">Récapitulatif de la demande</h3>
-              <p className="text-xs text-muted-foreground">Vérifiez les informations avant de continuer</p>
+            {/* Barre de progression */}
+            <div className="w-full bg-muted rounded-full h-1.5 mt-2">
+              <div 
+                className={`h-1.5 rounded-full transition-all duration-500 ${
+                  completionPercentage >= 80 ? 'bg-green-500' : completionPercentage >= 50 ? 'bg-amber-500' : 'bg-primary'
+                }`}
+                style={{ width: `${completionPercentage}%` }}
+              />
             </div>
           </div>
-        </div>
 
-        {/* Avertissement */}
-        <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-xl">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
-            Veuillez vérifier attentivement toutes les informations. Une fois soumise, la demande ne pourra plus être modifiée.
-          </AlertDescription>
-        </Alert>
-
-        {/* Erreurs de validation */}
-        {missingFields.length > 0 && (
-          <Alert className="bg-destructive/10 border-destructive/30 rounded-xl">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-            <AlertDescription className="text-xs text-destructive">
-              <p className="font-medium mb-1">Données manquantes :</p>
-              <ul className="space-y-1">
-                {missingFields.map((field, index) => (
-                  <li key={index} className="flex items-center justify-between">
-                    <span>• {field.label}</span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setActiveTab(field.tab);
-                        setStep('form');
-                      }}
-                      className="h-5 px-2 text-xs text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      Compléter
-                    </Button>
-                  </li>
-                ))}
-              </ul>
+          {/* Avertissement */}
+          <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-xl">
+            <AlertTriangle className="h-4 w-4 text-amber-600" />
+            <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
+              Veuillez vérifier attentivement toutes les informations. Une fois soumise, la demande ne pourra plus être modifiée.
             </AlertDescription>
           </Alert>
-        )}
 
-        <ScrollArea className="max-h-[35vh]">
-          <div className="space-y-2 pr-2">
-            {/* Parcelle */}
-            <Card className="rounded-xl border-border/50">
-              <CardContent className="p-3 space-y-1.5">
+          {/* Erreurs de validation obligatoires */}
+          {requiredMissing.length > 0 && (
+            <Alert className="bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-800 rounded-xl">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-xs text-red-700 dark:text-red-300">
+                <p className="font-medium mb-1.5">Données obligatoires manquantes ({requiredMissing.length}) :</p>
+                <ul className="space-y-1">
+                  {requiredMissing.map((field, index) => (
+                    <li key={index} className="flex items-center justify-between py-1 border-b border-red-200/50 last:border-0">
+                      <span>• {field.label}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setActiveTab(field.tab); setStep('form'); }}
+                        className="h-6 px-2 text-xs text-red-600 border-red-300 hover:bg-red-100"
+                      >
+                        Compléter
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Recommandations */}
+          {recommendedMissing.length > 0 && requiredMissing.length === 0 && (
+            <Alert className="bg-orange-50 dark:bg-orange-950/30 border-orange-200 dark:border-orange-800 rounded-xl">
+              <Info className="h-4 w-4 text-orange-600" />
+              <AlertDescription className="text-xs text-orange-700 dark:text-orange-300">
+                <p className="font-medium mb-1.5">Recommandé pour une expertise plus précise ({recommendedMissing.length}) :</p>
+                <ul className="space-y-1">
+                  {recommendedMissing.slice(0, 3).map((field, index) => (
+                    <li key={index} className="flex items-center justify-between py-1 border-b border-orange-200/50 last:border-0">
+                      <span>• {field.label}</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setActiveTab(field.tab); setStep('form'); }}
+                        className="h-6 px-2 text-xs text-orange-600 border-orange-300 hover:bg-orange-100"
+                      >
+                        Ajouter
+                      </Button>
+                    </li>
+                  ))}
+                  {recommendedMissing.length > 3 && (
+                    <li className="text-xs text-muted-foreground pt-1">
+                      Et {recommendedMissing.length - 3} autre(s)...
+                    </li>
+                  )}
+                </ul>
+              </AlertDescription>
+            </Alert>
+          )}
+        </div>
+
+        {/* Contenu scrollable */}
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="space-y-2 pr-3 pb-4">
+            {/* Section Parcelle */}
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    <MapPin className="h-4 w-4 text-blue-600" />
                     <h4 className="text-xs font-semibold">Parcelle</h4>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setStep('form')} className="h-6 px-2 text-xs text-muted-foreground">
-                    Modifier
-                  </Button>
                 </div>
-                <div className="flex justify-between text-xs border-b border-border/30 py-1">
-                  <span className="text-muted-foreground">Numéro</span>
-                  <span className="font-mono font-bold">{parcelNumber}</span>
-                </div>
-                {parcelData?.province && (
-                  <div className="flex justify-between text-xs py-1">
-                    <span className="text-muted-foreground">Localisation</span>
-                    <span className="text-right max-w-[60%]">{parcelData.province} {parcelData.ville && `• ${parcelData.ville}`}</span>
+                <div className="divide-y divide-border/30">
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Numéro de parcelle</span>
+                    <span className="font-mono font-bold text-primary">{parcelNumber}</span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Informations générales */}
-            <Card className="rounded-xl border-border/50">
-              <CardContent className="p-3 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Home className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="text-xs font-semibold">Construction</h4>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground">
-                    Modifier
-                  </Button>
-                </div>
-                <div className="flex justify-between text-xs border-b border-border/30 py-1">
-                  <span className="text-muted-foreground">Type</span>
-                  <span>{CONSTRUCTION_TYPE_LABELS[constructionType] || constructionType}</span>
-                </div>
-                {constructionYear && (
-                  <div className="flex justify-between text-xs border-b border-border/30 py-1">
-                    <span className="text-muted-foreground">Année construction</span>
-                    <span>{constructionYear}</span>
-                  </div>
-                )}
-                {totalBuiltAreaSqm && (
-                  <div className="flex justify-between text-xs border-b border-border/30 py-1">
-                    <span className="text-muted-foreground">Surface construite</span>
-                    <span>{totalBuiltAreaSqm} m²</span>
-                  </div>
-                )}
-                {numberOfFloors && (
-                  <div className="flex justify-between text-xs border-b border-border/30 py-1">
-                    <span className="text-muted-foreground">Étages</span>
-                    <span>{numberOfFloors}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-xs py-1">
-                  <span className="text-muted-foreground">État</span>
-                  <span>{propertyCondition === 'neuf' ? 'Neuf' : propertyCondition === 'bon' ? 'Bon état' : propertyCondition === 'moyen' ? 'Moyen' : propertyCondition === 'mauvais' ? 'Mauvais' : 'À rénover'}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Équipements */}
-            <Card className="rounded-xl border-border/50">
-              <CardContent className="p-3 space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Zap className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="text-xs font-semibold">Équipements</h4>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground">
-                    Modifier
-                  </Button>
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {hasWaterSupply && <Badge variant="secondary" className="text-[10px]">Eau</Badge>}
-                  {hasElectricity && <Badge variant="secondary" className="text-[10px]">Électricité</Badge>}
-                  {hasSewageSystem && <Badge variant="secondary" className="text-[10px]">Assainissement</Badge>}
-                  {hasInternet && <Badge variant="secondary" className="text-[10px]">Internet</Badge>}
-                  {hasSecuritySystem && <Badge variant="secondary" className="text-[10px]">Sécurité</Badge>}
-                  {hasParking && <Badge variant="secondary" className="text-[10px]">Parking</Badge>}
-                  {hasGarden && <Badge variant="secondary" className="text-[10px]">Jardin</Badge>}
-                  {hasPool && <Badge variant="secondary" className="text-[10px]">Piscine</Badge>}
-                  {hasAirConditioning && <Badge variant="secondary" className="text-[10px]">Climatisation</Badge>}
-                  {!hasWaterSupply && !hasElectricity && !hasSewageSystem && !hasInternet && (
-                    <span className="text-xs text-muted-foreground">Aucun équipement renseigné</span>
+                  {parcelData?.province && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Province</span>
+                      <span className="font-medium">{parcelData.province}</span>
+                    </div>
+                  )}
+                  {parcelData?.ville && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Ville</span>
+                      <span className="font-medium">{parcelData.ville}</span>
+                    </div>
+                  )}
+                  {parcelData?.commune && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Commune</span>
+                      <span className="font-medium">{parcelData.commune}</span>
+                    </div>
+                  )}
+                  {parcelData?.quartier && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Quartier</span>
+                      <span className="font-medium">{parcelData.quartier}</span>
+                    </div>
+                  )}
+                  {parcelData?.area_sqm && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Superficie parcelle</span>
+                      <span className="font-medium">{parcelData.area_sqm.toLocaleString()} m²</span>
+                    </div>
+                  )}
+                  {parcelData?.current_owner_name && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Propriétaire</span>
+                      <span className="font-medium">{parcelData.current_owner_name}</span>
+                    </div>
                   )}
                 </div>
               </CardContent>
             </Card>
 
-            {/* Documents */}
-            <Card className="rounded-xl border-border/50">
-              <CardContent className="p-3 space-y-1.5">
+            {/* Section Construction */}
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <h4 className="text-xs font-semibold">Documents</h4>
+                    <Home className="h-4 w-4 text-green-600" />
+                    <h4 className="text-xs font-semibold">Construction</h4>
+                    <Badge variant="outline" className="text-[10px] h-5">
+                      {[constructionType, constructionYear, totalBuiltAreaSqm, numberOfFloors, propertyCondition, constructionQuality].filter(Boolean).length}/6
+                    </Badge>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('documents'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground">
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
                   </Button>
                 </div>
-                <div className="flex justify-between text-xs border-b border-border/30 py-1">
-                  <span className="text-muted-foreground">Documents parcelle</span>
-                  <span>{parcelDocuments.length} fichier(s)</span>
+                <div className="divide-y divide-border/30">
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Type de construction</span>
+                    <span className="font-medium">{CONSTRUCTION_TYPE_LABELS[constructionType] || constructionType || <span className="text-orange-600">Non renseigné</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Année de construction</span>
+                    <span className="font-medium">{constructionYear || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Surface construite</span>
+                    <span className="font-medium">{totalBuiltAreaSqm ? `${totalBuiltAreaSqm} m²` : <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Nombre d'étages</span>
+                    <span className="font-medium">{numberOfFloors || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Standing</span>
+                    <span className="font-medium">{QUALITY_LABELS[constructionQuality] || constructionQuality}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">État général</span>
+                    <span className="font-medium">{CONDITION_LABELS[propertyCondition] || propertyCondition}</span>
+                  </div>
+                  {propertyDescription && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Description</span>
+                      <span className="font-medium text-right max-w-[60%] truncate">{propertyDescription}</span>
+                    </div>
+                  )}
                 </div>
-                <div className="flex justify-between text-xs py-1">
-                  <span className="text-muted-foreground">Photos construction</span>
-                  <span>{constructionImages.length} photo(s)</span>
+              </CardContent>
+            </Card>
+
+            {/* Section Pièces */}
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="h-4 w-4 text-purple-600" />
+                    <h4 className="text-xs font-semibold">Composition</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    Modifier
+                  </Button>
                 </div>
+                <div className="divide-y divide-border/30">
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Nombre de pièces</span>
+                    <span className="font-medium">{numberOfRooms || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Chambres</span>
+                    <span className="font-medium">{numberOfBedrooms || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Salles de bain</span>
+                    <span className="font-medium">{numberOfBathrooms || <span className="text-muted-foreground">—</span>}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section Matériaux */}
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-amber-600" />
+                    <h4 className="text-xs font-semibold">Matériaux de construction</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materials'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="divide-y divide-border/30">
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Murs / Élévation</span>
+                    <span className="font-medium">{WALL_LABELS[wallMaterial] || wallMaterial}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Toiture</span>
+                    <span className="font-medium">{ROOF_LABELS[roofMaterial] || roofMaterial}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Revêtement de sol</span>
+                    <span className="font-medium">{FLOOR_LABELS[floorMaterial] || floorMaterial}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Type de fenêtres</span>
+                    <span className="font-medium">{WINDOW_LABELS[windowType] || windowType}</span>
+                  </div>
+                </div>
+                {selectedFinishes.length > 0 && (
+                  <div className="pt-1.5">
+                    <span className="text-xs text-muted-foreground">Finitions :</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedFinishes.map((finish, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-[10px]">{finish}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Section Emplacement */}
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-cyan-600" />
+                    <h4 className="text-xs font-semibold">Emplacement & Position</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materials'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="divide-y divide-border/30">
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Position du bâtiment</span>
+                    <span className="font-medium text-right max-w-[55%]">{POSITION_LABELS[buildingPosition] || buildingPosition}</span>
+                  </div>
+                  {facadeOrientation && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Orientation façade</span>
+                      <span className="font-medium">{facadeOrientation}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Parcelle en coin</span>
+                    <Badge variant={isCornerPlot ? "default" : "secondary"} className="text-[10px]">
+                      {isCornerPlot ? 'Oui' : 'Non'}
+                    </Badge>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Accès direct rue</span>
+                    <Badge variant={hasDirectStreetAccess ? "default" : "secondary"} className="text-[10px]">
+                      {hasDirectStreetAccess ? 'Oui' : 'Non'}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section Appartement (si applicable) */}
+            {(constructionType === 'appartement' || constructionType === 'studio' || constructionType === 'immeuble') && (
+              <Card className="rounded-xl border-border/50 shadow-sm">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4 text-indigo-600" />
+                      <h4 className="text-xs font-semibold">Détails Appartement / Immeuble</h4>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materials'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                      Modifier
+                    </Button>
+                  </div>
+                  <div className="divide-y divide-border/30">
+                    {apartmentNumber && (
+                      <div className="flex justify-between text-xs py-1.5">
+                        <span className="text-muted-foreground">N° Appartement</span>
+                        <span className="font-medium">{apartmentNumber}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Étage</span>
+                      <span className="font-medium">{floorNumber || <span className="text-muted-foreground">—</span>}</span>
+                    </div>
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Total étages immeuble</span>
+                      <span className="font-medium">{totalBuildingFloors || <span className="text-muted-foreground">—</span>}</span>
+                    </div>
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Accessibilité</span>
+                      <span className="font-medium">{ACCESSIBILITY_LABELS[accessibility] || accessibility}</span>
+                    </div>
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Parties communes</span>
+                      <Badge variant={hasCommonAreas ? "default" : "secondary"} className="text-[10px]">
+                        {hasCommonAreas ? 'Oui' : 'Non'}
+                      </Badge>
+                    </div>
+                    {monthlyCharges && (
+                      <div className="flex justify-between text-xs py-1.5">
+                        <span className="text-muted-foreground">Charges mensuelles</span>
+                        <span className="font-medium text-primary">{monthlyCharges} USD</span>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Section Équipements */}
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4 text-yellow-600" />
+                    <h4 className="text-xs font-semibold">Équipements</h4>
+                    <Badge variant="outline" className="text-[10px] h-5">
+                      {selectedEquipments.length} sélectionné(s)
+                    </Badge>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('general'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    Modifier
+                  </Button>
+                </div>
+                {selectedEquipments.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedEquipments.map((equip, idx) => (
+                      <Badge key={idx} variant="secondary" className="text-[10px]">{equip}</Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">Aucun équipement renseigné</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Section Environnement */}
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Trees className="h-4 w-4 text-green-600" />
+                    <h4 className="text-xs font-semibold">Environnement & Accessibilité</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('environment'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="divide-y divide-border/30">
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Type de route</span>
+                    <span className="font-medium">{ROAD_LABELS[roadAccessType] || roadAccessType}</span>
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Environnement sonore</span>
+                    <span className="font-medium">{SOUND_LABELS[soundEnvironment] || soundEnvironment}</span>
+                  </div>
+                  {distanceToMainRoad && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Distance route principale</span>
+                      <span className="font-medium">{distanceToMainRoad} m</span>
+                    </div>
+                  )}
+                  {distanceToHospital && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Distance hôpital</span>
+                      <span className="font-medium">{distanceToHospital} km</span>
+                    </div>
+                  )}
+                  {distanceToSchool && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Distance école</span>
+                      <span className="font-medium">{distanceToSchool} km</span>
+                    </div>
+                  )}
+                  {distanceToMarket && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Distance marché</span>
+                      <span className="font-medium">{distanceToMarket} km</span>
+                    </div>
+                  )}
+                  {nearbyAmenities && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Commodités</span>
+                      <span className="font-medium text-right max-w-[55%] truncate">{nearbyAmenities}</span>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Section Risques */}
+            {selectedRisks.length > 0 && (
+              <Card className="rounded-xl border-amber-200 bg-amber-50/30 dark:border-amber-800 dark:bg-amber-950/20 shadow-sm">
+                <CardContent className="p-3 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <h4 className="text-xs font-semibold text-amber-700 dark:text-amber-400">Zones à risque</h4>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedRisks.map((risk, idx) => (
+                      <Badge key={idx} variant="outline" className="text-[10px] text-amber-700 border-amber-300">{risk}</Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Section Documents */}
+            <Card className="rounded-xl border-border/50 shadow-sm">
+              <CardContent className="p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-blue-600" />
+                    <h4 className="text-xs font-semibold">Documents</h4>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('documents'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    Modifier
+                  </Button>
+                </div>
+                <div className="divide-y divide-border/30">
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Documents parcelle</span>
+                    {parcelDocuments.length > 0 ? (
+                      <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                        <FileText className="h-3 w-3 mr-1" />
+                        {parcelDocuments.length} fichier(s)
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground text-xs">Aucun</span>
+                    )}
+                  </div>
+                  <div className="flex justify-between text-xs py-1.5">
+                    <span className="text-muted-foreground">Photos construction</span>
+                    {constructionImages.length > 0 ? (
+                      <Badge variant="outline" className="text-[10px] text-green-600 border-green-300">
+                        <Camera className="h-3 w-3 mr-1" />
+                        {constructionImages.length} photo(s)
+                      </Badge>
+                    ) : (
+                      <span className="text-orange-600 text-xs">⚠️ Recommandé</span>
+                    )}
+                  </div>
+                </div>
+                {additionalNotes && (
+                  <div className="pt-1.5 border-t border-border/30">
+                    <span className="text-xs text-muted-foreground">Notes additionnelles :</span>
+                    <p className="text-xs mt-1 bg-muted/30 p-2 rounded-lg">{additionalNotes}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
         </ScrollArea>
 
-        {/* Montant total */}
-        <Card className="rounded-xl bg-primary/5 border-primary/20">
-          <CardContent className="p-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-primary" />
-                <span className="text-sm font-medium">Frais d'expertise</span>
+        {/* Pied fixe avec montant et actions */}
+        <div className="shrink-0 pt-3 space-y-3 border-t border-border/50 mt-2">
+          {/* Montant total */}
+          <Card className="rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+            <CardContent className="p-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-primary" />
+                  <span className="text-sm font-medium">Frais d'expertise</span>
+                </div>
+                <span className="text-xl font-bold text-primary">{getTotalAmount()} USD</span>
               </div>
-              <span className="text-lg font-bold text-primary">{getTotalAmount()} USD</span>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* Actions */}
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setStep('form')}
-            className="flex-1 h-10 rounded-xl"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Modifier
-          </Button>
-          <Button
-            onClick={handleProceedToPayment}
-            disabled={missingFields.length > 0 || loadingFees}
-            className="flex-1 h-10 rounded-xl"
-          >
-            <DollarSign className="h-4 w-4 mr-2" />
-            Payer
-          </Button>
-        </div>
-
-        {missingFields.length === 0 && (
-          <div className="flex items-center justify-center gap-2 text-xs text-green-600">
-            <CheckCircle2 className="h-4 w-4" />
-            <span>Informations complètes</span>
+          {/* Actions */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setStep('form')}
+              className="flex-1 h-11 rounded-xl"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Modifier
+            </Button>
+            <Button
+              onClick={handleProceedToPayment}
+              disabled={requiredMissing.length > 0 || loadingFees}
+              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 shadow-md"
+            >
+              <DollarSign className="h-4 w-4 mr-2" />
+              Payer
+            </Button>
           </div>
-        )}
+
+          {requiredMissing.length === 0 && (
+            <div className="flex items-center justify-center gap-2 text-xs text-green-600">
+              <CheckCircle2 className="h-4 w-4" />
+              <span className="font-medium">Prêt pour le paiement</span>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
