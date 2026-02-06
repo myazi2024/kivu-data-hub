@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +17,7 @@ import {
   Loader2, FileSearch, MapPin, Building, Droplets, Zap, Wifi, 
   Shield, Car, Trees, AlertTriangle, Upload, X, FileText, Image, CheckCircle2,
   CreditCard, Smartphone, ArrowLeft, Receipt, DollarSign, Phone, Home,
-  Volume2, Layers, Building2, Camera, Info
+  Volume2, Layers, Building2, Camera, Info, Mic, MicOff, Fence, Warehouse, DoorOpen
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
@@ -125,12 +125,32 @@ const FLOOR_MATERIAL_OPTIONS = [
 ];
 
 const SOUND_ENVIRONMENT_OPTIONS = [
-  { value: 'tres_calme', label: 'Très calme (zone résidentielle)' },
-  { value: 'calme', label: 'Calme' },
-  { value: 'modere', label: 'Modéré (activité normale)' },
-  { value: 'bruyant', label: 'Bruyant (avenue passante)' },
-  { value: 'tres_bruyant', label: 'Très bruyant (zone commerciale/industrielle)' },
+  { value: 'tres_calme', label: 'Très calme (< 40 dB)', minDb: 0, maxDb: 40 },
+  { value: 'calme', label: 'Calme (40-55 dB)', minDb: 40, maxDb: 55 },
+  { value: 'modere', label: 'Modéré (55-70 dB)', minDb: 55, maxDb: 70 },
+  { value: 'bruyant', label: 'Bruyant (70-85 dB)', minDb: 70, maxDb: 85 },
+  { value: 'tres_bruyant', label: 'Très bruyant (> 85 dB)', minDb: 85, maxDb: 200 },
 ];
+
+const FACADE_ORIENTATION_OPTIONS = [
+  { value: 'nord', label: 'Nord' },
+  { value: 'nord_est', label: 'Nord-Est' },
+  { value: 'est', label: 'Est' },
+  { value: 'sud_est', label: 'Sud-Est' },
+  { value: 'sud', label: 'Sud' },
+  { value: 'sud_ouest', label: 'Sud-Ouest' },
+  { value: 'ouest', label: 'Ouest' },
+  { value: 'nord_ouest', label: 'Nord-Ouest' },
+];
+
+// Générer les options d'année (1950 à année actuelle)
+const YEAR_OPTIONS = Array.from(
+  { length: new Date().getFullYear() - 1950 + 1 },
+  (_, i) => {
+    const year = new Date().getFullYear() - i;
+    return { value: year.toString(), label: year.toString() };
+  }
+);
 
 const BUILDING_POSITION_OPTIONS = [
   { value: 'premiere_position', label: 'Première position (bordure de route)' },
@@ -221,6 +241,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [soundEnvironment, setSoundEnvironment] = useState('calme');
   const [nearbyNoiseSources, setNearbyNoiseSources] = useState('');
   const [hasDoubleGlazing, setHasDoubleGlazing] = useState(false);
+  const [isOnSite, setIsOnSite] = useState<boolean | null>(null);
+  const [isRecordingSound, setIsRecordingSound] = useState(false);
+  const [measuredDecibels, setMeasuredDecibels] = useState<number | null>(null);
+  const [microphoneError, setMicrophoneError] = useState<string | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   // === ÉQUIPEMENTS ===
   const [hasWaterSupply, setHasWaterSupply] = useState(false);
@@ -238,6 +266,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [hasWaterTank, setHasWaterTank] = useState(false);
   const [hasGenerator, setHasGenerator] = useState(false);
   const [hasBorehole, setHasBorehole] = useState(false);
+  const [hasElectricFence, setHasElectricFence] = useState(false);
+  const [hasGarage, setHasGarage] = useState(false);
+  const [hasCellar, setHasCellar] = useState(false);
+  const [hasAutomaticGate, setHasAutomaticGate] = useState(false);
 
   // === ENVIRONNEMENT & ACCESSIBILITÉ ===
   const [roadAccessType, setRoadAccessType] = useState('asphalte');
@@ -282,6 +314,85 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   const getTotalAmount = () => {
     return fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+  };
+
+  // Fonctions pour la mesure du bruit avec microphone
+  const getSoundLevelFromDecibels = useCallback((db: number): string => {
+    const match = SOUND_ENVIRONMENT_OPTIONS.find(opt => db >= opt.minDb && db < opt.maxDb);
+    return match?.value || 'modere';
+  }, []);
+
+  const startSoundMeasurement = async () => {
+    try {
+      setMicrophoneError(null);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+      
+      const audioContext = new AudioContext();
+      audioContextRef.current = audioContext;
+      
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyserRef.current = analyser;
+      
+      const source = audioContext.createMediaStreamSource(stream);
+      source.connect(analyser);
+      
+      setIsRecordingSound(true);
+      
+      const bufferLength = analyser.frequencyBinCount;
+      const dataArray = new Uint8Array(bufferLength);
+      
+      const measureSound = () => {
+        if (!analyserRef.current) return;
+        
+        analyserRef.current.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((sum, value) => sum + value, 0) / bufferLength;
+        // Conversion approximative en dB (valeur normalisée 0-255 vers 0-100 dB)
+        const estimatedDb = Math.round((average / 255) * 100);
+        setMeasuredDecibels(estimatedDb);
+        
+        // Auto-déterminer le niveau sonore
+        const detectedLevel = getSoundLevelFromDecibels(estimatedDb);
+        setSoundEnvironment(detectedLevel);
+        
+        animationFrameRef.current = requestAnimationFrame(measureSound);
+      };
+      
+      measureSound();
+    } catch (error: any) {
+      console.error('Microphone error:', error);
+      setMicrophoneError('Impossible d\'accéder au microphone. Vérifiez les autorisations.');
+      setIsOnSite(false);
+    }
+  };
+
+  const stopSoundMeasurement = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+    }
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+    }
+    setIsRecordingSound(false);
+  };
+
+  // Cleanup du microphone à la fermeture
+  useEffect(() => {
+    return () => {
+      stopSoundMeasurement();
+    };
+  }, []);
+
+  // Helper pour valider les valeurs non-négatives
+  const handleNonNegativeChange = (setter: (value: string) => void) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (value === '' || parseFloat(value) >= 0) {
+      setter(value);
+    }
   };
 
   const handleParcelDocSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -689,20 +800,24 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Année construction</Label>
-                    <Input
-                      type="number"
-                      value={constructionYear}
-                      onChange={(e) => setConstructionYear(e.target.value)}
-                      placeholder="Ex: 2015"
-                      className="h-9 text-sm rounded-xl border-2"
-                    />
+                    <Select value={constructionYear} onValueChange={setConstructionYear}>
+                      <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200] max-h-[200px]">
+                        {YEAR_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Nombre d'étages</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={numberOfFloors}
-                      onChange={(e) => setNumberOfFloors(e.target.value)}
+                      onChange={handleNonNegativeChange(setNumberOfFloors)}
                       placeholder="1"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -714,8 +829,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">Surface bâtie (m²)</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={totalBuiltAreaSqm}
-                      onChange={(e) => setTotalBuiltAreaSqm(e.target.value)}
+                      onChange={handleNonNegativeChange(setTotalBuiltAreaSqm)}
                       placeholder="Ex: 150"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -740,8 +856,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">Pièces</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={numberOfRooms}
-                      onChange={(e) => setNumberOfRooms(e.target.value)}
+                      onChange={handleNonNegativeChange(setNumberOfRooms)}
                       placeholder="5"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -750,8 +867,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">Chambres</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={numberOfBedrooms}
-                      onChange={(e) => setNumberOfBedrooms(e.target.value)}
+                      onChange={handleNonNegativeChange(setNumberOfBedrooms)}
                       placeholder="3"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -760,8 +878,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">SDB</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={numberOfBathrooms}
-                      onChange={(e) => setNumberOfBathrooms(e.target.value)}
+                      onChange={handleNonNegativeChange(setNumberOfBathrooms)}
                       placeholder="2"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -885,19 +1004,24 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Orientation façade</Label>
-                    <Input
-                      value={facadeOrientation}
-                      onChange={(e) => setFacadeOrientation(e.target.value)}
-                      placeholder="Ex: Nord-Est"
-                      className="h-9 text-sm rounded-xl border-2"
-                    />
+                    <Select value={facadeOrientation} onValueChange={setFacadeOrientation}>
+                      <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                        <SelectValue placeholder="Sélectionner..." />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200]">
+                        {FACADE_ORIENTATION_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">Distance route (m)</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={distanceFromRoad}
-                      onChange={(e) => setDistanceFromRoad(e.target.value)}
+                      onChange={handleNonNegativeChange(setDistanceFromRoad)}
                       placeholder="Ex: 5"
                       className="h-9 text-sm rounded-xl border-2"
                     />
@@ -994,6 +1118,35 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </div>
                 </div>
 
+                {/* Nouveaux équipements */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasElectricFence} onCheckedChange={(c) => setHasElectricFence(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Fence className="h-3.5 w-3.5 text-orange-500" />
+                      Clôture électrique
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasGarage} onCheckedChange={(c) => setHasGarage(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <Warehouse className="h-3.5 w-3.5 text-slate-600" />
+                      Garage
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasCellar} onCheckedChange={(c) => setHasCellar(c === true)} />
+                    <span className="text-sm">Cave</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
+                    <Checkbox checked={hasAutomaticGate} onCheckedChange={(c) => setHasAutomaticGate(c === true)} />
+                    <div className="flex items-center gap-1.5 text-sm">
+                      <DoorOpen className="h-3.5 w-3.5 text-indigo-500" />
+                      Portail auto.
+                    </div>
+                  </div>
+                </div>
+
                 <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
                   <Checkbox checked={hasParking} onCheckedChange={(c) => setHasParking(c === true)} />
                   <div className="flex items-center gap-1.5 text-sm flex-1">
@@ -1003,8 +1156,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   {hasParking && (
                     <Input
                       type="number"
+                      min="0"
                       value={parkingSpaces}
-                      onChange={(e) => setParkingSpaces(e.target.value)}
+                      onChange={handleNonNegativeChange(setParkingSpaces)}
                       placeholder="Places"
                       className="h-8 w-16 text-xs rounded-lg"
                     />
@@ -1016,8 +1170,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Label className="text-xs">Surface jardin (m²)</Label>
                     <Input
                       type="number"
+                      min="0"
                       value={gardenAreaSqm}
-                      onChange={(e) => setGardenAreaSqm(e.target.value)}
+                      onChange={handleNonNegativeChange(setGardenAreaSqm)}
                       placeholder="Ex: 50"
                       className="h-8 w-24 text-xs rounded-lg"
                     />
@@ -1128,19 +1283,134 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   Environnement sonore
                 </h4>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Niveau sonore</Label>
-                  <Select value={soundEnvironment} onValueChange={setSoundEnvironment}>
-                    <SelectTrigger className="h-9 text-sm rounded-xl border-2">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="z-[1200]">
-                      {SOUND_ENVIRONMENT_OPTIONS.map(opt => (
-                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* Question: êtes-vous sur le site? */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-medium">Êtes-vous actuellement sur la construction ?</Label>
+                  <RadioGroup 
+                    value={isOnSite === null ? '' : isOnSite ? 'yes' : 'no'} 
+                    onValueChange={(v) => {
+                      setIsOnSite(v === 'yes');
+                      if (v === 'no') {
+                        stopSoundMeasurement();
+                        setMeasuredDecibels(null);
+                      }
+                    }}
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="yes" id="onsite-yes" />
+                      <Label htmlFor="onsite-yes" className="text-sm cursor-pointer">Oui</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="no" id="onsite-no" />
+                      <Label htmlFor="onsite-no" className="text-sm cursor-pointer">Non</Label>
+                    </div>
+                  </RadioGroup>
                 </div>
+
+                {/* Mesure par microphone si sur site */}
+                {isOnSite === true && (
+                  <Card className="bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800 rounded-xl">
+                    <CardContent className="p-3 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Mic className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium">Mesure du bruit ambiant</span>
+                        </div>
+                        {measuredDecibels !== null && (
+                          <Badge variant="secondary" className="text-xs">
+                            ~{measuredDecibels} dB
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground">
+                        Activez le microphone pour mesurer le niveau sonore en temps réel. Le niveau sera automatiquement déterminé.
+                      </p>
+                      
+                      {microphoneError && (
+                        <Alert className="bg-red-50 border-red-200 rounded-lg">
+                          <AlertTriangle className="h-4 w-4 text-red-600" />
+                          <AlertDescription className="text-xs text-red-700">{microphoneError}</AlertDescription>
+                        </Alert>
+                      )}
+
+                      <div className="flex gap-2">
+                        {!isRecordingSound ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={startSoundMeasurement}
+                            className="flex-1 h-9 text-sm rounded-xl border-blue-300 text-blue-700 hover:bg-blue-100"
+                          >
+                            <Mic className="h-4 w-4 mr-2" />
+                            Démarrer la mesure
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            variant="destructive"
+                            onClick={stopSoundMeasurement}
+                            className="flex-1 h-9 text-sm rounded-xl"
+                          >
+                            <MicOff className="h-4 w-4 mr-2" />
+                            Arrêter la mesure
+                          </Button>
+                        )}
+                      </div>
+
+                      {isRecordingSound && measuredDecibels !== null && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-xs">
+                            <span>Niveau mesuré:</span>
+                            <span className="font-bold text-blue-700">{measuredDecibels} dB</span>
+                          </div>
+                          <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+                            <div 
+                              className={`h-3 rounded-full transition-all duration-300 ${
+                                measuredDecibels < 40 ? 'bg-green-500' :
+                                measuredDecibels < 55 ? 'bg-lime-500' :
+                                measuredDecibels < 70 ? 'bg-yellow-500' :
+                                measuredDecibels < 85 ? 'bg-orange-500' : 'bg-red-500'
+                              }`}
+                              style={{ width: `${Math.min(100, measuredDecibels)}%` }}
+                            />
+                          </div>
+                          <p className="text-xs text-center font-medium text-blue-700">
+                            Niveau détecté: {SOUND_ENVIRONMENT_OPTIONS.find(o => o.value === soundEnvironment)?.label}
+                          </p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Picklist manuel si pas sur site ou après mesure */}
+                {(isOnSite === false || isOnSite === null) && (
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Niveau sonore estimé</Label>
+                    <Select value={soundEnvironment} onValueChange={setSoundEnvironment}>
+                      <SelectTrigger className="h-9 text-sm rounded-xl border-2">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="z-[1200]">
+                        {SOUND_ENVIRONMENT_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Afficher le résultat si mesuré */}
+                {isOnSite === true && measuredDecibels !== null && !isRecordingSound && (
+                  <div className="flex items-center justify-between p-2 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200">
+                    <span className="text-sm">Niveau sonore mesuré:</span>
+                    <Badge className="bg-green-600 text-white">
+                      {SOUND_ENVIRONMENT_OPTIONS.find(o => o.value === soundEnvironment)?.label} ({measuredDecibels} dB)
+                    </Badge>
+                  </div>
+                )}
 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Sources de bruit à proximité</Label>
@@ -1530,7 +1800,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     const totalPossibleFields = 16;
     const completionPercentage = Math.round((allFields / totalPossibleFields) * 100);
 
-    // Liste des équipements sélectionnés
+    // Liste des équipements sélectionnés (incluant les nouveaux)
     const selectedEquipments = [
       hasWaterSupply && 'Eau courante',
       hasElectricity && 'Électricité',
@@ -1544,7 +1814,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       hasSolarPanels && 'Panneaux solaires',
       hasWaterTank && 'Citerne d\'eau',
       hasGenerator && 'Groupe électrogène',
-      hasBorehole && 'Forage'
+      hasBorehole && 'Forage',
+      hasElectricFence && 'Clôture électrique',
+      hasGarage && 'Garage',
+      hasCellar && 'Cave',
+      hasAutomaticGate && 'Portail automatique'
     ].filter(Boolean) as string[];
 
     // Finitions sélectionnées
@@ -1561,8 +1835,19 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       erosionRiskZone && 'Zone d\'érosion'
     ].filter(Boolean) as string[];
 
+    const ORIENTATION_LABELS: Record<string, string> = {
+      nord: 'Nord',
+      nord_est: 'Nord-Est',
+      est: 'Est',
+      sud_est: 'Sud-Est',
+      sud: 'Sud',
+      sud_ouest: 'Sud-Ouest',
+      ouest: 'Ouest',
+      nord_ouest: 'Nord-Ouest'
+    };
+
     return (
-      <div className="flex flex-col h-full max-h-[70vh]">
+      <div className="flex flex-col h-full" style={{ maxHeight: isMobile ? '65vh' : '70vh' }}>
         {/* En-tête fixe */}
         <div className="shrink-0 space-y-3 pb-3">
           <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 border border-primary/20">
@@ -1853,7 +2138,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   {facadeOrientation && (
                     <div className="flex justify-between text-xs py-1.5">
                       <span className="text-muted-foreground">Orientation façade</span>
-                      <span className="font-medium">{facadeOrientation}</span>
+                      <span className="font-medium">{ORIENTATION_LABELS[facadeOrientation] || facadeOrientation}</span>
+                    </div>
+                  )}
+                  {distanceFromRoad && (
+                    <div className="flex justify-between text-xs py-1.5">
+                      <span className="text-muted-foreground">Distance route</span>
+                      <span className="font-medium">{distanceFromRoad} m</span>
                     </div>
                   )}
                   <div className="flex justify-between text-xs py-1.5">
@@ -1967,7 +2258,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </div>
                   <div className="flex justify-between text-xs py-1.5">
                     <span className="text-muted-foreground">Environnement sonore</span>
-                    <span className="font-medium">{SOUND_LABELS[soundEnvironment] || soundEnvironment}</span>
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium">{SOUND_LABELS[soundEnvironment] || soundEnvironment}</span>
+                      {measuredDecibels !== null && (
+                        <Badge variant="outline" className="text-[9px] ml-1">{measuredDecibels} dB</Badge>
+                      )}
+                    </div>
                   </div>
                   {distanceToMainRoad && (
                     <div className="flex justify-between text-xs py-1.5">
