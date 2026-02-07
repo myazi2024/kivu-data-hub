@@ -94,7 +94,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
         </div>
 
         {/* Render the selected form inline */}
-        <div className="overflow-hidden flex-1 min-h-0">
+        <div className="overflow-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 140px)' }}>
           {activeTab === 'add' ? (
             <MortgageFormDialog
               parcelNumber={parcelNumber}
