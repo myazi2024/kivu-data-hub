@@ -25,6 +25,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
+import SuggestivePicklist from './SuggestivePicklist';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
@@ -239,7 +240,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   // === ENVIRONNEMENT SONORE ===
   const [soundEnvironment, setSoundEnvironment] = useState('calme');
-  const [nearbyNoiseSources, setNearbyNoiseSources] = useState('');
+  const [nearbyNoiseSources, setNearbyNoiseSources] = useState<string[]>([]);
   const [hasDoubleGlazing, setHasDoubleGlazing] = useState(false);
   const [isOnSite, setIsOnSite] = useState<boolean | null>(null);
   const [isRecordingSound, setIsRecordingSound] = useState(false);
@@ -279,7 +280,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [distanceToMarket, setDistanceToMarket] = useState('');
   const [floodRiskZone, setFloodRiskZone] = useState(false);
   const [erosionRiskZone, setErosionRiskZone] = useState(false);
-  const [nearbyAmenities, setNearbyAmenities] = useState('');
+  const [nearbyAmenities, setNearbyAmenities] = useState<string[]>([]);
 
   // === NOTES & DOCUMENTS ===
   const [additionalNotes, setAdditionalNotes] = useState('');
@@ -524,7 +525,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       has_common_areas: hasCommonAreas,
       monthly_charges: monthlyCharges ? parseFloat(monthlyCharges) : undefined,
       sound_environment: soundEnvironment,
-      nearby_noise_sources: nearbyNoiseSources || undefined,
+      nearby_noise_sources: nearbyNoiseSources.length > 0 ? nearbyNoiseSources.join(', ') : undefined,
       has_double_glazing: hasDoubleGlazing,
       has_pool: hasPool,
       has_air_conditioning: hasAirConditioning,
@@ -532,7 +533,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       has_water_tank: hasWaterTank,
       has_generator: hasGenerator,
       has_borehole: hasBorehole,
-      nearby_amenities: nearbyAmenities || undefined,
+      nearby_amenities: nearbyAmenities.length > 0 ? nearbyAmenities.join(', ') : undefined,
     };
 
     setFormData({
@@ -1389,7 +1390,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 {(isOnSite === false || isOnSite === null) && (
                   <div className="space-y-1.5">
                     <Label className="text-xs">Niveau sonore estimé</Label>
-                    <Select value={soundEnvironment} onValueChange={setSoundEnvironment}>
+                    <Select value={soundEnvironment} onValueChange={(v) => { setSoundEnvironment(v); if (v === 'tres_calme') setNearbyNoiseSources([]); }}>
                       <SelectTrigger className="h-9 text-sm rounded-xl border-2">
                         <SelectValue />
                       </SelectTrigger>
@@ -1412,15 +1413,15 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </div>
                 )}
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Sources de bruit à proximité</Label>
-                  <Textarea
-                    value={nearbyNoiseSources}
-                    onChange={(e) => setNearbyNoiseSources(e.target.value)}
-                    placeholder="Ex: Marché, bar, école, route principale..."
-                    className="min-h-[50px] text-sm rounded-xl border-2"
+                {soundEnvironment !== 'tres_calme' && (
+                  <SuggestivePicklist
+                    picklistKey="noise_sources"
+                    label="Sources de bruit à proximité"
+                    placeholder="Rechercher ou ajouter une source..."
+                    selectedValues={nearbyNoiseSources}
+                    onSelectionChange={setNearbyNoiseSources}
                   />
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -1486,15 +1487,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Commodités à proximité</Label>
-                  <Textarea
-                    value={nearbyAmenities}
-                    onChange={(e) => setNearbyAmenities(e.target.value)}
-                    placeholder="Ex: Banque, pharmacie, supermarché, église..."
-                    className="min-h-[50px] text-sm rounded-xl border-2"
-                  />
-                </div>
+                <SuggestivePicklist
+                  picklistKey="nearby_amenities"
+                  label="Commodités à proximité"
+                  placeholder="Rechercher ou ajouter..."
+                  selectedValues={nearbyAmenities}
+                  onSelectionChange={setNearbyAmenities}
+                />
               </CardContent>
             </Card>
 
@@ -1847,27 +1846,25 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     };
 
     return (
-      <div className="flex flex-col h-full" style={{ maxHeight: isMobile ? '65vh' : '70vh' }}>
-        {/* En-tête fixe */}
-        <div className="shrink-0 space-y-3 pb-3">
-          <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl p-3 border border-primary/20">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-primary/20 rounded-xl flex items-center justify-center">
-                <Receipt className="h-5 w-5 text-primary" />
+      <div className="flex flex-col" style={{ maxHeight: isMobile ? '75vh' : '70vh' }}>
+        {/* En-tête compact */}
+        <div className="shrink-0 space-y-2 pb-2">
+          <div className="bg-gradient-to-br from-primary/15 to-primary/5 rounded-xl p-2.5 border border-primary/20">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 bg-primary/20 rounded-lg flex items-center justify-center shrink-0">
+                <Receipt className="h-4 w-4 text-primary" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-sm">Récapitulatif de la demande</h3>
-                <p className="text-xs text-muted-foreground">Vérifiez les informations avant de continuer</p>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm leading-tight">Récapitulatif</h3>
+                <p className="text-[10px] text-muted-foreground truncate">Vérifiez avant de continuer</p>
               </div>
-              <div className="text-right">
-                <div className="text-lg font-bold text-primary">{completionPercentage}%</div>
-                <div className="text-[10px] text-muted-foreground">complet</div>
+              <div className="text-right shrink-0">
+                <div className="text-base font-bold text-primary">{completionPercentage}%</div>
               </div>
             </div>
-            {/* Barre de progression */}
-            <div className="w-full bg-muted rounded-full h-1.5 mt-2">
+            <div className="w-full bg-muted rounded-full h-1 mt-1.5">
               <div 
-                className={`h-1.5 rounded-full transition-all duration-500 ${
+                className={`h-1 rounded-full transition-all duration-500 ${
                   completionPercentage >= 80 ? 'bg-green-500' : completionPercentage >= 50 ? 'bg-amber-500' : 'bg-primary'
                 }`}
                 style={{ width: `${completionPercentage}%` }}
@@ -1875,11 +1872,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </div>
           </div>
 
-          {/* Avertissement */}
-          <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-xl">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
-              Veuillez vérifier attentivement toutes les informations. Une fois soumise, la demande ne pourra plus être modifiée.
+          {/* Avertissement - compact on mobile */}
+          <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-lg py-2 px-3">
+            <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
+            <AlertDescription className="text-[11px] text-amber-700 dark:text-amber-300">
+              Vérifiez les informations. Une fois soumise, la demande ne pourra plus être modifiée.
             </AlertDescription>
           </Alert>
 
@@ -2265,6 +2262,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       )}
                     </div>
                   </div>
+                  {nearbyNoiseSources.length > 0 && soundEnvironment !== 'tres_calme' && (
+                    <div className="py-1.5">
+                      <span className="text-muted-foreground text-xs">Sources de bruit</span>
+                      <div className="flex flex-wrap gap-1 mt-1 justify-end">
+                        {nearbyNoiseSources.map((src, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-[10px]">{src}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   {distanceToMainRoad && (
                     <div className="flex justify-between text-xs py-1.5">
                       <span className="text-muted-foreground">Distance route principale</span>
@@ -2289,10 +2296,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <span className="font-medium">{distanceToMarket} km</span>
                     </div>
                   )}
-                  {nearbyAmenities && (
-                    <div className="flex justify-between text-xs py-1.5">
-                      <span className="text-muted-foreground">Commodités</span>
-                      <span className="font-medium text-right max-w-[55%] truncate">{nearbyAmenities}</span>
+                  {nearbyAmenities.length > 0 && (
+                    <div className="py-1.5">
+                      <span className="text-muted-foreground text-xs">Commodités</span>
+                      <div className="flex flex-wrap gap-1 mt-1 justify-end">
+                        {nearbyAmenities.map((item, idx) => (
+                          <Badge key={idx} variant="secondary" className="text-[10px]">{item}</Badge>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2363,44 +2374,40 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           </div>
         </ScrollArea>
 
-        {/* Pied fixe avec montant et actions */}
-        <div className="shrink-0 pt-3 space-y-3 border-t border-border/50 mt-2">
+        {/* Pied fixe compact */}
+        <div className="shrink-0 pt-2 space-y-2 border-t border-border/50 mt-1">
           {/* Montant total */}
-          <Card className="rounded-xl bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
-            <CardContent className="p-3">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <span className="text-sm font-medium">Frais d'expertise</span>
-                </div>
-                <span className="text-xl font-bold text-primary">{getTotalAmount()} USD</span>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="flex items-center justify-between px-2 py-1.5 bg-primary/5 rounded-lg border border-primary/20">
+            <div className="flex items-center gap-1.5">
+              <DollarSign className="h-4 w-4 text-primary" />
+              <span className="text-xs font-medium">Frais d'expertise</span>
+            </div>
+            <span className="text-base font-bold text-primary">{getTotalAmount()} USD</span>
+          </div>
 
           {/* Actions */}
           <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={() => setStep('form')}
-              className="flex-1 h-11 rounded-xl"
+              className="flex-1 h-10 rounded-xl text-sm"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="h-4 w-4 mr-1" />
               Modifier
             </Button>
             <Button
               onClick={handleProceedToPayment}
               disabled={requiredMissing.length > 0 || loadingFees}
-              className="flex-1 h-11 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 shadow-md"
+              className="flex-1 h-10 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 shadow-md text-sm"
             >
-              <DollarSign className="h-4 w-4 mr-2" />
+              <DollarSign className="h-4 w-4 mr-1" />
               Payer
             </Button>
           </div>
 
           {requiredMissing.length === 0 && (
-            <div className="flex items-center justify-center gap-2 text-xs text-green-600">
-              <CheckCircle2 className="h-4 w-4" />
+            <div className="flex items-center justify-center gap-1.5 text-[11px] text-green-600 pb-0.5">
+              <CheckCircle2 className="h-3.5 w-3.5" />
               <span className="font-medium">Prêt pour le paiement</span>
             </div>
           )}
