@@ -88,8 +88,8 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
   {
     id: '7',
     key: 'tax',
-    label: 'Ajouter Taxe foncière',
-    description: 'Signaler le paiement d\'une taxe',
+    label: 'Taxe foncière',
+    description: 'Calculer et déclarer une taxe',
     isActive: true,
     isVisible: true,
     displayOrder: 7,
