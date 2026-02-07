@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePropertyTaxCalculator, TaxCalculationInput, TaxCalculationResult } from '@/hooks/usePropertyTaxCalculator';
 import IRLQuestionsStep from './tax-calculator/IRLQuestionsStep';
 import IRLSummaryStep from './tax-calculator/IRLSummaryStep';
+import { TenantEntry, createEmptyTenant, calculateTotalRentalIncome } from './tax-calculator/IRLTenantsList';
 import { toast } from 'sonner';
 
 interface IRLCalculatorProps {
@@ -27,6 +28,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
   const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
   const [hasNif, setHasNif] = useState<boolean | null>(null);
+  const [tenants, setTenants] = useState<TenantEntry[]>([createEmptyTenant()]);
 
   const defaultZone = parcelData?.parcel_type === 'rural' ? 'rural' : 'urban';
   const defaultUsage = parcelData?.declared_usage === 'Commercial' ? 'commercial'
@@ -66,11 +68,24 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       toast.error('Veuillez renseigner votre Numéro d\'Impôt (NIF)');
       return;
     }
-    if (!input.monthlyRentUsd || input.monthlyRentUsd <= 0) {
-      toast.error('Veuillez renseigner le loyer mensuel');
+
+    // Compute total from tenants
+    const validTenants = tenants.filter(t => t.monthlyRentUsd > 0);
+    if (validTenants.length === 0) {
+      toast.error('Veuillez renseigner au moins un locataire avec un loyer');
       return;
     }
-    const res = calculate(input);
+
+    const { totalIncome } = calculateTotalRentalIncome(tenants, input.fiscalYear);
+
+    // Feed total into calculator via monthlyRentUsd=totalIncome, occupancyMonths=1
+    const adjustedInput: TaxCalculationInput = {
+      ...input,
+      monthlyRentUsd: totalIncome,
+      occupancyMonths: 1,
+    };
+
+    const res = calculate(adjustedInput);
     setResult(res);
     setCalcStep('summary');
   };
@@ -117,6 +132,8 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       setIdDocumentFile={setIdDocumentFile}
       hasNif={hasNif}
       setHasNif={setHasNif}
+      tenants={tenants}
+      setTenants={setTenants}
       onCalculate={handleCalculate}
     />
   );
