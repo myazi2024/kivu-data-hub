@@ -8,6 +8,7 @@ import {
   DialogPortal,
   DialogOverlay,
 } from '@/components/ui/dialog';
+import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1082,6 +1083,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
       </DialogPortal>
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande de permis de construire." />}
     </Dialog>
   );
 };
