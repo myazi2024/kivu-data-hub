@@ -22,6 +22,7 @@ import { fr } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
+import SectionHelpPopover from './SectionHelpPopover';
 
 interface MutationRequestDialogProps {
   parcelNumber: string;
@@ -573,7 +574,13 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
         {/* Type de mutation */}
         <div className="space-y-2">
-          <Label className="text-sm font-semibold">Type de mutation *</Label>
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            Type de mutation *
+            <SectionHelpPopover
+              title="Type de mutation"
+              description="Choisissez le type d'opération juridique : vente, donation, succession, etc. Ce choix détermine les documents requis et les frais applicables."
+            />
+          </Label>
           <Select value={mutationType} onValueChange={setMutationType}>
             <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
               <SelectValue />
@@ -597,6 +604,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <Upload className="h-4 w-4 text-muted-foreground" />
               Documents justificatifs
+              <SectionHelpPopover
+                title="Documents justificatifs"
+                description="Joignez les pièces justificatives nécessaires : acte de vente notarié, certificat d'héritage, attestation de donation, etc. Max 10MB par fichier."
+              />
             </h4>
             <p className="text-xs text-muted-foreground">
               Acte de vente, certificat, attestation... (max 10MB/fichier)
@@ -648,7 +659,13 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
         {/* Type de demandeur */}
         <div className="space-y-2">
-          <Label className="text-sm font-semibold">Vous êtes</Label>
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            Vous êtes
+            <SectionHelpPopover
+              title="Type de demandeur"
+              description="Indiquez si vous êtes le propriétaire actuel de la parcelle ou un mandataire agissant en son nom (avocat, notaire, représentant légal)."
+            />
+          </Label>
           <Select value={requesterType} onValueChange={setRequesterType}>
             <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
               <SelectValue />
@@ -670,6 +687,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                 Nouveau propriétaire
+                <SectionHelpPopover
+                  title="Nouveau propriétaire"
+                  description="Renseignez l'identité complète du futur propriétaire. Pour une personne morale, indiquez la dénomination sociale. Ces informations figureront sur le nouveau titre."
+                />
               </h4>
               
               <div className="space-y-2">

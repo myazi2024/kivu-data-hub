@@ -37,6 +37,7 @@ import { ParentParcelSummary } from './subdivision/ParentParcelSummary';
 import { ParcelSketchCreator } from './subdivision/ParcelSketchCreator';
 import { SubdivisionValidations } from './subdivision/SubdivisionValidations';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
+import SectionHelpPopover from './SectionHelpPopover';
 
 interface SubdivisionRequestDialogProps {
   parcelNumber: string;
@@ -948,6 +949,10 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                           <CardTitle className="text-base flex items-center gap-2">
                             <User className="h-4 w-4 text-primary" />
                             Informations du demandeur
+                            <SectionHelpPopover
+                              title="Informations du demandeur"
+                              description="Renseignez vos coordonnées complètes. Si vous n'êtes pas le propriétaire, précisez votre qualité (mandataire, notaire, etc.)."
+                            />
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
@@ -1440,6 +1445,10 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                       <CardTitle className="text-base flex items-center gap-2">
                         <Route className="h-4 w-4 text-primary" />
                         Routes internes (optionnel)
+                        <SectionHelpPopover
+                          title="Routes internes"
+                          description="Définissez les voies de circulation internes au lotissement. Précisez leur largeur et type de revêtement prévu. Ces routes doivent respecter les normes d'urbanisme en vigueur."
+                        />
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
@@ -1459,6 +1468,10 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
                       <CardTitle className="text-base flex items-center gap-2">
                         <Layers className="h-4 w-4 text-primary" />
                         Éléments environnants (optionnel)
+                        <SectionHelpPopover
+                          title="Éléments environnants"
+                          description="Identifiez les éléments naturels ou construits autour de la parcelle (rivières, routes, bâtiments voisins) qui pourraient influencer le plan de lotissement."
+                        />
                       </CardTitle>
                     </CardHeader>
                     <CardContent>

@@ -40,6 +40,7 @@ import { CartItem } from '@/hooks/useCart';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import LandTitleReviewTab from './LandTitleReviewTab';
+import SectionHelpPopover from './SectionHelpPopover';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -640,7 +641,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <div className="p-1.5 bg-primary/10 rounded-lg">
                           <User className="h-4 w-4 text-primary" />
                         </div>
-                        <Label className="text-sm font-semibold">Informations du demandeur</Label>
+                        <Label className="text-sm font-semibold flex items-center gap-1.5">
+                          Informations du demandeur
+                          <SectionHelpPopover
+                            title="Informations du demandeur"
+                            description="Renseignez votre identité complète telle qu'elle figure sur votre pièce d'identité. Ces informations seront utilisées pour le traitement administratif de votre demande."
+                          />
+                        </Label>
                       </div>
 
                       <div className="space-y-2">
@@ -734,6 +741,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                           Informations du propriétaire
+                          <SectionHelpPopover
+                            title="Informations du propriétaire"
+                            description="Si le demandeur n'est pas le propriétaire, renseignez l'identité du propriétaire de la parcelle. Le titre sera établi à son nom."
+                          />
                         </h4>
 
                         <div className="grid grid-cols-2 gap-2">
@@ -813,7 +824,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <div className="p-1.5 bg-primary/10 rounded-lg">
                           <MapPin className="h-4 w-4 text-primary" />
                         </div>
-                        <Label className="text-sm font-semibold">Localisation de la parcelle</Label>
+                        <Label className="text-sm font-semibold flex items-center gap-1.5">
+                          Localisation de la parcelle
+                          <SectionHelpPopover
+                            title="Localisation de la parcelle"
+                            description="Précisez l'emplacement exact de la parcelle : province, ville/territoire, commune/collectivité et quartier/village. Choisissez d'abord si la parcelle est en zone urbaine ou rurale."
+                          />
+                        </Label>
                       </div>
 
                       <div className="space-y-1.5">
@@ -1044,6 +1061,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <h4 className="text-sm font-semibold flex items-center gap-2">
                           <Home className="h-4 w-4 text-muted-foreground" />
                           Mise en valeur
+                          <SectionHelpPopover
+                            title="Mise en valeur"
+                            description="Décrivez comment la parcelle est mise en valeur : type de construction, nature, usage déclaré. Ces informations déterminent le type de titre foncier auquel vous avez droit."
+                          />
                         </h4>
                         <span className="text-[10px] px-2 py-0.5 bg-muted rounded-full">
                           {formData.sectionType === 'urbaine' ? 'SU' : formData.sectionType === 'rurale' ? 'SR' : '—'}
@@ -1150,6 +1171,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                           <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                           Éligibilité
+                          <SectionHelpPopover
+                            title="Éligibilité au titre foncier"
+                            description="Indiquez votre nationalité et la durée d'occupation souhaitée. Ces critères déterminent automatiquement le type de titre foncier auquel vous êtes éligible selon la loi congolaise."
+                          />
                         </h4>
 
                         <div className="grid grid-cols-2 gap-2">
@@ -1358,6 +1383,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       <h4 className="text-sm font-semibold flex items-center gap-2">
                         <Upload className="h-4 w-4 text-muted-foreground" />
                         Documents justificatifs
+                        <SectionHelpPopover
+                          title="Documents justificatifs"
+                          description="Joignez les documents requis : pièce d'identité du demandeur, preuve de propriété (attestation de chef de terre, acte de vente, etc.). Formats acceptés : PDF et images (max 10MB)."
+                        />
                       </h4>
                       <p className="text-xs text-muted-foreground">
                         Pièces d'identité, preuves de propriété (max 10MB/fichier)
@@ -1477,7 +1506,13 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                         <div className="p-1.5 bg-primary/10 rounded-lg">
                           <CreditCard className="h-4 w-4 text-primary" />
                         </div>
-                        <Label className="text-sm font-semibold">Frais de dossier</Label>
+                        <Label className="text-sm font-semibold flex items-center gap-1.5">
+                          Frais de dossier
+                          <SectionHelpPopover
+                            title="Frais de dossier"
+                            description="Les frais de dossier sont calculés automatiquement en fonction du type de titre déduit, de la zone (urbaine/rurale) et de la superficie. Les frais obligatoires ne peuvent pas être désélectionnés."
+                          />
+                        </Label>
                         {deducedTitleType && (
                           <span className="ml-auto text-xs px-2 py-1 bg-primary/10 text-primary rounded-full font-medium">
                             {deducedTitleType.label}
