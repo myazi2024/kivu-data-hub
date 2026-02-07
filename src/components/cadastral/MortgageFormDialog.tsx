@@ -21,6 +21,7 @@ interface MortgageFormDialogProps {
   parcelId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  skipIntro?: boolean;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';
@@ -39,11 +40,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   parcelNumber,
   parcelId,
   open,
-  onOpenChange
+  onOpenChange,
+  skipIntro = false
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(!skipIntro);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   
@@ -457,9 +459,9 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   // Reset showIntro when dialog opens
   useEffect(() => {
     if (open) {
-      setShowIntro(true);
+      setShowIntro(!skipIntro);
     }
-  }, [open]);
+  }, [open, skipIntro]);
 
   const handleIntroComplete = () => {
     setShowIntro(false);
