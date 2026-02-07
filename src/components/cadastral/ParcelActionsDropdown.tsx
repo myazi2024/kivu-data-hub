@@ -13,7 +13,7 @@ import { ChevronDown, Sparkles, Clock, Beaker, Tag } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageManagementDialog from './MortgageManagementDialog';
-import BuildingPermitFormDialog from './BuildingPermitFormDialog';
+import BuildingPermitManagementDialog from './BuildingPermitManagementDialog';
 import TaxFormDialog from './TaxFormDialog';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
 import SubdivisionRequestDialog from './SubdivisionRequestDialog';
@@ -28,7 +28,6 @@ interface ParcelActionsDropdownProps {
 
 // Create a reusable haptic sound feedback utility with proper AudioContext handling
 const triggerHapticFeedback = async () => {
-  // Haptic vibration first (more reliable on mobile)
   if (navigator.vibrate) {
     navigator.vibrate(15);
   }
@@ -39,7 +38,6 @@ const triggerHapticFeedback = async () => {
     
     const audioContext = new AudioContextClass();
     
-    // Resume AudioContext if suspended (required for mobile browsers)
     if (audioContext.state === 'suspended') {
       await audioContext.resume();
     }
@@ -54,19 +52,16 @@ const triggerHapticFeedback = async () => {
     oscillator.type = 'sine';
     gainNode.gain.value = 0.1;
     
-    // Quick fade out for smoother sound
     gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
     gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.04);
     
     oscillator.start(audioContext.currentTime);
     oscillator.stop(audioContext.currentTime + 0.04);
     
-    // Clean up after sound finishes
     oscillator.onended = () => {
       audioContext.close();
     };
   } catch (e) {
-    // Silent fallback - vibration already triggered above
     console.log('Audio feedback not available');
   }
 };
@@ -129,8 +124,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   
   const [showMutationDialog, setShowMutationDialog] = useState(false);
   const [showMortgageManagementDialog, setShowMortgageManagementDialog] = useState(false);
-  const [showBuildingPermitDialog, setShowBuildingPermitDialog] = useState(false);
-  const [showRegularizationPermitDialog, setShowRegularizationPermitDialog] = useState(false);
+  const [showBuildingPermitManagementDialog, setShowBuildingPermitManagementDialog] = useState(false);
   const [showTaxDialog, setShowTaxDialog] = useState(false);
   const [showPermitRequestDialog, setShowPermitRequestDialog] = useState(false);
   const [showSubdivisionDialog, setShowSubdivisionDialog] = useState(false);
@@ -150,14 +144,14 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     lastFocusedIndexRef.current = null;
   };
 
-  // Map action keys to their handlers
+  // Map action keys to their handlers — both permit keys open the unified dialog
   const getActionHandler = (key: string) => {
     const handlers: Record<string, () => void> = {
       'expertise': () => setShowExpertiseDialog(true),
       'mutation': () => setShowMutationDialog(true),
       'mortgage_management': () => setShowMortgageManagementDialog(true),
-      'permit_add': () => setShowBuildingPermitDialog(true),
-      'permit_regularization': () => setShowRegularizationPermitDialog(true),
+      'permit_add': () => setShowBuildingPermitManagementDialog(true),
+      'permit_regularization': () => setShowBuildingPermitManagementDialog(true),
       'tax': () => setShowTaxDialog(true),
       'permit_request': () => setShowPermitRequestDialog(true),
       'subdivision': () => setShowSubdivisionDialog(true),
@@ -165,10 +159,21 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     return handlers[key];
   };
 
-  // Get sorted visible actions
+  // Get sorted visible actions, filtering out permit_regularization (merged into permit_add)
   const visibleActions = actions
-    .filter(a => a.isVisible)
+    .filter(a => a.isVisible && a.key !== 'permit_regularization')
     .sort((a, b) => a.displayOrder - b.displayOrder);
+
+  // Override the label for permit_add to the unified name
+  const getDisplayLabel = (action: ParcelAction) => {
+    if (action.key === 'permit_add') return 'Ajouter un permis';
+    return action.label;
+  };
+
+  const getDisplayDescription = (action: ParcelAction) => {
+    if (action.key === 'permit_add') return 'Construire ou régulariser';
+    return action.description;
+  };
 
   // Group actions by category for separators
   const groupedActions: (ParcelAction | 'separator')[] = [];
@@ -221,10 +226,10 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{action.label}</span>
+                        <span className="font-medium text-sm">{getDisplayLabel(action)}</span>
                         <ActionBadge badge={action.badge} />
                       </div>
-                      <div className="text-xs text-muted-foreground">{action.description}</div>
+                      <div className="text-xs text-muted-foreground">{getDisplayDescription(action)}</div>
                     </div>
                   </DropdownMenuItem>
                 );
@@ -250,22 +255,12 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         onOpenChange={setShowMortgageManagementDialog}
       />
 
-      {/* Dialog Permis de construire */}
-      <BuildingPermitFormDialog
+      {/* Dialog Ajouter un permis (unifié: construire + régularisation) */}
+      <BuildingPermitManagementDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
-        permitType="construction"
-        open={showBuildingPermitDialog}
-        onOpenChange={setShowBuildingPermitDialog}
-      />
-
-      {/* Dialog Permis de régularisation */}
-      <BuildingPermitFormDialog
-        parcelNumber={parcelNumber}
-        parcelId={parcelId}
-        permitType="regularisation"
-        open={showRegularizationPermitDialog}
-        onOpenChange={setShowRegularizationPermitDialog}
+        open={showBuildingPermitManagementDialog}
+        onOpenChange={setShowBuildingPermitManagementDialog}
       />
 
       {/* Dialog Taxe */}
