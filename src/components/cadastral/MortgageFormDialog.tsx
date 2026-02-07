@@ -456,7 +456,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   if (embedded) {
     return (
-      <ScrollArea className="max-h-[calc(85vh-140px)]">
+      <ScrollArea className="h-full max-h-[calc(85vh-160px)]">
         <div className="p-4">
           {step === 'form' && renderFormStep()}
           {step === 'preview' && renderPreviewStep()}

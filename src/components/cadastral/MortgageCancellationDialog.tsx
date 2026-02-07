@@ -1279,7 +1279,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   if (embedded) {
     return (
-      <ScrollArea className={`${isMobile ? 'h-[calc(85vh-140px)]' : 'max-h-[calc(85vh-140px)]'} px-4 pb-4`}>
+      <ScrollArea className="h-full max-h-[calc(85vh-160px)] px-4 pb-4">
         {step === 'form' && renderFormStep()}
         {step === 'review' && renderReviewStep()}
         {step === 'payment' && renderPaymentStep()}
