@@ -27,6 +27,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
   const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
   const [hasNif, setHasNif] = useState<boolean | null>(null);
+  const [exemptionCertificateFile, setExemptionCertificateFile] = useState<File | null>(null);
 
   const defaultZone = parcelData?.parcel_type === 'rural' ? 'rural' : 'urban';
   const defaultUsage = parcelData?.declared_usage === 'Commercial' ? 'commercial'
@@ -127,6 +128,8 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       setIdDocumentFile={setIdDocumentFile}
       hasNif={hasNif}
       setHasNif={setHasNif}
+      exemptionCertificateFile={exemptionCertificateFile}
+      setExemptionCertificateFile={setExemptionCertificateFile}
       onCalculate={handleCalculate}
     />
   );
