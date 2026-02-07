@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Switch } from '@/components/ui/switch';
 import {
   Calculator, Home, Building2, Factory, Tractor, Landmark, ArrowRight, MapPin, Shield
 } from 'lucide-react';
@@ -15,6 +14,7 @@ import {
   EXEMPTION_DEFINITIONS, ROOFING_TYPES, ExemptionCheckType,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
+import TaxpayerIdentitySection from './TaxpayerIdentitySection';
 
 const ZONE_OPTIONS = [
   { value: 'urban', label: 'Urbaine', icon: Building2, desc: 'Ville, commune urbaine' },
@@ -36,13 +36,6 @@ const CONSTRUCTION_OPTIONS = [
   { value: 'none', label: 'Terrain nu', desc: 'Pas de construction' },
 ];
 
-const REDEVABLE_QUALITES = [
-  { value: 'gerant', label: 'Gérant' },
-  { value: 'mandataire', label: 'Mandataire' },
-  { value: 'locataire', label: 'Locataire principal' },
-  { value: 'syndic', label: 'Syndic de copropriété' },
-];
-
 interface PropertyTaxQuestionsStepProps {
   parcelNumber: string;
   parcelData?: any;
@@ -52,12 +45,20 @@ interface PropertyTaxQuestionsStepProps {
   setHasNoConstruction: (v: boolean) => void;
   nif: string;
   setNif: (v: string) => void;
+  ownerName: string;
+  setOwnerName: (v: string) => void;
+  idDocumentFile: File | null;
+  setIdDocumentFile: (f: File | null) => void;
+  hasNif: boolean | null;
+  setHasNif: (v: boolean | null) => void;
   onCalculate: () => void;
 }
 
 const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
   parcelNumber, parcelData, input, setInput,
-  hasNoConstruction, setHasNoConstruction, nif, setNif, onCalculate
+  hasNoConstruction, setHasNoConstruction, nif, setNif,
+  ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
+  onCalculate
 }) => {
   const currentYear = new Date().getFullYear();
   const cities = DRC_MAJOR_CITIES[input.province] || [];
@@ -83,7 +84,19 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 
   return (
     <div className="space-y-3 px-4 pb-4">
-      {/* Section 1: Identification fiscale */}
+      {/* Section 1: Identité du contribuable */}
+      <TaxpayerIdentitySection
+        ownerName={ownerName}
+        setOwnerName={setOwnerName}
+        idDocumentFile={idDocumentFile}
+        setIdDocumentFile={setIdDocumentFile}
+        hasNif={hasNif}
+        setHasNif={setHasNif}
+        nif={nif}
+        setNif={setNif}
+      />
+
+      {/* Section 2: Identification fiscale */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -102,17 +115,6 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
             </div>
           </div>
 
-          {/* NIF */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">NIF du contribuable *</Label>
-            <Input
-              value={nif}
-              onChange={(e) => setNif(e.target.value)}
-              placeholder="Ex: A0123456B"
-              className="h-10 text-sm rounded-xl"
-            />
-          </div>
-
           {/* Fiscal year */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Exercice fiscal *</Label>
@@ -129,52 +131,6 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Redevable différent */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Redevable différent du propriétaire ?
-                <SectionHelpPopover
-                  title="Contribuable vs Redevable"
-                  description="Le contribuable est le propriétaire du bien. Le redevable est la personne tenue au paiement (gérant, mandataire, locataire principal). Si différent, renseignez les informations du redevable."
-                />
-              </Label>
-              <Switch
-                checked={input.redevableIsDifferent}
-                onCheckedChange={(v) => setInput(prev => ({ ...prev, redevableIsDifferent: v }))}
-              />
-            </div>
-            {input.redevableIsDifferent && (
-              <div className="space-y-2 pl-2 border-l-2 border-primary/20 ml-1">
-                <Input
-                  value={input.redevableNom}
-                  onChange={(e) => setInput(prev => ({ ...prev, redevableNom: e.target.value }))}
-                  placeholder="Nom du redevable"
-                  className="h-9 text-sm rounded-xl"
-                />
-                <Input
-                  value={input.redevableNif}
-                  onChange={(e) => setInput(prev => ({ ...prev, redevableNif: e.target.value }))}
-                  placeholder="NIF du redevable"
-                  className="h-9 text-sm rounded-xl"
-                />
-                <Select
-                  value={input.redevableQualite || '_placeholder'}
-                  onValueChange={(v) => setInput(prev => ({ ...prev, redevableQualite: v === '_placeholder' ? '' : v }))}
-                >
-                  <SelectTrigger className="h-9 text-sm rounded-xl">
-                    <SelectValue placeholder="Qualité du redevable" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl bg-popover">
-                    {REDEVABLE_QUALITES.map(q => (
-                      <SelectItem key={q.value} value={q.value}>{q.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>

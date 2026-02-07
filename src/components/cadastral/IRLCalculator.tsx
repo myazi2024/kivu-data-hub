@@ -24,6 +24,9 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [result, setResult] = useState<TaxCalculationResult | null>(null);
   const [nif, setNif] = useState('');
+  const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
+  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
+  const [hasNif, setHasNif] = useState<boolean | null>(null);
 
   const defaultZone = parcelData?.parcel_type === 'rural' ? 'rural' : 'urban';
   const defaultUsage = parcelData?.declared_usage === 'Commercial' ? 'commercial'
@@ -55,8 +58,12 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   });
 
   const handleCalculate = () => {
-    if (!nif.trim()) {
-      toast.error('Veuillez renseigner le Numéro d\'Impôt (NIF)');
+    if (!ownerName.trim()) {
+      toast.error('Veuillez renseigner le nom du propriétaire');
+      return;
+    }
+    if (hasNif === true && !nif.trim()) {
+      toast.error('Veuillez renseigner votre Numéro d\'Impôt (NIF)');
       return;
     }
     if (!input.monthlyRentUsd || input.monthlyRentUsd <= 0) {
@@ -104,6 +111,12 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       setInput={setInput}
       nif={nif}
       setNif={setNif}
+      ownerName={ownerName}
+      setOwnerName={setOwnerName}
+      idDocumentFile={idDocumentFile}
+      setIdDocumentFile={setIdDocumentFile}
+      hasNif={hasNif}
+      setHasNif={setHasNif}
       onCalculate={handleCalculate}
     />
   );

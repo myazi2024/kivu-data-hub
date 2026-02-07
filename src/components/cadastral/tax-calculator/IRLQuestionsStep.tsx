@@ -12,6 +12,7 @@ import {
   TaxCalculationInput, DRC_PROVINCES, DRC_MAJOR_CITIES,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
+import TaxpayerIdentitySection from './TaxpayerIdentitySection';
 
 const ZONE_OPTIONS = [
   { value: 'urban', label: 'Urbaine', icon: Building2, desc: 'Ville, commune urbaine' },
@@ -26,31 +27,44 @@ const USAGE_OPTIONS = [
   { value: 'mixed', label: 'Mixte', icon: Landmark, desc: 'Usage combiné' },
 ];
 
-const REDEVABLE_QUALITES = [
-  { value: 'gerant', label: 'Gérant' },
-  { value: 'mandataire', label: 'Mandataire' },
-  { value: 'locataire', label: 'Locataire principal' },
-  { value: 'syndic', label: 'Syndic de copropriété' },
-];
-
 interface IRLQuestionsStepProps {
   parcelNumber: string;
   input: TaxCalculationInput;
   setInput: React.Dispatch<React.SetStateAction<TaxCalculationInput>>;
   nif: string;
   setNif: (v: string) => void;
+  ownerName: string;
+  setOwnerName: (v: string) => void;
+  idDocumentFile: File | null;
+  setIdDocumentFile: (f: File | null) => void;
+  hasNif: boolean | null;
+  setHasNif: (v: boolean | null) => void;
   onCalculate: () => void;
 }
 
 const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
-  parcelNumber, input, setInput, nif, setNif, onCalculate
+  parcelNumber, input, setInput, nif, setNif,
+  ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
+  onCalculate
 }) => {
   const currentYear = new Date().getFullYear();
   const cities = DRC_MAJOR_CITIES[input.province] || [];
 
   return (
     <div className="space-y-3 px-4 pb-4">
-      {/* Section 1: Identification */}
+      {/* Section 1: Identité du contribuable */}
+      <TaxpayerIdentitySection
+        ownerName={ownerName}
+        setOwnerName={setOwnerName}
+        idDocumentFile={idDocumentFile}
+        setIdDocumentFile={setIdDocumentFile}
+        hasNif={hasNif}
+        setHasNif={setHasNif}
+        nif={nif}
+        setNif={setNif}
+      />
+
+      {/* Section 2: IRL Info */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -69,17 +83,6 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             </div>
           </div>
 
-          {/* NIF */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">NIF du contribuable *</Label>
-            <Input
-              value={nif}
-              onChange={(e) => setNif(e.target.value)}
-              placeholder="Ex: A0123456B"
-              className="h-10 text-sm rounded-xl"
-            />
-          </div>
-
           {/* Fiscal year */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium">Exercice fiscal *</Label>
@@ -96,52 +99,6 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
                 ))}
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Redevable différent */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Redevable différent ?
-                <SectionHelpPopover
-                  title="Contribuable vs Redevable"
-                  description="Le contribuable est le propriétaire. Le redevable est la personne tenue au paiement (gérant, mandataire). Utile quand un tiers gère la location."
-                />
-              </Label>
-              <Switch
-                checked={input.redevableIsDifferent}
-                onCheckedChange={(v) => setInput(prev => ({ ...prev, redevableIsDifferent: v }))}
-              />
-            </div>
-            {input.redevableIsDifferent && (
-              <div className="space-y-2 pl-2 border-l-2 border-primary/20 ml-1">
-                <Input
-                  value={input.redevableNom}
-                  onChange={(e) => setInput(prev => ({ ...prev, redevableNom: e.target.value }))}
-                  placeholder="Nom du redevable"
-                  className="h-9 text-sm rounded-xl"
-                />
-                <Input
-                  value={input.redevableNif}
-                  onChange={(e) => setInput(prev => ({ ...prev, redevableNif: e.target.value }))}
-                  placeholder="NIF du redevable"
-                  className="h-9 text-sm rounded-xl"
-                />
-                <Select
-                  value={input.redevableQualite || '_placeholder'}
-                  onValueChange={(v) => setInput(prev => ({ ...prev, redevableQualite: v === '_placeholder' ? '' : v }))}
-                >
-                  <SelectTrigger className="h-9 text-sm rounded-xl">
-                    <SelectValue placeholder="Qualité du redevable" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl bg-popover">
-                    {REDEVABLE_QUALITES.map(q => (
-                      <SelectItem key={q.value} value={q.value}>{q.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
           </div>
         </CardContent>
       </Card>
