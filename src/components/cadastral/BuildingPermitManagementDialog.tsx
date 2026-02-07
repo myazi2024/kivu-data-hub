@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 import { Building2, FileCheck } from 'lucide-react';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import BuildingPermitFormDialog from './BuildingPermitFormDialog';
@@ -52,8 +53,8 @@ const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogPro
         <div className="px-4 pt-5 pb-2 flex-shrink-0">
           <DialogHeader className="space-y-1">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Building2 className="h-4.5 w-4.5 text-primary" />
+              <div className="h-9 w-9 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                <Building2 className="h-4.5 w-4.5 text-blue-600" />
               </div>
             </div>
             <DialogTitle className="text-base font-bold text-center">
@@ -65,29 +66,25 @@ const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogPro
           </DialogHeader>
 
           {/* Tab buttons */}
-          <div className="grid grid-cols-2 gap-1.5 mt-3">
-            <button
+          <div className="flex gap-2 mt-3">
+            <Button
+              variant={activeTab === 'construction' ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setActiveTab('construction')}
-              className={`flex items-center justify-center gap-1 h-8 rounded-lg text-[11px] font-semibold transition-all ${
-                activeTab === 'construction'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
+              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
             >
-              <Building2 className="h-3 w-3" />
+              <Building2 className="h-3.5 w-3.5" />
               Construire
-            </button>
-            <button
+            </Button>
+            <Button
+              variant={activeTab === 'regularisation' ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setActiveTab('regularisation')}
-              className={`flex items-center justify-center gap-1 h-8 rounded-lg text-[11px] font-semibold transition-all ${
-                activeTab === 'regularisation'
-                  ? 'bg-primary text-primary-foreground shadow-sm'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              }`}
+              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
             >
-              <FileCheck className="h-3 w-3" />
+              <FileCheck className="h-3.5 w-3.5" />
               Régularisation
-            </button>
+            </Button>
           </div>
         </div>
 
