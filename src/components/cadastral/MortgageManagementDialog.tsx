@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Landmark, Plus, FileX2, ArrowRight } from 'lucide-react';
+import { Landmark, Plus, FileX2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import MortgageFormDialog from './MortgageFormDialog';
@@ -16,7 +15,7 @@ interface MortgageManagementDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type MortgageOperation = null | 'add' | 'remove';
+type MortgageTab = 'add' | 'remove';
 
 const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   parcelNumber,
@@ -26,26 +25,16 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const [showIntro, setShowIntro] = useState(true);
-  const [selectedOperation, setSelectedOperation] = useState<MortgageOperation>(null);
+  const [activeTab, setActiveTab] = useState<MortgageTab>('add');
 
   const handleIntroComplete = () => {
     setShowIntro(false);
   };
 
-  const handleSelectOperation = (op: MortgageOperation) => {
-    setSelectedOperation(op);
-  };
-
   const handleClose = () => {
     setShowIntro(true);
-    setSelectedOperation(null);
+    setActiveTab('add');
     onOpenChange(false);
-  };
-
-  const handleSubDialogClose = (isOpen: boolean) => {
-    if (!isOpen) {
-      setSelectedOperation(null);
-    }
   };
 
   // Show intro first
@@ -62,109 +51,73 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     );
   }
 
-  // Show sub-dialogs if operation is selected
-  if (selectedOperation === 'add') {
-    return (
-      <MortgageFormDialog
-        parcelNumber={parcelNumber}
-        parcelId={parcelId}
-        open={true}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) handleClose();
-        }}
-        skipIntro
-      />
-    );
-  }
-
-  if (selectedOperation === 'remove') {
-    return (
-      <MortgageCancellationDialog
-        parcelNumber={parcelNumber}
-        parcelId={parcelId}
-        open={true}
-        onOpenChange={(isOpen) => {
-          if (!isOpen) handleClose();
-        }}
-        skipIntro
-      />
-    );
-  }
-
-  // Show operation choice
+  // After intro, show the tabbed form
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
       <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl z-[1200]">
-        <div className="px-4 pt-6 pb-2">
+        <div className="px-4 pt-5 pb-2">
           <DialogHeader className="space-y-1">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <div className="h-10 w-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <Landmark className="h-5 w-5 text-amber-600" />
+            <div className="flex items-center justify-center gap-2 mb-1">
+              <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
+                <Landmark className="h-4.5 w-4.5 text-amber-600" />
               </div>
             </div>
-            <DialogTitle className="text-lg font-bold text-center">
+            <DialogTitle className="text-base font-bold text-center">
               Gestion Hypothèque
             </DialogTitle>
-            <DialogDescription className="text-sm text-muted-foreground text-center">
+            <DialogDescription className="text-xs text-muted-foreground text-center">
               Parcelle: <span className="font-mono font-semibold text-foreground">{parcelNumber}</span>
             </DialogDescription>
           </DialogHeader>
+
+          {/* Tab buttons */}
+          <div className="flex gap-2 mt-3">
+            <Button
+              variant={activeTab === 'add' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('add')}
+              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Enregistrer
+            </Button>
+            <Button
+              variant={activeTab === 'remove' ? 'destructive' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('remove')}
+              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
+            >
+              <FileX2 className="h-3.5 w-3.5" />
+              Radiation
+            </Button>
+          </div>
         </div>
 
-        <div className="px-4 pb-4 space-y-3">
-          <p className="text-sm text-muted-foreground text-center">
-            Quelle opération souhaitez-vous effectuer ?
-          </p>
-
-          {/* Option: Ajouter une hypothèque */}
-          <Card
-            className="rounded-2xl shadow-md border-border/50 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-amber-500/30 hover:scale-[1.01] active:scale-[0.99]"
-            onClick={() => handleSelectOperation('add')}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-amber-500/10 flex items-center justify-center flex-shrink-0">
-                  <Plus className="h-6 w-6 text-amber-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold">Enregistrer une hypothèque</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Inscrire une nouvelle garantie hypothécaire sur cette parcelle
-                  </p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Option: Retirer une hypothèque */}
-          <Card
-            className="rounded-2xl shadow-md border-border/50 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-red-500/30 hover:scale-[1.01] active:scale-[0.99]"
-            onClick={() => handleSelectOperation('remove')}
-          >
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                  <FileX2 className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold">Demander une radiation</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Supprimer une hypothèque existante après remboursement
-                  </p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            className="w-full h-10 rounded-xl text-sm"
-          >
-            Annuler
-          </Button>
+        {/* Render the selected form inline */}
+        <div className="px-0 pb-0">
+          {activeTab === 'add' ? (
+            <MortgageFormDialog
+              parcelNumber={parcelNumber}
+              parcelId={parcelId}
+              open={true}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) handleClose();
+              }}
+              skipIntro
+              embedded
+            />
+          ) : (
+            <MortgageCancellationDialog
+              parcelNumber={parcelNumber}
+              parcelId={parcelId}
+              open={true}
+              onOpenChange={(isOpen) => {
+                if (!isOpen) handleClose();
+              }}
+              skipIntro
+              embedded
+            />
+          )}
         </div>
       </DialogContent>
     </Dialog>

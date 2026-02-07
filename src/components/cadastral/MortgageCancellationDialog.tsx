@@ -26,6 +26,7 @@ interface MortgageCancellationDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   skipIntro?: boolean;
+  embedded?: boolean;
 }
 
 type Step = 'form' | 'review' | 'payment' | 'confirmation';
@@ -111,7 +112,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   parcelId,
   open,
   onOpenChange,
-  skipIntro = false
+  skipIntro = false,
+  embedded = false
 }) => {
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
@@ -1281,9 +1283,9 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   // Reset showIntro when dialog opens
   useEffect(() => {
     if (open) {
-      setShowIntro(true);
+      setShowIntro(!skipIntro);
     }
-  }, [open]);
+  }, [open, skipIntro]);
 
   const handleIntroComplete = () => {
     setShowIntro(false);
@@ -1297,6 +1299,17 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         onContinue={handleIntroComplete}
         config={FORM_INTRO_CONFIGS.mortgage_remove}
       />
+    );
+  }
+
+  if (embedded) {
+    return (
+      <ScrollArea className={`${isMobile ? 'h-[calc(85vh-140px)]' : 'max-h-[calc(85vh-140px)]'} px-4 pb-4`}>
+        {step === 'form' && renderFormStep()}
+        {step === 'review' && renderReviewStep()}
+        {step === 'payment' && renderPaymentStep()}
+        {step === 'confirmation' && renderConfirmationStep()}
+      </ScrollArea>
     );
   }
 
