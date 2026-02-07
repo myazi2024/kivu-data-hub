@@ -18,14 +18,13 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
+
 
 interface MortgageCancellationDialogProps {
   parcelNumber: string;
   parcelId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  skipIntro?: boolean;
   embedded?: boolean;
 }
 
@@ -112,12 +111,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   parcelId,
   open,
   onOpenChange,
-  skipIntro = false,
   embedded = false
 }) => {
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
-  const [showIntro, setShowIntro] = useState(!skipIntro);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
@@ -1279,28 +1276,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       </Button>
     </div>
   );
-
-  // Reset showIntro when dialog opens
-  useEffect(() => {
-    if (open) {
-      setShowIntro(!skipIntro);
-    }
-  }, [open, skipIntro]);
-
-  const handleIntroComplete = () => {
-    setShowIntro(false);
-  };
-
-  if (showIntro && open) {
-    return (
-      <FormIntroDialog
-        open={open}
-        onOpenChange={onOpenChange}
-        onContinue={handleIntroComplete}
-        config={FORM_INTRO_CONFIGS.mortgage_remove}
-      />
-    );
-  }
 
   if (embedded) {
     return (
