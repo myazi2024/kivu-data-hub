@@ -1279,12 +1279,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   if (embedded) {
     return (
-      <ScrollArea className="h-full max-h-[calc(85vh-160px)] px-4 pb-4">
+      <div className="overflow-y-auto h-full px-4 pb-4">
         {step === 'form' && renderFormStep()}
         {step === 'review' && renderReviewStep()}
         {step === 'payment' && renderPaymentStep()}
         {step === 'confirmation' && renderConfirmationStep()}
-      </ScrollArea>
+      </div>
     );
   }
 
