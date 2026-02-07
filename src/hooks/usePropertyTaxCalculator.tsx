@@ -32,27 +32,132 @@ export interface TaxExemption {
   max_area_sqm: number | null;
 }
 
+// --- Province/Ville data for DRC fiscal rates ---
+export const DRC_PROVINCES = [
+  'Kinshasa', 'Nord-Kivu', 'Sud-Kivu', 'Haut-Katanga', 'Lualaba',
+  'Kongo-Central', 'Équateur', 'Tshopo', 'Kasaï', 'Kasaï-Central',
+  'Kasaï-Oriental', 'Lomami', 'Tanganyika', 'Haut-Lomami', 'Maniema',
+  'Ituri', 'Bas-Uele', 'Haut-Uele', 'Mongala', 'Nord-Ubangi',
+  'Sud-Ubangi', 'Tshuapa', 'Sankuru', 'Kwango', 'Kwilu', 'Mai-Ndombe',
+] as const;
+
+export const DRC_MAJOR_CITIES: Record<string, string[]> = {
+  'Kinshasa': ['Kinshasa'],
+  'Nord-Kivu': ['Goma', 'Beni', 'Butembo'],
+  'Sud-Kivu': ['Bukavu', 'Uvira'],
+  'Haut-Katanga': ['Lubumbashi', 'Likasi', 'Kolwezi'],
+  'Lualaba': ['Kolwezi'],
+  'Kongo-Central': ['Matadi', 'Boma'],
+  'Équateur': ['Mbandaka'],
+  'Tshopo': ['Kisangani'],
+  'Kasaï-Central': ['Kananga'],
+  'Kasaï-Oriental': ['Mbuji-Mayi'],
+};
+
+// Kinshasa has a higher multiplier, provincial capitals medium, rural lowest
+export type FiscalZoneCategory = 'kinshasa' | 'capital_provinciale' | 'ville_secondaire' | 'rural';
+
+export const getFiscalZoneCategory = (province: string, ville: string | null, zoneType: 'urban' | 'rural'): FiscalZoneCategory => {
+  if (zoneType === 'rural') return 'rural';
+  if (province === 'Kinshasa') return 'kinshasa';
+  const cities = DRC_MAJOR_CITIES[province];
+  if (cities && ville && cities.includes(ville)) return 'capital_provinciale';
+  return 'ville_secondaire';
+};
+
+// Multipliers per fiscal zone (Kinshasa highest, rural lowest)
+export const FISCAL_ZONE_MULTIPLIERS: Record<FiscalZoneCategory, number> = {
+  kinshasa: 1.5,
+  capital_provinciale: 1.2,
+  ville_secondaire: 1.0,
+  rural: 0.7,
+};
+
+export const FISCAL_ZONE_LABELS: Record<FiscalZoneCategory, string> = {
+  kinshasa: 'Kinshasa (taux majoré)',
+  capital_provinciale: 'Capitale provinciale',
+  ville_secondaire: 'Ville secondaire',
+  rural: 'Zone rurale (taux réduit)',
+};
+
+// --- Exemption types ---
+export type ExemptionCheckType =
+  | 'edifice_public'
+  | 'edifice_religieux'
+  | 'construction_moins_5ans'
+  | 'surface_moins_50m2'
+  | 'zone_economique_speciale';
+
+export const EXEMPTION_DEFINITIONS: { type: ExemptionCheckType; label: string; description: string }[] = [
+  { type: 'edifice_public', label: 'Édifice public ou d\'utilité publique', description: 'Bâtiments de l\'État, provinces, ETD, missions diplomatiques' },
+  { type: 'edifice_religieux', label: 'Édifice cultuel ou religieux', description: 'Lieux de culte, couvents, séminaires' },
+  { type: 'construction_moins_5ans', label: 'Construction de moins de 5 ans', description: 'Exonération temporaire pour nouvelles constructions (art. 8, Ord.-loi n°69-006)' },
+  { type: 'surface_moins_50m2', label: 'Surface bâtie < 50 m²', description: 'Exonération pour petites surfaces habitées' },
+  { type: 'zone_economique_speciale', label: 'Zone Économique Spéciale (ZES)', description: 'Régime fiscal dérogatoire applicable aux ZES' },
+];
+
+// --- Roofing types ---
+export const ROOFING_TYPES = [
+  { value: 'tole', label: 'Tôle ondulée' },
+  { value: 'tuile', label: 'Tuile' },
+  { value: 'beton', label: 'Dalle en béton' },
+  { value: 'chaume', label: 'Chaume / Paille' },
+  { value: 'autre', label: 'Autre' },
+];
+
 export interface TaxCalculationInput {
   zoneType: 'urban' | 'rural';
   usageType: 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'mixed';
   constructionType: 'en_dur' | 'semi_dur' | 'en_paille' | null;
   areaSqm: number;
   fiscalYear: number;
+  // Province/ville for zone-specific rates
+  province: string;
+  ville: string;
+  // Construction details
+  constructionYear: number | null;
+  numberOfFloors: number;
+  roofingType: string;
+  // Exemptions
+  selectedExemptions: ExemptionCheckType[];
+  // Contribuable / Redevable
+  redevableIsDifferent: boolean;
+  redevableNom: string;
+  redevableNif: string;
+  redevableQualite: string; // gérant, mandataire, locataire
   // IRL fields
   isRented: boolean;
   monthlyRentUsd: number;
-  occupancyMonths: number; // months occupied per year (1-12)
+  occupancyMonths: number;
+  // IRL deduction
+  applyDeduction30: boolean;
+  // Late payment
+  monthsLate: number;
 }
 
 export interface TaxCalculationResult {
+  // Fiscal zone
+  fiscalZoneCategory: FiscalZoneCategory;
+  fiscalZoneMultiplier: number;
   // Impôt foncier
   baseTax: number;
   areaComponent: number;
+  zoneAdjustedTax: number;
   totalPropertyTax: number;
+  // Exemptions
+  isExempt: boolean;
+  exemptionReasons: string[];
   // IRL
   annualRentalIncome: number;
+  deduction30Amount: number;
+  taxableRentalIncome: number;
   irlRate: number;
   irlAmount: number;
+  // Penalties
+  penaltyRate: number;
+  penaltyAmount: number;
+  majorationAmount: number;
+  totalPenalties: number;
   // Combined
   totalTax: number;
   fees: { name: string; amount: number; description: string | null }[];
@@ -89,6 +194,48 @@ export const usePropertyTaxCalculator = () => {
   const calculate = useCallback((input: TaxCalculationInput): TaxCalculationResult => {
     const round = (n: number) => Math.round(n * 100) / 100;
 
+    // --- Fiscal zone ---
+    const fiscalZoneCategory = getFiscalZoneCategory(input.province, input.ville || null, input.zoneType);
+    const fiscalZoneMultiplier = FISCAL_ZONE_MULTIPLIERS[fiscalZoneCategory];
+
+    // --- Exemptions check ---
+    const exemptionReasons: string[] = [];
+    let isExempt = false;
+
+    if (input.selectedExemptions.includes('edifice_public')) {
+      exemptionReasons.push('Édifice public ou d\'utilité publique');
+      isExempt = true;
+    }
+    if (input.selectedExemptions.includes('edifice_religieux')) {
+      exemptionReasons.push('Édifice cultuel ou religieux');
+      isExempt = true;
+    }
+    if (input.selectedExemptions.includes('construction_moins_5ans')) {
+      const currentYear = new Date().getFullYear();
+      if (input.constructionYear && (currentYear - input.constructionYear) < 5) {
+        exemptionReasons.push(`Construction récente (${input.constructionYear}) — exonération temporaire`);
+        isExempt = true;
+      }
+    }
+    if (input.selectedExemptions.includes('surface_moins_50m2')) {
+      if (input.areaSqm > 0 && input.areaSqm < 50) {
+        exemptionReasons.push('Surface bâtie inférieure à 50 m²');
+        isExempt = true;
+      }
+    }
+    if (input.selectedExemptions.includes('zone_economique_speciale')) {
+      exemptionReasons.push('Zone Économique Spéciale (ZES)');
+      isExempt = true;
+    }
+
+    // Also check DB exemptions
+    const smallSurface = exemptions.find(e => e.exemption_type === 'petites_surfaces');
+    if (smallSurface && smallSurface.max_area_sqm && input.areaSqm <= smallSurface.max_area_sqm) {
+      if (!exemptionReasons.some(r => r.includes('50 m²'))) {
+        exemptionReasons.push(smallSurface.label);
+      }
+    }
+
     // --- Impôt foncier ---
     const matchedRate = rates.find(r =>
       r.tax_category === 'impot_foncier' &&
@@ -104,16 +251,28 @@ export const usePropertyTaxCalculator = () => {
 
     const baseTax = matchedRate?.base_amount_usd || 0;
     const areaComponent = (matchedRate?.area_multiplier || 0) * input.areaSqm;
-    const totalPropertyTax = baseTax + areaComponent;
+    const rawPropertyTax = baseTax + areaComponent;
+    const zoneAdjustedTax = round(rawPropertyTax * fiscalZoneMultiplier);
+    const totalPropertyTax = isExempt ? 0 : zoneAdjustedTax;
 
     // --- Impôt sur le Revenu Locatif (IRL) ---
     let annualRentalIncome = 0;
+    let deduction30Amount = 0;
+    let taxableRentalIncome = 0;
     let irlRate = 0;
     let irlAmount = 0;
     let matchedIrlRate: TaxRate | null = null;
 
     if (input.isRented && input.monthlyRentUsd > 0) {
       annualRentalIncome = input.monthlyRentUsd * (input.occupancyMonths || 12);
+
+      // 30% flat deduction for maintenance costs (art. 13, Ord.-loi n°69-009)
+      if (input.applyDeduction30) {
+        deduction30Amount = round(annualRentalIncome * 0.30);
+        taxableRentalIncome = annualRentalIncome - deduction30Amount;
+      } else {
+        taxableRentalIncome = annualRentalIncome;
+      }
 
       matchedIrlRate = rates.find(r =>
         r.tax_category === 'impot_revenu_locatif' &&
@@ -126,16 +285,26 @@ export const usePropertyTaxCalculator = () => {
 
       if (matchedIrlRate) {
         irlRate = matchedIrlRate.rate_percentage;
-        irlAmount = (irlRate / 100) * annualRentalIncome;
+        irlAmount = round((irlRate / 100) * taxableRentalIncome);
       }
     }
 
-    // --- Exemptions check ---
-    const appliedExemptions: string[] = [];
-    // Check small surface exemption
-    const smallSurface = exemptions.find(e => e.exemption_type === 'petites_surfaces');
-    if (smallSurface && smallSurface.max_area_sqm && input.areaSqm <= smallSurface.max_area_sqm) {
-      appliedExemptions.push(smallSurface.label);
+    // --- Penalties (late payment) ---
+    let penaltyRate = 0;
+    let penaltyAmount = 0;
+    let majorationAmount = 0;
+    let totalPenalties = 0;
+
+    if (input.monthsLate > 0) {
+      const taxBase = totalPropertyTax + irlAmount;
+      // 2% per month of delay
+      penaltyRate = Math.min(input.monthsLate * 2, 24); // cap at 24%
+      penaltyAmount = round((penaltyRate / 100) * taxBase);
+      // 25% majoration if > 3 months late
+      if (input.monthsLate > 3) {
+        majorationAmount = round(0.25 * taxBase);
+      }
+      totalPenalties = penaltyAmount + majorationAmount;
     }
 
     // --- Combined ---
@@ -152,19 +321,30 @@ export const usePropertyTaxCalculator = () => {
     const totalFees = calculatedFees.reduce((sum, f) => sum + f.amount, 0);
 
     return {
+      fiscalZoneCategory,
+      fiscalZoneMultiplier,
       baseTax: round(baseTax),
       areaComponent: round(areaComponent),
+      zoneAdjustedTax,
       totalPropertyTax: round(totalPropertyTax),
+      isExempt,
+      exemptionReasons,
       annualRentalIncome: round(annualRentalIncome),
+      deduction30Amount,
+      taxableRentalIncome: round(taxableRentalIncome),
       irlRate,
       irlAmount: round(irlAmount),
+      penaltyRate,
+      penaltyAmount,
+      majorationAmount,
+      totalPenalties,
       totalTax: round(totalTax),
       fees: calculatedFees,
       totalFees: round(totalFees),
-      grandTotal: round(totalTax + totalFees),
+      grandTotal: round(totalTax + totalFees + totalPenalties),
       matchedRate,
       matchedIrlRate,
-      appliedExemptions,
+      appliedExemptions: exemptionReasons,
     };
   }, [rates, fees, exemptions]);
 

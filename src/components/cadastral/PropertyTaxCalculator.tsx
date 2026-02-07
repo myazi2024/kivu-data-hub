@@ -42,9 +42,21 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     constructionType: defaultConstruction === 'none' ? null : (defaultConstruction as any),
     areaSqm: parcelData?.area_sqm || 0,
     fiscalYear: currentYear,
+    province: parcelData?.province || 'Nord-Kivu',
+    ville: parcelData?.ville || '',
+    constructionYear: null,
+    numberOfFloors: 1,
+    roofingType: '',
+    selectedExemptions: [],
+    redevableIsDifferent: false,
+    redevableNom: '',
+    redevableNif: '',
+    redevableQualite: '',
     isRented: false,
     monthlyRentUsd: 0,
     occupancyMonths: 12,
+    applyDeduction30: false,
+    monthsLate: 0,
   });
 
   const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === 'none');
