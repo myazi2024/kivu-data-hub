@@ -37,9 +37,21 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     constructionType: null,
     areaSqm: parcelData?.area_sqm || 0,
     fiscalYear: currentYear,
+    province: parcelData?.province || 'Nord-Kivu',
+    ville: parcelData?.ville || '',
+    constructionYear: null,
+    numberOfFloors: 1,
+    roofingType: '',
+    selectedExemptions: [],
+    redevableIsDifferent: false,
+    redevableNom: '',
+    redevableNif: '',
+    redevableQualite: '',
     isRented: true,
     monthlyRentUsd: 0,
     occupancyMonths: 12,
+    applyDeduction30: true,
+    monthsLate: 0,
   });
 
   const handleCalculate = () => {
