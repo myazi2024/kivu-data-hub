@@ -2,6 +2,7 @@ import React from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Trash2, Users, Home, Calendar } from 'lucide-react';
 
@@ -12,6 +13,7 @@ export interface TenantEntry {
   monthlyRentUsd: number;
   arrivalDate: string;
   departureDate: string;
+  hasDepartureDate: boolean;
 }
 
 interface IRLTenantsListProps {
@@ -27,6 +29,7 @@ const createEmptyTenant = (): TenantEntry => ({
   monthlyRentUsd: 0,
   arrivalDate: '',
   departureDate: '',
+  hasDepartureDate: false,
 });
 
 /** Calculate occupied months within the fiscal year for a tenant */
@@ -71,7 +74,7 @@ const IRLTenantsList: React.FC<IRLTenantsListProps> = ({ tenants, setTenants, fi
     setTenants(prev => prev.length <= 1 ? prev : prev.filter(t => t.id !== id));
   };
 
-  const updateTenant = (id: string, field: keyof TenantEntry, value: string | number) => {
+  const updateTenant = (id: string, field: keyof TenantEntry, value: string | number | boolean) => {
     setTenants(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
   };
 
@@ -173,15 +176,27 @@ const IRLTenantsList: React.FC<IRLTenantsListProps> = ({ tenants, setTenants, fi
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs flex items-center gap-1">
-                    <Calendar className="h-2.5 w-2.5" /> Départ
-                  </Label>
-                  <Input
-                    type="date"
-                    value={tenant.departureDate}
-                    onChange={(e) => updateTenant(tenant.id, 'departureDate', e.target.value)}
-                    className="h-8 text-xs rounded-lg"
-                  />
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs flex items-center gap-1">
+                      <Calendar className="h-2.5 w-2.5" /> Date de départ connue ?
+                    </Label>
+                    <Switch
+                      checked={tenant.hasDepartureDate}
+                      onCheckedChange={(v) => {
+                        updateTenant(tenant.id, 'hasDepartureDate', v);
+                        if (!v) updateTenant(tenant.id, 'departureDate', '');
+                      }}
+                      className="scale-75"
+                    />
+                  </div>
+                  {tenant.hasDepartureDate && (
+                    <Input
+                      type="date"
+                      value={tenant.departureDate}
+                      onChange={(e) => updateTenant(tenant.id, 'departureDate', e.target.value)}
+                      className="h-8 text-xs rounded-lg"
+                    />
+                  )}
                 </div>
               </div>
 
