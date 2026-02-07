@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePropertyTaxCalculator, TaxCalculationInput, TaxCalculationResult } from '@/hooks/usePropertyTaxCalculator';
-import PropertyTaxQuestionsStep from './tax-calculator/PropertyTaxQuestionsStep';
-import PropertyTaxSummaryStep from './tax-calculator/PropertyTaxSummaryStep';
+import IRLQuestionsStep from './tax-calculator/IRLQuestionsStep';
+import IRLSummaryStep from './tax-calculator/IRLSummaryStep';
 import { toast } from 'sonner';
 
-interface PropertyTaxCalculatorProps {
+interface IRLCalculatorProps {
   parcelNumber: string;
   parcelId?: string;
   parcelData?: any;
@@ -14,7 +14,7 @@ interface PropertyTaxCalculatorProps {
 
 type CalcStep = 'questions' | 'summary';
 
-const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
+const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   parcelNumber, parcelId, parcelData
 }) => {
   const { user } = useAuth();
@@ -30,32 +30,25 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     : parcelData?.declared_usage === 'Industriel' ? 'industrial'
     : parcelData?.declared_usage === 'Agricole' ? 'agricultural'
     : 'residential';
-  const defaultConstruction = parcelData?.construction_type === 'En dur' ? 'en_dur'
-    : parcelData?.construction_type === 'Semi-dur' ? 'semi_dur'
-    : parcelData?.construction_type === 'En paille' ? 'en_paille'
-    : parcelData?.construction_type === 'Terrain nu' ? 'none'
-    : null;
 
   const [input, setInput] = useState<TaxCalculationInput>({
     zoneType: (defaultZone as any) || 'urban',
     usageType: (defaultUsage as any) || 'residential',
-    constructionType: defaultConstruction === 'none' ? null : (defaultConstruction as any),
+    constructionType: null,
     areaSqm: parcelData?.area_sqm || 0,
     fiscalYear: currentYear,
-    isRented: false,
+    isRented: true,
     monthlyRentUsd: 0,
     occupancyMonths: 12,
   });
-
-  const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === 'none');
 
   const handleCalculate = () => {
     if (!nif.trim()) {
       toast.error('Veuillez renseigner le Numéro d\'Impôt (NIF)');
       return;
     }
-    if (!input.areaSqm || input.areaSqm <= 0) {
-      toast.error('Veuillez renseigner la superficie de la parcelle');
+    if (!input.monthlyRentUsd || input.monthlyRentUsd <= 0) {
+      toast.error('Veuillez renseigner le loyer mensuel');
       return;
     }
     const res = calculate(input);
@@ -81,7 +74,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
 
   if (calcStep === 'summary' && result) {
     return (
-      <PropertyTaxSummaryStep
+      <IRLSummaryStep
         parcelNumber={parcelNumber}
         nif={nif}
         input={input}
@@ -93,13 +86,10 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   }
 
   return (
-    <PropertyTaxQuestionsStep
+    <IRLQuestionsStep
       parcelNumber={parcelNumber}
-      parcelData={parcelData}
       input={input}
       setInput={setInput}
-      hasNoConstruction={hasNoConstruction}
-      setHasNoConstruction={setHasNoConstruction}
       nif={nif}
       setNif={setNif}
       onCalculate={handleCalculate}
@@ -107,4 +97,4 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   );
 };
 
-export default PropertyTaxCalculator;
+export default IRLCalculator;
