@@ -25,6 +25,7 @@ interface MortgageCancellationDialogProps {
   parcelId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  skipIntro?: boolean;
 }
 
 type Step = 'form' | 'review' | 'payment' | 'confirmation';
@@ -109,11 +110,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   parcelNumber,
   parcelId,
   open,
-  onOpenChange
+  onOpenChange,
+  skipIntro = false
 }) => {
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(!skipIntro);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
