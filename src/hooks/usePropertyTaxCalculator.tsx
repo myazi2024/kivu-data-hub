@@ -81,22 +81,36 @@ export const FISCAL_ZONE_LABELS: Record<FiscalZoneCategory, string> = {
 };
 
 // --- Auto late payment calculation based on DRC fiscal calendar ---
-// Calendar: Jan = assessment, before Feb 1 = declaration, Jan-Mar = payment
-// After March 31 of fiscal year = late
-export const calculateMonthsLate = (fiscalYear: number): number => {
+
+// Impôt foncier: deadline March 31
+export const calculatePropertyTaxMonthsLate = (fiscalYear: number): number => {
   const now = new Date();
-  // Deadline: March 31 of the fiscal year
-  const deadline = new Date(fiscalYear, 2, 31); // month is 0-indexed, so 2 = March
+  const deadline = new Date(fiscalYear, 2, 31); // March 31
   if (now <= deadline) return 0;
-  // Calculate full months elapsed since deadline
   const diffMs = now.getTime() - deadline.getTime();
-  const diffMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44));
-  return Math.max(0, diffMonths);
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44)));
 };
 
-export const getLatePenaltyInfo = (fiscalYear: number) => {
-  const monthsLate = calculateMonthsLate(fiscalYear);
-  const deadlineStr = `31 mars ${fiscalYear}`;
+// IRL (Kinshasa/provincial): deadline February 28
+// En 2026, l'échéance a été repoussée au 28 février par le gouvernement provincial
+export const calculateIRLMonthsLate = (fiscalYear: number): number => {
+  const now = new Date();
+  const deadline = new Date(fiscalYear, 1, 28); // February 28
+  if (now <= deadline) return 0;
+  const diffMs = now.getTime() - deadline.getTime();
+  return Math.max(0, Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44)));
+};
+
+// Backward-compatible alias
+export const calculateMonthsLate = calculatePropertyTaxMonthsLate;
+
+export const getLatePenaltyInfo = (fiscalYear: number, taxType: 'property' | 'irl' = 'property') => {
+  const monthsLate = taxType === 'irl'
+    ? calculateIRLMonthsLate(fiscalYear)
+    : calculatePropertyTaxMonthsLate(fiscalYear);
+  const deadlineStr = taxType === 'irl'
+    ? `28 février ${fiscalYear}`
+    : `31 mars ${fiscalYear}`;
   const isLate = monthsLate > 0;
   const penaltyRate = Math.min(monthsLate * 2, 24);
   const hasSurcharge = monthsLate > 3;
@@ -315,8 +329,9 @@ export const usePropertyTaxCalculator = () => {
     // --- Penalties (late payment) - Auto-calculated ---
     // DRC fiscal calendar: deadline is March 31 of the fiscal year
     // After March → late. Penalties: 2%/month (cap 24%) + 25% surcharge if >3 months
-    const autoMonthsLate = calculateMonthsLate(input.fiscalYear);
-    const effectiveMonthsLate = autoMonthsLate;
+    const autoPropertyMonthsLate = calculatePropertyTaxMonthsLate(input.fiscalYear);
+    const autoIrlMonthsLate = calculateIRLMonthsLate(input.fiscalYear);
+    const effectiveMonthsLate = Math.max(autoPropertyMonthsLate, autoIrlMonthsLate);
 
     let penaltyRate = 0;
     let penaltyAmount = 0;

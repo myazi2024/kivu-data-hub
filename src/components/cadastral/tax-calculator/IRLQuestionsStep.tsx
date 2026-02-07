@@ -6,10 +6,11 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
-  Home, Building2, Factory, Tractor, Landmark, ArrowRight, DollarSign, MapPin
+  Home, Building2, Factory, Tractor, Landmark, ArrowRight, DollarSign, MapPin,
+  AlertTriangle, CheckCircle2, Clock
 } from 'lucide-react';
 import {
-  TaxCalculationInput, DRC_PROVINCES, DRC_MAJOR_CITIES,
+  TaxCalculationInput, DRC_PROVINCES, DRC_MAJOR_CITIES, getLatePenaltyInfo,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
 import TaxpayerIdentitySection from './TaxpayerIdentitySection';
@@ -270,32 +271,52 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 4: Pénalités */}
+      {/* Section 4: Retard de paiement — calcul automatique */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <Label className="text-sm font-semibold flex items-center gap-1.5">
+            <Clock className="h-3.5 w-3.5" />
             Retard de paiement
             <SectionHelpPopover
-              title="Pénalités de retard"
-              description="Intérêts moratoires de 2% par mois de retard. Majoration de 25% au-delà de 3 mois. Calculées à titre indicatif."
+              title="Calendrier IRL — DGRK"
+              description="L'IRL est exigible au 1er trimestre. À Kinshasa, l'échéance est fixée au 28 février (prorogée en 2026). Après cette date : intérêts de 2%/mois (max 24%) et majoration de 25% au-delà de 3 mois."
             />
           </Label>
-          <Select
-            value={input.monthsLate.toString()}
-            onValueChange={(v) => setInput(prev => ({ ...prev, monthsLate: parseInt(v) }))}
-          >
-            <SelectTrigger className="h-9 text-sm rounded-xl">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl bg-popover">
-              <SelectItem value="0">Aucun retard</SelectItem>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => (
-                <SelectItem key={m} value={m.toString()}>
-                  {m} mois {m > 3 ? '(+ majoration 25%)' : ''}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {(() => {
+            const info = getLatePenaltyInfo(input.fiscalYear, 'irl');
+            if (!info.isLate) {
+              return (
+                <div className="flex items-center gap-2 p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/30">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Pas de retard</p>
+                    <p className="text-xs text-muted-foreground">
+                      Échéance IRL : {info.deadlineStr}
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div className="p-3 bg-destructive/10 rounded-xl border border-destructive/30 space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive flex-shrink-0" />
+                  <p className="text-sm font-semibold text-destructive">
+                    Retard de {info.monthsLate} mois
+                  </p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Échéance dépassée : {info.deadlineStr}
+                </p>
+                <div className="text-xs space-y-1 pl-6">
+                  <p>• Intérêts moratoires : <span className="font-semibold">{info.penaltyRate}%</span> ({info.monthsLate} × 2%)</p>
+                  {info.hasSurcharge && (
+                    <p>• Majoration supplémentaire : <span className="font-semibold">25%</span> (retard &gt; 3 mois)</p>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 
