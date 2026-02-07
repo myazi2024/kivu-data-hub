@@ -12,6 +12,7 @@ import {
 import {
   TaxCalculationInput, DRC_PROVINCES, DRC_MAJOR_CITIES,
   EXEMPTION_DEFINITIONS, ROOFING_TYPES, ExemptionCheckType,
+  getLatePenaltyInfo,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
 import TaxpayerIdentitySection from './TaxpayerIdentitySection';
@@ -475,37 +476,41 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 5: Pénalités de retard */}
-      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
-        <CardContent className="p-4 space-y-3">
-          <Label className="text-sm font-semibold flex items-center gap-1.5">
-            Retard de paiement
-            <SectionHelpPopover
-              title="Pénalités de retard"
-              description="Intérêts moratoires de 2% par mois de retard. Majoration de 25% au-delà de 3 mois de retard. Ces pénalités sont calculées automatiquement à titre indicatif."
-            />
-          </Label>
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Mois de retard</Label>
-            <Select
-              value={input.monthsLate.toString()}
-              onValueChange={(v) => setInput(prev => ({ ...prev, monthsLate: parseInt(v) }))}
-            >
-              <SelectTrigger className="h-9 text-sm rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-popover">
-                <SelectItem value="0">Aucun retard</SelectItem>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(m => (
-                  <SelectItem key={m} value={m.toString()}>
-                    {m} mois {m > 3 ? '(+ majoration 25%)' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Section 5: Retard de paiement (auto-calculé) */}
+      {(() => {
+        const penaltyInfo = getLatePenaltyInfo(input.fiscalYear);
+        return (
+          <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
+            <CardContent className="p-4 space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">
+                Retard de paiement
+                <SectionHelpPopover
+                  title="Calendrier fiscal — RDC"
+                  description="Janvier : constat de la situation du bien. Avant le 1er février : dépôt de la déclaration. Janvier–mars : paiement de l'impôt foncier. Au-delà du 31 mars : pénalités de retard (2 % par mois, plafonnées à 24 %). Majoration de 25 % au-delà de 3 mois de retard."
+                />
+              </Label>
+
+              <div className={`p-3 rounded-xl border ${penaltyInfo.isLate ? 'bg-destructive/5 border-destructive/30' : 'bg-emerald-50 border-emerald-200'}`}>
+                <p className={`text-sm font-medium ${penaltyInfo.isLate ? 'text-destructive' : 'text-emerald-700'}`}>
+                  {penaltyInfo.isLate
+                    ? `⚠️ Retard de ${penaltyInfo.monthsLate} mois — Pénalité : ${penaltyInfo.penaltyRate}%${penaltyInfo.hasSurcharge ? ' + majoration 25%' : ''}`
+                    : `✅ Aucun retard — Échéance : ${penaltyInfo.deadlineStr}`
+                  }
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Exercice fiscal {input.fiscalYear} — Échéance légale : {penaltyInfo.deadlineStr}
+                </p>
+                {penaltyInfo.isLate && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Intérêts moratoires : 2 % par mois de retard (plafonné à 24 %).
+                    {penaltyInfo.hasSurcharge && ' Majoration de 25 % applicable (retard supérieur à 3 mois).'}
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <Button
         onClick={onCalculate}
