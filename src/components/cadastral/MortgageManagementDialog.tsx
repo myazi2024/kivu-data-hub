@@ -54,8 +54,8 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   // After intro, show the tabbed form
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
-      <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl z-[1200]">
-        <div className="px-4 pt-5 pb-2">
+      <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl z-[1200] flex flex-col overflow-hidden">
+        <div className="px-4 pt-5 pb-2 flex-shrink-0">
           <DialogHeader className="space-y-1">
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
@@ -94,7 +94,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
         </div>
 
         {/* Render the selected form inline */}
-        <div className="px-0 pb-0">
+        <div className="overflow-hidden flex-1 min-h-0">
           {activeTab === 'add' ? (
             <MortgageFormDialog
               parcelNumber={parcelNumber}
