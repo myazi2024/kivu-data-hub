@@ -3004,6 +3004,45 @@ export type Database = {
         }
         Relationships: []
       }
+      tax_exemptions_config: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          duration_years: number | null
+          exemption_type: string
+          id: string
+          is_active: boolean
+          label: string
+          max_area_sqm: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          duration_years?: number | null
+          exemption_type: string
+          id?: string
+          is_active?: boolean
+          label: string
+          max_area_sqm?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          duration_years?: number | null
+          exemption_type?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          max_area_sqm?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tax_payment_fees_config: {
         Row: {
           amount_usd: number | null
