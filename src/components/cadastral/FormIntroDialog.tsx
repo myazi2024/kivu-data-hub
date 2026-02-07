@@ -389,6 +389,26 @@ export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
       'Notre équipe d\'assistance est joignable 24h/24 via WhatsApp pour vous guider'
     ],
     buttonLabel: 'Démarrer ma demande d\'expertise'
+  },
+  mortgage_management: {
+    title: 'Gestion Hypothèque',
+    subtitle: 'Constitution ou radiation de garantie hypothécaire',
+    aboutService: 'Ce service unifié vous permet de gérer l\'ensemble des opérations hypothécaires sur votre bien immobilier. Vous pouvez soit enregistrer une nouvelle hypothèque (inscription d\'une garantie au profit d\'un créancier), soit demander la radiation d\'une hypothèque existante après remboursement intégral ou accord amiable avec le créancier.',
+    estimatedTime: '1 à 3 minutes',
+    processingTime: '3 à 14 jours ouvrables selon l\'opération',
+    requiredInfo: [
+      'Pour un enregistrement : montant, identité du créancier, date du contrat et justificatif',
+      'Pour une radiation : référence de l\'hypothèque, motif, accord du créancier et documents justificatifs',
+      'Identité complète du demandeur (propriétaire, débiteur ou mandataire)',
+      'Documents officiels attestant de la transaction ou du règlement'
+    ],
+    userResponsibility: 'En utilisant ce service, vous certifiez être le propriétaire légitime du bien ou disposer d\'une procuration valide. Pour l\'enregistrement, vous attestez l\'exactitude des informations relatives au créancier et au montant. Pour la radiation, vous attestez que la dette a été intégralement remboursée ou qu\'un accord formel a été conclu. Toute déclaration mensongère engage votre responsabilité civile et pénale.',
+    helpInfo: [
+      'Un guide détaillé vous accompagne pour chaque champ obligatoire',
+      'Le calcul des frais est effectué automatiquement selon le barème en vigueur',
+      'Notre équipe d\'assistance est disponible 24h/24 via WhatsApp'
+    ],
+    buttonLabel: 'Continuer'
   }
 };
 

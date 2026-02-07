@@ -12,8 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { ChevronDown, Sparkles, Clock, Beaker, Tag } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import MutationRequestDialog from './MutationRequestDialog';
-import MortgageFormDialog from './MortgageFormDialog';
-import MortgageCancellationDialog from './MortgageCancellationDialog';
+import MortgageManagementDialog from './MortgageManagementDialog';
 import BuildingPermitFormDialog from './BuildingPermitFormDialog';
 import TaxFormDialog from './TaxFormDialog';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
@@ -129,8 +128,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const { actions, loading } = useParcelActionsConfig();
   
   const [showMutationDialog, setShowMutationDialog] = useState(false);
-  const [showMortgageDialog, setShowMortgageDialog] = useState(false);
-  const [showMortgageCancellationDialog, setShowMortgageCancellationDialog] = useState(false);
+  const [showMortgageManagementDialog, setShowMortgageManagementDialog] = useState(false);
   const [showBuildingPermitDialog, setShowBuildingPermitDialog] = useState(false);
   const [showRegularizationPermitDialog, setShowRegularizationPermitDialog] = useState(false);
   const [showTaxDialog, setShowTaxDialog] = useState(false);
@@ -157,8 +155,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     const handlers: Record<string, () => void> = {
       'expertise': () => setShowExpertiseDialog(true),
       'mutation': () => setShowMutationDialog(true),
-      'mortgage_add': () => setShowMortgageDialog(true),
-      'mortgage_remove': () => setShowMortgageCancellationDialog(true),
+      'mortgage_management': () => setShowMortgageManagementDialog(true),
       'permit_add': () => setShowBuildingPermitDialog(true),
       'permit_regularization': () => setShowRegularizationPermitDialog(true),
       'tax': () => setShowTaxDialog(true),
@@ -245,20 +242,12 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         onOpenChange={setShowMutationDialog}
       />
 
-      {/* Dialog Hypothèque */}
-      <MortgageFormDialog
+      {/* Dialog Gestion Hypothèque (unifié) */}
+      <MortgageManagementDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
-        open={showMortgageDialog}
-        onOpenChange={setShowMortgageDialog}
-      />
-
-      {/* Dialog Radiation Hypothèque */}
-      <MortgageCancellationDialog
-        parcelNumber={parcelNumber}
-        parcelId={parcelId}
-        open={showMortgageCancellationDialog}
-        onOpenChange={setShowMortgageCancellationDialog}
+        open={showMortgageManagementDialog}
+        onOpenChange={setShowMortgageManagementDialog}
       />
 
       {/* Dialog Permis de construire */}
