@@ -103,7 +103,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
               onOpenChange={(isOpen) => {
                 if (!isOpen) handleClose();
               }}
-              skipIntro
               embedded
             />
           ) : (
@@ -114,7 +113,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
               onOpenChange={(isOpen) => {
                 if (!isOpen) handleClose();
               }}
-              skipIntro
               embedded
             />
           )}
