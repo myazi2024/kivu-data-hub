@@ -14,6 +14,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
+import SectionHelpPopover from './SectionHelpPopover';
 
 interface BuildingPermitFormDialogProps {
   parcelNumber: string;
@@ -202,7 +203,15 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
                 <IconComponent className={`h-4 w-4 ${iconColor}`} />
               </div>
               <div>
-                <Label className="text-base font-semibold">{title}</Label>
+                <Label className="text-base font-semibold flex items-center gap-1.5">
+                  {title}
+                  <SectionHelpPopover
+                    title={title}
+                    description={isConstruction 
+                      ? "Enregistrez un permis de construire délivré par l'autorité compétente. Renseignez le numéro, la date de délivrance et le service émetteur."
+                      : "Régularisez une construction existante en fournissant les informations du permis de régularisation obtenu auprès de l'administration."}
+                  />
+                </Label>
                 <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
               </div>
             </div>
@@ -305,7 +314,13 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
           {/* Pièce jointe */}
           <div className="space-y-2 pt-2 border-t border-border/50">
-            <Label className="text-sm font-medium">Document du permis (optionnel)</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Document du permis (optionnel)
+              <SectionHelpPopover
+                title="Document du permis"
+                description="Joignez une copie numérique du permis de construire (scan ou photo). Ce document sera vérifié par l'administration lors de la validation."
+              />
+            </Label>
             {!permitRecord.permitFile ? (
               <Button
                 type="button"

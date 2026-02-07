@@ -13,6 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
+import SectionHelpPopover from './SectionHelpPopover';
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
@@ -188,7 +189,13 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
                 <Landmark className="h-4 w-4 text-amber-600" />
               </div>
               <div>
-                <Label className="text-base font-semibold">Nouvelle Hypothèque</Label>
+                <Label className="text-base font-semibold flex items-center gap-1.5">
+                  Nouvelle Hypothèque
+                  <SectionHelpPopover
+                    title="Déclaration d'hypothèque"
+                    description="Renseignez les détails de l'hypothèque : montant emprunté, durée, identité du créancier et date du contrat. Cette information sera publiquement consultable."
+                  />
+                </Label>
                 <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
               </div>
             </div>
@@ -294,7 +301,13 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
           {/* Pièce jointe */}
           <div className="space-y-2 pt-2 border-t border-border/50">
-            <Label className="text-sm font-medium">Justificatif (optionnel)</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Justificatif (optionnel)
+              <SectionHelpPopover
+                title="Justificatif"
+                description="Joignez le contrat d'hypothèque ou tout document attestant de l'accord avec le créancier (PDF ou image, max 10MB)."
+              />
+            </Label>
             {!mortgageRecord.receiptFile ? (
               <Button
                 type="button"

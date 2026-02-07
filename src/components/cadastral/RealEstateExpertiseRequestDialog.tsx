@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SuggestivePicklist from './SuggestivePicklist';
+import SectionHelpPopover from './SectionHelpPopover';
 
 interface RealEstateExpertiseRequestDialogProps {
   parcelNumber: string;
@@ -762,6 +763,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Home className="h-4 w-4 text-muted-foreground" />
                   Type de bien
+                  <SectionHelpPopover
+                    title="Type de bien"
+                    description="Sélectionnez la catégorie qui correspond le mieux à votre construction. Ce choix orientera l'expert dans son évaluation et déterminera les critères d'analyse."
+                  />
                 </h4>
                 
                 <div className="space-y-1.5">
@@ -796,6 +801,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
                   Caractéristiques
+                  <SectionHelpPopover
+                    title="Caractéristiques"
+                    description="Renseignez les données techniques de votre bien : année de construction, surface, nombre de pièces et état général. Ces informations sont essentielles pour estimer la valeur vénale."
+                  />
                 </h4>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -911,6 +920,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   <h4 className="text-sm font-semibold flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-blue-600" />
                     Détails appartement/immeuble
+                    <SectionHelpPopover
+                      title="Détails appartement/immeuble"
+                      description="Précisez l'étage, l'accessibilité et les charges mensuelles. Ces informations spécifiques aux copropriétés influencent directement la valeur estimée du bien."
+                    />
                   </h4>
 
                   <div className="grid grid-cols-2 gap-3">
@@ -986,6 +999,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Layers className="h-4 w-4 text-muted-foreground" />
                   Position sur la parcelle
+                  <SectionHelpPopover
+                    title="Position sur la parcelle"
+                    description="Indiquez l'emplacement de la construction sur la parcelle, l'orientation de la façade et la distance par rapport à la route. La position influence la valeur (première position = meilleure accessibilité)."
+                  />
                 </h4>
 
                 <div className="space-y-1.5">
@@ -1045,7 +1062,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             {/* Équipements */}
             <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold">Équipements & commodités</h4>
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  Équipements & commodités
+                  <SectionHelpPopover
+                    title="Équipements & commodités"
+                    description="Cochez tous les équipements présents dans votre propriété. Plus votre bien est équipé, plus sa valeur estimée sera élevée. Incluez les installations récentes."
+                  />
+                </h4>
                 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
@@ -1190,6 +1213,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Building className="h-4 w-4 text-muted-foreground" />
                   Matériaux de construction
+                  <SectionHelpPopover
+                    title="Matériaux de construction"
+                    description="Précisez les matériaux utilisés pour les murs, la toiture, les fenêtres et le sol. La qualité des matériaux est un facteur déterminant dans l'évaluation immobilière."
+                  />
                 </h4>
 
                 <div className="space-y-1.5">
@@ -1250,7 +1277,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
                 <Separator className="my-2" />
 
-                <h5 className="text-xs font-semibold text-muted-foreground">Finitions</h5>
+                <h5 className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                  Finitions
+                  <SectionHelpPopover
+                    title="Finitions"
+                    description="Indiquez l'état des finitions intérieures : crépi, peinture, plafond et isolation. Des finitions de qualité augmentent significativement la valeur du bien."
+                  />
+                </h5>
                 <div className="grid grid-cols-3 gap-2">
                   <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50">
                     <Checkbox checked={hasPlaster} onCheckedChange={(c) => setHasPlaster(c === true)} />
@@ -1282,6 +1315,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Volume2 className="h-4 w-4 text-muted-foreground" />
                   Environnement sonore
+                  <SectionHelpPopover
+                    title="Environnement sonore"
+                    description="Évaluez le niveau de bruit autour du bien. Si vous êtes sur place, utilisez le microphone pour une mesure automatique. Un environnement calme valorise le bien."
+                  />
                 </h4>
 
                 {/* Question: êtes-vous sur le site? */}
@@ -1428,7 +1465,13 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             {/* Accessibilité */}
             <Card className="border rounded-xl">
               <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold">Accessibilité & distances</h4>
+                <h4 className="text-sm font-semibold flex items-center gap-2">
+                  Accessibilité & distances
+                  <SectionHelpPopover
+                    title="Accessibilité & distances"
+                    description="Indiquez les distances vers les services essentiels (hôpital, école, marché) et le type d'accès routier. La proximité des commodités augmente la valeur du bien."
+                  />
+                </h4>
                 
                 <div className="space-y-1.5">
                   <Label className="text-xs">Type d'accès routier</Label>
@@ -1503,6 +1546,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <h4 className="text-sm font-semibold flex items-center gap-2 text-amber-700 dark:text-amber-400">
                   <AlertTriangle className="h-4 w-4" />
                   Zones à risque
+                  <SectionHelpPopover
+                    title="Zones à risque"
+                    description="Signalez si le bien se trouve dans une zone inondable ou d'érosion. Ces facteurs de risque sont pris en compte dans l'évaluation et peuvent réduire la valeur estimée."
+                  />
                 </h4>
                 
                 <div className="flex flex-col gap-2">
@@ -1527,6 +1574,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <FileText className="h-4 w-4 text-blue-600" />
                   Documents de la parcelle
+                  <SectionHelpPopover
+                    title="Documents de la parcelle"
+                    description="Joignez les documents juridiques liés à la parcelle : titre foncier, certificat d'enregistrement, PV de bornage. Ces documents accéléreront le processus d'expertise."
+                  />
                 </h4>
                 <p className="text-xs text-muted-foreground">
                   Titre foncier, certificat d'enregistrement, PV de bornage, attestation de propriété...
@@ -1578,6 +1629,10 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                 <h4 className="text-sm font-semibold flex items-center gap-2">
                   <Camera className="h-4 w-4 text-green-600" />
                   Photos de la construction
+                  <SectionHelpPopover
+                    title="Photos de la construction"
+                    description="Ajoutez des photos récentes de votre bien (façade, intérieur, cuisine, chambres, jardin). Plus vous fournissez de photos, plus l'expert pourra préparer sa visite efficacement."
+                  />
                 </h4>
                 <p className="text-xs text-muted-foreground">
                   Façade, intérieur, cuisine, chambres, salles de bain, jardin, terrasse...

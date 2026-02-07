@@ -13,6 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
+import SectionHelpPopover from './SectionHelpPopover';
 
 interface TaxFormDialogProps {
   parcelNumber: string;
@@ -186,7 +187,13 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
                 <Receipt className="h-4 w-4 text-purple-600" />
               </div>
               <div>
-                <Label className="text-base font-semibold">Taxe foncière</Label>
+                <Label className="text-base font-semibold flex items-center gap-1.5">
+                  Taxe foncière
+                  <SectionHelpPopover
+                    title="Taxe foncière"
+                    description="Enregistrez le paiement d'une taxe foncière pour cette parcelle. Précisez le type de taxe, l'année fiscale concernée et le montant payé."
+                  />
+                </Label>
                 <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
               </div>
             </div>
@@ -290,7 +297,13 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
 
           {/* Pièce jointe */}
           <div className="space-y-2 pt-2 border-t border-border/50">
-            <Label className="text-sm font-medium">Reçu (optionnel)</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Reçu (optionnel)
+              <SectionHelpPopover
+                title="Reçu de paiement"
+                description="Joignez une copie du reçu de paiement de la taxe (photo ou PDF). Ce document servira de preuve de conformité fiscale lors de la validation."
+              />
+            </Label>
             {!taxRecord.receiptFile ? (
               <Button
                 type="button"
