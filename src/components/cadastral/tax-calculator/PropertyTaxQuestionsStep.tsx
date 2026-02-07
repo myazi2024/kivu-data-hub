@@ -55,6 +55,7 @@ interface PropertyTaxQuestionsStepProps {
   setHasNif: (v: boolean | null) => void;
   exemptionCertificateFile: File | null;
   setExemptionCertificateFile: (f: File | null) => void;
+  zoneAutoDetected?: boolean;
   onCalculate: () => void;
 }
 
@@ -62,7 +63,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
   parcelNumber, parcelData, input, setInput,
   hasNoConstruction, setHasNoConstruction, nif, setNif,
   ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
-  exemptionCertificateFile, setExemptionCertificateFile, onCalculate
+  exemptionCertificateFile, setExemptionCertificateFile, zoneAutoDetected, onCalculate
 }) => {
   const currentYear = new Date().getFullYear();
   const cities = DRC_MAJOR_CITIES[input.province] || [];
@@ -200,7 +201,12 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 
           {/* Zone type */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Type de zone *</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Type de zone *
+              {zoneAutoDetected && (
+                <Badge variant="secondary" className="text-[10px]">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</Badge>
+              )}
+            </Label>
             <div className="grid grid-cols-2 gap-2">
               {ZONE_OPTIONS.map(opt => {
                 const Icon = opt.icon;
@@ -208,12 +214,13 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
                 return (
                   <button
                     key={opt.value}
+                    disabled={zoneAutoDetected}
                     onClick={() => setInput(prev => ({ ...prev, zoneType: opt.value as any }))}
                     className={`p-3 rounded-xl border-2 text-left transition-all ${
                       selected
                         ? 'border-primary bg-primary/5 shadow-sm'
                         : 'border-border hover:border-primary/30'
-                    }`}
+                    } ${zoneAutoDetected ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
