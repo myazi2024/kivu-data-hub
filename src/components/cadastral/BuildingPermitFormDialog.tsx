@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
-import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SectionHelpPopover from './SectionHelpPopover';
 
 interface BuildingPermitFormDialogProps {
@@ -23,6 +22,7 @@ interface BuildingPermitFormDialogProps {
   permitType: 'construction' | 'regularisation';
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  embedded?: boolean;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';
@@ -42,11 +42,11 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   parcelId,
   permitType,
   open,
-  onOpenChange
+  onOpenChange,
+  embedded = false
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   
@@ -64,11 +64,11 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
   const isConstruction = permitType === 'construction';
   const title = isConstruction ? 'Permis de construire' : 'Permis de régularisation';
-  const icon = isConstruction ? Building2 : FileCheck;
   const iconColor = isConstruction ? 'text-blue-600' : 'text-green-600';
   const bgColor = isConstruction ? 'bg-blue-500/10' : 'bg-green-500/10';
   const gradientFrom = isConstruction ? 'from-blue-500' : 'from-green-500';
   const gradientTo = isConstruction ? 'to-blue-600' : 'to-green-600';
+  const IconComponent = isConstruction ? Building2 : FileCheck;
 
   const updatePermit = (field: keyof PermitRecord, value: string | File | null) => {
     setPermitRecord(prev => ({ ...prev, [field]: value }));
@@ -119,7 +119,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
     setLoading(true);
     try {
-      // Upload du fichier si présent
       let documentUrl = null;
       if (permitRecord.permitFile) {
         const fileExt = permitRecord.permitFile.name.split('.').pop();
@@ -136,7 +135,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         documentUrl = data.publicUrl;
       }
 
-      // Créer l'enregistrement du permis via une contribution
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -159,7 +157,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
       if (error) throw error;
 
-      // Créer une notification
       await supabase.from('notifications').insert({
         user_id: user.id,
         title: `${title} soumis`,
@@ -191,185 +188,141 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     onOpenChange(false);
   };
 
-  const IconComponent = icon;
-
   const renderFormStep = () => (
-    <div className="space-y-4">
-      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
-        <CardContent className="p-4 space-y-4">
-          {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className={`h-8 w-8 rounded-xl ${bgColor} flex items-center justify-center`}>
-                <IconComponent className={`h-4 w-4 ${iconColor}`} />
-              </div>
-              <div>
-                <Label className="text-base font-semibold flex items-center gap-1.5">
-                  {title}
-                  <SectionHelpPopover
-                    title={title}
-                    description={isConstruction 
-                      ? "Enregistrez un permis de construire délivré par l'autorité compétente. Renseignez le numéro, la date de délivrance et le service émetteur."
-                      : "Régularisez une construction existante en fournissant les informations du permis de régularisation obtenu auprès de l'administration."}
-                  />
-                </Label>
-                <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
-              </div>
-            </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full">
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 rounded-xl" align="end">
-                <div className="space-y-2 text-xs">
-                  <h4 className="font-semibold text-sm">{title}</h4>
-                  <p className="text-muted-foreground">
-                    {isConstruction 
-                      ? 'Enregistrez un nouveau permis de construire pour cette parcelle.'
-                      : 'Régularisez une construction existante avec ce permis.'}
-                  </p>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
+    <div className="space-y-3">
+      {/* Formulaire compact */}
+      <div className="grid grid-cols-2 gap-2.5">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">N° Permis *</Label>
+          <Input
+            placeholder="ex: PC-2024-001"
+            value={permitRecord.permitNumber}
+            onChange={(e) => updatePermit('permitNumber', e.target.value)}
+            className="h-9 text-sm rounded-xl"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">Date délivrance *</Label>
+          <Input
+            type="date"
+            max={new Date().toISOString().split('T')[0]}
+            value={permitRecord.issueDate}
+            onChange={(e) => updatePermit('issueDate', e.target.value)}
+            className="h-9 text-sm rounded-xl"
+          />
+        </div>
+      </div>
 
-          {/* Formulaire */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">N° Permis *</Label>
-              <Input
-                placeholder="ex: PC-2024-001"
-                value={permitRecord.permitNumber}
-                onChange={(e) => updatePermit('permitNumber', e.target.value)}
-                className="h-10 text-sm rounded-xl"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Date délivrance *</Label>
-              <Input
-                type="date"
-                max={new Date().toISOString().split('T')[0]}
-                value={permitRecord.issueDate}
-                onChange={(e) => updatePermit('issueDate', e.target.value)}
-                className="h-10 text-sm rounded-xl"
-              />
-            </div>
-          </div>
+      <div className="space-y-1">
+        <Label className="text-xs font-medium">Service émetteur *</Label>
+        <BuildingPermitIssuingServiceSelect
+          value={permitRecord.issuingService}
+          onValueChange={(value) => updatePermit('issuingService', value)}
+        />
+      </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Service émetteur *</Label>
-            <BuildingPermitIssuingServiceSelect
-              value={permitRecord.issuingService}
-              onValueChange={(value) => updatePermit('issuingService', value)}
-            />
-          </div>
+      <div className="space-y-1">
+        <Label className="text-xs font-medium">Contact service</Label>
+        <Input
+          placeholder="Téléphone ou email du service"
+          value={permitRecord.issuingServiceContact}
+          onChange={(e) => updatePermit('issuingServiceContact', e.target.value)}
+          className="h-9 text-sm rounded-xl"
+        />
+      </div>
 
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Contact service</Label>
-            <Input
-              placeholder="Téléphone ou email du service"
-              value={permitRecord.issuingServiceContact}
-              onChange={(e) => updatePermit('issuingServiceContact', e.target.value)}
-              className="h-10 text-sm rounded-xl"
-            />
-          </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">Validité (mois)</Label>
+          <Select
+            value={permitRecord.validityPeriod}
+            onValueChange={(value) => updatePermit('validityPeriod', value)}
+          >
+            <SelectTrigger className="h-9 text-sm rounded-xl">
+              <SelectValue placeholder="Durée" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl bg-popover">
+              <SelectItem value="6">6 mois</SelectItem>
+              <SelectItem value="12">12 mois</SelectItem>
+              <SelectItem value="24">24 mois</SelectItem>
+              <SelectItem value="36">36 mois</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs font-medium">Statut</Label>
+          <Select
+            value={permitRecord.administrativeStatus}
+            onValueChange={(value) => updatePermit('administrativeStatus', value)}
+          >
+            <SelectTrigger className="h-9 text-sm rounded-xl">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl bg-popover">
+              <SelectItem value="Valide">Valide</SelectItem>
+              <SelectItem value="En cours">En cours</SelectItem>
+              <SelectItem value="Expiré">Expiré</SelectItem>
+              <SelectItem value="Suspendu">Suspendu</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Validité (mois)</Label>
-              <Select
-                value={permitRecord.validityPeriod}
-                onValueChange={(value) => updatePermit('validityPeriod', value)}
-              >
-                <SelectTrigger className="h-10 text-sm rounded-xl">
-                  <SelectValue placeholder="Durée" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover">
-                  <SelectItem value="6">6 mois</SelectItem>
-                  <SelectItem value="12">12 mois</SelectItem>
-                  <SelectItem value="24">24 mois</SelectItem>
-                  <SelectItem value="36">36 mois</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Statut</Label>
-              <Select
-                value={permitRecord.administrativeStatus}
-                onValueChange={(value) => updatePermit('administrativeStatus', value)}
-              >
-                <SelectTrigger className="h-10 text-sm rounded-xl">
-                  <SelectValue placeholder="Statut" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover">
-                  <SelectItem value="Valide">Valide</SelectItem>
-                  <SelectItem value="En cours">En cours</SelectItem>
-                  <SelectItem value="Expiré">Expiré</SelectItem>
-                  <SelectItem value="Suspendu">Suspendu</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      {/* Pièce jointe */}
+      <div className="space-y-1.5 pt-2 border-t border-border/50">
+        <Label className="text-xs font-medium flex items-center gap-1.5">
+          Document du permis (optionnel)
+          <SectionHelpPopover
+            title="Document du permis"
+            description="Joignez une copie numérique du permis de construire (scan ou photo)."
+          />
+        </Label>
+        {!permitRecord.permitFile ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            className="gap-2 w-full text-xs h-9 rounded-xl border-dashed border-2"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Joindre le permis
+          </Button>
+        ) : (
+          <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
+            <FileText className="h-3.5 w-3.5 text-primary flex-shrink-0" />
+            <span className="text-xs flex-1 truncate">{permitRecord.permitFile.name}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={removeFile}
+              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
           </div>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+      </div>
 
-          {/* Pièce jointe */}
-          <div className="space-y-2 pt-2 border-t border-border/50">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              Document du permis (optionnel)
-              <SectionHelpPopover
-                title="Document du permis"
-                description="Joignez une copie numérique du permis de construire (scan ou photo). Ce document sera vérifié par l'administration lors de la validation."
-              />
-            </Label>
-            {!permitRecord.permitFile ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="gap-2 w-full text-sm h-10 rounded-xl border-dashed border-2"
-              >
-                <Plus className="h-4 w-4" />
-                Joindre le permis
-              </Button>
-            ) : (
-              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
-                <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                <span className="text-sm flex-1 truncate">{permitRecord.permitFile.name}</span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={removeFile}
-                  className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            )}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-2">
         <Button
           variant="outline"
           onClick={handleClose}
-          className="flex-1 h-11 rounded-xl"
+          className="flex-1 h-10 rounded-xl text-xs"
         >
           Annuler
         </Button>
         <Button
           onClick={handlePreview}
-          className={`flex-1 h-11 rounded-xl bg-gradient-to-r ${gradientFrom} ${gradientTo}`}
+          className={`flex-1 h-10 rounded-xl text-xs bg-gradient-to-r ${gradientFrom} ${gradientTo}`}
         >
           Prévisualiser
         </Button>
@@ -378,125 +331,110 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   );
 
   const renderPreviewStep = () => (
-    <div className="space-y-4">
-      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <div className={`h-8 w-8 rounded-xl ${bgColor} flex items-center justify-center`}>
-              <IconComponent className={`h-4 w-4 ${iconColor}`} />
+    <div className="space-y-3">
+      <Card className="rounded-xl shadow-sm border-border/50 overflow-hidden">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center gap-2 mb-2">
+            <div className={`h-7 w-7 rounded-lg ${bgColor} flex items-center justify-center`}>
+              <IconComponent className={`h-3.5 w-3.5 ${iconColor}`} />
             </div>
             <div>
-              <Label className="text-base font-semibold">Récapitulatif</Label>
-              <p className="text-xs text-muted-foreground">Vérifiez les informations</p>
+              <Label className="text-sm font-semibold">Récapitulatif</Label>
+              <p className="text-[10px] text-muted-foreground">Vérifiez les informations</p>
             </div>
           </div>
 
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">Type</span>
-              <span className="font-semibold">{title}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">Parcelle</span>
-              <span className="font-mono font-bold">{parcelNumber}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">N° Permis</span>
-              <span className="font-semibold">{permitRecord.permitNumber}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">Date délivrance</span>
-              <span>{permitRecord.issueDate}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">Service émetteur</span>
-              <span className="text-right max-w-[60%]">{permitRecord.issuingService}</span>
-            </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">Validité</span>
-              <span>{permitRecord.validityPeriod} mois</span>
-            </div>
-            <div className="flex justify-between py-2">
-              <span className="text-muted-foreground">Statut</span>
-              <span>{permitRecord.administrativeStatus}</span>
-            </div>
+          <div className="space-y-1.5 text-xs">
+            {[
+              ['Type', title],
+              ['Parcelle', parcelNumber],
+              ['N° Permis', permitRecord.permitNumber],
+              ['Date délivrance', permitRecord.issueDate],
+              ['Service émetteur', permitRecord.issuingService],
+              ['Validité', `${permitRecord.validityPeriod} mois`],
+              ['Statut', permitRecord.administrativeStatus],
+            ].map(([label, value], i, arr) => (
+              <div key={label} className={`flex justify-between py-1.5 ${i < arr.length - 1 ? 'border-b border-border/30' : ''}`}>
+                <span className="text-muted-foreground">{label}</span>
+                <span className="font-medium text-right max-w-[55%]">{value}</span>
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>
+
+      <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-2.5">
+        <p className="text-[10px] text-destructive font-medium text-center">
+          ⚠️ Après soumission, les informations ne pourront plus être modifiées.
+        </p>
+      </div>
 
       <div className="flex gap-2">
         <Button
           variant="outline"
           onClick={() => setStep('form')}
-          className="flex-1 h-11 rounded-xl gap-2"
+          className="flex-1 h-10 rounded-xl text-xs gap-1.5"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Modifier
         </Button>
         <Button
           onClick={handleSubmit}
           disabled={loading}
-          className={`flex-1 h-11 rounded-xl bg-gradient-to-r ${gradientFrom} ${gradientTo}`}
+          className={`flex-1 h-10 rounded-xl text-xs bg-gradient-to-r ${gradientFrom} ${gradientTo}`}
         >
-          {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Soumettre'}
+          {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Soumettre'}
         </Button>
       </div>
     </div>
   );
 
   const renderConfirmationStep = () => (
-    <div className="space-y-4 text-center py-6">
-      <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
-        <CheckCircle2 className="h-8 w-8 text-green-600" />
+    <div className="space-y-3 text-center py-4">
+      <div className="h-14 w-14 rounded-full bg-green-100 flex items-center justify-center mx-auto">
+        <CheckCircle2 className="h-7 w-7 text-green-600" />
       </div>
       <div>
-        <h3 className="text-lg font-semibold">{title} enregistré</h3>
-        <p className="text-sm text-muted-foreground mt-1">
+        <h3 className="text-base font-semibold">{title} enregistré</h3>
+        <p className="text-xs text-muted-foreground mt-1">
           Votre {title.toLowerCase()} pour la parcelle {parcelNumber} a été soumis avec succès.
         </p>
-        <div className={`mt-3 p-3 rounded-xl border ${isConstruction ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'}`}>
-          <p className={`text-xs ${isConstruction ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300'}`}>
-            🎁 Un <strong>code CCC</strong> sera généré après validation par l'administration. 
-            Sa valeur dépendra de la complétude des informations fournies.
+        <div className={`mt-2 p-2.5 rounded-xl border ${isConstruction ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'}`}>
+          <p className={`text-[10px] ${isConstruction ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300'}`}>
+            🎁 Un <strong>code CCC</strong> sera généré après validation par l'administration.
           </p>
         </div>
       </div>
-      <Button onClick={handleClose} className="w-full h-11 rounded-xl">
+      <Button onClick={handleClose} className="w-full h-10 rounded-xl text-xs">
         Fermer
       </Button>
     </div>
   );
 
-  // Reset showIntro when dialog opens
-  useEffect(() => {
-    if (open) {
-      setShowIntro(true);
-    }
-  }, [open]);
+  const formContent = (
+    <>
+      {step === 'form' && renderFormStep()}
+      {step === 'preview' && renderPreviewStep()}
+      {step === 'confirmation' && renderConfirmationStep()}
+    </>
+  );
 
-  const handleIntroComplete = () => {
-    setShowIntro(false);
-  };
-
-  const introConfig = isConstruction ? FORM_INTRO_CONFIGS.permit_add : FORM_INTRO_CONFIGS.permit_regularization;
-
-  if (showIntro && open) {
+  // Embedded mode: render directly without Dialog wrapper
+  if (embedded) {
     return (
-      <FormIntroDialog
-        open={open}
-        onOpenChange={onOpenChange}
-        onContinue={handleIntroComplete}
-        config={introConfig}
-      />
+      <div className="px-4 pb-4">
+        {formContent}
+      </div>
     );
   }
 
+  // Standalone mode with Dialog
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-md'} rounded-2xl p-0 gap-0 max-h-[90vh] overflow-hidden z-[1200]`}>
-        <DialogHeader className="p-4 pb-2 border-b">
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <IconComponent className={`h-5 w-5 ${iconColor}`} />
+      <DialogContent className="max-w-[380px] rounded-2xl p-0 gap-0 max-h-[85vh] overflow-hidden z-[1200] flex flex-col">
+        <DialogHeader className="p-4 pb-2 border-b flex-shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-base">
+            <IconComponent className={`h-4 w-4 ${iconColor}`} />
             {title}
           </DialogTitle>
           <DialogDescription className="text-xs">
@@ -506,13 +444,9 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 max-h-[calc(90vh-80px)]">
-          <div className="p-4">
-            {step === 'form' && renderFormStep()}
-            {step === 'preview' && renderPreviewStep()}
-            {step === 'confirmation' && renderConfirmationStep()}
-          </div>
-        </ScrollArea>
+        <div className="overflow-y-auto flex-1 min-h-0 p-4">
+          {formContent}
+        </div>
       </DialogContent>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de permis de construire." />}
     </Dialog>
