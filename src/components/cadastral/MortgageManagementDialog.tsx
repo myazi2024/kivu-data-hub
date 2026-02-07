@@ -55,39 +55,38 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
       <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl z-[1200] flex flex-col overflow-hidden">
-        <div className="px-4 pt-5 pb-2 flex-shrink-0">
-          <DialogHeader className="space-y-1">
-            <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="h-9 w-9 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <Landmark className="h-4.5 w-4.5 text-amber-600" />
+        <div className="px-4 pt-3 pb-1.5 flex-shrink-0">
+          <DialogHeader className="space-y-0.5">
+            <div className="flex items-center justify-center gap-2">
+              <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                <Landmark className="h-3.5 w-3.5 text-amber-600" />
               </div>
+              <DialogTitle className="text-sm font-bold">
+                Gestion Hypothèque
+              </DialogTitle>
             </div>
-            <DialogTitle className="text-base font-bold text-center">
-              Gestion Hypothèque
-            </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground text-center">
+            <DialogDescription className="text-[11px] text-muted-foreground text-center">
               Parcelle: <span className="font-mono font-semibold text-foreground">{parcelNumber}</span>
             </DialogDescription>
           </DialogHeader>
 
-          {/* Tab buttons */}
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-1.5 mt-2">
             <Button
               variant={activeTab === 'add' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('add')}
-              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
+              className="flex-1 h-7 rounded-lg text-[11px] font-semibold gap-1"
             >
-              <Plus className="h-3.5 w-3.5" />
+              <Plus className="h-3 w-3" />
               Enregistrer
             </Button>
             <Button
               variant={activeTab === 'remove' ? 'destructive' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('remove')}
-              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
+              className="flex-1 h-7 rounded-lg text-[11px] font-semibold gap-1"
             >
-              <FileX2 className="h-3.5 w-3.5" />
+              <FileX2 className="h-3 w-3" />
               Radiation
             </Button>
           </div>
