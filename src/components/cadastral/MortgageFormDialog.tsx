@@ -22,6 +22,7 @@ interface MortgageFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   skipIntro?: boolean;
+  embedded?: boolean;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';
@@ -41,7 +42,8 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   parcelId,
   open,
   onOpenChange,
-  skipIntro = false
+  skipIntro = false,
+  embedded = false
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
@@ -475,6 +477,18 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         onContinue={handleIntroComplete}
         config={FORM_INTRO_CONFIGS.mortgage_add}
       />
+    );
+  }
+
+  if (embedded) {
+    return (
+      <ScrollArea className="max-h-[calc(85vh-140px)]">
+        <div className="p-4">
+          {step === 'form' && renderFormStep()}
+          {step === 'preview' && renderPreviewStep()}
+          {step === 'confirmation' && renderConfirmationStep()}
+        </div>
+      </ScrollArea>
     );
   }
 
