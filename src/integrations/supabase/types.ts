@@ -2375,6 +2375,60 @@ export type Database = {
         }
         Relationships: []
       }
+      property_tax_rates_config: {
+        Row: {
+          area_multiplier: number | null
+          base_amount_usd: number
+          construction_type: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          max_area_sqm: number | null
+          min_area_sqm: number | null
+          rate_percentage: number
+          tax_category: string
+          updated_at: string
+          usage_type: string
+          zone_type: string
+        }
+        Insert: {
+          area_multiplier?: number | null
+          base_amount_usd?: number
+          construction_type?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          max_area_sqm?: number | null
+          min_area_sqm?: number | null
+          rate_percentage?: number
+          tax_category: string
+          updated_at?: string
+          usage_type?: string
+          zone_type?: string
+        }
+        Update: {
+          area_multiplier?: number | null
+          base_amount_usd?: number
+          construction_type?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          max_area_sqm?: number | null
+          min_area_sqm?: number | null
+          rate_percentage?: number
+          tax_category?: string
+          updated_at?: string
+          usage_type?: string
+          zone_type?: string
+        }
+        Relationships: []
+      }
       publication_downloads: {
         Row: {
           downloaded_at: string
@@ -2947,6 +3001,48 @@ export type Database = {
           updated_at?: string
           usage_count?: number
           value?: string
+        }
+        Relationships: []
+      }
+      tax_payment_fees_config: {
+        Row: {
+          amount_usd: number | null
+          created_at: string
+          description: string | null
+          display_order: number
+          fee_name: string
+          fee_type: string
+          id: string
+          is_active: boolean
+          is_mandatory: boolean
+          percentage: number | null
+          updated_at: string
+        }
+        Insert: {
+          amount_usd?: number | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name: string
+          fee_type?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          percentage?: number | null
+          updated_at?: string
+        }
+        Update: {
+          amount_usd?: number | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          fee_name?: string
+          fee_type?: string
+          id?: string
+          is_active?: boolean
+          is_mandatory?: boolean
+          percentage?: number | null
+          updated_at?: string
         }
         Relationships: []
       }

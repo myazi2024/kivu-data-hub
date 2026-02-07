@@ -21,6 +21,7 @@ interface TaxFormDialogProps {
   parcelId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  embedded?: boolean;
 }
 
 type Step = 'form' | 'preview' | 'confirmation';
@@ -38,11 +39,12 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
   parcelNumber,
   parcelId,
   open,
-  onOpenChange
+  onOpenChange,
+  embedded = false
 }) => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const [showIntro, setShowIntro] = useState(true);
+  const [showIntro, setShowIntro] = useState(!embedded);
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   
@@ -448,18 +450,18 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
     </div>
   );
 
-  // Reset showIntro when dialog opens
+  // Reset showIntro when dialog opens (only in standalone mode)
   useEffect(() => {
-    if (open) {
+    if (open && !embedded) {
       setShowIntro(true);
     }
-  }, [open]);
+  }, [open, embedded]);
 
   const handleIntroComplete = () => {
     setShowIntro(false);
   };
 
-  if (showIntro && open) {
+  if (showIntro && open && !embedded) {
     return (
       <FormIntroDialog
         open={open}
@@ -467,6 +469,17 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
         onContinue={handleIntroComplete}
         config={FORM_INTRO_CONFIGS.tax}
       />
+    );
+  }
+
+  // Embedded mode: render form content directly without Dialog wrapper
+  if (embedded) {
+    return (
+      <div className="px-4 pb-4">
+        {step === 'form' && renderFormStep()}
+        {step === 'preview' && renderPreviewStep()}
+        {step === 'confirmation' && renderConfirmationStep()}
+      </div>
     );
   }
 
