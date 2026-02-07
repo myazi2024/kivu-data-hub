@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1853,6 +1854,7 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
         )}
         </DialogContent>
       </DialogPortal>
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande de lotissement." />}
     </Dialog>
   );
 };

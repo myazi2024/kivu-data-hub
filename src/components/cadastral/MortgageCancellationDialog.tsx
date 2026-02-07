@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1322,6 +1323,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </ScrollArea>
         </DialogContent>
       </DialogPortal>
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
     </Dialog>
   );
 };

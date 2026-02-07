@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -2690,6 +2691,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         {step === 'payment' && renderPayment()}
         {step === 'confirmation' && renderConfirmation()}
       </DialogContent>
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande d'expertise immobilière." />}
     </Dialog>
   );
 };

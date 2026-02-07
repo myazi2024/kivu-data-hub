@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
+import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1697,6 +1698,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
       </DialogPortal>
+
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de mutation." />}
 
       {/* Dialog pour demande d'expertise immobilière */}
       <RealEstateExpertiseRequestDialog
