@@ -51,12 +51,24 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
   },
   {
     id: '3',
-    key: 'mortgage_management',
-    label: 'Gestion Hypothèque',
-    description: 'Ajouter ou retirer une hypothèque',
+    key: 'mortgage_add',
+    label: 'Ajouter Hypothèque',
+    description: 'Ajouter une Hypothèque active',
     isActive: true,
     isVisible: true,
     displayOrder: 3,
+    badge: { type: 'none' },
+    requiresAuth: true,
+    category: 'mortgage'
+  },
+  {
+    id: '4',
+    key: 'mortgage_remove',
+    label: 'Retirer Hypothèque',
+    description: 'Demander la radiation',
+    isActive: true,
+    isVisible: true,
+    displayOrder: 4,
     badge: { type: 'none' },
     requiresAuth: true,
     category: 'mortgage'
