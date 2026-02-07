@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Calculator, Home, Building2, Factory, Tractor, Landmark, ArrowRight, MapPin, Shield
+  Calculator, Home, Building2, Factory, Tractor, Landmark, ArrowRight, MapPin, Shield, Upload, FileCheck, X
 } from 'lucide-react';
 import {
   TaxCalculationInput, DRC_PROVINCES, DRC_MAJOR_CITIES,
@@ -15,6 +15,7 @@ import {
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
 import TaxpayerIdentitySection from './TaxpayerIdentitySection';
+import { toast } from 'sonner';
 
 const ZONE_OPTIONS = [
   { value: 'urban', label: 'Urbaine', icon: Building2, desc: 'Ville, commune urbaine' },
@@ -51,6 +52,8 @@ interface PropertyTaxQuestionsStepProps {
   setIdDocumentFile: (f: File | null) => void;
   hasNif: boolean | null;
   setHasNif: (v: boolean | null) => void;
+  exemptionCertificateFile: File | null;
+  setExemptionCertificateFile: (f: File | null) => void;
   onCalculate: () => void;
 }
 
@@ -58,7 +61,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
   parcelNumber, parcelData, input, setInput,
   hasNoConstruction, setHasNoConstruction, nif, setNif,
   ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
-  onCalculate
+  exemptionCertificateFile, setExemptionCertificateFile, onCalculate
 }) => {
   const currentYear = new Date().getFullYear();
   const cities = DRC_MAJOR_CITIES[input.province] || [];
@@ -410,7 +413,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
           </div>
 
           {hasExemption === true && (
-            <div className="space-y-2 pt-1">
+            <div className="space-y-3 pt-1">
               <Label className="text-sm font-medium">Cochez les exonérations applicables :</Label>
               {EXEMPTION_DEFINITIONS.map(ex => (
                 <div key={ex.type} className="flex items-start gap-2.5">
@@ -426,6 +429,47 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
                   </div>
                 </div>
               ))}
+
+              {/* Certificat d'exonération fiscale */}
+              <div className="mt-3 p-3 rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <FileCheck className="h-4 w-4 text-primary" />
+                  <Label className="text-sm font-semibold text-primary">Certificat d'exonération fiscale *</Label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Joignez votre certificat d'exonération délivré par la Direction Générale des Impôts (DGI). Format PDF ou image, max 10 Mo.
+                </p>
+                {exemptionCertificateFile ? (
+                  <div className="flex items-center gap-2 p-2 rounded-lg bg-background border border-border">
+                    <FileCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                    <span className="text-sm truncate flex-1">{exemptionCertificateFile.name}</span>
+                    <button
+                      onClick={() => setExemptionCertificateFile(null)}
+                      className="p-1 rounded-md hover:bg-muted transition-colors"
+                    >
+                      <X className="h-3.5 w-3.5 text-muted-foreground" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-border hover:border-primary/50 hover:bg-primary/5 transition-all">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Choisir un fichier…</span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file && file.size <= 10 * 1024 * 1024) {
+                          setExemptionCertificateFile(file);
+                        } else if (file) {
+                          toast?.('Le fichier dépasse la taille maximale de 10 Mo');
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </div>
             </div>
           )}
         </CardContent>
