@@ -15,7 +15,6 @@ import MutationRequestDialog from './MutationRequestDialog';
 import MortgageManagementDialog from './MortgageManagementDialog';
 import BuildingPermitManagementDialog from './BuildingPermitManagementDialog';
 import TaxFormDialog from './TaxFormDialog';
-import TaxManagementDialog from './TaxManagementDialog';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
 import SubdivisionRequestDialog from './SubdivisionRequestDialog';
 import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog';
@@ -264,11 +263,10 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         onOpenChange={setShowBuildingPermitManagementDialog}
       />
 
-      {/* Dialog Taxe foncière (unifié: calculateur + ajout) */}
-      <TaxManagementDialog
+      {/* Dialog Taxe */}
+      <TaxFormDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
-        parcelData={parcelData}
         open={showTaxDialog}
         onOpenChange={setShowTaxDialog}
       />
