@@ -80,6 +80,29 @@ export const FISCAL_ZONE_LABELS: Record<FiscalZoneCategory, string> = {
   rural: 'Zone rurale (taux réduit)',
 };
 
+// --- Auto late payment calculation based on DRC fiscal calendar ---
+// Calendar: Jan = assessment, before Feb 1 = declaration, Jan-Mar = payment
+// After March 31 of fiscal year = late
+export const calculateMonthsLate = (fiscalYear: number): number => {
+  const now = new Date();
+  // Deadline: March 31 of the fiscal year
+  const deadline = new Date(fiscalYear, 2, 31); // month is 0-indexed, so 2 = March
+  if (now <= deadline) return 0;
+  // Calculate full months elapsed since deadline
+  const diffMs = now.getTime() - deadline.getTime();
+  const diffMonths = Math.floor(diffMs / (1000 * 60 * 60 * 24 * 30.44));
+  return Math.max(0, diffMonths);
+};
+
+export const getLatePenaltyInfo = (fiscalYear: number) => {
+  const monthsLate = calculateMonthsLate(fiscalYear);
+  const deadlineStr = `31 mars ${fiscalYear}`;
+  const isLate = monthsLate > 0;
+  const penaltyRate = Math.min(monthsLate * 2, 24);
+  const hasSurcharge = monthsLate > 3;
+  return { monthsLate, deadlineStr, isLate, penaltyRate, hasSurcharge };
+};
+
 // --- Exemption types ---
 export type ExemptionCheckType =
   | 'edifice_public'
@@ -132,7 +155,7 @@ export interface TaxCalculationInput {
   // IRL deduction
   applyDeduction30: boolean;
   // Late payment
-  monthsLate: number;
+  monthsLate: number; // auto-calculated, kept for backward compat
 }
 
 export interface TaxCalculationResult {
@@ -289,19 +312,22 @@ export const usePropertyTaxCalculator = () => {
       }
     }
 
-    // --- Penalties (late payment) ---
+    // --- Penalties (late payment) - Auto-calculated ---
+    // DRC fiscal calendar: deadline is March 31 of the fiscal year
+    // After March → late. Penalties: 2%/month (cap 24%) + 25% surcharge if >3 months
+    const autoMonthsLate = calculateMonthsLate(input.fiscalYear);
+    const effectiveMonthsLate = autoMonthsLate;
+
     let penaltyRate = 0;
     let penaltyAmount = 0;
     let majorationAmount = 0;
     let totalPenalties = 0;
 
-    if (input.monthsLate > 0) {
+    if (effectiveMonthsLate > 0) {
       const taxBase = totalPropertyTax + irlAmount;
-      // 2% per month of delay
-      penaltyRate = Math.min(input.monthsLate * 2, 24); // cap at 24%
+      penaltyRate = Math.min(effectiveMonthsLate * 2, 24);
       penaltyAmount = round((penaltyRate / 100) * taxBase);
-      // 25% majoration if > 3 months late
-      if (input.monthsLate > 3) {
+      if (effectiveMonthsLate > 3) {
         majorationAmount = round(0.25 * taxBase);
       }
       totalPenalties = penaltyAmount + majorationAmount;
