@@ -14,6 +14,7 @@ import {
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
 import TaxpayerIdentitySection from './TaxpayerIdentitySection';
+import IRLTenantsList, { TenantEntry } from './IRLTenantsList';
 
 const ZONE_OPTIONS = [
   { value: 'urban', label: 'Urbaine', icon: Building2, desc: 'Ville, commune urbaine' },
@@ -40,12 +41,15 @@ interface IRLQuestionsStepProps {
   setIdDocumentFile: (f: File | null) => void;
   hasNif: boolean | null;
   setHasNif: (v: boolean | null) => void;
+  tenants: TenantEntry[];
+  setTenants: React.Dispatch<React.SetStateAction<TenantEntry[]>>;
   onCalculate: () => void;
 }
 
 const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
   parcelNumber, input, setInput, nif, setNif,
   ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
+  tenants, setTenants,
   onCalculate
 }) => {
   const currentYear = new Date().getFullYear();
@@ -203,47 +207,14 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 3: Revenus locatifs */}
+      {/* Section 3: Locataires & revenus locatifs */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <DollarSign className="h-3.5 w-3.5 text-emerald-600" />
-            </div>
-            <Label className="text-sm font-semibold">Revenus locatifs</Label>
-          </div>
-
-          {/* Monthly rent */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Loyer mensuel (USD) *</Label>
-            <Input
-              type="number"
-              value={input.monthlyRentUsd || ''}
-              onChange={(e) => setInput(prev => ({ ...prev, monthlyRentUsd: parseFloat(e.target.value) || 0 }))}
-              placeholder="Ex: 500"
-              className="h-10 text-sm rounded-xl"
-            />
-          </div>
-
-          {/* Occupancy months */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Mois d'occupation *</Label>
-            <Select
-              value={input.occupancyMonths.toString()}
-              onValueChange={(v) => setInput(prev => ({ ...prev, occupancyMonths: parseInt(v) }))}
-            >
-              <SelectTrigger className="h-10 text-sm rounded-xl">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-popover">
-                {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                  <SelectItem key={m} value={m.toString()}>
-                    {m} mois
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <IRLTenantsList
+            tenants={tenants}
+            setTenants={setTenants}
+            fiscalYear={input.fiscalYear}
+          />
 
           {/* 30% deduction */}
           <div className="flex items-center justify-between p-3 bg-muted/50 rounded-xl">
@@ -262,12 +233,6 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
               onCheckedChange={(v) => setInput(prev => ({ ...prev, applyDeduction30: v }))}
             />
           </div>
-
-          {input.applyDeduction30 && input.monthlyRentUsd > 0 && (
-            <p className="text-xs text-emerald-600 font-medium pl-1">
-              ✅ Base imposable réduite : {((input.monthlyRentUsd * input.occupancyMonths) * 0.7).toLocaleString()} USD au lieu de {(input.monthlyRentUsd * input.occupancyMonths).toLocaleString()} USD
-            </p>
-          )}
         </CardContent>
       </Card>
 
