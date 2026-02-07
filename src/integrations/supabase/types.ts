@@ -2920,6 +2920,36 @@ export type Database = {
           },
         ]
       }
+      suggestive_picklist_values: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          picklist_key: string
+          updated_at: string
+          usage_count: number
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          picklist_key: string
+          updated_at?: string
+          usage_count?: number
+          value: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          picklist_key?: string
+          updated_at?: string
+          usage_count?: number
+          value?: string
+        }
+        Relationships: []
+      }
       territorial_zones: {
         Row: {
           coordinates: Json
