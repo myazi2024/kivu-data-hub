@@ -1,9 +1,9 @@
 import React from 'react';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import {
   Calculator, Home, Building2, Factory, Tractor, Landmark, ArrowRight
@@ -16,7 +16,7 @@ const ZONE_OPTIONS = [
   { value: 'rural', label: 'Rurale', icon: Tractor, desc: 'Territoire, collectivité' },
 ];
 
-const USAGE_OPTIONS = [
+export const USAGE_OPTIONS = [
   { value: 'residential', label: 'Résidentiel', icon: Home, desc: 'Habitation principale ou secondaire' },
   { value: 'commercial', label: 'Commercial', icon: Building2, desc: 'Bureau, boutique, entrepôt' },
   { value: 'industrial', label: 'Industriel', icon: Factory, desc: 'Usine, atelier de production' },
@@ -31,19 +31,21 @@ const CONSTRUCTION_OPTIONS = [
   { value: 'none', label: 'Terrain nu', desc: 'Pas de construction' },
 ];
 
-interface TaxQuestionsStepProps {
+interface PropertyTaxQuestionsStepProps {
   parcelNumber: string;
   parcelData?: any;
   input: TaxCalculationInput;
   setInput: React.Dispatch<React.SetStateAction<TaxCalculationInput>>;
   hasNoConstruction: boolean;
   setHasNoConstruction: (v: boolean) => void;
+  nif: string;
+  setNif: (v: string) => void;
   onCalculate: () => void;
 }
 
-const TaxQuestionsStep: React.FC<TaxQuestionsStepProps> = ({
+const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
   parcelNumber, parcelData, input, setInput,
-  hasNoConstruction, setHasNoConstruction, onCalculate
+  hasNoConstruction, setHasNoConstruction, nif, setNif, onCalculate
 }) => {
   const currentYear = new Date().getFullYear();
 
@@ -67,14 +69,28 @@ const TaxQuestionsStep: React.FC<TaxQuestionsStepProps> = ({
             </div>
             <div>
               <Label className="text-base font-semibold flex items-center gap-1.5">
-                Calculateur d'impôt
+                Impôt foncier annuel
                 <SectionHelpPopover
-                  title="Calculateur fiscal"
-                  description="Répondez à quelques questions pour estimer le montant de votre impôt foncier et/ou revenu locatif. Les données de la parcelle sont pré-remplies si disponibles."
+                  title="Impôt foncier annuel"
+                  description="Déclaration de l'impôt foncier annuel perçu par la Direction Générale des Impôts (DGI). Basé sur un barème fixe selon la zone, l'usage et le type de construction."
                 />
               </Label>
               <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
             </div>
+          </div>
+
+          {/* NIF */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Numéro d'Impôt (NIF) *</Label>
+            <Input
+              value={nif}
+              onChange={(e) => setNif(e.target.value)}
+              placeholder="Ex: A0123456B"
+              className="h-10 text-sm rounded-xl"
+            />
+            <p className="text-xs text-muted-foreground">
+              Numéro d'identification fiscale du contribuable
+            </p>
           </div>
 
           {/* Fiscal year */}
@@ -192,62 +208,6 @@ const TaxQuestionsStep: React.FC<TaxQuestionsStepProps> = ({
               </p>
             )}
           </div>
-
-          {/* IRL Section */}
-          <div className="space-y-3 pt-2 border-t border-border/50">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Revenu locatif (IRL)
-                <SectionHelpPopover
-                  title="Impôt sur le Revenu Locatif"
-                  description="Si votre bien est mis en location, un impôt de 22% est appliqué sur le revenu brut locatif annuel (article 13 de l'Ordonnance-loi n°69-009 du 10/02/1969)."
-                />
-              </Label>
-              <Switch
-                checked={input.isRented}
-                onCheckedChange={(checked) => setInput(prev => ({ ...prev, isRented: checked }))}
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Activez si ce bien génère des revenus locatifs
-            </p>
-
-            {input.isRented && (
-              <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Loyer mensuel (USD) *</Label>
-                  <input
-                    type="number"
-                    value={input.monthlyRentUsd || ''}
-                    onChange={(e) => setInput(prev => ({ ...prev, monthlyRentUsd: parseFloat(e.target.value) || 0 }))}
-                    placeholder="Ex: 500"
-                    className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-sm font-medium">Mois d'occupation *</Label>
-                  <Select
-                    value={input.occupancyMonths.toString()}
-                    onValueChange={(v) => setInput(prev => ({ ...prev, occupancyMonths: parseInt(v) }))}
-                  >
-                    <SelectTrigger className="h-10 text-sm rounded-xl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl bg-popover">
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-                        <SelectItem key={m} value={m.toString()}>
-                          {m} mois
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <p className="text-xs text-muted-foreground">
-                    Nombre de mois pendant lesquels le bien a été loué durant l'exercice
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
         </CardContent>
       </Card>
 
@@ -256,12 +216,11 @@ const TaxQuestionsStep: React.FC<TaxQuestionsStepProps> = ({
         className="w-full h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white gap-2"
       >
         <Calculator className="h-4 w-4" />
-        Calculer l'impôt
+        Calculer l'impôt foncier
         <ArrowRight className="h-4 w-4" />
       </Button>
     </div>
   );
 };
 
-export { USAGE_OPTIONS };
-export default TaxQuestionsStep;
+export default PropertyTaxQuestionsStep;

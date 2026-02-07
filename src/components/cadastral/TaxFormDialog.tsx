@@ -27,6 +27,7 @@ interface TaxFormDialogProps {
 type Step = 'form' | 'preview' | 'confirmation';
 
 interface TaxRecord {
+  nif: string;
   taxType: string;
   taxYear: string;
   taxAmount: string;
@@ -51,6 +52,7 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
   const currentYear = new Date().getFullYear();
   
   const [taxRecord, setTaxRecord] = useState<TaxRecord>({
+    nif: '',
     taxType: 'Impôt foncier annuel',
     taxYear: currentYear.toString(),
     taxAmount: '',
@@ -90,6 +92,10 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
   };
 
   const validateForm = (): boolean => {
+    if (!taxRecord.nif.trim()) {
+      toast.error('Veuillez renseigner le Numéro d\'Impôt (NIF)');
+      return false;
+    }
     if (!taxRecord.taxAmount || !taxRecord.taxYear) {
       toast.error('Veuillez remplir les champs obligatoires: Montant, Année');
       return false;
@@ -169,6 +175,7 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
   const handleClose = () => {
     setStep('form');
     setTaxRecord({
+      nif: '',
       taxType: 'Impôt foncier annuel',
       taxYear: currentYear.toString(),
       taxAmount: '',
@@ -215,6 +222,20 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
                 </div>
               </PopoverContent>
             </Popover>
+          </div>
+
+          {/* NIF */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Numéro d'Impôt (NIF) *</Label>
+            <Input
+              value={taxRecord.nif}
+              onChange={(e) => updateTax('nif', e.target.value)}
+              placeholder="Ex: A0123456B"
+              className="h-10 text-sm rounded-xl"
+            />
+            <p className="text-xs text-muted-foreground">
+              Numéro d'identification fiscale du contribuable
+            </p>
           </div>
 
           {/* Formulaire */}
@@ -377,6 +398,10 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
           </div>
 
           <div className="space-y-3 text-sm">
+            <div className="flex justify-between py-2 border-b">
+              <span className="text-muted-foreground">NIF</span>
+              <span className="font-mono font-bold">{taxRecord.nif}</span>
+            </div>
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Parcelle</span>
               <span className="font-mono font-bold">{parcelNumber}</span>

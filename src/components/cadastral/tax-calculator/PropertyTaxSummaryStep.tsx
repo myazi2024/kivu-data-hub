@@ -4,41 +4,47 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import {
-  Calculator, ChevronLeft, CreditCard, AlertTriangle, CheckCircle2, Home, Building2
+  Calculator, ChevronLeft, Send, AlertTriangle, CheckCircle2, Home, Building2
 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import { TaxCalculationInput, TaxCalculationResult } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
-import { USAGE_OPTIONS } from './TaxQuestionsStep';
+import { USAGE_OPTIONS } from './PropertyTaxQuestionsStep';
 
-interface TaxSummaryStepProps {
+interface PropertyTaxSummaryStepProps {
   parcelNumber: string;
+  nif: string;
   input: TaxCalculationInput;
   result: TaxCalculationResult;
   onBack: () => void;
-  onPayment: () => void;
+  onSubmit: () => void;
+  loading?: boolean;
 }
 
-const TaxSummaryStep: React.FC<TaxSummaryStepProps> = ({
-  parcelNumber, input, result, onBack, onPayment
+const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
+  parcelNumber, nif, input, result, onBack, onSubmit, loading
 }) => {
   return (
     <div className="space-y-4 px-4 pb-4">
-      {/* Summary header */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-4">
+          {/* Header */}
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             </div>
             <div>
-              <Label className="text-base font-semibold">Récapitulatif</Label>
-              <p className="text-xs text-muted-foreground">Vérifiez les informations avant paiement</p>
+              <Label className="text-base font-semibold">Fiche de déclaration — Impôt foncier</Label>
+              <p className="text-xs text-muted-foreground">Direction Générale des Impôts (DGI)</p>
             </div>
           </div>
 
-          {/* Parcel info */}
+          {/* Identification */}
           <div className="space-y-2 text-sm">
+            <div className="flex justify-between py-1.5 border-b border-border/50">
+              <span className="text-muted-foreground">NIF</span>
+              <span className="font-mono font-bold">{nif || '—'}</span>
+            </div>
             <div className="flex justify-between py-1.5 border-b border-border/50">
               <span className="text-muted-foreground">Parcelle</span>
               <span className="font-mono font-bold">{parcelNumber}</span>
@@ -62,27 +68,15 @@ const TaxSummaryStep: React.FC<TaxSummaryStepProps> = ({
               <span className="text-muted-foreground">Superficie</span>
               <span>{input.areaSqm.toLocaleString()} m²</span>
             </div>
-            {input.isRented && (
-              <>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Loyer mensuel</span>
-                  <span>{input.monthlyRentUsd.toLocaleString()} USD</span>
-                </div>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Occupation</span>
-                  <span>{input.occupancyMonths} mois</span>
-                </div>
-              </>
-            )}
           </div>
 
           <Separator />
 
-          {/* Impôt foncier breakdown */}
+          {/* Tax breakdown */}
           <div className="space-y-2">
             <h4 className="text-sm font-semibold flex items-center gap-1.5">
               <Calculator className="h-3.5 w-3.5 text-emerald-600" />
-              Impôt foncier annuel
+              Calcul de l'impôt foncier annuel
             </h4>
             <div className="space-y-1.5 text-sm pl-5">
               <div className="flex justify-between">
@@ -99,37 +93,6 @@ const TaxSummaryStep: React.FC<TaxSummaryStepProps> = ({
               </div>
             </div>
           </div>
-
-          {/* IRL breakdown */}
-          {input.isRented && result.irlAmount > 0 && (
-            <>
-              <Separator />
-              <div className="space-y-2">
-                <h4 className="text-sm font-semibold flex items-center gap-1.5">
-                  <Home className="h-3.5 w-3.5 text-blue-600" />
-                  Impôt sur le Revenu Locatif (IRL)
-                  <SectionHelpPopover
-                    title="IRL — 22%"
-                    description="L'impôt sur le revenu locatif est calculé à 22% du revenu brut annuel des loyers perçus, conformément à la législation fiscale de la RDC."
-                  />
-                </h4>
-                <div className="space-y-1.5 text-sm pl-5">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Revenu brut annuel</span>
-                    <span>{result.annualRentalIncome.toLocaleString()} USD</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Taux IRL</span>
-                    <span>{result.irlRate}%</span>
-                  </div>
-                  <div className="flex justify-between font-semibold pt-1 border-t border-border/50">
-                    <span>Sous-total IRL</span>
-                    <span>{result.irlAmount.toLocaleString()} USD</span>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
 
           {/* Exemptions */}
           {result.appliedExemptions.length > 0 && (
@@ -176,7 +139,7 @@ const TaxSummaryStep: React.FC<TaxSummaryStepProps> = ({
           <Separator />
           <div className="flex justify-between text-base font-bold">
             <span>Total à payer</span>
-            <span className="text-emerald-600">{result.grandTotal.toLocaleString()} USD</span>
+            <span className="text-emerald-600">{(result.totalPropertyTax + result.totalFees).toLocaleString()} USD</span>
           </div>
 
           {!result.matchedRate && (
@@ -192,7 +155,7 @@ const TaxSummaryStep: React.FC<TaxSummaryStepProps> = ({
             <div className="flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-destructive mt-0.5 flex-shrink-0" />
               <p className="text-xs text-destructive font-medium">
-                Une fois la déclaration soumise et le paiement effectué, cette opération ne peut plus être modifiée. Veuillez vérifier toutes les informations avant de continuer.
+                Cette fiche de déclaration sera transmise à la Direction Générale des Impôts (DGI). Une fois soumise, elle ne peut plus être modifiée.
               </p>
             </div>
           </div>
@@ -215,15 +178,16 @@ const TaxSummaryStep: React.FC<TaxSummaryStepProps> = ({
           Modifier
         </Button>
         <Button
-          onClick={onPayment}
+          onClick={onSubmit}
+          disabled={loading}
           className="flex-1 h-11 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white gap-2"
         >
-          <CreditCard className="h-4 w-4" />
-          Payer
+          <Send className="h-4 w-4" />
+          Soumettre la déclaration
         </Button>
       </div>
     </div>
   );
 };
 
-export default TaxSummaryStep;
+export default PropertyTaxSummaryStep;
