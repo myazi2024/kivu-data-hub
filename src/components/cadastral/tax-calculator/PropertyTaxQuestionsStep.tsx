@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -62,6 +62,9 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 }) => {
   const currentYear = new Date().getFullYear();
   const cities = DRC_MAJOR_CITIES[input.province] || [];
+  const [hasExemption, setHasExemption] = useState<boolean | null>(
+    input.selectedExemptions.length > 0 ? true : null
+  );
 
   const handleConstructionChange = (value: string) => {
     if (value === 'none') {
@@ -375,22 +378,56 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
             </Label>
           </div>
 
-          <div className="space-y-2">
-            {EXEMPTION_DEFINITIONS.map(ex => (
-              <div key={ex.type} className="flex items-start gap-2.5">
-                <Checkbox
-                  id={ex.type}
-                  checked={input.selectedExemptions.includes(ex.type)}
-                  onCheckedChange={(checked) => toggleExemption(ex.type, !!checked)}
-                  className="mt-0.5"
-                />
-                <div>
-                  <label htmlFor={ex.type} className="text-sm font-medium cursor-pointer">{ex.label}</label>
-                  <p className="text-xs text-muted-foreground">{ex.description}</p>
-                </div>
-              </div>
-            ))}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium">Bénéficiez-vous d'une exonération fiscale ? *</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: true, label: 'Oui', desc: 'Je suis exonéré(e)' },
+                { value: false, label: 'Non', desc: 'Pas d\'exonération' },
+              ].map(opt => {
+                const selected = hasExemption === opt.value;
+                return (
+                  <button
+                    key={String(opt.value)}
+                    onClick={() => {
+                      setHasExemption(opt.value);
+                      if (!opt.value) {
+                        setInput(prev => ({ ...prev, selectedExemptions: [] }));
+                      }
+                    }}
+                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                      selected
+                        ? 'border-primary bg-primary/5 shadow-sm'
+                        : 'border-border hover:border-primary/30'
+                    }`}
+                  >
+                    <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
+                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
+          {hasExemption === true && (
+            <div className="space-y-2 pt-1">
+              <Label className="text-sm font-medium">Cochez les exonérations applicables :</Label>
+              {EXEMPTION_DEFINITIONS.map(ex => (
+                <div key={ex.type} className="flex items-start gap-2.5">
+                  <Checkbox
+                    id={ex.type}
+                    checked={input.selectedExemptions.includes(ex.type)}
+                    onCheckedChange={(checked) => toggleExemption(ex.type, !!checked)}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <label htmlFor={ex.type} className="text-sm font-medium cursor-pointer">{ex.label}</label>
+                    <p className="text-xs text-muted-foreground">{ex.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
