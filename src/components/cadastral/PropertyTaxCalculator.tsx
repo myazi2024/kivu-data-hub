@@ -29,7 +29,8 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   const [hasNif, setHasNif] = useState<boolean | null>(null);
   const [exemptionCertificateFile, setExemptionCertificateFile] = useState<File | null>(null);
 
-  const defaultZone = parcelData?.parcel_type === 'rural' ? 'rural' : 'urban';
+  const defaultZone = parcelNumber?.startsWith('SR') ? 'rural' : parcelNumber?.startsWith('SU') ? 'urban' : (parcelData?.parcel_type === 'rural' ? 'rural' : 'urban');
+  const zoneAutoDetected = parcelNumber?.startsWith('SR') || parcelNumber?.startsWith('SU');
   const defaultUsage = parcelData?.declared_usage === 'Commercial' ? 'commercial'
     : parcelData?.declared_usage === 'Industriel' ? 'industrial'
     : parcelData?.declared_usage === 'Agricole' ? 'agricultural'
@@ -130,6 +131,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       setHasNif={setHasNif}
       exemptionCertificateFile={exemptionCertificateFile}
       setExemptionCertificateFile={setExemptionCertificateFile}
+      zoneAutoDetected={zoneAutoDetected}
       onCalculate={handleCalculate}
     />
   );

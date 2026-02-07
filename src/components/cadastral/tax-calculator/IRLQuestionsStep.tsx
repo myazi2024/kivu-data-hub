@@ -43,13 +43,14 @@ interface IRLQuestionsStepProps {
   setHasNif: (v: boolean | null) => void;
   tenants: TenantEntry[];
   setTenants: React.Dispatch<React.SetStateAction<TenantEntry[]>>;
+  zoneAutoDetected?: boolean;
   onCalculate: () => void;
 }
 
 const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
   parcelNumber, input, setInput, nif, setNif,
   ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
-  tenants, setTenants,
+  tenants, setTenants, zoneAutoDetected,
   onCalculate
 }) => {
   const currentYear = new Date().getFullYear();
@@ -159,7 +160,12 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
 
           {/* Zone type */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Type de zone *</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Type de zone *
+              {zoneAutoDetected && (
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</span>
+              )}
+            </Label>
             <div className="grid grid-cols-2 gap-2">
               {ZONE_OPTIONS.map(opt => {
                 const Icon = opt.icon;
@@ -167,12 +173,13 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
                 return (
                   <button
                     key={opt.value}
+                    disabled={zoneAutoDetected}
                     onClick={() => setInput(prev => ({ ...prev, zoneType: opt.value as any }))}
                     className={`p-3 rounded-xl border-2 text-left transition-all ${
                       selected
                         ? 'border-primary bg-primary/5 shadow-sm'
                         : 'border-border hover:border-primary/30'
-                    }`}
+                    } ${zoneAutoDetected ? 'opacity-70 cursor-not-allowed' : ''}`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />

@@ -30,7 +30,8 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   const [hasNif, setHasNif] = useState<boolean | null>(null);
   const [tenants, setTenants] = useState<TenantEntry[]>([createEmptyTenant()]);
 
-  const defaultZone = parcelData?.parcel_type === 'rural' ? 'rural' : 'urban';
+  const defaultZone = parcelNumber?.startsWith('SR') ? 'rural' : parcelNumber?.startsWith('SU') ? 'urban' : (parcelData?.parcel_type === 'rural' ? 'rural' : 'urban');
+  const zoneAutoDetected = parcelNumber?.startsWith('SR') || parcelNumber?.startsWith('SU');
   const defaultUsage = parcelData?.declared_usage === 'Commercial' ? 'commercial'
     : parcelData?.declared_usage === 'Industriel' ? 'industrial'
     : parcelData?.declared_usage === 'Agricole' ? 'agricultural'
@@ -134,6 +135,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       setHasNif={setHasNif}
       tenants={tenants}
       setTenants={setTenants}
+      zoneAutoDetected={zoneAutoDetected}
       onCalculate={handleCalculate}
     />
   );
