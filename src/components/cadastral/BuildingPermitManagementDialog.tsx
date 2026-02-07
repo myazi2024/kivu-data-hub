@@ -66,23 +66,23 @@ const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogPro
           </DialogHeader>
 
           {/* Tab buttons */}
-          <div className="flex gap-1.5 mt-3 justify-center">
+          <div className="flex gap-2 mt-3">
             <Button
               variant={activeTab === 'construction' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('construction')}
-              className="h-8 px-3 rounded-xl text-xs font-semibold gap-1"
+              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
             >
-              <Building2 className="h-3 w-3" />
+              <Building2 className="h-3.5 w-3.5" />
               Construire
             </Button>
             <Button
               variant={activeTab === 'regularisation' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('regularisation')}
-              className="h-8 px-3 rounded-xl text-xs font-semibold gap-1"
+              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
             >
-              <FileCheck className="h-3 w-3" />
+              <FileCheck className="h-3.5 w-3.5" />
               Régularisation
             </Button>
           </div>
