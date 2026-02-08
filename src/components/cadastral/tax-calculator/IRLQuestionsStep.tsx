@@ -257,7 +257,69 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 3: Locataires & revenus locatifs */}
+      {/* Section: Détails de la construction — aligné sur le formulaire CCC (onglet Infos) */}
+      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
+              <Home className="h-3.5 w-3.5 text-amber-600" />
+            </div>
+            <Label className="text-sm font-semibold">Détails de la construction</Label>
+            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal ml-auto">Données auto-remplies</span>
+          </div>
+
+          {/* Type de construction */}
+          {parcelData?.construction_type && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Type de construction
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+              </Label>
+              <Input value={parcelData.construction_type} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
+          {/* Nature de la construction */}
+          {parcelData?.construction_nature && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Nature de la construction
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+              </Label>
+              <Input value={parcelData.construction_nature} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
+          {/* Année de construction */}
+          {parcelData?.construction_type !== 'Terrain nu' && (input.constructionYear || parcelData?.construction_year) && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Année de construction
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+              </Label>
+              <Input
+                value={input.constructionYear || parcelData?.construction_year || '—'}
+                disabled
+                className="h-10 text-sm rounded-xl opacity-70"
+              />
+            </div>
+          )}
+
+          {/* Superficie */}
+          <div className="space-y-1.5">
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Superficie (m²)
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+            </Label>
+            <Input
+              value={parcelData?.area_sqm ? `${Number(parcelData.area_sqm).toLocaleString('fr-FR')} m²` : '—'}
+              disabled
+              className="h-10 text-sm rounded-xl opacity-70"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <IRLTenantsList
