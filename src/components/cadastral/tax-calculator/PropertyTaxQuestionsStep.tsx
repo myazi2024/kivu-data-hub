@@ -352,18 +352,31 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 
           {!hasNoConstruction && (
             <>
-              {/* Construction year */}
+              {/* Construction year — auto-filled from CCC */}
               <div className="space-y-1.5">
-                <Label className="text-sm font-medium">Année de construction</Label>
-                <Input
-                  type="number"
-                  value={input.constructionYear || ''}
-                  onChange={(e) => setInput(prev => ({ ...prev, constructionYear: parseInt(e.target.value) || null }))}
-                  placeholder="Ex: 2019"
-                  className="h-9 text-sm rounded-xl"
-                  min={1900}
-                  max={currentYear}
-                />
+                <Label className="text-sm font-medium flex items-center gap-1.5">
+                  Année de construction
+                  {parcelData?.construction_year && (
+                    <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+                  )}
+                </Label>
+                {parcelData?.construction_year ? (
+                  <Input
+                    value={parcelData.construction_year}
+                    disabled
+                    className="h-10 text-sm rounded-xl opacity-70"
+                  />
+                ) : (
+                  <Input
+                    type="number"
+                    value={input.constructionYear || ''}
+                    onChange={(e) => setInput(prev => ({ ...prev, constructionYear: parseInt(e.target.value) || null }))}
+                    placeholder="Ex: 2019"
+                    className="h-9 text-sm rounded-xl"
+                    min={1900}
+                    max={currentYear}
+                  />
+                )}
                 {input.constructionYear && (currentYear - input.constructionYear) < 5 && (
                   <p className="text-xs text-emerald-600 font-medium">
                     ✅ Éligible à l'exonération temporaire (construction &lt; 5 ans)

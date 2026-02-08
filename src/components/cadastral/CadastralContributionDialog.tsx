@@ -2911,6 +2911,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         // Reset materials if switching to Terrain nu
                         if (value === 'Terrain nu') {
                           handleInputChange('constructionMaterials', '');
+                          handleInputChange('constructionYear', undefined);
                         }
                         setHighlightRequiredFields(false);
                       }}
@@ -3035,6 +3036,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </Select>
                   </div>
                 </div>
+
+                {/* Année de construction - visible sauf Terrain nu */}
+                {formData.constructionType && formData.constructionType !== 'Terrain nu' && (
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Année de construction</Label>
+                    <Select
+                      value={formData.constructionYear?.toString() || ''}
+                      onValueChange={(value) => handleInputChange('constructionYear', parseInt(value))}
+                    >
+                      <SelectTrigger className="h-10 rounded-xl text-sm">
+                        <SelectValue placeholder="Sélectionner l'année" />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl max-h-60">
+                        {Array.from({ length: new Date().getFullYear() - 1950 + 1 }, (_, i) => new Date().getFullYear() - i).map(year => (
+                          <SelectItem key={year} value={year.toString()}>{year}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
