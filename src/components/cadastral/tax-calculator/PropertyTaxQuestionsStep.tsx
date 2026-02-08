@@ -160,9 +160,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               Province *
-              {parcelData?.province && (
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-              )}
+              {parcelData?.province && <Badge variant="secondary" className="text-[10px]">Auto</Badge>}
             </Label>
             <Select
               value={input.province}
@@ -179,40 +177,6 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
               </SelectContent>
             </Select>
           </div>
-
-          {/* Ville (if urban and cities exist) */}
-          {input.zoneType === 'urban' && cities.length > 0 && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Ville
-                {parcelData?.ville && (
-                  <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-                )}
-              </Label>
-              <Select
-                value={input.ville || '_other'}
-                disabled={!!parcelData?.ville}
-                onValueChange={(v) => setInput(prev => ({ ...prev, ville: v === '_other' ? '' : v }))}
-              >
-                <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.ville ? 'opacity-70' : ''}`}>
-                  <SelectValue placeholder="Sélectionner la ville" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover">
-                  {cities.map(c => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                  <SelectItem value="_other">Autre ville</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {input.province === 'Kinshasa'
-                  ? '⚡ Kinshasa : taux majoré (×1.5)'
-                  : cities.includes(input.ville)
-                    ? '📍 Capitale provinciale : taux standard (×1.2)'
-                    : '🏘️ Ville secondaire : taux de base'}
-              </p>
-            </div>
-          )}
 
           {/* Zone type */}
           <div className="space-y-1.5">
@@ -247,6 +211,49 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
               })}
             </div>
           </div>
+
+          {/* Ville (if urban and cities exist) */}
+          {input.zoneType === 'urban' && cities.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Ville
+                {parcelData?.ville && <Badge variant="secondary" className="text-[10px]">Auto</Badge>}
+              </Label>
+              <Select
+                value={input.ville || '_other'}
+                disabled={!!parcelData?.ville}
+                onValueChange={(v) => setInput(prev => ({ ...prev, ville: v === '_other' ? '' : v }))}
+              >
+                <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.ville ? 'opacity-70' : ''}`}>
+                  <SelectValue placeholder="Sélectionner la ville" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl bg-popover">
+                  {cities.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                  <SelectItem value="_other">Autre ville</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {input.province === 'Kinshasa'
+                  ? '⚡ Kinshasa : taux majoré (×1.5)'
+                  : cities.includes(input.ville)
+                    ? '📍 Capitale provinciale : taux standard (×1.2)'
+                    : '🏘️ Ville secondaire : taux de base'}
+              </p>
+            </div>
+          )}
+
+          {/* Circonscription foncière */}
+          {parcelData?.circonscription_fonciere && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Circonscription foncière
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.circonscription_fonciere} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
 
           {/* Commune */}
           {parcelData?.commune && (
@@ -303,6 +310,17 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
             </div>
           )}
 
+          {/* Groupement (rural) */}
+          {parcelData?.groupement && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Groupement
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.groupement} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
           {/* Village (rural) */}
           {parcelData?.village && (
             <div className="space-y-1.5">
@@ -318,9 +336,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               Usage déclaré *
-              {parcelData?.declared_usage && (
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-              )}
+              {parcelData?.declared_usage && <Badge variant="secondary" className="text-[10px]">Auto</Badge>}
             </Label>
             <Select
               value={input.usageType}
@@ -347,20 +363,16 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               Superficie (m²) *
-              {parcelData?.area_sqm && (
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-              )}
+              {parcelData?.area_sqm && <Badge variant="secondary" className="text-[10px]">Auto</Badge>}
             </Label>
-            <div className="relative">
-              <input
-                type="number"
-                value={input.areaSqm || ''}
-                disabled={!!parcelData?.area_sqm}
-                onChange={(e) => setInput(prev => ({ ...prev, areaSqm: parseFloat(e.target.value) || 0 }))}
-                placeholder="Ex: 500"
-                className={`flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${parcelData?.area_sqm ? 'opacity-70' : ''}`}
-              />
-            </div>
+            <Input
+              type="number"
+              value={input.areaSqm || ''}
+              disabled={!!parcelData?.area_sqm}
+              onChange={(e) => setInput(prev => ({ ...prev, areaSqm: parseFloat(e.target.value) || 0 }))}
+              placeholder="Ex: 500"
+              className={`h-10 text-sm rounded-xl ${parcelData?.area_sqm ? 'opacity-70' : ''}`}
+            />
           </div>
         </CardContent>
       </Card>
@@ -377,12 +389,16 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 
           {/* Construction type */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Type de construction *</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Type de construction *
+              {parcelData?.construction_type && <Badge variant="secondary" className="text-[10px]">Auto</Badge>}
+            </Label>
             <Select
               value={hasNoConstruction ? 'none' : (input.constructionType || '')}
+              disabled={!!parcelData?.construction_type}
               onValueChange={handleConstructionChange}
             >
-              <SelectTrigger className="h-10 text-sm rounded-xl">
+              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.construction_type ? 'opacity-70' : ''}`}>
                 <SelectValue placeholder="Sélectionner" />
               </SelectTrigger>
               <SelectContent className="rounded-xl bg-popover">
@@ -397,6 +413,17 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Nature de la construction */}
+          {parcelData?.construction_nature && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Nature de la construction
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.construction_nature} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
 
           {!hasNoConstruction && (
             <>
