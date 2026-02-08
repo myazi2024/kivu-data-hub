@@ -248,6 +248,72 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
             </div>
           </div>
 
+          {/* Commune */}
+          {parcelData?.commune && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Commune
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.commune} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
+          {/* Quartier */}
+          {parcelData?.quartier && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Quartier
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.quartier} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
+          {/* Avenue */}
+          {parcelData?.avenue && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Avenue
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.avenue} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
+          {/* Territoire (rural) */}
+          {parcelData?.territoire && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Territoire
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.territoire} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
+          {/* Collectivité (rural) */}
+          {parcelData?.collectivite && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Collectivité
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.collectivite} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
+          {/* Village (rural) */}
+          {parcelData?.village && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Village
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.village} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
           {/* Usage type */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
