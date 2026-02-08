@@ -158,12 +158,18 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 
           {/* Province */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Province *</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Province *
+              {parcelData?.province && (
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              )}
+            </Label>
             <Select
               value={input.province}
+              disabled={!!parcelData?.province}
               onValueChange={(v) => setInput(prev => ({ ...prev, province: v, ville: '' }))}
             >
-              <SelectTrigger className="h-10 text-sm rounded-xl">
+              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.province ? 'opacity-70' : ''}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl bg-popover max-h-60">
@@ -177,12 +183,18 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
           {/* Ville (if urban and cities exist) */}
           {input.zoneType === 'urban' && cities.length > 0 && (
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Ville</Label>
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Ville
+                {parcelData?.ville && (
+                  <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                )}
+              </Label>
               <Select
                 value={input.ville || '_other'}
+                disabled={!!parcelData?.ville}
                 onValueChange={(v) => setInput(prev => ({ ...prev, ville: v === '_other' ? '' : v }))}
               >
-                <SelectTrigger className="h-10 text-sm rounded-xl">
+                <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.ville ? 'opacity-70' : ''}`}>
                   <SelectValue placeholder="Sélectionner la ville" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl bg-popover">
@@ -238,12 +250,18 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 
           {/* Usage type */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Usage déclaré *</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Usage déclaré *
+              {parcelData?.declared_usage && (
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              )}
+            </Label>
             <Select
               value={input.usageType}
+              disabled={!!parcelData?.declared_usage}
               onValueChange={(v) => setInput(prev => ({ ...prev, usageType: v as any }))}
             >
-              <SelectTrigger className="h-10 text-sm rounded-xl">
+              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.declared_usage ? 'opacity-70' : ''}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl bg-popover">
@@ -261,20 +279,21 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 
           {/* Area */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Superficie (m²) *</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Superficie (m²) *
+              {parcelData?.area_sqm && (
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              )}
+            </Label>
             <div className="relative">
               <input
                 type="number"
                 value={input.areaSqm || ''}
+                disabled={!!parcelData?.area_sqm}
                 onChange={(e) => setInput(prev => ({ ...prev, areaSqm: parseFloat(e.target.value) || 0 }))}
                 placeholder="Ex: 500"
-                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                className={`flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${parcelData?.area_sqm ? 'opacity-70' : ''}`}
               />
-              {parcelData?.area_sqm && (
-                <Badge variant="secondary" className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px]">
-                  Auto
-                </Badge>
-              )}
             </div>
           </div>
         </CardContent>

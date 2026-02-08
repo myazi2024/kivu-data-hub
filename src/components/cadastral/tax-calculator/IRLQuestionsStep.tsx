@@ -31,6 +31,7 @@ const USAGE_OPTIONS = [
 
 interface IRLQuestionsStepProps {
   parcelNumber: string;
+  parcelData?: any;
   input: TaxCalculationInput;
   setInput: React.Dispatch<React.SetStateAction<TaxCalculationInput>>;
   nif: string;
@@ -49,7 +50,7 @@ interface IRLQuestionsStepProps {
 }
 
 const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
-  parcelNumber, input, setInput, nif, setNif,
+  parcelNumber, parcelData, input, setInput, nif, setNif,
   ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
   tenants, setTenants, zoneAutoDetected,
   onCalculate, onOpenServiceCatalog
@@ -123,12 +124,18 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
 
           {/* Province */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Province *</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Province *
+              {parcelData?.province && (
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+              )}
+            </Label>
             <Select
               value={input.province}
+              disabled={!!parcelData?.province}
               onValueChange={(v) => setInput(prev => ({ ...prev, province: v, ville: '' }))}
             >
-              <SelectTrigger className="h-10 text-sm rounded-xl">
+              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.province ? 'opacity-70' : ''}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl bg-popover max-h-60">
@@ -142,12 +149,18 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
           {/* Ville */}
           {input.zoneType === 'urban' && cities.length > 0 && (
             <div className="space-y-1.5">
-              <Label className="text-sm font-medium">Ville</Label>
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Ville
+                {parcelData?.ville && (
+                  <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+                )}
+              </Label>
               <Select
                 value={input.ville || '_other'}
+                disabled={!!parcelData?.ville}
                 onValueChange={(v) => setInput(prev => ({ ...prev, ville: v === '_other' ? '' : v }))}
               >
-                <SelectTrigger className="h-10 text-sm rounded-xl">
+                <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.ville ? 'opacity-70' : ''}`}>
                   <SelectValue placeholder="Sélectionner" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl bg-popover">
@@ -196,12 +209,18 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
 
           {/* Usage type */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Usage déclaré *</Label>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Usage déclaré *
+              {parcelData?.declared_usage && (
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+              )}
+            </Label>
             <Select
               value={input.usageType}
+              disabled={!!parcelData?.declared_usage}
               onValueChange={(v) => setInput(prev => ({ ...prev, usageType: v as any }))}
             >
-              <SelectTrigger className="h-10 text-sm rounded-xl">
+              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.declared_usage ? 'opacity-70' : ''}`}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-xl bg-popover">

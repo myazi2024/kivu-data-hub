@@ -120,6 +120,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   return (
     <IRLQuestionsStep
       parcelNumber={parcelNumber}
+      parcelData={parcelData}
       input={input}
       setInput={setInput}
       nif={nif}
