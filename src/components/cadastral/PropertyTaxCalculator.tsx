@@ -50,7 +50,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     fiscalYear: currentYear,
     province: parcelData?.province || 'Nord-Kivu',
     ville: parcelData?.ville || '',
-    constructionYear: null,
+    constructionYear: parcelData?.construction_year || null,
     numberOfFloors: 1,
     roofingType: '',
     selectedExemptions: [],

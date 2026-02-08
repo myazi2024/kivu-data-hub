@@ -25,6 +25,7 @@ export interface CadastralContributionData {
   constructionNature?: string;
   constructionMaterials?: string;
   declaredUsage?: string;
+  constructionYear?: number; // Année de construction (si pas terrain nu)
   
   // Permis de construire
   buildingPermits?: Array<{
@@ -299,6 +300,7 @@ export const useCadastralContribution = () => {
         parcel_sides: data.parcelSides, // Dimensions exactes des côtés
         construction_type: data.constructionType,
         construction_nature: data.constructionNature,
+        construction_year: data.constructionYear || null,
         declared_usage: data.declaredUsage,
         building_permits: data.buildingPermits,
         previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber, // ✅ Extraction depuis permitRequest si présent
@@ -506,6 +508,7 @@ export const useCadastralContribution = () => {
         parcel_sides: data.parcelSides,
         construction_type: data.constructionType,
         construction_nature: data.constructionNature,
+        construction_year: data.constructionYear || null,
         declared_usage: data.declaredUsage,
         building_permits: data.buildingPermits,
         previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,

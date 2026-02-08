@@ -417,6 +417,7 @@ export type Database = {
           commune: string | null
           construction_nature: string | null
           construction_type: string | null
+          construction_year: number | null
           contribution_type: string
           created_at: string
           current_owner_legal_status: string | null
@@ -479,6 +480,7 @@ export type Database = {
           commune?: string | null
           construction_nature?: string | null
           construction_type?: string | null
+          construction_year?: number | null
           contribution_type?: string
           created_at?: string
           current_owner_legal_status?: string | null
@@ -541,6 +543,7 @@ export type Database = {
           commune?: string | null
           construction_nature?: string | null
           construction_type?: string | null
+          construction_year?: number | null
           contribution_type?: string
           created_at?: string
           current_owner_legal_status?: string | null
@@ -879,6 +882,7 @@ export type Database = {
           commune: string | null
           construction_nature: string | null
           construction_type: string | null
+          construction_year: number | null
           created_at: string
           current_owner_legal_status: string | null
           current_owner_name: string
@@ -919,6 +923,7 @@ export type Database = {
           commune?: string | null
           construction_nature?: string | null
           construction_type?: string | null
+          construction_year?: number | null
           created_at?: string
           current_owner_legal_status?: string | null
           current_owner_name: string
@@ -959,6 +964,7 @@ export type Database = {
           commune?: string | null
           construction_nature?: string | null
           construction_type?: string | null
+          construction_year?: number | null
           created_at?: string
           current_owner_legal_status?: string | null
           current_owner_name?: string
