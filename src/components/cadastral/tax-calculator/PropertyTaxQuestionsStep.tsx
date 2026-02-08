@@ -10,7 +10,7 @@ import {
   Calculator, Home, Building2, Factory, Tractor, Landmark, ArrowRight, MapPin, Shield, Upload, FileCheck, X
 } from 'lucide-react';
 import {
-  TaxCalculationInput, DRC_PROVINCES, DRC_MAJOR_CITIES,
+  TaxCalculationInput,
   EXEMPTION_DEFINITIONS, ROOFING_TYPES, ExemptionCheckType,
   getLatePenaltyInfo,
 } from '@/hooks/usePropertyTaxCalculator';
@@ -68,7 +68,6 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
   onOpenServiceCatalog
 }) => {
   const currentYear = new Date().getFullYear();
-  const cities = DRC_MAJOR_CITIES[input.province] || [];
   const [hasExemption, setHasExemption] = useState<boolean | null>(
     input.selectedExemptions.length > 0 ? true : null
   );
@@ -146,7 +145,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 2: Localisation géographique */}
+      {/* Section 2: Localisation & zone fiscale — aligné sur le formulaire CCC (onglet Lieu) */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -154,106 +153,70 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
               <MapPin className="h-3.5 w-3.5 text-blue-600" />
             </div>
             <Label className="text-sm font-semibold">Localisation & zone fiscale</Label>
+            <Badge variant="outline" className="text-[10px] ml-auto">Données auto-remplies</Badge>
           </div>
 
           {/* Province */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
-              Province *
-              {parcelData?.province && (
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-              )}
+              Province
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
             </Label>
-            <Select
-              value={input.province}
-              disabled={!!parcelData?.province}
-              onValueChange={(v) => setInput(prev => ({ ...prev, province: v, ville: '' }))}
-            >
-              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.province ? 'opacity-70' : ''}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-popover max-h-60">
-                {DRC_PROVINCES.map(p => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input value={input.province || '—'} disabled className="h-10 text-sm rounded-xl opacity-70" />
           </div>
 
-          {/* Ville (if urban and cities exist) */}
-          {input.zoneType === 'urban' && cities.length > 0 && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Ville
-                {parcelData?.ville && (
-                  <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-                )}
-              </Label>
-              <Select
-                value={input.ville || '_other'}
-                disabled={!!parcelData?.ville}
-                onValueChange={(v) => setInput(prev => ({ ...prev, ville: v === '_other' ? '' : v }))}
-              >
-                <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.ville ? 'opacity-70' : ''}`}>
-                  <SelectValue placeholder="Sélectionner la ville" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover">
-                  {cities.map(c => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                  <SelectItem value="_other">Autre ville</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-muted-foreground">
-                {input.province === 'Kinshasa'
-                  ? '⚡ Kinshasa : taux majoré (×1.5)'
-                  : cities.includes(input.ville)
-                    ? '📍 Capitale provinciale : taux standard (×1.2)'
-                    : '🏘️ Ville secondaire : taux de base'}
-              </p>
-            </div>
-          )}
-
-          {/* Zone type */}
+          {/* Type de zone */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
-              Type de zone *
-              {zoneAutoDetected && (
-                <Badge variant="secondary" className="text-[10px]">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</Badge>
-              )}
+              Type de zone
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</span>
             </Label>
             <div className="grid grid-cols-2 gap-2">
               {ZONE_OPTIONS.map(opt => {
                 const Icon = opt.icon;
                 const selected = input.zoneType === opt.value;
                 return (
-                  <button
+                  <div
                     key={opt.value}
-                    disabled={zoneAutoDetected}
-                    onClick={() => setInput(prev => ({ ...prev, zoneType: opt.value as any }))}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    className={`p-3 rounded-xl border-2 text-left opacity-70 cursor-not-allowed ${
                       selected
                         ? 'border-primary bg-primary/5 shadow-sm'
-                        : 'border-border hover:border-primary/30'
-                    } ${zoneAutoDetected ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        : 'border-border'
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
                       <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
-                  </button>
+                  </div>
                 );
               })}
             </div>
           </div>
 
-          {/* Commune */}
+          {/* Ville — urban only */}
+          {input.zoneType === 'urban' && (parcelData?.ville || input.ville) && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Ville
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+              </Label>
+              <Input value={parcelData?.ville || input.ville || '—'} disabled className="h-10 text-sm rounded-xl opacity-70" />
+              <p className="text-xs text-muted-foreground">
+                {input.province === 'Kinshasa'
+                  ? '⚡ Kinshasa : taux majoré (×1.5)'
+                  : '📍 Taux standard'}
+              </p>
+            </div>
+          )}
+
+          {/* Commune — urban */}
           {parcelData?.commune && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Commune
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
               </Label>
               <Input value={parcelData.commune} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
@@ -264,7 +227,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Quartier
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
               </Label>
               <Input value={parcelData.quartier} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
@@ -275,97 +238,78 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Avenue
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
               </Label>
               <Input value={parcelData.avenue} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
           )}
 
-          {/* Territoire (rural) */}
+          {/* Territoire — rural */}
           {parcelData?.territoire && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Territoire
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
               </Label>
               <Input value={parcelData.territoire} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
           )}
 
-          {/* Collectivité (rural) */}
+          {/* Collectivité — rural */}
           {parcelData?.collectivite && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Collectivité
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
               </Label>
               <Input value={parcelData.collectivite} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
           )}
 
-          {/* Village (rural) */}
+          {/* Village — rural */}
           {parcelData?.village && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Village
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
               </Label>
               <Input value={parcelData.village} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
           )}
 
-          {/* Usage type */}
+          {/* Usage déclaré */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
-              Usage déclaré *
-              {parcelData?.declared_usage && (
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-              )}
+              Usage déclaré
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
             </Label>
-            <Select
-              value={input.usageType}
-              disabled={!!parcelData?.declared_usage}
-              onValueChange={(v) => setInput(prev => ({ ...prev, usageType: v as any }))}
-            >
-              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.declared_usage ? 'opacity-70' : ''}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-popover">
-                {USAGE_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    <div className="flex items-center gap-2">
-                      <span>{opt.label}</span>
-                      <span className="text-xs text-muted-foreground">— {opt.desc}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              value={
+                USAGE_OPTIONS.find(o => o.value === input.usageType)?.label
+                  ? `${USAGE_OPTIONS.find(o => o.value === input.usageType)?.label} — ${USAGE_OPTIONS.find(o => o.value === input.usageType)?.desc}`
+                  : input.usageType
+              }
+              disabled
+              className="h-10 text-sm rounded-xl opacity-70"
+            />
           </div>
 
-          {/* Area */}
+          {/* Superficie */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
-              Superficie (m²) *
-              {parcelData?.area_sqm && (
-                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
-              )}
+              Superficie (m²)
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
             </Label>
-            <div className="relative">
-              <input
-                type="number"
-                value={input.areaSqm || ''}
-                disabled={!!parcelData?.area_sqm}
-                onChange={(e) => setInput(prev => ({ ...prev, areaSqm: parseFloat(e.target.value) || 0 }))}
-                placeholder="Ex: 500"
-                className={`flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${parcelData?.area_sqm ? 'opacity-70' : ''}`}
-              />
-            </div>
+            <Input
+              value={input.areaSqm ? `${input.areaSqm.toLocaleString('fr-FR')} m²` : '—'}
+              disabled
+              className="h-10 text-sm rounded-xl opacity-70"
+            />
           </div>
         </CardContent>
       </Card>
 
-      {/* Section 3: Construction */}
+      {/* Section 3: Détails de la construction — aligné sur le formulaire CCC (onglet Infos) */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -373,30 +317,38 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
               <Home className="h-3.5 w-3.5 text-amber-600" />
             </div>
             <Label className="text-sm font-semibold">Détails de la construction</Label>
+            <Badge variant="outline" className="text-[10px] ml-auto">Données auto-remplies</Badge>
           </div>
 
-          {/* Construction type */}
+          {/* Type de construction */}
           <div className="space-y-1.5">
-            <Label className="text-sm font-medium">Type de construction *</Label>
-            <Select
-              value={hasNoConstruction ? 'none' : (input.constructionType || '')}
-              onValueChange={handleConstructionChange}
-            >
-              <SelectTrigger className="h-10 text-sm rounded-xl">
-                <SelectValue placeholder="Sélectionner" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-popover">
-                {CONSTRUCTION_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    <div className="flex items-center gap-2">
-                      <span>{opt.label}</span>
-                      <span className="text-xs text-muted-foreground">— {opt.desc}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Type de construction
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+            </Label>
+            <Input
+              value={
+                hasNoConstruction
+                  ? 'Terrain nu — Pas de construction'
+                  : CONSTRUCTION_OPTIONS.find(o => o.value === input.constructionType)
+                    ? `${CONSTRUCTION_OPTIONS.find(o => o.value === input.constructionType)?.label} — ${CONSTRUCTION_OPTIONS.find(o => o.value === input.constructionType)?.desc}`
+                    : '—'
+              }
+              disabled
+              className="h-10 text-sm rounded-xl opacity-70"
+            />
           </div>
+
+          {/* Nature de la construction */}
+          {parcelData?.construction_nature && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Nature de la construction
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+              </Label>
+              <Input value={parcelData.construction_nature} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
 
           {!hasNoConstruction && (
             <>

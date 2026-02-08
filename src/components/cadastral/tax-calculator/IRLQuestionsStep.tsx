@@ -10,7 +10,7 @@ import {
   AlertTriangle, CheckCircle2, Clock
 } from 'lucide-react';
 import {
-  TaxCalculationInput, DRC_PROVINCES, DRC_MAJOR_CITIES, getLatePenaltyInfo,
+  TaxCalculationInput, getLatePenaltyInfo,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
 import TaxpayerIdentitySection from './TaxpayerIdentitySection';
@@ -56,7 +56,6 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
   onCalculate, onOpenServiceCatalog
 }) => {
   const currentYear = new Date().getFullYear();
-  const cities = DRC_MAJOR_CITIES[input.province] || [];
 
   return (
     <div className="space-y-3 px-4 pb-4">
@@ -112,100 +111,66 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 2: Localisation */}
+      {/* Section 2: Localisation & zone fiscale — aligné sur le formulaire CCC (onglet Lieu) */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
             <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <MapPin className="h-3.5 w-3.5 text-blue-600" />
             </div>
-            <Label className="text-sm font-semibold">Localisation</Label>
+            <Label className="text-sm font-semibold">Localisation & zone fiscale</Label>
+            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal ml-auto">Données auto-remplies</span>
           </div>
 
           {/* Province */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
-              Province *
-              {parcelData?.province && (
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              )}
+              Province
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
             </Label>
-            <Select
-              value={input.province}
-              disabled={!!parcelData?.province}
-              onValueChange={(v) => setInput(prev => ({ ...prev, province: v, ville: '' }))}
-            >
-              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.province ? 'opacity-70' : ''}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-popover max-h-60">
-                {DRC_PROVINCES.map(p => (
-                  <SelectItem key={p} value={p}>{p}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input value={input.province || '—'} disabled className="h-10 text-sm rounded-xl opacity-70" />
           </div>
 
-          {/* Ville */}
-          {input.zoneType === 'urban' && cities.length > 0 && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Ville
-                {parcelData?.ville && (
-                  <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-                )}
-              </Label>
-              <Select
-                value={input.ville || '_other'}
-                disabled={!!parcelData?.ville}
-                onValueChange={(v) => setInput(prev => ({ ...prev, ville: v === '_other' ? '' : v }))}
-              >
-                <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.ville ? 'opacity-70' : ''}`}>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover">
-                  {cities.map(c => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                  <SelectItem value="_other">Autre ville</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
-          {/* Zone type */}
+          {/* Type de zone */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
-              Type de zone *
-              {zoneAutoDetected && (
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</span>
-              )}
+              Type de zone
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</span>
             </Label>
             <div className="grid grid-cols-2 gap-2">
               {ZONE_OPTIONS.map(opt => {
                 const Icon = opt.icon;
                 const selected = input.zoneType === opt.value;
                 return (
-                  <button
+                  <div
                     key={opt.value}
-                    disabled={zoneAutoDetected}
-                    onClick={() => setInput(prev => ({ ...prev, zoneType: opt.value as any }))}
-                    className={`p-3 rounded-xl border-2 text-left transition-all ${
+                    className={`p-3 rounded-xl border-2 text-left opacity-70 cursor-not-allowed ${
                       selected
                         ? 'border-primary bg-primary/5 shadow-sm'
-                        : 'border-border hover:border-primary/30'
-                    } ${zoneAutoDetected ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        : 'border-border'
+                    }`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
                       <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
-                  </button>
+                  </div>
                 );
               })}
             </div>
           </div>
+
+          {/* Ville — urban only */}
+          {input.zoneType === 'urban' && (parcelData?.ville || input.ville) && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Ville
+                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+              </Label>
+              <Input value={parcelData?.ville || input.ville || '—'} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
 
           {/* Commune */}
           {parcelData?.commune && (
@@ -240,7 +205,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             </div>
           )}
 
-          {/* Territoire (rural) */}
+          {/* Territoire — rural */}
           {parcelData?.territoire && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
@@ -251,7 +216,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             </div>
           )}
 
-          {/* Collectivité (rural) */}
+          {/* Collectivité — rural */}
           {parcelData?.collectivite && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
@@ -262,7 +227,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             </div>
           )}
 
-          {/* Village (rural) */}
+          {/* Village — rural */}
           {parcelData?.village && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
@@ -273,30 +238,21 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             </div>
           )}
 
-          {/* Usage type */}
+          {/* Usage déclaré */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
-              Usage déclaré *
-              {parcelData?.declared_usage && (
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              )}
+              Usage déclaré
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
             </Label>
-            <Select
-              value={input.usageType}
-              disabled={!!parcelData?.declared_usage}
-              onValueChange={(v) => setInput(prev => ({ ...prev, usageType: v as any }))}
-            >
-              <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.declared_usage ? 'opacity-70' : ''}`}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl bg-popover">
-                {USAGE_OPTIONS.map(opt => (
-                  <SelectItem key={opt.value} value={opt.value}>
-                    <span>{opt.label} — {opt.desc}</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              value={
+                USAGE_OPTIONS.find(o => o.value === input.usageType)?.label
+                  ? `${USAGE_OPTIONS.find(o => o.value === input.usageType)?.label} — ${USAGE_OPTIONS.find(o => o.value === input.usageType)?.desc}`
+                  : input.usageType
+              }
+              disabled
+              className="h-10 text-sm rounded-xl opacity-70"
+            />
           </div>
         </CardContent>
       </Card>
