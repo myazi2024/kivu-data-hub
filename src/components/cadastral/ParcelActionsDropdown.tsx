@@ -273,13 +273,13 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         onOpenChange={setShowTaxDialog}
         onOpenServiceCatalog={() => {
           setShowTaxDialog(false);
-          // Scroll to service catalog in the results dialog behind
+          // Scroll the results dialog content to the top to show the service catalog
           setTimeout(() => {
-            const catalogHeader = document.querySelector('[data-service-catalog]');
-            if (catalogHeader) {
-              catalogHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            const scrollContainer = document.querySelector('[data-results-scroll]');
+            if (scrollContainer) {
+              scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
             }
-          }, 300);
+          }, 350);
         }}
       />
 

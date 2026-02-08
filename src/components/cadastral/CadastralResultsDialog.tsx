@@ -127,7 +127,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
         </div>
         
         {/* Contenu scrollable optimisé mobile */}
-        <div className="flex-1 overflow-auto p-2.5 sm:p-3">
+        <div className="flex-1 overflow-auto p-2.5 sm:p-3" data-results-scroll>
           <CadastralResultCard 
             result={result}
             onClose={handleClose}
