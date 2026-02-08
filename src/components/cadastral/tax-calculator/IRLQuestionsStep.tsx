@@ -1,4 +1,5 @@
 import React from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -119,16 +120,14 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <MapPin className="h-3.5 w-3.5 text-blue-600" />
             </div>
-            <Label className="text-sm font-semibold">Localisation</Label>
+            <Label className="text-sm font-semibold">Localisation & zone fiscale</Label>
           </div>
 
           {/* Province */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               Province *
-              {parcelData?.province && (
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              )}
+              {parcelData?.province && <Badge variant="secondary" className="text-[10px]">Auto</Badge>}
             </Label>
             <Select
               value={input.province}
@@ -146,39 +145,12 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             </Select>
           </div>
 
-          {/* Ville */}
-          {input.zoneType === 'urban' && cities.length > 0 && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Ville
-                {parcelData?.ville && (
-                  <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-                )}
-              </Label>
-              <Select
-                value={input.ville || '_other'}
-                disabled={!!parcelData?.ville}
-                onValueChange={(v) => setInput(prev => ({ ...prev, ville: v === '_other' ? '' : v }))}
-              >
-                <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.ville ? 'opacity-70' : ''}`}>
-                  <SelectValue placeholder="Sélectionner" />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl bg-popover">
-                  {cities.map(c => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
-                  ))}
-                  <SelectItem value="_other">Autre ville</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          )}
-
           {/* Zone type */}
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               Type de zone *
               {zoneAutoDetected && (
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</span>
+                <Badge variant="secondary" className="text-[10px]">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</Badge>
               )}
             </Label>
             <div className="grid grid-cols-2 gap-2">
@@ -207,12 +179,48 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             </div>
           </div>
 
+          {/* Ville */}
+          {input.zoneType === 'urban' && cities.length > 0 && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Ville
+                {parcelData?.ville && <Badge variant="secondary" className="text-[10px]">Auto</Badge>}
+              </Label>
+              <Select
+                value={input.ville || '_other'}
+                disabled={!!parcelData?.ville}
+                onValueChange={(v) => setInput(prev => ({ ...prev, ville: v === '_other' ? '' : v }))}
+              >
+                <SelectTrigger className={`h-10 text-sm rounded-xl ${parcelData?.ville ? 'opacity-70' : ''}`}>
+                  <SelectValue placeholder="Sélectionner" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl bg-popover">
+                  {cities.map(c => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                  <SelectItem value="_other">Autre ville</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Circonscription foncière */}
+          {parcelData?.circonscription_fonciere && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Circonscription foncière
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.circonscription_fonciere} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
           {/* Commune */}
           {parcelData?.commune && (
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Commune
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
               </Label>
               <Input value={parcelData.commune} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
@@ -223,7 +231,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Quartier
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
               </Label>
               <Input value={parcelData.quartier} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
@@ -234,7 +242,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Avenue
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
               </Label>
               <Input value={parcelData.avenue} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
@@ -245,7 +253,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Territoire
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
               </Label>
               <Input value={parcelData.territoire} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
@@ -256,9 +264,20 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Collectivité
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
               </Label>
               <Input value={parcelData.collectivite} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
+
+          {/* Groupement (rural) */}
+          {parcelData?.groupement && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Groupement
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.groupement} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
           )}
 
@@ -267,7 +286,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
             <div className="space-y-1.5">
               <Label className="text-sm font-medium flex items-center gap-1.5">
                 Village
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
               </Label>
               <Input value={parcelData.village} disabled className="h-10 text-sm rounded-xl opacity-70" />
             </div>
@@ -277,9 +296,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
           <div className="space-y-1.5">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               Usage déclaré *
-              {parcelData?.declared_usage && (
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              )}
+              {parcelData?.declared_usage && <Badge variant="secondary" className="text-[10px]">Auto</Badge>}
             </Label>
             <Select
               value={input.usageType}
@@ -298,6 +315,17 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
               </SelectContent>
             </Select>
           </div>
+
+          {/* Superficie */}
+          {parcelData?.area_sqm && (
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium flex items-center gap-1.5">
+                Superficie (m²)
+                <Badge variant="secondary" className="text-[10px]">Auto</Badge>
+              </Label>
+              <Input value={parcelData.area_sqm} disabled className="h-10 text-sm rounded-xl opacity-70" />
+            </div>
+          )}
         </CardContent>
       </Card>
 
