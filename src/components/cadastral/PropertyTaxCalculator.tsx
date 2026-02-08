@@ -69,8 +69,9 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
 
   // Sync areaSqm when parcelData loads asynchronously
   useEffect(() => {
-    if (parcelData?.area_sqm && parcelData.area_sqm > 0) {
-      setInput(prev => prev.areaSqm === 0 ? { ...prev, areaSqm: Number(parcelData.area_sqm) } : prev);
+    const area = Number(parcelData?.area_sqm);
+    if (area > 0) {
+      setInput(prev => ({ ...prev, areaSqm: area }));
     }
   }, [parcelData?.area_sqm]);
 
