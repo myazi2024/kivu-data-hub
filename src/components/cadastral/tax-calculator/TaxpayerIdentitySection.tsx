@@ -1,10 +1,10 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { User, Upload, CheckCircle, Info } from 'lucide-react';
+import { User, Info, ShieldCheck, ExternalLink } from 'lucide-react';
 
 interface TaxpayerIdentitySectionProps {
   ownerName: string;
@@ -15,22 +15,13 @@ interface TaxpayerIdentitySectionProps {
   setHasNif: (v: boolean | null) => void;
   nif: string;
   setNif: (v: string) => void;
+  onOpenServiceCatalog?: () => void;
 }
 
 const TaxpayerIdentitySection: React.FC<TaxpayerIdentitySectionProps> = ({
   ownerName, setOwnerName, idDocumentFile, setIdDocumentFile,
-  hasNif, setHasNif, nif, setNif
+  hasNif, setHasNif, nif, setNif, onOpenServiceCatalog
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0] || null;
-    if (file && file.size > 5 * 1024 * 1024) {
-      return; // max 5MB
-    }
-    setIdDocumentFile(file);
-  };
-
   return (
     <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
       <CardContent className="p-4 space-y-3">
@@ -44,52 +35,28 @@ const TaxpayerIdentitySection: React.FC<TaxpayerIdentitySectionProps> = ({
           </div>
         </div>
 
-        {/* Owner name */}
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Nom complet du propriétaire *</Label>
-          <Input
-            value={ownerName}
-            onChange={(e) => setOwnerName(e.target.value)}
-            placeholder="Ex: Jean-Pierre Mukendi"
-            className="h-10 text-sm rounded-xl"
-          />
-        </div>
-
-        {/* ID document upload */}
-        <div className="space-y-1.5">
-          <Label className="text-sm font-medium">Pièce d'identité</Label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          {idDocumentFile ? (
-            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-muted/50 border border-border/50">
-              <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
-              <span className="text-sm truncate flex-1">{idDocumentFile.name}</span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIdDocumentFile(null)}
-                className="h-7 text-xs"
-              >
-                Retirer
-              </Button>
+        {/* Synced owner identity message */}
+        <button
+          type="button"
+          onClick={() => onOpenServiceCatalog?.()}
+          className="w-full text-left p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer group"
+        >
+          <div className="flex gap-2.5">
+            <ShieldCheck className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
+                Identité synchronisée automatiquement
+              </p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5">
+                Le nom et la pièce d'identité du propriétaire actuel sont issus de la base de données cadastrale.
+              </p>
+              <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1.5 flex items-center gap-1 font-medium group-hover:underline">
+                <ExternalLink className="h-3 w-3" />
+                Cliquez ici pour consulter l'identité du propriétaire
+              </p>
             </div>
-          ) : (
-            <Button
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-10 rounded-xl text-sm gap-2 border-dashed"
-            >
-              <Upload className="h-4 w-4" />
-              Joindre une pièce d'identité
-            </Button>
-          )}
-          <p className="text-xs text-muted-foreground">Carte d'identité, passeport ou carte d'électeur (max 5 Mo)</p>
-        </div>
+          </div>
+        </button>
 
         {/* NIF toggle */}
         <div className="space-y-2">
@@ -130,7 +97,7 @@ const TaxpayerIdentitySection: React.FC<TaxpayerIdentitySectionProps> = ({
             <div>
               <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Pas de NIF ? Aucun souci !</p>
               <p className="text-xs text-blue-700 dark:text-blue-400 mt-0.5">
-                Un Numéro d'Impôt (NIF) vous sera automatiquement attribué lors de la soumission de votre fiche de déclaration fiscale et du paiement de l'impôt dû auprès de la DGI.
+                Un NIF vous sera attribué lors de la soumission de votre déclaration fiscale auprès de la DGI.
               </p>
             </div>
           </div>

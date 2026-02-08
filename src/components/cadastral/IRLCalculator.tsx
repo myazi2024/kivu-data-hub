@@ -11,12 +11,13 @@ interface IRLCalculatorProps {
   parcelNumber: string;
   parcelId?: string;
   parcelData?: any;
+  onOpenServiceCatalog?: () => void;
 }
 
 type CalcStep = 'questions' | 'summary';
 
 const IRLCalculator: React.FC<IRLCalculatorProps> = ({
-  parcelNumber, parcelId, parcelData
+  parcelNumber, parcelId, parcelData, onOpenServiceCatalog
 }) => {
   const { user } = useAuth();
   const { calculate, loading: configLoading } = usePropertyTaxCalculator();
@@ -137,6 +138,7 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       setTenants={setTenants}
       zoneAutoDetected={zoneAutoDetected}
       onCalculate={handleCalculate}
+      onOpenServiceCatalog={onOpenServiceCatalog}
     />
   );
 };

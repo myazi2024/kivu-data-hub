@@ -271,6 +271,16 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         parcelData={parcelData}
         open={showTaxDialog}
         onOpenChange={setShowTaxDialog}
+        onOpenServiceCatalog={() => {
+          setShowTaxDialog(false);
+          // Scroll to service catalog in the results dialog behind
+          setTimeout(() => {
+            const catalogHeader = document.querySelector('[data-service-catalog]');
+            if (catalogHeader) {
+              catalogHeader.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 300);
+        }}
       />
 
       {/* Dialog Demande de permis de construire */}

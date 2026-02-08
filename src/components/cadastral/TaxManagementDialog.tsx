@@ -15,12 +15,13 @@ interface TaxManagementDialogProps {
   parcelData?: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOpenServiceCatalog?: () => void;
 }
 
 type ActiveTab = 'foncier' | 'irl' | 'add';
 
 const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
-  parcelNumber, parcelId, parcelData, open, onOpenChange
+  parcelNumber, parcelId, parcelData, open, onOpenChange, onOpenServiceCatalog
 }) => {
   const isMobile = useIsMobile();
   const [showIntro, setShowIntro] = useState(true);
@@ -105,6 +106,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
+              onOpenServiceCatalog={onOpenServiceCatalog}
             />
           )}
           {activeTab === 'irl' && (
@@ -112,6 +114,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
+              onOpenServiceCatalog={onOpenServiceCatalog}
             />
           )}
           {activeTab === 'add' && (

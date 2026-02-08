@@ -45,13 +45,14 @@ interface IRLQuestionsStepProps {
   setTenants: React.Dispatch<React.SetStateAction<TenantEntry[]>>;
   zoneAutoDetected?: boolean;
   onCalculate: () => void;
+  onOpenServiceCatalog?: () => void;
 }
 
 const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
   parcelNumber, input, setInput, nif, setNif,
   ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
   tenants, setTenants, zoneAutoDetected,
-  onCalculate
+  onCalculate, onOpenServiceCatalog
 }) => {
   const currentYear = new Date().getFullYear();
   const cities = DRC_MAJOR_CITIES[input.province] || [];
@@ -68,6 +69,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         setHasNif={setHasNif}
         nif={nif}
         setNif={setNif}
+        onOpenServiceCatalog={onOpenServiceCatalog}
       />
 
       {/* Section 2: IRL Info */}
