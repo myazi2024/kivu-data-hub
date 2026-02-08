@@ -91,6 +91,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
   return (
     <div 
       className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+      data-results-dialog
       onClick={handleOverlayClick}
     >
       <Card className="relative w-full h-full overflow-hidden bg-background flex flex-col md:m-4 md:max-w-4xl md:mx-auto md:max-h-[90vh] md:rounded-2xl md:shadow-2xl">
