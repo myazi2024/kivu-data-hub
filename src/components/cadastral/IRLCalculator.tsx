@@ -62,10 +62,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   });
 
   const handleCalculate = () => {
-    if (!ownerName.trim()) {
-      toast.error('Veuillez renseigner le nom du propriétaire');
-      return;
-    }
     if (hasNif === true && !nif.trim()) {
       toast.error('Veuillez renseigner votre Numéro d\'Impôt (NIF)');
       return;
