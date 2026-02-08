@@ -57,13 +57,15 @@ interface PropertyTaxQuestionsStepProps {
   setExemptionCertificateFile: (f: File | null) => void;
   zoneAutoDetected?: boolean;
   onCalculate: () => void;
+  onOpenServiceCatalog?: () => void;
 }
 
 const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
   parcelNumber, parcelData, input, setInput,
   hasNoConstruction, setHasNoConstruction, nif, setNif,
   ownerName, setOwnerName, idDocumentFile, setIdDocumentFile, hasNif, setHasNif,
-  exemptionCertificateFile, setExemptionCertificateFile, zoneAutoDetected, onCalculate
+  exemptionCertificateFile, setExemptionCertificateFile, zoneAutoDetected, onCalculate,
+  onOpenServiceCatalog
 }) => {
   const currentYear = new Date().getFullYear();
   const cities = DRC_MAJOR_CITIES[input.province] || [];
@@ -102,6 +104,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
         setHasNif={setHasNif}
         nif={nif}
         setNif={setNif}
+        onOpenServiceCatalog={onOpenServiceCatalog}
       />
 
       {/* Section 2: Identification fiscale */}

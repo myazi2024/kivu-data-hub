@@ -116,7 +116,7 @@ const CadastralResultsDialog: React.FC<CadastralResultsDialogProps> = ({
               <ArrowLeft className="h-4 w-4" />
             </Button>
           )}
-          <div className="flex-1 min-w-0 pr-8">
+          <div className="flex-1 min-w-0 pr-8" data-service-catalog>
             <h2 className="text-sm font-semibold truncate">
               Catalogue de services
             </h2>

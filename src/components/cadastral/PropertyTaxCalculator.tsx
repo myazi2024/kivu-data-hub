@@ -10,12 +10,13 @@ interface PropertyTaxCalculatorProps {
   parcelNumber: string;
   parcelId?: string;
   parcelData?: any;
+  onOpenServiceCatalog?: () => void;
 }
 
 type CalcStep = 'questions' | 'summary';
 
 const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
-  parcelNumber, parcelId, parcelData
+  parcelNumber, parcelId, parcelData, onOpenServiceCatalog
 }) => {
   const { user } = useAuth();
   const { calculate, loading: configLoading } = usePropertyTaxCalculator();
@@ -133,6 +134,7 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       setExemptionCertificateFile={setExemptionCertificateFile}
       zoneAutoDetected={zoneAutoDetected}
       onCalculate={handleCalculate}
+      onOpenServiceCatalog={onOpenServiceCatalog}
     />
   );
 };
