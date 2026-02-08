@@ -80,11 +80,18 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       toast.error('Veuillez renseigner votre Numéro d\'Impôt (NIF)');
       return;
     }
-    if (!input.areaSqm || input.areaSqm <= 0) {
+    if (hasNif === true && nif.trim() && !/^[A-Za-z0-9]{6,15}$/.test(nif.trim())) {
+      toast.error('Format NIF invalide. Le NIF doit contenir entre 6 et 15 caractères alphanumériques (ex: A0123456B)');
+      return;
+    }
+    // Use parcelData.area_sqm as fallback if input.areaSqm hasn't synced yet
+    const effectiveArea = input.areaSqm || Number(parcelData?.area_sqm) || 0;
+    if (effectiveArea <= 0) {
       toast.error('Veuillez renseigner la superficie de la parcelle');
       return;
     }
-    const res = calculate(input);
+    const adjustedInput = { ...input, areaSqm: effectiveArea };
+    const res = calculate(adjustedInput);
     setResult(res);
     setCalcStep('summary');
   };

@@ -7,36 +7,21 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Calculator, Home, Building2, Factory, Tractor, Landmark, ArrowRight, MapPin, Shield, Upload, FileCheck, X
+  Calculator, Home, ArrowRight, Shield, Upload, FileCheck, X
 } from 'lucide-react';
 import {
   TaxCalculationInput,
   EXEMPTION_DEFINITIONS, ROOFING_TYPES, ExemptionCheckType,
-  getLatePenaltyInfo,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
 import TaxpayerIdentitySection from './TaxpayerIdentitySection';
+import TaxLocationSection from './TaxLocationSection';
+import TaxPenaltySection from './TaxPenaltySection';
+import { CONSTRUCTION_OPTIONS } from './taxFormConstants';
 import { toast } from 'sonner';
 
-const ZONE_OPTIONS = [
-  { value: 'urban', label: 'Urbaine', icon: Building2, desc: 'Ville, commune urbaine' },
-  { value: 'rural', label: 'Rurale', icon: Tractor, desc: 'Territoire, collectivité' },
-];
-
-export const USAGE_OPTIONS = [
-  { value: 'residential', label: 'Résidentiel', icon: Home, desc: 'Habitation principale ou secondaire' },
-  { value: 'commercial', label: 'Commercial', icon: Building2, desc: 'Bureau, boutique, entrepôt' },
-  { value: 'industrial', label: 'Industriel', icon: Factory, desc: 'Usine, atelier de production' },
-  { value: 'agricultural', label: 'Agricole', icon: Tractor, desc: 'Exploitation agricole' },
-  { value: 'mixed', label: 'Mixte', icon: Landmark, desc: 'Usage combiné' },
-];
-
-const CONSTRUCTION_OPTIONS = [
-  { value: 'en_dur', label: 'En dur', desc: 'Béton, briques, ciment' },
-  { value: 'semi_dur', label: 'Semi-dur', desc: 'Matériaux mixtes' },
-  { value: 'en_paille', label: 'En paille/bois', desc: 'Matériaux traditionnels' },
-  { value: 'none', label: 'Terrain nu', desc: 'Pas de construction' },
-];
+// Re-export for backward compatibility
+export { USAGE_OPTIONS } from './taxFormConstants';
 
 interface PropertyTaxQuestionsStepProps {
   parcelNumber: string;
@@ -71,16 +56,6 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
   const [hasExemption, setHasExemption] = useState<boolean | null>(
     input.selectedExemptions.length > 0 ? true : null
   );
-
-  const handleConstructionChange = (value: string) => {
-    if (value === 'none') {
-      setHasNoConstruction(true);
-      setInput(prev => ({ ...prev, constructionType: null }));
-    } else {
-      setHasNoConstruction(false);
-      setInput(prev => ({ ...prev, constructionType: value as any }));
-    }
-  };
 
   const toggleExemption = (type: ExemptionCheckType, checked: boolean) => {
     setInput(prev => ({
@@ -145,171 +120,10 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 2: Localisation & zone fiscale — aligné sur le formulaire CCC (onglet Lieu) */}
-      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <MapPin className="h-3.5 w-3.5 text-blue-600" />
-            </div>
-            <Label className="text-sm font-semibold">Localisation & zone fiscale</Label>
-            <Badge variant="outline" className="text-[10px] ml-auto">Données auto-remplies</Badge>
-          </div>
+      {/* Section 2: Localisation — shared component */}
+      <TaxLocationSection input={input} parcelData={parcelData} />
 
-          {/* Province */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              Province
-              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-            </Label>
-            <Input value={input.province || '—'} disabled className="h-10 text-sm rounded-xl opacity-70" />
-          </div>
-
-          {/* Type de zone */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              Type de zone
-              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto (préfixe {input.zoneType === 'rural' ? 'SR' : 'SU'})</span>
-            </Label>
-            <div className="grid grid-cols-2 gap-2">
-              {ZONE_OPTIONS.map(opt => {
-                const Icon = opt.icon;
-                const selected = input.zoneType === opt.value;
-                return (
-                  <div
-                    key={opt.value}
-                    className={`p-3 rounded-xl border-2 text-left opacity-70 cursor-not-allowed ${
-                      selected
-                        ? 'border-primary bg-primary/5 shadow-sm'
-                        : 'border-border'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Icon className={`h-4 w-4 ${selected ? 'text-primary' : 'text-muted-foreground'}`} />
-                      <span className={`text-sm font-medium ${selected ? 'text-primary' : ''}`}>{opt.label}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Ville — urban only */}
-          {input.zoneType === 'urban' && (parcelData?.ville || input.ville) && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Ville
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData?.ville || input.ville || '—'} disabled className="h-10 text-sm rounded-xl opacity-70" />
-              <p className="text-xs text-muted-foreground">
-                {input.province === 'Kinshasa'
-                  ? '⚡ Kinshasa : taux majoré (×1.5)'
-                  : '📍 Taux standard'}
-              </p>
-            </div>
-          )}
-
-          {/* Commune — urban */}
-          {parcelData?.commune && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Commune
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData.commune} disabled className="h-10 text-sm rounded-xl opacity-70" />
-            </div>
-          )}
-
-          {/* Quartier */}
-          {parcelData?.quartier && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Quartier
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData.quartier} disabled className="h-10 text-sm rounded-xl opacity-70" />
-            </div>
-          )}
-
-          {/* Avenue */}
-          {parcelData?.avenue && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Avenue
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData.avenue} disabled className="h-10 text-sm rounded-xl opacity-70" />
-            </div>
-          )}
-
-          {/* Territoire — rural */}
-          {parcelData?.territoire && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Territoire
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData.territoire} disabled className="h-10 text-sm rounded-xl opacity-70" />
-            </div>
-          )}
-
-          {/* Collectivité — rural */}
-          {parcelData?.collectivite && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Collectivité
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData.collectivite} disabled className="h-10 text-sm rounded-xl opacity-70" />
-            </div>
-          )}
-
-          {/* Village — rural */}
-          {parcelData?.village && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Village
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData.village} disabled className="h-10 text-sm rounded-xl opacity-70" />
-            </div>
-          )}
-
-          {/* Usage déclaré */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              Usage déclaré
-              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-            </Label>
-            <Input
-              value={
-                USAGE_OPTIONS.find(o => o.value === input.usageType)?.label
-                  ? `${USAGE_OPTIONS.find(o => o.value === input.usageType)?.label} — ${USAGE_OPTIONS.find(o => o.value === input.usageType)?.desc}`
-                  : input.usageType
-              }
-              disabled
-              className="h-10 text-sm rounded-xl opacity-70"
-            />
-          </div>
-
-          {/* Superficie */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              Superficie (m²)
-              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-            </Label>
-            <Input
-              value={input.areaSqm ? `${input.areaSqm.toLocaleString('fr-FR')} m²` : '—'}
-              disabled
-              className="h-10 text-sm rounded-xl opacity-70"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Section 3: Détails de la construction — aligné sur le formulaire CCC (onglet Infos) */}
+      {/* Section 3: Détails de la construction */}
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center gap-2">
@@ -352,7 +166,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
 
           {!hasNoConstruction && (
             <>
-              {/* Année de construction — auto-filled from CCC */}
+              {/* Année de construction */}
               <div className="space-y-1.5">
                 <Label className="text-sm font-medium flex items-center gap-1.5">
                   Année de construction
@@ -510,7 +324,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
                         if (file && file.size <= 10 * 1024 * 1024) {
                           setExemptionCertificateFile(file);
                         } else if (file) {
-                          toast?.('Le fichier dépasse la taille maximale de 10 Mo');
+                          toast.error('Le fichier dépasse la taille maximale de 10 Mo');
                         }
                       }}
                     />
@@ -522,41 +336,8 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 5: Retard de paiement (auto-calculé) */}
-      {(() => {
-        const penaltyInfo = getLatePenaltyInfo(input.fiscalYear);
-        return (
-          <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
-            <CardContent className="p-4 space-y-3">
-              <Label className="text-sm font-semibold flex items-center gap-1.5">
-                Retard de paiement
-                <SectionHelpPopover
-                  title="Calendrier fiscal — RDC"
-                  description="Janvier : constat de la situation du bien. Avant le 1er février : dépôt de la déclaration. Janvier–mars : paiement de l'impôt foncier. Au-delà du 31 mars : pénalités de retard (2 % par mois, plafonnées à 24 %). Majoration de 25 % au-delà de 3 mois de retard."
-                />
-              </Label>
-
-              <div className={`p-3 rounded-xl border ${penaltyInfo.isLate ? 'bg-destructive/5 border-destructive/30' : 'bg-emerald-50 border-emerald-200'}`}>
-                <p className={`text-sm font-medium ${penaltyInfo.isLate ? 'text-destructive' : 'text-emerald-700'}`}>
-                  {penaltyInfo.isLate
-                    ? `⚠️ Retard de ${penaltyInfo.monthsLate} mois — Pénalité : ${penaltyInfo.penaltyRate}%${penaltyInfo.hasSurcharge ? ' + majoration 25%' : ''}`
-                    : `✅ Aucun retard — Échéance : ${penaltyInfo.deadlineStr}`
-                  }
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Exercice fiscal {input.fiscalYear} — Échéance légale : {penaltyInfo.deadlineStr}
-                </p>
-                {penaltyInfo.isLate && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Intérêts moratoires : 2 % par mois de retard (plafonné à 24 %).
-                    {penaltyInfo.hasSurcharge && ' Majoration de 25 % applicable (retard supérieur à 3 mois).'}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+      {/* Section 5: Retard de paiement — shared component */}
+      <TaxPenaltySection fiscalYear={input.fiscalYear} taxType="property" />
 
       <Button
         onClick={onCalculate}

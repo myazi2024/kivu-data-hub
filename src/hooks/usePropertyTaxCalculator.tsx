@@ -327,26 +327,40 @@ export const usePropertyTaxCalculator = () => {
     }
 
     // --- Penalties (late payment) - Auto-calculated ---
-    // DRC fiscal calendar: deadline is March 31 of the fiscal year
-    // After March → late. Penalties: 2%/month (cap 24%) + 25% surcharge if >3 months
-    const autoPropertyMonthsLate = calculatePropertyTaxMonthsLate(input.fiscalYear);
-    const autoIrlMonthsLate = calculateIRLMonthsLate(input.fiscalYear);
-    const effectiveMonthsLate = Math.max(autoPropertyMonthsLate, autoIrlMonthsLate);
+    // Use the correct deadline per tax type:
+    // - Property tax only → property deadline (March 31)
+    // - IRL only → IRL deadline (February 28)
+    // - Both → apply each penalty to its own tax base
+    const propertyMonthsLate = calculatePropertyTaxMonthsLate(input.fiscalYear);
+    const irlMonthsLate = calculateIRLMonthsLate(input.fiscalYear);
 
     let penaltyRate = 0;
     let penaltyAmount = 0;
     let majorationAmount = 0;
     let totalPenalties = 0;
 
-    if (effectiveMonthsLate > 0) {
-      const taxBase = totalPropertyTax + irlAmount;
-      penaltyRate = Math.min(effectiveMonthsLate * 2, 24);
-      penaltyAmount = round((penaltyRate / 100) * taxBase);
-      if (effectiveMonthsLate > 3) {
-        majorationAmount = round(0.25 * taxBase);
-      }
-      totalPenalties = penaltyAmount + majorationAmount;
+    // Property tax penalties
+    if (propertyMonthsLate > 0 && totalPropertyTax > 0) {
+      const propPenaltyRate = Math.min(propertyMonthsLate * 2, 24);
+      const propPenalty = round((propPenaltyRate / 100) * totalPropertyTax);
+      const propMajoration = propertyMonthsLate > 3 ? round(0.25 * totalPropertyTax) : 0;
+      penaltyRate = propPenaltyRate;
+      penaltyAmount += propPenalty;
+      majorationAmount += propMajoration;
     }
+
+    // IRL penalties (separate deadline)
+    if (irlMonthsLate > 0 && irlAmount > 0) {
+      const irlPenaltyRate = Math.min(irlMonthsLate * 2, 24);
+      const irlPenalty = round((irlPenaltyRate / 100) * irlAmount);
+      const irlMajoration = irlMonthsLate > 3 ? round(0.25 * irlAmount) : 0;
+      // If both tax types are late, use the higher penalty rate for display
+      penaltyRate = Math.max(penaltyRate, irlPenaltyRate);
+      penaltyAmount += irlPenalty;
+      majorationAmount += irlMajoration;
+    }
+
+    totalPenalties = penaltyAmount + majorationAmount;
 
     // --- Combined ---
     const totalTax = totalPropertyTax + irlAmount;
