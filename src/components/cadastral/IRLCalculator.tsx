@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { usePropertyTaxCalculator, TaxCalculationInput, TaxCalculationResult } from '@/hooks/usePropertyTaxCalculator';
@@ -60,6 +60,13 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     applyDeduction30: true,
     monthsLate: 0,
   });
+
+  // Sync areaSqm when parcelData loads asynchronously
+  useEffect(() => {
+    if (parcelData?.area_sqm && parcelData.area_sqm > 0) {
+      setInput(prev => prev.areaSqm === 0 ? { ...prev, areaSqm: Number(parcelData.area_sqm) } : prev);
+    }
+  }, [parcelData?.area_sqm]);
 
   const handleCalculate = () => {
     if (hasNif === true && !nif.trim()) {
