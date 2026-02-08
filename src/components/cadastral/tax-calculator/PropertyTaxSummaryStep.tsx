@@ -11,18 +11,10 @@ import {
   TaxCalculationInput, TaxCalculationResult, FISCAL_ZONE_LABELS,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
-import { USAGE_OPTIONS } from './PropertyTaxQuestionsStep';
+import { USAGE_LABELS, CONSTRUCTION_LABELS, ROOFING_LABELS } from './taxFormConstants';
 
-const CONSTRUCTION_LABELS: Record<string, string> = {
-  en_dur: 'En dur',
-  semi_dur: 'Semi-dur',
-  en_paille: 'En paille/bois',
-};
-
-const ROOFING_LABELS: Record<string, string> = {
-  tole: 'Tôle ondulée', tuile: 'Tuile', beton: 'Dalle en béton',
-  chaume: 'Chaume / Paille', autre: 'Autre',
-};
+// Re-export for backward compatibility
+export { USAGE_OPTIONS } from './taxFormConstants';
 
 interface PropertyTaxSummaryStepProps {
   parcelNumber: string;
@@ -54,22 +46,11 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
 
           {/* Identification */}
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-1.5 border-b border-border/50">
-              <span className="text-muted-foreground">NIF contribuable</span>
-              <span className="font-mono font-bold">{nif || '—'}</span>
-            </div>
+            <SummaryRow label="NIF contribuable" value={nif || '—'} bold />
             {input.redevableIsDifferent && input.redevableNom && (
               <>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Redevable</span>
-                  <span className="font-medium">{input.redevableNom}</span>
-                </div>
-                {input.redevableNif && (
-                  <div className="flex justify-between py-1.5 border-b border-border/50">
-                    <span className="text-muted-foreground">NIF redevable</span>
-                    <span className="font-mono">{input.redevableNif}</span>
-                  </div>
-                )}
+                <SummaryRow label="Redevable" value={input.redevableNom} />
+                {input.redevableNif && <SummaryRow label="NIF redevable" value={input.redevableNif} mono />}
                 {input.redevableQualite && (
                   <div className="flex justify-between py-1.5 border-b border-border/50">
                     <span className="text-muted-foreground">Qualité</span>
@@ -78,10 +59,7 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
                 )}
               </>
             )}
-            <div className="flex justify-between py-1.5 border-b border-border/50">
-              <span className="text-muted-foreground">Parcelle</span>
-              <span className="font-mono font-bold">{parcelNumber}</span>
-            </div>
+            <SummaryRow label="Parcelle" value={parcelNumber} bold mono />
             <div className="flex justify-between py-1.5 border-b border-border/50">
               <span className="text-muted-foreground">Exercice fiscal</span>
               <Badge variant="secondary" className="text-xs">{input.fiscalYear}</Badge>
@@ -97,16 +75,8 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
               Localisation fiscale
             </h4>
             <div className="space-y-1.5 pl-5">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Province</span>
-                <span>{input.province}</span>
-              </div>
-              {input.ville && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Ville</span>
-                  <span>{input.ville}</span>
-                </div>
-              )}
+              <PlainRow label="Province" value={input.province} />
+              {input.ville && <PlainRow label="Ville" value={input.ville} />}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Zone</span>
                 <span className="flex items-center gap-1.5">
@@ -118,14 +88,8 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
                 <span className="text-muted-foreground">Catégorie fiscale</span>
                 <Badge variant="outline" className="text-xs">{FISCAL_ZONE_LABELS[result.fiscalZoneCategory]}</Badge>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Usage</span>
-                <span>{USAGE_OPTIONS.find(o => o.value === input.usageType)?.label}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Superficie</span>
-                <span>{input.areaSqm.toLocaleString()} m²</span>
-              </div>
+              <PlainRow label="Usage" value={USAGE_LABELS[input.usageType] || input.usageType} />
+              <PlainRow label="Superficie" value={`${input.areaSqm.toLocaleString()} m²`} />
             </div>
           </div>
 
@@ -134,28 +98,10 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
             <>
               <Separator />
               <div className="space-y-1.5 text-sm pl-5">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Construction</span>
-                  <span>{CONSTRUCTION_LABELS[input.constructionType] || input.constructionType}</span>
-                </div>
-                {input.constructionYear && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Année</span>
-                    <span>{input.constructionYear}</span>
-                  </div>
-                )}
-                {input.numberOfFloors > 1 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Étages</span>
-                    <span>R+{input.numberOfFloors - 1}</span>
-                  </div>
-                )}
-                {input.roofingType && (
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Toiture</span>
-                    <span>{ROOFING_LABELS[input.roofingType] || input.roofingType}</span>
-                  </div>
-                )}
+                <PlainRow label="Construction" value={CONSTRUCTION_LABELS[input.constructionType] || input.constructionType} />
+                {input.constructionYear && <PlainRow label="Année" value={String(input.constructionYear)} />}
+                {input.numberOfFloors > 1 && <PlainRow label="Étages" value={`R+${input.numberOfFloors - 1}`} />}
+                {input.roofingType && <PlainRow label="Toiture" value={ROOFING_LABELS[input.roofingType] || input.roofingType} />}
               </div>
             </>
           )}
@@ -169,19 +115,10 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
               Calcul de l'impôt foncier annuel
             </h4>
             <div className="space-y-1.5 text-sm pl-5">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Base fixe</span>
-                <span>{result.baseTax.toLocaleString()} USD</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Composante surface</span>
-                <span>{result.areaComponent.toLocaleString()} USD</span>
-              </div>
+              <PlainRow label="Base fixe" value={`${result.baseTax.toLocaleString()} USD`} />
+              <PlainRow label="Composante surface" value={`${result.areaComponent.toLocaleString()} USD`} />
               {result.fiscalZoneMultiplier !== 1 && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Coefficient zone (×{result.fiscalZoneMultiplier})</span>
-                  <span>{result.zoneAdjustedTax.toLocaleString()} USD</span>
-                </div>
+                <PlainRow label={`Coefficient zone (×${result.fiscalZoneMultiplier})`} value={`${result.zoneAdjustedTax.toLocaleString()} USD`} />
               )}
               {result.isExempt ? (
                 <div className="flex justify-between font-semibold pt-1 border-t border-border/50 text-emerald-600">
@@ -222,15 +159,9 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
               <div className="space-y-1.5 text-sm">
                 <h4 className="text-sm font-semibold text-destructive">Pénalités de retard</h4>
                 <div className="pl-5 space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Intérêts moratoires ({result.penaltyRate}%)</span>
-                    <span>{result.penaltyAmount.toLocaleString()} USD</span>
-                  </div>
+                  <PlainRow label={`Intérêts moratoires (${result.penaltyRate}%)`} value={`${result.penaltyAmount.toLocaleString()} USD`} />
                   {result.majorationAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Majoration 25%</span>
-                      <span>{result.majorationAmount.toLocaleString()} USD</span>
-                    </div>
+                    <PlainRow label="Majoration 25%" value={`${result.majorationAmount.toLocaleString()} USD`} />
                   )}
                   <div className="flex justify-between font-semibold text-destructive border-t border-border/50 pt-1">
                     <span>Total pénalités</span>
@@ -255,10 +186,7 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
                 </h4>
                 <div className="space-y-1.5 text-sm">
                   {result.fees.map((fee, i) => (
-                    <div key={i} className="flex justify-between">
-                      <span className="text-muted-foreground">{fee.name}</span>
-                      <span>{fee.amount.toLocaleString()} USD</span>
-                    </div>
+                    <PlainRow key={i} label={fee.name} value={`${fee.amount.toLocaleString()} USD`} />
                   ))}
                 </div>
               </div>
@@ -318,5 +246,21 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
     </div>
   );
 };
+
+/** Bordered summary row (for identification section) */
+const SummaryRow: React.FC<{ label: string; value: string; bold?: boolean; mono?: boolean }> = ({ label, value, bold, mono }) => (
+  <div className="flex justify-between py-1.5 border-b border-border/50">
+    <span className="text-muted-foreground">{label}</span>
+    <span className={`${bold ? 'font-bold' : 'font-medium'} ${mono ? 'font-mono' : ''}`}>{value}</span>
+  </div>
+);
+
+/** Plain row (no border) */
+const PlainRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex justify-between">
+    <span className="text-muted-foreground">{label}</span>
+    <span>{value}</span>
+  </div>
+);
 
 export default PropertyTaxSummaryStep;

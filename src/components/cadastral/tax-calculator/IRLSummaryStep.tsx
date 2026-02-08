@@ -8,17 +8,10 @@ import {
 } from 'lucide-react';
 import { Label } from '@/components/ui/label';
 import {
-  TaxCalculationInput, TaxCalculationResult, FISCAL_ZONE_LABELS,
+  TaxCalculationInput, TaxCalculationResult,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
-
-const USAGE_LABELS: Record<string, string> = {
-  residential: 'Résidentiel',
-  commercial: 'Commercial',
-  industrial: 'Industriel',
-  agricultural: 'Agricole',
-  mixed: 'Mixte',
-};
+import { USAGE_LABELS } from './taxFormConstants';
 
 interface IRLSummaryStepProps {
   parcelNumber: string;
@@ -93,16 +86,8 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
               Localisation
             </h4>
             <div className="pl-5 space-y-1">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Province</span>
-                <span>{input.province}</span>
-              </div>
-              {input.ville && (
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Ville</span>
-                  <span>{input.ville}</span>
-                </div>
-              )}
+              <SummaryRow label="Province" value={input.province} />
+              {input.ville && <SummaryRow label="Ville" value={input.ville} />}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Zone</span>
                 <span className="flex items-center gap-1.5">
@@ -110,10 +95,7 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
                   {input.zoneType === 'urban' ? 'Urbaine' : 'Rurale'}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Usage</span>
-                <span>{USAGE_LABELS[input.usageType] || input.usageType}</span>
-              </div>
+              <SummaryRow label="Usage" value={USAGE_LABELS[input.usageType] || input.usageType} />
             </div>
           </div>
 
@@ -130,18 +112,10 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
               />
             </h4>
             <div className="space-y-1.5 text-sm pl-5">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Loyer mensuel</span>
-                <span>{input.monthlyRentUsd.toLocaleString()} USD</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Mois d'occupation</span>
-                <span>{input.occupancyMonths} mois</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Revenu brut annuel</span>
-                <span>{result.annualRentalIncome.toLocaleString()} USD</span>
-              </div>
+              <SummaryRow
+                label="Revenu locatif brut annuel"
+                value={`${result.annualRentalIncome.toLocaleString()} USD`}
+              />
               {input.applyDeduction30 && result.deduction30Amount > 0 && (
                 <>
                   <div className="flex justify-between text-emerald-600">
@@ -154,10 +128,7 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
                   </div>
                 </>
               )}
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Taux IRL</span>
-                <span>{result.irlRate}%</span>
-              </div>
+              <SummaryRow label="Taux IRL" value={`${result.irlRate}%`} />
               <div className="flex justify-between font-semibold pt-1 border-t border-border/50">
                 <span>Montant IRL</span>
                 <span>{result.irlAmount.toLocaleString()} USD</span>
@@ -172,15 +143,9 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
               <div className="space-y-1.5 text-sm">
                 <h4 className="text-sm font-semibold text-destructive">Pénalités de retard</h4>
                 <div className="pl-5 space-y-1">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Intérêts ({result.penaltyRate}%)</span>
-                    <span>{result.penaltyAmount.toLocaleString()} USD</span>
-                  </div>
+                  <SummaryRow label={`Intérêts (${result.penaltyRate}%)`} value={`${result.penaltyAmount.toLocaleString()} USD`} />
                   {result.majorationAmount > 0 && (
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Majoration 25%</span>
-                      <span>{result.majorationAmount.toLocaleString()} USD</span>
-                    </div>
+                    <SummaryRow label="Majoration 25%" value={`${result.majorationAmount.toLocaleString()} USD`} />
                   )}
                   <div className="flex justify-between font-semibold text-destructive border-t border-border/50 pt-1">
                     <span>Total pénalités</span>
@@ -205,10 +170,7 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
                 </h4>
                 <div className="space-y-1.5 text-sm">
                   {result.fees.map((fee, i) => (
-                    <div key={i} className="flex justify-between">
-                      <span className="text-muted-foreground">{fee.name}</span>
-                      <span>{fee.amount.toLocaleString()} USD</span>
-                    </div>
+                    <SummaryRow key={i} label={fee.name} value={`${fee.amount.toLocaleString()} USD`} />
                   ))}
                 </div>
               </div>
@@ -260,5 +222,13 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
     </div>
   );
 };
+
+/** Reusable summary row */
+const SummaryRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
+  <div className="flex justify-between">
+    <span className="text-muted-foreground">{label}</span>
+    <span>{value}</span>
+  </div>
+);
 
 export default IRLSummaryStep;

@@ -74,6 +74,14 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       toast.error('Veuillez renseigner votre Numéro d\'Impôt (NIF)');
       return;
     }
+    if (hasNif === true && nif.trim() && !/^[A-Za-z0-9]{6,15}$/.test(nif.trim())) {
+      toast.error('Format NIF invalide. Le NIF doit contenir entre 6 et 15 caractères alphanumériques (ex: A0123456B)');
+      return;
+    }
+    if (input.redevableIsDifferent && !input.redevableNom.trim()) {
+      toast.error('Veuillez renseigner le nom du redevable');
+      return;
+    }
 
     // Compute total from tenants
     const validTenants = tenants.filter(t => t.monthlyRentUsd > 0);
