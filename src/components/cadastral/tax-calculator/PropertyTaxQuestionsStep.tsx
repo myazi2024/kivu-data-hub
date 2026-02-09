@@ -19,6 +19,8 @@ import TaxLocationSection from './TaxLocationSection';
 import TaxPenaltySection from './TaxPenaltySection';
 import { CONSTRUCTION_OPTIONS } from './taxFormConstants';
 import { toast } from 'sonner';
+import ExemptionRequestInfoBlock from './ExemptionRequestInfoBlock';
+import ExemptionRequestDialog from './ExemptionRequestDialog';
 
 // Re-export for backward compatibility
 export { USAGE_OPTIONS } from './taxFormConstants';
@@ -56,6 +58,7 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
   const [hasExemption, setHasExemption] = useState<boolean | null>(
     input.selectedExemptions.length > 0 ? true : null
   );
+  const [showExemptionRequest, setShowExemptionRequest] = useState(false);
 
   const toggleExemption = (type: ExemptionCheckType, checked: boolean) => {
     setInput(prev => ({
@@ -330,6 +333,11 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
                     />
                   </label>
                 )}
+
+                {/* Info block when no certificate is uploaded */}
+                {!exemptionCertificateFile && (
+                  <ExemptionRequestInfoBlock onRequestExemption={() => setShowExemptionRequest(true)} />
+                )}
               </div>
             </div>
           )}
@@ -347,6 +355,14 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
         Calculer l'impôt foncier
         <ArrowRight className="h-4 w-4" />
       </Button>
+
+      {/* Exemption Request Dialog */}
+      <ExemptionRequestDialog
+        open={showExemptionRequest}
+        onOpenChange={setShowExemptionRequest}
+        parcelNumber={parcelNumber}
+        parcelData={parcelData}
+      />
     </div>
   );
 };
