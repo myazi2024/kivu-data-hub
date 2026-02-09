@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
-  Home, ArrowRight, DollarSign
+  Home, ArrowRight, DollarSign, Shield
 } from 'lucide-react';
 import {
   TaxCalculationInput,
@@ -17,6 +17,8 @@ import TaxLocationSection from './TaxLocationSection';
 import TaxPenaltySection from './TaxPenaltySection';
 import TaxRedevableSection from './TaxRedevableSection';
 import IRLTenantsList, { TenantEntry } from './IRLTenantsList';
+import ExemptionRequestInfoBlock from './ExemptionRequestInfoBlock';
+import ExemptionRequestDialog from './ExemptionRequestDialog';
 
 interface IRLQuestionsStepProps {
   parcelNumber: string;
@@ -45,7 +47,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
   onCalculate, onOpenServiceCatalog
 }) => {
   const currentYear = new Date().getFullYear();
-
+  const [showExemptionRequest, setShowExemptionRequest] = useState(false);
   return (
     <div className="space-y-3 px-4 pb-4">
       {/* Section 1: Identité du contribuable */}
@@ -198,6 +200,29 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
+      {/* Section: Exonération IRL - info block */}
+      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="h-7 w-7 rounded-lg bg-purple-500/10 flex items-center justify-center">
+              <Shield className="h-3.5 w-3.5 text-purple-600" />
+            </div>
+            <Label className="text-sm font-semibold flex items-center gap-1.5">
+              Exonération fiscale
+              <SectionHelpPopover
+                title="Exonération IRL"
+                description="Si vous estimez être éligible à une exonération de l'impôt sur le revenu locatif, vous pouvez demander un certificat d'exonération auprès de la DGR."
+              />
+            </Label>
+          </div>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Si vous disposez d'un certificat d'exonération, joignez-le dans la déclaration. 
+            Sinon, vous pouvez soumettre une demande ci-dessous.
+          </p>
+          <ExemptionRequestInfoBlock onRequestExemption={() => setShowExemptionRequest(true)} />
+        </CardContent>
+      </Card>
+
       {/* Section: Retard de paiement — shared component */}
       <TaxPenaltySection fiscalYear={input.fiscalYear} taxType="irl" />
 
@@ -209,6 +234,14 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         Calculer l'IRL
         <ArrowRight className="h-4 w-4" />
       </Button>
+
+      {/* Exemption Request Dialog */}
+      <ExemptionRequestDialog
+        open={showExemptionRequest}
+        onOpenChange={setShowExemptionRequest}
+        parcelNumber={parcelNumber}
+        parcelData={parcelData}
+      />
     </div>
   );
 };
