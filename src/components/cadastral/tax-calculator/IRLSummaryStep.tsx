@@ -11,7 +11,7 @@ import {
   TaxCalculationInput, TaxCalculationResult,
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
-import { USAGE_LABELS } from './taxFormConstants';
+import { USAGE_LABELS, CONSTRUCTION_LABELS, ROOFING_LABELS } from './taxFormConstants';
 import { SummaryRow, PlainRow } from './SummaryRowComponents';
 
 interface IRLSummaryStepProps {
@@ -44,22 +44,11 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
 
           {/* Identification */}
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between py-1.5 border-b border-border/50">
-              <span className="text-muted-foreground">NIF contribuable</span>
-              <span className="font-mono font-bold">{nif || '—'}</span>
-            </div>
+            <SummaryRow label="NIF contribuable" value={nif || '—'} bold mono />
             {input.redevableIsDifferent && input.redevableNom && (
               <>
-                <div className="flex justify-between py-1.5 border-b border-border/50">
-                  <span className="text-muted-foreground">Redevable</span>
-                  <span className="font-medium">{input.redevableNom}</span>
-                </div>
-                {input.redevableNif && (
-                  <div className="flex justify-between py-1.5 border-b border-border/50">
-                    <span className="text-muted-foreground">NIF redevable</span>
-                    <span className="font-mono">{input.redevableNif}</span>
-                  </div>
-                )}
+                <SummaryRow label="Redevable" value={input.redevableNom} />
+                {input.redevableNif && <SummaryRow label="NIF redevable" value={input.redevableNif} mono />}
                 {input.redevableQualite && (
                   <div className="flex justify-between py-1.5 border-b border-border/50">
                     <span className="text-muted-foreground">Qualité</span>
@@ -68,10 +57,7 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
                 )}
               </>
             )}
-            <div className="flex justify-between py-1.5 border-b border-border/50">
-              <span className="text-muted-foreground">Parcelle</span>
-              <span className="font-mono font-bold">{parcelNumber}</span>
-            </div>
+            <SummaryRow label="Parcelle" value={parcelNumber} bold mono />
             <div className="flex justify-between py-1.5 border-b border-border/50">
               <span className="text-muted-foreground">Exercice fiscal</span>
               <Badge variant="secondary" className="text-xs">{input.fiscalYear}</Badge>
@@ -81,14 +67,14 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
           <Separator />
 
           {/* Localisation */}
-          <div className="space-y-1.5 text-sm">
+          <div className="space-y-2 text-sm">
             <h4 className="text-sm font-semibold flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-blue-600" />
-              Localisation
+              Localisation fiscale
             </h4>
-            <div className="pl-5 space-y-1">
-              <SummaryRow label="Province" value={input.province} />
-              {input.ville && <SummaryRow label="Ville" value={input.ville} />}
+            <div className="pl-5 space-y-1.5">
+              <PlainRow label="Province" value={input.province} />
+              {input.ville && <PlainRow label="Ville" value={input.ville} />}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Zone</span>
                 <span className="flex items-center gap-1.5">
@@ -96,9 +82,21 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
                   {input.zoneType === 'urban' ? 'Urbaine' : 'Rurale'}
                 </span>
               </div>
-              <SummaryRow label="Usage" value={USAGE_LABELS[input.usageType] || input.usageType} />
+              <PlainRow label="Usage" value={USAGE_LABELS[input.usageType] || input.usageType} />
+              {input.areaSqm > 0 && <PlainRow label="Superficie" value={`${input.areaSqm.toLocaleString()} m²`} />}
             </div>
           </div>
+
+          {/* Construction details */}
+          {input.constructionType && (
+            <>
+              <Separator />
+              <div className="space-y-1.5 text-sm pl-5">
+                <PlainRow label="Construction" value={CONSTRUCTION_LABELS[input.constructionType] || input.constructionType} />
+                {input.constructionYear && <PlainRow label="Année" value={String(input.constructionYear)} />}
+              </div>
+            </>
+          )}
 
           <Separator />
 
@@ -113,7 +111,7 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
               />
             </h4>
             <div className="space-y-1.5 text-sm pl-5">
-              <SummaryRow
+              <PlainRow
                 label="Revenu locatif brut annuel"
                 value={`${result.annualRentalIncome.toLocaleString()} USD`}
               />
@@ -129,7 +127,7 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
                   </div>
                 </>
               )}
-              <SummaryRow label="Taux IRL" value={`${result.irlRate}%`} />
+              <PlainRow label="Taux IRL" value={`${result.irlRate}%`} />
               <div className="flex justify-between font-semibold pt-1 border-t border-border/50">
                 <span>Montant IRL</span>
                 <span>{result.irlAmount.toLocaleString()} USD</span>

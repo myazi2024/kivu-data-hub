@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import {
-  Home, ArrowRight, DollarSign, Shield
+  ArrowRight, DollarSign, Shield
 } from 'lucide-react';
 import {
   TaxCalculationInput,
@@ -16,6 +15,7 @@ import TaxpayerIdentitySection from './TaxpayerIdentitySection';
 import TaxLocationSection from './TaxLocationSection';
 import TaxPenaltySection from './TaxPenaltySection';
 import TaxRedevableSection from './TaxRedevableSection';
+import ConstructionDetailsSection from './ConstructionDetailsSection';
 import IRLTenantsList, { TenantEntry } from './IRLTenantsList';
 import ExemptionRequestInfoBlock from './ExemptionRequestInfoBlock';
 import ExemptionRequestDialog from './ExemptionRequestDialog';
@@ -48,6 +48,9 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
 }) => {
   const currentYear = new Date().getFullYear();
   const [showExemptionRequest, setShowExemptionRequest] = useState(false);
+
+  const hasNoConstruction = parcelData?.construction_type === 'Terrain nu' || (!input.constructionType && !parcelData?.construction_type);
+
   return (
     <div className="space-y-3 px-4 pb-4">
       {/* Section 1: Identité du contribuable */}
@@ -105,70 +108,15 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
       {/* Section: Localisation — shared component */}
       <TaxLocationSection input={input} parcelData={parcelData} showArea={false} />
 
-      {/* Section: Détails de la construction */}
-      <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
-        <CardContent className="p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-amber-500/10 flex items-center justify-center">
-              <Home className="h-3.5 w-3.5 text-amber-600" />
-            </div>
-            <Label className="text-sm font-semibold">Détails de la construction</Label>
-            <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal ml-auto">Données auto-remplies</span>
-          </div>
+      {/* Section: Détails de la construction — shared component */}
+      <ConstructionDetailsSection
+        input={input}
+        parcelData={parcelData}
+        hasNoConstruction={hasNoConstruction}
+        showAdvancedFields={false}
+      />
 
-          {/* Type de construction */}
-          {parcelData?.construction_type && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Type de construction
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData.construction_type} disabled className="h-10 text-sm rounded-xl opacity-70" />
-            </div>
-          )}
-
-          {/* Nature de la construction */}
-          {parcelData?.construction_nature && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Nature de la construction
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input value={parcelData.construction_nature} disabled className="h-10 text-sm rounded-xl opacity-70" />
-            </div>
-          )}
-
-          {/* Année de construction */}
-          {parcelData?.construction_type !== 'Terrain nu' && (input.constructionYear || parcelData?.construction_year) && (
-            <div className="space-y-1.5">
-              <Label className="text-sm font-medium flex items-center gap-1.5">
-                Année de construction
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-              </Label>
-              <Input
-                value={input.constructionYear || parcelData?.construction_year || '—'}
-                disabled
-                className="h-10 text-sm rounded-xl opacity-70"
-              />
-            </div>
-          )}
-
-          {/* Superficie */}
-          <div className="space-y-1.5">
-            <Label className="text-sm font-medium flex items-center gap-1.5">
-              Superficie (m²)
-              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-md font-normal">Auto</span>
-            </Label>
-            <Input
-              value={parcelData?.area_sqm ? `${Number(parcelData.area_sqm).toLocaleString('fr-FR')} m²` : '—'}
-              disabled
-              className="h-10 text-sm rounded-xl opacity-70"
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Section: Redevable différent (parity with PropertyTax) */}
+      {/* Section: Redevable différent */}
       <TaxRedevableSection input={input} setInput={setInput} />
 
       {/* Section: Locataires */}
