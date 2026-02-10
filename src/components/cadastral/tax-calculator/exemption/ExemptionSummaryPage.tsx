@@ -11,6 +11,14 @@ import { ExemptionFormData } from '../ExemptionRequestDialog';
 import { EXEMPTION_DEFINITIONS } from '@/hooks/usePropertyTaxCalculator';
 import { toast } from 'sonner';
 
+const IRL_EXEMPTION_LABELS: Record<string, string> = {
+  habitation_personnelle: 'Habitation personnelle du propriétaire',
+  edifice_public_irl: 'Propriété de l\'État ou d\'une ETD',
+  organisme_international: 'Organisation internationale ou diplomatique',
+  bien_non_loue: 'Bien vacant non générateur de revenus',
+  edifice_religieux_irl: 'Édifice cultuel ou religieux',
+};
+
 interface ExemptionSummaryPageProps {
   formData: ExemptionFormData;
   taxType: 'property' | 'irl';
@@ -35,7 +43,7 @@ const ExemptionSummaryPage: React.FC<ExemptionSummaryPageProps> = ({
 
   const exemptionLabels = taxType === 'property'
     ? formData.selectedExemptions.map(e => EXEMPTION_DEFINITIONS.find(d => d.type === e)?.label || e)
-    : [formData.irlExemptionType];
+    : [IRL_EXEMPTION_LABELS[formData.irlExemptionType] || formData.irlExemptionType];
 
   const justification = taxType === 'property' ? formData.justification : formData.irlJustification;
   const documents = taxType === 'property' ? formData.supportingDocuments : formData.irlSupportingDocuments;

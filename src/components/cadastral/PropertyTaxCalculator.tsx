@@ -67,13 +67,19 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
 
   const [hasNoConstruction, setHasNoConstruction] = useState(defaultConstruction === 'none');
 
-  // Sync areaSqm when parcelData loads asynchronously
+  // Sync areaSqm and ownerName when parcelData loads asynchronously
   useEffect(() => {
     const area = Number(parcelData?.area_sqm);
     if (area > 0) {
       setInput(prev => ({ ...prev, areaSqm: area }));
     }
   }, [parcelData?.area_sqm]);
+
+  useEffect(() => {
+    if (parcelData?.current_owner_name && !ownerName) {
+      setOwnerName(parcelData.current_owner_name);
+    }
+  }, [parcelData?.current_owner_name]);
 
   const handleCalculate = () => {
     if (hasNif === true && !nif.trim()) {
