@@ -12,6 +12,7 @@ import {
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
 import { USAGE_LABELS } from './taxFormConstants';
+import { SummaryRow, PlainRow } from './SummaryRowComponents';
 
 interface IRLSummaryStepProps {
   parcelNumber: string;
@@ -222,13 +223,5 @@ const IRLSummaryStep: React.FC<IRLSummaryStepProps> = ({
     </div>
   );
 };
-
-/** Reusable summary row */
-const SummaryRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex justify-between">
-    <span className="text-muted-foreground">{label}</span>
-    <span>{value}</span>
-  </div>
-);
 
 export default IRLSummaryStep;

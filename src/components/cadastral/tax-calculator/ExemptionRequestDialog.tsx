@@ -65,23 +65,24 @@ interface ExemptionRequestDialogProps {
   onOpenChange: (open: boolean) => void;
   parcelNumber: string;
   parcelData?: any;
+  defaultTab?: 'property' | 'irl';
 }
 
 type ActiveTab = 'property' | 'irl';
 type FormStep = 'form' | 'summary';
 
 const ExemptionRequestDialog: React.FC<ExemptionRequestDialogProps> = ({
-  open, onOpenChange, parcelNumber, parcelData
+  open, onOpenChange, parcelNumber, parcelData, defaultTab = 'property'
 }) => {
   const isMobile = useIsMobile();
-  const [activeTab, setActiveTab] = useState<ActiveTab>('property');
+  const [activeTab, setActiveTab] = useState<ActiveTab>(defaultTab);
   const [formStep, setFormStep] = useState<FormStep>('form');
   const [formData, setFormData] = useState<ExemptionFormData>(() => createEmptyFormData(parcelNumber, parcelData));
 
   const handleReset = () => {
     setFormData(createEmptyFormData(parcelNumber, parcelData));
     setFormStep('form');
-    setActiveTab('property');
+    setActiveTab(defaultTab);
   };
 
   const handleClose = () => {

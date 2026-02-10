@@ -84,6 +84,10 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       toast.error('Format NIF invalide. Le NIF doit contenir entre 6 et 15 caractères alphanumériques (ex: A0123456B)');
       return;
     }
+    if (input.redevableIsDifferent && !input.redevableNom.trim()) {
+      toast.error('Veuillez renseigner le nom du redevable');
+      return;
+    }
     // Use parcelData.area_sqm as fallback if input.areaSqm hasn't synced yet
     const effectiveArea = input.areaSqm || Number(parcelData?.area_sqm) || 0;
     if (effectiveArea <= 0) {

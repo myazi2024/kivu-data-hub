@@ -12,6 +12,7 @@ import {
 } from '@/hooks/usePropertyTaxCalculator';
 import SectionHelpPopover from '../SectionHelpPopover';
 import { USAGE_LABELS, CONSTRUCTION_LABELS, ROOFING_LABELS } from './taxFormConstants';
+import { SummaryRow, PlainRow } from './SummaryRowComponents';
 
 // Re-export for backward compatibility
 export { USAGE_OPTIONS } from './taxFormConstants';
@@ -246,21 +247,5 @@ const PropertyTaxSummaryStep: React.FC<PropertyTaxSummaryStepProps> = ({
     </div>
   );
 };
-
-/** Bordered summary row (for identification section) */
-const SummaryRow: React.FC<{ label: string; value: string; bold?: boolean; mono?: boolean }> = ({ label, value, bold, mono }) => (
-  <div className="flex justify-between py-1.5 border-b border-border/50">
-    <span className="text-muted-foreground">{label}</span>
-    <span className={`${bold ? 'font-bold' : 'font-medium'} ${mono ? 'font-mono' : ''}`}>{value}</span>
-  </div>
-);
-
-/** Plain row (no border) */
-const PlainRow: React.FC<{ label: string; value: string }> = ({ label, value }) => (
-  <div className="flex justify-between">
-    <span className="text-muted-foreground">{label}</span>
-    <span>{value}</span>
-  </div>
-);
 
 export default PropertyTaxSummaryStep;

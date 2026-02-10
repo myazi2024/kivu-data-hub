@@ -17,6 +17,7 @@ import SectionHelpPopover from '../SectionHelpPopover';
 import TaxpayerIdentitySection from './TaxpayerIdentitySection';
 import TaxLocationSection from './TaxLocationSection';
 import TaxPenaltySection from './TaxPenaltySection';
+import TaxRedevableSection from './TaxRedevableSection';
 import { CONSTRUCTION_OPTIONS } from './taxFormConstants';
 import { toast } from 'sonner';
 import ExemptionRequestInfoBlock from './ExemptionRequestInfoBlock';
@@ -344,7 +345,10 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section 5: Retard de paiement — shared component */}
+      {/* Section 5: Redevable différent */}
+      <TaxRedevableSection input={input} setInput={setInput} />
+
+      {/* Section 6: Retard de paiement — shared component */}
       <TaxPenaltySection fiscalYear={input.fiscalYear} taxType="property" />
 
       <Button

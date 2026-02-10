@@ -102,7 +102,11 @@ const TaxLocationSection: React.FC<TaxLocationSectionProps> = ({
         {showArea && (
           <AutoField
             label="Superficie (m²)"
-            value={input.areaSqm ? `${input.areaSqm.toLocaleString('fr-FR')} m²` : '—'}
+            value={
+              (input.areaSqm || Number(parcelData?.area_sqm))
+                ? `${(input.areaSqm || Number(parcelData?.area_sqm)).toLocaleString('fr-FR')} m²`
+                : '—'
+            }
           />
         )}
       </CardContent>

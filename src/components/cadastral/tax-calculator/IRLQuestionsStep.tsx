@@ -241,6 +241,7 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         onOpenChange={setShowExemptionRequest}
         parcelNumber={parcelNumber}
         parcelData={parcelData}
+        defaultTab="irl"
       />
     </div>
   );
