@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -27,18 +27,27 @@ import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, CheckCircle2, AlertCircle, ArrowLeft, CalendarIcon, Clock, MapPin, CreditCard, Loader2, Smartphone, Shield } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle, ArrowLeft, CalendarIcon, Clock, MapPin, CreditCard, Loader2, Smartphone, Shield, Plus, X, FileText, Upload, Info } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
+import SectionHelpPopover from './SectionHelpPopover';
 
 interface BuildingPermitRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   parcelNumber: string;
   hasExistingConstruction?: boolean;
+}
+
+// CDF/USD exchange rate (approximate)
+const CDF_TO_USD = 2800;
+
+interface AttachmentFile {
+  file: File;
+  label: string;
 }
 
 const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = ({
@@ -66,6 +75,17 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const [paymentPhone, setPaymentPhone] = useState('');
   const [paymentPin, setPaymentPin] = useState('');
   const [availableProviders, setAvailableProviders] = useState<Array<{ value: string; label: string; prefix: string; color: string }>>([]);
+
+  // Attachments
+  const [attachments, setAttachments] = useState<Record<string, AttachmentFile | null>>({
+    architectural_plans: null,
+    id_document: null,
+    property_title: null,
+    environmental_study: null,
+    site_photos: null,
+    other: null,
+  });
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   // Load payment providers
   useEffect(() => {
@@ -124,8 +144,26 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     currentState: '',
     complianceIssues: '',
     regularizationReason: '',
-    originalPermitNumber: ''
+    originalPermitNumber: '',
+    architectName: '',
+    architectLicense: '',
+    roofingType: '',
+    numberOfRooms: '',
+    waterSupply: '',
+    electricitySupply: '',
   });
+
+  // Auto-populate user info
+  useEffect(() => {
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        applicantName: prev.applicantName || user.user_metadata?.full_name || '',
+        applicantPhone: prev.applicantPhone || user.user_metadata?.phone || '',
+        applicantEmail: prev.applicantEmail || user.email || '',
+      }));
+    }
+  }, [user]);
 
   const handleInputChange = (field: string, value: string) => {
     if (field === 'constructionDate' && value) {
@@ -147,6 +185,32 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleFileSelect = (key: string, label: string) => {
+    fileInputRefs.current[key]?.click();
+  };
+
+  const handleFileChange = (key: string, label: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
+      const isValidSize = file.size <= 10 * 1024 * 1024;
+      if (!isValid) {
+        toast({ title: 'Format non supporté', description: 'Images ou PDF uniquement', variant: 'destructive' });
+        return;
+      }
+      if (!isValidSize) {
+        toast({ title: 'Fichier trop volumineux', description: 'Max 10 Mo', variant: 'destructive' });
+        return;
+      }
+      setAttachments(prev => ({ ...prev, [key]: { file, label } }));
+    }
+    e.target.value = '';
+  };
+
+  const removeAttachment = (key: string) => {
+    setAttachments(prev => ({ ...prev, [key]: null }));
+  };
+
   const requiresOriginalPermit = () => {
     const reasonsRequiringPermit = [
       'Modification non autorisée',
@@ -155,6 +219,33 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     ];
     return reasonsRequiringPermit.includes(formData.regularizationReason);
   };
+
+  // ========== FEE CALCULATION ==========
+  const areaSqm = parseFloat(formData.plannedArea) || 0;
+  const usage = formData.declaredUsage;
+
+  const getUrbanismTaxCDF = () => {
+    if (!areaSqm) return 0;
+    if (['Commerce', 'Bureau', 'Entrepôt'].includes(usage)) {
+      return areaSqm * 450; // Commercial/Industrial: ~400-500 CDF/m²
+    }
+    return areaSqm * 250; // Residential: ~200-300 CDF/m²
+  };
+
+  const urbanismTaxCDF = getUrbanismTaxCDF();
+  const urbanismTaxUSD = Math.round((urbanismTaxCDF / CDF_TO_USD) * 100) / 100;
+
+  const permitFeeUSD = requestType === 'new' ? 75 : 120;
+  const bicAdminFeeUSD = 15;
+  const bankFeeUSD = 2;
+  const totalFeeUSD = Math.round((permitFeeUSD + urbanismTaxUSD + bicAdminFeeUSD + bankFeeUSD) * 100) / 100;
+
+  const feeBreakdown = [
+    { label: requestType === 'new' ? 'Frais de permis de construire' : 'Frais de permis de régularisation', amount: permitFeeUSD },
+    { label: `Taxe d'urbanisme (${areaSqm ? areaSqm.toLocaleString('fr-FR') : '0'} m²)`, amount: urbanismTaxUSD, detail: `${urbanismTaxCDF.toLocaleString('fr-FR')} CDF` },
+    { label: 'Frais administratifs BIC', amount: bicAdminFeeUSD },
+    { label: 'Frais bancaires', amount: bankFeeUSD },
+  ];
 
   const isFormValid = () => {
     const baseFields = [
@@ -233,125 +324,84 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       return;
     }
 
-    // Mode bypass (dev)
     if (!isPaymentRequired()) {
       setStep('confirmation');
-      toast({
-        title: "Demande enregistrée",
-        description: "Votre demande de permis a été enregistrée avec succès",
-      });
+      toast({ title: "Demande enregistrée", description: "Votre demande de permis a été enregistrée avec succès" });
       return;
     }
 
     if (paymentMethod === 'mobile_money') {
       if (!paymentProvider || !paymentPhone || !paymentPin) {
-        toast({
-          title: 'Champs requis',
-          description: 'Veuillez remplir tous les champs de paiement.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Champs requis', description: 'Veuillez remplir tous les champs de paiement.', variant: 'destructive' });
         return;
       }
 
       try {
         setProcessingPayment(true);
-
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
           'process-mobile-money-payment',
-          {
-            body: {
-              payment_provider: paymentProvider,
-              phone_number: paymentPhone,
-              amount_usd: servicePrice,
-              payment_type: 'permit_request',
-              test_mode: paymentMode.test_mode,
-            },
-          }
+          { body: { payment_provider: paymentProvider, phone_number: paymentPhone, amount_usd: totalFeeUSD, payment_type: 'permit_request', test_mode: paymentMode.test_mode } }
         );
-
         if (paymentError) throw paymentError;
         if (!paymentResult?.success) throw new Error(paymentResult?.error || 'Payment failed');
-
         await pollTransaction(paymentResult.transaction_id);
-
-        toast({
-          title: "Demande enregistrée",
-          description: "Votre demande de permis a été enregistrée avec succès",
-        });
+        toast({ title: "Demande enregistrée", description: "Votre demande de permis a été enregistrée avec succès" });
         setStep('confirmation');
       } catch (err: any) {
         console.error('Payment error:', err);
-        toast({
-          title: 'Erreur de paiement',
-          description: err?.message || "Une erreur s'est produite",
-          variant: 'destructive',
-        });
+        toast({ title: 'Erreur de paiement', description: err?.message || "Une erreur s'est produite", variant: 'destructive' });
       } finally {
         setProcessingPayment(false);
       }
     } else {
-      // Bank card payment
-      toast({
-        title: 'Carte bancaire',
-        description: 'Le paiement par carte bancaire sera bientôt disponible.',
-      });
+      toast({ title: 'Carte bancaire', description: 'Le paiement par carte bancaire sera bientôt disponible.' });
     }
   };
 
   const handleClose = () => {
     setStep('form');
     setFormData({
-      constructionType: '',
-      constructionNature: '',
-      declaredUsage: '',
-      plannedArea: '',
-      numberOfFloors: '1',
-      estimatedCost: '',
-      applicantName: '',
-      applicantPhone: '',
-      applicantEmail: '',
-      applicantAddress: '',
-      projectDescription: '',
-      startDate: '',
-      estimatedDuration: '',
-      constructionDate: '',
-      currentState: '',
-      complianceIssues: '',
-      regularizationReason: '',
-      originalPermitNumber: ''
+      constructionType: '', constructionNature: '', declaredUsage: '', plannedArea: '',
+      numberOfFloors: '1', estimatedCost: '', applicantName: '', applicantPhone: '',
+      applicantEmail: '', applicantAddress: '', projectDescription: '', startDate: '',
+      estimatedDuration: '', constructionDate: '', currentState: '', complianceIssues: '',
+      regularizationReason: '', originalPermitNumber: '', architectName: '', architectLicense: '',
+      roofingType: '', numberOfRooms: '', waterSupply: '', electricitySupply: '',
     });
-    setPaymentProvider('');
-    setPaymentPhone('');
-    setPaymentPin('');
-    setPaymentMethod('mobile_money');
+    setAttachments({ architectural_plans: null, id_document: null, property_title: null, environmental_study: null, site_photos: null, other: null });
+    setPaymentProvider(''); setPaymentPhone(''); setPaymentPin(''); setPaymentMethod('mobile_money');
     onOpenChange(false);
   };
 
-  const servicePrice = requestType === 'new' ? 150 : 200;
+  const attachmentFields = [
+    { key: 'architectural_plans', label: 'Plans architecturaux', required: true, help: 'Façades, coupes et plan d\'implantation' },
+    { key: 'id_document', label: 'Pièce d\'identité', required: true, help: 'Carte d\'identité, passeport ou permis de conduire' },
+    { key: 'property_title', label: 'Titre de propriété', required: false, help: 'Certificat d\'enregistrement ou contrat de concession' },
+    { key: 'environmental_study', label: 'Étude d\'impact environnemental', required: false, help: 'Requise pour les projets commerciaux/industriels' },
+    { key: 'site_photos', label: 'Photos du site', required: false, help: 'Photos récentes du terrain ou de la construction existante' },
+    { key: 'other', label: 'Autre document', required: false, help: 'Tout document complémentaire pertinent' },
+  ];
+
   const cartItem: CartItem = {
     id: 'building-permit-request',
-    title: requestType === 'new' ? 'Demande de permis' : 'Demande de permis de régularisation',
-    price: servicePrice,
+    title: requestType === 'new' ? 'Permis de construire' : 'Permis de régularisation',
+    price: totalFeeUSD,
     description: `Parcelle: ${parcelNumber}`
   };
 
   const getStepTitle = () => {
     switch (step) {
-      case 'preview':
-        return 'Aperçu de la demande';
-      case 'payment':
-        return 'Paiement';
-      case 'confirmation':
-        return 'Confirmation';
-      default:
-        return requestType === 'new' ? 'Demande de permis' : 'Demande de régularisation';
+      case 'preview': return 'Aperçu de la demande';
+      case 'payment': return 'Paiement';
+      case 'confirmation': return 'Confirmation';
+      default: return requestType === 'new' ? 'Permis de construire' : 'Permis de régularisation';
     }
   };
 
   const renderFormStep = () => (
     <ScrollArea className="h-[65vh] sm:h-[70vh]">
       <div className="space-y-4 pr-2">
-        {/* Informations parcelle */}
+        {/* Parcelle info */}
         <Card className="bg-muted/50 border-0 rounded-xl">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
@@ -368,11 +418,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         <Card className="border-2 rounded-xl">
           <CardContent className="p-3 space-y-3">
             <h4 className="text-sm font-semibold">Type de demande</h4>
-            <RadioGroup 
-              value={requestType} 
-              onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} 
-              className="space-y-2"
-            >
+            <RadioGroup value={requestType} onValueChange={(value: 'new' | 'regularization') => setRequestType(value)} className="space-y-2">
               <div className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-colors cursor-pointer ${requestType === 'new' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}>
                 <RadioGroupItem value="new" id="new" />
                 <Label htmlFor="new" className="flex-1 cursor-pointer">
@@ -388,7 +434,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                 </Label>
               </div>
             </RadioGroup>
-            
             {requestType === 'regularization' && (
               <Alert className="bg-orange-50 dark:bg-orange-950/50 border-orange-200 dark:border-orange-900 rounded-xl">
                 <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400" />
@@ -403,19 +448,21 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         {/* Détails de la construction */}
         <Card className="border-2 rounded-xl">
           <CardContent className="p-3 space-y-3">
-            <h4 className="text-sm font-semibold">Détails de la construction</h4>
+            <h4 className="text-sm font-semibold flex items-center gap-1.5">
+              Détails de la construction
+              <SectionHelpPopover title="Construction" description="Décrivez les caractéristiques techniques de votre projet de construction." />
+            </h4>
             
             <div className="space-y-1.5">
               <Label className="text-sm">Type de construction *</Label>
               <Select value={formData.constructionType} onValueChange={(v) => handleInputChange('constructionType', v)}>
-                <SelectTrigger className="h-11 text-sm rounded-xl border-2">
-                  <SelectValue placeholder="Sélectionner le type" />
-                </SelectTrigger>
+                <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner le type" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Résidentielle">Résidentielle</SelectItem>
                   <SelectItem value="Commerciale">Commerciale</SelectItem>
                   <SelectItem value="Industrielle">Industrielle</SelectItem>
                   <SelectItem value="Agricole">Agricole</SelectItem>
+                  <SelectItem value="Mixte">Mixte (résidentiel + commercial)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -423,13 +470,11 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             <div className="space-y-1.5">
               <Label className="text-sm">Nature de construction *</Label>
               <Select value={formData.constructionNature} onValueChange={(v) => handleInputChange('constructionNature', v)}>
-                <SelectTrigger className="h-11 text-sm rounded-xl border-2">
-                  <SelectValue placeholder="Sélectionner la nature" />
-                </SelectTrigger>
+                <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner la nature" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Durable">Durable</SelectItem>
-                  <SelectItem value="Semi-durable">Semi-durable</SelectItem>
-                  <SelectItem value="Précaire">Précaire</SelectItem>
+                  <SelectItem value="En dur">En dur (béton, briques, ciment)</SelectItem>
+                  <SelectItem value="Semi-dur">Semi-dur (matériaux mixtes)</SelectItem>
+                  <SelectItem value="Précaire">Précaire (bois, tôle)</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -437,9 +482,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             <div className="space-y-1.5">
               <Label className="text-sm">Usage déclaré *</Label>
               <Select value={formData.declaredUsage} onValueChange={(v) => handleInputChange('declaredUsage', v)}>
-                <SelectTrigger className="h-11 text-sm rounded-xl border-2">
-                  <SelectValue placeholder="Sélectionner l'usage" />
-                </SelectTrigger>
+                <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner l'usage" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Habitation">Habitation</SelectItem>
                   <SelectItem value="Commerce">Commerce</SelectItem>
@@ -453,47 +496,86 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label className="text-sm">Surface (m²) *</Label>
-                <Input
-                  type="number"
-                  placeholder="150"
-                  value={formData.plannedArea}
-                  onChange={(e) => handleInputChange('plannedArea', e.target.value)}
-                  className="h-11 text-sm rounded-xl border-2"
-                />
+                <Input type="number" placeholder="150" value={formData.plannedArea} onChange={(e) => handleInputChange('plannedArea', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-sm">Nombre d'étages *</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  placeholder="2"
-                  value={formData.numberOfFloors}
-                  onChange={(e) => handleInputChange('numberOfFloors', e.target.value)}
-                  className="h-11 text-sm rounded-xl border-2"
-                />
+                <Label className="text-sm">Nombre d'étages</Label>
+                <Input type="number" min="1" placeholder="2" value={formData.numberOfFloors} onChange={(e) => handleInputChange('numberOfFloors', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Nombre de pièces</Label>
+                <Input type="number" min="1" placeholder="6" value={formData.numberOfRooms} onChange={(e) => handleInputChange('numberOfRooms', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Type de toiture</Label>
+                <Select value={formData.roofingType} onValueChange={(v) => handleInputChange('roofingType', v)}>
+                  <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Toiture" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Tôle ondulée">Tôle ondulée</SelectItem>
+                    <SelectItem value="Tuile">Tuile</SelectItem>
+                    <SelectItem value="Dalle en béton">Dalle en béton</SelectItem>
+                    <SelectItem value="Chaume">Chaume / Paille</SelectItem>
+                    <SelectItem value="Autre">Autre</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Eau</Label>
+                <Select value={formData.waterSupply} onValueChange={(v) => handleInputChange('waterSupply', v)}>
+                  <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Alimentation" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="REGIDESO">REGIDESO</SelectItem>
+                    <SelectItem value="Forage">Forage privé</SelectItem>
+                    <SelectItem value="Citerne">Citerne</SelectItem>
+                    <SelectItem value="Aucune">Aucune</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Électricité</Label>
+                <Select value={formData.electricitySupply} onValueChange={(v) => handleInputChange('electricitySupply', v)}>
+                  <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Alimentation" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SNEL">SNEL</SelectItem>
+                    <SelectItem value="Solaire">Solaire</SelectItem>
+                    <SelectItem value="Groupe électrogène">Groupe électrogène</SelectItem>
+                    <SelectItem value="Aucune">Aucune</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-sm">Coût estimé (USD)</Label>
-              <Input
-                type="number"
-                placeholder="50000"
-                value={formData.estimatedCost}
-                onChange={(e) => handleInputChange('estimatedCost', e.target.value)}
-                className="h-11 text-sm rounded-xl border-2"
-              />
+              <Input type="number" placeholder="50000" value={formData.estimatedCost} onChange={(e) => handleInputChange('estimatedCost', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-sm">Description du projet *</Label>
-              <Textarea
-                placeholder="Décrivez brièvement votre projet de construction..."
-                value={formData.projectDescription}
-                onChange={(e) => handleInputChange('projectDescription', e.target.value)}
-                rows={3}
-                className="resize-none text-sm rounded-xl border-2"
-              />
+              <Textarea placeholder="Décrivez brièvement votre projet de construction..." value={formData.projectDescription} onChange={(e) => handleInputChange('projectDescription', e.target.value)} rows={3} className="resize-none text-sm rounded-xl border-2" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Architecte / Maître d'œuvre */}
+        <Card className="border-2 rounded-xl">
+          <CardContent className="p-3 space-y-3">
+            <h4 className="text-sm font-semibold">Architecte / Maître d'œuvre</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Nom de l'architecte</Label>
+                <Input type="text" placeholder="Nom complet" value={formData.architectName} onChange={(e) => handleInputChange('architectName', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">N° d'agrément</Label>
+                <Input type="text" placeholder="Ex: ONA/2024/001" value={formData.architectLicense} onChange={(e) => handleInputChange('architectLicense', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -506,23 +588,11 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-1.5">
                   <Label className="text-sm">Date de début *</Label>
-                  <Input
-                    type="date"
-                    min={new Date().toISOString().split('T')[0]}
-                    value={formData.startDate}
-                    onChange={(e) => handleInputChange('startDate', e.target.value)}
-                    className="h-11 text-sm rounded-xl border-2"
-                  />
+                  <Input type="date" min={new Date().toISOString().split('T')[0]} value={formData.startDate} onChange={(e) => handleInputChange('startDate', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm">Durée (mois)</Label>
-                  <Input
-                    type="number"
-                    placeholder="12"
-                    value={formData.estimatedDuration}
-                    onChange={(e) => handleInputChange('estimatedDuration', e.target.value)}
-                    className="h-11 text-sm rounded-xl border-2"
-                  />
+                  <Input type="number" placeholder="12" value={formData.estimatedDuration} onChange={(e) => handleInputChange('estimatedDuration', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
                 </div>
               </div>
             </CardContent>
@@ -535,9 +605,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <div className="space-y-1.5">
                 <Label className="text-sm">Raison de la régularisation *</Label>
                 <Select value={formData.regularizationReason} onValueChange={(v) => handleInputChange('regularizationReason', v)}>
-                  <SelectTrigger className="h-11 text-sm rounded-xl border-2">
-                    <SelectValue placeholder="Sélectionner la raison" />
-                  </SelectTrigger>
+                  <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner la raison" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Construction sans permis initial">Construction sans permis initial</SelectItem>
                     <SelectItem value="Permis périmé">Permis périmé</SelectItem>
@@ -551,16 +619,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               {requiresOriginalPermit() && (
                 <div className="space-y-1.5">
                   <Label className="text-sm">Numéro du permis initial *</Label>
-                  <Input
-                    type="text"
-                    placeholder="Ex: PC/2020/001234"
-                    value={formData.originalPermitNumber}
-                    onChange={(e) => handleInputChange('originalPermitNumber', e.target.value)}
-                    className="h-11 text-sm rounded-xl border-2"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Numéro du permis de la construction existante faisant l'objet de modification
-                  </p>
+                  <Input type="text" placeholder="Ex: PC/2020/001234" value={formData.originalPermitNumber} onChange={(e) => handleInputChange('originalPermitNumber', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
                 </div>
               )}
 
@@ -568,44 +627,21 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                 <Label className="text-sm">Date de construction *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className={cn(
-                        "w-full h-11 justify-start text-left font-normal rounded-xl border-2",
-                        !formData.constructionDate && "text-muted-foreground"
-                      )}
-                    >
+                    <Button variant="outline" className={cn("w-full h-10 justify-start text-left font-normal rounded-xl border-2", !formData.constructionDate && "text-muted-foreground")}>
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {formData.constructionDate ? (
-                        format(new Date(formData.constructionDate), "dd MMMM yyyy", { locale: fr })
-                      ) : (
-                        <span>Sélectionner une date</span>
-                      )}
+                      {formData.constructionDate ? format(new Date(formData.constructionDate), "dd MMMM yyyy", { locale: fr }) : <span>Sélectionner une date</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={formData.constructionDate ? new Date(formData.constructionDate) : undefined}
-                      onSelect={(date) => {
-                        if (date) {
-                          handleInputChange('constructionDate', date.toISOString().split('T')[0]);
-                        }
-                      }}
-                      disabled={(date) => date > new Date()}
-                      initialFocus
-                      className={cn("p-3 pointer-events-auto")}
-                    />
+                    <Calendar mode="single" selected={formData.constructionDate ? new Date(formData.constructionDate) : undefined} onSelect={(date) => { if (date) handleInputChange('constructionDate', date.toISOString().split('T')[0]); }} disabled={(date) => date > new Date()} initialFocus className={cn("p-3 pointer-events-auto")} />
                   </PopoverContent>
                 </Popover>
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-sm">État actuel de la construction *</Label>
+                <Label className="text-sm">État actuel *</Label>
                 <Select value={formData.currentState} onValueChange={(v) => handleInputChange('currentState', v)}>
-                  <SelectTrigger className="h-11 text-sm rounded-xl border-2">
-                    <SelectValue placeholder="Sélectionner l'état" />
-                  </SelectTrigger>
+                  <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue placeholder="Sélectionner l'état" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="En cours">En cours</SelectItem>
                     <SelectItem value="Terminée">Terminée</SelectItem>
@@ -615,14 +651,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-sm">Problèmes de conformité (optionnel)</Label>
-                <Textarea
-                  placeholder="Décrivez les éventuels problèmes de conformité..."
-                  value={formData.complianceIssues}
-                  onChange={(e) => handleInputChange('complianceIssues', e.target.value)}
-                  rows={2}
-                  className="resize-none text-sm rounded-xl border-2"
-                />
+                <Label className="text-sm">Problèmes de conformité</Label>
+                <Textarea placeholder="Décrivez les éventuels problèmes..." value={formData.complianceIssues} onChange={(e) => handleInputChange('complianceIssues', e.target.value)} rows={2} className="resize-none text-sm rounded-xl border-2" />
               </div>
             </CardContent>
           </Card>
@@ -632,69 +662,100 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         <Card className="border-2 rounded-xl">
           <CardContent className="p-3 space-y-3">
             <h4 className="text-sm font-semibold">Informations du demandeur</h4>
-            
             <div className="space-y-1.5">
               <Label className="text-sm">Nom complet *</Label>
-              <Input
-                type="text"
-                placeholder="Jean Dupont"
-                value={formData.applicantName}
-                onChange={(e) => handleInputChange('applicantName', e.target.value)}
-                className="h-11 text-sm rounded-xl border-2"
-              />
+              <Input type="text" placeholder="Jean Dupont" value={formData.applicantName} onChange={(e) => handleInputChange('applicantName', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
             </div>
-
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
                 <Label className="text-sm">Téléphone *</Label>
-                <Input
-                  type="tel"
-                  placeholder="+243 XXX XXX XXX"
-                  value={formData.applicantPhone}
-                  onChange={(e) => handleInputChange('applicantPhone', e.target.value)}
-                  className="h-11 text-sm rounded-xl border-2"
-                />
+                <Input type="tel" placeholder="+243 XXX XXX XXX" value={formData.applicantPhone} onChange={(e) => handleInputChange('applicantPhone', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-sm">Email</Label>
-                <Input
-                  type="email"
-                  placeholder="email@exemple.com"
-                  value={formData.applicantEmail}
-                  onChange={(e) => handleInputChange('applicantEmail', e.target.value)}
-                  className="h-11 text-sm rounded-xl border-2"
-                />
+                <Input type="email" placeholder="email@exemple.com" value={formData.applicantEmail} onChange={(e) => handleInputChange('applicantEmail', e.target.value)} className="h-10 text-sm rounded-xl border-2" />
               </div>
             </div>
-
             <div className="space-y-1.5">
               <Label className="text-sm">Adresse</Label>
-              <Textarea
-                placeholder="Votre adresse complète..."
-                value={formData.applicantAddress}
-                onChange={(e) => handleInputChange('applicantAddress', e.target.value)}
-                rows={2}
-                className="resize-none text-sm rounded-xl border-2"
-              />
+              <Textarea placeholder="Votre adresse complète..." value={formData.applicantAddress} onChange={(e) => handleInputChange('applicantAddress', e.target.value)} rows={2} className="resize-none text-sm rounded-xl border-2" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Pièces jointes */}
+        <Card className="border-2 rounded-xl">
+          <CardContent className="p-3 space-y-3">
+            <h4 className="text-sm font-semibold flex items-center gap-1.5">
+              <Upload className="h-4 w-4" />
+              Pièces jointes
+              <SectionHelpPopover title="Documents requis" description="Joignez les documents nécessaires à l'instruction de votre dossier. Les plans architecturaux et la pièce d'identité sont obligatoires." />
+            </h4>
+            
+            <div className="space-y-2">
+              {attachmentFields.map(({ key, label, required, help }) => (
+                <div key={key}>
+                  {!attachments[key] ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleFileSelect(key, label)}
+                      className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2 justify-start"
+                    >
+                      <Plus className="h-3.5 w-3.5 flex-shrink-0" />
+                      <span className="truncate">{label}{required ? ' *' : ''}</span>
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
+                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs font-medium block truncate">{label}</span>
+                        <span className="text-[10px] text-muted-foreground truncate block">{attachments[key]!.file.name}</span>
+                      </div>
+                      <Button type="button" variant="ghost" size="sm" onClick={() => removeAttachment(key)} className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-lg flex-shrink-0">
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                  <input
+                    ref={el => { fileInputRefs.current[key] = el; }}
+                    type="file"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,application/pdf"
+                    onChange={(e) => handleFileChange(key, label, e)}
+                    className="hidden"
+                  />
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
         {/* Récapitulatif des frais */}
         <Card className="bg-primary/5 border-2 border-primary/20 rounded-xl">
-          <CardContent className="p-3">
+          <CardContent className="p-3 space-y-2">
+            <h4 className="text-sm font-semibold flex items-center gap-1.5">
+              <Info className="h-4 w-4 text-primary" />
+              Détail des frais
+            </h4>
+            {feeBreakdown.map((fee, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <div className="flex-1 min-w-0">
+                  <span className="text-muted-foreground text-xs">{fee.label}</span>
+                  {fee.detail && <span className="text-[10px] text-muted-foreground ml-1">({fee.detail})</span>}
+                </div>
+                <span className="font-medium ml-2">${fee.amount.toFixed(2)}</span>
+              </div>
+            ))}
+            <Separator />
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">Frais de traitement</span>
-              <span className="text-lg font-bold text-primary">${servicePrice} USD</span>
+              <span className="text-sm font-bold">Total</span>
+              <span className="text-lg font-bold text-primary">${totalFeeUSD.toFixed(2)} USD</span>
             </div>
           </CardContent>
         </Card>
 
-        <Button 
-          onClick={handlePreview} 
-          className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
-          disabled={!isFormValid()}
-        >
+        <Button onClick={handlePreview} className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg" disabled={!isFormValid()}>
           Aperçu avant soumission
         </Button>
       </div>
@@ -717,38 +778,39 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <span className="text-sm text-muted-foreground">Parcelle</span>
               <span className="font-mono font-bold text-sm">{parcelNumber}</span>
             </div>
-            
             <Separator />
-            
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Type de demande</span>
-              <span className="text-sm font-semibold">
-                {requestType === 'new' ? 'Nouveau permis' : 'Régularisation'}
-              </span>
+              <span className="text-sm text-muted-foreground">Type</span>
+              <span className="text-sm font-semibold">{requestType === 'new' ? 'Nouveau permis' : 'Régularisation'}</span>
             </div>
-
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Type de construction</span>
-              <span className="text-sm">{formData.constructionType}</span>
+              <span className="text-sm text-muted-foreground">Construction</span>
+              <span className="text-sm">{formData.constructionType} — {formData.constructionNature}</span>
             </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Nature</span>
-              <span className="text-sm">{formData.constructionNature}</span>
-            </div>
-
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Usage</span>
               <span className="text-sm">{formData.declaredUsage}</span>
             </div>
-
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Surface</span>
-              <span className="text-sm">{formData.plannedArea} m²</span>
+              <span className="text-sm">{parseFloat(formData.plannedArea).toLocaleString('fr-FR')} m²</span>
             </div>
+            {formData.numberOfRooms && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Pièces</span>
+                <span className="text-sm">{formData.numberOfRooms}</span>
+              </div>
+            )}
+            {formData.roofingType && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Toiture</span>
+                <span className="text-sm">{formData.roofingType}</span>
+              </div>
+            )}
 
             <Separator />
 
+            {/* Demandeur */}
             <div className="space-y-2 bg-primary/5 p-3 rounded-xl -mx-1">
               <span className="text-xs font-semibold text-primary uppercase tracking-wide">Demandeur</span>
               <div className="flex items-center justify-between">
@@ -759,19 +821,41 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                 <span className="text-sm text-muted-foreground">Téléphone</span>
                 <span className="text-sm">{formData.applicantPhone}</span>
               </div>
-              {formData.applicantEmail && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Email</span>
-                  <span className="text-sm">{formData.applicantEmail}</span>
-                </div>
-              )}
             </div>
+
+            {/* Pièces jointes */}
+            {Object.values(attachments).some(a => a !== null) && (
+              <>
+                <Separator />
+                <div className="space-y-1.5">
+                  <span className="text-xs font-semibold text-primary uppercase tracking-wide">Documents joints</span>
+                  {Object.entries(attachments).filter(([, a]) => a !== null).map(([key, a]) => (
+                    <div key={key} className="flex items-center gap-2 text-xs">
+                      <FileText className="h-3 w-3 text-primary flex-shrink-0" />
+                      <span className="text-muted-foreground">{a!.label}</span>
+                      <span className="truncate font-medium">{a!.file.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
             <Separator />
 
+            {/* Frais détaillés */}
+            <div className="space-y-1.5">
+              <span className="text-xs font-semibold text-primary uppercase tracking-wide">Détail des frais</span>
+              {feeBreakdown.map((fee, i) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground text-xs">{fee.label}</span>
+                  <span className="font-medium">${fee.amount.toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
             <div className="flex items-center justify-between pt-2 border-t-2">
               <span className="text-sm font-bold">Total à payer</span>
-              <span className="text-lg font-bold text-primary">${servicePrice} USD</span>
+              <span className="text-lg font-bold text-primary">${totalFeeUSD.toFixed(2)} USD</span>
             </div>
           </CardContent>
         </Card>
@@ -784,20 +868,13 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         </Alert>
 
         <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={() => setStep('form')} 
-            className="flex-1 h-12 text-sm font-semibold rounded-xl"
-          >
+          <Button variant="outline" onClick={() => setStep('form')} className="flex-1 h-11 text-sm font-semibold rounded-xl">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Modifier
           </Button>
-          <Button 
-            onClick={handleSubmitForm} 
-            className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg"
-          >
+          <Button onClick={handleSubmitForm} className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg">
             <CreditCard className="h-4 w-4 mr-2" />
-            Payer ${servicePrice}
+            Payer ${totalFeeUSD.toFixed(2)}
           </Button>
         </div>
       </div>
@@ -818,7 +895,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                   <h3 className="text-base font-semibold">Validation en cours...</h3>
                   <p className="text-sm text-muted-foreground">Confirmez le paiement sur votre téléphone</p>
                 </div>
-
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-xl border border-blue-200 dark:border-blue-800">
                   <div className="flex items-start gap-3">
                     <Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
@@ -841,7 +917,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
     return (
       <div className="space-y-3">
-        {/* Header avec montant */}
         <Card className="bg-muted/50 border-0 rounded-xl">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
@@ -851,48 +926,30 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               </div>
               <div className="text-right ml-3">
                 <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Montant</p>
-                <p className="text-xl font-bold text-primary">${servicePrice}</p>
+                <p className="text-xl font-bold text-primary">${totalFeeUSD.toFixed(2)}</p>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Mode de paiement */}
         <div className="space-y-2">
           <Label className="text-xs font-medium">Mode de paiement</Label>
           <div className="grid grid-cols-2 gap-2">
-            <Button
-              type="button"
-              variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPaymentMethod('mobile_money')}
-              className="h-9 text-xs rounded-lg gap-1.5"
-            >
-              <Smartphone className="h-3.5 w-3.5" />
-              Mobile Money
+            <Button type="button" variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentMethod('mobile_money')} className="h-9 text-xs rounded-lg gap-1.5">
+              <Smartphone className="h-3.5 w-3.5" /> Mobile Money
             </Button>
-            <Button
-              type="button"
-              variant={paymentMethod === 'bank_card' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setPaymentMethod('bank_card')}
-              className="h-9 text-xs rounded-lg gap-1.5"
-            >
-              <CreditCard className="h-3.5 w-3.5" />
-              Carte bancaire
+            <Button type="button" variant={paymentMethod === 'bank_card' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentMethod('bank_card')} className="h-9 text-xs rounded-lg gap-1.5">
+              <CreditCard className="h-3.5 w-3.5" /> Carte bancaire
             </Button>
           </div>
         </div>
 
-        {/* Formulaire Mobile Money */}
         {paymentMethod === 'mobile_money' && (
           <div className="space-y-2.5">
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground">Opérateur</Label>
               <Select value={paymentProvider} onValueChange={setPaymentProvider}>
-                <SelectTrigger className="h-9 text-xs rounded-lg">
-                  <SelectValue placeholder="Sélectionner l'opérateur..." />
-                </SelectTrigger>
+                <SelectTrigger className="h-9 text-xs rounded-lg"><SelectValue placeholder="Sélectionner l'opérateur..." /></SelectTrigger>
                 <SelectContent>
                   {availableProviders.map((provider) => (
                     <SelectItem key={provider.value} value={provider.value} className="text-xs">
@@ -905,36 +962,20 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                 </SelectContent>
               </Select>
             </div>
-            
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground">Numéro de téléphone</Label>
-              <PhoneNumberInput
-                value={paymentPhone}
-                onChange={setPaymentPhone}
-                placeholder="97 123 4567"
-                disabled={!paymentProvider}
-              />
+              <PhoneNumberInput value={paymentPhone} onChange={setPaymentPhone} placeholder="97 123 4567" disabled={!paymentProvider} />
             </div>
-
             <div className="space-y-1">
               <Label className="text-[10px] text-muted-foreground">Code secret</Label>
               <div className="relative">
                 <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  type="tel"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="Votre code PIN"
-                  value={paymentPin}
-                  onChange={(e) => setPaymentPin(e.target.value.replace(/[^0-9]/g, ''))}
-                  className="h-9 pl-9 text-xs rounded-lg"
-                />
+                <Input type="tel" inputMode="numeric" pattern="[0-9]*" placeholder="Votre code PIN" value={paymentPin} onChange={(e) => setPaymentPin(e.target.value.replace(/[^0-9]/g, ''))} className="h-9 pl-9 text-xs rounded-lg" />
               </div>
             </div>
           </div>
         )}
 
-        {/* Info carte bancaire */}
         {paymentMethod === 'bank_card' && (
           <Alert className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
             <CreditCard className="h-4 w-4 text-amber-600" />
@@ -944,27 +985,15 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           </Alert>
         )}
 
-        {/* Boutons d'action */}
         <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline"
-            onClick={() => setStep('preview')}
-            disabled={processingPayment}
-            className="flex-1 h-10 text-xs rounded-xl"
-          >
-            <ArrowLeft className="h-3.5 w-3.5 mr-1.5" />
-            Retour
+          <Button variant="outline" onClick={() => setStep('preview')} disabled={processingPayment} className="flex-1 h-10 text-xs rounded-xl">
+            <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Retour
           </Button>
-          <Button
-            onClick={handlePayment}
-            disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone || !paymentPin))}
-            className="flex-1 h-10 text-xs rounded-xl"
-          >
-            Payer ${servicePrice}
+          <Button onClick={handlePayment} disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone || !paymentPin))} className="flex-1 h-10 text-xs rounded-xl">
+            Payer ${totalFeeUSD.toFixed(2)}
           </Button>
         </div>
 
-        {/* Sécurité */}
         <div className="flex items-center justify-center gap-1.5 text-[10px] text-muted-foreground">
           <Shield className="h-3 w-3" />
           <span>Transaction sécurisée SSL</span>
@@ -979,80 +1008,50 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
         <CheckCircle2 className="h-8 w-8 text-green-600 relative" />
       </div>
-      
       <div>
         <h3 className="font-semibold text-base">Demande soumise avec succès</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          Votre demande sera traitée dans les 15 à 30 jours ouvrables
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">Votre demande sera traitée dans les 15 à 30 jours ouvrables</p>
       </div>
-
       <Card className="bg-muted/50 border-0 text-left rounded-lg">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              Parcelle
-            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />Parcelle</div>
             <span className="font-mono font-bold text-xs">{parcelNumber}</span>
           </div>
-          
           <Separator />
-          
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Building2 className="h-3 w-3" />
-              Type
-            </div>
-            <span className="text-xs">
-              {requestType === 'new' ? 'Nouveau permis' : 'Régularisation'}
-            </span>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Building2 className="h-3 w-3" />Type</div>
+            <span className="text-xs">{requestType === 'new' ? 'Nouveau permis' : 'Régularisation'}</span>
           </div>
-          
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              Délai estimé
-            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock className="h-3 w-3" />Délai estimé</div>
             <span className="text-xs">15-30 jours</span>
           </div>
-          
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-muted-foreground">Montant payé</span>
-            <span className="font-bold text-primary text-sm">${servicePrice} USD</span>
+            <span className="font-bold text-primary text-sm">${totalFeeUSD.toFixed(2)} USD</span>
           </div>
         </CardContent>
       </Card>
-
       <Alert className="text-left py-2 rounded-lg">
         <AlertDescription className="text-[10px]">
           Vous recevrez une notification par email et SMS lors du traitement de votre demande.
         </AlertDescription>
       </Alert>
-
-      <Button onClick={handleClose} className="w-full h-10 text-sm rounded-xl">
-        Fermer
-      </Button>
+      <Button onClick={handleClose} className="w-full h-10 text-sm rounded-xl">Fermer</Button>
     </div>
   );
 
-  // Reset showIntro when dialog opens
   useEffect(() => {
-    if (open) {
-      setShowIntro(true);
-    }
+    if (open) setShowIntro(true);
   }, [open]);
-
-  const handleIntroComplete = () => {
-    setShowIntro(false);
-  };
 
   if (showIntro && open) {
     return (
       <FormIntroDialog
         open={open}
         onOpenChange={onOpenChange}
-        onContinue={handleIntroComplete}
+        onContinue={() => setShowIntro(false)}
         config={FORM_INTRO_CONFIGS.permit_request}
       />
     );
@@ -1071,12 +1070,9 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               {getStepTitle()}
             </DialogTitle>
             {step === 'form' && (
-              <DialogDescription className="text-sm text-muted-foreground">
-                Parcelle {parcelNumber}
-              </DialogDescription>
+              <DialogDescription className="text-sm text-muted-foreground">Parcelle {parcelNumber}</DialogDescription>
             )}
           </DialogHeader>
-
           {step === 'form' && renderFormStep()}
           {step === 'preview' && renderPreviewStep()}
           {step === 'payment' && renderPaymentStep()}
