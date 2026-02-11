@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Receipt, Calculator, Plus, DollarSign } from 'lucide-react';
+import { Receipt, Calculator, Plus, DollarSign, Building2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import TaxFormDialog from './TaxFormDialog';
 import PropertyTaxCalculator from './PropertyTaxCalculator';
+import BuildingTaxCalculator from './BuildingTaxCalculator';
 import IRLCalculator from './IRLCalculator';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 
@@ -18,7 +19,7 @@ interface TaxManagementDialogProps {
   onOpenServiceCatalog?: () => void;
 }
 
-type ActiveTab = 'foncier' | 'irl' | 'add';
+type ActiveTab = 'foncier' | 'batisse' | 'irl' | 'add';
 
 const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
   parcelNumber, parcelId, parcelData, open, onOpenChange, onOpenServiceCatalog
@@ -43,10 +44,11 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
         config={{
           ...FORM_INTRO_CONFIGS.tax,
           title: 'Déclaration d\'impôts',
-          aboutService: 'Ce service vous permet de déclarer vos impôts séparément : l\'Impôt Foncier Annuel (perçu par la DGI) et l\'Impôt sur le Revenu Locatif (perçu par la DGR). Chaque déclaration génère une fiche qui sera transmise à l\'entité administrative compétente accompagnée du paiement.',
+          aboutService: 'Ce service centralise toutes vos obligations fiscales foncières en RDC : l\'Impôt Foncier Annuel (perçu par la DGI), la Taxe de Bâtisse (impôt provincial sur les constructions), l\'Impôt sur le Revenu Locatif (perçu par la DGR), et l\'enregistrement manuel de paiements antérieurs. Chaque déclaration génère une fiche officielle transmise à l\'entité compétente.',
           requiredInfo: [
             'Numéro d\'Identification Fiscale (NIF)',
             'Caractéristiques de la parcelle (zone, usage, superficie)',
+            'Détails de la construction (type, état, étages) pour la taxe de bâtisse',
             'Revenus locatifs (pour l\'IRL)',
             'Année fiscale concernée',
           ],
@@ -69,40 +71,57 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
           </DialogDescription>
 
           {/* Tab buttons */}
-          <div className="flex gap-1.5 mt-3">
+          <div className="flex gap-1 mt-3">
             <Button
               variant={activeTab === 'foncier' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('foncier')}
-              className={`flex-1 h-9 rounded-xl text-[11px] gap-1 px-2 ${activeTab === 'foncier' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`flex-1 h-8 rounded-xl text-[10px] gap-0.5 px-1.5 ${activeTab === 'foncier' ? 'bg-primary text-primary-foreground' : ''}`}
             >
-              <Calculator className="h-3.5 w-3.5 flex-shrink-0" />
-              <span className="truncate">Impôt foncier</span>
+              <Calculator className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">Foncier</span>
+            </Button>
+            <Button
+              variant={activeTab === 'batisse' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveTab('batisse')}
+              className={`flex-1 h-8 rounded-xl text-[10px] gap-0.5 px-1.5 ${activeTab === 'batisse' ? 'bg-amber-600 text-white hover:bg-amber-700' : ''}`}
+            >
+              <Building2 className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">Bâtisse</span>
             </Button>
             <Button
               variant={activeTab === 'irl' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('irl')}
-              className={`flex-1 h-9 rounded-xl text-[11px] gap-1 px-2 ${activeTab === 'irl' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`flex-1 h-8 rounded-xl text-[10px] gap-0.5 px-1.5 ${activeTab === 'irl' ? 'bg-primary text-primary-foreground' : ''}`}
             >
-              <DollarSign className="h-3.5 w-3.5 flex-shrink-0" />
-              <span className="truncate">Revenu locatif</span>
+              <DollarSign className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">Locatif</span>
             </Button>
             <Button
               variant={activeTab === 'add' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('add')}
-              className={`flex-1 h-9 rounded-xl text-[11px] gap-1 px-2 ${activeTab === 'add' ? 'bg-primary text-primary-foreground' : ''}`}
+              className={`flex-1 h-8 rounded-xl text-[10px] gap-0.5 px-1.5 ${activeTab === 'add' ? 'bg-primary text-primary-foreground' : ''}`}
             >
-              <Plus className="h-3.5 w-3.5 flex-shrink-0" />
+              <Plus className="h-3 w-3 flex-shrink-0" />
               <span className="truncate">Ajouter</span>
             </Button>
           </div>
         </DialogHeader>
 
-        <div className="overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 180px)' }}>
+        <div className="overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 200px)' }}>
           {activeTab === 'foncier' && (
             <PropertyTaxCalculator
+              parcelNumber={parcelNumber}
+              parcelId={parcelId}
+              parcelData={parcelData}
+              onOpenServiceCatalog={onOpenServiceCatalog}
+            />
+          )}
+          {activeTab === 'batisse' && (
+            <BuildingTaxCalculator
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
