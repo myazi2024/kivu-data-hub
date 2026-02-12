@@ -377,11 +377,14 @@ const CadastralMap = () => {
         // Créer la carte centrée sur Goma, RDC
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
         const map = L.map(mapRef.current, {
-          zoomControl: !isMobile,
+          zoomControl: false,
           scrollWheelZoom: !isMobile,
           doubleClickZoom: !isMobile,
           dragging: true
         }).setView([-1.6794, 29.2273], 12);
+
+        // Add zoom control positioned bottom-right for both mobile and desktop
+        L.control.zoom({ position: 'bottomright' }).addTo(map);
 
         // Ajouter la couche de tuiles OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -565,7 +568,7 @@ const CadastralMap = () => {
     <div className="min-h-screen flex flex-col bg-background">
       <Navigation />
       
-      <main className="flex-1" style={{ height: 'calc(100vh - 4rem)' }}>
+      <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>
         {/* Carte en plein écran */}
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
@@ -585,11 +588,12 @@ const CadastralMap = () => {
 
         {/* Overlay de recherche - Design moderne avec animation de rebond */}
         <div 
-          className={`absolute left-3 top-3 z-[1000] ${isMobile ? 'right-3' : 'w-96'} transform-gpu ${
+          className={`absolute left-3 z-[900] ${isMobile ? 'right-3' : 'w-96'} transform-gpu ${
             isSearchBarActive || selectedParcel 
-              ? 'animate-search-rise' 
-              : 'translate-y-[calc(100dvh-12rem)]'
+              ? 'top-3' 
+              : 'translate-y-[calc(100dvh-12rem)] top-3'
           }`}
+          style={{ transition: 'top 0.3s ease, transform 0.3s ease' }}
         >
           <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
             <div className={`${selectedParcel && isMobile ? 'p-2' : 'p-2.5'}`}>
@@ -687,7 +691,7 @@ const CadastralMap = () => {
                   <Settings2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'} transition-transform duration-300 ${showAdvancedSearch ? 'rotate-90' : ''}`} />
                 </Button>
 
-                {/* Bouton Obtenir titre foncier - Texte sur desktop, icône sur mobile */}
+                {/* Bouton Obtenir titre foncier - Icône seule par défaut, expand on hover (desktop) */}
                 {isMobile ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -714,7 +718,6 @@ const CadastralMap = () => {
                               title="Demander un titre foncier"
                             >
                               <FileCheck2 className={`${selectedParcel && isMobile ? 'h-3.5 w-3.5' : 'h-4 w-4'}`} />
-                              {/* Indicateur de notification pulsant jaune */}
                               {showLandTitleNotification && (
                                 <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
                               )}
@@ -746,7 +749,7 @@ const CadastralMap = () => {
                     </TooltipContent>
                   </Tooltip>
                 ) : (
-                  /* Desktop - Bouton texte visible */
+                  /* Desktop - Icon only, expands to icon+text on hover */
                   <Popover
                     open={showLandTitleNotification}
                     onOpenChange={(nextOpen) => {
@@ -765,11 +768,12 @@ const CadastralMap = () => {
                           setShowLandTitleNotification(false);
                           setShowLandTitleTermsDialog(true);
                         }}
-                        className="h-9 px-3 shrink-0 rounded-xl transition-colors relative gap-1.5 text-xs font-medium"
+                        className="h-9 w-9 hover:w-auto shrink-0 rounded-xl transition-all duration-300 ease-in-out relative gap-1.5 text-xs font-medium overflow-hidden group px-0 hover:px-3"
                       >
-                        <FileCheck2 className="h-4 w-4" />
-                        <span>Demander un titre foncier</span>
-                        {/* Indicateur de notification pulsant jaune */}
+                        <FileCheck2 className="h-4 w-4 shrink-0" />
+                        <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-300 ease-in-out">
+                          Demander un titre foncier
+                        </span>
                         {showLandTitleNotification && (
                           <span className="absolute -top-1 -right-1 h-3 w-3 bg-yellow-400 rounded-full animate-pulse shadow-lg border border-yellow-300" />
                         )}
@@ -870,16 +874,20 @@ const CadastralMap = () => {
           )}
         </div>
 
-        {/* Bouton Contribuer détaché - Animation élégante */}
+        {/* Bouton Contribuer - Positionné sous la barre de recherche sur desktop */}
         {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
-          <div className="absolute left-1/2 -translate-x-1/2 z-[1000] animate-fade-in"
-            style={{ top: isSearchBarActive ? 'calc(var(--search-bar-height, 80px) + 1rem)' : 'auto', bottom: !isSearchBarActive ? '8rem' : 'auto' }}
+          <div className={`absolute z-[900] animate-fade-in ${
+            isMobile 
+              ? 'left-1/2 -translate-x-1/2 bottom-24'
+              : 'left-3 top-[5.5rem]'
+          }`}
+            style={isMobile ? {} : { width: '24rem' }}
           >
             <div className="relative">
               {/* Notification flottante au-dessus du bouton */}
               {showManualSearchNotification && (
-                <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-64 animate-scale-in">
-                  <div className="bg-primary text-primary-foreground text-xs px-4 py-2.5 rounded-xl shadow-lg text-center">
+                <div className={`absolute -top-12 ${isMobile ? 'left-1/2 -translate-x-1/2' : 'left-0 right-0'} animate-scale-in`}>
+                  <div className="bg-primary text-primary-foreground text-xs px-4 py-2.5 rounded-xl shadow-lg text-center w-64 mx-auto">
                     <div className="flex items-center justify-center gap-2">
                       <Sparkles className="h-3.5 w-3.5 shrink-0" />
                       <span>Cette parcelle n'existe pas encore</span>
@@ -889,11 +897,11 @@ const CadastralMap = () => {
                 </div>
               )}
               
-              {/* Bouton principal centré et compact */}
+              {/* Bouton principal */}
               <Button
                 variant="default"
                 size="lg"
-                className="h-11 px-5 text-sm font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary animate-scale-in"
+                className="h-11 px-5 text-sm font-semibold rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary animate-scale-in w-full"
                 onClick={handleManualSearchClick}
               >
                 <div className="flex items-center justify-center gap-2">
@@ -1023,21 +1031,73 @@ const CadastralMap = () => {
           </div>
         )}
 
-        {/* Légende - Design moderne compact */}
-        <div className="absolute top-3 right-3 z-[1000] hidden md:block">
+        {/* Légende - Desktop: top-right below nav, Mobile: bottom-left toggle */}
+        {/* Desktop legend */}
+        <div className="absolute top-16 right-3 z-[800] hidden md:block">
           <div className="bg-background/95 backdrop-blur-md rounded-xl shadow-lg border border-border/50 p-3">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Légende</p>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 text-xs">
                 <div className="w-3.5 h-3.5 bg-red-500/20 border-2 border-red-500 rounded" />
-                <span className="text-muted-foreground">Avec bornage</span>
+                <span className="text-muted-foreground">Parcelle avec bornage GPS</span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <MapPin className="h-3.5 w-3.5 text-blue-500" />
-                <span className="text-muted-foreground">Sans bornage</span>
+                <span className="text-muted-foreground">Parcelle sans bornage</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="w-3.5 h-0.5 bg-red-500" />
+                <span className="text-muted-foreground">Limites parcellaires</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <div className="px-1 py-0.5 text-[8px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none">12m</div>
+                <span className="text-muted-foreground">Dimensions côtés</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <AlertTriangle className="h-3.5 w-3.5 text-orange-500" />
+                <span className="text-muted-foreground">Données incomplètes</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                <span className="text-muted-foreground">Parcelle favorite</span>
               </div>
             </div>
           </div>
+        </div>
+        {/* Mobile legend toggle */}
+        <div className="absolute bottom-20 left-3 z-[800] md:hidden">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="secondary" size="sm" className="h-9 w-9 rounded-xl shadow-lg p-0">
+                <HelpCircle className="h-4 w-4" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent side="top" align="start" sideOffset={8} className="w-52 rounded-xl p-3">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mb-2">Légende</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="w-3.5 h-3.5 bg-red-500/20 border-2 border-red-500 rounded shrink-0" />
+                  <span className="text-muted-foreground">Bornage GPS</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <MapPin className="h-3.5 w-3.5 text-blue-500 shrink-0" />
+                  <span className="text-muted-foreground">Sans bornage</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="w-3.5 h-0.5 bg-red-500 shrink-0" />
+                  <span className="text-muted-foreground">Limites</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <div className="px-1 py-0.5 text-[8px] font-bold text-red-500 border border-red-500 rounded bg-white leading-none shrink-0">12m</div>
+                  <span className="text-muted-foreground">Dimensions</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <AlertTriangle className="h-3.5 w-3.5 text-orange-500 shrink-0" />
+                  <span className="text-muted-foreground">Incomplètes</span>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </main>
 
