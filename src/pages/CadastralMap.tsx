@@ -74,6 +74,7 @@ const CadastralMap = () => {
   const landTitleNotificationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [showLandTitleButton, setShowLandTitleButton] = useState(false);
   const landTitleButtonTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
   
   // Animation shake et notification caractères invalides
   const [isShaking, setIsShaking] = useState(false);
@@ -127,9 +128,9 @@ const CadastralMap = () => {
   }, []);
 
   // Timer d'inactivité pour afficher la notification du bouton "Obtenir titre foncier"
+  // Only show when user has NOT interacted with anything
   useEffect(() => {
-    // Afficher la notification 10 secondes après l'apparition du bouton
-    if (showLandTitleButton && !showLandTitleNotification && !landTitleNotificationDismissedRef.current) {
+    if (showLandTitleButton && !showLandTitleNotification && !landTitleNotificationDismissedRef.current && !hasUserInteracted) {
       landTitleNotificationTimerRef.current = setTimeout(() => {
         setShowLandTitleNotification(true);
       }, 10000);
@@ -140,7 +141,15 @@ const CadastralMap = () => {
         clearTimeout(landTitleNotificationTimerRef.current);
       }
     };
-  }, [showLandTitleButton, showLandTitleNotification]);
+  }, [showLandTitleButton, showLandTitleNotification, hasUserInteracted]);
+
+  // Dismiss land title notification when user interacts
+  useEffect(() => {
+    if (hasUserInteracted && showLandTitleNotification) {
+      landTitleNotificationDismissedRef.current = true;
+      setShowLandTitleNotification(false);
+    }
+  }, [hasUserInteracted, showLandTitleNotification]);
 
   // Gestionnaire de clic global pour fermer la notification "Obtenir titre foncier"
   useEffect(() => {
@@ -652,8 +661,12 @@ const CadastralMap = () => {
                       // Accepter seulement les caractères numériques
                       const numericValue = inputValue.replace(/[^0-9]/g, '');
                       setSearchQuery(numericValue);
+                      if (numericValue) setHasUserInteracted(true);
                     }}
-                    onFocus={() => setIsSearchBarActive(true)}
+                    onFocus={() => {
+                      setIsSearchBarActive(true);
+                      setHasUserInteracted(true);
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && searchQuery.trim()) {
                         searchHistory.addToHistory(searchQuery);
@@ -684,6 +697,7 @@ const CadastralMap = () => {
                   onClick={() => {
                     setIsSearchBarActive(true);
                     setShowAdvancedSearch(!showAdvancedSearch);
+                    setHasUserInteracted(true);
                   }}
                   className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
                   title="Recherche avancée"
@@ -709,11 +723,12 @@ const CadastralMap = () => {
                             <Button 
                               variant="destructive" 
                               size="sm"
-                              onClick={() => {
-                                landTitleNotificationDismissedRef.current = true;
-                                setShowLandTitleNotification(false);
-                                setShowLandTitleTermsDialog(true);
-                              }}
+                            onClick={() => {
+                              landTitleNotificationDismissedRef.current = true;
+                              setShowLandTitleNotification(false);
+                              setShowLandTitleTermsDialog(true);
+                              setHasUserInteracted(true);
+                            }}
                               className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
                               title="Demander un titre foncier"
                             >
@@ -767,6 +782,7 @@ const CadastralMap = () => {
                           landTitleNotificationDismissedRef.current = true;
                           setShowLandTitleNotification(false);
                           setShowLandTitleTermsDialog(true);
+                          setHasUserInteracted(true);
                         }}
                         className="h-9 w-9 hover:w-auto shrink-0 rounded-xl transition-all duration-300 ease-in-out relative gap-1.5 text-xs font-medium overflow-hidden group px-0 hover:px-3"
                       >
@@ -884,19 +900,6 @@ const CadastralMap = () => {
             style={isMobile ? {} : { width: '24rem' }}
           >
             <div className="relative">
-              {/* Notification flottante au-dessus du bouton */}
-              {showManualSearchNotification && (
-                <div className={`absolute -top-12 ${isMobile ? 'left-1/2 -translate-x-1/2' : 'left-0 right-0'} animate-scale-in`}>
-                  <div className="bg-primary text-primary-foreground text-xs px-4 py-2.5 rounded-xl shadow-lg text-center w-64 mx-auto">
-                    <div className="flex items-center justify-center gap-2">
-                      <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                      <span>Cette parcelle n'existe pas encore</span>
-                    </div>
-                  </div>
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] border-l-transparent border-r-transparent border-t-primary" />
-                </div>
-              )}
-              
               {/* Bouton principal */}
               <Button
                 variant="default"
@@ -914,6 +917,18 @@ const CadastralMap = () => {
                   </div>
                 </div>
               </Button>
+
+              {/* Notification BELOW the button - yellow color */}
+              {showManualSearchNotification && (
+                <div className="mt-2 animate-scale-in">
+                  <div className="bg-yellow-400 text-yellow-900 text-xs px-4 py-2.5 rounded-xl shadow-lg text-center w-64 mx-auto">
+                    <div className="flex items-center justify-center gap-2">
+                      <Sparkles className="h-3.5 w-3.5 shrink-0" />
+                      <span>Cette parcelle n'existe pas encore</span>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
