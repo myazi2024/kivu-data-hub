@@ -558,6 +558,38 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
     }
   }, [formData.isTitleInCurrentOwnerName, formData.titleIssueDate, currentOwners[0]?.since]);
+
+  // Auto-remplir "Ancien #2" avec le nom du propriétaire actuel quand le titre n'est pas à son nom
+  // Le propriétaire actuel est aussi l'ancien propriétaire #2 dans la chaîne (il a acquis du vendeur inscrit sur le titre)
+  useEffect(() => {
+    if (formData.isTitleInCurrentOwnerName === false) {
+      const firstCurrentOwner = currentOwners[0];
+      if (firstCurrentOwner?.lastName && firstCurrentOwner?.firstName) {
+        const currentOwnerFullName = [firstCurrentOwner.lastName, firstCurrentOwner.middleName, firstCurrentOwner.firstName].filter(Boolean).join(' ');
+        
+        // Ensure we have at least 2 previous owners
+        if (previousOwners.length < 2) {
+          setPreviousOwners(prev => [...prev, {
+            name: currentOwnerFullName,
+            legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
+            startDate: firstCurrentOwner.since || '',
+            endDate: '',
+            mutationType: 'Vente'
+          }]);
+        } else if (previousOwners[1]) {
+          // Update existing second previous owner
+          const updated = [...previousOwners];
+          updated[1] = {
+            ...updated[1],
+            name: currentOwnerFullName,
+            legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
+            startDate: firstCurrentOwner.since || '',
+          };
+          setPreviousOwners(updated);
+        }
+      }
+    }
+  }, [formData.isTitleInCurrentOwnerName, currentOwners[0]?.lastName, currentOwners[0]?.firstName, currentOwners[0]?.middleName, currentOwners[0]?.since]);
   useEffect(() => {
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     
@@ -2486,7 +2518,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                     <div className="space-y-1">
                       <Label htmlFor="titleIssueDate" className="text-sm font-medium">
-                        Date délivrance
+                        {formData.leaseType === 'renewal' ? 'Date renouvellement' : 'Date délivrance'}
                       </Label>
                       <Input
                         id="titleIssueDate"
@@ -3071,7 +3103,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <MdInsertDriveFile className="h-3.5 w-3.5 text-primary" />
                     </div>
                     <Label className="text-sm font-semibold leading-tight">
-                      Avez-vous un permis de construire pour votre construction {formData.constructionType?.toLowerCase() || ''}
+                      Avez-vous obtenu une autorisation de bâtir pour votre construction {formData.constructionType?.toLowerCase() || ''}
                       {formData.constructionNature ? `, ${formData.constructionNature.toLowerCase()}` : ''}
                       {formData.constructionMaterials ? `, en ${formData.constructionMaterials.toLowerCase()}` : ''}
                       {formData.declaredUsage ? `, utilisée en tant que ${formData.declaredUsage.toLowerCase()}` : ''} ?
@@ -3106,7 +3138,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    J'ai un permis
+                    Oui
                   </button>
                   <button
                     type="button"
@@ -3118,7 +3150,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    Pas de permis
+                    Non
                   </button>
                 </div>
 
@@ -3138,19 +3170,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <div className="h-7 w-7 rounded-xl bg-primary/10 flex items-center justify-center">
                               <MdInsertDriveFile className="h-4 w-4 text-primary" />
                             </div>
-                            <span className="text-sm font-semibold text-foreground">Permis #{index + 1}</span>
+                            <span className="text-sm font-semibold text-foreground">Dernière autorisation de bâtir ou de régularisation délivrée</span>
                           </div>
-                          {index > 0 && (
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => removeBuildingPermit(index)}
-                              className="h-8 w-8 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
                         </div>
 
                         {/* Type de permis */}
@@ -3267,29 +3288,19 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     {showPermitWarning && (
                       <div className="bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
                         <p className="text-sm text-amber-700 dark:text-amber-300">
-                          ⚠️ Complétez le permis actuel avant d'en ajouter un nouveau.
+                          ⚠️ Complétez les informations de l'autorisation.
                         </p>
                       </div>
                     )}
-
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addBuildingPermit}
-                      className="w-full h-11 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
-                    >
-                      <Plus className="h-4 w-4" />
-                      Ajouter un autre permis
-                    </Button>
                   </div>
                 )}
 
                 {/* Mode: Pas de permis */}
                 {permitMode === 'request' && (
                   <div className="animate-fade-in">
-                    <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
-                      <p className="text-sm text-amber-800 dark:text-amber-200 text-center">
-                        Demande disponible dans <strong>Espace Personnel</strong> après soumission
+                    <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 rounded-xl p-3">
+                      <p className="text-sm text-green-800 dark:text-green-200 text-center">
+                        ✓ Pas de souci ! Vous pourrez faire une demande d'<strong>autorisation de régularisation</strong> pour votre construction plus tard, dès que votre parcelle sera ajoutée au cadastre numérique.
                       </p>
                     </div>
                   </div>
@@ -3507,7 +3518,33 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
                   </div>
 
-                  {/* Champ Numéro - visible uniquement si l'avenue est renseignée */}
+                  {/* Champ Numéro de la maison - visible uniquement si l'avenue est renseignée */}
+                  {formData.avenue && formData.avenue.trim() !== '' && (
+                    <div className="space-y-1.5 animate-fade-in">
+                      <div className="flex items-center gap-1">
+                        <Label htmlFor="houseNumber" className="text-sm">N° de la maison</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                              <Info className="h-3 w-3 text-muted-foreground" />
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 rounded-xl text-xs">
+                            <p className="text-muted-foreground">
+                              Il s'agit du numéro placardé devant la parcelle, près de l'entrée, utilisé pour faciliter la localisation de la maison dans le découpage administratif de la ville.
+                            </p>
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      <Input
+                        id="houseNumber"
+                        className="h-9 text-sm rounded-xl"
+                        placeholder="ex: 12, 45B"
+                        value={formData.houseNumber || ''}
+                        onChange={(e) => handleInputChange('houseNumber', e.target.value)}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
@@ -3731,12 +3768,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
 
                     <div className="space-y-1">
-                      <Label className="text-sm font-medium">Nom complet</Label>
+                      <div className="flex items-center gap-1">
+                        <Label className="text-sm font-medium">Nom complet</Label>
+                        {formData.isTitleInCurrentOwnerName === false && index === 1 && (
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                                <Info className="h-3 w-3 text-primary" />
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-64 rounded-xl text-xs">
+                              <p className="text-muted-foreground">
+                                Ce champ est pré-rempli avec le nom du propriétaire actuel renseigné dans l'onglet "Infos". Comme le titre n'est pas à son nom, il figure ici en tant qu'acquéreur dans la chaîne de propriété. Pour modifier ce nom, rendez-vous dans l'onglet "Infos".
+                              </p>
+                            </PopoverContent>
+                          </Popover>
+                        )}
+                      </div>
                       <Input
                         placeholder="ex: Jean Mukendi"
                         value={owner.name}
                         onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
-                        className="h-10 text-sm rounded-xl"
+                        disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                        className={cn("h-10 text-sm rounded-xl", formData.isTitleInCurrentOwnerName === false && index === 1 && "cursor-not-allowed opacity-70")}
                       />
                     </div>
 
@@ -3958,6 +4012,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <SelectContent className="rounded-xl">
                               <SelectItem value="Impôt foncier annuel">Impôt foncier</SelectItem>
                               <SelectItem value="Impôt sur les revenus locatifs">Revenus locatifs</SelectItem>
+                              <SelectItem value="Taxe de bâtisse">Taxe de bâtisse</SelectItem>
                               <SelectItem value="Taxe de superficie">Superficie</SelectItem>
                               <SelectItem value="Taxe de plus-value immobilière">Plus-value</SelectItem>
                               <SelectItem value="Taxe d'habitation">Habitation</SelectItem>
