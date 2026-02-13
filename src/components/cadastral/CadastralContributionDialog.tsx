@@ -123,6 +123,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       }
     }
     
+    // Validation: Ancien #1 "Date début" ≤ date délivrance/renouvellement si titre au nom du propriétaire actuel
+    if (formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate) {
+      const firstPreviousOwner = previousOwners[0];
+      if (firstPreviousOwner?.startDate && new Date(firstPreviousOwner.startDate) > new Date(formData.titleIssueDate)) {
+        missing.push({ field: 'previousOwnerStartDate', label: `Date début Ancien #1 doit être ≤ date de ${formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'}`, tab: 'history' });
+      }
+    }
+    
     // ===== ONGLET LOCALISATION =====
     // Province toujours obligatoire
     if (!formData.province || formData.province.trim() === '') {
@@ -2727,57 +2735,86 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
                     )}
 
-                    <div className="grid grid-cols-1 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Nom *</Label>
-                        <Input
-                          placeholder="Nom de famille"
-                          value={owner.lastName}
-                          onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
-                          className="h-10 text-sm rounded-xl"
-                        />
-                      </div>
-                      {/* Post-nom et Prénom - côte-à-côte */}
-                      <div className="grid grid-cols-2 gap-2">
+                    {/* Statut juridique - en premier pour conditionner les champs */}
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">Statut juridique</Label>
+                      <Select 
+                        value={owner.legalStatus}
+                        onValueChange={(value) => {
+                          updateCurrentOwner(index, 'legalStatus', value);
+                          // Reset name fields when switching status
+                          if (value === 'Personne morale') {
+                            updateCurrentOwner(index, 'middleName', '');
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="h-10 text-sm rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="Personne physique">Personne physique</SelectItem>
+                          <SelectItem value="Personne morale">Personne morale</SelectItem>
+                          <SelectItem value="État">État</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {owner.legalStatus === 'Personne morale' ? (
+                      <div className="grid grid-cols-1 gap-2">
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">Post-nom</Label>
+                          <Label className="text-sm font-medium">Raison sociale *</Label>
                           <Input
-                            placeholder="Post-nom"
-                            value={owner.middleName}
-                            onChange={(e) => updateCurrentOwner(index, 'middleName', e.target.value)}
+                            placeholder="Nom de l'entreprise ou organisation"
+                            value={owner.lastName}
+                            onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
                             className="h-10 text-sm rounded-xl"
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">Prénom *</Label>
+                          <Label className="text-sm font-medium">N° d'identification (RCCM) *</Label>
                           <Input
-                            placeholder="Prénom"
+                            placeholder="Ex: CD/KIN/RCCM/XX-X-XXXXX"
                             value={owner.firstName}
                             onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
                             className="h-10 text-sm rounded-xl"
                           />
                         </div>
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Statut juridique</Label>
-                        <Select 
-                          value={owner.legalStatus}
-                          onValueChange={(value) => updateCurrentOwner(index, 'legalStatus', value)}
-                        >
-                          <SelectTrigger className="h-10 text-sm rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="Personne physique">Personne physique</SelectItem>
-                            <SelectItem value="Personne morale">Personne morale</SelectItem>
-                            <SelectItem value="État">État</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    ) : (
+                      <div className="grid grid-cols-1 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Nom *</Label>
+                          <Input
+                            placeholder="Nom de famille"
+                            value={owner.lastName}
+                            onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
+                            className="h-10 text-sm rounded-xl"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1">
+                            <Label className="text-sm font-medium">Post-nom</Label>
+                            <Input
+                              placeholder="Post-nom"
+                              value={owner.middleName}
+                              onChange={(e) => updateCurrentOwner(index, 'middleName', e.target.value)}
+                              className="h-10 text-sm rounded-xl"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-sm font-medium">Prénom *</Label>
+                            <Input
+                              placeholder="Prénom"
+                              value={owner.firstName}
+                              onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
+                              className="h-10 text-sm rounded-xl"
+                            />
+                          </div>
+                        </div>
                       </div>
-                      <div className="space-y-1">
+                    )}
+
+                    <div className="space-y-1">
                         <div className="flex items-center gap-1">
                           <Label className="text-sm font-medium">Propriétaire depuis</Label>
                           {formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && index === 0 && (
@@ -2820,7 +2857,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </p>
                         )}
                       </div>
-                    </div>
 
                     {/* Pièce d'identité */}
                     <div className="space-y-1.5 pt-2 border-t border-border/50">
@@ -3193,7 +3229,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               getPermitTypeRestrictions().blockedInExisting === 'construction' && 'opacity-50 cursor-not-allowed'
                             )}
                           >
-                            Construire
+                            Bâtir
                           </button>
                           <button
                             type="button"
@@ -3219,7 +3255,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         {/* Champs du formulaire */}
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1.5">
-                            <Label className="text-sm font-medium text-foreground">N° Permis</Label>
+                            <Label className="text-sm font-medium text-foreground">N° de l'autorisation</Label>
                             <Input
                               placeholder="PC-2024-001"
                               value={permit.permitNumber}
@@ -3239,7 +3275,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         </div>
 
                         <div className="space-y-1.5">
-                          <Label className="text-sm font-medium text-foreground">Service émetteur</Label>
+                          <Label className="text-sm font-medium text-foreground">Service émetteur de l'autorisation</Label>
                           <BuildingPermitIssuingServiceSelect
                             value={permit.issuingService}
                             onValueChange={(value) => updateBuildingPermit(index, 'issuingService', value)}
@@ -3769,7 +3805,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                     <div className="space-y-1">
                       <div className="flex items-center gap-1">
-                        <Label className="text-sm font-medium">Nom complet</Label>
+                        <Label className="text-sm font-medium">
+                          {owner.legalStatus === 'Personne morale' ? 'Raison sociale' : 'Nom complet'}
+                        </Label>
                         {formData.isTitleInCurrentOwnerName === false && index === 1 && (
                           <Popover>
                             <PopoverTrigger asChild>
@@ -3786,7 +3824,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         )}
                       </div>
                       <Input
-                        placeholder="ex: Jean Mukendi"
+                        placeholder={owner.legalStatus === 'Personne morale' ? "Nom de l'entreprise" : "ex: Jean Mukendi"}
                         value={owner.name}
                         onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
                         disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
@@ -3833,14 +3871,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                     <div className="grid grid-cols-2 gap-2">
                       <div className="space-y-1">
-                        <Label className="text-sm font-medium">Date début</Label>
+                        <div className="flex items-center gap-1">
+                          <Label className="text-sm font-medium">Date début</Label>
+                          {formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate && index === 0 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                                  <Info className="h-3 w-3 text-amber-600 dark:text-amber-400" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 rounded-xl text-xs">
+                                <p className="text-muted-foreground">
+                                  <strong>⚠️ Règle :</strong> Le renouvellement d'un titre foncier suppose que la parcelle appartenait déjà au même propriétaire. La date de début doit donc être antérieure ou égale à la date de {formData.leaseType === 'renewal' ? 'renouvellement' : 'délivrance'} ({formData.titleIssueDate ? new Date(formData.titleIssueDate).toLocaleDateString('fr-FR') : 'non définie'}).
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
                         <Input
                           type="date"
-                          max={owner.endDate || (index === 0 ? currentOwners[0]?.since : previousOwners[index - 1]?.startDate) || new Date().toISOString().split('T')[0]}
+                          max={formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate && index === 0 
+                            ? formData.titleIssueDate 
+                            : (owner.endDate || (index === 0 ? currentOwners[0]?.since : previousOwners[index - 1]?.startDate) || new Date().toISOString().split('T')[0])}
                           value={owner.startDate}
                           onChange={(e) => updatePreviousOwner(index, 'startDate', e.target.value)}
                           className="h-10 text-sm rounded-xl"
                         />
+                        {formData.isTitleInCurrentOwnerName === true && formData.titleIssueDate && owner.startDate && index === 0 && new Date(owner.startDate) > new Date(formData.titleIssueDate) && (
+                          <p className="text-xs text-destructive">
+                            ⚠️ Date invalide : doit être ≤ {new Date(formData.titleIssueDate).toLocaleDateString('fr-FR')}
+                          </p>
+                        )}
                         {owner.startDate && owner.endDate && owner.startDate > owner.endDate && (
                           <p className="text-xs text-destructive">Début avant fin</p>
                         )}
