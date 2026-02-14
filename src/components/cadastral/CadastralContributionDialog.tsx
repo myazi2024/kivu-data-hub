@@ -42,6 +42,7 @@ import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { ParcelMapPreview } from './ParcelMapPreview';
 import { PermitPaymentDialog } from './PermitPaymentDialog';
 import { useMapConfig } from '@/hooks/useMapConfig';
+import SuggestivePicklist from './SuggestivePicklist';
 
 interface CadastralContributionDialogProps {
   open: boolean;
@@ -205,12 +206,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [previousOwners, setPreviousOwners] = useState<Array<{
     name: string;
     legalStatus: string;
+    entityType: string;
+    entitySubType: string;
+    entitySubTypeOther: string;
+    stateExploitedBy: string;
     startDate: string;
     endDate: string;
     mutationType: string;
   }>>([{
     name: '',
     legalStatus: 'Personne physique',
+    entityType: '',
+    entitySubType: '',
+    entitySubTypeOther: '',
+    stateExploitedBy: '',
     startDate: '',
     endDate: '',
     mutationType: 'Vente'
@@ -222,12 +231,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     middleName: string;
     firstName: string;
     legalStatus: string;
+    entityType: string;
+    entitySubType: string;
+    entitySubTypeOther: string;
+    stateExploitedBy: string;
     since: string;
   }>>([{
     lastName: '',
     middleName: '',
     firstName: '',
     legalStatus: 'Personne physique',
+    entityType: '',
+    entitySubType: '',
+    entitySubTypeOther: '',
+    stateExploitedBy: '',
     since: ''
   }]);
 
@@ -580,6 +597,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
           setPreviousOwners(prev => [...prev, {
             name: currentOwnerFullName,
             legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
+            entityType: firstCurrentOwner.entityType || '',
+            entitySubType: firstCurrentOwner.entitySubType || '',
+            entitySubTypeOther: firstCurrentOwner.entitySubTypeOther || '',
+            stateExploitedBy: firstCurrentOwner.stateExploitedBy || '',
             startDate: firstCurrentOwner.since || '',
             endDate: '',
             mutationType: 'Vente'
@@ -1329,6 +1350,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const newOwner = {
       name: '',
       legalStatus: 'Personne physique',
+      entityType: '',
+      entitySubType: '',
+      entitySubTypeOther: '',
+      stateExploitedBy: '',
       startDate: '',
       endDate: '',
       mutationType: 'Vente'
@@ -1395,6 +1420,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       middleName: '',
       firstName: '',
       legalStatus: 'Personne physique',
+      entityType: '',
+      entitySubType: '',
+      entitySubTypeOther: '',
+      stateExploitedBy: '',
       since: ''
     }]);
   };
@@ -2190,6 +2219,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setPreviousOwners([{
       name: '',
       legalStatus: 'Personne physique',
+      entityType: '',
+      entitySubType: '',
+      entitySubTypeOther: '',
+      stateExploitedBy: '',
       startDate: '',
       endDate: '',
       mutationType: 'Vente'
@@ -2199,6 +2232,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       middleName: '',
       firstName: '',
       legalStatus: 'Personne physique',
+      entityType: '',
+      entitySubType: '',
+      entitySubTypeOther: '',
+      stateExploitedBy: '',
       since: ''
     }]);
     setTaxRecords([{
@@ -2742,8 +2779,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         value={owner.legalStatus}
                         onValueChange={(value) => {
                           updateCurrentOwner(index, 'legalStatus', value);
-                          // Reset name fields when switching status
-                          if (value === 'Personne morale') {
+                          // Reset dependent fields when switching status
+                          updateCurrentOwner(index, 'entityType', '');
+                          updateCurrentOwner(index, 'entitySubType', '');
+                          updateCurrentOwner(index, 'entitySubTypeOther', '');
+                          updateCurrentOwner(index, 'stateExploitedBy', '');
+                          if (value !== 'Personne physique') {
                             updateCurrentOwner(index, 'middleName', '');
                           }
                         }}
@@ -2760,23 +2801,134 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     </div>
 
                     {owner.legalStatus === 'Personne morale' ? (
-                      <div className="grid grid-cols-1 gap-2">
+                      <div className="space-y-2">
+                        {/* Type d'entreprise */}
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">Raison sociale *</Label>
-                          <Input
-                            placeholder="Nom de l'entreprise ou organisation"
-                            value={owner.lastName}
-                            onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
-                            className="h-10 text-sm rounded-xl"
-                          />
+                          <Label className="text-sm font-medium">Type d'entreprise *</Label>
+                          <Select
+                            value={owner.entityType || ''}
+                            onValueChange={(value) => {
+                              updateCurrentOwner(index, 'entityType', value);
+                              updateCurrentOwner(index, 'entitySubType', '');
+                              updateCurrentOwner(index, 'entitySubTypeOther', '');
+                            }}
+                          >
+                            <SelectTrigger className="h-10 text-sm rounded-xl">
+                              <SelectValue placeholder="Sélectionner" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="Société">Société</SelectItem>
+                              <SelectItem value="Association">Association</SelectItem>
+                            </SelectContent>
+                          </Select>
                         </div>
+
+                        {/* Sous-type dépendant */}
+                        {owner.entityType === 'Société' && (
+                          <div className="space-y-1 animate-fade-in">
+                            <Label className="text-sm font-medium">Forme juridique *</Label>
+                            <Select
+                              value={owner.entitySubType || ''}
+                              onValueChange={(value) => {
+                                updateCurrentOwner(index, 'entitySubType', value);
+                                if (value !== 'Autre') updateCurrentOwner(index, 'entitySubTypeOther', '');
+                              }}
+                            >
+                              <SelectTrigger className="h-10 text-sm rounded-xl">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="Entreprise individuelle (Ets)">Entreprise individuelle (Ets)</SelectItem>
+                                <SelectItem value="Société en Participation (SEP)">Société en Participation (SEP)</SelectItem>
+                                <SelectItem value="Société à Responsabilité Limitée (SARL)">SARL</SelectItem>
+                                <SelectItem value="Société Anonyme (SA)">SA</SelectItem>
+                                <SelectItem value="Société par Actions Simplifiée (SAS)">SAS</SelectItem>
+                                <SelectItem value="Société en Nom Collectif (SNC)">SNC</SelectItem>
+                                <SelectItem value="Société en Commandite Simple (SCS)">SCS</SelectItem>
+                                <SelectItem value="Groupement d'Intérêt Économique (GIE)">GIE</SelectItem>
+                                <SelectItem value="Autre">Autre</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {owner.entitySubType === 'Autre' && (
+                              <Input
+                                placeholder="Précisez la forme juridique"
+                                value={owner.entitySubTypeOther || ''}
+                                onChange={(e) => updateCurrentOwner(index, 'entitySubTypeOther', e.target.value)}
+                                className="h-10 text-sm rounded-xl mt-1"
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        {owner.entityType === 'Association' && (
+                          <div className="space-y-1 animate-fade-in">
+                            <Label className="text-sm font-medium">Type d'association *</Label>
+                            <Select
+                              value={owner.entitySubType || ''}
+                              onValueChange={(value) => {
+                                updateCurrentOwner(index, 'entitySubType', value);
+                                if (value !== 'Autre') updateCurrentOwner(index, 'entitySubTypeOther', '');
+                              }}
+                            >
+                              <SelectTrigger className="h-10 text-sm rounded-xl">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="Association sans but lucratif (ASBL)">ASBL</SelectItem>
+                                <SelectItem value="Établissement d'Utilité Publique (EUP)">EUP</SelectItem>
+                                <SelectItem value="Autre">Autre</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {owner.entitySubType === 'Autre' && (
+                              <Input
+                                placeholder="Précisez le type d'association"
+                                value={owner.entitySubTypeOther || ''}
+                                onChange={(e) => updateCurrentOwner(index, 'entitySubTypeOther', e.target.value)}
+                                className="h-10 text-sm rounded-xl mt-1"
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        {/* Raison sociale + N° RCCM */}
+                        {owner.entityType && (
+                          <div className="space-y-2 animate-fade-in">
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">Raison sociale *</Label>
+                              <Input
+                                placeholder="Dénomination officielle"
+                                value={owner.lastName}
+                                onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
+                                className="h-10 text-sm rounded-xl"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-sm font-medium">N° d'identification (RCCM) *</Label>
+                              <Input
+                                placeholder="Ex: CD/KIN/RCCM/XX-X-XXXXX"
+                                value={owner.firstName}
+                                onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
+                                className="h-10 text-sm rounded-xl"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : owner.legalStatus === 'État' ? (
+                      <div className="space-y-2">
                         <div className="space-y-1">
-                          <Label className="text-sm font-medium">N° d'identification (RCCM) *</Label>
-                          <Input
-                            placeholder="Ex: CD/KIN/RCCM/XX-X-XXXXX"
-                            value={owner.firstName}
-                            onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
-                            className="h-10 text-sm rounded-xl"
+                          <Label className="text-sm font-medium">Exploitée par *</Label>
+                          <SuggestivePicklist
+                            picklistKey="state_agencies_drc"
+                            label=""
+                            placeholder="Rechercher un service ou agence de l'État..."
+                            selectedValues={owner.stateExploitedBy ? [owner.stateExploitedBy] : []}
+                            onSelectionChange={(values) => {
+                              updateCurrentOwner(index, 'stateExploitedBy', values[values.length - 1] || '');
+                              // Also set lastName for data consistency
+                              updateCurrentOwner(index, 'lastName', values[values.length - 1] || '');
+                              updateCurrentOwner(index, 'firstName', 'État');
+                            }}
                           />
                         </div>
                       </div>
@@ -3803,70 +3955,219 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       )}
                     </div>
 
+                    {/* Statut juridique */}
                     <div className="space-y-1">
-                      <div className="flex items-center gap-1">
-                        <Label className="text-sm font-medium">
-                          {owner.legalStatus === 'Personne morale' ? 'Raison sociale' : 'Nom complet'}
-                        </Label>
-                        {formData.isTitleInCurrentOwnerName === false && index === 1 && (
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
-                                <Info className="h-3 w-3 text-primary" />
-                              </Button>
-                            </PopoverTrigger>
-                            <PopoverContent className="w-64 rounded-xl text-xs">
-                              <p className="text-muted-foreground">
-                                Ce champ est pré-rempli avec le nom du propriétaire actuel renseigné dans l'onglet "Infos". Comme le titre n'est pas à son nom, il figure ici en tant qu'acquéreur dans la chaîne de propriété. Pour modifier ce nom, rendez-vous dans l'onglet "Infos".
-                              </p>
-                            </PopoverContent>
-                          </Popover>
-                        )}
-                      </div>
-                      <Input
-                        placeholder={owner.legalStatus === 'Personne morale' ? "Nom de l'entreprise" : "ex: Jean Mukendi"}
-                        value={owner.name}
-                        onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
+                      <Label className="text-sm font-medium">Statut</Label>
+                      <Select
+                        value={owner.legalStatus}
+                        onValueChange={(value) => {
+                          updatePreviousOwner(index, 'legalStatus', value);
+                          updatePreviousOwner(index, 'entityType', '');
+                          updatePreviousOwner(index, 'entitySubType', '');
+                          updatePreviousOwner(index, 'entitySubTypeOther', '');
+                          updatePreviousOwner(index, 'stateExploitedBy', '');
+                        }}
                         disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
-                        className={cn("h-10 text-sm rounded-xl", formData.isTitleInCurrentOwnerName === false && index === 1 && "cursor-not-allowed opacity-70")}
-                      />
+                      >
+                        <SelectTrigger className="h-10 text-sm rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="Personne physique">Personne physique</SelectItem>
+                          <SelectItem value="Personne morale">Personne morale</SelectItem>
+                          <SelectItem value="État">État</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Statut</Label>
-                        <Select
-                          value={owner.legalStatus}
-                          onValueChange={(value) => updatePreviousOwner(index, 'legalStatus', value)}
-                        >
-                          <SelectTrigger className="h-10 text-sm rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="Personne physique">Personne physique</SelectItem>
-                            <SelectItem value="Personne morale">Personne morale</SelectItem>
-                            <SelectItem value="État">État</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    {/* Champs dépendants du statut juridique */}
+                    {owner.legalStatus === 'Personne morale' ? (
+                      <div className="space-y-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Type d'entreprise *</Label>
+                          <Select
+                            value={owner.entityType || ''}
+                            onValueChange={(value) => {
+                              updatePreviousOwner(index, 'entityType', value);
+                              updatePreviousOwner(index, 'entitySubType', '');
+                              updatePreviousOwner(index, 'entitySubTypeOther', '');
+                            }}
+                            disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                          >
+                            <SelectTrigger className="h-10 text-sm rounded-xl">
+                              <SelectValue placeholder="Sélectionner" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="Société">Société</SelectItem>
+                              <SelectItem value="Association">Association</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        {owner.entityType === 'Société' && (
+                          <div className="space-y-1 animate-fade-in">
+                            <Label className="text-sm font-medium">Forme juridique *</Label>
+                            <Select
+                              value={owner.entitySubType || ''}
+                              onValueChange={(value) => {
+                                updatePreviousOwner(index, 'entitySubType', value);
+                                if (value !== 'Autre') updatePreviousOwner(index, 'entitySubTypeOther', '');
+                              }}
+                              disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                            >
+                              <SelectTrigger className="h-10 text-sm rounded-xl">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="Entreprise individuelle (Ets)">Entreprise individuelle (Ets)</SelectItem>
+                                <SelectItem value="Société en Participation (SEP)">SEP</SelectItem>
+                                <SelectItem value="Société à Responsabilité Limitée (SARL)">SARL</SelectItem>
+                                <SelectItem value="Société Anonyme (SA)">SA</SelectItem>
+                                <SelectItem value="Société par Actions Simplifiée (SAS)">SAS</SelectItem>
+                                <SelectItem value="Société en Nom Collectif (SNC)">SNC</SelectItem>
+                                <SelectItem value="Société en Commandite Simple (SCS)">SCS</SelectItem>
+                                <SelectItem value="Groupement d'Intérêt Économique (GIE)">GIE</SelectItem>
+                                <SelectItem value="Autre">Autre</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {owner.entitySubType === 'Autre' && (
+                              <Input
+                                placeholder="Précisez la forme juridique"
+                                value={owner.entitySubTypeOther || ''}
+                                onChange={(e) => updatePreviousOwner(index, 'entitySubTypeOther', e.target.value)}
+                                className="h-10 text-sm rounded-xl mt-1"
+                                disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        {owner.entityType === 'Association' && (
+                          <div className="space-y-1 animate-fade-in">
+                            <Label className="text-sm font-medium">Type d'association *</Label>
+                            <Select
+                              value={owner.entitySubType || ''}
+                              onValueChange={(value) => {
+                                updatePreviousOwner(index, 'entitySubType', value);
+                                if (value !== 'Autre') updatePreviousOwner(index, 'entitySubTypeOther', '');
+                              }}
+                              disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                            >
+                              <SelectTrigger className="h-10 text-sm rounded-xl">
+                                <SelectValue placeholder="Sélectionner" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl">
+                                <SelectItem value="Association sans but lucratif (ASBL)">ASBL</SelectItem>
+                                <SelectItem value="Établissement d'Utilité Publique (EUP)">EUP</SelectItem>
+                                <SelectItem value="Autre">Autre</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            {owner.entitySubType === 'Autre' && (
+                              <Input
+                                placeholder="Précisez le type d'association"
+                                value={owner.entitySubTypeOther || ''}
+                                onChange={(e) => updatePreviousOwner(index, 'entitySubTypeOther', e.target.value)}
+                                className="h-10 text-sm rounded-xl mt-1"
+                                disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                              />
+                            )}
+                          </div>
+                        )}
+
+                        {/* Raison sociale */}
+                        {owner.entityType && (
+                          <div className="space-y-1 animate-fade-in">
+                            <div className="flex items-center gap-1">
+                              <Label className="text-sm font-medium">Raison sociale</Label>
+                              {formData.isTitleInCurrentOwnerName === false && index === 1 && (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                                      <Info className="h-3 w-3 text-primary" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-64 rounded-xl text-xs">
+                                    <p className="text-muted-foreground">
+                                      Pré-rempli depuis l'onglet "Infos". Pour modifier, rendez-vous dans l'onglet "Infos".
+                                    </p>
+                                  </PopoverContent>
+                                </Popover>
+                              )}
+                            </div>
+                            <Input
+                              placeholder="Dénomination officielle"
+                              value={owner.name}
+                              onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
+                              disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                              className={cn("h-10 text-sm rounded-xl", formData.isTitleInCurrentOwnerName === false && index === 1 && "cursor-not-allowed opacity-70")}
+                            />
+                          </div>
+                        )}
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-sm font-medium">Mutation</Label>
-                        <Select
-                          value={owner.mutationType}
-                          onValueChange={(value) => updatePreviousOwner(index, 'mutationType', value)}
-                        >
-                          <SelectTrigger className="h-10 text-sm rounded-xl">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl">
-                            <SelectItem value="Vente">Vente</SelectItem>
-                            <SelectItem value="Donation">Donation</SelectItem>
-                            <SelectItem value="Succession">Succession</SelectItem>
-                            <SelectItem value="Expropriation">Expropriation</SelectItem>
-                            <SelectItem value="Échange">Échange</SelectItem>
-                          </SelectContent>
-                        </Select>
+                    ) : owner.legalStatus === 'État' ? (
+                      <div className="space-y-2">
+                        <div className="space-y-1">
+                          <Label className="text-sm font-medium">Exploitée par</Label>
+                          <SuggestivePicklist
+                            picklistKey="state_agencies_drc"
+                            label=""
+                            placeholder="Rechercher un service de l'État..."
+                            selectedValues={owner.stateExploitedBy ? [owner.stateExploitedBy] : []}
+                            onSelectionChange={(values) => {
+                              updatePreviousOwner(index, 'stateExploitedBy', values[values.length - 1] || '');
+                              updatePreviousOwner(index, 'name', values[values.length - 1] || '');
+                            }}
+                            disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                          />
+                        </div>
                       </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1">
+                          <Label className="text-sm font-medium">Nom complet</Label>
+                          {formData.isTitleInCurrentOwnerName === false && index === 1 && (
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button type="button" variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                                  <Info className="h-3 w-3 text-primary" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 rounded-xl text-xs">
+                                <p className="text-muted-foreground">
+                                  Pré-rempli avec le nom du propriétaire actuel. Pour modifier, rendez-vous dans l'onglet "Infos".
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          )}
+                        </div>
+                        <Input
+                          placeholder="ex: Jean Mukendi"
+                          value={owner.name}
+                          onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
+                          disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
+                          className={cn("h-10 text-sm rounded-xl", formData.isTitleInCurrentOwnerName === false && index === 1 && "cursor-not-allowed opacity-70")}
+                        />
+                      </div>
+                    )}
+
+                    {/* Mutation */}
+                    <div className="space-y-1">
+                      <Label className="text-sm font-medium">Mutation</Label>
+                      <Select
+                        value={owner.mutationType}
+                        onValueChange={(value) => updatePreviousOwner(index, 'mutationType', value)}
+                      >
+                        <SelectTrigger className="h-10 text-sm rounded-xl">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="Vente">Vente</SelectItem>
+                          <SelectItem value="Donation">Donation</SelectItem>
+                          <SelectItem value="Succession">Succession</SelectItem>
+                          <SelectItem value="Expropriation">Expropriation</SelectItem>
+                          <SelectItem value="Échange">Échange</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
