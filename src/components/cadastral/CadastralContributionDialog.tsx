@@ -2894,22 +2894,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </div>
                         )}
 
-                        {/* Raison sociale + N° RCCM */}
+                        {/* Raison sociale / Dénomination + N° RCCM / Arrêté */}
                         {owner.entityType && (
                           <div className="space-y-2 animate-fade-in">
                             <div className="space-y-1">
-                              <Label className="text-sm font-medium">Raison sociale *</Label>
+                              <Label className="text-sm font-medium">
+                                {owner.entityType === 'Association' ? 'Dénomination *' : 'Raison sociale *'}
+                              </Label>
                               <Input
-                                placeholder="Dénomination officielle"
+                                placeholder={owner.entityType === 'Association' ? "Dénomination de l'association" : "Dénomination officielle"}
                                 value={owner.lastName}
                                 onChange={(e) => updateCurrentOwner(index, 'lastName', e.target.value)}
                                 className="h-10 text-sm rounded-xl"
                               />
                             </div>
                             <div className="space-y-1">
-                              <Label className="text-sm font-medium">N° d'identification (RCCM) *</Label>
+                              <Label className="text-sm font-medium">
+                                {owner.entityType === 'Association' ? "Numéro d'Arrêté ministériel d'autorisation *" : "N° d'identification (RCCM) *"}
+                              </Label>
                               <Input
-                                placeholder="Ex: CD/KIN/RCCM/XX-X-XXXXX"
+                                placeholder={owner.entityType === 'Association' ? "Ex: 0XX/CAB/MIN/..." : "Ex: CD/KIN/RCCM/XX-X-XXXXX"}
                                 value={owner.firstName}
                                 onChange={(e) => updateCurrentOwner(index, 'firstName', e.target.value)}
                                 className="h-10 text-sm rounded-xl"
@@ -4074,11 +4078,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </div>
                         )}
 
-                        {/* Raison sociale */}
+                        {/* Raison sociale / Dénomination */}
                         {owner.entityType && (
                           <div className="space-y-1 animate-fade-in">
                             <div className="flex items-center gap-1">
-                              <Label className="text-sm font-medium">Raison sociale</Label>
+                              <Label className="text-sm font-medium">
+                                {owner.entityType === 'Association' ? 'Dénomination' : 'Raison sociale'}
+                              </Label>
                               {formData.isTitleInCurrentOwnerName === false && index === 1 && (
                                 <Popover>
                                   <PopoverTrigger asChild>
@@ -4095,7 +4101,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                               )}
                             </div>
                             <Input
-                              placeholder="Dénomination officielle"
+                              placeholder={owner.entityType === 'Association' ? "Dénomination de l'association" : "Dénomination officielle"}
                               value={owner.name}
                               onChange={(e) => updatePreviousOwner(index, 'name', e.target.value)}
                               disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
