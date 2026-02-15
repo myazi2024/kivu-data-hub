@@ -1375,17 +1375,20 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setPreviousOwners(previousOwners.filter((_, i) => i !== index));
   };
 
-  const updatePreviousOwner = (index: number, field: string, value: string) => {
-    const updated = [...previousOwners];
-    updated[index] = { ...updated[index], [field]: value };
-    
-    // Auto-remplir la date de fin du propriétaire suivant (plus ancien) quand on change la date de début
-    if (field === 'startDate' && value && index < previousOwners.length - 1) {
-      // Mettre à jour la date de fin du propriétaire suivant (index + 1)
-      updated[index + 1] = { ...updated[index + 1], endDate: value };
-    }
-    
-    setPreviousOwners(updated);
+  const updatePreviousOwner = (index: number, field: string | Record<string, string>, value?: string) => {
+    setPreviousOwners(prev => {
+      const updated = [...prev];
+      if (typeof field === 'string') {
+        updated[index] = { ...updated[index], [field]: value };
+        // Auto-remplir la date de fin du propriétaire suivant (plus ancien) quand on change la date de début
+        if (field === 'startDate' && value && index < updated.length - 1) {
+          updated[index + 1] = { ...updated[index + 1], endDate: value };
+        }
+      } else {
+        updated[index] = { ...updated[index], ...field };
+      }
+      return updated;
+    });
   };
 
   // Fonctions pour gérer les propriétaires actuels
@@ -1434,10 +1437,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }
   };
 
-  const updateCurrentOwner = (index: number, field: string, value: string) => {
-    const updated = [...currentOwners];
-    updated[index] = { ...updated[index], [field]: value };
-    setCurrentOwners(updated);
+  const updateCurrentOwner = (index: number, field: string | Record<string, string>, value?: string) => {
+    setCurrentOwners(prev => {
+      const updated = [...prev];
+      if (typeof field === 'string') {
+        updated[index] = { ...updated[index], [field]: value };
+      } else {
+        updated[index] = { ...updated[index], ...field };
+      }
+      return updated;
+    });
   };
 
   // Fonctions pour gérer les taxes
@@ -2778,15 +2787,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <Select 
                         value={owner.legalStatus}
                         onValueChange={(value) => {
-                          updateCurrentOwner(index, 'legalStatus', value);
-                          // Reset dependent fields when switching status
-                          updateCurrentOwner(index, 'entityType', '');
-                          updateCurrentOwner(index, 'entitySubType', '');
-                          updateCurrentOwner(index, 'entitySubTypeOther', '');
-                          updateCurrentOwner(index, 'stateExploitedBy', '');
-                          if (value !== 'Personne physique') {
-                            updateCurrentOwner(index, 'middleName', '');
-                          }
+                          updateCurrentOwner(index, {
+                            legalStatus: value,
+                            entityType: '',
+                            entitySubType: '',
+                            entitySubTypeOther: '',
+                            stateExploitedBy: '',
+                            ...(value !== 'Personne physique' ? { middleName: '' } : {}),
+                          });
                         }}
                       >
                         <SelectTrigger className="h-10 text-sm rounded-xl">
@@ -2808,9 +2816,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Select
                             value={owner.entityType || ''}
                             onValueChange={(value) => {
-                              updateCurrentOwner(index, 'entityType', value);
-                              updateCurrentOwner(index, 'entitySubType', '');
-                              updateCurrentOwner(index, 'entitySubTypeOther', '');
+                              updateCurrentOwner(index, { entityType: value, entitySubType: '', entitySubTypeOther: '' });
                             }}
                           >
                             <SelectTrigger className="h-10 text-sm rounded-xl">
@@ -2830,8 +2836,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <Select
                               value={owner.entitySubType || ''}
                               onValueChange={(value) => {
-                                updateCurrentOwner(index, 'entitySubType', value);
-                                if (value !== 'Autre') updateCurrentOwner(index, 'entitySubTypeOther', '');
+                                updateCurrentOwner(index, { entitySubType: value, ...(value !== 'Autre' ? { entitySubTypeOther: '' } : {}) });
                               }}
                             >
                               <SelectTrigger className="h-10 text-sm rounded-xl">
@@ -2866,8 +2871,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <Select
                               value={owner.entitySubType || ''}
                               onValueChange={(value) => {
-                                updateCurrentOwner(index, 'entitySubType', value);
-                                if (value !== 'Autre') updateCurrentOwner(index, 'entitySubTypeOther', '');
+                                updateCurrentOwner(index, { entitySubType: value, ...(value !== 'Autre' ? { entitySubTypeOther: '' } : {}) });
                               }}
                             >
                               <SelectTrigger className="h-10 text-sm rounded-xl">
@@ -2924,10 +2928,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             placeholder="Rechercher un service ou agence de l'État..."
                             selectedValues={owner.stateExploitedBy ? [owner.stateExploitedBy] : []}
                             onSelectionChange={(values) => {
-                              updateCurrentOwner(index, 'stateExploitedBy', values[values.length - 1] || '');
-                              // Also set lastName for data consistency
-                              updateCurrentOwner(index, 'lastName', values[values.length - 1] || '');
-                              updateCurrentOwner(index, 'firstName', 'État');
+                              const val = values[values.length - 1] || '';
+                              updateCurrentOwner(index, { stateExploitedBy: val, lastName: val, firstName: 'État' });
                             }}
                           />
                         </div>
@@ -3961,11 +3963,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       <Select
                         value={owner.legalStatus}
                         onValueChange={(value) => {
-                          updatePreviousOwner(index, 'legalStatus', value);
-                          updatePreviousOwner(index, 'entityType', '');
-                          updatePreviousOwner(index, 'entitySubType', '');
-                          updatePreviousOwner(index, 'entitySubTypeOther', '');
-                          updatePreviousOwner(index, 'stateExploitedBy', '');
+                          updatePreviousOwner(index, {
+                            legalStatus: value,
+                            entityType: '',
+                            entitySubType: '',
+                            entitySubTypeOther: '',
+                            stateExploitedBy: '',
+                          });
                         }}
                         disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
                       >
@@ -3988,9 +3992,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           <Select
                             value={owner.entityType || ''}
                             onValueChange={(value) => {
-                              updatePreviousOwner(index, 'entityType', value);
-                              updatePreviousOwner(index, 'entitySubType', '');
-                              updatePreviousOwner(index, 'entitySubTypeOther', '');
+                              updatePreviousOwner(index, { entityType: value, entitySubType: '', entitySubTypeOther: '' });
                             }}
                             disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
                           >
@@ -4010,8 +4012,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <Select
                               value={owner.entitySubType || ''}
                               onValueChange={(value) => {
-                                updatePreviousOwner(index, 'entitySubType', value);
-                                if (value !== 'Autre') updatePreviousOwner(index, 'entitySubTypeOther', '');
+                                updatePreviousOwner(index, { entitySubType: value, ...(value !== 'Autre' ? { entitySubTypeOther: '' } : {}) });
                               }}
                               disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
                             >
@@ -4048,8 +4049,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             <Select
                               value={owner.entitySubType || ''}
                               onValueChange={(value) => {
-                                updatePreviousOwner(index, 'entitySubType', value);
-                                if (value !== 'Autre') updatePreviousOwner(index, 'entitySubTypeOther', '');
+                                updatePreviousOwner(index, { entitySubType: value, ...(value !== 'Autre' ? { entitySubTypeOther: '' } : {}) });
                               }}
                               disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
                             >
@@ -4114,8 +4114,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             placeholder="Rechercher un service de l'État..."
                             selectedValues={owner.stateExploitedBy ? [owner.stateExploitedBy] : []}
                             onSelectionChange={(values) => {
-                              updatePreviousOwner(index, 'stateExploitedBy', values[values.length - 1] || '');
-                              updatePreviousOwner(index, 'name', values[values.length - 1] || '');
+                              const val = values[values.length - 1] || '';
+                              updatePreviousOwner(index, { stateExploitedBy: val, name: val });
                             }}
                             disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
                           />
