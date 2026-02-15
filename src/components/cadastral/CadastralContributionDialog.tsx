@@ -3016,10 +3016,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         )}
                       </div>
 
-                    {/* Pièce d'identité */}
+                    {/* Pièce d'identité / Document juridique */}
                     <div className="space-y-1.5 pt-2 border-t border-border/50">
                       <div className="flex items-center gap-2">
-                        <Label className="text-sm font-medium">Pièce d'identité (optionnel)</Label>
+                        <Label className="text-sm font-medium">
+                          {currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Association'
+                            ? "Arrêté ministériel d'autorisation de fonctionnement"
+                            : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société'
+                              ? "Certificat d'immatriculation au RCCM"
+                              : "Pièce d'identité (optionnel)"}
+                        </Label>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
@@ -3028,7 +3034,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           </PopoverTrigger>
                           <PopoverContent className="w-64 rounded-xl text-xs">
                             <p className="text-muted-foreground">
-                              La pièce d'identité renforce la crédibilité de votre contribution.
+                              {currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Association'
+                                ? "Joignez une copie de l'arrêté ministériel autorisant le fonctionnement de l'association. Ce document atteste de son existence légale."
+                                : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société'
+                                  ? "Joignez une copie du certificat d'immatriculation au Registre du Commerce et du Crédit Mobilier (RCCM) de la société."
+                                  : "La pièce d'identité renforce la crédibilité de votre contribution."}
                             </p>
                           </PopoverContent>
                         </Popover>
@@ -3042,7 +3052,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           className="gap-2 w-full text-sm h-10 rounded-xl border-dashed border-2 hover:bg-primary/5"
                         >
                           <Plus className="h-4 w-4" />
-                          Ajouter la pièce d'identité
+                          {currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Association'
+                            ? "Ajouter l'arrêté ministériel"
+                            : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société'
+                              ? "Ajouter le certificat RCCM"
+                              : "Ajouter la pièce d'identité"}
                         </Button>
                       ) : (
                         <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-xl border overflow-hidden min-w-0">
@@ -5063,7 +5077,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   <div className="space-y-1 text-xs">
                     <div className={ownerDocFile ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
                       {ownerDocFile ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
-                      <span>Pièce d'identité: {ownerDocFile ? "✓" : "Non"}</span>
+                      <span>{currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Association'
+                        ? "Arrêté ministériel"
+                        : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société'
+                          ? "Certificat RCCM"
+                          : "Pièce d'identité"}: {ownerDocFile ? "✓" : "Non"}</span>
                     </div>
                     <div className={titleDocFiles.length > 0 ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
                       {titleDocFiles.length > 0 ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
