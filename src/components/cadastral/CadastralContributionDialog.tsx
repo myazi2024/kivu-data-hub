@@ -226,6 +226,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }]);
 
   // État pour gérer plusieurs propriétaires actuels (copropriété)
+  // État pour le mode de propriété (unique ou multiple)
+  const [ownershipMode, setOwnershipMode] = useState<'unique' | 'multiple'>('unique');
+
   const [currentOwners, setCurrentOwners] = useState<Array<{
     lastName: string;
     middleName: string;
@@ -235,6 +238,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     entitySubType: string;
     entitySubTypeOther: string;
     stateExploitedBy: string;
+    rightType: string;
     since: string;
   }>>([{
     lastName: '',
@@ -245,6 +249,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     entitySubType: '',
     entitySubTypeOther: '',
     stateExploitedBy: '',
+    rightType: '',
     since: ''
   }]);
 
@@ -1427,6 +1432,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       entitySubType: '',
       entitySubTypeOther: '',
       stateExploitedBy: '',
+      rightType: '',
       since: ''
     }]);
   };
@@ -2245,6 +2251,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       entitySubType: '',
       entitySubTypeOther: '',
       stateExploitedBy: '',
+      rightType: '',
       since: ''
     }]);
     setTaxRecords([{
@@ -2793,8 +2800,17 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             entitySubType: '',
                             entitySubTypeOther: '',
                             stateExploitedBy: '',
+                            rightType: '',
                             ...(value !== 'Personne physique' ? { middleName: '' } : {}),
                           });
+                          // Reset ownership mode if not personne physique
+                          if (value !== 'Personne physique' && index === 0) {
+                            setOwnershipMode('unique');
+                            // Remove extra owners if switching away from personne physique
+                            if (currentOwners.length > 1) {
+                              setCurrentOwners(prev => [prev[0]]);
+                            }
+                          }
                         }}
                       >
                         <SelectTrigger className="h-10 text-sm rounded-xl">
@@ -2924,6 +2940,39 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
                     ) : owner.legalStatus === 'État' ? (
                       <div className="space-y-2">
+                        {/* Type de droit */}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1">
+                            <Label className="text-sm font-medium">Type de droit *</Label>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-4 w-4 p-0 rounded-full">
+                                  <Info className="h-3 w-3 text-muted-foreground" />
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 rounded-xl text-xs">
+                                <p className="text-muted-foreground">
+                                  Il s'agit de déterminer la nature du droit d'exploitation que détient l'occupant de cette parcelle.
+                                </p>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
+                          <Select
+                            value={owner.rightType || ''}
+                            onValueChange={(value) => {
+                              updateCurrentOwner(index, 'rightType', value);
+                            }}
+                          >
+                            <SelectTrigger className="h-10 text-sm rounded-xl">
+                              <SelectValue placeholder="Sélectionner" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl">
+                              <SelectItem value="Concession">Concession</SelectItem>
+                              <SelectItem value="Affectation">Affectation</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+
                         <div className="space-y-1">
                           <Label className="text-sm font-medium">Exploitée par *</Label>
                           <SuggestivePicklist
@@ -2974,7 +3023,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
                     <div className="space-y-1">
                         <div className="flex items-center gap-1">
-                          <Label className="text-sm font-medium">Propriétaire depuis</Label>
+                          <Label className="text-sm font-medium">
+                            {owner.legalStatus === 'État' && owner.rightType === 'Concession' ? 'Concédé depuis' 
+                              : owner.legalStatus === 'État' && owner.rightType === 'Affectation' ? 'Affecté depuis'
+                              : 'Propriétaire depuis'}
+                          </Label>
                           {formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && index === 0 && (
                             <Popover>
                               <PopoverTrigger asChild>
@@ -3024,7 +3077,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             ? "Arrêté ministériel d'autorisation de fonctionnement"
                             : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société'
                               ? "Certificat d'immatriculation au RCCM"
-                              : "Pièce d'identité (optionnel)"}
+                              : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Concession'
+                                ? "Titre de concession"
+                                : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Affectation'
+                                  ? "Acte d'affectation"
+                                  : "Pièce d'identité (optionnel)"}
                         </Label>
                         <Popover>
                           <PopoverTrigger asChild>
@@ -3038,7 +3095,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                                 ? "Joignez une copie de l'arrêté ministériel autorisant le fonctionnement de l'association. Ce document atteste de son existence légale."
                                 : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société'
                                   ? "Joignez une copie du certificat d'immatriculation au Registre du Commerce et du Crédit Mobilier (RCCM) de la société."
-                                  : "La pièce d'identité renforce la crédibilité de votre contribution."}
+                                  : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Concession'
+                                    ? "Joignez une copie du titre de concession délivré par l'autorité compétente."
+                                    : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Affectation'
+                                      ? "Joignez une copie de l'acte d'affectation délivré par l'autorité compétente."
+                                      : "La pièce d'identité renforce la crédibilité de votre contribution."}
                             </p>
                           </PopoverContent>
                         </Popover>
@@ -3056,7 +3117,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             ? "Ajouter l'arrêté ministériel"
                             : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société'
                               ? "Ajouter le certificat RCCM"
-                              : "Ajouter la pièce d'identité"}
+                              : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Concession'
+                                ? "Ajouter le titre de concession"
+                                : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Affectation'
+                                  ? "Ajouter l'acte d'affectation"
+                                  : "Ajouter la pièce d'identité"}
                         </Button>
                       ) : (
                         <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-xl border overflow-hidden min-w-0">
@@ -3093,15 +3158,49 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   </div>
                 )}
 
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={addCurrentOwner}
-                  className="w-full h-10 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter un propriétaire
-                </Button>
+                {/* Unique/Plusieurs propriétaires - uniquement pour Personne physique */}
+                {currentOwners[0]?.legalStatus === 'Personne physique' && (
+                  <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant={ownershipMode === 'unique' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => {
+                          setOwnershipMode('unique');
+                          // Remove extra owners
+                          if (currentOwners.length > 1) {
+                            setCurrentOwners(prev => [prev[0]]);
+                          }
+                        }}
+                        className="h-9 text-sm rounded-xl"
+                      >
+                        Unique propriétaire
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={ownershipMode === 'multiple' ? 'default' : 'outline'}
+                        size="sm"
+                        onClick={() => setOwnershipMode('multiple')}
+                        className="h-9 text-sm rounded-xl"
+                      >
+                        Plusieurs propriétaires
+                      </Button>
+                    </div>
+
+                    {ownershipMode === 'multiple' && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addCurrentOwner}
+                        className="w-full h-10 gap-2 text-sm font-medium rounded-2xl border-2 border-dashed hover:bg-primary/5 hover:border-primary transition-all"
+                      >
+                        <Plus className="h-4 w-4" />
+                        Ajouter un copropriétaire
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -5081,7 +5180,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                         ? "Arrêté ministériel"
                         : currentOwners[0]?.legalStatus === 'Personne morale' && currentOwners[0]?.entityType === 'Société'
                           ? "Certificat RCCM"
-                          : "Pièce d'identité"}: {ownerDocFile ? "✓" : "Non"}</span>
+                          : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Concession'
+                            ? "Titre de concession"
+                            : currentOwners[0]?.legalStatus === 'État' && currentOwners[0]?.rightType === 'Affectation'
+                              ? "Acte d'affectation"
+                              : "Pièce d'identité"}: {ownerDocFile ? "✓" : "Non"}</span>
                     </div>
                     <div className={titleDocFiles.length > 0 ? "text-foreground flex items-center gap-1.5" : "text-muted-foreground flex items-center gap-1.5"}>
                       {titleDocFiles.length > 0 ? <CheckCircle2 className="h-3 w-3 text-primary" /> : <span>⭕</span>}
