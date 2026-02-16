@@ -2773,55 +2773,68 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       ? 'ring-2 ring-primary border-primary animate-pulse' 
                       : 'border-border'
                   }`}>
-                    {/* Bouton supprimer si plusieurs propriétaires */}
-                    {currentOwners.length > 1 && (
-                      <div className="flex justify-end">
+                    {/* Étiquette copropriétaire */}
+                    <div className="flex items-center justify-between">
+                      {index > 0 && (
+                        <span className="text-sm font-semibold text-primary">Copropriétaire {index}</span>
+                      )}
+                      {/* Bouton supprimer si plusieurs propriétaires */}
+                      {currentOwners.length > 1 && index > 0 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeCurrentOwner(index)}
-                          className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-xl"
+                          className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10 rounded-xl ml-auto"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {/* Statut juridique - en premier pour conditionner les champs */}
                     <div className="space-y-1">
                       <Label className="text-sm font-medium">Statut juridique</Label>
-                      <Select 
-                        value={owner.legalStatus}
-                        onValueChange={(value) => {
-                          updateCurrentOwner(index, {
-                            legalStatus: value,
-                            entityType: '',
-                            entitySubType: '',
-                            entitySubTypeOther: '',
-                            stateExploitedBy: '',
-                            rightType: '',
-                            ...(value !== 'Personne physique' ? { middleName: '' } : {}),
-                          });
-                          // Reset ownership mode if not personne physique
-                          if (value !== 'Personne physique' && index === 0) {
-                            setOwnershipMode('unique');
-                            // Remove extra owners if switching away from personne physique
-                            if (currentOwners.length > 1) {
-                              setCurrentOwners(prev => [prev[0]]);
+                      {index > 0 ? (
+                        // Copropriétaires sont bloqués sur Personne physique
+                        <Input 
+                          value="Personne physique" 
+                          readOnly 
+                          className="h-10 text-sm rounded-xl bg-muted cursor-not-allowed"
+                        />
+                      ) : (
+                        <Select 
+                          value={owner.legalStatus}
+                          onValueChange={(value) => {
+                            updateCurrentOwner(index, {
+                              legalStatus: value,
+                              entityType: '',
+                              entitySubType: '',
+                              entitySubTypeOther: '',
+                              stateExploitedBy: '',
+                              rightType: '',
+                              ...(value !== 'Personne physique' ? { middleName: '' } : {}),
+                            });
+                            // Reset ownership mode if not personne physique
+                            if (value !== 'Personne physique' && index === 0) {
+                              setOwnershipMode('unique');
+                              // Remove extra owners if switching away from personne physique
+                              if (currentOwners.length > 1) {
+                                setCurrentOwners(prev => [prev[0]]);
+                              }
                             }
-                          }
-                        }}
-                      >
-                        <SelectTrigger className="h-10 text-sm rounded-xl">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="rounded-xl">
-                          <SelectItem value="Personne physique">Personne physique</SelectItem>
-                          <SelectItem value="Personne morale">Personne morale</SelectItem>
-                          <SelectItem value="État">État</SelectItem>
-                        </SelectContent>
-                      </Select>
+                          }}
+                        >
+                          <SelectTrigger className="h-10 text-sm rounded-xl">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl">
+                            <SelectItem value="Personne physique">Personne physique</SelectItem>
+                            <SelectItem value="Personne morale">Personne morale</SelectItem>
+                            <SelectItem value="État">État</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
                     </div>
 
                     {owner.legalStatus === 'Personne morale' ? (
@@ -3161,32 +3174,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 {/* Unique/Plusieurs propriétaires - uniquement pour Personne physique */}
                 {currentOwners[0]?.legalStatus === 'Personne physique' && (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        variant={ownershipMode === 'unique' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => {
-                          setOwnershipMode('unique');
-                          // Remove extra owners
-                          if (currentOwners.length > 1) {
-                            setCurrentOwners(prev => [prev[0]]);
-                          }
-                        }}
-                        className="h-9 text-sm rounded-xl"
-                      >
-                        Unique propriétaire
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={ownershipMode === 'multiple' ? 'default' : 'outline'}
-                        size="sm"
-                        onClick={() => setOwnershipMode('multiple')}
-                        className="h-9 text-sm rounded-xl"
-                      >
-                        Plusieurs propriétaires
-                      </Button>
-                    </div>
+                    <RadioGroup
+                      value={ownershipMode}
+                      onValueChange={(value: 'unique' | 'multiple') => {
+                        setOwnershipMode(value);
+                        if (value === 'unique' && currentOwners.length > 1) {
+                          setCurrentOwners(prev => [prev[0]]);
+                        }
+                      }}
+                      className="flex gap-4"
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="unique" id="ownership-unique" />
+                        <Label htmlFor="ownership-unique" className="text-sm cursor-pointer">Unique propriétaire</Label>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="multiple" id="ownership-multiple" />
+                        <Label htmlFor="ownership-multiple" className="text-sm cursor-pointer">Plusieurs propriétaires</Label>
+                      </div>
+                    </RadioGroup>
 
                     {ownershipMode === 'multiple' && (
                       <Button
