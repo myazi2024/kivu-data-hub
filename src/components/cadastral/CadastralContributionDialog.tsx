@@ -5228,6 +5228,52 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                 </CardContent>
               </Card>
 
+              {/* Notification d'expiration du titre foncier */}
+              {(() => {
+                const selectedTitle = PROPERTY_TITLE_TYPES.find(t => t.value === formData.propertyTitleType);
+                if (!selectedTitle?.isRenewable || !formData.titleIssueDate || !leaseYears || leaseYears <= 0) return null;
+                
+                const issueDate = new Date(formData.titleIssueDate);
+                const expirationDate = new Date(issueDate);
+                expirationDate.setFullYear(expirationDate.getFullYear() + leaseYears);
+                const now = new Date();
+                const remainingMs = expirationDate.getTime() - now.getTime();
+                const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+                const remainingMonths = Math.round(remainingDays / 30.44);
+                const isExpired = remainingDays <= 0;
+                const isExpiringSoon = !isExpired && remainingMonths <= 3;
+                const isInitial = formData.leaseType === 'initial' || !formData.leaseType;
+                
+                if (!isExpired && !isExpiringSoon) return null;
+
+                const expirationDateStr = expirationDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+                const guidanceText = "Pour soumettre une demande de titre foncier, rendez-vous dans le Cadastre numérique, puis cliquez sur le bouton « Demander un titre foncier » dans la barre de recherche cadastrale.";
+
+                let message = '';
+                if (isExpired && isInitial) {
+                  message = `D'après la date de délivrance et le délai accordé, votre titre foncier « ${formData.propertyTitleType} » a expiré le ${expirationDateStr}. Après la soumission de votre parcelle au cadastre numérique, nous vous recommandons de demander un renouvellement du titre foncier existant ou un titre définitif dans un bref délai, sous réserve que les conditions établies par le titre expiré aient été respectées. ${guidanceText}`;
+                } else if (isExpired && formData.leaseType === 'renewal') {
+                  message = `Le délai légal de validité accordé à votre titre foncier « ${formData.propertyTitleType} » est dépassé : ce titre a expiré le ${expirationDateStr}. Après la soumission de votre parcelle au cadastre numérique, nous vous recommandons de demander un titre définitif dans un bref délai, sous réserve que toutes les conditions établies dans le titre expiré aient été respectées. ${guidanceText}`;
+                } else if (isExpiringSoon && isInitial) {
+                  message = `Le délai légal de votre titre foncier « ${formData.propertyTitleType} » arrive bientôt à expiration (le ${expirationDateStr}, soit dans environ ${remainingMonths > 0 ? remainingMonths + ' mois' : remainingDays + ' jours'}). Après la soumission de votre parcelle au cadastre numérique, nous vous recommandons de demander un renouvellement ou un titre définitif avant l'expiration, sous réserve que les conditions établies par le titre aient été respectées, afin d'éviter des complications administratives ou des frais complémentaires. ${guidanceText}`;
+                } else if (isExpiringSoon && formData.leaseType === 'renewal') {
+                  message = `Le délai légal de validité accordé à votre titre foncier « ${formData.propertyTitleType} » tend à expirer (le ${expirationDateStr}, soit dans environ ${remainingMonths > 0 ? remainingMonths + ' mois' : remainingDays + ' jours'}). Après la soumission de votre parcelle au cadastre numérique, nous vous recommandons de demander un titre définitif dans un bref délai avant l'expiration, sous réserve que toutes les conditions établies par ce titre actuel aient été respectées. ${guidanceText}`;
+                }
+
+                return message ? (
+                  <Card className={`rounded-2xl shadow-sm ${isExpired ? 'border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-950/20' : 'border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-950/20'}`}>
+                    <CardContent className="p-3">
+                      <div className="flex items-start gap-2">
+                        <Info className={`h-4 w-4 mt-0.5 flex-shrink-0 ${isExpired ? 'text-amber-600' : 'text-blue-600'}`} />
+                        <p className={`text-xs leading-relaxed ${isExpired ? 'text-amber-800 dark:text-amber-200' : 'text-blue-800 dark:text-blue-200'}`}>
+                          {message}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ) : null;
+              })()}
+
               {/* Message de motivation */}
               {calculateCCCValue().value < 5 && (
                 <Card className="rounded-2xl shadow-sm border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
