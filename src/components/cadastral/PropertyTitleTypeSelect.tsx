@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 
 interface PropertyTitleType {
   value: string;
@@ -56,10 +57,10 @@ const PROPERTY_TITLE_TYPES: PropertyTitleType[] = [
     isRenewable: true
   },
   {
-    value: "Certificat de location",
-    label: "Certificat de location",
-    description: "Document attestant d'un contrat de location régulièrement enregistré",
-    details: "Le certificat de location est délivré après enregistrement d'un bail locatif ordinaire auprès des services compétents. Il atteste de l'existence d'un contrat de location régulier entre bailleur et locataire pour une durée déterminée.",
+    value: "Contrat de location (Concession provisoire)",
+    label: "Contrat de location (Concession provisoire)",
+    description: "Titre provisoire et précaire délivré par l'État pour une durée limitée",
+    details: "Le contrat de location est un titre provisoire et précaire, souvent appelé \"concession provisoire\", délivré par l'État congolais pour une durée limitée (généralement 3 à 5 ans).",
     reference: "Ex: CL-123456 ou CL/2024/001",
     isRenewable: true
   },
@@ -91,6 +92,8 @@ interface PropertyTitleTypeSelectProps {
   onValueChange: (value: string) => void;
   leaseType?: 'initial' | 'renewal';
   onLeaseTypeChange?: (type: 'initial' | 'renewal') => void;
+  leaseYears?: number;
+  onLeaseYearsChange?: (years: number) => void;
   disabled?: boolean;
 }
 
@@ -99,6 +102,8 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
   onValueChange, 
   leaseType, 
   onLeaseTypeChange,
+  leaseYears,
+  onLeaseYearsChange,
   disabled = false
 }) => {
   const [openPopoverId, setOpenPopoverId] = React.useState<string | null>(null);
@@ -196,7 +201,7 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
         )}
         
         {showLeaseTypeOption && onLeaseTypeChange && (
-          <div className="space-y-2 pt-2 border-t border-border/50">
+          <div className="space-y-3 pt-2 border-t border-border/50">
             <div className="flex items-center gap-2">
               <Label className="text-sm font-medium">Type de bail</Label>
               <Popover>
@@ -215,30 +220,43 @@ const PropertyTitleTypeSelect: React.FC<PropertyTitleTypeSelectProps> = ({
                 </PopoverContent>
               </Popover>
             </div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => onLeaseTypeChange('initial')}
-                className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                  leaseType === 'initial'
-                    ? 'bg-primary text-primary-foreground shadow-md'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                Bail initial
-              </button>
-              <button
-                type="button"
-                onClick={() => onLeaseTypeChange('renewal')}
-                className={`flex-1 py-2.5 px-3 rounded-xl text-sm font-medium transition-all ${
-                  leaseType === 'renewal'
-                    ? 'bg-primary text-primary-foreground shadow-md'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                Renouvellement
-              </button>
-            </div>
+            <RadioGroup
+              value={leaseType || ''}
+              onValueChange={(val) => onLeaseTypeChange(val as 'initial' | 'renewal')}
+              className="flex gap-4"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="initial" id="lease-initial" />
+                <Label htmlFor="lease-initial" className="text-sm cursor-pointer">Bail initial</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="renewal" id="lease-renewal" />
+                <Label htmlFor="lease-renewal" className="text-sm cursor-pointer">Renouvellement</Label>
+              </div>
+            </RadioGroup>
+
+            {/* Lease years field */}
+            {leaseType && onLeaseYearsChange && (
+              <div className="space-y-1 animate-fade-in">
+                <Label className="text-sm font-medium">
+                  {leaseType === 'initial' ? "Nombre d'années accordé" : "Nombre d'années ajouté"}
+                </Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={99}
+                  placeholder={leaseType === 'initial' ? "Ex: 25" : "Ex: 10"}
+                  value={leaseYears || ''}
+                  onChange={(e) => onLeaseYearsChange(parseInt(e.target.value) || 0)}
+                  className="h-9 text-sm rounded-xl"
+                />
+                <p className="text-xs text-muted-foreground">
+                  {leaseType === 'initial' 
+                    ? "Durée du bail accordée à l'origine" 
+                    : "Durée supplémentaire ajoutée au renouvellement"}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>
