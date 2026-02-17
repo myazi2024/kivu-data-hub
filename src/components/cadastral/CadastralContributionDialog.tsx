@@ -228,6 +228,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   // État pour gérer plusieurs propriétaires actuels (copropriété)
   // État pour le mode de propriété (unique ou multiple)
   const [ownershipMode, setOwnershipMode] = useState<'unique' | 'multiple'>('unique');
+  const [leaseYears, setLeaseYears] = useState<number>(0);
 
   const [currentOwners, setCurrentOwners] = useState<Array<{
     lastName: string;
@@ -2539,6 +2540,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               onValueChange={(value) => handleInputChange('propertyTitleType', value)}
               leaseType={formData.leaseType}
               onLeaseTypeChange={(type) => handleInputChange('leaseType', type)}
+              leaseYears={leaseYears}
+              onLeaseYearsChange={setLeaseYears}
             />
 
             {formData.propertyTitleType && (
@@ -2557,7 +2560,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             "Concession perpétuelle": "Conc. perpét.",
                             "Concession ordinaire": "Conc. ordin.",
                             "Bail emphytéotique": "Bail emphyt.",
-                            "Certificat de location": "Cert. de loc.",
+                            "Contrat de location (Concession provisoire)": "Contr. de loc.",
                             "Autorisation d'occupation provisoire": "AOP",
                             "Permis d'occupation urbain": "POU",
                             "Permis d'occupation rural": "POR",
@@ -2775,8 +2778,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                   }`}>
                     {/* Étiquette copropriétaire */}
                     <div className="flex items-center justify-between">
-                      {index > 0 && (
-                        <span className="text-sm font-semibold text-primary">Copropriétaire {index}</span>
+                      {ownershipMode === 'multiple' && (
+                        <span className="text-sm font-semibold text-primary">Copropriétaire {index + 1}</span>
                       )}
                       {/* Bouton supprimer si plusieurs propriétaires */}
                       {currentOwners.length > 1 && index > 0 && (
@@ -3060,19 +3063,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                           type="date"
                           max={new Date().toISOString().split('T')[0]}
                           min={formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && index === 0 ? formData.titleIssueDate : undefined}
-                          value={owner.since}
+                          value={index > 0 && ownershipMode === 'multiple' ? currentOwners[0]?.since || '' : owner.since}
                           onChange={(e) => updateCurrentOwner(index, 'since', e.target.value)}
                           className={`h-10 text-sm rounded-xl ${formData.isTitleInCurrentOwnerName === true && index === 0 ? 'cursor-not-allowed opacity-70' : ''} ${
+                            index > 0 && ownershipMode === 'multiple' ? 'cursor-not-allowed opacity-70 bg-muted' : ''
+                          } ${
                             formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && owner.since && index === 0 && new Date(owner.since) < new Date(formData.titleIssueDate) 
                               ? 'border-destructive ring-1 ring-destructive' 
                               : ''
                           }`}
-                          disabled={formData.isTitleInCurrentOwnerName === true && index === 0}
-                          title={formData.isTitleInCurrentOwnerName === true && index === 0 ? 'Cette date est synchronisée avec la date de délivrance du titre' : undefined}
+                          disabled={(formData.isTitleInCurrentOwnerName === true && index === 0) || (index > 0 && ownershipMode === 'multiple')}
+                          title={index > 0 && ownershipMode === 'multiple' ? 'Date synchronisée avec le copropriétaire 1' : formData.isTitleInCurrentOwnerName === true && index === 0 ? 'Cette date est synchronisée avec la date de délivrance du titre' : undefined}
                         />
                         {formData.isTitleInCurrentOwnerName === true && index === 0 && (
                           <p className="text-xs text-muted-foreground">
                             Synchronisée avec la date de délivrance
+                          </p>
+                        )}
+                        {index > 0 && ownershipMode === 'multiple' && (
+                          <p className="text-xs text-muted-foreground">
+                            Synchronisée avec le copropriétaire 1
                           </p>
                         )}
                         {formData.isTitleInCurrentOwnerName === false && formData.titleIssueDate && owner.since && index === 0 && new Date(owner.since) < new Date(formData.titleIssueDate) && (
