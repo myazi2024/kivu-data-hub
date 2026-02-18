@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp } from 'lucide-react';
+import { Loader2, CheckCircle2, Upload, X, Info, ChevronRight, User, MapPin, FileText, CreditCard, Building, Home, Award, AlertCircle, Check, ClipboardCheck, TrendingUp, Search, Plus } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +41,7 @@ import { ParcelMapPreview } from './ParcelMapPreview';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import LandTitleReviewTab from './LandTitleReviewTab';
 import SectionHelpPopover from './SectionHelpPopover';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LandTitleRequestDialogProps {
   open: boolean;
@@ -72,6 +73,16 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
+  
+  // Request type state
+  const [requestType, setRequestType] = useState<'initial' | 'renouvellement' | 'definitif' | ''>('');
+  const [parcelNumberSearch, setParcelNumberSearch] = useState('');
+  const [parcelSearchResults, setParcelSearchResults] = useState<Array<{ parcel_number: string; id: string }>>([]);
+  const [selectedParcelNumber, setSelectedParcelNumber] = useState('');
+  const [parcelValidated, setParcelValidated] = useState(false);
+  const [parcelSearchLoading, setParcelSearchLoading] = useState(false);
+  const [showParcelDropdown, setShowParcelDropdown] = useState(false);
+  const [showCCCDialog, setShowCCCDialog] = useState(false);
   
   // Form data
   const [formData, setFormData] = useState<LandTitleRequestData>({
@@ -180,6 +191,47 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       });
     }
   };
+
+  // Parcel number search for renewal/definitive requests
+  const searchParcels = useCallback(async (query: string) => {
+    if (!query || query.length < 2) {
+      setParcelSearchResults([]);
+      return;
+    }
+    setParcelSearchLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('cadastral_parcels')
+        .select('parcel_number, id')
+        .ilike('parcel_number', `%${query}%`)
+        .is('deleted_at', null)
+        .limit(10);
+      if (error) throw error;
+      setParcelSearchResults(data || []);
+    } catch (err) {
+      console.error('Error searching parcels:', err);
+      setParcelSearchResults([]);
+    } finally {
+      setParcelSearchLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (parcelNumberSearch && (requestType === 'renouvellement' || requestType === 'definitif')) {
+        searchParcels(parcelNumberSearch);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [parcelNumberSearch, requestType, searchParcels]);
+
+  // Reset parcel validation when request type changes
+  useEffect(() => {
+    setParcelNumberSearch('');
+    setSelectedParcelNumber('');
+    setParcelValidated(false);
+    setParcelSearchResults([]);
+  }, [requestType]);
 
   // Reset validation when construction data changes
   useEffect(() => {
@@ -353,6 +405,10 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   };
 
   const isFormValid = (): boolean => {
+    // Check request type
+    if (!requestType) return false;
+    if ((requestType === 'renouvellement' || requestType === 'definitif') && !parcelValidated) return false;
+    
     // Check requester info
     if (!formData.requesterLastName || !formData.requesterFirstName || !formData.requesterPhone) {
       return false;
@@ -635,6 +691,141 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
                 {/* Tab: Requester */}
                 <TabsContent value="requester" className="space-y-4">
+                  {/* Informations sur la demande */}
+                  <Card className="border-2 border-primary/30 rounded-lg">
+                    <CardContent className="p-3 space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="p-1.5 bg-primary/10 rounded-lg">
+                          <FileText className="h-4 w-4 text-primary" />
+                        </div>
+                        <Label className="text-sm font-semibold flex items-center gap-1.5">
+                          Informations sur la demande *
+                          <SectionHelpPopover
+                            title="Type de demande"
+                            description="Indiquez s'il s'agit d'une demande initiale de titre foncier, d'un renouvellement d'un titre existant, ou d'une demande de titre foncier définitif. Ce choix influence l'évaluation de votre dossier."
+                          />
+                        </Label>
+                      </div>
+
+                      <Select
+                        value={requestType}
+                        onValueChange={(value) => setRequestType(value as 'initial' | 'renouvellement' | 'definitif')}
+                      >
+                        <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+                          <SelectValue placeholder="Sélectionnez le type de demande" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="initial" className="text-sm py-2">Demande initiale</SelectItem>
+                          <SelectItem value="renouvellement" className="text-sm py-2">Renouvellement d'un titre foncier</SelectItem>
+                          <SelectItem value="definitif" className="text-sm py-2">Titre foncier définitif</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      {/* Parcel number search for renewal or definitive */}
+                      {(requestType === 'renouvellement' || requestType === 'definitif') && (
+                        <div className="space-y-2 animate-fade-in">
+                          <Label className="text-sm">
+                            Numéro de la parcelle (SU ou SR) *
+                          </Label>
+                          <div className="relative">
+                            <div className="relative">
+                              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                              <Input
+                                value={parcelNumberSearch}
+                                onChange={(e) => {
+                                  setParcelNumberSearch(e.target.value);
+                                  setParcelValidated(false);
+                                  setSelectedParcelNumber('');
+                                  setShowParcelDropdown(true);
+                                }}
+                                onFocus={() => setShowParcelDropdown(true)}
+                                placeholder="Tapez le numéro SU ou SR..."
+                                className="h-9 text-sm rounded-xl border-2 pl-8"
+                              />
+                              {parcelSearchLoading && (
+                                <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                              )}
+                            </div>
+
+                            {/* Search results dropdown */}
+                            {showParcelDropdown && parcelNumberSearch.length >= 2 && (
+                              <div className="absolute z-[1300] w-full mt-1 bg-background border rounded-xl shadow-lg max-h-[180px] overflow-y-auto">
+                                {parcelSearchResults.length > 0 ? (
+                                  parcelSearchResults.map((parcel) => (
+                                    <button
+                                      key={parcel.id}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedParcelNumber(parcel.parcel_number);
+                                        setParcelNumberSearch(parcel.parcel_number);
+                                        setParcelValidated(true);
+                                        setShowParcelDropdown(false);
+                                      }}
+                                      className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2"
+                                    >
+                                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                                      <span>{parcel.parcel_number}</span>
+                                    </button>
+                                  ))
+                                ) : !parcelSearchLoading ? (
+                                  <div className="px-3 py-2 text-xs text-muted-foreground">
+                                    Aucune parcelle trouvée pour « {parcelNumberSearch} »
+                                  </div>
+                                ) : null}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Validated parcel */}
+                          {parcelValidated && selectedParcelNumber && (
+                            <div className="flex items-center gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded-lg text-xs text-green-700 dark:text-green-400">
+                              <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                              <span>Parcelle <strong>{selectedParcelNumber}</strong> trouvée dans la base de données.</span>
+                            </div>
+                          )}
+
+                          {/* Parcel not found message */}
+                          {!parcelValidated && parcelNumberSearch.length >= 2 && !parcelSearchLoading && parcelSearchResults.length === 0 && (
+                            <div className="space-y-2 animate-fade-in">
+                              <div className="p-3 bg-amber-50 dark:bg-amber-950/30 rounded-lg text-xs text-amber-800 dark:text-amber-300 space-y-2">
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                                  <div className="space-y-1.5">
+                                    <p>
+                                      {requestType === 'renouvellement'
+                                        ? "Une demande de renouvellement d'un titre foncier doit concerner une parcelle déjà enregistrée dans notre base de données afin de faciliter un suivi rigoureux avec les services cadastraux."
+                                        : "Une demande de titre foncier définitif doit concerner une parcelle déjà enregistrée dans notre base de données afin de faciliter un suivi rigoureux avec les services cadastraux."}
+                                    </p>
+                                    <p>
+                                      Nous vous invitons à commencer par ajouter cette parcelle au cadastre numérique, puis à revenir sur ce formulaire pour introduire votre demande.
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className="w-full h-9 text-xs rounded-xl gap-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+                                onClick={() => {
+                                  // Close this dialog and open CCC form
+                                  onOpenChange(false);
+                                  // Dispatch custom event to open CCC dialog
+                                  window.dispatchEvent(new CustomEvent('open-ccc-dialog', { detail: { parcelNumber: parcelNumberSearch } }));
+                                }}
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                                Ajouter la parcelle « {parcelNumberSearch} » au cadastre numérique
+                              </Button>
+                              <p className="text-[10px] text-muted-foreground text-center">
+                                Cliquez sur le bouton ci-dessus pour commencer le processus d'enregistrement de votre parcelle.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
                   <Card className="border-2 rounded-lg">
                     <CardContent className="p-3 space-y-3">
                       <div className="flex items-center gap-2 mb-2">
@@ -1329,9 +1520,66 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                           </span>
                         </div>
                         
-                        <p className="text-sm text-muted-foreground leading-relaxed">
-                          {deducedTitleType.description}
-                        </p>
+                        {/* Contextual paragraph comparing request type with deduced title */}
+                        {requestType && (
+                          <div className={cn(
+                            "p-3 rounded-lg text-sm leading-relaxed",
+                            (() => {
+                              const requestTypeLabel = requestType === 'initial' ? 'une demande initiale de titre foncier' 
+                                : requestType === 'renouvellement' ? 'un renouvellement de titre foncier' 
+                                : 'une demande de titre foncier définitif';
+                              
+                              // Check alignment
+                              const isDefinitifRequest = requestType === 'definitif';
+                              const isDefinitifDeduced = deducedTitleType.type === "Certificat d'enregistrement";
+                              const isRenewalRequest = requestType === 'renouvellement';
+                              const isTemporaryDeduced = deducedTitleType.type === 'Concession ordinaire' || deducedTitleType.type === 'Bail emphytéotique' || deducedTitleType.type === 'Bail foncier';
+                              
+                              const isAligned = (isDefinitifRequest && isDefinitifDeduced) || 
+                                (isRenewalRequest && isTemporaryDeduced) ||
+                                requestType === 'initial';
+                              
+                              return isAligned 
+                                ? "bg-green-50 dark:bg-green-950/30 text-green-800 dark:text-green-300" 
+                                : "bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300";
+                            })()
+                          )}>
+                            {(() => {
+                              const requestTypeLabel = requestType === 'initial' ? 'une demande initiale de titre foncier' 
+                                : requestType === 'renouvellement' ? 'un renouvellement de titre foncier' 
+                                : 'une demande de titre foncier définitif';
+                              
+                              const isDefinitifRequest = requestType === 'definitif';
+                              const isDefinitifDeduced = deducedTitleType.type === "Certificat d'enregistrement";
+                              const isRenewalRequest = requestType === 'renouvellement';
+                              const isTemporaryDeduced = deducedTitleType.type === 'Concession ordinaire' || deducedTitleType.type === 'Bail emphytéotique' || deducedTitleType.type === 'Bail foncier';
+                              
+                              const isAligned = (isDefinitifRequest && isDefinitifDeduced) || 
+                                (isRenewalRequest && isTemporaryDeduced) ||
+                                requestType === 'initial';
+
+                              if (isAligned) {
+                                return (
+                                  <>
+                                    <strong>Analyse favorable.</strong> Vous avez indiqué qu'il s'agit d'{requestTypeLabel}. Après vérification des données disponibles dans la base de données et de celles fournies dans ce formulaire, cette parcelle est éligible pour obtenir un <strong>{deducedTitleType.label}</strong>. {deducedTitleType.description}
+                                  </>
+                                );
+                              } else {
+                                return (
+                                  <>
+                                    <strong>Analyse divergente.</strong> Vous avez indiqué qu'il s'agit d'{requestTypeLabel}. Après vérification des données disponibles dans la base de données et de celles fournies dans ce formulaire, cette parcelle n'est pas éligible pour {requestTypeLabel === 'une demande initiale de titre foncier' ? requestTypeLabel : `un ${requestTypeLabel.replace("un ", "").replace("une ", "")}`}. Compte tenu des données disponibles et de celles renseignées dans ce formulaire, cette parcelle est éligible pour obtenir un <strong>{deducedTitleType.label}</strong>. {deducedTitleType.description}
+                                  </>
+                                );
+                              }
+                            })()}
+                          </div>
+                        )}
+
+                        {!requestType && (
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            {deducedTitleType.description}
+                          </p>
+                        )}
 
                         {deducedTitleType.conditions && deducedTitleType.conditions.length > 0 && (
                           <div className="pt-3 border-t border-border/50">
@@ -1659,6 +1907,8 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
                       parcelSides={parcelSides}
                       totalAmount={totalAmount}
                       loading={loading}
+                      requestType={requestType}
+                      selectedParcelNumber={selectedParcelNumber}
                       onEditTab={(tabId) => setActiveTab(tabId)}
                       onProceedToPayment={handleProceedToPayment}
                     />

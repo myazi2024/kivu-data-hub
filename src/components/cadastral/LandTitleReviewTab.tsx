@@ -23,6 +23,8 @@ export interface LandTitleReviewTabProps {
   parcelSides: Array<{ name: string; length: string }>;
   totalAmount: number;
   loading?: boolean;
+  requestType?: string;
+  selectedParcelNumber?: string;
   onEditTab: (tabId: string) => void;
   onProceedToPayment: () => void;
 }
@@ -68,6 +70,8 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   parcelSides,
   totalAmount,
   loading,
+  requestType,
+  selectedParcelNumber,
   onEditTab,
   onProceedToPayment,
 }) => {
@@ -75,10 +79,12 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
   const hasParcelSides = parcelSides.some((s) => s.length);
 
   const requesterComplete =
+    !!requestType &&
     !!formData.requesterLastName &&
     !!formData.requesterFirstName &&
     !!formData.requesterPhone &&
-    (formData.requesterType !== "representative" || (!!formData.ownerLastName && !!formData.ownerFirstName));
+    (formData.requesterType !== "representative" || (!!formData.ownerLastName && !!formData.ownerFirstName)) &&
+    (requestType === 'initial' || !!selectedParcelNumber);
 
   const locationComplete =
     !!formData.sectionType &&
@@ -145,6 +151,15 @@ const LandTitleReviewTab: React.FC<LandTitleReviewTabProps> = ({
             </Button>
           </div>
           <div className="space-y-1 text-xs">
+            {requestType && (
+              <div className="pb-1 mb-1 border-b border-border/50">
+                <span className="font-medium">Type de demande :</span>{" "}
+                {requestType === 'initial' ? 'Demande initiale' : requestType === 'renouvellement' ? 'Renouvellement de titre foncier' : 'Titre foncier définitif'}
+                {selectedParcelNumber && (
+                  <div className="text-muted-foreground mt-0.5">Parcelle : {selectedParcelNumber}</div>
+                )}
+              </div>
+            )}
             <div>
               <span className="font-medium">Nom:</span> {formData.requesterLastName || <span className="italic text-muted-foreground">Non renseigné</span>}
             </div>
