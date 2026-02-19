@@ -409,6 +409,26 @@ export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
       'Notre équipe d\'assistance est disponible 24h/24 via WhatsApp'
     ],
     buttonLabel: 'Continuer'
+  },
+  land_dispute: {
+    title: 'Litige foncier',
+    subtitle: 'Signalement ou levée d\'un litige foncier',
+    aboutService: 'Ce service vous permet de signaler un litige foncier en cours affectant votre parcelle ou de demander la levée d\'un litige précédemment enregistré. Le signalement permet de protéger vos droits en consignant officiellement le conflit dans le registre cadastral numérique, tandis que la levée met fin à la mention du litige après résolution.',
+    estimatedTime: '2 à 5 minutes',
+    processingTime: '5 à 15 jours ouvrables',
+    requiredInfo: [
+      'Pour un signalement : nature du litige, parties concernées, statut actuel, documents probants',
+      'Pour une levée : numéro de référence du litige, motif de la demande, documents justificatifs (jugement, PV de conciliation, accord)',
+      'Identité complète du déclarant (nom, qualité, pièce d\'identité)',
+      'Tout document officiel attestant de la situation conflictuelle ou de sa résolution'
+    ],
+    userResponsibility: 'En utilisant ce service, vous certifiez que les informations communiquées sont exactes et vérifiables. Tout signalement abusif, frauduleux ou de mauvaise foi engage votre responsabilité civile et pénale conformément à la législation en vigueur. Pour une demande de levée, vous attestez que le litige a été effectivement résolu ou qu\'une décision exécutoire a été rendue.',
+    helpInfo: [
+      'Un formulaire structuré vous guide pour fournir toutes les informations nécessaires',
+      'Les litiges enregistrés sont consultables dans l\'onglet « Litiges » du résultat cadastral',
+      'Notre équipe d\'assistance est disponible 24h/24 via WhatsApp pour vous accompagner'
+    ],
+    buttonLabel: 'Continuer'
   }
 };
 

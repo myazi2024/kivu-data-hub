@@ -120,6 +120,18 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     badge: { type: 'bientot' },
     requiresAuth: true,
     category: 'subdivision'
+  },
+  {
+    id: '10',
+    key: 'land_dispute',
+    label: 'Litige foncier',
+    description: 'Signaler ou lever un litige foncier',
+    isActive: true,
+    isVisible: true,
+    displayOrder: 10,
+    badge: { type: 'nouveau' as const, label: 'Niveau' },
+    requiresAuth: true,
+    category: 'dispute'
   }
 ];
 
