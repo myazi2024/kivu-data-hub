@@ -23,7 +23,8 @@ import {
   FileCheck,
   ExternalLink,
   Info,
-  Hash
+  Hash,
+  Scale
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -42,6 +43,45 @@ import CadastralInvoice from './CadastralInvoice';
 import DocumentAttachment from './DocumentAttachment';
 import { PROPERTY_TITLE_TYPES } from './PropertyTitleTypeSelect';
 import CadastralContributionDialog from './CadastralContributionDialog';
+import { Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+
+const DisputesContent: React.FC<{ parcelNumber: string }> = ({ parcelNumber }) => {
+  const [disputes, setDisputes] = React.useState<any[]>([]);
+  const [loadingD, setLoadingD] = React.useState(true);
+  React.useEffect(() => {
+    (async () => {
+      setLoadingD(true);
+      try {
+        const { data } = await (supabase as any).from('cadastral_land_disputes').select('*').eq('parcel_number', parcelNumber).eq('dispute_type', 'report').order('created_at', { ascending: false });
+        if (data) setDisputes(data);
+      } catch (e) { console.error(e); }
+      finally { setLoadingD(false); }
+    })();
+  }, [parcelNumber]);
+  if (loadingD) return <div className="flex justify-center p-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>;
+  if (disputes.length === 0) return (
+    <div className="flex items-center gap-2 p-3 rounded-lg border bg-muted/30">
+      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+      <div><span className="text-xs font-medium block">Aucun litige foncier enregistré</span><span className="text-[10px] text-muted-foreground">Cette parcelle ne fait l'objet d'aucun litige connu</span></div>
+    </div>
+  );
+  return (
+    <div className="space-y-3">{disputes.map((d: any) => (
+      <Card key={d.id} className="border-0 bg-gradient-to-br from-background to-primary/5">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center justify-between"><Badge variant="destructive" className="text-[10px]">{d.dispute_nature}</Badge><span className="text-[10px] font-mono text-muted-foreground">{d.reference_number}</span></div>
+          <div className="space-y-1 text-xs">
+            <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><span className="font-medium">{d.current_status}</span></div>
+            <div className="flex justify-between"><span className="text-muted-foreground">Déclarant :</span><span>{d.declarant_name}</span></div>
+            {d.dispute_start_date && <div className="flex justify-between"><span className="text-muted-foreground">Depuis :</span><span>{new Date(d.dispute_start_date).toLocaleDateString('fr-FR')}</span></div>}
+            {d.dispute_description && <p className="text-[10px] text-muted-foreground mt-1">{d.dispute_description}</p>}
+          </div>
+        </CardContent>
+      </Card>
+    ))}</div>
+  );
+};
 
 interface CadastralResultCardProps {
   result: CadastralSearchResult;
@@ -105,7 +145,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     const checkAllServices = async () => {
       if (!user) return;
       
-      const services = ['information', 'location_history', 'history', 'obligations'];
+      const services = ['information', 'location_history', 'history', 'obligations', 'land_disputes'];
       const accessPromises = services.map(service => 
         checkServiceAccess(parcel.parcel_number, service)
       );
@@ -136,6 +176,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
     else if (services.includes('location_history')) setActiveTab('location');
     else if (services.includes('history')) setActiveTab('history');
     else if (services.includes('obligations')) setActiveTab('obligations');
+    else if (services.includes('land_disputes')) setActiveTab('disputes');
     
     // Notifier le parent avec tous les services payés
     if (onPaymentSuccess) {
@@ -370,7 +411,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
       <CardContent className="p-4 md:p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           {/* Onglets figés pour faciliter la navigation */}
-          <TabsList className={`sticky z-10 grid w-full grid-cols-4 h-auto bg-muted/50 p-1 rounded-xl shadow-inner backdrop-blur-md bg-background/95 border border-border/50 transition-all duration-500 ease-out ${isHeaderHidden ? 'top-0 shadow-lg' : 'top-[120px]'}`}>
+          <TabsList className={`sticky z-10 grid w-full grid-cols-5 h-auto bg-muted/50 p-1 rounded-xl shadow-inner backdrop-blur-md bg-background/95 border border-border/50 transition-all duration-500 ease-out ${isHeaderHidden ? 'top-0 shadow-lg' : 'top-[120px]'}`}>
             <TabsTrigger 
               value="general" 
               className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
@@ -409,6 +450,16 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                 <span className="hidden sm:inline">Obligations</span>
                 <span className="sm:hidden">Oblig.</span>
                 {!hasServiceAccess('obligations') && <span className="text-xs opacity-60">🔒</span>}
+              </div>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="disputes" 
+              className="text-xs font-medium p-2 md:p-3 data-[state=active]:bg-background data-[state=active]:shadow-md transition-all duration-200 hover:scale-[1.02] rounded-lg"
+            >
+              <div className="flex flex-col items-center gap-1">
+                <span className="hidden sm:inline">Litiges</span>
+                <span className="sm:hidden">Lit.</span>
+                {!hasServiceAccess('land_disputes') && <span className="text-xs opacity-60">🔒</span>}
               </div>
             </TabsTrigger>
           </TabsList>
@@ -1465,6 +1516,37 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </Card>
                 )}
               </div>
+            )}
+          </TabsContent>
+
+          {/* Onglet Litiges */}
+          <TabsContent value="disputes" className="mt-3 space-y-3 animate-fade-in">
+            {!hasServiceAccess('land_disputes') ? (
+              <div className="p-4 text-center border-2 border-dashed border-primary/20 rounded-lg bg-gradient-to-br from-primary/5 to-secondary/5">
+                <div className="space-y-3">
+                  <div className="mx-auto w-12 h-12 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-xl flex items-center justify-center">
+                    <Scale className="h-6 w-6 text-primary" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-sm font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                      Service Premium
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Accédez aux informations sur les litiges fonciers
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={() => { setPreselectServiceId('land_disputes'); setShowBillingPanel(true); }} 
+                    size="sm"
+                    className="text-xs bg-gradient-to-r from-primary to-primary/80"
+                  >
+                    <CreditCard className="h-3 w-3 mr-1" />
+                    Débloquer
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <DisputesContent parcelNumber={parcel.parcel_number} />
             )}
           </TabsContent>
         </Tabs>

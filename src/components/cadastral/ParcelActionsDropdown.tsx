@@ -19,6 +19,7 @@ import TaxManagementDialog from './TaxManagementDialog';
 import BuildingPermitRequestDialog from './BuildingPermitRequestDialog';
 import SubdivisionRequestDialog from './SubdivisionRequestDialog';
 import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog';
+import LandDisputeManagementDialog from './LandDisputeManagementDialog';
 
 interface ParcelActionsDropdownProps {
   parcelNumber: string;
@@ -75,7 +76,7 @@ const ActionBadge: React.FC<{ badge: ParcelAction['badge'] }> = ({ badge }) => {
     switch (badge.type) {
       case 'nouveau':
         return { 
-          label: 'nouveau', 
+          label: badge.label || 'nouveau', 
           className: 'bg-seloger-red text-white',
           icon: <Sparkles className="h-2.5 w-2.5" />
         };
@@ -130,6 +131,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const [showPermitRequestDialog, setShowPermitRequestDialog] = useState(false);
   const [showSubdivisionDialog, setShowSubdivisionDialog] = useState(false);
   const [showExpertiseDialog, setShowExpertiseDialog] = useState(false);
+  const [showLandDisputeDialog, setShowLandDisputeDialog] = useState(false);
 
   // Track last focused item for haptic feedback on scroll
   const lastFocusedIndexRef = useRef<number | null>(null);
@@ -156,6 +158,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
       'tax': () => setShowTaxDialog(true),
       'permit_request': () => setShowPermitRequestDialog(true),
       'subdivision': () => setShowSubdivisionDialog(true),
+      'land_dispute': () => setShowLandDisputeDialog(true),
     };
     return handlers[key];
   };
@@ -311,6 +314,15 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         parcelData={parcelData}
         open={showExpertiseDialog}
         onOpenChange={setShowExpertiseDialog}
+      />
+
+      {/* Dialog Litige foncier */}
+      <LandDisputeManagementDialog
+        parcelNumber={parcelNumber}
+        parcelId={parcelId}
+        parcelData={parcelData}
+        open={showLandDisputeDialog}
+        onOpenChange={setShowLandDisputeDialog}
       />
     </>
   );

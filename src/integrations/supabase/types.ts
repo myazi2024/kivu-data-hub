@@ -740,6 +740,98 @@ export type Database = {
           },
         ]
       }
+      cadastral_land_disputes: {
+        Row: {
+          created_at: string
+          current_status: string
+          declarant_email: string | null
+          declarant_id_number: string | null
+          declarant_name: string
+          declarant_phone: string | null
+          declarant_quality: string
+          dispute_description: string | null
+          dispute_nature: string
+          dispute_start_date: string | null
+          dispute_type: string
+          id: string
+          lifting_documents: Json | null
+          lifting_reason: string | null
+          lifting_request_reference: string | null
+          lifting_status: string | null
+          parcel_id: string | null
+          parcel_number: string
+          parties_involved: Json | null
+          reference_number: string
+          reported_by: string | null
+          resolution_details: string | null
+          resolution_level: string | null
+          supporting_documents: Json | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_status?: string
+          declarant_email?: string | null
+          declarant_id_number?: string | null
+          declarant_name: string
+          declarant_phone?: string | null
+          declarant_quality?: string
+          dispute_description?: string | null
+          dispute_nature: string
+          dispute_start_date?: string | null
+          dispute_type: string
+          id?: string
+          lifting_documents?: Json | null
+          lifting_reason?: string | null
+          lifting_request_reference?: string | null
+          lifting_status?: string | null
+          parcel_id?: string | null
+          parcel_number: string
+          parties_involved?: Json | null
+          reference_number: string
+          reported_by?: string | null
+          resolution_details?: string | null
+          resolution_level?: string | null
+          supporting_documents?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_status?: string
+          declarant_email?: string | null
+          declarant_id_number?: string | null
+          declarant_name?: string
+          declarant_phone?: string | null
+          declarant_quality?: string
+          dispute_description?: string | null
+          dispute_nature?: string
+          dispute_start_date?: string | null
+          dispute_type?: string
+          id?: string
+          lifting_documents?: Json | null
+          lifting_reason?: string | null
+          lifting_request_reference?: string | null
+          lifting_status?: string | null
+          parcel_id?: string | null
+          parcel_number?: string
+          parties_involved?: Json | null
+          reference_number?: string
+          reported_by?: string | null
+          resolution_details?: string | null
+          resolution_level?: string | null
+          supporting_documents?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastral_land_disputes_parcel_id_fkey"
+            columns: ["parcel_id"]
+            isOneToOne: false
+            referencedRelation: "cadastral_parcels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cadastral_mortgage_payments: {
         Row: {
           created_at: string
