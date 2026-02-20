@@ -8,7 +8,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Upload, X, Info, CheckCircle2, Plus, Trash2, Scale, User, Phone, Mail, FileText, Calendar, AlertTriangle, Shield } from 'lucide-react';
+import { Loader2, Upload, X, Info, CheckCircle2, Plus, Trash2, Scale, User, Phone, Mail, FileText, Calendar, AlertTriangle, Shield, Image } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -166,7 +166,6 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     if (!user) { toast.error('Vous devez être connecté'); return; }
     setLoading(true);
     try {
-      // Upload documents
       const documentUrls: string[] = [];
       for (const file of documents) {
         const fileExt = file.name.split('.').pop();
@@ -241,29 +240,29 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   // Confirmation step
   if (step === 'confirmation') {
     return (
-      <div className="px-3 py-3 space-y-3">
+      <div className="px-4 py-4 space-y-4">
         <div className="text-center space-y-3">
-          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
+          <div className="mx-auto w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
+            <CheckCircle2 className="h-7 w-7 text-green-600" />
           </div>
           <h3 className="text-base font-bold">Signalement enregistré</h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Votre signalement de litige foncier a été enregistré avec succès.
           </p>
-          <Card className="p-3 bg-muted/50">
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Référence :</span><span className="font-mono font-bold">{referenceNumber}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Parcelle :</span><span className="font-mono">{parcelNumber}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES.find(n => n.value === disputeNature)?.label}</span></div>
-            </div>
+          <Card className="rounded-xl shadow-sm">
+            <CardContent className="p-3 space-y-1.5">
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Référence :</span><span className="font-mono font-bold">{referenceNumber}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Parcelle :</span><span className="font-mono">{parcelNumber}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES.find(n => n.value === disputeNature)?.label}</span></div>
+            </CardContent>
           </Card>
-          <Alert className="bg-blue-50 border-blue-200">
+          <Alert className="bg-blue-50 border-blue-200 rounded-xl">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-xs text-blue-800">
-              Ce numéro de référence sera utilisé pour le suivi de votre dossier. Conservez-le précieusement.
+              Conservez ce numéro de référence pour le suivi de votre dossier.
             </AlertDescription>
           </Alert>
-          <Button onClick={handleClose} className="w-full">Fermer</Button>
+          <Button onClick={handleClose} className="w-full h-11 rounded-xl">Fermer</Button>
         </div>
       </div>
     );
@@ -272,52 +271,60 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   // Review step
   if (step === 'review') {
     return (
-      <div className="px-3 py-3 space-y-2.5">
-        <div className="flex items-center gap-2 mb-2">
-          <Button variant="ghost" size="sm" onClick={() => setStep('form')} className="h-7 w-7 p-0 rounded-lg">
-            <span className="text-xs">←</span>
+      <div className="px-4 py-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Button variant="ghost" size="sm" onClick={() => setStep('form')} className="h-8 w-8 p-0 rounded-xl">
+            <span className="text-sm">←</span>
           </Button>
           <h3 className="text-sm font-bold">Récapitulatif du signalement</h3>
         </div>
 
-        <Card className="p-3 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary"><Scale className="h-3.5 w-3.5" /> Détails du litige</div>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between"><span className="text-muted-foreground">Référence :</span><span className="font-mono font-bold">{referenceNumber}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES.find(n => n.value === disputeNature)?.label}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{disputeStartDate}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><span>{currentStatus === 'en_resolution' ? RESOLUTION_LEVELS.find(r => r.value === resolutionLevel)?.label : 'En cours'}</span></div>
-            {disputeDescription && <div className="pt-1"><span className="text-muted-foreground">Description :</span><p className="mt-0.5">{disputeDescription}</p></div>}
-          </div>
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Scale className="h-4 w-4" /> Détails du litige</div>
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Référence :</span><span className="font-mono font-bold">{referenceNumber}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES.find(n => n.value === disputeNature)?.label}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{disputeStartDate}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><span>{currentStatus === 'en_resolution' ? RESOLUTION_LEVELS.find(r => r.value === resolutionLevel)?.label : 'En cours'}</span></div>
+              {disputeDescription && <div className="pt-1"><span className="text-muted-foreground">Description :</span><p className="mt-0.5">{disputeDescription}</p></div>}
+            </div>
+          </CardContent>
         </Card>
 
-        <Card className="p-3 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary"><User className="h-3.5 w-3.5" /> Déclarant</div>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{declarantName}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{DECLARANT_QUALITIES.find(q => q.value === declarantQuality)?.label}</span></div>
-            {declarantPhone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{declarantPhone}</span></div>}
-          </div>
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary"><User className="h-4 w-4" /> Déclarant</div>
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{declarantName}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{DECLARANT_QUALITIES.find(q => q.value === declarantQuality)?.label}</span></div>
+              {declarantPhone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{declarantPhone}</span></div>}
+            </div>
+          </CardContent>
         </Card>
 
         {parties.filter(p => p.name.trim()).length > 0 && (
-          <Card className="p-3 space-y-2">
-            <div className="flex items-center gap-2 text-xs font-semibold text-primary"><User className="h-3.5 w-3.5" /> Parties concernées</div>
-            {parties.filter(p => p.name.trim()).map((party, i) => (
-              <div key={i} className="text-xs flex justify-between">
-                <span className="text-muted-foreground">{PARTY_ROLES.find(r => r.value === party.role)?.label} :</span>
-                <span>{party.name}</span>
-              </div>
-            ))}
+          <Card className="rounded-xl shadow-sm">
+            <CardContent className="p-3 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-semibold text-primary"><User className="h-4 w-4" /> Parties concernées</div>
+              {parties.filter(p => p.name.trim()).map((party, i) => (
+                <div key={i} className="text-sm flex justify-between">
+                  <span className="text-muted-foreground">{PARTY_ROLES.find(r => r.value === party.role)?.label} :</span>
+                  <span>{party.name}</span>
+                </div>
+              ))}
+            </CardContent>
           </Card>
         )}
 
-        <Card className="p-3 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary"><FileText className="h-3.5 w-3.5" /> Documents</div>
-          <div className="text-xs text-muted-foreground">{documents.length} document(s) joint(s)</div>
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary"><FileText className="h-4 w-4" /> Documents</div>
+            <div className="text-sm text-muted-foreground">{documents.length} document(s) joint(s)</div>
+          </CardContent>
         </Card>
 
-        <Button onClick={handleSubmit} disabled={loading} className="w-full">
+        <Button onClick={handleSubmit} disabled={loading} className="w-full h-11 rounded-xl">
           {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Soumission en cours...</> : 'Soumettre le signalement'}
         </Button>
       </div>
@@ -326,61 +333,72 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
 
   // Form step
   return (
-    <div className="px-3 py-3 space-y-3">
+    <div className="px-4 py-4 space-y-4">
       {/* Référence */}
-      <Card className="p-3 bg-primary/5 border-primary/20">
-        <div className="flex items-center gap-2 text-xs">
-          <Shield className="h-4 w-4 text-primary" />
-          <div>
-            <span className="text-muted-foreground">Référence : </span>
-            <span className="font-mono font-bold text-primary">{referenceNumber}</span>
+      <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <Shield className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Référence du signalement</p>
+              <p className="font-mono font-bold text-sm text-primary">{referenceNumber}</p>
+            </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
 
       {/* Nature du litige */}
       <div className="space-y-2">
-        <div className="flex items-center gap-1">
-          <Label className="text-xs font-semibold">Nature du litige *</Label>
+        <Label className="text-sm font-semibold flex items-center gap-2">
+          Nature du litige *
           <SectionHelpPopover title="Nature du litige" description="Sélectionnez le type de litige qui correspond le mieux à votre situation. Cette information permet de catégoriser et d'orienter correctement votre signalement." />
-        </div>
+        </Label>
         <Select value={disputeNature} onValueChange={setDisputeNature}>
-          <SelectTrigger className="h-10 text-xs"><SelectValue placeholder="Sélectionner la nature du litige" /></SelectTrigger>
-          <SelectContent>
+          <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
+            <SelectValue placeholder="Sélectionner la nature du litige" />
+          </SelectTrigger>
+          <SelectContent className="rounded-xl">
             {DISPUTE_NATURES.map(nature => (
-              <SelectItem key={nature.value} value={nature.value} className="text-xs">
-                <div>
-                  <div className="font-medium">{nature.label}</div>
-                  <div className="text-muted-foreground text-[10px]">{nature.description}</div>
-                </div>
+              <SelectItem key={nature.value} value={nature.value} className="text-sm py-2">
+                {nature.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
+        {disputeNature && (
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            {DISPUTE_NATURES.find(n => n.value === disputeNature)?.description}
+          </p>
+        )}
       </div>
 
       {/* Date de début */}
       <div className="space-y-2">
-        <Label className="text-xs font-semibold">Date de début du litige *</Label>
-        <Input type="date" value={disputeStartDate} onChange={(e) => setDisputeStartDate(e.target.value)} className="h-10 text-xs" max={new Date().toISOString().split('T')[0]} />
+        <Label className="text-sm font-semibold">Date de début du litige *</Label>
+        <Input type="date" value={disputeStartDate} onChange={(e) => setDisputeStartDate(e.target.value)} className="h-11 text-sm rounded-xl border-2 focus:border-primary" max={new Date().toISOString().split('T')[0]} />
       </div>
 
       {/* Description */}
       <div className="space-y-2">
-        <Label className="text-xs font-semibold">Description du litige</Label>
-        <Textarea value={disputeDescription} onChange={(e) => setDisputeDescription(e.target.value)} placeholder="Décrivez brièvement les circonstances du litige..." className="text-xs min-h-[70px]" />
+        <Label className="text-sm font-semibold">Description du litige</Label>
+        <Textarea value={disputeDescription} onChange={(e) => setDisputeDescription(e.target.value)} placeholder="Décrivez brièvement les circonstances du litige..." className="text-sm min-h-[80px] rounded-xl border-2 focus:border-primary" />
       </div>
 
       <Separator />
 
       {/* Statut actuel */}
       <div className="space-y-2">
-        <Label className="text-xs font-semibold">Statut actuel du litige *</Label>
+        <Label className="text-sm font-semibold flex items-center gap-2">
+          Statut actuel du litige *
+          <SectionHelpPopover title="Statut" description="Indiquez si le litige est en cours sans résolution ou si une procédure de résolution a déjà été engagée." />
+        </Label>
         <Select value={currentStatus} onValueChange={setCurrentStatus}>
-          <SelectTrigger className="h-10 text-xs"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="en_cours" className="text-xs">En cours (non résolu)</SelectItem>
-            <SelectItem value="en_resolution" className="text-xs">En cours de résolution</SelectItem>
+          <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary"><SelectValue /></SelectTrigger>
+          <SelectContent className="rounded-xl">
+            <SelectItem value="en_cours" className="text-sm py-2">En cours (non résolu)</SelectItem>
+            <SelectItem value="en_resolution" className="text-sm py-2">En cours de résolution</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -388,24 +406,26 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
       {currentStatus === 'en_resolution' && (
         <>
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">Niveau de résolution *</Label>
+            <Label className="text-sm font-semibold">Niveau de résolution *</Label>
             <Select value={resolutionLevel} onValueChange={setResolutionLevel}>
-              <SelectTrigger className="h-10 text-xs"><SelectValue placeholder="Sélectionner le niveau" /></SelectTrigger>
-              <SelectContent>
+              <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary"><SelectValue placeholder="Sélectionner le niveau" /></SelectTrigger>
+              <SelectContent className="rounded-xl">
                 {RESOLUTION_LEVELS.map(level => (
-                  <SelectItem key={level.value} value={level.value} className="text-xs">
-                    <div>
-                      <div className="font-medium">{level.label}</div>
-                      <div className="text-muted-foreground text-[10px]">{level.description}</div>
-                    </div>
+                  <SelectItem key={level.value} value={level.value} className="text-sm py-2">
+                    {level.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {resolutionLevel && (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {RESOLUTION_LEVELS.find(l => l.value === resolutionLevel)?.description}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">Détails sur la résolution</Label>
-            <Textarea value={resolutionDetails} onChange={(e) => setResolutionDetails(e.target.value)} placeholder="Numéro de dossier judiciaire, nom du médiateur, etc." className="text-xs min-h-[50px]" />
+            <Label className="text-sm font-semibold">Détails sur la résolution</Label>
+            <Textarea value={resolutionDetails} onChange={(e) => setResolutionDetails(e.target.value)} placeholder="Numéro de dossier judiciaire, nom du médiateur, etc." className="text-sm min-h-[60px] rounded-xl border-2 focus:border-primary" />
           </div>
         </>
       )}
@@ -413,39 +433,44 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
       <Separator />
 
       {/* Parties concernées */}
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <Label className="text-xs font-semibold">Parties concernées</Label>
-          <Button variant="outline" size="sm" onClick={addParty} className="h-7 text-[10px] gap-1">
-            <Plus className="h-3 w-3" /> Ajouter
+          <Label className="text-sm font-semibold flex items-center gap-2">
+            Parties concernées
+            <SectionHelpPopover title="Parties" description="Renseignez les personnes ou entités impliquées dans le litige : voisin, héritier, institution, etc." />
+          </Label>
+          <Button variant="outline" size="sm" onClick={addParty} className="h-9 text-xs gap-1 rounded-xl">
+            <Plus className="h-3.5 w-3.5" /> Ajouter
           </Button>
         </div>
         {parties.map((party, index) => (
-          <Card key={index} className="p-2.5 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-muted-foreground">Partie {index + 1}</span>
-              {parties.length > 1 && (
-                <Button variant="ghost" size="sm" onClick={() => removeParty(index)} className="h-6 w-6 p-0">
-                  <Trash2 className="h-3 w-3 text-destructive" />
-                </Button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-[10px]">Nom complet *</Label>
-                <Input value={party.name} onChange={(e) => updateParty(index, 'name', e.target.value)} className="h-8 text-xs" placeholder="Nom" />
+          <Card key={index} className="rounded-xl shadow-sm">
+            <CardContent className="p-3 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-muted-foreground">Partie {index + 1}</span>
+                {parties.length > 1 && (
+                  <Button variant="ghost" size="sm" onClick={() => removeParty(index)} className="h-7 w-7 p-0 rounded-lg hover:bg-destructive/10">
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                )}
               </div>
-              <div>
-                <Label className="text-[10px]">Rôle</Label>
-                <Select value={party.role} onValueChange={(v) => updateParty(index, 'role', v)}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PARTY_ROLES.map(r => <SelectItem key={r.value} value={r.value} className="text-xs">{r.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label className="text-xs">Nom complet *</Label>
+                  <Input value={party.name} onChange={(e) => updateParty(index, 'name', e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="Nom" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Rôle</Label>
+                  <Select value={party.role} onValueChange={(v) => updateParty(index, 'role', v)}>
+                    <SelectTrigger className="h-11 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {PARTY_ROLES.map(r => <SelectItem key={r.value} value={r.value} className="text-sm">{r.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-            <Input value={party.phone} onChange={(e) => updateParty(index, 'phone', e.target.value)} className="h-8 text-xs" placeholder="Téléphone (facultatif)" />
+              <Input value={party.phone} onChange={(e) => updateParty(index, 'phone', e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="Téléphone (facultatif)" />
+            </CardContent>
           </Card>
         ))}
       </div>
@@ -453,81 +478,102 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
       <Separator />
 
       {/* Identité du déclarant */}
-      <div className="space-y-2">
-        <Label className="text-xs font-semibold">Identité du déclarant</Label>
-        <div className="space-y-2">
-          <div>
-            <Label className="text-[10px]">Nom complet *</Label>
-            <Input value={declarantName} onChange={(e) => setDeclarantName(e.target.value)} className="h-9 text-xs" />
-          </div>
-          <div>
-            <Label className="text-[10px]">Qualité *</Label>
-            <Select value={declarantQuality} onValueChange={setDeclarantQuality}>
-              <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {DECLARANT_QUALITIES.map(q => <SelectItem key={q.value} value={q.value} className="text-xs">{q.label}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-[10px]">Téléphone</Label>
-              <Input value={declarantPhone} onChange={(e) => setDeclarantPhone(e.target.value)} className="h-9 text-xs" placeholder="+243..." />
+      <Card className="border-2 border-dashed rounded-xl">
+        <CardContent className="p-3 space-y-3">
+          <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+            <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+            Identité du déclarant
+            <SectionHelpPopover title="Déclarant" description="Renseignez vos informations personnelles. Ces données permettent de vous contacter pour le suivi du dossier." />
+          </h4>
+          <div className="space-y-2.5">
+            <div className="space-y-1">
+              <Label className="text-xs">Nom complet *</Label>
+              <Input value={declarantName} onChange={(e) => setDeclarantName(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
             </div>
-            <div>
-              <Label className="text-[10px]">E-mail</Label>
-              <Input value={declarantEmail} onChange={(e) => setDeclarantEmail(e.target.value)} className="h-9 text-xs" type="email" />
+            <div className="space-y-1">
+              <Label className="text-xs">Qualité *</Label>
+              <Select value={declarantQuality} onValueChange={setDeclarantQuality}>
+                <SelectTrigger className="h-11 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  {DECLARANT_QUALITIES.map(q => <SelectItem key={q.value} value={q.value} className="text-sm">{q.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label className="text-xs">Téléphone</Label>
+                <Input value={declarantPhone} onChange={(e) => setDeclarantPhone(e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="+243..." />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">E-mail</Label>
+                <Input value={declarantEmail} onChange={(e) => setDeclarantEmail(e.target.value)} className="h-11 text-sm rounded-xl border-2" type="email" />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">N° pièce d'identité</Label>
+              <Input value={declarantIdNumber} onChange={(e) => setDeclarantIdNumber(e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="Carte d'identité ou passeport" />
             </div>
           </div>
-          <div>
-            <Label className="text-[10px]">N° pièce d'identité</Label>
-            <Input value={declarantIdNumber} onChange={(e) => setDeclarantIdNumber(e.target.value)} className="h-9 text-xs" placeholder="Numéro de carte d'identité ou passeport" />
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       <Separator />
 
       {/* Documents justificatifs */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-1">
-          <Label className="text-xs font-semibold">Documents justificatifs</Label>
-          <SectionHelpPopover title="Documents" description="Joignez tout document pertinent : procès-verbal de constatation, acte de propriété, correspondance, photos, attestation de plainte, etc." />
-        </div>
-        <div 
-          className="border-2 border-dashed border-border rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 transition-colors"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-          <p className="text-xs text-muted-foreground">Cliquez pour ajouter des fichiers</p>
-          <p className="text-[10px] text-muted-foreground">Images ou PDF, max 10 Mo par fichier</p>
-        </div>
-        <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.pdf" multiple onChange={handleFileChange} />
-        {documents.length > 0 && (
-          <div className="space-y-1">
-            {documents.map((file, i) => (
-              <div key={i} className="flex items-center justify-between bg-muted/50 rounded-lg p-2 text-xs">
-                <span className="truncate flex-1">{file.name}</span>
-                <Button variant="ghost" size="sm" onClick={() => removeFile(i)} className="h-6 w-6 p-0 ml-1">
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <Card className="border rounded-xl">
+        <CardContent className="p-3 space-y-3">
+          <h4 className="text-sm font-semibold flex items-center gap-2">
+            <Upload className="h-4 w-4 text-muted-foreground" />
+            Documents justificatifs
+            <SectionHelpPopover title="Documents" description="Joignez tout document pertinent : procès-verbal de constatation, acte de propriété, correspondance, photos, attestation de plainte, etc." />
+          </h4>
+          <p className="text-xs text-muted-foreground">
+            PV de constatation, acte de propriété, photos... (max 10 Mo/fichier)
+          </p>
+          
+          <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.pdf" multiple onChange={handleFileChange} />
+          
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+            className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5"
+          >
+            <Upload className="h-4 w-4 mr-2" />
+            Ajouter des documents
+          </Button>
+          
+          {documents.length > 0 && (
+            <div className="space-y-2">
+              {documents.map((file, i) => (
+                <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                  {file.type.startsWith('image/') ? (
+                    <Image className="h-4 w-4 text-primary flex-shrink-0" />
+                  ) : (
+                    <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                  )}
+                  <span className="flex-1 truncate text-sm">{file.name}</span>
+                  <Button variant="ghost" size="icon" onClick={() => removeFile(i)} className="h-7 w-7 rounded-lg hover:bg-destructive/10">
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Separator />
 
       {/* Certification */}
-      <div className="flex items-start gap-2">
-        <Checkbox checked={certifyAccuracy} onCheckedChange={(c) => setCertifyAccuracy(c === true)} id="certify" />
-        <label htmlFor="certify" className="text-[10px] text-muted-foreground leading-relaxed cursor-pointer">
+      <div className="flex items-start gap-2.5">
+        <Checkbox checked={certifyAccuracy} onCheckedChange={(c) => setCertifyAccuracy(c === true)} id="certify" className="mt-0.5" />
+        <label htmlFor="certify" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
           Je certifie sur l'honneur que les informations fournies sont exactes et complètes. Tout signalement abusif ou frauduleux engage ma responsabilité civile et pénale.
         </label>
       </div>
 
-      <Button onClick={handleGoToReview} className="w-full" disabled={!certifyAccuracy}>
+      <Button onClick={handleGoToReview} className="w-full h-11 rounded-xl" disabled={!certifyAccuracy}>
         Vérifier et soumettre
       </Button>
 
