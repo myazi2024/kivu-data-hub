@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Scale, AlertTriangle, FileX2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
@@ -54,47 +55,47 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
-      <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl z-[1200] flex flex-col overflow-hidden w-[calc(100vw-2rem)]">
-        <div className="px-3 pt-4 pb-2 flex-shrink-0">
+      <DialogContent className="max-w-[400px] max-h-[90vh] p-0 rounded-2xl z-[1200] flex flex-col overflow-hidden w-[calc(100vw-2rem)]">
+        <div className="px-4 pt-4 pb-2 flex-shrink-0">
           <DialogHeader className="space-y-1">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="h-8 w-8 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                <Scale className="h-4 w-4 text-orange-600" />
+              <div className="h-9 w-9 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                <Scale className="h-4.5 w-4.5 text-orange-600" />
               </div>
             </div>
-            <DialogTitle className="text-sm font-bold text-center">
+            <DialogTitle className="text-base font-bold text-center">
               Litige foncier
             </DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground text-center">
+            <DialogDescription className="text-sm text-muted-foreground text-center">
               Parcelle : <span className="font-mono font-semibold text-foreground">{parcelNumber}</span>
             </DialogDescription>
           </DialogHeader>
 
           {/* Tab buttons */}
-          <div className="flex gap-1.5 mt-2">
+          <div className="flex gap-2 mt-3">
             <Button
               variant={activeTab === 'report' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('report')}
-              className="flex-1 h-8 rounded-xl text-[11px] font-semibold gap-1"
+              className="flex-1 h-10 rounded-xl text-sm font-semibold gap-1.5"
             >
-              <AlertTriangle className="h-3 w-3" />
+              <AlertTriangle className="h-4 w-4" />
               Signaler
             </Button>
             <Button
               variant={activeTab === 'lifting' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('lifting')}
-              className="flex-1 h-8 rounded-xl text-[11px] font-semibold gap-1"
+              className="flex-1 h-10 rounded-xl text-sm font-semibold gap-1.5"
             >
-              <FileX2 className="h-3 w-3" />
+              <FileX2 className="h-4 w-4" />
               Levée
             </Button>
           </div>
         </div>
 
         {/* Render the selected form inline */}
-        <div className="overflow-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 130px)' }}>
+        <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: 'calc(90vh - 160px)' }}>
           {activeTab === 'report' ? (
             <LandDisputeReportForm
               parcelNumber={parcelNumber}
@@ -116,7 +117,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
               embedded
             />
           )}
-        </div>
+        </ScrollArea>
       </DialogContent>
     </Dialog>
   );

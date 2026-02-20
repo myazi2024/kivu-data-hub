@@ -4,11 +4,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Upload, X, Info, CheckCircle2, Scale, Shield, FileText, User, AlertTriangle, Search, ExternalLink } from 'lucide-react';
+import { Loader2, Upload, X, Info, CheckCircle2, Scale, Shield, FileText, User, AlertTriangle, Search, Image } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -92,7 +92,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
     }
   }, [profile]);
 
-  // Validate dispute reference
   useEffect(() => {
     const timer = setTimeout(() => {
       if (disputeReference.length >= 5) {
@@ -155,7 +154,6 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   };
 
   const handleOpenCatalog = () => {
-    // Open the results dialog / service catalog
     const resultsDialog = document.querySelector('[data-results-dialog]');
     if (resultsDialog) {
       (resultsDialog as HTMLElement).style.zIndex = '1300';
@@ -260,23 +258,23 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   // Confirmation
   if (step === 'confirmation') {
     return (
-      <div className="px-3 py-3 space-y-3">
+      <div className="px-4 py-4 space-y-4">
         <div className="text-center space-y-3">
-          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
+          <div className="mx-auto w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
+            <CheckCircle2 className="h-7 w-7 text-green-600" />
           </div>
           <h3 className="text-base font-bold">Demande de levée enregistrée</h3>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Votre demande de levée de litige a été soumise avec succès. Elle sera examinée par nos services.
           </p>
-          <Card className="p-3 bg-muted/50">
-            <div className="space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Référence demande :</span><span className="font-mono font-bold">{requestReference}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Litige concerné :</span><span className="font-mono">{disputeReference}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Motif :</span><span>{LIFTING_REASONS.find(r => r.value === liftingReason)?.label}</span></div>
-            </div>
+          <Card className="rounded-xl shadow-sm">
+            <CardContent className="p-3 space-y-1.5">
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Référence demande :</span><span className="font-mono font-bold">{requestReference}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Litige concerné :</span><span className="font-mono">{disputeReference}</span></div>
+              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Motif :</span><span>{LIFTING_REASONS.find(r => r.value === liftingReason)?.label}</span></div>
+            </CardContent>
           </Card>
-          <Button onClick={handleClose} className="w-full">Fermer</Button>
+          <Button onClick={handleClose} className="w-full h-11 rounded-xl">Fermer</Button>
         </div>
       </div>
     );
@@ -285,37 +283,43 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   // Review
   if (step === 'review') {
     return (
-      <div className="px-3 py-3 space-y-2.5">
-        <div className="flex items-center gap-2 mb-2">
-          <Button variant="ghost" size="sm" onClick={() => setStep('form')} className="h-7 w-7 p-0 rounded-lg">
-            <span className="text-xs">←</span>
+      <div className="px-4 py-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Button variant="ghost" size="sm" onClick={() => setStep('form')} className="h-8 w-8 p-0 rounded-xl">
+            <span className="text-sm">←</span>
           </Button>
           <h3 className="text-sm font-bold">Récapitulatif de la demande de levée</h3>
         </div>
 
-        <Card className="p-3 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary"><Scale className="h-3.5 w-3.5" /> Informations</div>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between"><span className="text-muted-foreground">Réf. demande :</span><span className="font-mono font-bold">{requestReference}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Litige :</span><span className="font-mono">{disputeReference}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Motif :</span><span>{LIFTING_REASONS.find(r => r.value === liftingReason)?.label}</span></div>
-          </div>
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary"><Scale className="h-4 w-4" /> Informations</div>
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Réf. demande :</span><span className="font-mono font-bold">{requestReference}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Litige :</span><span className="font-mono">{disputeReference}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Motif :</span><span>{LIFTING_REASONS.find(r => r.value === liftingReason)?.label}</span></div>
+            </div>
+          </CardContent>
         </Card>
 
-        <Card className="p-3 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary"><User className="h-3.5 w-3.5" /> Demandeur</div>
-          <div className="space-y-1 text-xs">
-            <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{requesterName}</span></div>
-            <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{REQUESTER_QUALITIES.find(q => q.value === requesterQuality)?.label}</span></div>
-          </div>
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary"><User className="h-4 w-4" /> Demandeur</div>
+            <div className="space-y-1.5 text-sm">
+              <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{requesterName}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{REQUESTER_QUALITIES.find(q => q.value === requesterQuality)?.label}</span></div>
+            </div>
+          </CardContent>
         </Card>
 
-        <Card className="p-3 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-semibold text-primary"><FileText className="h-3.5 w-3.5" /> Documents</div>
-          <div className="text-xs text-muted-foreground">{documents.length} document(s) joint(s)</div>
+        <Card className="rounded-xl shadow-sm">
+          <CardContent className="p-3 space-y-2">
+            <div className="flex items-center gap-2 text-sm font-semibold text-primary"><FileText className="h-4 w-4" /> Documents</div>
+            <div className="text-sm text-muted-foreground">{documents.length} document(s) joint(s)</div>
+          </CardContent>
         </Card>
 
-        <Button onClick={handleSubmit} disabled={loading} className="w-full">
+        <Button onClick={handleSubmit} disabled={loading} className="w-full h-11 rounded-xl">
           {loading ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Soumission en cours...</> : 'Soumettre la demande de levée'}
         </Button>
       </div>
@@ -324,65 +328,73 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
 
   // Form
   return (
-    <div className="px-3 py-3 space-y-3">
+    <div className="px-4 py-4 space-y-4">
       {/* Référence de la demande */}
-      <Card className="p-3 bg-primary/5 border-primary/20">
-        <div className="flex items-center gap-2 text-xs">
-          <Shield className="h-4 w-4 text-primary" />
-          <div>
-            <span className="text-muted-foreground">Référence de la demande : </span>
-            <span className="font-mono font-bold text-primary">{requestReference}</span>
+      <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
+        <CardContent className="p-3">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-primary/10 rounded-lg">
+              <Shield className="h-4 w-4 text-primary" />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground">Référence de la demande</p>
+              <p className="font-mono font-bold text-sm text-primary">{requestReference}</p>
+            </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
 
       {/* Numéro de référence du litige */}
       <div className="space-y-2">
-        <div className="flex items-center gap-1">
-          <Label className="text-xs font-semibold">Numéro de référence du litige *</Label>
+        <Label className="text-sm font-semibold flex items-center gap-2">
+          Numéro de référence du litige *
           <SectionHelpPopover title="Référence du litige" description="Chaque litige foncier enregistré dans notre système est identifié par un numéro de référence unique. Ce numéro est disponible dans l'onglet 'Litiges' du résultat cadastral de la parcelle." />
-        </div>
+        </Label>
         <div className="relative">
           <Input
             value={disputeReference}
             onChange={(e) => setDisputeReference(e.target.value.toUpperCase())}
             placeholder="Ex: LIT-XXXXXXXX-XXXX"
-            className={`h-10 text-xs font-mono pr-8 ${
-              referenceValid === true ? 'border-green-500' :
-              referenceValid === false ? 'border-destructive' : ''
+            className={`h-11 text-sm font-mono rounded-xl border-2 pr-10 ${
+              referenceValid === true ? 'border-green-500 focus:border-green-500' :
+              referenceValid === false ? 'border-destructive focus:border-destructive' : 'focus:border-primary'
             }`}
           />
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
             {validatingReference && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
             {referenceValid === true && <CheckCircle2 className="h-4 w-4 text-green-500" />}
             {referenceValid === false && <AlertTriangle className="h-4 w-4 text-destructive" />}
           </div>
         </div>
         {referenceError && (
-          <p className="text-[10px] text-destructive">{referenceError}</p>
+          <p className="text-xs text-destructive">{referenceError}</p>
         )}
       </div>
 
       {/* Info notification */}
-      <Alert className="bg-blue-50 border-blue-200">
+      <Alert className="bg-blue-50 border-blue-200 rounded-xl">
         <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-[10px] text-blue-800">
-          Chaque litige foncier est référencé par un numéro unique disponible dans le résultat cadastral, onglet « Litiges ». Pour l'obtenir, consultez le catalogue de services.
+        <AlertDescription className="text-xs text-blue-800 leading-relaxed">
+          Chaque litige foncier est référencé par un numéro unique disponible dans le résultat cadastral, onglet « Litiges ». Consultez le catalogue de services pour l'obtenir.
         </AlertDescription>
       </Alert>
-      <Button variant="outline" size="sm" onClick={handleOpenCatalog} className="w-full h-8 text-xs gap-1">
-        <Search className="h-3 w-3" /> Ouvrir le catalogue de services
+      <Button variant="outline" size="sm" onClick={handleOpenCatalog} className="w-full h-11 text-sm gap-2 rounded-xl border-2 hover:border-primary hover:bg-primary/5">
+        <Search className="h-4 w-4" /> Ouvrir le catalogue de services
       </Button>
 
       {/* Show dispute info if found */}
       {referenceValid && disputeData && (
-        <Card className="p-3 bg-green-50 border-green-200 space-y-1">
-          <div className="text-xs font-semibold text-green-800">Litige identifié</div>
-          <div className="text-[10px] text-green-700 space-y-0.5">
-            <div>Nature : {disputeData.dispute_nature}</div>
-            <div>Statut : {disputeData.current_status}</div>
-            <div>Déclarant : {disputeData.declarant_name}</div>
-          </div>
+        <Card className="bg-green-50 border-green-200 rounded-xl shadow-sm">
+          <CardContent className="p-3 space-y-1">
+            <div className="text-sm font-semibold text-green-800 flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4" /> Litige identifié
+            </div>
+            <div className="text-xs text-green-700 space-y-0.5">
+              <div>Nature : {disputeData.dispute_nature}</div>
+              <div>Statut : {disputeData.current_status}</div>
+              <div>Déclarant : {disputeData.declarant_name}</div>
+            </div>
+          </CardContent>
         </Card>
       )}
 
@@ -392,114 +404,139 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
 
           {/* Motif */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">Motif de la demande de levée *</Label>
+            <Label className="text-sm font-semibold flex items-center gap-2">
+              Motif de la demande de levée *
+              <SectionHelpPopover title="Motif" description="Indiquez la raison pour laquelle vous demandez la levée de ce litige foncier." />
+            </Label>
             <Select value={liftingReason} onValueChange={setLiftingReason}>
-              <SelectTrigger className="h-10 text-xs"><SelectValue placeholder="Sélectionner le motif" /></SelectTrigger>
-              <SelectContent>
+              <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary"><SelectValue placeholder="Sélectionner le motif" /></SelectTrigger>
+              <SelectContent className="rounded-xl">
                 {LIFTING_REASONS.map(reason => (
-                  <SelectItem key={reason.value} value={reason.value} className="text-xs">
-                    <div>
-                      <div className="font-medium">{reason.label}</div>
-                      <div className="text-muted-foreground text-[10px]">{reason.description}</div>
-                    </div>
+                  <SelectItem key={reason.value} value={reason.value} className="text-sm py-2">
+                    {reason.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {liftingReason && (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {LIFTING_REASONS.find(r => r.value === liftingReason)?.description}
+              </p>
+            )}
           </div>
 
           {/* Détails complémentaires */}
           <div className="space-y-2">
-            <Label className="text-xs font-semibold">Détails complémentaires</Label>
-            <Textarea value={liftingDetails} onChange={(e) => setLiftingDetails(e.target.value)} placeholder="Précisions sur la résolution du litige, numéro de jugement, etc." className="text-xs min-h-[60px]" />
+            <Label className="text-sm font-semibold">Détails complémentaires</Label>
+            <Textarea value={liftingDetails} onChange={(e) => setLiftingDetails(e.target.value)} placeholder="Précisions sur la résolution du litige, numéro de jugement, etc." className="text-sm min-h-[70px] rounded-xl border-2 focus:border-primary" />
           </div>
 
           <Separator />
 
           {/* Informations du demandeur */}
-          <div className="space-y-2">
-            <Label className="text-xs font-semibold">Informations du demandeur</Label>
-            <div className="space-y-2">
-              <div>
-                <Label className="text-[10px]">Nom complet *</Label>
-                <Input value={requesterName} onChange={(e) => setRequesterName(e.target.value)} className="h-9 text-xs" />
-              </div>
-              <div>
-                <Label className="text-[10px]">Qualité *</Label>
-                <Select value={requesterQuality} onValueChange={setRequesterQuality}>
-                  <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {REQUESTER_QUALITIES.map(q => <SelectItem key={q.value} value={q.value} className="text-xs">{q.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-[10px]">Téléphone</Label>
-                  <Input value={requesterPhone} onChange={(e) => setRequesterPhone(e.target.value)} className="h-9 text-xs" placeholder="+243..." />
+          <Card className="border-2 border-dashed rounded-xl">
+            <CardContent className="p-3 space-y-3">
+              <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+                Informations du demandeur
+              </h4>
+              <div className="space-y-2.5">
+                <div className="space-y-1">
+                  <Label className="text-xs">Nom complet *</Label>
+                  <Input value={requesterName} onChange={(e) => setRequesterName(e.target.value)} className="h-11 text-sm rounded-xl border-2" />
                 </div>
-                <div>
-                  <Label className="text-[10px]">E-mail</Label>
-                  <Input value={requesterEmail} onChange={(e) => setRequesterEmail(e.target.value)} className="h-9 text-xs" type="email" />
+                <div className="space-y-1">
+                  <Label className="text-xs">Qualité *</Label>
+                  <Select value={requesterQuality} onValueChange={setRequesterQuality}>
+                    <SelectTrigger className="h-11 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      {REQUESTER_QUALITIES.map(q => <SelectItem key={q.value} value={q.value} className="text-sm">{q.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Téléphone</Label>
+                    <Input value={requesterPhone} onChange={(e) => setRequesterPhone(e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="+243..." />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">E-mail</Label>
+                    <Input value={requesterEmail} onChange={(e) => setRequesterEmail(e.target.value)} className="h-11 text-sm rounded-xl border-2" type="email" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">N° pièce d'identité</Label>
+                  <Input value={requesterIdNumber} onChange={(e) => setRequesterIdNumber(e.target.value)} className="h-11 text-sm rounded-xl border-2" placeholder="Carte d'identité ou passeport" />
                 </div>
               </div>
-              <div>
-                <Label className="text-[10px]">N° pièce d'identité</Label>
-                <Input value={requesterIdNumber} onChange={(e) => setRequesterIdNumber(e.target.value)} className="h-9 text-xs" />
-              </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
           <Separator />
 
           {/* Documents */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <Label className="text-xs font-semibold">Documents justificatifs *</Label>
-              <SectionHelpPopover title="Documents requis" description="Joignez les documents prouvant la résolution du litige : PV de conciliation, jugement du tribunal, acte de reconnaissance, accord transactionnel, etc." />
-            </div>
-            <div 
-              className="border-2 border-dashed border-border rounded-lg p-3 text-center cursor-pointer hover:border-primary/50 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="h-5 w-5 mx-auto mb-1 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">PV de conciliation, jugement, acte de reconnaissance...</p>
-              <p className="text-[10px] text-muted-foreground">Images ou PDF, max 10 Mo</p>
-            </div>
-            <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.pdf" multiple onChange={handleFileChange} />
-            {documents.length > 0 && (
-              <div className="space-y-1">
-                {documents.map((file, i) => (
-                  <div key={i} className="flex items-center justify-between bg-muted/50 rounded-lg p-2 text-xs">
-                    <span className="truncate flex-1">{file.name}</span>
-                    <Button variant="ghost" size="sm" onClick={() => removeFile(i)} className="h-6 w-6 p-0 ml-1">
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <Card className="border rounded-xl">
+            <CardContent className="p-3 space-y-3">
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                Documents justificatifs *
+                <SectionHelpPopover title="Documents requis" description="Joignez les documents prouvant la résolution du litige : PV de conciliation, jugement du tribunal, acte de reconnaissance, accord transactionnel, etc." />
+              </h4>
+              <p className="text-xs text-muted-foreground">
+                PV de conciliation, jugement, acte de reconnaissance... (max 10 Mo/fichier)
+              </p>
+              
+              <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.pdf" multiple onChange={handleFileChange} />
+              
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Ajouter des documents
+              </Button>
+              
+              {documents.length > 0 && (
+                <div className="space-y-2">
+                  {documents.map((file, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                      {file.type.startsWith('image/') ? (
+                        <Image className="h-4 w-4 text-primary flex-shrink-0" />
+                      ) : (
+                        <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                      )}
+                      <span className="flex-1 truncate text-sm">{file.name}</span>
+                      <Button variant="ghost" size="icon" onClick={() => removeFile(i)} className="h-7 w-7 rounded-lg hover:bg-destructive/10">
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Separator />
 
           {/* Certifications */}
-          <div className="space-y-2">
-            <div className="flex items-start gap-2">
-              <Checkbox checked={allPartiesAgree} onCheckedChange={(c) => setAllPartiesAgree(c === true)} id="parties-agree" />
-              <label htmlFor="parties-agree" className="text-[10px] text-muted-foreground leading-relaxed cursor-pointer">
+          <div className="space-y-3">
+            <div className="flex items-start gap-2.5">
+              <Checkbox checked={allPartiesAgree} onCheckedChange={(c) => setAllPartiesAgree(c === true)} id="parties-agree" className="mt-0.5" />
+              <label htmlFor="parties-agree" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
                 Je confirme que toutes les parties impliquées dans ce litige ont donné leur accord pour la levée, ou qu'une décision de justice exécutoire a été rendue.
               </label>
             </div>
-            <div className="flex items-start gap-2">
-              <Checkbox checked={certifyAccuracy} onCheckedChange={(c) => setCertifyAccuracy(c === true)} id="certify-lifting" />
-              <label htmlFor="certify-lifting" className="text-[10px] text-muted-foreground leading-relaxed cursor-pointer">
+            <div className="flex items-start gap-2.5">
+              <Checkbox checked={certifyAccuracy} onCheckedChange={(c) => setCertifyAccuracy(c === true)} id="certify-lifting" className="mt-0.5" />
+              <label htmlFor="certify-lifting" className="text-xs text-muted-foreground leading-relaxed cursor-pointer">
                 Je certifie sur l'honneur que les informations fournies sont exactes. Toute déclaration mensongère engage ma responsabilité civile et pénale.
               </label>
             </div>
           </div>
 
-          <Button onClick={handleGoToReview} className="w-full" disabled={!certifyAccuracy || !allPartiesAgree}>
+          <Button onClick={handleGoToReview} className="w-full h-11 rounded-xl" disabled={!certifyAccuracy || !allPartiesAgree}>
             Vérifier et soumettre
           </Button>
         </>
