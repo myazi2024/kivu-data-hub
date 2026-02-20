@@ -241,10 +241,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   // Confirmation step
   if (step === 'confirmation') {
     return (
-      <div className="p-4 space-y-4">
+      <div className="px-3 py-3 space-y-3">
         <div className="text-center space-y-3">
-          <div className="mx-auto w-14 h-14 bg-green-100 rounded-full flex items-center justify-center">
-            <CheckCircle2 className="h-7 w-7 text-green-600" />
+          <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+            <CheckCircle2 className="h-6 w-6 text-green-600" />
           </div>
           <h3 className="text-base font-bold">Signalement enregistré</h3>
           <p className="text-xs text-muted-foreground">
@@ -272,7 +272,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   // Review step
   if (step === 'review') {
     return (
-      <div className="p-4 space-y-3">
+      <div className="px-3 py-3 space-y-2.5">
         <div className="flex items-center gap-2 mb-2">
           <Button variant="ghost" size="sm" onClick={() => setStep('form')} className="h-7 w-7 p-0 rounded-lg">
             <span className="text-xs">←</span>
@@ -326,7 +326,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
 
   // Form step
   return (
-    <div className="p-4 space-y-4">
+    <div className="px-3 py-3 space-y-3">
       {/* Référence */}
       <Card className="p-3 bg-primary/5 border-primary/20">
         <div className="flex items-center gap-2 text-xs">

@@ -54,15 +54,15 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
-      <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl z-[1200] flex flex-col overflow-hidden">
-        <div className="px-4 pt-5 pb-2 flex-shrink-0">
+      <DialogContent className="max-w-[380px] max-h-[85vh] p-0 rounded-2xl z-[1200] flex flex-col overflow-hidden w-[calc(100vw-2rem)]">
+        <div className="px-3 pt-4 pb-2 flex-shrink-0">
           <DialogHeader className="space-y-1">
             <div className="flex items-center justify-center gap-2 mb-1">
-              <div className="h-9 w-9 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                <Scale className="h-4.5 w-4.5 text-orange-600" />
+              <div className="h-8 w-8 rounded-xl bg-orange-500/10 flex items-center justify-center">
+                <Scale className="h-4 w-4 text-orange-600" />
               </div>
             </div>
-            <DialogTitle className="text-base font-bold text-center">
+            <DialogTitle className="text-sm font-bold text-center">
               Litige foncier
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground text-center">
@@ -71,30 +71,30 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
           </DialogHeader>
 
           {/* Tab buttons */}
-          <div className="flex gap-2 mt-3">
+          <div className="flex gap-1.5 mt-2">
             <Button
               variant={activeTab === 'report' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('report')}
-              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
+              className="flex-1 h-8 rounded-xl text-[11px] font-semibold gap-1"
             >
-              <AlertTriangle className="h-3.5 w-3.5" />
-              Signaler un litige
+              <AlertTriangle className="h-3 w-3" />
+              Signaler
             </Button>
             <Button
               variant={activeTab === 'lifting' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setActiveTab('lifting')}
-              className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
+              className="flex-1 h-8 rounded-xl text-[11px] font-semibold gap-1"
             >
-              <FileX2 className="h-3.5 w-3.5" />
-              Levée d'un litige
+              <FileX2 className="h-3 w-3" />
+              Levée
             </Button>
           </div>
         </div>
 
         {/* Render the selected form inline */}
-        <div className="overflow-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+        <div className="overflow-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 130px)' }}>
           {activeTab === 'report' ? (
             <LandDisputeReportForm
               parcelNumber={parcelNumber}

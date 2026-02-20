@@ -1,0 +1,1 @@
+UPDATE parcel_actions_config SET badge_label = 'Nouveau' WHERE action_key = 'land_dispute';
