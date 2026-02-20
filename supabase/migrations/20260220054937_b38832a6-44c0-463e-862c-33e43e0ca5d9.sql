@@ -1,0 +1,2 @@
+INSERT INTO parcel_actions_config (action_key, label, description, is_active, is_visible, display_order, badge_type, badge_label, requires_auth, category)
+VALUES ('land_dispute', 'Litige foncier', 'Signaler ou lever un litige foncier', true, true, 10, 'nouveau', 'Niveau', true, 'dispute');
