@@ -203,12 +203,30 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
 
       if (error) throw error;
 
+      // Créer une contribution cadastrale pour que le signalement génère un code CCC
+      try {
+        await supabase
+          .from('cadastral_contributions')
+          .insert({
+            parcel_number: parcelNumber,
+            original_parcel_id: parcelId || null,
+            user_id: user.id,
+            contribution_type: 'dispute_report',
+            status: 'pending',
+            current_owner_name: declarantName,
+            province: null,
+            whatsapp_number: declarantPhone || null,
+          });
+      } catch (contributionError) {
+        console.warn('Erreur lors de la création de la contribution CCC associée:', contributionError);
+      }
+
       await supabase.from('notifications' as any).insert({
         user_id: user.id,
         title: 'Litige foncier signalé',
-        message: `Votre signalement de litige foncier (${referenceNumber}) pour la parcelle ${parcelNumber} a été enregistré avec succès.`,
+        message: `Votre signalement de litige foncier (${referenceNumber}) pour la parcelle ${parcelNumber} a été enregistré avec succès. Une contribution CCC a été créée et vous recevrez un code CCC après validation.`,
         type: 'success',
-        action_url: '/user-dashboard'
+        action_url: '/user-dashboard?tab=disputes'
       });
 
       setStep('confirmation');
