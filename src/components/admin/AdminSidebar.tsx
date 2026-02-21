@@ -28,7 +28,8 @@ import {
   Smartphone,
   Grid3X3,
   TestTube,
-  Key
+  Key,
+  Scale
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -108,6 +109,7 @@ const menuItems = [
       { icon: FileCheck, label: 'Expertises Immob.', value: 'expertise-requests', badge: 'expertise' },
       { icon: DollarSign, label: 'Config Frais Expert.', value: 'expertise-fees-config', badge: null },
       { icon: AlertTriangle, label: 'Conflits Limites', value: 'boundary-conflicts', badge: null },
+      { icon: Scale, label: 'Litiges Fonciers', value: 'land-disputes', badge: null },
       { icon: Database, label: 'Hypothèques', value: 'mortgages', badge: null },
       { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
       { icon: Users, label: 'Historique Propriété', value: 'ownership-history', badge: null },

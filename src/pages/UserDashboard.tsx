@@ -12,7 +12,8 @@ import { UserAccountSecurity } from '@/components/user/UserAccountSecurity';
 import UserProfileSection from '@/components/user/UserProfileSection';
 import { UserLandTitleRequests } from '@/components/user/UserLandTitleRequests';
 import { NotificationBell } from '@/components/user/NotificationBell';
-import { User, FileText, Building, CreditCard, Settings, ScrollText } from 'lucide-react';
+import { UserLandDisputes } from '@/components/user/UserLandDisputes';
+import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
@@ -43,7 +44,7 @@ const UserDashboard = () => {
 
           <Tabs defaultValue="profile" className="w-full">
             {/* Navigation compacte */}
-            <TabsList className="w-full h-auto p-1 grid grid-cols-6 gap-1 bg-background shadow-sm rounded-2xl border">
+            <TabsList className="w-full h-auto p-1 grid grid-cols-7 gap-1 bg-background shadow-sm rounded-2xl border">
               <TabsTrigger 
                 value="profile" 
                 className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
@@ -71,6 +72,13 @@ const UserDashboard = () => {
               >
                 <Building className="h-4 w-4" />
                 <span className="text-[10px] font-medium">Permis</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="disputes" 
+                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+              >
+                <Scale className="h-4 w-4" />
+                <span className="text-[10px] font-medium">Litiges</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="invoices" 
@@ -102,6 +110,10 @@ const UserDashboard = () => {
 
             <TabsContent value="permits" className="mt-4">
               <UserBuildingPermits />
+            </TabsContent>
+
+            <TabsContent value="disputes" className="mt-4">
+              <UserLandDisputes />
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-4">

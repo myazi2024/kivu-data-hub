@@ -173,6 +173,9 @@ export const UserContributions: React.FC = () => {
     if (contribution.boundary_history && Array.isArray(contribution.boundary_history) && contribution.boundary_history.length > 0) {
       return { label: 'Bornage', icon: '📍', color: 'text-red-600' };
     }
+    if (contribution.contribution_type === 'dispute_report') {
+      return { label: 'Litige foncier', icon: '⚖️', color: 'text-orange-600' };
+    }
     if (contribution.contribution_type === 'update') {
       return { label: 'Mise à jour', icon: '✏️', color: 'text-blue-600' };
     }
