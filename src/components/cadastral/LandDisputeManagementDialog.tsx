@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+
 import { Scale, AlertTriangle, FileX2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
@@ -95,7 +95,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
         </div>
 
         {/* Render the selected form inline */}
-        <ScrollArea className="flex-1 min-h-0" style={{ maxHeight: 'calc(90vh - 160px)' }}>
+        <div className="flex-1 min-h-0 overflow-y-auto" style={{ maxHeight: 'calc(85vh - 140px)' }}>
           {activeTab === 'report' ? (
             <LandDisputeReportForm
               parcelNumber={parcelNumber}
@@ -117,7 +117,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
               embedded
             />
           )}
-        </ScrollArea>
+        </div>
       </DialogContent>
     </Dialog>
   );
