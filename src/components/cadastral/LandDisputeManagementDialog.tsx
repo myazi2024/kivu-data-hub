@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-
-import { Scale, AlertTriangle, FileX2 } from 'lucide-react';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
+import { Scale, AlertTriangle, FileX2, X } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import LandDisputeReportForm from './LandDisputeReportForm';
@@ -54,8 +54,19 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
   }
 
   return (
-    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); }}>
-      <DialogContent className="max-w-[400px] max-h-[90vh] p-0 rounded-2xl z-[1200] flex flex-col overflow-hidden w-[calc(100vw-2rem)]">
+    <Dialog open={open} onOpenChange={() => {}}>
+      <DialogPortal>
+        <DialogOverlay />
+        <DialogPrimitive.Content
+          className="fixed left-[50%] top-[50%] z-[1200] translate-x-[-50%] translate-y-[-50%] max-w-[400px] max-h-[90vh] p-0 rounded-2xl flex flex-col overflow-hidden w-[calc(100vw-2rem)] border bg-background shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          {/* Custom close button */}
+          <button onClick={handleClose} className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 z-10">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Fermer</span>
+          </button>
         <div className="px-4 pt-4 pb-2 flex-shrink-0">
           <DialogHeader className="space-y-1">
             <div className="flex items-center justify-center gap-2 mb-1">
@@ -118,7 +129,8 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
             />
           )}
         </div>
-      </DialogContent>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   );
 };

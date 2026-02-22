@@ -329,6 +329,14 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   // Form
   return (
     <div className="px-4 py-4 space-y-4">
+      {/* Avertissement important */}
+      <Alert className="bg-amber-50 border-amber-300 rounded-xl">
+        <AlertTriangle className="h-4 w-4 text-amber-600" />
+        <AlertDescription className="text-xs text-amber-900 leading-relaxed">
+          <span className="font-semibold">Important :</span> Les informations que vous fournissez doivent être exactes et vérifiables. Toute demande contenant des informations erronées ou mensongères ne sera pas prise en considération et pourra engager votre responsabilité.
+        </AlertDescription>
+      </Alert>
+
       {/* Référence de la demande */}
       <Card className="bg-primary/5 border-primary/20 rounded-xl shadow-sm">
         <CardContent className="p-3">
@@ -371,16 +379,20 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         )}
       </div>
 
-      {/* Info notification */}
-      <Alert className="bg-blue-50 border-blue-200 rounded-xl">
-        <Info className="h-4 w-4 text-blue-600" />
-        <AlertDescription className="text-xs text-blue-800 leading-relaxed">
-          Chaque litige foncier est référencé par un numéro unique disponible dans le résultat cadastral, onglet « Litiges ». Consultez le catalogue de services pour l'obtenir.
-        </AlertDescription>
-      </Alert>
-      <Button variant="outline" size="sm" onClick={handleOpenCatalog} className="w-full h-11 text-sm gap-2 rounded-xl border-2 hover:border-primary hover:bg-primary/5">
-        <Search className="h-4 w-4" /> Ouvrir le catalogue de services
-      </Button>
+      {/* Info notification — only show when reference is NOT valid */}
+      {referenceValid !== true && (
+        <>
+          <Alert className="bg-blue-50 border-blue-200 rounded-xl">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-xs text-blue-800 leading-relaxed">
+              Chaque litige foncier est référencé par un numéro unique disponible dans le résultat cadastral, onglet « Litiges ». Consultez le catalogue de services pour l'obtenir.
+            </AlertDescription>
+          </Alert>
+          <Button variant="outline" size="sm" onClick={handleOpenCatalog} className="w-full h-11 text-sm gap-2 rounded-xl border-2 border-destructive text-destructive hover:bg-destructive/5 hover:border-destructive">
+            <Search className="h-4 w-4" /> Ouvrir le catalogue de services
+          </Button>
+        </>
+      )}
 
       {/* Show dispute info if found */}
       {referenceValid && disputeData && (
