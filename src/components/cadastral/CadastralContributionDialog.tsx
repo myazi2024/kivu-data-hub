@@ -176,6 +176,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!hasValidExistingPermit) {
         missing.push({ field: 'buildingPermit', label: 'Informations du permis existant', tab: 'general' });
       }
+
+      // Validation: année de délivrance du permis ≤ année de construction
+      if (formData.constructionYear) {
+        const invalidPermit = buildingPermits.find(permit => {
+          if (!permit.issueDate) return false;
+          const permitYear = new Date(permit.issueDate).getFullYear();
+          return permitYear > formData.constructionYear!;
+        });
+        if (invalidPermit) {
+          missing.push({ field: 'permitIssueDate', label: `Date de l'autorisation doit être ≤ année de construction (${formData.constructionYear})`, tab: 'general' });
+        }
+      }
     }
     
     // NOTE: Si "Pas de permis" (permitMode === 'request') est sélectionné,
@@ -3551,13 +3563,44 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             />
                           </div>
                           <div className="space-y-1.5">
-                            <Label className="text-sm font-medium text-foreground">Date</Label>
+                            <div className="flex items-center gap-1">
+                              <Label className="text-sm font-medium text-foreground">Date</Label>
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button type="button" className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground hover:text-primary transition-colors">
+                                    <Info className="h-3 w-3" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 rounded-xl text-xs" align="start" sideOffset={5}>
+                                  <div className="space-y-1">
+                                    <h4 className="font-semibold text-sm">Date de délivrance</h4>
+                                    <p className="text-muted-foreground leading-relaxed">
+                                      L'autorisation de bâtir est délivrée <strong>avant</strong> le début des travaux. Sa date doit donc être antérieure ou égale à l'année de construction.
+                                    </p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            </div>
                             <Input
                               type="date"
                               value={permit.issueDate}
-                              onChange={(e) => updateBuildingPermit(index, 'issueDate', e.target.value)}
-                              className="h-10 text-sm rounded-xl"
+                              max={formData.constructionYear ? `${formData.constructionYear}-12-31` : undefined}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (formData.constructionYear && value) {
+                                  const permitYear = new Date(value).getFullYear();
+                                  if (permitYear > formData.constructionYear) {
+                                    toast({ title: "Date invalide", description: `L'autorisation doit être antérieure ou égale à l'année de construction (${formData.constructionYear}).`, variant: "destructive" });
+                                    return;
+                                  }
+                                }
+                                updateBuildingPermit(index, 'issueDate', value);
+                              }}
+                              className={cn("h-10 text-sm rounded-xl", permit.issueDate && formData.constructionYear && new Date(permit.issueDate).getFullYear() > formData.constructionYear && "border-destructive")}
                             />
+                            {permit.issueDate && formData.constructionYear && new Date(permit.issueDate).getFullYear() > formData.constructionYear && (
+                              <p className="text-[10px] text-destructive">Doit être ≤ {formData.constructionYear}</p>
+                            )}
                           </div>
                         </div>
 
