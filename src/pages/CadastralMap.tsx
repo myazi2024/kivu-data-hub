@@ -578,6 +578,14 @@ const CadastralMap = () => {
       <Navigation />
       
       <main className="flex-1 relative" style={{ height: 'calc(100vh - 4rem)' }}>
+        {/* Mobile: move Leaflet zoom controls up ~5cm */}
+        {isMobile && (
+          <style>{`
+            .leaflet-bottom.leaflet-right .leaflet-control-zoom {
+              margin-bottom: 10rem !important;
+            }
+          `}</style>
+        )}
         {/* Carte en plein écran */}
         {loading ? (
           <div className="absolute inset-0 flex items-center justify-center bg-muted/50">
@@ -695,10 +703,12 @@ const CadastralMap = () => {
                   variant="ghost" 
                   size="sm"
                   onClick={() => {
+                    if (selectedParcel) return;
                     setIsSearchBarActive(true);
                     setShowAdvancedSearch(!showAdvancedSearch);
                     setHasUserInteracted(true);
                   }}
+                  disabled={!!selectedParcel}
                   className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl ${showAdvancedSearch ? 'bg-primary/10 text-primary' : 'bg-muted/50'} hover:bg-muted transition-colors`}
                   title="Recherche avancée"
                 >
@@ -724,11 +734,13 @@ const CadastralMap = () => {
                               variant="destructive" 
                               size="sm"
                             onClick={() => {
+                              if (selectedParcel) return;
                               landTitleNotificationDismissedRef.current = true;
                               setShowLandTitleNotification(false);
                               setShowLandTitleTermsDialog(true);
                               setHasUserInteracted(true);
                             }}
+                              disabled={!!selectedParcel}
                               className={`${selectedParcel && isMobile ? 'h-8 w-8' : 'h-9 w-9'} shrink-0 rounded-xl transition-colors relative`}
                               title="Demander un titre foncier"
                             >
@@ -779,12 +791,14 @@ const CadastralMap = () => {
                         variant="destructive" 
                         size="sm"
                         onClick={() => {
+                          if (selectedParcel) return;
                           landTitleNotificationDismissedRef.current = true;
                           setShowLandTitleNotification(false);
                           setShowLandTitleTermsDialog(true);
                           setHasUserInteracted(true);
                         }}
-                        className="h-9 w-9 hover:w-auto shrink-0 rounded-xl transition-all duration-300 ease-in-out relative gap-1.5 text-xs font-medium overflow-hidden group px-0 hover:px-3"
+                        disabled={!!selectedParcel}
+                        className={`h-9 w-9 shrink-0 rounded-xl transition-all duration-300 ease-in-out relative gap-1.5 text-xs font-medium overflow-hidden px-0 ${selectedParcel ? '' : 'hover:w-auto group hover:px-3'}`}
                       >
                         <FileCheck2 className="h-4 w-4 shrink-0" />
                         <span className="max-w-0 overflow-hidden whitespace-nowrap opacity-0 group-hover:max-w-[200px] group-hover:opacity-100 transition-all duration-300 ease-in-out">
@@ -892,9 +906,9 @@ const CadastralMap = () => {
 
         {/* Bouton Contribuer - Positionné sous la barre de recherche sur desktop */}
         {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
-          <div className={`absolute z-[900] animate-fade-in ${
+          <div className={`absolute z-[850] animate-fade-in ${
             isMobile 
-              ? 'left-1/2 -translate-x-1/2 bottom-24'
+              ? 'left-1/2 -translate-x-1/2 bottom-52'
               : 'left-3 top-[5.5rem]'
           }`}
             style={isMobile ? {} : { width: '24rem' }}
@@ -1080,7 +1094,7 @@ const CadastralMap = () => {
           </div>
         </div>
         {/* Mobile legend toggle */}
-        <div className="absolute bottom-20 left-3 z-[800] md:hidden">
+        <div className="absolute bottom-40 left-3 z-[800] md:hidden">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="secondary" size="sm" className="h-9 w-9 rounded-xl shadow-lg p-0">
