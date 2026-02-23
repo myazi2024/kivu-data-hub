@@ -908,7 +908,7 @@ const CadastralMap = () => {
         {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
           <div className={`absolute z-[850] animate-fade-in ${
             isMobile 
-              ? 'left-1/2 -translate-x-1/2 bottom-52'
+              ? 'left-1/2 -translate-x-1/2 bottom-60'
               : 'left-3 top-[5.5rem]'
           }`}
             style={isMobile ? {} : { width: '24rem' }}
