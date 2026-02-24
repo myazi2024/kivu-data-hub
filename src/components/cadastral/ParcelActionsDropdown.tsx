@@ -276,16 +276,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         onOpenChange={setShowTaxDialog}
         onOpenServiceCatalog={() => {
           setShowTaxDialog(false);
-          // Bring the results dialog to the front (above the tax dialog) and scroll to catalog
           setTimeout(() => {
-            const resultsDialog = document.querySelector('[data-results-dialog]');
-            if (resultsDialog) {
-              (resultsDialog as HTMLElement).style.zIndex = '1300';
-            }
-            const scrollContainer = document.querySelector('[data-results-scroll]');
-            if (scrollContainer) {
-              scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
-            }
+            window.dispatchEvent(new CustomEvent('open-cadastral-results-dialog'));
           }, 150);
         }}
       />
@@ -326,14 +318,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         onOpenServiceCatalog={() => {
           setShowLandDisputeDialog(false);
           setTimeout(() => {
-            const resultsDialog = document.querySelector('[data-results-dialog]');
-            if (resultsDialog) {
-              (resultsDialog as HTMLElement).style.zIndex = '1300';
-            }
-            const scrollContainer = document.querySelector('[data-results-scroll]');
-            if (scrollContainer) {
-              scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
-            }
+            window.dispatchEvent(new CustomEvent('open-cadastral-results-dialog'));
           }, 150);
         }}
       />
