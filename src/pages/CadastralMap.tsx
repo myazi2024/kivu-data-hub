@@ -582,7 +582,7 @@ const CadastralMap = () => {
         {isMobile && (
           <style>{`
             .leaflet-bottom.leaflet-right .leaflet-control-zoom {
-              margin-bottom: 10rem !important;
+              margin-bottom: 12rem !important;
             }
           `}</style>
         )}
@@ -906,9 +906,9 @@ const CadastralMap = () => {
 
         {/* Bouton Contribuer - Positionné sous la barre de recherche sur desktop */}
         {searchQuery && filteredParcels.length === 0 && !selectedParcel && (
-          <div className={`absolute z-[850] animate-fade-in ${
+          <div className={`absolute z-[890] animate-fade-in ${
             isMobile 
-              ? 'left-1/2 -translate-x-1/2 bottom-60'
+              ? 'left-1/2 -translate-x-1/2 bottom-96'
               : 'left-3 top-[5.5rem]'
           }`}
             style={isMobile ? {} : { width: '24rem' }}
@@ -1094,7 +1094,7 @@ const CadastralMap = () => {
           </div>
         </div>
         {/* Mobile legend toggle */}
-        <div className="absolute bottom-40 left-3 z-[800] md:hidden">
+        <div className="absolute bottom-48 left-3 z-[800] md:hidden">
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="secondary" size="sm" className="h-9 w-9 rounded-xl shadow-lg p-0">
