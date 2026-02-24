@@ -53,6 +53,17 @@ const CadastralSearchBar = () => {
     clearSearch
   } = useCadastralSearch();
 
+  // Listen for external requests to open the results dialog
+  useEffect(() => {
+    const handleOpenCatalog = () => {
+      if (searchResult) {
+        setShowResultsDialog(true);
+      }
+    };
+    window.addEventListener('open-cadastral-results-dialog', handleOpenCatalog);
+    return () => window.removeEventListener('open-cadastral-results-dialog', handleOpenCatalog);
+  }, [searchResult]);
+
   useEffect(() => {
     const urlSearchQuery = searchParams.get('search');
     const fromParam = searchParams.get('from');
