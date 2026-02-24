@@ -14,6 +14,7 @@ interface LandDisputeManagementDialogProps {
   parcelData?: any;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOpenServiceCatalog?: () => void;
 }
 
 type DisputeTab = 'report' | 'lifting';
@@ -23,7 +24,8 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
   parcelId,
   parcelData,
   open,
-  onOpenChange
+  onOpenChange,
+  onOpenServiceCatalog
 }) => {
   const isMobile = useIsMobile();
   const [showIntro, setShowIntro] = useState(true);
@@ -126,6 +128,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
                 if (!isOpen) handleClose();
               }}
               embedded
+              onOpenServiceCatalog={onOpenServiceCatalog}
             />
           )}
         </div>

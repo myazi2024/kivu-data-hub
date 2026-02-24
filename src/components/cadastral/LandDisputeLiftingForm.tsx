@@ -21,6 +21,7 @@ interface LandDisputeLiftingFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   embedded?: boolean;
+  onOpenServiceCatalog?: () => void;
 }
 
 const LIFTING_REASONS = [
@@ -50,7 +51,8 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   parcelId,
   open,
   onOpenChange,
-  embedded = false
+  embedded = false,
+  onOpenServiceCatalog
 }) => {
   const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>('form');
@@ -154,6 +156,10 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
   };
 
   const handleOpenCatalog = () => {
+    if (onOpenServiceCatalog) {
+      onOpenServiceCatalog();
+      return;
+    }
     const resultsDialog = document.querySelector('[data-results-dialog]');
     if (resultsDialog) {
       (resultsDialog as HTMLElement).style.zIndex = '1300';

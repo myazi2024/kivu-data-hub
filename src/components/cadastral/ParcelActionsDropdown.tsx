@@ -323,6 +323,19 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         parcelData={parcelData}
         open={showLandDisputeDialog}
         onOpenChange={setShowLandDisputeDialog}
+        onOpenServiceCatalog={() => {
+          setShowLandDisputeDialog(false);
+          setTimeout(() => {
+            const resultsDialog = document.querySelector('[data-results-dialog]');
+            if (resultsDialog) {
+              (resultsDialog as HTMLElement).style.zIndex = '1300';
+            }
+            const scrollContainer = document.querySelector('[data-results-scroll]');
+            if (scrollContainer) {
+              scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+          }, 150);
+        }}
       />
     </>
   );
