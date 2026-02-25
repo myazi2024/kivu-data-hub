@@ -138,6 +138,9 @@ export const ParcelMapPreview = ({
   const [showParcelControls, setShowParcelControls] = useState(false);
   const [showClearAllDialog, setShowClearAllDialog] = useState(false);
   const [mapBearing, setMapBearing] = useState<number>(0);
+  const [editingSideIndex, setEditingSideIndex] = useState<number | null>(null);
+  const [editingSideValue, setEditingSideValue] = useState<string>('');
+  const dimensionLongPressRef = useRef<number | null>(null);
   
   // Charger la configuration depuis Supabase
   const { config: dbConfig, loading: configLoading } = useMapConfig();
@@ -1292,9 +1295,70 @@ export const ParcelMapPreview = ({
     return Math.round(area * 100) / 100;
   };
 
-  // Afficher dimensions des côtés
-  // Afficher les dimensions sur la carte en utilisant les valeurs stockées dans parcelSides
-  // pour éviter les variations dues aux arrondis lors des rotations/déplacements
+  // Redimensionner un côté de la parcelle en déplaçant la borne de fin
+  const resizeSide = useCallback((sideIndex: number, newLengthMeters: number) => {
+    if (validCoords.length < 2 || sideIndex < 0 || sideIndex >= validCoords.length) return;
+    
+    const nextIndex = (sideIndex + 1) % validCoords.length;
+    const startCoord = validCoords[sideIndex];
+    const endCoord = validCoords[nextIndex];
+    
+    const lat1 = parseFloat(startCoord.lat);
+    const lng1 = parseFloat(startCoord.lng);
+    const lat2 = parseFloat(endCoord.lat);
+    const lng2 = parseFloat(endCoord.lng);
+    
+    if (isNaN(lat1) || isNaN(lng1) || isNaN(lat2) || isNaN(lng2)) return;
+    
+    const currentLength = calculateDistance(lat1, lng1, lat2, lng2);
+    if (currentLength === 0) return;
+    
+    const ratio = newLengthMeters / currentLength;
+    
+    // Calculer la nouvelle position de la borne de fin
+    const metersPerDegLat = 111320;
+    const metersPerDegLng = 111320 * Math.cos((lat1 * Math.PI) / 180);
+    
+    const dx = (lng2 - lng1) * metersPerDegLng;
+    const dy = (lat2 - lat1) * metersPerDegLat;
+    
+    const newDx = dx * ratio;
+    const newDy = dy * ratio;
+    
+    const newLat = lat1 + newDy / metersPerDegLat;
+    const newLng = lng1 + newDx / metersPerDegLng;
+    
+    // Mettre à jour les coordonnées
+    const endBorne = validCoords[nextIndex].borne;
+    const coordIndex = coordinates.findIndex(c => c.borne === endBorne);
+    if (coordIndex === -1) return;
+    
+    const updated = [...coordinates];
+    updated[coordIndex] = {
+      ...updated[coordIndex],
+      lat: newLat.toFixed(6),
+      lng: newLng.toFixed(6),
+    };
+    
+    onCoordinatesUpdate(updated);
+    updateParcelSidesFromCoordinates(updated);
+  }, [validCoords, coordinates, onCoordinatesUpdate, updateParcelSidesFromCoordinates]);
+
+  // Confirmer l'édition d'une dimension
+  const confirmDimensionEdit = useCallback(() => {
+    if (editingSideIndex === null) return;
+    const newLength = parseFloat(editingSideValue);
+    if (isNaN(newLength) || newLength <= 0) {
+      setEditingSideIndex(null);
+      setEditingSideValue('');
+      return;
+    }
+    resizeSide(editingSideIndex, newLength);
+    setEditingSideIndex(null);
+    setEditingSideValue('');
+  }, [editingSideIndex, editingSideValue, resizeSide]);
+
+  // Afficher dimensions des côtés (interactives : double-clic / appui prolongé pour éditer)
   const displaySideDimensions = (L: any, map: any, coords: [number, number][]) => {
     coords.forEach((coord, index) => {
       const nextIndex = (index + 1) % coords.length;
@@ -1303,8 +1367,6 @@ export const ParcelMapPreview = ({
       const midLat = (coord[0] + nextCoord[0]) / 2;
       const midLng = (coord[1] + nextCoord[1]) / 2;
       
-      // Utiliser la dimension stockée dans parcelSides si disponible (stable)
-      // sinon recalculer (pour les nouveaux points)
       const storedSide = parcelSides[index];
       const displayDistance = storedSide?.length 
         ? parseFloat(storedSide.length) 
@@ -1312,21 +1374,48 @@ export const ParcelMapPreview = ({
       
       const label = L.divIcon({
         className: 'dimension-label',
-        html: `<div style="
+        html: `<div data-side-index="${index}" style="
           background: rgba(255,255,255,0.95);
-          padding: 2px 6px;
-          border-radius: 4px;
-          font-size: 10px;
-          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: 6px;
+          font-size: 11px;
+          font-weight: 700;
           white-space: nowrap;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-          border: 1px solid rgba(0,0,0,0.1);
-        ">${displayDistance.toFixed(1)}m</div>`,
-        iconSize: [40, 16],
-        iconAnchor: [20, 8]
+          box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+          border: 1.5px solid hsl(var(--primary) / 0.3);
+          cursor: pointer;
+          user-select: none;
+          transition: all 0.15s ease;
+        ">${displayDistance.toFixed(1)}m ✏️</div>`,
+        iconSize: [60, 20],
+        iconAnchor: [30, 10]
       });
       
-      const marker = L.marker([midLat, midLng], { icon: label, interactive: false }).addTo(map);
+      const marker = L.marker([midLat, midLng], { icon: label, interactive: true }).addTo(map);
+      
+      // Double-clic pour éditer (desktop)
+      marker.on('dblclick', (e: any) => {
+        e.originalEvent?.stopPropagation();
+        e.originalEvent?.preventDefault();
+        setEditingSideIndex(index);
+        setEditingSideValue(displayDistance.toFixed(1));
+      });
+      
+      // Appui prolongé pour éditer (mobile)
+      let longPressTimer: number | null = null;
+      marker.on('mousedown touchstart', () => {
+        longPressTimer = window.setTimeout(() => {
+          setEditingSideIndex(index);
+          setEditingSideValue(displayDistance.toFixed(1));
+        }, 500);
+      });
+      marker.on('mouseup touchend mouseout', () => {
+        if (longPressTimer) {
+          window.clearTimeout(longPressTimer);
+          longPressTimer = null;
+        }
+      });
+      
       dimensionLayersRef.current.push(marker);
     });
   };
@@ -1652,6 +1741,52 @@ export const ParcelMapPreview = ({
           className="h-[340px] w-full"
           style={{ cursor: isDrawingMode || isAddingBuilding ? 'crosshair' : 'grab' }}
         />
+        
+        {/* Overlay d'édition de dimension */}
+        {editingSideIndex !== null && (
+          <div className="absolute inset-0 z-[1100] flex items-center justify-center bg-black/30 rounded-2xl">
+            <div className="bg-card rounded-xl p-4 shadow-2xl border border-border/50 w-56 space-y-3">
+              <p className="text-xs font-semibold text-foreground text-center">
+                Modifier Côté {editingSideIndex + 1}
+              </p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={editingSideValue}
+                  onChange={(e) => setEditingSideValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') confirmDimensionEdit();
+                    if (e.key === 'Escape') { setEditingSideIndex(null); setEditingSideValue(''); }
+                  }}
+                  autoFocus
+                  className="flex-1 h-9 rounded-lg border border-border bg-background px-3 text-sm font-mono text-center focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <span className="text-sm font-medium text-muted-foreground">m</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-8 rounded-lg text-xs"
+                  onClick={() => { setEditingSideIndex(null); setEditingSideValue(''); }}
+                >
+                  Annuler
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  className="flex-1 h-8 rounded-lg text-xs"
+                  onClick={confirmDimensionEdit}
+                >
+                  Appliquer
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
         
         {/* Boutons Tracer/Terminer + Superficie/Périmètre sur la carte (en haut à gauche) */}
         {enableDrawingMode && (
