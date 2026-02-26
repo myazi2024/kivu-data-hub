@@ -186,7 +186,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
-  const { createExpertiseRequest, loading } = useRealEstateExpertise();
+  const { createExpertiseRequest, loading, checkExistingValidCertificate, checkCertificateValidity } = useRealEstateExpertise();
   const parcelDocsInputRef = useRef<HTMLInputElement>(null);
   const constructionImagesInputRef = useRef<HTMLInputElement>(null);
 
@@ -194,6 +194,17 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [step, setStep] = useState<'form' | 'summary' | 'payment' | 'confirmation'>('form');
   const [activeTab, setActiveTab] = useState('general');
   const [createdRequest, setCreatedRequest] = useState<any>(null);
+
+  // Existing valid certificate state
+  const [checkingCertificate, setCheckingCertificate] = useState(false);
+  const [existingCertificate, setExistingCertificate] = useState<any>(null);
+  const [certificateChecked, setCertificateChecked] = useState(false);
+  const [showCertificatePayment, setShowCertificatePayment] = useState(false);
+  const [certPaymentMethod, setCertPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
+  const [certPaymentProvider, setCertPaymentProvider] = useState('');
+  const [certPaymentPhone, setCertPaymentPhone] = useState('');
+  const [processingCertPayment, setProcessingCertPayment] = useState(false);
+  const [certificateAccessFee, setCertificateAccessFee] = useState<number>(0);
 
   // Payment state
   const [fees, setFees] = useState<ExpertiseFee[]>([]);
@@ -303,6 +314,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
         if (error) throw error;
         setFees(data || []);
+
+        // Also fetch certificate access fee
+        const accessFee = (data || []).find((f: any) => f.fee_name?.toLowerCase().includes('accès') || f.fee_name?.toLowerCase().includes('certificat'));
+        if (accessFee) {
+          setCertificateAccessFee(accessFee.amount_usd);
+        } else {
+          // Default: use 20% of total fees as access price, or fallback to $5
+          const total = (data || []).reduce((s: number, f: any) => s + f.amount_usd, 0);
+          setCertificateAccessFee(total > 0 ? Math.round(total * 0.2 * 100) / 100 : 5);
+        }
       } catch (error) {
         console.error('Error fetching expertise fees:', error);
       } finally {
@@ -314,6 +335,27 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       fetchFees();
     }
   }, [open]);
+
+  // Check for existing valid certificate when dialog opens (after intro)
+  useEffect(() => {
+    const checkCertificate = async () => {
+      if (!parcelNumber) return;
+      setCheckingCertificate(true);
+      try {
+        const existing = await checkExistingValidCertificate(parcelNumber);
+        setExistingCertificate(existing);
+      } catch (e) {
+        console.error('Certificate check error:', e);
+      } finally {
+        setCheckingCertificate(false);
+        setCertificateChecked(true);
+      }
+    };
+
+    if (open && !showIntro) {
+      checkCertificate();
+    }
+  }, [open, showIntro, parcelNumber]);
 
   const getTotalAmount = () => {
     return fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
@@ -699,6 +741,75 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     }
   };
 
+  const handleCertificateAccessPayment = async () => {
+    if (!user || !existingCertificate) return;
+
+    if (certPaymentMethod === 'mobile_money' && (!certPaymentProvider || !certPaymentPhone)) {
+      toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
+      return;
+    }
+
+    setProcessingCertPayment(true);
+    try {
+      // Create payment record for certificate access
+      const { data: paymentRecord, error: paymentError } = await supabase
+        .from('expertise_payments')
+        .insert({
+          expertise_request_id: existingCertificate.id,
+          user_id: user.id,
+          fee_items: [{ fee_name: 'Accès au certificat d\'expertise immobilière', amount_usd: certificateAccessFee }],
+          total_amount_usd: certificateAccessFee,
+          payment_method: certPaymentMethod,
+          payment_provider: certPaymentMethod === 'mobile_money' ? certPaymentProvider : 'stripe',
+          phone_number: certPaymentMethod === 'mobile_money' ? certPaymentPhone : null,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (paymentError) throw paymentError;
+
+      if (certPaymentMethod === 'mobile_money') {
+        const { error: mmError } = await supabase.functions.invoke('process-mobile-money-payment', {
+          body: {
+            payment_provider: certPaymentProvider,
+            phone_number: certPaymentPhone,
+            amount_usd: certificateAccessFee,
+            payment_type: 'certificate_access',
+            invoice_id: paymentRecord.id
+          }
+        });
+        if (mmError) throw mmError;
+
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await supabase.from('expertise_payments').update({
+          status: 'completed',
+          paid_at: new Date().toISOString(),
+          transaction_id: 'TXN-' + Date.now()
+        }).eq('id', paymentRecord.id);
+      } else {
+        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
+          body: { invoice_id: paymentRecord.id, payment_type: 'certificate_access', amount_usd: certificateAccessFee }
+        });
+        if (stripeError) throw stripeError;
+        if (stripeSession?.url) { window.location.href = stripeSession.url; return; }
+      }
+
+      // Open the certificate URL
+      if (existingCertificate.certificate_url) {
+        window.open(existingCertificate.certificate_url, '_blank');
+      }
+
+      toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
+      handleClose();
+    } catch (error: any) {
+      console.error('Certificate access payment error:', error);
+      toast.error(error.message || 'Erreur lors du paiement');
+    } finally {
+      setProcessingCertPayment(false);
+    }
+  };
+
   const handleClose = () => {
     setStep('form');
     setActiveTab('general');
@@ -713,6 +824,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setPaymentMethod('mobile_money');
     setPaymentProvider('');
     setPaymentPhone('');
+    setExistingCertificate(null);
+    setCertificateChecked(false);
+    setShowCertificatePayment(false);
+    setCertPaymentMethod('mobile_money');
+    setCertPaymentProvider('');
+    setCertPaymentPhone('');
     onOpenChange(false);
   };
 
@@ -2667,6 +2784,164 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     );
   }
 
+  const renderExistingCertificateBlock = () => {
+    if (checkingCertificate) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          <span className="ml-2 text-sm text-muted-foreground">Vérification en cours...</span>
+        </div>
+      );
+    }
+
+    if (!certificateChecked) return null;
+
+    if (existingCertificate) {
+      const validity = checkCertificateValidity(existingCertificate.certificate_issue_date);
+      const issueDate = existingCertificate.certificate_issue_date
+        ? new Date(existingCertificate.certificate_issue_date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })
+        : 'N/A';
+
+      if (!showCertificatePayment) {
+        return (
+          <div className="space-y-4">
+            <Alert className="rounded-xl border-2 border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <AlertDescription className="text-sm space-y-2">
+                <p className="font-semibold text-green-800 dark:text-green-300">
+                  Certificat d'expertise immobilière valide
+                </p>
+                <p className="text-green-700 dark:text-green-400">
+                  Un certificat d'expertise immobilière est en cours de validité pour cette parcelle, 
+                  délivré le <strong>{issueDate}</strong>.
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-500">
+                  Référence : <span className="font-mono">{existingCertificate.reference_number}</span> 
+                  — Expire dans {validity.daysRemaining} jour{validity.daysRemaining > 1 ? 's' : ''}
+                </p>
+              </AlertDescription>
+            </Alert>
+
+            {existingCertificate.market_value_usd && (
+              <Card className="rounded-xl border-primary/20">
+                <CardContent className="p-3 flex items-center gap-3">
+                  <DollarSign className="h-5 w-5 text-primary flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Valeur vénale estimée</p>
+                    <p className="font-bold text-lg">${existingCertificate.market_value_usd.toLocaleString()}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Button
+              variant="seloger"
+              onClick={() => setShowCertificatePayment(true)}
+              className="w-full h-11 rounded-2xl text-sm font-semibold"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Accéder au certificat — ${certificateAccessFee}
+            </Button>
+
+            <p className="text-[11px] text-muted-foreground text-center">
+              Un paiement est requis pour consulter le certificat complet.
+            </p>
+          </div>
+        );
+      }
+
+      // Certificate access payment form
+      return (
+        <div className="space-y-3">
+          <Button variant="ghost" size="sm" onClick={() => setShowCertificatePayment(false)} className="h-8 gap-1 text-xs rounded-xl">
+            <ArrowLeft className="h-3.5 w-3.5" /> Retour
+          </Button>
+
+          <Card className="rounded-xl border-primary/20">
+            <CardContent className="p-3 space-y-1">
+              <p className="text-sm font-semibold">Accès au certificat d'expertise immobilière</p>
+              <p className="text-xs text-muted-foreground">Parcelle {parcelNumber}</p>
+              <Separator className="my-2" />
+              <div className="flex justify-between text-sm">
+                <span>Accès au certificat</span>
+                <span className="font-bold">${certificateAccessFee}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-medium">Mode de paiement</Label>
+            <RadioGroup value={certPaymentMethod} onValueChange={(v) => setCertPaymentMethod(v as any)} className="flex gap-3">
+              <div className="flex items-center gap-1.5">
+                <RadioGroupItem value="mobile_money" id="cert-mm" />
+                <Label htmlFor="cert-mm" className="text-xs cursor-pointer flex items-center gap-1">
+                  <Smartphone className="h-3.5 w-3.5" /> Mobile Money
+                </Label>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <RadioGroupItem value="bank_card" id="cert-bc" />
+                <Label htmlFor="cert-bc" className="text-xs cursor-pointer flex items-center gap-1">
+                  <CreditCard className="h-3.5 w-3.5" /> Carte bancaire
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {certPaymentMethod === 'mobile_money' && (
+            <div className="space-y-2">
+              <Select value={certPaymentProvider} onValueChange={setCertPaymentProvider}>
+                <SelectTrigger className="h-9 rounded-xl text-sm"><SelectValue placeholder="Opérateur" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="airtel">Airtel Money</SelectItem>
+                  <SelectItem value="orange">Orange Money</SelectItem>
+                  <SelectItem value="mpesa">M-Pesa</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input value={certPaymentPhone} onChange={(e) => setCertPaymentPhone(e.target.value)} placeholder="+243 ..." className="h-9 rounded-xl text-sm" />
+            </div>
+          )}
+
+          {certPaymentMethod === 'bank_card' && (
+            <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-2xl border">
+              <CreditCard className="h-4 w-4 text-primary flex-shrink-0" />
+              <p className="text-xs text-muted-foreground">Redirection vers Stripe pour un paiement sécurisé.</p>
+            </div>
+          )}
+
+          <Button
+            variant="seloger"
+            onClick={handleCertificateAccessPayment}
+            disabled={processingCertPayment || (certPaymentMethod === 'mobile_money' && (!certPaymentProvider || !certPaymentPhone))}
+            className="w-full h-10 rounded-2xl text-sm font-semibold"
+          >
+            {processingCertPayment ? (
+              <><Loader2 className="h-4 w-4 animate-spin mr-1.5" /> Traitement...</>
+            ) : (
+              <><CheckCircle2 className="h-4 w-4 mr-1.5" /> Payer ${certificateAccessFee}</>
+            )}
+          </Button>
+        </div>
+      );
+    }
+
+    // No valid certificate exists
+    return null;
+  };
+
+  // Insert a "no certificate" info block at top of the form
+  const renderNoCertificateInfo = () => {
+    if (!certificateChecked || existingCertificate || checkingCertificate) return null;
+    return (
+      <Alert className="rounded-xl border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+        <Info className="h-4 w-4 text-amber-600" />
+        <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
+          Il n'existe pas de certificat d'expertise immobilière valide pour cette parcelle. 
+          Veuillez renseigner ce formulaire pour en demander un.
+        </AlertDescription>
+      </Alert>
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
@@ -2674,22 +2949,39 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         <DialogHeader className="pb-2">
           <DialogTitle className="text-base flex items-center gap-2">
             <FileSearch className="h-5 w-5 text-primary" />
-            {step === 'form' && 'Expertise immobilière'}
-            {step === 'summary' && 'Récapitulatif'}
-            {step === 'payment' && 'Paiement'}
-            {step === 'confirmation' && 'Confirmation'}
+            {existingCertificate && step === 'form' ? 'Certificat existant' : (
+              <>
+                {step === 'form' && 'Expertise immobilière'}
+                {step === 'summary' && 'Récapitulatif'}
+                {step === 'payment' && 'Paiement'}
+                {step === 'confirmation' && 'Confirmation'}
+              </>
+            )}
           </DialogTitle>
-          {step === 'form' && (
+          {step === 'form' && !existingCertificate && (
             <DialogDescription className="text-xs">
               Renseignez les détails pour obtenir un certificat de valeur vénale
             </DialogDescription>
           )}
         </DialogHeader>
 
-        {step === 'form' && renderForm()}
-        {step === 'summary' && renderSummary()}
-        {step === 'payment' && renderPayment()}
-        {step === 'confirmation' && renderConfirmation()}
+        {step === 'form' && existingCertificate ? renderExistingCertificateBlock() : (
+          <>
+            {step === 'form' && (
+              <div className="space-y-3">
+                {renderNoCertificateInfo()}
+                {checkingCertificate ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : renderForm()}
+              </div>
+            )}
+            {step === 'summary' && renderSummary()}
+            {step === 'payment' && renderPayment()}
+            {step === 'confirmation' && renderConfirmation()}
+          </>
+        )}
       </DialogContent>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande d'expertise immobilière." />}
     </Dialog>
