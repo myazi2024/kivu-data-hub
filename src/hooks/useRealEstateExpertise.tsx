@@ -173,6 +173,33 @@ export const useRealEstateExpertise = () => {
     }
   };
 
+  /**
+   * Check if a valid (non-expired) expertise certificate exists for a parcel.
+   * Returns the completed request if the certificate is still valid, null otherwise.
+   */
+  const checkExistingValidCertificate = async (parcelNumber: string): Promise<ExpertiseRequest | null> => {
+    try {
+      const { data, error } = await supabase
+        .from('real_estate_expertise_requests')
+        .select('*')
+        .eq('parcel_number', parcelNumber)
+        .eq('status', 'completed')
+        .not('certificate_issue_date', 'is', null)
+        .order('certificate_issue_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+      if (!data) return null;
+
+      const validity = checkCertificateValidity(data.certificate_issue_date);
+      return validity.isValid ? (data as ExpertiseRequest) : null;
+    } catch (error: any) {
+      console.error('Error checking existing certificate:', error);
+      return null;
+    }
+  };
+
   const checkCertificateValidity = (certificateIssueDate?: string): { isValid: boolean; daysRemaining: number } => {
     if (!certificateIssueDate) return { isValid: false, daysRemaining: 0 };
 
@@ -201,6 +228,7 @@ export const useRealEstateExpertise = () => {
     createExpertiseRequest,
     fetchUserRequests,
     getRequestByParcel,
+    checkExistingValidCertificate,
     checkCertificateValidity,
   };
 };
