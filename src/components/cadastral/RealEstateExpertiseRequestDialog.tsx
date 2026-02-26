@@ -2965,23 +2965,25 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           )}
         </DialogHeader>
 
-        {step === 'form' && existingCertificate ? renderExistingCertificateBlock() : (
-          <>
-            {step === 'form' && (
-              <div className="space-y-3">
-                {renderNoCertificateInfo()}
-                {checkingCertificate ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
-                ) : renderForm()}
-              </div>
-            )}
-            {step === 'summary' && renderSummary()}
-            {step === 'payment' && renderPayment()}
-            {step === 'confirmation' && renderConfirmation()}
-          </>
-        )}
+        <ScrollArea className="max-h-[calc(90vh-120px)] overflow-y-auto">
+          {step === 'form' && existingCertificate ? renderExistingCertificateBlock() : (
+            <>
+              {step === 'form' && (
+                <div className="space-y-3">
+                  {renderNoCertificateInfo()}
+                  {checkingCertificate ? (
+                    <div className="flex items-center justify-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    </div>
+                  ) : renderForm()}
+                </div>
+              )}
+              {step === 'summary' && renderSummary()}
+              {step === 'payment' && renderPayment()}
+              {step === 'confirmation' && renderConfirmation()}
+            </>
+          )}
+        </ScrollArea>
       </DialogContent>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande d'expertise immobilière." />}
     </Dialog>
