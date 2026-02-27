@@ -12,7 +12,7 @@ interface PaymentRequest {
   payment_provider: string;
   phone_number: string;
   amount_usd: number;
-  payment_type: 'publication' | 'cadastral_service';
+  payment_type: 'publication' | 'cadastral_service' | 'expertise_fee' | 'certificate_access';
   invoice_id?: string;
   test_mode?: boolean;
 }

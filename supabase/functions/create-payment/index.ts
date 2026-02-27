@@ -9,9 +9,9 @@ const corsHeaders = {
 
 interface PaymentRequest {
   items?: string[]; // Publication IDs
-  invoice_id?: string; // Cadastral invoice ID
-  payment_type: 'publications' | 'cadastral_service';
-  amount_usd?: number; // For cadastral services
+  invoice_id?: string; // Cadastral invoice ID or expertise payment ID
+  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access';
+  amount_usd?: number; // For cadastral/expertise services
 }
 
 serve(async (req) => {
@@ -114,7 +114,47 @@ serve(async (req) => {
       totalAmount = Math.round(invoice.total_amount_usd * 100);
       orderMetadata.invoice_id = invoice_id;
       orderMetadata.parcel_number = invoice.parcel_number;
-    } else {
+    }
+    // Handle Expertise Fee / Certificate Access payment
+    else if ((payment_type === 'expertise_fee' || payment_type === 'certificate_access') && invoice_id && amount_usd) {
+      // invoice_id here is the expertise_payments record ID
+      const supabaseService = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+
+      const { data: expertisePayment, error: epError } = await supabaseService
+        .from("expertise_payments")
+        .select("*")
+        .eq("id", invoice_id)
+        .eq("user_id", user.id)
+        .single();
+
+      if (epError || !expertisePayment) {
+        throw new Error("Invalid expertise payment record");
+      }
+
+      const label = payment_type === 'certificate_access'
+        ? "Accès au certificat d'expertise immobilière"
+        : "Frais d'expertise immobilière";
+
+      lineItems = [{
+        price_data: {
+          currency: "usd",
+          product_data: {
+            name: label,
+            description: `Paiement expertise immobilière`,
+          },
+          unit_amount: Math.round(expertisePayment.total_amount_usd * 100),
+        },
+        quantity: 1,
+      }];
+
+      totalAmount = Math.round(expertisePayment.total_amount_usd * 100);
+      orderMetadata.expertise_payment_id = invoice_id;
+    }
+    else {
       throw new Error("Invalid payment request: missing items or invoice_id");
     }
 
@@ -173,13 +213,20 @@ serve(async (req) => {
     }
 
     // Create Stripe checkout session
-    const successUrl = payment_type === 'cadastral_service'
-      ? `${req.headers.get("origin")}/services?payment=success&session_id={CHECKOUT_SESSION_ID}`
-      : `${req.headers.get("origin")}/publications?payment=success&session_id={CHECKOUT_SESSION_ID}`;
+    let successUrl: string;
+    let cancelUrl: string;
+    const origin = req.headers.get("origin") || "";
 
-    const cancelUrl = payment_type === 'cadastral_service'
-      ? `${req.headers.get("origin")}/services?payment=cancelled`
-      : `${req.headers.get("origin")}/publications?payment=cancelled`;
+    if (payment_type === 'expertise_fee' || payment_type === 'certificate_access') {
+      successUrl = `${origin}/cadastral-map?payment=success&type=${payment_type}&session_id={CHECKOUT_SESSION_ID}`;
+      cancelUrl = `${origin}/cadastral-map?payment=cancelled`;
+    } else if (payment_type === 'cadastral_service') {
+      successUrl = `${origin}/services?payment=success&session_id={CHECKOUT_SESSION_ID}`;
+      cancelUrl = `${origin}/services?payment=cancelled`;
+    } else {
+      successUrl = `${origin}/publications?payment=success&session_id={CHECKOUT_SESSION_ID}`;
+      cancelUrl = `${origin}/publications?payment=cancelled`;
+    }
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -226,6 +273,13 @@ serve(async (req) => {
       await supabaseService.from("cadastral_invoices").update({
         payment_method: 'stripe',
         status: 'processing'
+      }).eq('id', invoice_id);
+    } else if ((payment_type === 'expertise_fee' || payment_type === 'certificate_access') && invoice_id) {
+      // Update expertise payment with Stripe session
+      await supabaseService.from("expertise_payments").update({
+        transaction_id: session.id,
+        payment_method: 'bank_card',
+        payment_provider: 'stripe',
       }).eq('id', invoice_id);
     }
 

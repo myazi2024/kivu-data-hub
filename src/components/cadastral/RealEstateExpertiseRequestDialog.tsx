@@ -683,7 +683,25 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
         if (mmError) throw mmError;
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Poll transaction status instead of fixed wait
+        const txId = paymentResult?.transaction_id;
+        if (txId) {
+          let attempts = 0;
+          const maxAttempts = 15;
+          let completed = false;
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const { data: tx } = await supabase
+              .from('payment_transactions')
+              .select('status')
+              .eq('id', txId)
+              .single();
+            if (tx?.status === 'completed') { completed = true; break; }
+            if (tx?.status === 'failed') throw new Error('Le paiement a échoué');
+            attempts++;
+          }
+          if (!completed) throw new Error('Délai de paiement dépassé');
+        }
 
         await supabase
           .from('expertise_payments')
@@ -770,7 +788,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       if (paymentError) throw paymentError;
 
       if (certPaymentMethod === 'mobile_money') {
-        const { error: mmError } = await supabase.functions.invoke('process-mobile-money-payment', {
+        const { data: mmResult, error: mmError } = await supabase.functions.invoke('process-mobile-money-payment', {
           body: {
             payment_provider: certPaymentProvider,
             phone_number: certPaymentPhone,
@@ -781,11 +799,30 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         });
         if (mmError) throw mmError;
 
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Poll transaction status
+        const txId = mmResult?.transaction_id;
+        if (txId) {
+          let attempts = 0;
+          const maxAttempts = 15;
+          let completed = false;
+          while (attempts < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            const { data: tx } = await supabase
+              .from('payment_transactions')
+              .select('status')
+              .eq('id', txId)
+              .single();
+            if (tx?.status === 'completed') { completed = true; break; }
+            if (tx?.status === 'failed') throw new Error('Le paiement a échoué');
+            attempts++;
+          }
+          if (!completed) throw new Error('Délai de paiement dépassé');
+        }
+
         await supabase.from('expertise_payments').update({
           status: 'completed',
           paid_at: new Date().toISOString(),
-          transaction_id: 'TXN-' + Date.now()
+          transaction_id: mmResult?.transaction_id || 'TXN-' + Date.now()
         }).eq('id', paymentRecord.id);
       } else {
         const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
