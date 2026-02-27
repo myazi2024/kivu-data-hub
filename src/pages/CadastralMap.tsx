@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navigation from '@/components/ui/navigation';
 import Footer from '@/components/Footer';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -50,6 +50,7 @@ interface ParcelHistoryData {
 
 const CadastralMap = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const isMobile = useIsMobile();
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<any>(null);
@@ -127,7 +128,30 @@ const CadastralMap = () => {
     };
   }, []);
 
-  // Timer d'inactivité pour afficher la notification du bouton "Obtenir titre foncier"
+  // Handle Stripe payment return for expertise/certificate access
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment');
+    const paymentType = searchParams.get('type');
+    const sessionId = searchParams.get('session_id');
+
+    if (paymentStatus === 'success' && sessionId) {
+      if (paymentType === 'certificate_access') {
+        toast.success('Paiement réussi ! Vous pouvez maintenant accéder au certificat d\'expertise.');
+      } else if (paymentType === 'expertise_fee') {
+        toast.success('Paiement réussi ! Votre demande d\'expertise a été enregistrée.');
+      }
+      // Clean URL params
+      searchParams.delete('payment');
+      searchParams.delete('type');
+      searchParams.delete('session_id');
+      setSearchParams(searchParams, { replace: true });
+    } else if (paymentStatus === 'cancelled') {
+      toast.error('Le paiement a été annulé.');
+      searchParams.delete('payment');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   // Only show when user has NOT interacted with anything
   useEffect(() => {
     if (showLandTitleButton && !showLandTitleNotification && !landTitleNotificationDismissedRef.current && !hasUserInteracted) {

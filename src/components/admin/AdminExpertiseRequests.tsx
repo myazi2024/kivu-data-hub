@@ -165,7 +165,9 @@ export const AdminExpertiseRequests: React.FC = () => {
         updateData.market_value_usd = parseFloat(marketValue);
         updateData.certificate_url = certificateUrl;
         updateData.certificate_issue_date = new Date().toISOString();
-        updateData.certificate_expiry_date = new Date(Date.now() + 6 * 30 * 24 * 60 * 60 * 1000).toISOString();
+        const expiryDate = new Date();
+        expiryDate.setMonth(expiryDate.getMonth() + 6);
+        updateData.certificate_expiry_date = expiryDate.toISOString();
         updateData.expertise_date = new Date().toISOString();
       } else {
         updateData.status = 'rejected';
