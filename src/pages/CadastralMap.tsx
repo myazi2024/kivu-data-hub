@@ -134,22 +134,81 @@ const CadastralMap = () => {
     const paymentType = searchParams.get('type');
     const sessionId = searchParams.get('session_id');
 
-    if (paymentStatus === 'success' && sessionId) {
-      if (paymentType === 'certificate_access') {
-        toast.success('Paiement réussi ! Vous pouvez maintenant accéder au certificat d\'expertise.');
-      } else if (paymentType === 'expertise_fee') {
-        toast.success('Paiement réussi ! Votre demande d\'expertise a été enregistrée.');
+    if (!paymentStatus) return;
+
+    const clearPaymentParams = () => {
+      const nextParams = new URLSearchParams(searchParams);
+      nextParams.delete('payment');
+      nextParams.delete('type');
+      nextParams.delete('session_id');
+      setSearchParams(nextParams, { replace: true });
+    };
+
+    const handlePaymentReturn = async () => {
+      if (paymentStatus === 'cancelled') {
+        toast.error('Le paiement a été annulé.');
+        clearPaymentParams();
+        return;
       }
-      // Clean URL params
-      searchParams.delete('payment');
-      searchParams.delete('type');
-      searchParams.delete('session_id');
-      setSearchParams(searchParams, { replace: true });
-    } else if (paymentStatus === 'cancelled') {
-      toast.error('Le paiement a été annulé.');
-      searchParams.delete('payment');
-      setSearchParams(searchParams, { replace: true });
-    }
+
+      if (paymentStatus !== 'success' || !sessionId) return;
+
+      try {
+        if (paymentType === 'certificate_access') {
+          let completedPayment: { expertise_request_id: string } | null = null;
+
+          // Wait up to 30s for webhook sync (Stripe -> Supabase)
+          for (let attempt = 0; attempt < 15; attempt++) {
+            const { data: payment } = await supabase
+              .from('expertise_payments')
+              .select('status, expertise_request_id')
+              .eq('transaction_id', sessionId)
+              .maybeSingle();
+
+            if (payment?.status === 'completed' && payment.expertise_request_id) {
+              completedPayment = { expertise_request_id: payment.expertise_request_id };
+              break;
+            }
+
+            if (payment?.status === 'failed') {
+              throw new Error('Le paiement du certificat a échoué.');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+
+          if (!completedPayment) {
+            toast.message('Paiement confirmé, synchronisation en cours. Réessayez dans quelques secondes.');
+            clearPaymentParams();
+            return;
+          }
+
+          const { data: expertiseRequest } = await supabase
+            .from('real_estate_expertise_requests')
+            .select('certificate_url')
+            .eq('id', completedPayment.expertise_request_id)
+            .maybeSingle();
+
+          if (expertiseRequest?.certificate_url) {
+            window.open(expertiseRequest.certificate_url, '_blank', 'noopener,noreferrer');
+            toast.success('Paiement réussi ! Le certificat a été ouvert.');
+          } else {
+            toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
+          }
+        } else if (paymentType === 'expertise_fee') {
+          toast.success('Paiement réussi ! Votre demande d’expertise a été enregistrée.');
+        } else {
+          toast.success('Paiement réussi.');
+        }
+      } catch (error: any) {
+        console.error('Error while handling Stripe payment return:', error);
+        toast.error(error.message || 'Erreur lors de la vérification du paiement.');
+      } finally {
+        clearPaymentParams();
+      }
+    };
+
+    void handlePaymentReturn();
   }, [searchParams, setSearchParams]);
 
   // Only show when user has NOT interacted with anything

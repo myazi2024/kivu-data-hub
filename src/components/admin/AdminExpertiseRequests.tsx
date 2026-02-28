@@ -45,6 +45,7 @@ interface ExpertiseRequest {
   requester_phone?: string;
   requester_email?: string;
   status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'rejected';
+  payment_status: 'pending' | 'paid' | 'failed';
   assigned_to?: string;
   market_value_usd?: number;
   certificate_url?: string;
@@ -145,6 +146,11 @@ export const AdminExpertiseRequests: React.FC = () => {
 
     if (processAction === 'complete' && (!marketValue || !certificateUrl)) {
       toast.error('Veuillez renseigner la valeur vénale et le lien du certificat');
+      return;
+    }
+
+    if (processAction === 'complete' && selectedRequest.payment_status !== 'paid') {
+      toast.error('Le certificat ne peut être généré que pour une demande payée');
       return;
     }
 
