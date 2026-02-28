@@ -98,40 +98,64 @@ serve(async (req) => {
           }
         } else if (paymentType === "expertise_fee" || paymentType === "certificate_access") {
           // Handle expertise fee or certificate access payment
-          const expertisePaymentId = metadata.expertise_payment_id;
+          let expertisePaymentId = metadata.expertise_payment_id as string | undefined;
+          let expertiseRequestId: string | null = null;
+          let expertiseUserId: string | null = metadata.user_id || null;
+
+          // Fallback lookup by Stripe session ID if metadata is missing
+          if (!expertisePaymentId) {
+            const { data: paymentBySession } = await supabase
+              .from("expertise_payments")
+              .select("id, expertise_request_id, user_id")
+              .eq("transaction_id", session.id)
+              .maybeSingle();
+
+            if (paymentBySession) {
+              expertisePaymentId = paymentBySession.id;
+              expertiseRequestId = paymentBySession.expertise_request_id;
+              expertiseUserId = expertiseUserId || paymentBySession.user_id;
+            }
+          }
+
           if (expertisePaymentId) {
-            // Update expertise_payments record
+            // Keep Stripe session id as transaction reference for deterministic frontend lookup
             await supabase
               .from("expertise_payments")
               .update({
                 status: "completed",
                 paid_at: new Date().toISOString(),
-                transaction_id: session.payment_intent as string,
+                transaction_id: session.id,
               })
               .eq("id", expertisePaymentId);
 
-            // Get the expertise request ID from the payment record
-            const { data: expertisePayment } = await supabase
-              .from("expertise_payments")
-              .select("expertise_request_id")
-              .eq("id", expertisePaymentId)
-              .single();
+            // Get expertise_request_id if not already known
+            if (!expertiseRequestId) {
+              const { data: expertisePayment } = await supabase
+                .from("expertise_payments")
+                .select("expertise_request_id, user_id")
+                .eq("id", expertisePaymentId)
+                .single();
 
-            if (expertisePayment?.expertise_request_id) {
+              expertiseRequestId = expertisePayment?.expertise_request_id || null;
+              expertiseUserId = expertiseUserId || expertisePayment?.user_id || null;
+            }
+
+            if (expertiseRequestId) {
               // Update payment_status on the expertise request
               await supabase
                 .from("real_estate_expertise_requests")
                 .update({ payment_status: "paid", updated_at: new Date().toISOString() })
-                .eq("id", expertisePayment.expertise_request_id);
+                .eq("id", expertiseRequestId);
             }
 
             // Notification
-            if (metadata.user_id) {
+            if (expertiseUserId) {
               const notifMessage = paymentType === "certificate_access"
                 ? "Votre paiement pour l'accès au certificat d'expertise a été confirmé."
                 : "Votre paiement pour la demande d'expertise immobilière a été confirmé.";
+
               await supabase.from("notifications").insert({
-                user_id: metadata.user_id,
+                user_id: expertiseUserId,
                 type: "success",
                 title: "Paiement expertise confirmé",
                 message: notifMessage,
