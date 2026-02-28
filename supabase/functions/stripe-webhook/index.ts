@@ -96,6 +96,49 @@ serve(async (req) => {
               action_url: "/services"
             });
           }
+        } else if (paymentType === "expertise_fee" || paymentType === "certificate_access") {
+          // Handle expertise fee or certificate access payment
+          const expertisePaymentId = metadata.expertise_payment_id;
+          if (expertisePaymentId) {
+            // Update expertise_payments record
+            await supabase
+              .from("expertise_payments")
+              .update({
+                status: "completed",
+                paid_at: new Date().toISOString(),
+                transaction_id: session.payment_intent as string,
+              })
+              .eq("id", expertisePaymentId);
+
+            // Get the expertise request ID from the payment record
+            const { data: expertisePayment } = await supabase
+              .from("expertise_payments")
+              .select("expertise_request_id")
+              .eq("id", expertisePaymentId)
+              .single();
+
+            if (expertisePayment?.expertise_request_id) {
+              // Update payment_status on the expertise request
+              await supabase
+                .from("real_estate_expertise_requests")
+                .update({ payment_status: "paid", updated_at: new Date().toISOString() })
+                .eq("id", expertisePayment.expertise_request_id);
+            }
+
+            // Notification
+            if (metadata.user_id) {
+              const notifMessage = paymentType === "certificate_access"
+                ? "Votre paiement pour l'accès au certificat d'expertise a été confirmé."
+                : "Votre paiement pour la demande d'expertise immobilière a été confirmé.";
+              await supabase.from("notifications").insert({
+                user_id: metadata.user_id,
+                type: "success",
+                title: "Paiement expertise confirmé",
+                message: notifMessage,
+                action_url: "/cadastral-map"
+              });
+            }
+          }
         } else if (paymentType === "publications") {
           // Mettre à jour la commande
           await supabase
@@ -144,7 +187,13 @@ serve(async (req) => {
         const session = event.data.object as any;
         const metadata = session.metadata || {};
 
-        if (metadata.invoice_id) {
+        if (metadata.expertise_payment_id) {
+          // Handle expertise payment failure
+          await supabase
+            .from("expertise_payments")
+            .update({ status: "failed" })
+            .eq("id", metadata.expertise_payment_id);
+        } else if (metadata.invoice_id) {
           await supabase
             .from("payment_transactions")
             .update({ status: "failed", error_message: "Payment failed or expired" })
