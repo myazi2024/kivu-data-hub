@@ -149,6 +149,18 @@ export const AdminExpertiseRequests: React.FC = () => {
       return;
     }
 
+    if (processAction === 'complete') {
+      try {
+        const parsed = new URL(certificateUrl);
+        if (!['http:', 'https:'].includes(parsed.protocol)) {
+          throw new Error('invalid protocol');
+        }
+      } catch {
+        toast.error('Veuillez renseigner une URL de certificat valide (http/https)');
+        return;
+      }
+    }
+
     if (processAction === 'complete' && selectedRequest.payment_status !== 'paid') {
       toast.error('Le certificat ne peut être généré que pour une demande payée');
       return;
@@ -348,6 +360,7 @@ export const AdminExpertiseRequests: React.FC = () => {
                   <ResponsiveTableHead priority="low">Demandeur</ResponsiveTableHead>
                   <ResponsiveTableHead priority="low">Date</ResponsiveTableHead>
                   <ResponsiveTableHead>Statut</ResponsiveTableHead>
+                  <ResponsiveTableHead>Paiement</ResponsiveTableHead>
                   <ResponsiveTableHead priority="low">Valeur</ResponsiveTableHead>
                   <ResponsiveTableHead className="text-right">Actions</ResponsiveTableHead>
                 </ResponsiveTableRow>
@@ -376,6 +389,11 @@ export const AdminExpertiseRequests: React.FC = () => {
                     </ResponsiveTableCell>
                     <ResponsiveTableCell>
                       <StatusBadge status={request.status as any} />
+                    </ResponsiveTableCell>
+                    <ResponsiveTableCell>
+                      <Badge variant={request.payment_status === 'paid' ? 'default' : request.payment_status === 'failed' ? 'destructive' : 'secondary'}>
+                        {request.payment_status === 'paid' ? 'Payé' : request.payment_status === 'failed' ? 'Échoué' : 'En attente'}
+                      </Badge>
                     </ResponsiveTableCell>
                     <ResponsiveTableCell label="Valeur" priority="low">
                       {request.market_value_usd ? (
@@ -465,6 +483,12 @@ export const AdminExpertiseRequests: React.FC = () => {
                   <div>
                     <Label className="text-xs text-muted-foreground">Statut</Label>
                     <StatusBadge status={selectedRequest.status as any} />
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Paiement</Label>
+                    <Badge variant={selectedRequest.payment_status === 'paid' ? 'default' : selectedRequest.payment_status === 'failed' ? 'destructive' : 'secondary'}>
+                      {selectedRequest.payment_status === 'paid' ? 'Payé' : selectedRequest.payment_status === 'failed' ? 'Échoué' : 'En attente'}
+                    </Badge>
                   </div>
                 </div>
 

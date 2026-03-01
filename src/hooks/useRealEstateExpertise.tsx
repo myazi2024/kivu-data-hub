@@ -185,12 +185,13 @@ export const useRealEstateExpertise = () => {
         .eq('parcel_number', parcelNumber)
         .eq('status', 'completed')
         .not('certificate_issue_date', 'is', null)
+        .not('certificate_url', 'is', null)
         .order('certificate_issue_date', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (error) throw error;
-      if (!data) return null;
+      if (!data || !data.certificate_url?.trim()) return null;
 
       const validity = checkCertificateValidity(data.certificate_issue_date);
       return validity.isValid ? (data as ExpertiseRequest) : null;

@@ -140,8 +140,8 @@ serve(async (req) => {
               expertiseUserId = expertiseUserId || expertisePayment?.user_id || null;
             }
 
-            if (expertiseRequestId) {
-              // Update payment_status on the expertise request
+            if (expertiseRequestId && paymentType === "expertise_fee") {
+              // Mark request paid only for the initial expertise fee (not certificate re-access)
               await supabase
                 .from("real_estate_expertise_requests")
                 .update({ payment_status: "paid", updated_at: new Date().toISOString() })
@@ -211,12 +211,24 @@ serve(async (req) => {
         const session = event.data.object as any;
         const metadata = session.metadata || {};
 
-        if (metadata.expertise_payment_id) {
+        let expertisePaymentId = metadata.expertise_payment_id as string | undefined;
+
+        if (!expertisePaymentId && session?.id) {
+          const { data: paymentBySession } = await supabase
+            .from("expertise_payments")
+            .select("id")
+            .eq("transaction_id", session.id)
+            .maybeSingle();
+
+          expertisePaymentId = paymentBySession?.id;
+        }
+
+        if (expertisePaymentId) {
           // Handle expertise payment failure
           await supabase
             .from("expertise_payments")
             .update({ status: "failed" })
-            .eq("id", metadata.expertise_payment_id);
+            .eq("id", expertisePaymentId);
         } else if (metadata.invoice_id) {
           await supabase
             .from("payment_transactions")

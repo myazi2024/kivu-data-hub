@@ -205,6 +205,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const [certPaymentPhone, setCertPaymentPhone] = useState('');
   const [processingCertPayment, setProcessingCertPayment] = useState(false);
   const [certificateAccessFee, setCertificateAccessFee] = useState<number>(0);
+  const [hasCertificateAccess, setHasCertificateAccess] = useState(false);
+  const [checkingCertificateAccess, setCheckingCertificateAccess] = useState(false);
 
   // Payment state
   const [fees, setFees] = useState<ExpertiseFee[]>([]);
@@ -355,7 +357,48 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     if (open && !showIntro) {
       checkCertificate();
     }
-  }, [open, showIntro, parcelNumber]);
+  }, [open, showIntro, parcelNumber, checkExistingValidCertificate]);
+
+  // Check whether current user already has paid access to the certificate
+  useEffect(() => {
+    const checkUserCertificateAccess = async () => {
+      if (!user || !existingCertificate?.id) {
+        setHasCertificateAccess(false);
+        return;
+      }
+
+      setCheckingCertificateAccess(true);
+      try {
+        const { data, error } = await supabase
+          .from('expertise_payments')
+          .select('id')
+          .eq('expertise_request_id', existingCertificate.id)
+          .eq('user_id', user.id)
+          .eq('status', 'completed')
+          .limit(1)
+          .maybeSingle();
+
+        if (error && error.code !== 'PGRST116') throw error;
+
+        const hasAccess = Boolean(data);
+        setHasCertificateAccess(hasAccess);
+        if (hasAccess) {
+          setShowCertificatePayment(false);
+        }
+      } catch (error) {
+        console.error('Certificate access check error:', error);
+        setHasCertificateAccess(false);
+      } finally {
+        setCheckingCertificateAccess(false);
+      }
+    };
+
+    if (open && !showIntro && existingCertificate?.id) {
+      checkUserCertificateAccess();
+    } else {
+      setHasCertificateAccess(false);
+    }
+  }, [open, showIntro, user?.id, existingCertificate?.id]);
 
   const getTotalAmount = () => {
     return fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
@@ -832,12 +875,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         if (stripeSession?.url) { window.location.href = stripeSession.url; return; }
       }
 
+      setHasCertificateAccess(true);
+
       // Open the certificate URL
       if (existingCertificate.certificate_url) {
-        window.open(existingCertificate.certificate_url, '_blank');
+        window.open(existingCertificate.certificate_url, '_blank', 'noopener,noreferrer');
+        toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
+      } else {
+        toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
       }
 
-      toast.success('Paiement réussi ! Vous pouvez accéder au certificat.');
       handleClose();
     } catch (error: any) {
       console.error('Certificate access payment error:', error);
@@ -867,6 +914,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setCertPaymentMethod('mobile_money');
     setCertPaymentProvider('');
     setCertPaymentPhone('');
+    setHasCertificateAccess(false);
+    setCheckingCertificateAccess(false);
     onOpenChange(false);
   };
 
@@ -2871,18 +2920,48 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </Card>
             )}
 
-            <Button
-              variant="seloger"
-              onClick={() => setShowCertificatePayment(true)}
-              className="w-full h-11 rounded-2xl text-sm font-semibold"
-            >
-              <FileText className="h-4 w-4 mr-2" />
-              Accéder au certificat — ${certificateAccessFee}
-            </Button>
+            {checkingCertificateAccess ? (
+              <div className="flex items-center justify-center py-3 text-xs text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                Vérification de vos droits d'accès...
+              </div>
+            ) : hasCertificateAccess ? (
+              <>
+                <Button
+                  variant="seloger"
+                  onClick={() => {
+                    if (existingCertificate.certificate_url) {
+                      window.open(existingCertificate.certificate_url, '_blank', 'noopener,noreferrer');
+                      toast.success('Certificat ouvert avec succès.');
+                    } else {
+                      toast.info('Le certificat sera disponible dès sa publication.');
+                    }
+                  }}
+                  className="w-full h-11 rounded-2xl text-sm font-semibold"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Ouvrir le certificat
+                </Button>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Accès déjà autorisé pour votre compte.
+                </p>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="seloger"
+                  onClick={() => setShowCertificatePayment(true)}
+                  className="w-full h-11 rounded-2xl text-sm font-semibold"
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Accéder au certificat — ${certificateAccessFee}
+                </Button>
 
-            <p className="text-[11px] text-muted-foreground text-center">
-              Un paiement est requis pour consulter le certificat complet.
-            </p>
+                <p className="text-[11px] text-muted-foreground text-center">
+                  Un paiement est requis pour consulter le certificat complet.
+                </p>
+              </>
+            )}
           </div>
         );
       }

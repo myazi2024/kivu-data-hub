@@ -196,7 +196,33 @@ const CadastralMap = () => {
             toast.success('Paiement réussi ! Le certificat sera disponible dès sa publication.');
           }
         } else if (paymentType === 'expertise_fee') {
-          toast.success('Paiement réussi ! Votre demande d’expertise a été enregistrée.');
+          let isCompleted = false;
+
+          // Wait up to 30s for webhook sync (Stripe -> Supabase)
+          for (let attempt = 0; attempt < 15; attempt++) {
+            const { data: payment } = await supabase
+              .from('expertise_payments')
+              .select('status')
+              .eq('transaction_id', sessionId)
+              .maybeSingle();
+
+            if (payment?.status === 'completed') {
+              isCompleted = true;
+              break;
+            }
+
+            if (payment?.status === 'failed') {
+              throw new Error('Le paiement de la demande d’expertise a échoué.');
+            }
+
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+
+          if (isCompleted) {
+            toast.success('Paiement réussi ! Votre demande d’expertise a été enregistrée.');
+          } else {
+            toast.message('Paiement confirmé, synchronisation en cours. Réessayez dans quelques secondes.');
+          }
         } else {
           toast.success('Paiement réussi.');
         }
