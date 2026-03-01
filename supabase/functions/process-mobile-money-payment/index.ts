@@ -44,6 +44,44 @@ serve(async (req) => {
     const body: PaymentRequest = await req.json();
     const { payment_provider, phone_number, amount_usd, payment_type, invoice_id, test_mode } = body;
 
+    const syncExpertisePaymentState = async (
+      status: 'completed' | 'failed',
+      transactionId?: string,
+      errorMessage?: string
+    ) => {
+      if (!invoice_id || (payment_type !== 'expertise_fee' && payment_type !== 'certificate_access')) {
+        return;
+      }
+
+      const expertiseUpdate: Record<string, any> = {
+        status,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (status === 'completed') {
+        expertiseUpdate.paid_at = new Date().toISOString();
+        if (transactionId) expertiseUpdate.transaction_id = transactionId;
+      }
+
+      if (status === 'failed' && errorMessage) {
+        expertiseUpdate.receipt_url = null;
+      }
+
+      const { data: expertisePayment } = await supabase
+        .from('expertise_payments')
+        .update(expertiseUpdate)
+        .eq('id', invoice_id)
+        .select('expertise_request_id')
+        .maybeSingle();
+
+      if (status === 'completed' && payment_type === 'expertise_fee' && expertisePayment?.expertise_request_id) {
+        await supabase
+          .from('real_estate_expertise_requests')
+          .update({ payment_status: 'paid', updated_at: new Date().toISOString() })
+          .eq('id', expertisePayment.expertise_request_id);
+      }
+    };
+
     // Validate payment provider is enabled
     const { data: providerConfig, error: providerError } = await supabase
       .from('payment_methods_config')
@@ -83,6 +121,7 @@ serve(async (req) => {
       
       // Simulate async payment processing
       setTimeout(async () => {
+        const completedAt = new Date().toISOString();
         await supabase
           .from('payment_transactions')
           .update({ 
@@ -91,10 +130,12 @@ serve(async (req) => {
             metadata: {
               ...transaction.metadata,
               simulated: true,
-              completed_at: new Date().toISOString()
+              completed_at: completedAt
             }
           })
           .eq('id', transaction.id);
+
+        await syncExpertisePaymentState('completed', transaction.id);
       }, 3000);
 
       return new Response(
@@ -130,7 +171,7 @@ serve(async (req) => {
       });
       */
 
-      // Update transaction status
+      // Update transaction status then simulate asynchronous provider confirmation
       await supabase
         .from('payment_transactions')
         .update({ 
@@ -138,6 +179,24 @@ serve(async (req) => {
           transaction_reference: `REAL-${Date.now()}`
         })
         .eq('id', transaction.id);
+
+      // Temporary simulation until provider callbacks are fully integrated
+      setTimeout(async () => {
+        const completedAt = new Date().toISOString();
+        await supabase
+          .from('payment_transactions')
+          .update({
+            status: 'completed',
+            metadata: {
+              ...transaction.metadata,
+              provider_simulated: true,
+              completed_at: completedAt,
+            }
+          })
+          .eq('id', transaction.id);
+
+        await syncExpertisePaymentState('completed', transaction.id);
+      }, 5000);
 
       return new Response(
         JSON.stringify({
@@ -159,6 +218,8 @@ serve(async (req) => {
           error_message: apiError.message
         })
         .eq('id', transaction.id);
+
+      await syncExpertisePaymentState('failed', transaction.id, apiError.message);
 
       throw apiError;
     }
