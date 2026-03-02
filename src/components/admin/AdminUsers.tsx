@@ -226,7 +226,19 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
         <div className="overflow-x-auto">
           <ResponsiveTable className="border-none">
             <ResponsiveTableHeader>
-              <ResponsiveTableRow>
+            <ResponsiveTableRow>
+                <ResponsiveTableHead priority="high" className="w-8">
+                  <Checkbox
+                    checked={selectedUsers.length === pagination.paginatedData.length && pagination.paginatedData.length > 0}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedUsers(pagination.paginatedData.map(u => u.user_id));
+                      } else {
+                        setSelectedUsers([]);
+                      }
+                    }}
+                  />
+                </ResponsiveTableHead>
                 <ResponsiveTableHead priority="high">Utilisateur</ResponsiveTableHead>
                 <ResponsiveTableHead priority="low">Organisation</ResponsiveTableHead>
                 <ResponsiveTableHead priority="medium">Rôle</ResponsiveTableHead>
@@ -238,7 +250,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
               {pagination.paginatedData.length === 0 ? (
                 <ResponsiveTableRow>
                   <ResponsiveTableCell priority="high" className="text-center text-xs sm:text-sm text-muted-foreground">
-                    {searchQuery || roleFilter !== 'all' || statusFilter !== 'all'
+                    {searchQuery || roleFilter !== '_all' || statusFilter !== '_all'
                       ? 'Aucun utilisateur trouvé avec ces critères'
                       : 'Aucun utilisateur trouvé'
                     }
@@ -247,6 +259,18 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
               ) : (
                 pagination.paginatedData.map((user) => (
                   <ResponsiveTableRow key={user.id}>
+                    <ResponsiveTableCell priority="high">
+                      <Checkbox
+                        checked={selectedUsers.includes(user.user_id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedUsers(prev => [...prev, user.user_id]);
+                          } else {
+                            setSelectedUsers(prev => prev.filter(id => id !== user.user_id));
+                          }
+                        }}
+                      />
+                    </ResponsiveTableCell>
                     <ResponsiveTableCell priority="high" label="Utilisateur">
                       <div className="flex items-center space-x-1.5 md:space-x-2">
                         <div className="w-6 h-6 bg-primary/10 rounded-full flex items-center justify-center shrink-0">

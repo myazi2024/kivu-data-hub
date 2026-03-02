@@ -112,6 +112,7 @@ export const BulkActionsDialog: React.FC<BulkActionsDialogProps> = ({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="user">Utilisateur</SelectItem>
                   <SelectItem value="partner">Partenaire</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
                 </SelectContent>
