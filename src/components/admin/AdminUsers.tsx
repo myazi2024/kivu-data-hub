@@ -69,9 +69,10 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
     };
   }, [fetchUsers]);
 
-  // Reset pagination only when search or filters change (not sort)
+  // Reset pagination and selection when search or filters change
   useEffect(() => {
     pagination.goToPage(1);
+    setSelectedUsers([]);
   }, [searchQuery, roleFilter, statusFilter]);
 
   const handleExportCSV = () => {
@@ -112,6 +113,8 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
       super_admin: { variant: 'destructive', icon: Shield, label: 'Super Admin' },
       admin: { variant: 'destructive', icon: Shield, label: 'Admin' },
       partner: { variant: 'default', icon: UsersIcon, label: 'Partenaire' },
+      expert_immobilier: { variant: 'default', icon: UserIcon, label: 'Expert Immobilier' },
+      mortgage_officer: { variant: 'default', icon: UserIcon, label: 'Agent Hypothécaire' },
       user: { variant: 'secondary', icon: UserIcon, label: 'Utilisateur' }
     };
     
@@ -183,6 +186,8 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
                 <SelectItem value="super_admin">Super Admin</SelectItem>
                 <SelectItem value="admin">Admin</SelectItem>
                 <SelectItem value="partner">Partenaire</SelectItem>
+                <SelectItem value="expert_immobilier">Expert Immobilier</SelectItem>
+                <SelectItem value="mortgage_officer">Agent Hypothécaire</SelectItem>
                 <SelectItem value="user">Utilisateur</SelectItem>
               </SelectContent>
             </Select>
@@ -249,7 +254,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ onRefresh }) => {
             <ResponsiveTableBody>
               {pagination.paginatedData.length === 0 ? (
                 <ResponsiveTableRow>
-                  <ResponsiveTableCell priority="high" className="text-center text-xs sm:text-sm text-muted-foreground">
+                  <ResponsiveTableCell priority="high" colSpan={6} className="text-center text-xs sm:text-sm text-muted-foreground">
                     {searchQuery || roleFilter !== '_all' || statusFilter !== '_all'
                       ? 'Aucun utilisateur trouvé avec ces critères'
                       : 'Aucun utilisateur trouvé'

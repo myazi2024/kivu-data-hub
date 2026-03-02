@@ -76,7 +76,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         .eq('table_name', 'profiles')
         .eq('record_id', user.user_id)
         .eq('action', 'UPDATE')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: true });
 
       if (error) {
         console.error('Error fetching block history:', error);
@@ -86,6 +86,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       }
 
       const history: BlockHistory[] = [];
+      // Data is ordered ascending (oldest first) so blocks appear before their unblocks
       (data || []).forEach((log) => {
         if (log.new_values && typeof log.new_values === 'object') {
           const newVals = log.new_values as any;
@@ -100,6 +101,8 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           }
         }
       });
+      // Reverse to show newest first in UI
+      history.reverse();
 
       setBlockHistory(history);
     } catch (error) {
@@ -138,6 +141,8 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
       super_admin: { variant: 'destructive', icon: Shield, label: 'Super Admin' },
       admin: { variant: 'default', icon: Shield, label: 'Admin' },
       partner: { variant: 'secondary', icon: UsersIcon, label: 'Partenaire' },
+      expert_immobilier: { variant: 'secondary', icon: UserIcon, label: 'Expert Immobilier' },
+      mortgage_officer: { variant: 'secondary', icon: UserIcon, label: 'Agent Hypothécaire' },
       user: { variant: 'outline', icon: UserIcon, label: 'Utilisateur' }
     };
     

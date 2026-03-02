@@ -40,7 +40,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-type AppRole = 'super_admin' | 'admin' | 'partner' | 'user';
+type AppRole = 'super_admin' | 'admin' | 'partner' | 'user' | 'expert_immobilier' | 'mortgage_officer';
 
 interface AllUserProfile {
   user_id: string;
@@ -88,6 +88,18 @@ const roleConfig = {
     label: 'Partenaire',
     color: 'bg-gradient-to-r from-green-500 to-emerald-500',
     description: 'Codes de remise et commissions',
+  },
+  expert_immobilier: {
+    icon: User,
+    label: 'Expert Immobilier',
+    color: 'bg-gradient-to-r from-amber-500 to-orange-500',
+    description: 'Expertises et certificats immobiliers',
+  },
+  mortgage_officer: {
+    icon: User,
+    label: 'Agent Hypothécaire',
+    color: 'bg-gradient-to-r from-teal-500 to-cyan-500',
+    description: 'Gestion des hypothèques',
   },
   user: {
     icon: User,

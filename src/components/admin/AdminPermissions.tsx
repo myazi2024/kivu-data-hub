@@ -17,6 +17,8 @@ const roleConfig = {
   super_admin: { icon: Crown, label: 'Super Admin', color: 'bg-purple-500' },
   admin: { icon: Shield, label: 'Administrateur', color: 'bg-blue-500' },
   partner: { icon: Briefcase, label: 'Partenaire', color: 'bg-green-500' },
+  expert_immobilier: { icon: User, label: 'Expert Immobilier', color: 'bg-amber-500' },
+  mortgage_officer: { icon: User, label: 'Agent Hypothécaire', color: 'bg-teal-500' },
   user: { icon: User, label: 'Utilisateur', color: 'bg-gray-500' },
 };
 
