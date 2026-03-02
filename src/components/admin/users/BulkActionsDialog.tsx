@@ -114,6 +114,8 @@ export const BulkActionsDialog: React.FC<BulkActionsDialogProps> = ({
                 <SelectContent>
                   <SelectItem value="user">Utilisateur</SelectItem>
                   <SelectItem value="partner">Partenaire</SelectItem>
+                  <SelectItem value="expert_immobilier">Expert Immobilier</SelectItem>
+                  <SelectItem value="mortgage_officer">Agent Hypothécaire</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
                 </SelectContent>
               </Select>

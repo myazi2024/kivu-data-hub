@@ -17,7 +17,7 @@ export interface UserProfile {
   fraud_strikes: number;
 }
 
-const ROLE_HIERARCHY = ['super_admin', 'admin', 'partner', 'user'];
+const ROLE_HIERARCHY = ['super_admin', 'admin', 'expert_immobilier', 'mortgage_officer', 'partner', 'user'];
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState<UserProfile[]>([]);

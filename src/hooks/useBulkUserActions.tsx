@@ -19,7 +19,21 @@ export const useBulkUserActions = () => {
     let failed = 0;
 
     try {
-      for (let i = 0; i < userIds.length; i++) {
+      // Pre-check: filter out super_admins to prevent blocking them
+      const { data: superAdmins } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('user_id', userIds)
+        .eq('role', 'super_admin' as any);
+      
+      const superAdminIds = new Set((superAdmins || []).map(sa => sa.user_id));
+      const safeUserIds = userIds.filter(id => !superAdminIds.has(id));
+      
+      if (superAdminIds.size > 0) {
+        toast.error(`${superAdminIds.size} super admin(s) ignoré(s) — impossible de les bloquer`);
+      }
+
+      for (let i = 0; i < safeUserIds.length; i++) {
         try {
           const { error } = await supabase
             .from('profiles')
@@ -28,13 +42,13 @@ export const useBulkUserActions = () => {
               blocked_at: new Date().toISOString(),
               blocked_reason: reason
             })
-            .eq('user_id', userIds[i]);
+            .eq('user_id', safeUserIds[i]);
 
           if (error) throw error;
           
           // Send notification
           await supabase.from('notifications').insert({
-            user_id: userIds[i],
+            user_id: safeUserIds[i],
             type: 'account',
             title: 'Compte bloqué',
             message: `Votre compte a été bloqué. Raison: ${reason}`,
@@ -43,11 +57,11 @@ export const useBulkUserActions = () => {
 
           success++;
         } catch (error) {
-          console.error(`Error blocking user ${userIds[i]}:`, error);
+          console.error(`Error blocking user ${safeUserIds[i]}:`, error);
           failed++;
         }
 
-        setProgress(Math.round(((i + 1) / userIds.length) * 100));
+        setProgress(Math.round(((i + 1) / safeUserIds.length) * 100));
       }
 
       toast.success(`${success} utilisateur(s) bloqué(s), ${failed} échec(s)`);

@@ -27,6 +27,7 @@ interface ResponsiveTableCellProps {
   className?: string;
   priority?: 'high' | 'medium' | 'low';
   label?: string; // Label pour l'affichage mobile
+  colSpan?: number;
 }
 
 const ResponsiveTable: React.FC<ResponsiveTableProps> = ({ 
@@ -76,7 +77,8 @@ const ResponsiveTableCell: React.FC<ResponsiveTableCellProps> = ({
   children, 
   className, 
   priority = 'medium',
-  label 
+  label,
+  colSpan
 }) => (
   <td className={cn(
     "p-2 md:p-4 align-middle [&:has([role=checkbox])]:pr-0",
@@ -90,6 +92,7 @@ const ResponsiveTableCell: React.FC<ResponsiveTableCellProps> = ({
     className
   )}
   data-label={label}
+  colSpan={colSpan}
 >
     <span className="block md:inline">
       {children}
