@@ -75,7 +75,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
         .select('created_at, new_values, old_values, admin_name')
         .eq('table_name', 'profiles')
         .eq('record_id', user.user_id)
-        .in('action', ['block_user', 'unblock_user'])
+        .eq('action', 'UPDATE')
         .order('created_at', { ascending: false });
 
       if (error) {
