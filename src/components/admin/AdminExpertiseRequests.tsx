@@ -13,7 +13,7 @@ import { Separator } from '@/components/ui/separator';
 import { 
   FileSearch, Search, Filter, Eye, Check, X, User, MapPin, 
   Building, Calendar, DollarSign, Loader2, Clock, AlertTriangle,
-  FileText, Download, UserCheck, RefreshCw
+  FileText, Download, UserCheck, RefreshCw, Award
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,6 +23,7 @@ import { fr } from 'date-fns/locale';
 import { ResponsiveTable, ResponsiveTableHeader, ResponsiveTableBody, ResponsiveTableRow, ResponsiveTableCell, ResponsiveTableHead } from '@/components/ui/responsive-table';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
+import { generateExpertiseCertificatePDF } from '@/utils/generateExpertiseCertificatePDF';
 
 interface ExpertiseRequest {
   id: string;
@@ -82,9 +83,9 @@ export const AdminExpertiseRequests: React.FC = () => {
   const [processing, setProcessing] = useState(false);
 
   // Process form state
+  // Process form state (certificateUrl removed - auto-generated)
   const [processAction, setProcessAction] = useState<'complete' | 'reject'>('complete');
   const [marketValue, setMarketValue] = useState('');
-  const [certificateUrl, setCertificateUrl] = useState('');
   const [processingNotes, setProcessingNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
 
@@ -135,7 +136,7 @@ export const AdminExpertiseRequests: React.FC = () => {
     setSelectedRequest(request);
     setProcessAction('complete');
     setMarketValue(request.market_value_usd?.toString() || '');
-    setCertificateUrl(request.certificate_url || '');
+    
     setProcessingNotes(request.processing_notes || '');
     setRejectionReason('');
     setShowProcessDialog(true);
@@ -144,21 +145,9 @@ export const AdminExpertiseRequests: React.FC = () => {
   const handleProcessRequest = async () => {
     if (!selectedRequest || !user) return;
 
-    if (processAction === 'complete' && (!marketValue || !certificateUrl)) {
-      toast.error('Veuillez renseigner la valeur vénale et le lien du certificat');
+    if (processAction === 'complete' && !marketValue) {
+      toast.error('Veuillez renseigner la valeur vénale');
       return;
-    }
-
-    if (processAction === 'complete') {
-      try {
-        const parsed = new URL(certificateUrl);
-        if (!['http:', 'https:'].includes(parsed.protocol)) {
-          throw new Error('invalid protocol');
-        }
-      } catch {
-        toast.error('Veuillez renseigner une URL de certificat valide (http/https)');
-        return;
-      }
     }
 
     if (processAction === 'complete' && selectedRequest.payment_status !== 'paid') {
@@ -179,14 +168,73 @@ export const AdminExpertiseRequests: React.FC = () => {
       };
 
       if (processAction === 'complete') {
+        // Auto-generate the certificate PDF
+        toast.info('Génération automatique du certificat en cours...');
+
+        const issueDate = new Date().toISOString();
+        const expiryDate = new Date();
+        expiryDate.setMonth(expiryDate.getMonth() + 6);
+
+        const pdfBlob = await generateExpertiseCertificatePDF({
+          referenceNumber: selectedRequest.reference_number,
+          parcelNumber: selectedRequest.parcel_number,
+          requesterName: selectedRequest.requester_name,
+          requesterEmail: selectedRequest.requester_email,
+          propertyDescription: selectedRequest.property_description,
+          constructionYear: selectedRequest.construction_year,
+          constructionQuality: selectedRequest.construction_quality,
+          numberOfFloors: selectedRequest.number_of_floors,
+          totalBuiltAreaSqm: selectedRequest.total_built_area_sqm,
+          propertyCondition: selectedRequest.property_condition,
+          hasWaterSupply: selectedRequest.has_water_supply,
+          hasElectricity: selectedRequest.has_electricity,
+          hasSewageSystem: selectedRequest.has_sewage_system,
+          hasInternet: (selectedRequest as any).has_internet || false,
+          hasSecuritySystem: (selectedRequest as any).has_security_system || false,
+          hasParking: (selectedRequest as any).has_parking || false,
+          parkingSpaces: (selectedRequest as any).parking_spaces,
+          hasGarden: (selectedRequest as any).has_garden || false,
+          gardenAreaSqm: (selectedRequest as any).garden_area_sqm,
+          roadAccessType: selectedRequest.road_access_type,
+          distanceToMainRoadM: (selectedRequest as any).distance_to_main_road_m,
+          distanceToHospitalKm: (selectedRequest as any).distance_to_hospital_km,
+          distanceToSchoolKm: (selectedRequest as any).distance_to_school_km,
+          distanceToMarketKm: (selectedRequest as any).distance_to_market_km,
+          floodRiskZone: (selectedRequest as any).flood_risk_zone || false,
+          erosionRiskZone: (selectedRequest as any).erosion_risk_zone || false,
+          marketValueUsd: parseFloat(marketValue),
+          expertiseDateStr: issueDate,
+          issueDate: issueDate,
+          expiryDate: expiryDate.toISOString(),
+          approvedBy: 'Bureau d\'Information Cadastrale',
+        });
+
+        // Upload to Supabase Storage
+        const fileName = `certificat_${selectedRequest.reference_number.replace(/[^a-zA-Z0-9-]/g, '_')}_${Date.now()}.pdf`;
+        const filePath = `certificates/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('expertise-certificates')
+          .upload(filePath, pdfBlob, {
+            contentType: 'application/pdf',
+            upsert: true,
+          });
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('expertise-certificates')
+          .getPublicUrl(filePath);
+
+        const certificateUrl = urlData.publicUrl;
+
         updateData.status = 'completed';
         updateData.market_value_usd = parseFloat(marketValue);
         updateData.certificate_url = certificateUrl;
-        updateData.certificate_issue_date = new Date().toISOString();
-        const expiryDate = new Date();
-        expiryDate.setMonth(expiryDate.getMonth() + 6);
+        updateData.certificate_issue_date = issueDate;
         updateData.certificate_expiry_date = expiryDate.toISOString();
-        updateData.expertise_date = new Date().toISOString();
+        updateData.expertise_date = issueDate;
       } else {
         updateData.status = 'rejected';
         updateData.rejection_reason = rejectionReason;
@@ -204,23 +252,23 @@ export const AdminExpertiseRequests: React.FC = () => {
         user_id: selectedRequest.user_id,
         type: processAction === 'complete' ? 'success' : 'error',
         title: processAction === 'complete' 
-          ? 'Expertise immobilière terminée' 
+          ? 'Certificat d\'expertise immobilière généré' 
           : 'Demande d\'expertise rejetée',
         message: processAction === 'complete'
-          ? `Votre certificat d'expertise pour la parcelle ${selectedRequest.parcel_number} est disponible. Valeur vénale: $${marketValue}`
+          ? `Votre certificat d'expertise pour la parcelle ${selectedRequest.parcel_number} a été généré automatiquement. Valeur vénale: $${marketValue}. Le certificat est disponible dans votre espace.`
           : `Votre demande d'expertise pour la parcelle ${selectedRequest.parcel_number} a été rejetée. Raison: ${rejectionReason}`,
         action_url: '/dashboard?tab=expertise',
       });
 
       toast.success(processAction === 'complete' 
-        ? 'Expertise complétée avec succès' 
+        ? 'Certificat généré et envoyé automatiquement' 
         : 'Demande rejetée');
       
       setShowProcessDialog(false);
       fetchRequests();
     } catch (error: any) {
       console.error('Error processing request:', error);
-      toast.error('Erreur lors du traitement');
+      toast.error(`Erreur: ${error.message || 'Erreur lors du traitement'}`);
     } finally {
       setProcessing(false);
     }
@@ -638,14 +686,12 @@ export const AdminExpertiseRequests: React.FC = () => {
                     placeholder="Ex: 50000"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>URL du certificat *</Label>
-                  <Input
-                    value={certificateUrl}
-                    onChange={(e) => setCertificateUrl(e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
+                <Alert className="bg-primary/5 border-primary/20">
+                  <Award className="h-4 w-4 text-primary" />
+                  <AlertDescription className="text-xs">
+                    Le certificat PDF sera <strong>généré automatiquement</strong> avec toutes les informations du bien et uploadé dans le stockage sécurisé.
+                  </AlertDescription>
+                </Alert>
                 <div className="space-y-2">
                   <Label>Notes de traitement</Label>
                   <Textarea

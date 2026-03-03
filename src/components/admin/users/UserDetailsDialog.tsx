@@ -221,7 +221,7 @@ export const UserDetailsDialog: React.FC<UserDetailsDialogProps> = ({
           </div>
 
           {/* All Roles Section */}
-          {allRoles.length > 1 && (
+          {allRoles.length >= 1 && (
             <div className="border-t pt-3">
               <h4 className="font-semibold mb-1.5 text-xs md:text-sm">Tous les rôles ({allRoles.length})</h4>
               <div className="flex flex-wrap gap-1.5">
