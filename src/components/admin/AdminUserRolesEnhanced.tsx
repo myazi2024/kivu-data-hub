@@ -571,8 +571,8 @@ export const AdminUserRolesEnhanced: React.FC = () => {
           <div className="space-y-1.5">
             {filteredUsers.map(([userId, data]) => {
               const highestRole = data.roles.sort((a, b) => {
-                const order = { super_admin: 0, admin: 1, partner: 2, user: 3 };
-                return order[a.role as AppRole] - order[b.role as AppRole];
+                const order: Record<string, number> = { super_admin: 0, admin: 1, expert_immobilier: 2, mortgage_officer: 3, partner: 4, user: 5 };
+                return (order[a.role] ?? 99) - (order[b.role] ?? 99);
               })[0];
 
               const config = roleConfig[highestRole.role as AppRole];
