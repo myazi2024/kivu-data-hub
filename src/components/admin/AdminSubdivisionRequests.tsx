@@ -37,6 +37,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import { generateAndUploadCertificate } from '@/utils/certificateService';
 
 interface LotData {
   id: string;
@@ -227,6 +228,32 @@ export function AdminSubdivisionRequests() {
 
       if (error) throw error;
 
+      // Auto-generate certificate on approval
+      if (actionType === 'approve') {
+        toast({ title: 'Génération du certificat', description: 'Génération automatique du certificat de lotissement...' });
+        const fullName = `${selectedRequest.requester_first_name} ${selectedRequest.requester_last_name}`;
+        const certResult = await generateAndUploadCertificate(
+          'lotissement',
+          {
+            referenceNumber: selectedRequest.reference_number,
+            recipientName: fullName,
+            parcelNumber: selectedRequest.parcel_number,
+            issueDate: new Date().toISOString(),
+            approvedBy: 'Bureau d\'Information Cadastrale',
+            additionalData: { requestId: selectedRequest.id },
+          },
+          [
+            { label: 'Nombre de lots:', value: selectedRequest.lots_data?.length?.toString() || 'N/A' },
+            { label: 'Surface totale:', value: `${selectedRequest.parent_parcel_area_sqm} m²` },
+            { label: 'Frais:', value: `$${selectedRequest.total_amount_usd || selectedRequest.submission_fee_usd}` },
+          ],
+          user.id
+        );
+        if (certResult) {
+          toast({ title: 'Certificat généré', description: 'Le certificat de lotissement a été généré automatiquement.' });
+        }
+      }
+
       // Créer notification pour l'utilisateur
       await supabase.from('notifications').insert({
         user_id: selectedRequest.user_id,
@@ -235,7 +262,7 @@ export function AdminSubdivisionRequests() {
           ? 'Demande de lotissement approuvée' 
           : 'Demande de lotissement rejetée',
         message: actionType === 'approve'
-          ? `Votre demande ${selectedRequest.reference_number} a été approuvée.${parseFloat(processingFee) > 0 ? ` Frais restants: $${processingFee}` : ''}`
+          ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.${parseFloat(processingFee) > 0 ? ` Frais restants: $${processingFee}` : ''}`
           : `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif: ${rejectionReason}`,
         action_url: '/user-dashboard?tab=subdivisions'
       });

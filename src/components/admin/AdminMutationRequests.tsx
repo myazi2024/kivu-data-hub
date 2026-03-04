@@ -28,6 +28,7 @@ import {
   Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
   Settings, Plus, Trash2, Edit2, Save, Download
 } from 'lucide-react';
+import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -198,12 +199,40 @@ const AdminMutationRequests: React.FC = () => {
 
       if (error) throw error;
 
+      // Auto-generate certificate on approval
+      if (processAction === 'approve') {
+        toast.info('Génération automatique du certificat de mutation...');
+        const certResult = await generateAndUploadCertificate(
+          'mutation_fonciere',
+          {
+            referenceNumber: selectedRequest.reference_number,
+            recipientName: selectedRequest.requester_name,
+            recipientEmail: selectedRequest.requester_email || undefined,
+            parcelNumber: selectedRequest.parcel_number,
+            issueDate: new Date().toISOString(),
+            approvedBy: 'Bureau d\'Information Cadastrale',
+            additionalData: { requestId: selectedRequest.id },
+          },
+          [
+            { label: 'Type mutation:', value: selectedRequest.mutation_type },
+            { label: 'Bénéficiaire:', value: selectedRequest.beneficiary_name || 'N/A' },
+            { label: 'Montant payé:', value: `$${selectedRequest.total_amount_usd}` },
+          ],
+          user.id
+        );
+        if (certResult) {
+          toast.success('Certificat de mutation généré automatiquement');
+        }
+      }
+
       // Create notification for user
       await supabase.from('notifications').insert({
         user_id: selectedRequest.user_id,
         type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : 'warning',
         title: `Demande de mutation ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'mise en attente'}`,
-        message: `Votre demande ${selectedRequest.reference_number} a été ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'mise en attente'}.`,
+        message: processAction === 'approve'
+          ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
+          : `Votre demande ${selectedRequest.reference_number} a été ${processAction === 'reject' ? 'rejetée' : 'mise en attente'}.`,
         action_url: '/user-dashboard?tab=mutations'
       });
 

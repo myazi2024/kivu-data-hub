@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { PermitActionsHistory } from './PermitActionsHistory';
 import { useAuth } from '@/hooks/useAuth';
 import { usePermitPayment } from '@/hooks/usePermitPayment';
+import { generateAndUploadCertificate } from '@/utils/certificateService';
 
 interface PermitRequestDialogProps {
   open: boolean;
@@ -151,6 +152,34 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
 
       if (error) throw error;
 
+      // Auto-generate certificate on approval
+      if (action === 'approve') {
+        toast.info('Génération automatique du certificat de permis...');
+        const certResult = await generateAndUploadCertificate(
+          'permis_construire',
+          {
+            referenceNumber: updatedPermitData.permitNumber || `PERM-${Date.now()}`,
+            recipientName: permitRequestData.applicantName || 'N/A',
+            recipientEmail: permitRequestData.applicantEmail || undefined,
+            parcelNumber: parcelNumber,
+            issueDate: new Date().toISOString(),
+            expiryDate: new Date(Date.now() + 36 * 30 * 24 * 60 * 60 * 1000).toISOString(),
+            approvedBy: 'Bureau d\'Information Cadastrale',
+            additionalData: { requestId: contributionId },
+          },
+          [
+            { label: 'Type permis:', value: permitRequestData.permitType === 'construction' ? 'Construction' : 'Régularisation' },
+            { label: 'Demandeur:', value: permitRequestData.applicantName || 'N/A' },
+            { label: 'Service émetteur:', value: permitRequestData.issuingService || "Service de l'Urbanisme" },
+            { label: 'Validité:', value: '36 mois' },
+          ],
+          user?.id
+        );
+        if (certResult) {
+          toast.success('Certificat de permis de construire généré');
+        }
+      }
+
       // Enregistrer l'action admin
       await supabase.from('permit_admin_actions').insert({
         contribution_id: contributionId,
@@ -165,7 +194,7 @@ export const PermitRequestDialog: React.FC<PermitRequestDialogProps> = ({
         type: action === 'approve' ? 'success' : 'error',
         title: action === 'approve' ? 'Permis délivré !' : 'Demande rejetée',
         message: action === 'approve'
-          ? `Votre permis ${updatedPermitData.permitNumber} a été délivré pour la parcelle ${parcelNumber}. Vous pouvez le télécharger depuis votre espace.`
+          ? `Votre permis ${updatedPermitData.permitNumber} a été délivré pour la parcelle ${parcelNumber}. Le certificat est disponible dans votre espace.`
           : `Votre demande de permis pour la parcelle ${parcelNumber} a été rejetée. ${response}`,
         action_url: '/user-dashboard?tab=building-permits'
       });

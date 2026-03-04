@@ -60,6 +60,7 @@ import { AdminPermissions } from '@/components/admin/AdminPermissions';
 import AdminSubdivisionRequests from '@/components/admin/AdminSubdivisionRequests';
 import AdminParcelActionsConfig from '@/components/admin/AdminParcelActionsConfig';
 import AdminLandDisputes from '@/components/admin/AdminLandDisputes';
+import AdminCertificates from '@/components/admin/AdminCertificates';
 const Admin = () => {
   const { user, profile, loading } = useAuth();
   const [searchParams] = useSearchParams();
@@ -329,6 +330,8 @@ const Admin = () => {
         return <AdminParcelActionsConfig />;
       case 'land-disputes':
         return <AdminLandDisputes />;
+      case 'certificates':
+        return <AdminCertificates />;
       case 'audit-logs':
         return <AdminAuditLogs />;
       default:
