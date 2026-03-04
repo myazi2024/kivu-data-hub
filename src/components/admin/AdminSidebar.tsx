@@ -29,7 +29,8 @@ import {
   Grid3X3,
   TestTube,
   Key,
-  Scale
+  Scale,
+  Award
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -114,6 +115,12 @@ const menuItems = [
       { icon: FileText, label: 'Historique Taxes', value: 'tax-history', badge: null },
       { icon: Users, label: 'Historique Propriété', value: 'ownership-history', badge: null },
       { icon: MapPin, label: 'Historique Bornage', value: 'boundary-history', badge: null },
+    ]
+  },
+  {
+    category: 'Certificats',
+    items: [
+      { icon: Award, label: 'Gestion Certificats', value: 'certificates', badge: null },
     ]
   },
   {

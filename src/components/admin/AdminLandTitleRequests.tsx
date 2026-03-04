@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { usePagination } from '@/hooks/usePagination';
+import { generateAndUploadCertificate } from '@/utils/certificateService';
 
 interface LandTitleRequest {
   id: string;
@@ -182,12 +183,43 @@ const AdminLandTitleRequests: React.FC = () => {
 
       if (error) throw error;
 
+      // Auto-generate certificate on approval
+      if (processAction === 'approve') {
+        toast.info('Génération automatique du certificat...');
+        const fullName = getFullName(selectedRequest);
+        const certResult = await generateAndUploadCertificate(
+          'titre_foncier',
+          {
+            referenceNumber: selectedRequest.reference_number,
+            recipientName: fullName,
+            recipientEmail: selectedRequest.requester_email || undefined,
+            parcelNumber: `${selectedRequest.province}/${selectedRequest.commune || selectedRequest.territoire || ''}`,
+            issueDate: new Date().toISOString(),
+            approvedBy: 'Bureau d\'Information Cadastrale',
+            additionalData: { requestId: selectedRequest.id },
+          },
+          [
+            { label: 'Province:', value: selectedRequest.province },
+            { label: 'Localisation:', value: getLocation(selectedRequest) },
+            { label: 'Surface:', value: selectedRequest.area_sqm ? `${selectedRequest.area_sqm} m²` : 'N/A' },
+            { label: 'Type:', value: selectedRequest.section_type === 'urban' ? 'Urbain' : 'Rural' },
+            { label: 'Montant payé:', value: `$${selectedRequest.total_amount_usd}` },
+          ],
+          user.id
+        );
+        if (certResult) {
+          toast.success('Certificat de titre foncier généré automatiquement');
+        }
+      }
+
       // Create notification for user
       await supabase.from('notifications').insert({
         user_id: selectedRequest.user_id,
         type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : 'info',
         title: `Demande de titre foncier ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'en cours d\'examen'}`,
-        message: `Votre demande ${selectedRequest.reference_number} a été ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'mise en cours d\'examen'}.`,
+        message: processAction === 'approve' 
+          ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
+          : `Votre demande ${selectedRequest.reference_number} a été ${processAction === 'reject' ? 'rejetée' : 'mise en cours d\'examen'}.`,
         action_url: '/user-dashboard?tab=land-titles'
       });
 

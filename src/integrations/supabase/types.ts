@@ -1304,6 +1304,81 @@ export type Database = {
         }
         Relationships: []
       }
+      certificate_templates: {
+        Row: {
+          body_text: string
+          certificate_type: string
+          created_at: string
+          footer_text: string
+          header_organization: string
+          header_subtitle: string
+          header_title: string
+          id: string
+          is_active: boolean
+          legal_text: string
+          logo_url: string | null
+          primary_color: string
+          secondary_color: string
+          show_border: boolean
+          show_qr_code: boolean
+          show_stamp: boolean
+          signature_image_url: string | null
+          signature_name: string
+          signature_title: string
+          stamp_text: string
+          template_name: string
+          updated_at: string
+        }
+        Insert: {
+          body_text?: string
+          certificate_type: string
+          created_at?: string
+          footer_text?: string
+          header_organization?: string
+          header_subtitle?: string
+          header_title?: string
+          id?: string
+          is_active?: boolean
+          legal_text?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          show_border?: boolean
+          show_qr_code?: boolean
+          show_stamp?: boolean
+          signature_image_url?: string | null
+          signature_name?: string
+          signature_title?: string
+          stamp_text?: string
+          template_name: string
+          updated_at?: string
+        }
+        Update: {
+          body_text?: string
+          certificate_type?: string
+          created_at?: string
+          footer_text?: string
+          header_organization?: string
+          header_subtitle?: string
+          header_title?: string
+          id?: string
+          is_active?: boolean
+          legal_text?: string
+          logo_url?: string | null
+          primary_color?: string
+          secondary_color?: string
+          show_border?: boolean
+          show_qr_code?: boolean
+          show_stamp?: boolean
+          signature_image_url?: string | null
+          signature_name?: string
+          signature_title?: string
+          stamp_text?: string
+          template_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       discount_codes: {
         Row: {
           code: string
@@ -1478,6 +1553,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      generated_certificates: {
+        Row: {
+          certificate_type: string
+          certificate_url: string | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          metadata: Json | null
+          parcel_number: string
+          recipient_name: string
+          reference_number: string
+          request_id: string | null
+          status: string
+        }
+        Insert: {
+          certificate_type: string
+          certificate_url?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          parcel_number: string
+          recipient_name: string
+          reference_number: string
+          request_id?: string | null
+          status?: string
+        }
+        Update: {
+          certificate_type?: string
+          certificate_url?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          metadata?: Json | null
+          parcel_number?: string
+          recipient_name?: string
+          reference_number?: string
+          request_id?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       land_title_fees_by_type: {
         Row: {
