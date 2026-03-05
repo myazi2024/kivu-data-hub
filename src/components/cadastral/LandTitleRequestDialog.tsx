@@ -637,8 +637,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       </AlertDialog>
 
       <Dialog open={open} onOpenChange={handleCloseRequest}>
-        <DialogPortal>
-          <DialogOverlay className="z-[1200]" />
+      <Dialog open={open} onOpenChange={handleCloseRequest}>
           <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
             <DialogHeader className="pb-2">
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
@@ -1911,7 +1910,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               </div>
             </ScrollArea>
           </DialogContent>
-        </DialogPortal>
+      </Dialog>
       </Dialog>
 
       {/* Quick Auth Dialog */}
