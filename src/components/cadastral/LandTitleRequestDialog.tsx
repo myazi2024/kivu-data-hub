@@ -537,8 +537,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
     return (
       <Dialog open={open} onOpenChange={handleConfirmClose}>
-        <DialogPortal>
-          <DialogOverlay className="z-[1200]" />
           <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
             <DialogHeader className="pb-2">
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
@@ -565,7 +563,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               Annuler
             </Button>
           </DialogContent>
-        </DialogPortal>
       </Dialog>
     );
   }
@@ -574,8 +571,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   if (showSuccess) {
     return (
       <Dialog open={open} onOpenChange={handleConfirmClose}>
-        <DialogPortal>
-          <DialogOverlay className="z-[1200]" />
           <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
             <div className="space-y-3 text-center py-2">
               <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
@@ -604,7 +599,6 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               <Button onClick={handleConfirmClose} className="w-full h-8 text-xs rounded-xl">Fermer</Button>
             </div>
           </DialogContent>
-        </DialogPortal>
       </Dialog>
     );
   }
@@ -643,8 +637,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       </AlertDialog>
 
       <Dialog open={open} onOpenChange={handleCloseRequest}>
-        <DialogPortal>
-          <DialogOverlay className="z-[1200]" />
+      <Dialog open={open} onOpenChange={handleCloseRequest}>
           <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
             <DialogHeader className="pb-2">
               <DialogTitle className="flex items-center gap-2 text-base font-bold">
@@ -1917,7 +1910,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
               </div>
             </ScrollArea>
           </DialogContent>
-        </DialogPortal>
+      </Dialog>
       </Dialog>
 
       {/* Quick Auth Dialog */}

@@ -1059,8 +1059,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogPortal>
-        <DialogOverlay className="z-[1200]" />
         <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
           <DialogHeader className="pb-2">
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
@@ -1078,7 +1076,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           {step === 'payment' && renderPaymentStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
-      </DialogPortal>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande de permis de construire." />}
     </Dialog>
   );
