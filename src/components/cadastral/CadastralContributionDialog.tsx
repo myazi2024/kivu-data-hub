@@ -3007,9 +3007,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             picklistKey="state_agencies_drc"
                             label=""
                             placeholder="Rechercher un service ou agence de l'État..."
+                            maxSelection={1}
                             selectedValues={owner.stateExploitedBy ? [owner.stateExploitedBy] : []}
                             onSelectionChange={(values) => {
-                              const val = values[values.length - 1] || '';
+                              const val = values[0] || '';
                               updateCurrentOwner(index, { stateExploitedBy: val, lastName: val, firstName: 'État' });
                             }}
                           />
@@ -4290,9 +4291,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                             picklistKey="state_agencies_drc"
                             label=""
                             placeholder="Rechercher un service de l'État..."
+                            maxSelection={1}
                             selectedValues={owner.stateExploitedBy ? [owner.stateExploitedBy] : []}
                             onSelectionChange={(values) => {
-                              const val = values[values.length - 1] || '';
+                              const val = values[0] || '';
                               updatePreviousOwner(index, { stateExploitedBy: val, name: val });
                             }}
                             disabled={formData.isTitleInCurrentOwnerName === false && index === 1}
