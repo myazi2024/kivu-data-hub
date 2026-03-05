@@ -1851,7 +1851,6 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
           </div>
         )}
         </DialogContent>
-      </DialogPortal>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande de lotissement." />}
     </Dialog>
   );
