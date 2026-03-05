@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import * as DialogPrimitive from '@radix-ui/react-dialog';
-import { Scale, AlertTriangle, FileX2, X } from 'lucide-react';
+import { Scale, AlertTriangle, FileX2 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import LandDisputeReportForm from './LandDisputeReportForm';
