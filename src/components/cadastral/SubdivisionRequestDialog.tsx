@@ -816,8 +816,6 @@ const SubdivisionRequestDialog: React.FC<SubdivisionRequestDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogPortal>
-        <DialogOverlay className="z-[1200]" />
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 z-[1200]">
         <DialogHeader className="px-4 md:px-6 pt-4 md:pt-6 pb-2">
           <DialogTitle className="flex items-center gap-2 text-lg md:text-xl">
