@@ -13,7 +13,8 @@ import UserProfileSection from '@/components/user/UserProfileSection';
 import { UserLandTitleRequests } from '@/components/user/UserLandTitleRequests';
 import { NotificationBell } from '@/components/user/NotificationBell';
 import { UserLandDisputes } from '@/components/user/UserLandDisputes';
-import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale } from 'lucide-react';
+import { UserExpertiseRequests } from '@/components/user/UserExpertiseRequests';
+import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
@@ -43,58 +44,67 @@ const UserDashboard = () => {
           </div>
 
           <Tabs defaultValue="profile" className="w-full">
-            {/* Navigation compacte */}
-            <TabsList className="w-full h-auto p-1 grid grid-cols-7 gap-1 bg-background shadow-sm rounded-2xl border">
-              <TabsTrigger 
-                value="profile" 
-                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-              >
-                <User className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Profil</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="contributions" 
-                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-              >
-                <FileText className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Données</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="titles" 
-                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-              >
-                <ScrollText className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Titres</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="permits" 
-                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-              >
-                <Building className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Permis</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="disputes" 
-                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-              >
-                <Scale className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Litiges</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="invoices" 
-                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-              >
-                <CreditCard className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Factures</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="settings" 
-                className="flex flex-col items-center gap-0.5 py-2 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="text-[10px] font-medium">Réglages</span>
-              </TabsTrigger>
-            </TabsList>
+            {/* Navigation compacte - scrollable horizontally */}
+            <div className="overflow-x-auto -mx-1 px-1 pb-1">
+              <TabsList className="w-max min-w-full h-auto p-1 flex gap-1 bg-background shadow-sm rounded-2xl border">
+                <TabsTrigger 
+                  value="profile" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <User className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Profil</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="contributions" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <FileText className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Données</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="titles" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <ScrollText className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Titres</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="permits" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <Building className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Permis</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="expertise" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <FileSearch className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Expertises</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="disputes" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <Scale className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Litiges</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="invoices" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <CreditCard className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Factures</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="settings" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Réglages</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="profile" className="mt-4">
               <UserProfileSection />
@@ -110,6 +120,10 @@ const UserDashboard = () => {
 
             <TabsContent value="permits" className="mt-4">
               <UserBuildingPermits />
+            </TabsContent>
+
+            <TabsContent value="expertise" className="mt-4">
+              <UserExpertiseRequests />
             </TabsContent>
 
             <TabsContent value="disputes" className="mt-4">
