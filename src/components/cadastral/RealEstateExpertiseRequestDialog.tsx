@@ -360,13 +360,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   // Check whether current user already has paid access to the certificate
   useEffect(() => {
-    const checkUserCertificateAccess = async () => {
-      if (!user || !existingCertificate?.id) {
-        setHasCertificateAccess(false);
-        return;
-      }
+    if (!open || showIntro || !user || !existingCertificate?.id) {
+      return;
+    }
 
-      setCheckingCertificateAccess(true);
+    let cancelled = false;
+    setCheckingCertificateAccess(true);
+
+    const checkAccess = async () => {
       try {
         const { data, error } = await supabase
           .from('expertise_payments')
@@ -378,6 +379,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           .maybeSingle();
 
         if (error && error.code !== 'PGRST116') throw error;
+        if (cancelled) return;
 
         const hasAccess = Boolean(data);
         setHasCertificateAccess(hasAccess);
@@ -386,17 +388,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         }
       } catch (error) {
         console.error('Certificate access check error:', error);
-        setHasCertificateAccess(false);
+        if (!cancelled) setHasCertificateAccess(false);
       } finally {
-        setCheckingCertificateAccess(false);
+        if (!cancelled) setCheckingCertificateAccess(false);
       }
     };
 
-    if (open && !showIntro && existingCertificate?.id) {
-      checkUserCertificateAccess();
-    } else {
-      setHasCertificateAccess(false);
-    }
+    checkAccess();
+    return () => { cancelled = true; };
   }, [open, showIntro, user?.id, existingCertificate?.id]);
 
   const getTotalAmount = () => {
