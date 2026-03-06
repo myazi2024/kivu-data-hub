@@ -2339,7 +2339,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Layers className="h-4 w-4 text-amber-600" />
                     <h4 className="text-xs font-semibold">Matériaux de construction</h4>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materials'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materiaux'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
                   </Button>
                 </div>
@@ -2382,7 +2382,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <MapPin className="h-4 w-4 text-cyan-600" />
                     <h4 className="text-xs font-semibold">Emplacement & Position</h4>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materials'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materiaux'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
                   </Button>
                 </div>
@@ -2428,7 +2428,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                       <Building className="h-4 w-4 text-indigo-600" />
                       <h4 className="text-xs font-semibold">Détails Appartement / Immeuble</h4>
                     </div>
-                    <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materials'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                    <Button variant="ghost" size="sm" onClick={() => { setActiveTab('materiaux'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                       Modifier
                     </Button>
                   </div>
@@ -2503,7 +2503,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                     <Trees className="h-4 w-4 text-green-600" />
                     <h4 className="text-xs font-semibold">Environnement & Accessibilité</h4>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('environment'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
+                  <Button variant="ghost" size="sm" onClick={() => { setActiveTab('environnement'); setStep('form'); }} className="h-6 px-2 text-xs text-muted-foreground hover:text-primary">
                     Modifier
                   </Button>
                 </div>
@@ -3059,7 +3059,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) { handleClose(); } else { onOpenChange(true); } }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-[95vw] sm:max-w-[420px] max-h-[90vh] p-4 rounded-2xl z-[1200]">
         <DialogHeader className="pb-2">
