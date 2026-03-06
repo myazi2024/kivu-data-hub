@@ -152,7 +152,7 @@ export const useRealEstateExpertise = () => {
     }
   };
 
-  const getRequestByParcel = async (parcelNumber: string): Promise<ExpertiseRequest | null> => {
+  const getRequestByParcel = useCallback(async (parcelNumber: string): Promise<ExpertiseRequest | null> => {
     if (!user) return null;
 
     try {
@@ -171,13 +171,25 @@ export const useRealEstateExpertise = () => {
       console.error('Error fetching expertise by parcel:', error);
       return null;
     }
-  };
+  }, [user]);
 
-  /**
-   * Check if a valid (non-expired) expertise certificate exists for a parcel.
-   * Returns the completed request if the certificate is still valid, null otherwise.
-   */
-  const checkExistingValidCertificate = async (parcelNumber: string): Promise<ExpertiseRequest | null> => {
+  const checkCertificateValidity = useCallback((certificateIssueDate?: string): { isValid: boolean; daysRemaining: number } => {
+    if (!certificateIssueDate) return { isValid: false, daysRemaining: 0 };
+
+    const issueDate = new Date(certificateIssueDate);
+    const expiryDate = new Date(issueDate);
+    expiryDate.setMonth(expiryDate.getMonth() + 6);
+    
+    const today = new Date();
+    const daysRemaining = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    return {
+      isValid: daysRemaining > 0,
+      daysRemaining: Math.max(0, daysRemaining)
+    };
+  }, []);
+
+  const checkExistingValidCertificate = useCallback(async (parcelNumber: string): Promise<ExpertiseRequest | null> => {
     try {
       const { data, error } = await supabase
         .from('real_estate_expertise_requests')
@@ -199,23 +211,7 @@ export const useRealEstateExpertise = () => {
       console.error('Error checking existing certificate:', error);
       return null;
     }
-  };
-
-  const checkCertificateValidity = (certificateIssueDate?: string): { isValid: boolean; daysRemaining: number } => {
-    if (!certificateIssueDate) return { isValid: false, daysRemaining: 0 };
-
-    const issueDate = new Date(certificateIssueDate);
-    const expiryDate = new Date(issueDate);
-    expiryDate.setMonth(expiryDate.getMonth() + 6);
-    
-    const today = new Date();
-    const daysRemaining = Math.ceil((expiryDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return {
-      isValid: daysRemaining > 0,
-      daysRemaining: Math.max(0, daysRemaining)
-    };
-  };
+  }, [checkCertificateValidity]);
 
   useEffect(() => {
     if (user) {
