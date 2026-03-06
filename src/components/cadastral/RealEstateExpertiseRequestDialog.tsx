@@ -897,6 +897,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const handleClose = () => {
     setStep('form');
     setActiveTab('general');
+    setShowIntro(true);
     setCreatedRequest(null);
     setFormData(null);
     setPropertyDescription('');
