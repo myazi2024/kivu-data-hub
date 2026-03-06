@@ -340,8 +340,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
   // Check for existing valid certificate when dialog opens (after intro)
   useEffect(() => {
+    if (!open || showIntro || !parcelNumber || certificateChecked) return;
+
     const checkCertificate = async () => {
-      if (!parcelNumber) return;
       setCheckingCertificate(true);
       try {
         const existing = await checkExistingValidCertificate(parcelNumber);
@@ -354,10 +355,8 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       }
     };
 
-    if (open && !showIntro) {
-      checkCertificate();
-    }
-  }, [open, showIntro, parcelNumber, checkExistingValidCertificate]);
+    checkCertificate();
+  }, [open, showIntro, parcelNumber, certificateChecked, checkExistingValidCertificate]);
 
   // Check whether current user already has paid access to the certificate
   useEffect(() => {
