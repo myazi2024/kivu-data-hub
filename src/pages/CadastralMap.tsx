@@ -1066,7 +1066,7 @@ const CadastralMap = () => {
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
                 expanded={actionsExpanded}
-                onToggleExpand={() => setActionsExpanded(prev => !prev)}
+                onCollapse={() => setActionsExpanded(false)}
               />
 
               <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
