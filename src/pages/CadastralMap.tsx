@@ -1060,8 +1060,8 @@ const CadastralMap = () => {
         {/* Panneau d'information de la parcelle sélectionnée - Design moderne */}
         {selectedParcel && (
           <div className={`absolute ${isMobile ? 'bottom-2 left-2 right-2' : 'bottom-4 right-4 w-80'} z-[1000]`}>
-            <div className="relative">
-              {/* Expandable actions panel — slides up from the card */}
+            <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+              {/* Expandable services panel — expands upward within the card */}
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
                 parcelId={selectedParcel.id}
@@ -1069,37 +1069,36 @@ const CadastralMap = () => {
                 onCollapse={() => setActionsExpanded(false)}
               />
 
-              <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
-                {/* Header compact */}
-                <div className="px-3 py-2.5 border-b border-border/30 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                      <MapPin className="h-3.5 w-3.5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="font-mono font-bold text-sm text-primary leading-none">{selectedParcel.parcel_number}</p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">{selectedParcel.ville || selectedParcel.province}</p>
-                    </div>
+              {/* Header compact */}
+              <div className="px-3 py-2.5 border-b border-border/30 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <MapPin className="h-3.5 w-3.5 text-primary" />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-7 w-7 p-0 rounded-full ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-muted-foreground hover:bg-muted'}`}
-                      onClick={handleAddToFavorites}
-                    >
-                      <Star className={`h-3.5 w-3.5 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                      onClick={() => { setSelectedParcel(null); setActionsExpanded(false); }}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
+                  <div>
+                    <p className="font-mono font-bold text-sm text-primary leading-none">{selectedParcel.parcel_number}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{selectedParcel.ville || selectedParcel.province}</p>
                   </div>
                 </div>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`h-7 w-7 p-0 rounded-full ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-muted-foreground hover:bg-muted'}`}
+                    onClick={handleAddToFavorites}
+                  >
+                    <Star className={`h-3.5 w-3.5 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => { setSelectedParcel(null); setActionsExpanded(false); }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
 
                 {/* Contenu */}
                 <div className="px-3 py-2.5">
