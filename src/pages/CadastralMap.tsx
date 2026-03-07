@@ -65,6 +65,7 @@ const CadastralMap = () => {
   const [selectedParcelHistory, setSelectedParcelHistory] = useState<ParcelHistoryData | null>(null);
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [hasIncompleteData, setHasIncompleteData] = useState(false);
+  const [actionsExpanded, setActionsExpanded] = useState(false);
   const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
   const [showManualSearchNotification, setShowManualSearchNotification] = useState(false);
   const [isSearchBarActive, setIsSearchBarActive] = useState(false);
@@ -1059,111 +1060,130 @@ const CadastralMap = () => {
         {/* Panneau d'information de la parcelle sélectionnée - Design moderne */}
         {selectedParcel && (
           <div className={`absolute ${isMobile ? 'bottom-2 left-2 right-2' : 'bottom-4 right-4 w-80'} z-[1000]`}>
-            <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
-              {/* Header compact */}
-              <div className="px-3 py-2.5 border-b border-border/30 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
-                    <MapPin className="h-3.5 w-3.5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-mono font-bold text-sm text-primary leading-none">{selectedParcel.parcel_number}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{selectedParcel.ville || selectedParcel.province}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className={`h-7 w-7 p-0 rounded-full ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-muted-foreground hover:bg-muted'}`}
-                    onClick={handleAddToFavorites}
-                  >
-                    <Star className={`h-3.5 w-3.5 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => setSelectedParcel(null)}
-                  >
-                    <X className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
+            <div className="relative">
+              {/* Expandable actions panel — slides up from the card */}
+              <ParcelActionsDropdown
+                parcelNumber={selectedParcel.parcel_number}
+                parcelId={selectedParcel.id}
+                expanded={actionsExpanded}
+                onToggleExpand={() => setActionsExpanded(prev => !prev)}
+              />
 
-              {/* Contenu */}
-              <div className="px-3 py-2.5">
-                {/* Infos rapides en badges */}
-                <div className="flex flex-wrap gap-1.5 mb-3">
-                  <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
-                    <span className="text-muted-foreground">Surface:</span>
-                    <span className="font-semibold">
-                      {selectedParcel.gps_coordinates && selectedParcel.gps_coordinates.length >= 3
-                        ? calculateAreaFromCoordinates(selectedParcel.gps_coordinates).toLocaleString(undefined, { maximumFractionDigits: 0 })
-                        : selectedParcel.area_sqm?.toLocaleString()
-                      } m²
-                    </span>
+              <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+                {/* Header compact */}
+                <div className="px-3 py-2.5 border-b border-border/30 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center">
+                      <MapPin className="h-3.5 w-3.5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-mono font-bold text-sm text-primary leading-none">{selectedParcel.parcel_number}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{selectedParcel.ville || selectedParcel.province}</p>
+                    </div>
                   </div>
-                  {selectedParcel.commune && (
-                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
-                      <span className="font-medium">{selectedParcel.commune}</span>
-                    </div>
-                  )}
-                  {selectedParcel.quartier && (
-                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
-                      <span className="font-medium">{selectedParcel.quartier}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-7 w-7 p-0 rounded-full ${searchHistory.isFavorite(selectedParcel.id) ? 'text-yellow-500 bg-yellow-500/10' : 'text-muted-foreground hover:bg-muted'}`}
+                      onClick={handleAddToFavorites}
+                    >
+                      <Star className={`h-3.5 w-3.5 ${searchHistory.isFavorite(selectedParcel.id) ? 'fill-yellow-500' : ''}`} />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 w-7 p-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => { setSelectedParcel(null); setActionsExpanded(false); }}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </div>
 
-                {/* Boutons d'action - Design moderne */}
-                <div className="flex gap-1.5">
-                  <Button
-                    onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
-                    className="flex-1 h-9 text-xs rounded-xl font-medium"
-                    size="sm"
-                    disabled={loadingHistory}
-                  >
-                    {loadingHistory ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <Search className="h-3 w-3 mr-1.5" />
-                        {isMobile ? "Données" : "Plus de données"}
-                      </>
+                {/* Contenu */}
+                <div className="px-3 py-2.5">
+                  {/* Infos rapides en badges */}
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
+                      <span className="text-muted-foreground">Surface:</span>
+                      <span className="font-semibold">
+                        {selectedParcel.gps_coordinates && selectedParcel.gps_coordinates.length >= 3
+                          ? calculateAreaFromCoordinates(selectedParcel.gps_coordinates).toLocaleString(undefined, { maximumFractionDigits: 0 })
+                          : selectedParcel.area_sqm?.toLocaleString()
+                        } m²
+                      </span>
+                    </div>
+                    {selectedParcel.commune && (
+                      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
+                        <span className="font-medium">{selectedParcel.commune}</span>
+                      </div>
                     )}
-                  </Button>
-                  <ParcelActionsDropdown
-                    parcelNumber={selectedParcel.parcel_number}
-                    parcelId={selectedParcel.id}
-                  />
-                  <Button
-                    onClick={() => {
-                      const phoneNumber = '243816996077';
-                      const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
-                      window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
-                    }}
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-9 p-0 rounded-xl shrink-0"
-                    title="Aide WhatsApp"
-                  >
-                    <MessageCircle className="h-3.5 w-3.5" />
-                  </Button>
+                    {selectedParcel.quartier && (
+                      <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-muted/50 text-[10px]">
+                        <span className="font-medium">{selectedParcel.quartier}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Boutons d'action */}
+                  <div className="flex gap-1.5">
+                    <Button
+                      onClick={() => navigate(`/services?search=${encodeURIComponent(selectedParcel.parcel_number)}&from=map`)}
+                      className="flex-1 h-9 text-xs rounded-xl font-medium"
+                      size="sm"
+                      disabled={loadingHistory}
+                    >
+                      {loadingHistory ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <>
+                          <Search className="h-3 w-3 mr-1.5" />
+                          {isMobile ? "Données" : "Plus de données"}
+                        </>
+                      )}
+                    </Button>
+                    {/* Actions toggle button is rendered by ParcelActionsDropdown above */}
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="flex-1 h-9 text-xs rounded-xl font-medium gap-1"
+                      onClick={() => setActionsExpanded(prev => !prev)}
+                    >
+                      Actions
+                      {actionsExpanded
+                        ? <X className="h-3 w-3" />
+                        : <Settings2 className="h-3 w-3" />
+                      }
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        const phoneNumber = '243816996077';
+                        const message = 'Bonjour, j\'ai besoin d\'aide concernant les informations cadastrales.';
+                        window.open(`https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank');
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-9 p-0 rounded-xl shrink-0"
+                      title="Aide WhatsApp"
+                    >
+                      <MessageCircle className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                  
+                  {/* Alerte données incomplètes */}
+                  {hasIncompleteData && (
+                    <button 
+                      onClick={() => setShowContributionDialog(true)}
+                      className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 transition-colors text-left"
+                    >
+                      <AlertTriangle className="h-3.5 w-3.5 text-orange-600 shrink-0" />
+                      <span className="text-[10px] text-orange-700 leading-tight">
+                        Données incomplètes - Cliquez pour contribuer
+                      </span>
+                    </button>
+                  )}
                 </div>
-                
-                {/* Alerte données incomplètes */}
-                {hasIncompleteData && (
-                  <button 
-                    onClick={() => setShowContributionDialog(true)}
-                    className="w-full mt-2 flex items-center gap-2 px-3 py-2 rounded-xl bg-orange-500/10 border border-orange-500/20 hover:bg-orange-500/15 transition-colors text-left"
-                  >
-                    <AlertTriangle className="h-3.5 w-3.5 text-orange-600 shrink-0" />
-                    <span className="text-[10px] text-orange-700 leading-tight">
-                      Données incomplètes - Cliquez pour contribuer
-                    </span>
-                  </button>
-                )}
               </div>
             </div>
           </div>
