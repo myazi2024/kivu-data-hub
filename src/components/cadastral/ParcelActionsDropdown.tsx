@@ -126,12 +126,12 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     <>
       {/* Expandable services panel */}
       {expanded && (
-        <div className="border-b border-border/30 bg-muted/20">
+        <div className="bg-muted/20">
           <div className="px-3 py-2 flex items-center justify-between">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Services disponibles</p>
             <span className="text-[9px] text-muted-foreground">{visibleActions.length} services</span>
           </div>
-          <ScrollArea className="max-h-[220px] sm:max-h-[280px]">
+          <div className="overflow-y-auto max-h-[220px] sm:max-h-[280px]">
             <div className="px-2 pb-2 space-y-0.5">
               {groupedActions.map((item, index) => {
                 if (item === 'separator') return <Separator key={`sep-${index}`} className="my-1" />;
@@ -156,7 +156,9 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
+          {/* Séparateur visuel entre services et données parcelle */}
+          <div className="border-b-2 border-primary/20" />
         </div>
       )}
 

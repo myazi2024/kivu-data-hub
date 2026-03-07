@@ -1060,7 +1060,7 @@ const CadastralMap = () => {
         {/* Panneau d'information de la parcelle sélectionnée - Design moderne */}
         {selectedParcel && (
           <div className={`absolute ${isMobile ? 'bottom-2 left-2 right-2' : 'bottom-4 right-4 w-80'} z-[1000]`}>
-            <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-xl border border-border/50 overflow-hidden">
+            <div className="bg-background/95 backdrop-blur-md rounded-2xl shadow-2xl border border-border/50 overflow-hidden ring-1 ring-black/5">
               {/* Expandable services panel — expands upward within the card */}
               <ParcelActionsDropdown
                 parcelNumber={selectedParcel.parcel_number}
