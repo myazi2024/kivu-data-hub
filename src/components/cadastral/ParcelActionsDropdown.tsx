@@ -156,7 +156,9 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
                 );
               })}
             </div>
-          </ScrollArea>
+          </div>
+          {/* Séparateur visuel entre services et données parcelle */}
+          <div className="border-b-2 border-primary/20" />
         </div>
       )}
 
