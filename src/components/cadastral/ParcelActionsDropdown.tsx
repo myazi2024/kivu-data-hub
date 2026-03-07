@@ -1,15 +1,9 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { ChevronDown, Sparkles, Clock, Beaker, Tag } from 'lucide-react';
+import { Separator } from '@/components/ui/separator';
+import { ChevronUp, ChevronDown, Sparkles, Clock, Beaker, Tag } from 'lucide-react';
 import { useParcelActionsConfig, ParcelAction } from '@/hooks/useParcelActionsConfig';
 import MutationRequestDialog from './MutationRequestDialog';
 import MortgageManagementDialog from './MortgageManagementDialog';
@@ -26,9 +20,12 @@ interface ParcelActionsDropdownProps {
   parcelId?: string;
   parcelData?: any;
   className?: string;
+  /** When true, renders an expandable inline panel instead of a button+dropdown */
+  expanded?: boolean;
+  onToggleExpand?: () => void;
 }
 
-// Create a reusable haptic sound feedback utility with proper AudioContext handling
+// Haptic feedback utility
 const triggerHapticFeedback = async () => {
   if (navigator.vibrate) {
     navigator.vibrate(15);
@@ -77,7 +74,7 @@ const ActionBadge: React.FC<{ badge: ParcelAction['badge'] }> = ({ badge }) => {
       case 'nouveau':
         return { 
           label: badge.label || 'nouveau', 
-          className: 'bg-seloger-red text-white',
+          className: 'bg-destructive text-destructive-foreground',
           icon: <Sparkles className="h-2.5 w-2.5" />
         };
       case 'bientot':
@@ -120,7 +117,9 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   parcelNumber,
   parcelId,
   parcelData,
-  className
+  className,
+  expanded = false,
+  onToggleExpand
 }) => {
   const { actions, loading } = useParcelActionsConfig();
   
@@ -133,7 +132,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
   const [showExpertiseDialog, setShowExpertiseDialog] = useState(false);
   const [showLandDisputeDialog, setShowLandDisputeDialog] = useState(false);
 
-  // Track last focused item for haptic feedback on scroll
+  // Track last focused item for haptic feedback
   const lastFocusedIndexRef = useRef<number | null>(null);
 
   const handleMenuItemFocus = useCallback((index: number) => {
@@ -143,11 +142,7 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     lastFocusedIndexRef.current = index;
   }, []);
 
-  const resetFocusTracking = () => {
-    lastFocusedIndexRef.current = null;
-  };
-
-  // Map action keys to their handlers — both permit keys open the unified dialog
+  // Map action keys to their handlers
   const getActionHandler = (key: string) => {
     const handlers: Record<string, () => void> = {
       'expertise': () => setShowExpertiseDialog(true),
@@ -163,12 +158,11 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     return handlers[key];
   };
 
-  // Get sorted visible actions, filtering out permit_regularization (merged into permit_add)
+  // Get sorted visible actions
   const visibleActions = actions
     .filter(a => a.isVisible && a.key !== 'permit_regularization')
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
-  // Override the label for permit_add to the unified name
   const getDisplayLabel = (action: ParcelAction) => {
     if (action.key === 'permit_add') return 'Ajouter un permis';
     return action.label;
@@ -191,83 +185,51 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     lastCategory = action.category;
   });
 
+  const handleActionClick = (action: ParcelAction) => {
+    const handler = getActionHandler(action.key);
+    if (handler) {
+      triggerHapticFeedback();
+      handler();
+      // Collapse after selecting
+      onToggleExpand?.();
+    }
+  };
+
   return (
     <>
-      <DropdownMenu onOpenChange={(open) => !open && resetFocusTracking()}>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="secondary"
-            size="sm"
-            className={`flex-1 h-9 text-xs rounded-xl font-medium gap-1 ${className}`}
-          >
-            Actions
-            <ChevronDown className="h-3 w-3" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent 
-          side="top"
-          align="end" 
-          sideOffset={70}
-          className="w-56 rounded-xl bg-popover border shadow-lg z-[1100] p-0"
-        >
-          <ScrollArea className="h-[280px] sm:h-[320px]">
-            <div className="p-1">
-              {groupedActions.map((item, index) => {
-                if (item === 'separator') {
-                  return <DropdownMenuSeparator key={`sep-${index}`} className="my-1" />;
-                }
+      {/* Toggle button */}
+      <Button
+        variant="secondary"
+        size="sm"
+        className={`flex-1 h-9 text-xs rounded-xl font-medium gap-1 ${className}`}
+        onClick={onToggleExpand}
+      >
+        Actions
+        {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronUp className="h-3 w-3" />}
+      </Button>
 
-                const action = item;
-                const handler = getActionHandler(action.key);
+      {/* Expandable services panel — rendered separately via the parent */}
+      {/* The actual panel is rendered by ParcelActionsPanel below */}
 
-                return (
-                  <DropdownMenuItem 
-                    key={action.id}
-                    onClick={handler}
-                    onFocus={() => handleMenuItemFocus(index)}
-                    disabled={!action.isActive}
-                    className={`cursor-pointer rounded-lg ${!action.isActive ? 'opacity-50' : ''}`}
-                  >
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-sm">{getDisplayLabel(action)}</span>
-                        <ActionBadge badge={action.badge} />
-                      </div>
-                      <div className="text-xs text-muted-foreground">{getDisplayDescription(action)}</div>
-                    </div>
-                  </DropdownMenuItem>
-                );
-              })}
-            </div>
-          </ScrollArea>
-        </DropdownMenuContent>
-      </DropdownMenu>
-
-      {/* Dialog Mutation */}
+      {/* All dialogs */}
       <MutationRequestDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
         open={showMutationDialog}
         onOpenChange={setShowMutationDialog}
       />
-
-      {/* Dialog Gestion Hypothèque (unifié) */}
       <MortgageManagementDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
         open={showMortgageManagementDialog}
         onOpenChange={setShowMortgageManagementDialog}
       />
-
-      {/* Dialog Ajouter un permis (unifié: construire + régularisation) */}
       <BuildingPermitManagementDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
         open={showBuildingPermitManagementDialog}
         onOpenChange={setShowBuildingPermitManagementDialog}
       />
-
-      {/* Dialog Taxe foncière (unifié: calculateur + ajout) */}
       <TaxManagementDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
@@ -281,16 +243,12 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           }, 150);
         }}
       />
-
-      {/* Dialog Demande de permis de construire */}
       <BuildingPermitRequestDialog
         parcelNumber={parcelNumber}
         open={showPermitRequestDialog}
         onOpenChange={setShowPermitRequestDialog}
         hasExistingConstruction={false}
       />
-
-      {/* Dialog Demande de lotissement */}
       <SubdivisionRequestDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
@@ -298,8 +256,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         open={showSubdivisionDialog}
         onOpenChange={setShowSubdivisionDialog}
       />
-
-      {/* Dialog Expertise immobilière */}
       <RealEstateExpertiseRequestDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
@@ -307,8 +263,6 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
         open={showExpertiseDialog}
         onOpenChange={setShowExpertiseDialog}
       />
-
-      {/* Dialog Litige foncier */}
       <LandDisputeManagementDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
@@ -322,6 +276,49 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
           }, 150);
         }}
       />
+
+      {/* Inline expandable panel */}
+      {expanded && (
+        <div className="absolute bottom-full left-0 right-0 mb-0 z-[1050]">
+          <div className="bg-background/95 backdrop-blur-md rounded-t-2xl border border-b-0 border-border/50 shadow-lg overflow-hidden">
+            <div className="px-3 py-2 border-b border-border/30">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Services disponibles</p>
+            </div>
+            <ScrollArea className="max-h-[240px] sm:max-h-[300px]">
+              <div className="p-1.5 space-y-0.5">
+                {groupedActions.map((item, index) => {
+                  if (item === 'separator') {
+                    return <Separator key={`sep-${index}`} className="my-1" />;
+                  }
+
+                  const action = item;
+                  return (
+                    <button
+                      key={action.id}
+                      onClick={() => handleActionClick(action)}
+                      onFocus={() => handleMenuItemFocus(index)}
+                      disabled={!action.isActive}
+                      className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-left transition-colors
+                        ${action.isActive 
+                          ? 'hover:bg-accent/50 active:bg-accent cursor-pointer' 
+                          : 'opacity-40 cursor-not-allowed'
+                        }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-sm text-foreground truncate">{getDisplayLabel(action)}</span>
+                          <ActionBadge badge={action.badge} />
+                        </div>
+                        <p className="text-[10px] text-muted-foreground truncate">{getDisplayDescription(action)}</p>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </ScrollArea>
+          </div>
+        </div>
+      )}
     </>
   );
 };
