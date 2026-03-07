@@ -1185,7 +1185,6 @@ const CadastralMap = () => {
                 </div>
               </div>
             </div>
-          </div>
         )}
 
         {/* Légende - Desktop: top-right below nav, Mobile: bottom-left toggle */}
