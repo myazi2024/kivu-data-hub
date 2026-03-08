@@ -59,6 +59,17 @@ const ROAD_LABELS: Record<string, string> = {
   piste: 'Piste / Sentier',
 };
 
+function drawTextStamp(doc: jsPDF, sigY: number) {
+  doc.setDrawColor(0, 120, 60);
+  doc.setLineWidth(1.5);
+  doc.circle(55, sigY + 10, 12);
+  doc.setFontSize(6);
+  doc.setTextColor(0, 120, 60);
+  doc.setFont('helvetica', 'bold');
+  doc.text('CERTIFIÉ', 55, sigY + 8, { align: 'center' });
+  doc.text('CONFORME', 55, sigY + 12, { align: 'center' });
+}
+
 export async function generateExpertiseCertificatePDF(data: ExpertiseCertificateData): Promise<Blob> {
   const doc = new jsPDF();
   const pw = doc.internal.pageSize.getWidth();
