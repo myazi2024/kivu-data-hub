@@ -413,27 +413,69 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   };
 
   // Documents requis par type de mutation
-  const getRequiredDocuments = (): { label: string; required: boolean }[] => {
-    const base = [{ label: 'Pièce d\'identité du demandeur', required: true }];
+  const getRequiredDocuments = (): RequiredDocument[] => {
+    const base: RequiredDocument[] = [
+      { key: 'requester_id', label: 'Pièce d\'identité du demandeur', required: true },
+    ];
+
     switch (mutationType) {
       case 'vente':
-        return [...base, { label: 'Acte de vente notarié', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+        return [
+          ...base,
+          { key: 'sale_deed', label: 'Acte de vente notarié', required: true },
+          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
+        ];
       case 'donation':
-        return [...base, { label: 'Acte de donation notarié', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+        return [
+          ...base,
+          { key: 'donation_deed', label: 'Acte de donation notarié', required: true },
+          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
+        ];
       case 'succession':
-        return [...base, { label: 'Certificat d\'héritage / Jugement supplétif', required: true }, { label: 'Acte de décès', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+        return [
+          ...base,
+          { key: 'inheritance_certificate', label: 'Certificat d\'héritage / Jugement supplétif', required: true },
+          { key: 'death_certificate', label: 'Acte de décès', required: true },
+          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
+        ];
       case 'expropriation':
-        return [...base, { label: 'Arrêté d\'expropriation', required: true }, { label: 'PV d\'indemnisation', required: true }];
+        return [
+          ...base,
+          { key: 'expropriation_order', label: 'Arrêté d\'expropriation', required: true },
+          { key: 'compensation_report', label: 'PV d\'indemnisation', required: true },
+        ];
       case 'echange':
-        return [...base, { label: 'Contrat d\'échange notarié', required: true }, { label: 'Certificat d\'expertise des deux biens', required: true }];
+        return [
+          ...base,
+          { key: 'exchange_contract', label: 'Contrat d\'échange notarié', required: true },
+          { key: 'dual_expertise_certificate', label: 'Certificat d\'expertise des deux biens', required: true, handledByExpertiseCertificate: true },
+        ];
       case 'correction':
-        return [...base, { label: 'Document justificatif de la correction', required: true }];
+        return [...base, { key: 'correction_proof', label: 'Document justificatif de la correction', required: true }];
       case 'mise_a_jour':
-        return [...base, { label: 'Document attestant la mise à jour', required: false }];
+        return [...base, { key: 'update_proof', label: 'Document attestant la mise à jour', required: true }];
       default:
         return base;
     }
   };
+
+  const requiredSupportingDocuments = getRequiredDocuments().filter(
+    (doc) => doc.required && !doc.handledByExpertiseCertificate
+  );
+
+  useEffect(() => {
+    const requiredDocsForType = getRequiredDocuments().filter(
+      (doc) => doc.required && !doc.handledByExpertiseCertificate
+    );
+
+    setRequiredDocumentChecks((prev) => {
+      const next: Record<string, boolean> = {};
+      requiredDocsForType.forEach((doc) => {
+        next[doc.key] = prev[doc.key] ?? false;
+      });
+      return next;
+    });
+  }, [mutationType]);
 
   const validateForm = (): boolean => {
     if (isTransferMutation && (!beneficiaryLastName.trim() || (beneficiaryLegalStatus === 'personne_physique' && !beneficiaryFirstName.trim()))) {
@@ -475,11 +517,17 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       }
     }
 
-    // Valider les documents requis selon le type de mutation
-    const requiredDocs = getRequiredDocuments().filter(d => d.required);
-    if (requiredDocs.length > 0 && attachedFiles.length === 0 && !expertiseCertificateFile) {
-      const docNames = requiredDocs.map(d => d.label).join(', ');
-      toast.error(`Documents requis pour ce type de mutation : ${docNames}`);
+    const missingCheckedDocuments = requiredSupportingDocuments.filter(
+      (doc) => !requiredDocumentChecks[doc.key]
+    );
+
+    if (missingCheckedDocuments.length > 0) {
+      toast.error(`Veuillez confirmer les pièces requises : ${missingCheckedDocuments.map((doc) => doc.label).join(', ')}`);
+      return false;
+    }
+
+    if (requiredSupportingDocuments.length > 0 && attachedFiles.length < requiredSupportingDocuments.length) {
+      toast.error(`Ajoutez au moins ${requiredSupportingDocuments.length} document(s) justificatif(s) pour ce type de mutation.`);
       return false;
     }
     
