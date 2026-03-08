@@ -11,15 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Plus, RefreshCw, Edit2, Trash2, DollarSign, ArrowUp, ArrowDown } from 'lucide-react';
 
-interface MutationFee {
-  id: string;
-  fee_name: string;
-  amount_usd: number;
-  description: string | null;
-  is_mandatory: boolean;
-  is_active: boolean;
-  display_order: number;
-}
+import type { MutationFee } from '@/types/mutation';
 
 const AdminMutationFeesConfig = () => {
   const [fees, setFees] = useState<MutationFee[]>([]);

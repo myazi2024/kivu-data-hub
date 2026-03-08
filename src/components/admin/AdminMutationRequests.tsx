@@ -34,38 +34,7 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 
-interface MutationRequest {
-  id: string;
-  reference_number: string;
-  user_id: string;
-  parcel_number: string;
-  mutation_type: string;
-  requester_type: string;
-  requester_name: string;
-  requester_phone: string | null;
-  requester_email: string | null;
-  beneficiary_name: string | null;
-  proposed_changes: any;
-  justification: string | null;
-  total_amount_usd: number;
-  payment_status: string;
-  status: string;
-  processing_notes: string | null;
-  rejection_reason: string | null;
-  estimated_processing_days: number;
-  created_at: string;
-  profiles?: { full_name: string; email: string } | null;
-}
-
-interface MutationFee {
-  id: string;
-  fee_name: string;
-  amount_usd: number;
-  description: string | null;
-  is_mandatory: boolean;
-  is_active: boolean;
-  display_order: number;
-}
+import type { MutationFee, MutationRequest } from '@/types/mutation';
 
 const AdminMutationRequests: React.FC = () => {
   const { user } = useAuth();

@@ -1405,7 +1405,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                           </span>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {lateFeesCalculation.days} jours × 0,45 USD/jour
+                          {lateFeesCalculation.days} jours × {DAILY_LATE_FEE_USD} USD/jour
+                          {lateFeesCalculation.capped && (
+                            <span className="block text-orange-600 font-medium mt-0.5">
+                              ⚠ Plafonné à ${LATE_FEE_CAP_USD} USD (plafond légal)
+                            </span>
+                          )}
                         </p>
                       </div>
                     </div>
