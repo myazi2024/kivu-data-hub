@@ -50,7 +50,7 @@ export interface CadastralContributionData {
     applicantName: string;
     applicantPhone: string;
     applicantEmail?: string;
-    // Champs spécifiques permis de construire
+    // Champs spécifiques autorisation de bâtir
     numberOfFloors?: string;
     buildingMaterials?: string;
     architecturalPlanImages?: string[]; // URLs après upload
