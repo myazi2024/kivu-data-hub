@@ -277,7 +277,10 @@ export const AdminExpertiseRequests: React.FC = () => {
           expertiseDateStr: issueDate,
           issueDate: issueDate,
           expiryDate: expiryDate.toISOString(),
-          approvedBy: 'Bureau d\'Information Cadastrale',
+          approvedBy: expertName || 'Bureau d\'Information Cadastrale',
+          expertName: expertName || undefined,
+          expertTitle: expertTitle || undefined,
+          stampImageUrl: stampImageUrl || undefined,
         });
 
         // Upload to Supabase Storage
