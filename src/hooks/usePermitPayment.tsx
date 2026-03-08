@@ -2,7 +2,9 @@ import { useState, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 
+// Fix #19: Use shared FeeItem type pattern
 export interface PermitFee {
   id: string;
   permit_type: 'construction' | 'regularization';
@@ -38,7 +40,6 @@ export const usePermitPayment = () => {
   const { toast } = useToast();
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Cleanup on unmount — consumers should call this in useEffect cleanup
   const cancelPolling = useCallback(() => {
     abortControllerRef.current?.abort();
   }, []);
@@ -103,37 +104,6 @@ export const usePermitPayment = () => {
     }
   };
 
-  const pollTransactionStatus = async (transactionId: string, signal: AbortSignal) => {
-    let attempts = 0;
-    const maxAttempts = 25;
-
-    while (attempts < maxAttempts) {
-      if (signal.aborted) throw new Error('Paiement annulé');
-
-      await new Promise<void>((resolve) => {
-        const timer = setTimeout(resolve, 2000);
-        const onAbort = () => { clearTimeout(timer); resolve(); };
-        signal.addEventListener('abort', onAbort, { once: true });
-      });
-
-      if (signal.aborted) throw new Error('Paiement annulé');
-
-      const { data: txData, error } = await supabase
-        .from('payment_transactions')
-        .select('status, transaction_reference')
-        .eq('id', transactionId)
-        .maybeSingle();
-
-      if (error) throw error;
-      if (txData?.status === 'completed') return txData;
-      if (txData?.status === 'failed') throw new Error('Le paiement a échoué');
-
-      attempts++;
-    }
-
-    throw new Error('Délai de paiement dépassé');
-  };
-
   const createPayment = async (
     contributionId: string,
     permitType: 'construction' | 'regularization',
@@ -186,7 +156,7 @@ export const usePermitPayment = () => {
 
       if (paymentError) throw paymentError;
 
-      // Process payment — NO PIN sent (security fix)
+      // Process payment — NO PIN sent
       if (paymentData.payment_method === 'mobile_money' && paymentData.payment_provider && paymentData.phone_number) {
         const { data: paymentResult, error: invokeError } = await supabase.functions.invoke(
           'process-mobile-money-payment',
@@ -203,8 +173,14 @@ export const usePermitPayment = () => {
 
         if (invokeError) throw invokeError;
 
-        // Poll with AbortController
-        const txResult = await pollTransactionStatus(paymentResult.transaction_id, controller.signal);
+        // Fix #17: Use shared polling utility instead of duplicated logic
+        const pollResult = await pollTransactionStatus(
+          paymentResult.transaction_id, 25, 2000, controller.signal
+        );
+
+        if (pollResult === 'failed') throw new Error('Le paiement a échoué');
+        if (pollResult === 'timeout') throw new Error('Délai de paiement dépassé');
+        if (pollResult === 'aborted') throw new Error('Paiement annulé');
 
         // Update permit payment status
         const { error: updateError } = await supabase
@@ -240,13 +216,15 @@ export const usePermitPayment = () => {
       }
 
       // Create notification
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        type: 'success',
-        title: 'Paiement reçu',
-        message: `Votre paiement de ${totalAmount}$ pour la demande d'autorisation a été reçu. Votre dossier est en cours d'examen.`,
-        action_url: '/user-dashboard?tab=building-permits'
-      });
+      try {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'success',
+          title: 'Paiement reçu',
+          message: `Votre paiement de ${totalAmount}$ pour la demande d'autorisation a été reçu. Votre dossier est en cours d'examen.`,
+          action_url: '/user-dashboard?tab=building-permits'
+        });
+      } catch (notifErr) { console.warn('Notification insert failed:', notifErr); }
 
       toast({
         title: "Paiement réussi",

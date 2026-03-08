@@ -1,7 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -41,6 +45,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const [processingPayment, setProcessingPayment] = useState(false);
   const [savedContributionId, setSavedContributionId] = useState<string | null>(null);
   const [savedTransactionId, setSavedTransactionId] = useState<string | null>(null);
+  // Fix #16: Confirm before close with unsaved data
+  const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   // Payment UI state
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
@@ -55,6 +61,14 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   }, []);
 
   const requestTypeLabel = form.requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
+
+  // Check if form has meaningful data (for close confirmation - Fix #16)
+  const hasUnsavedData = useCallback(() => {
+    if (step === 'confirmation') return false;
+    const fd = form.formData;
+    return !!(fd.constructionType || fd.constructionNature || fd.declaredUsage ||
+      fd.plannedArea || fd.applicantName || fd.projectDescription);
+  }, [form.formData, step]);
 
   // ========== FILE UPLOAD ==========
   const uploadAttachments = async (): Promise<Record<string, string>> => {
@@ -126,6 +140,25 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
     if (error) throw error;
 
+    // Fix #2: Also write to permit_payments for admin tracking
+    if (transactionId) {
+      try {
+        await supabase.from('permit_payments').insert({
+          contribution_id: data.id,
+          user_id: user.id,
+          permit_type: form.requestType === 'new' ? 'construction' : 'regularization',
+          fee_items: form.feeBreakdown.map(f => ({ fee_name: f.label, amount_usd: f.amount })),
+          total_amount_usd: form.totalFeeUSD,
+          payment_method: paymentMethod,
+          payment_provider: paymentProvider || null,
+          phone_number: paymentPhone || null,
+          transaction_id: transactionId,
+          status: 'completed',
+          paid_at: new Date().toISOString(),
+        });
+      } catch (pmErr) { console.warn('permit_payments insert failed (non-blocking):', pmErr); }
+    }
+
     // Non-blocking notification
     try {
       await supabase.from('notifications').insert({
@@ -186,7 +219,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       return;
     }
 
-    // Step 3: Process Mobile Money payment — NO test_mode from client (#7)
+    // Step 3: Process Mobile Money payment
     abortControllerRef.current?.abort();
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -201,7 +234,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
       setSavedTransactionId(paymentResult.transaction_id);
 
-      // Use shared polling utility (#17)
       const pollResult = await pollTransactionStatus(paymentResult.transaction_id, 25, 2000, controller.signal);
       if (pollResult === 'failed') throw new Error('Le paiement a échoué');
       if (pollResult === 'timeout') throw new Error('Délai de paiement dépassé. Veuillez réessayer.');
@@ -213,7 +245,9 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         setSavedContributionId(contributionId);
         form.clearDraft();
       } catch (dbError: any) {
+        // Fix #4: Cleanup files on DB failure after successful payment
         console.error('DB save failed after payment:', dbError);
+        await cleanupUploadedFiles(uploadedUrls);
         toast({
           title: 'Paiement confirmé — Erreur d\'enregistrement',
           description: `Votre paiement (ID: ${paymentResult.transaction_id}) est confirmé. Contactez le support pour finaliser l'enregistrement.`,
@@ -229,10 +263,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     } catch (err: any) {
       if (err.message !== 'Paiement annulé') {
         console.error('Payment error:', err);
-        await cleanupUploadedFiles(uploadedUrls);
+      }
+      await cleanupUploadedFiles(uploadedUrls);
+      if (err.message !== 'Paiement annulé') {
         toast({ title: 'Erreur de paiement', description: err?.message || "Une erreur s'est produite", variant: 'destructive' });
-      } else {
-        await cleanupUploadedFiles(uploadedUrls);
       }
     } finally {
       setProcessingPayment(false);
@@ -249,12 +283,33 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setStep('preview');
   };
 
-  const handleClose = () => {
+  // Fix #9: Skip payment step when payment not required
+  const handleProceedFromPreview = () => {
+    if (!isPaymentRequired()) {
+      // Directly submit without going through payment UI
+      handlePayment();
+    } else {
+      setStep('payment');
+    }
+  };
+
+  // Fix #16: Intercept close to confirm if data exists
+  const attemptClose = () => {
+    if (processingPayment) return; // Don't close during payment
+    if (hasUnsavedData()) {
+      setShowCloseConfirm(true);
+    } else {
+      doClose();
+    }
+  };
+
+  const doClose = () => {
     abortControllerRef.current?.abort();
     setStep('form');
     setShowIntro(true);
     setSavedContributionId(null);
     setSavedTransactionId(null);
+    setShowCloseConfirm(false);
     form.resetForm();
     setPaymentProvider('');
     setPaymentPhone('');
@@ -287,64 +342,87 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
-        <DialogHeader className="pb-2">
-          <DialogTitle className="flex items-center gap-2 text-base font-bold">
-            <div className="p-1.5 bg-primary/10 rounded-lg">
-              <Building2 className="h-4 w-4 text-primary" />
-            </div>
-            {getStepTitle()}
-          </DialogTitle>
-          {step === 'form' && (
-            <DialogDescription className="text-sm text-muted-foreground">Parcelle {parcelNumber}</DialogDescription>
-          )}
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={attemptClose}>
+        <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
+          <DialogHeader className="pb-2">
+            <DialogTitle className="flex items-center gap-2 text-base font-bold">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Building2 className="h-4 w-4 text-primary" />
+              </div>
+              {getStepTitle()}
+            </DialogTitle>
+            {step === 'form' && (
+              <DialogDescription className="text-sm text-muted-foreground">Parcelle {parcelNumber}</DialogDescription>
+            )}
+          </DialogHeader>
 
-        {step === 'form' && (
-          <PermitFormStep
-            parcelNumber={parcelNumber}
-            requestType={form.requestType} setRequestType={form.setRequestType}
-            formData={form.formData} handleInputChange={form.handleInputChange}
-            attachments={form.attachments} setAttachments={form.setAttachments}
-            feesLoading={form.feesLoading} feesSource={form.feesSource}
-            feeBreakdown={form.feeBreakdown} totalFeeUSD={form.totalFeeUSD}
-            isFormValid={form.isFormValid} requiresOriginalPermit={form.requiresOriginalPermit}
-            onPreview={handlePreview}
-          />
-        )}
-        {step === 'preview' && (
-          <PermitPreviewStep
-            parcelNumber={parcelNumber} requestType={form.requestType}
-            requestTypeLabel={requestTypeLabel} formData={form.formData}
-            attachments={form.attachments} feeBreakdown={form.feeBreakdown}
-            totalFeeUSD={form.totalFeeUSD}
-            onBack={() => setStep('form')} onPay={() => setStep('payment')}
-          />
-        )}
-        {step === 'payment' && (
-          <PermitPaymentStep
-            totalFeeUSD={form.totalFeeUSD} requestTypeLabel={requestTypeLabel}
-            parcelNumber={parcelNumber} processingPayment={processingPayment}
-            paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
-            paymentProvider={paymentProvider} setPaymentProvider={setPaymentProvider}
-            paymentPhone={paymentPhone} setPaymentPhone={setPaymentPhone}
-            availableProviders={availableProviders}
-            onPay={handlePayment} onBack={() => setStep('preview')}
-            onCancelPayment={() => { abortControllerRef.current?.abort(); setProcessingPayment(false); }}
-          />
-        )}
-        {step === 'confirmation' && (
-          <PermitConfirmationStep
-            parcelNumber={parcelNumber} requestTypeLabel={requestTypeLabel}
-            totalFeeUSD={form.totalFeeUSD}
-            savedContributionId={savedContributionId} savedTransactionId={savedTransactionId}
-            onClose={handleClose}
-          />
-        )}
-      </DialogContent>
+          {step === 'form' && (
+            <PermitFormStep
+              parcelNumber={parcelNumber}
+              requestType={form.requestType} setRequestType={form.setRequestType}
+              formData={form.formData} handleInputChange={form.handleInputChange}
+              attachments={form.attachments} setAttachments={form.setAttachments}
+              feesLoading={form.feesLoading} feesSource={form.feesSource}
+              feeBreakdown={form.feeBreakdown} totalFeeUSD={form.totalFeeUSD}
+              isFormValid={form.isFormValid} requiresOriginalPermit={form.requiresOriginalPermit}
+              onPreview={handlePreview}
+              isDraftRestored={form.isDraftRestored}
+            />
+          )}
+          {step === 'preview' && (
+            <PermitPreviewStep
+              parcelNumber={parcelNumber} requestType={form.requestType}
+              requestTypeLabel={requestTypeLabel} formData={form.formData}
+              attachments={form.attachments} feeBreakdown={form.feeBreakdown}
+              totalFeeUSD={form.totalFeeUSD}
+              onBack={() => setStep('form')} onPay={handleProceedFromPreview}
+              isPaymentRequired={isPaymentRequired()}
+              processingPayment={processingPayment}
+            />
+          )}
+          {step === 'payment' && (
+            <PermitPaymentStep
+              totalFeeUSD={form.totalFeeUSD} requestTypeLabel={requestTypeLabel}
+              parcelNumber={parcelNumber} processingPayment={processingPayment}
+              paymentMethod={paymentMethod} setPaymentMethod={setPaymentMethod}
+              paymentProvider={paymentProvider} setPaymentProvider={setPaymentProvider}
+              paymentPhone={paymentPhone} setPaymentPhone={setPaymentPhone}
+              availableProviders={availableProviders}
+              onPay={handlePayment} onBack={() => setStep('preview')}
+              onCancelPayment={() => { abortControllerRef.current?.abort(); setProcessingPayment(false); }}
+            />
+          )}
+          {step === 'confirmation' && (
+            <PermitConfirmationStep
+              parcelNumber={parcelNumber} requestTypeLabel={requestTypeLabel}
+              totalFeeUSD={form.totalFeeUSD}
+              savedContributionId={savedContributionId} savedTransactionId={savedTransactionId}
+              onClose={doClose}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Fix #21: WhatsApp button outside Dialog to avoid z-index/portal issues */}
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande d'autorisation de bâtir." />}
-    </Dialog>
+
+      {/* Fix #16: Close confirmation dialog */}
+      <AlertDialog open={showCloseConfirm} onOpenChange={setShowCloseConfirm}>
+        <AlertDialogContent className="z-[1300]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Quitter le formulaire ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Votre brouillon est sauvegardé automatiquement. Vous pourrez reprendre là où vous en étiez en rouvrant ce service.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Continuer</AlertDialogCancel>
+            <AlertDialogAction onClick={doClose}>Quitter</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 

@@ -4,7 +4,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, ArrowLeft, Clock, MapPin, CreditCard, FileText } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Clock, CreditCard, FileText, Loader2, Send } from 'lucide-react';
 import { PermitFormData, AttachmentFile } from './types';
 
 interface PermitPreviewStepProps {
@@ -17,11 +17,25 @@ interface PermitPreviewStepProps {
   totalFeeUSD: number;
   onBack: () => void;
   onPay: () => void;
+  /** Fix #9: When false, show "Soumettre" instead of "Payer" */
+  isPaymentRequired?: boolean;
+  processingPayment?: boolean;
 }
 
+const PreviewRow: React.FC<{ label: string; value: string | number | null | undefined }> = ({ label, value }) => {
+  if (!value) return null;
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-sm text-muted-foreground">{label}</span>
+      <span className="text-sm text-right max-w-[55%] break-words">{value}</span>
+    </div>
+  );
+};
+
 const PermitPreviewStep: React.FC<PermitPreviewStepProps> = ({
-  parcelNumber, requestTypeLabel, formData, attachments,
+  parcelNumber, requestType, requestTypeLabel, formData, attachments,
   feeBreakdown, totalFeeUSD, onBack, onPay,
+  isPaymentRequired = true, processingPayment = false,
 }) => {
   return (
     <ScrollArea className="h-[65vh] sm:h-[70vh]">
@@ -35,66 +49,56 @@ const PermitPreviewStep: React.FC<PermitPreviewStepProps> = ({
 
         <Card className="border-2 rounded-xl shadow-sm">
           <CardContent className="p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Parcelle</span>
-              <span className="font-mono font-bold text-sm">{parcelNumber}</span>
-            </div>
+            <PreviewRow label="Parcelle" value={parcelNumber} />
             <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Type</span>
-              <span className="text-sm font-semibold">{requestTypeLabel}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Construction</span>
-              <span className="text-sm">{formData.constructionType} — {formData.constructionNature}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Usage</span>
-              <span className="text-sm">{formData.declaredUsage}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Surface</span>
-              <span className="text-sm">{parseFloat(formData.plannedArea).toLocaleString('fr-FR')} m²</span>
-            </div>
-            {formData.numberOfRooms && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Pièces</span>
-                <span className="text-sm">{formData.numberOfRooms}</span>
-              </div>
+            <PreviewRow label="Type" value={requestTypeLabel} />
+            <PreviewRow label="Construction" value={`${formData.constructionType} — ${formData.constructionNature}`} />
+            <PreviewRow label="Usage" value={formData.declaredUsage} />
+            <PreviewRow label="Surface" value={formData.plannedArea ? `${parseFloat(formData.plannedArea).toLocaleString('fr-FR')} m²` : null} />
+            <PreviewRow label="Étages" value={formData.numberOfFloors !== '1' ? formData.numberOfFloors : null} />
+            {/* Fix #11-14: Show ALL collected fields */}
+            <PreviewRow label="Pièces" value={formData.numberOfRooms} />
+            <PreviewRow label="Toiture" value={formData.roofingType} />
+            <PreviewRow label="Coût estimé" value={formData.estimatedCost ? `$${parseFloat(formData.estimatedCost).toLocaleString('fr-FR')} USD` : null} />
+            <PreviewRow label="Eau" value={formData.waterSupply} />
+            <PreviewRow label="Électricité" value={formData.electricitySupply} />
+
+            {/* Fix #13: Planning fields for new construction */}
+            {requestType === 'new' && (formData.startDate || formData.estimatedDuration) && (
+              <>
+                <Separator />
+                <div className="space-y-2 bg-muted/30 p-3 rounded-xl -mx-1">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Planification</span>
+                  <PreviewRow label="Date de début" value={formData.startDate} />
+                  <PreviewRow label="Durée estimée" value={formData.estimatedDuration ? `${formData.estimatedDuration} mois` : null} />
+                </div>
+              </>
             )}
-            {formData.roofingType && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Toiture</span>
-                <span className="text-sm">{formData.roofingType}</span>
-              </div>
-            )}
-            {/* Fix #14: Show estimated cost in preview */}
-            {formData.estimatedCost && (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Coût estimé</span>
-                <span className="text-sm">${parseFloat(formData.estimatedCost).toLocaleString('fr-FR')} USD</span>
-              </div>
+
+            {/* Fix #12: Regularization-specific fields */}
+            {requestType === 'regularization' && (
+              <>
+                <Separator />
+                <div className="space-y-2 bg-orange-50/50 dark:bg-orange-950/20 p-3 rounded-xl -mx-1 border border-orange-200/50 dark:border-orange-800/50">
+                  <span className="text-xs font-semibold text-orange-700 dark:text-orange-400 uppercase tracking-wide">Régularisation</span>
+                  <PreviewRow label="Raison" value={formData.regularizationReason} />
+                  <PreviewRow label="Date de construction" value={formData.constructionDate} />
+                  <PreviewRow label="État actuel" value={formData.currentState} />
+                  <PreviewRow label="Permis initial" value={formData.originalPermitNumber} />
+                  <PreviewRow label="Problèmes de conformité" value={formData.complianceIssues} />
+                </div>
+              </>
             )}
 
             <Separator />
 
-            {/* Fix #15: Show architect info in preview */}
+            {/* Architect info */}
             {(formData.architectName || formData.architectLicense) && (
               <>
                 <div className="space-y-2 bg-muted/30 p-3 rounded-xl -mx-1">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Architecte</span>
-                  {formData.architectName && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">Nom</span>
-                      <span className="text-sm">{formData.architectName}</span>
-                    </div>
-                  )}
-                  {formData.architectLicense && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">N° agrément</span>
-                      <span className="text-sm font-mono">{formData.architectLicense}</span>
-                    </div>
-                  )}
+                  <PreviewRow label="Nom" value={formData.architectName} />
+                  <PreviewRow label="N° agrément" value={formData.architectLicense} />
                 </div>
                 <Separator />
               </>
@@ -103,21 +107,23 @@ const PermitPreviewStep: React.FC<PermitPreviewStepProps> = ({
             {/* Demandeur */}
             <div className="space-y-2 bg-primary/5 p-3 rounded-xl -mx-1">
               <span className="text-xs font-semibold text-primary uppercase tracking-wide">Demandeur</span>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Nom</span>
-                <span className="text-sm font-medium">{formData.applicantName}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Téléphone</span>
-                <span className="text-sm">{formData.applicantPhone}</span>
-              </div>
-              {formData.applicantEmail && (
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Email</span>
-                  <span className="text-sm">{formData.applicantEmail}</span>
-                </div>
-              )}
+              <PreviewRow label="Nom" value={formData.applicantName} />
+              <PreviewRow label="Téléphone" value={formData.applicantPhone} />
+              <PreviewRow label="Email" value={formData.applicantEmail} />
+              {/* Fix #11: Show address in preview */}
+              <PreviewRow label="Adresse" value={formData.applicantAddress} />
             </div>
+
+            {/* Description du projet */}
+            {formData.projectDescription && (
+              <>
+                <Separator />
+                <div className="space-y-1.5">
+                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Description du projet</span>
+                  <p className="text-sm text-foreground leading-relaxed">{formData.projectDescription}</p>
+                </div>
+              </>
+            )}
 
             {/* Pièces jointes */}
             {Object.values(attachments).some(a => a !== null) && (
@@ -159,16 +165,23 @@ const PermitPreviewStep: React.FC<PermitPreviewStepProps> = ({
         <Alert className="rounded-xl bg-muted/50">
           <Clock className="h-4 w-4" />
           <AlertDescription className="text-sm">
-            Délai de traitement estimé: <strong>15 à 30 jours ouvrables</strong> après paiement.
+            Délai de traitement estimé: <strong>15 à 30 jours ouvrables</strong> après soumission.
           </AlertDescription>
         </Alert>
 
         <div className="flex gap-2">
-          <Button variant="outline" onClick={onBack} className="flex-1 h-11 text-sm font-semibold rounded-xl">
+          <Button variant="outline" onClick={onBack} disabled={processingPayment} className="flex-1 h-11 text-sm font-semibold rounded-xl">
             <ArrowLeft className="h-4 w-4 mr-2" />Modifier
           </Button>
-          <Button onClick={onPay} className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg">
-            <CreditCard className="h-4 w-4 mr-2" />Payer ${totalFeeUSD.toFixed(2)}
+          {/* Fix #9: Show appropriate button based on payment requirement */}
+          <Button onClick={onPay} disabled={processingPayment} className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg">
+            {processingPayment ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Traitement...</>
+            ) : isPaymentRequired ? (
+              <><CreditCard className="h-4 w-4 mr-2" />Payer ${totalFeeUSD.toFixed(2)}</>
+            ) : (
+              <><Send className="h-4 w-4 mr-2" />Soumettre</>
+            )}
           </Button>
         </div>
       </div>
