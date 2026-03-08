@@ -384,7 +384,7 @@ export const AdminExpertiseRequests: React.FC = () => {
                   r.parcel_number,
                   r.requester_name,
                   r.requester_email || '',
-                  statusLabels[r.status] || r.status,
+                  STATUS_LABELS[r.status] || r.status,
                   r.market_value_usd?.toString() || '',
                   format(new Date(r.created_at), 'dd/MM/yyyy'),
                 ])
