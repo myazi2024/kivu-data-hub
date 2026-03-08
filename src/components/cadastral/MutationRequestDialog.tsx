@@ -1586,7 +1586,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   {mutationFeesCalculation.bankFee > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Frais bancaires (0.5%)</span>
-                      <span className="text-sm font-medium">${mutationFeesCalculation.bankFee}</span>
+                      <span className="text-sm font-medium">${mutationFeesCalculation.bankFee.toFixed(2)}</span>
                     </div>
                   )}
                 </>
