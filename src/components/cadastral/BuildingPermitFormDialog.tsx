@@ -274,7 +274,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           Document du permis (optionnel)
           <SectionHelpPopover
             title="Document du permis"
-            description="Joignez une copie numérique du permis de construire (scan ou photo)."
+            description="Joignez une copie numérique de l'autorisation de bâtir (scan ou photo)."
           />
         </Label>
         {!permitRecord.permitFile ? (
