@@ -74,8 +74,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     setShowIntro(true);
     setActiveTab('add');
     introCompletedRef.current = false;
-    setAddKey(k => k + 1);
-    setRemoveKey(k => k + 1);
     onOpenChange(false);
   }, [onOpenChange]);
 
