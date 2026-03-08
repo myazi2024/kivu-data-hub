@@ -18,7 +18,7 @@ import { useMutationRequest } from '@/hooks/useMutationRequest';
 import type { MutationFee, MutationRequest } from '@/types/mutation';
 import { LATE_FEE_CAP_USD, DAILY_LATE_FEE_USD, LEGAL_GRACE_PERIOD_DAYS } from '@/types/mutation';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
-import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { format, differenceInDays, addMonths } from 'date-fns';
