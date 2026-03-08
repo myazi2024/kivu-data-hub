@@ -138,6 +138,10 @@ const UserDashboard = () => {
               <UserLandDisputes />
             </TabsContent>
 
+            <TabsContent value="mutations" className="mt-4">
+              <UserMutationRequests />
+            </TabsContent>
+
             <TabsContent value="invoices" className="mt-4">
               <CadastralDashboardTabs />
             </TabsContent>
