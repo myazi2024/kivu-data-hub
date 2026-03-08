@@ -10,7 +10,7 @@ import { TenantEntry, createEmptyTenant, calculateTotalRentalIncome } from './ta
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { detectZoneType, isZoneAutoDetected, detectUsageType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
-import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants'; // #18 fix
+import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants';
 
 interface IRLCalculatorProps {
   parcelNumber: string;
@@ -19,7 +19,7 @@ interface IRLCalculatorProps {
   onOpenServiceCatalog?: () => void;
 }
 
-type CalcStep = 'questions' | 'summary' | 'confirmation'; // #4 fix
+type CalcStep = 'questions' | 'summary' | 'confirmation';
 
 const IRLCalculator: React.FC<IRLCalculatorProps> = ({
   parcelNumber, parcelId, parcelData, onOpenServiceCatalog
@@ -64,7 +64,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     monthsLate: 0,
   });
 
-  // Sync areaSqm and ownerName when parcelData loads asynchronously
   useEffect(() => {
     const area = Number(parcelData?.area_sqm);
     if (area > 0) {
@@ -78,7 +77,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     }
   }, [parcelData?.current_owner_name]);
 
-  // #15 fix: Reset form state
   const resetForm = () => {
     setNif('');
     setHasNif(null);
@@ -100,7 +98,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       toast.error('Veuillez renseigner votre Numéro d\'Impôt (NIF)');
       return;
     }
-    // #18 fix: Use centralized validateNIF
     if (hasNif === true && nif.trim() && !validateNIF(nif)) {
       toast.error(NIF_FORMAT_ERROR);
       return;
@@ -110,7 +107,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       return;
     }
 
-    // Compute total from tenants
     const validTenants = tenants.filter(t => t.monthlyRentUsd > 0);
     if (validTenants.length === 0) {
       toast.error('Veuillez renseigner au moins un locataire avec un loyer');
@@ -119,15 +115,16 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
 
     const { totalIncome } = calculateTotalRentalIncome(tenants, input.fiscalYear);
 
-    // #9 fix: Pass annualRentalIncome directly instead of hacking occupancyMonths=1.
-    // The calculator multiplies monthlyRentUsd * occupancyMonths, so we pass
-    // totalIncome as monthlyRentUsd with occupancyMonths=1.
-    // This is documented and intentional — the alternative would require
-    // refactoring the calculator interface which affects PropertyTax too.
+    /**
+     * #9 fix: Use annualRentalIncomeOverride instead of the occupancyMonths=1 hack.
+     * This eliminates the fragile workaround and is semantically correct.
+     */
     const adjustedInput: TaxCalculationInput = {
       ...input,
-      monthlyRentUsd: totalIncome,
-      occupancyMonths: 1,
+      isRented: true,
+      monthlyRentUsd: 0, // not used when override is set
+      occupancyMonths: 12,
+      annualRentalIncomeOverride: totalIncome,
     };
 
     const res = calculate(adjustedInput);
@@ -144,7 +141,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
 
     setSubmitting(true);
     try {
-      // Duplicate check
       const isDuplicate = await checkDuplicateTaxSubmission(
         supabase, parcelNumber, user.id, 'Impôt sur le revenu locatif', input.fiscalYear
       );
@@ -165,7 +161,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
         idDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
       }
 
-      // Prepare tenant data for storage (sanitized)
       const tenantData = tenants
         .filter(t => t.monthlyRentUsd > 0)
         .map(t => ({
@@ -203,14 +198,12 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       });
 
       if (error) {
-        // Cleanup orphaned file
         if (uploadedIdPath) {
           await supabase.storage.from('cadastral-documents').remove([uploadedIdPath]);
         }
         throw error;
       }
 
-      // Fire-and-forget notification
       supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Déclaration IRL',
@@ -220,7 +213,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
       }).then(() => {});
 
       toast.success('Déclaration IRL soumise avec succès');
-      // #4 fix: Show confirmation
       setCalcStep('confirmation');
     } catch (error: any) {
       console.error('IRL submit error:', error);
@@ -238,7 +230,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
     );
   }
 
-  // #4 fix: Confirmation screen
   if (calcStep === 'confirmation' && result) {
     return (
       <TaxConfirmationStep
@@ -271,7 +262,6 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
 
   return (
     <div>
-      {/* #12 fix: Show tax history */}
       <div className="px-4 pt-3">
         <TaxHistorySection parcelNumber={parcelNumber} taxTypeFilter="Impôt sur le revenu locatif" />
       </div>

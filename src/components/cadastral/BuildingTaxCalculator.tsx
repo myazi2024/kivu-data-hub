@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,22 +8,22 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Building2, Calculator, Info, ArrowLeft, Loader2, MapPin, Lock } from 'lucide-react';
+import { Building2, Calculator, Info, ArrowLeft, Loader2, MapPin, Upload, FileCheck, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SectionHelpPopover from './SectionHelpPopover';
-import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants';
+import { validateNIF, NIF_FORMAT_ERROR, CONSTRUCTION_LABELS } from './tax-calculator/taxFormConstants';
 import { SummaryRow, PlainRow } from './tax-calculator/SummaryRowComponents';
 import TaxConfirmationStep from './tax-calculator/TaxConfirmationStep';
 import TaxHistorySection from './tax-calculator/TaxHistorySection';
+import TaxPenaltySection from './tax-calculator/TaxPenaltySection';
 import {
   getFiscalZoneCategory,
   FISCAL_ZONE_MULTIPLIERS,
   FISCAL_ZONE_LABELS,
   calculateBuildingTaxMonthsLate,
 } from '@/hooks/usePropertyTaxCalculator';
-// #16, #17 fix: Use centralized detection from taxSharedUtils
 import { detectZoneType, detectConstructionType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
 
 interface BuildingTaxCalculatorProps {
@@ -33,17 +33,18 @@ interface BuildingTaxCalculatorProps {
   onOpenServiceCatalog?: () => void;
 }
 
-type CalcStep = 'questions' | 'summary' | 'confirmation'; // #2 fix
+type CalcStep = 'questions' | 'summary' | 'confirmation';
 
 const BUILDING_TAX_RATES: Record<string, Record<string, number>> = {
   urban: { en_dur: 500, semi_dur: 300, en_paille: 100 },
   rural: { en_dur: 300, semi_dur: 150, en_paille: 50 },
 };
 
-const CONSTRUCTION_LABELS: Record<string, string> = {
-  en_dur: 'En dur (béton, briques)',
-  semi_dur: 'Semi-dur (mixte)',
-  en_paille: 'En paille / bois',
+/** #10 fix: Use centralized CONSTRUCTION_LABELS from taxFormConstants + extended descriptions for selectors */
+const CONSTRUCTION_SELECT_LABELS: Record<string, string> = {
+  en_dur: 'En dur (béton, briques, ciment)',
+  semi_dur: 'Semi-dur (matériaux mixtes)',
+  en_paille: 'En paille / bois (traditionnel)',
 };
 
 const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
@@ -54,12 +55,14 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [loading, setLoading] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(2800);
-  // #5 fix: Fetch building tax rates from DB config (fallback to hardcoded)
   const [dbBuildingRates, setDbBuildingRates] = useState<Record<string, Record<string, number>> | null>(null);
 
   const [nif, setNif] = useState('');
   const [hasNif, setHasNif] = useState<boolean | null>(null);
   const [ownerName, setOwnerName] = useState(parcelData?.current_owner_name || '');
+  // #7 fix: ID document upload support
+  const [idDocumentFile, setIdDocumentFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (parcelData?.current_owner_name && !ownerName) setOwnerName(parcelData.current_owner_name);
@@ -95,18 +98,17 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     fetchConfig();
   }, []);
 
-  // Effective building tax rates: DB config or hardcoded fallback
   const effectiveRates = dbBuildingRates || BUILDING_TAX_RATES;
 
-  // #16, #17 fix: Use centralized detection
   const defaultZone = detectZoneType(parcelNumber, parcelData);
-  // #8 fix: Use detectConstructionType (returns null for unknown) with fallback to 'en_dur' only if parcel has construction
+  // #3 fix: Use detected construction, fallback to null instead of hardcoded 'en_dur'
   const detectedConstruction = detectConstructionType(parcelData);
-  const defaultConstruction = detectedConstruction || (parcelData?.construction_type && parcelData.construction_type !== 'Terrain nu' ? 'en_dur' : 'en_dur');
 
-  // #7 fix: Zone is now editable via a Select
   const [zoneType, setZoneType] = useState<'urban' | 'rural'>(defaultZone);
-  const [constructionType, setConstructionType] = useState<'en_dur' | 'semi_dur' | 'en_paille'>(defaultConstruction);
+  // #3 fix: Default to detected construction or 'en_dur' only if parcel actually has construction
+  const [constructionType, setConstructionType] = useState<'en_dur' | 'semi_dur' | 'en_paille'>(
+    detectedConstruction || 'en_dur'
+  );
   const [areaSqm, setAreaSqm] = useState(Number(parcelData?.area_sqm) || 0);
   const [fiscalYear, setFiscalYear] = useState(currentYear);
   const [numberOfFloors, setNumberOfFloors] = useState(1);
@@ -117,16 +119,13 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     if (parcelData?.area_sqm && !areaSqm) setAreaSqm(Number(parcelData.area_sqm));
   }, [parcelData?.area_sqm]);
 
-  // Use centralized fiscal zone logic
   const ville = parcelData?.ville || '';
   const province = parcelData?.province || '';
   const fiscalZoneCategory = getFiscalZoneCategory(province, ville || null, zoneType as 'urban' | 'rural');
   const zoneMultiplier = FISCAL_ZONE_MULTIPLIERS[fiscalZoneCategory];
 
-  // Auto-calculate months late using centralized function
   const monthsLate = useMemo(() => calculateBuildingTaxMonthsLate(fiscalYear), [fiscalYear]);
 
-  // Memoized calculation
   const calculation = useMemo(() => {
     const baseTaxRate = effectiveRates[zoneType]?.[constructionType] || 0;
     const conditionMultiplier = buildingCondition === 'bon' ? 1.0 : buildingCondition === 'moyen' ? 0.75 : 0.5;
@@ -136,7 +135,6 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     const baseTaxCDF = totalSurface * baseTaxRate * zoneMultiplier * conditionMultiplier * ageReduction;
     const baseTaxUSD = Math.round((baseTaxCDF / exchangeRate) * 100) / 100;
 
-    // Penalty formula: 2%/month capped at 24% + 25% majoration if > 3 months
     const penaltyRate = Math.min(monthsLate * 2, 24) / 100;
     const majorationRate = monthsLate > 3 ? 0.25 : 0;
     const penaltyAmountUSD = Math.round(baseTaxUSD * penaltyRate * 100) / 100;
@@ -153,16 +151,32 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
 
   const canCalculate = areaSqm > 0 && constructionType;
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+        toast.error('Format non supporté (images ou PDF uniquement)');
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        toast.error('Fichier trop volumineux (max 10 Mo)');
+        return;
+      }
+      setIdDocumentFile(file);
+    }
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleCalculate = () => {
     if (!canCalculate) { toast.error('Renseignez la superficie et le type de construction'); return; }
     if (hasNif === true && nif && !validateNIF(nif)) { toast.error(NIF_FORMAT_ERROR); return; }
     setCalcStep('summary');
   };
 
-  // #15 fix: Reset form
   const resetForm = () => {
     setNif('');
     setHasNif(null);
+    setIdDocumentFile(null);
     setFiscalYear(currentYear);
     setBuildingCondition('bon');
     setNumberOfFloors(1);
@@ -172,7 +186,6 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     if (!user) { toast.error('Vous devez être connecté'); return; }
     setLoading(true);
     try {
-      // Duplicate check
       const isDuplicate = await checkDuplicateTaxSubmission(
         supabase, parcelNumber, user.id, 'Taxe de bâtisse', fiscalYear
       );
@@ -182,13 +195,33 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         return;
       }
 
-      // Persist to cadastral_contributions
+      // #7 fix: Upload ID document if present
+      let idDocUrl: string | null = null;
+      let uploadedIdPath: string | null = null;
+      if (idDocumentFile) {
+        const ext = idDocumentFile.name.split('.').pop();
+        const path = `tax-documents/${user.id}/id_building_${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from('cadastral-documents').upload(path, idDocumentFile);
+        if (upErr) throw upErr;
+        uploadedIdPath = path;
+        idDocUrl = supabase.storage.from('cadastral-documents').getPublicUrl(path).data.publicUrl;
+      }
+
+      // #6 fix: Include province, ville, area_sqm in root fields for data completeness
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
         user_id: user.id,
         contribution_type: 'update',
         status: 'pending',
+        province: province || null,
+        ville: ville || null,
+        area_sqm: areaSqm || null,
+        construction_type: constructionType === 'en_dur' ? 'En dur'
+          : constructionType === 'semi_dur' ? 'Semi-dur'
+          : 'En paille',
+        construction_year: constructionYear,
+        owner_document_url: idDocUrl,
         tax_history: [{
           tax_type: 'Taxe de bâtisse',
           tax_year: fiscalYear,
@@ -201,12 +234,19 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           floors: numberOfFloors,
           construction_year: constructionYear,
           penalty_amount_usd: calculation.totalPenaltiesUSD,
+          fiscal_zone: fiscalZoneCategory,
           payment_status: 'En attente',
           nif: hasNif ? nif : null,
         }],
       });
 
-      if (error) throw error;
+      if (error) {
+        // Cleanup orphaned file
+        if (uploadedIdPath) {
+          await supabase.storage.from('cadastral-documents').remove([uploadedIdPath]);
+        }
+        throw error;
+      }
 
       // Fire-and-forget notification
       supabase.from('notifications').insert({
@@ -218,7 +258,6 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
       }).then(() => {});
 
       toast.success('Déclaration soumise avec succès');
-      // #2 fix: Show confirmation instead of going back
       setCalcStep('confirmation');
     } catch (error: any) {
       console.error('Error:', error);
@@ -228,7 +267,6 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     }
   };
 
-  // #2 fix: Confirmation screen
   if (calcStep === 'confirmation') {
     return (
       <TaxConfirmationStep
@@ -263,6 +301,8 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
             <h4 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Identification</h4>
             <SummaryRow label="Parcelle" value={parcelNumber} bold mono />
             <SummaryRow label="Propriétaire" value={ownerName || '—'} />
+            {province && <SummaryRow label="Province" value={province} />}
+            {ville && <SummaryRow label="Ville" value={ville} />}
             {hasNif && nif && <SummaryRow label="NIF" value={nif} mono />}
             <Separator />
             <h4 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Bâtiment</h4>
@@ -315,7 +355,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         </div>
       </div>
 
-      {/* #12 fix: Tax history */}
+      {/* Tax history */}
       <TaxHistorySection parcelNumber={parcelNumber} taxTypeFilter="Taxe de bâtisse" />
 
       <Alert className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
@@ -357,10 +397,39 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           {hasNif === false && (
             <Alert className="rounded-lg"><AlertDescription className="text-xs">Un NIF vous sera attribué d'office après paiement.</AlertDescription></Alert>
           )}
+
+          {/* #7 fix: ID document upload */}
+          <div className="space-y-1.5 pt-2 border-t border-border/50">
+            <Label className="text-sm font-medium flex items-center gap-1.5">
+              Pièce d'identité
+              <SectionHelpPopover title="Document d'identité" description="Joignez une copie de votre pièce d'identité (carte d'identité, passeport). Ce document est requis pour la validation de votre déclaration." />
+            </Label>
+            {idDocumentFile ? (
+              <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
+                <FileCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="text-sm flex-1 truncate">{idDocumentFile.name}</span>
+                <button onClick={() => setIdDocumentFile(null)} className="p-1 rounded-md hover:bg-muted transition-colors">
+                  <X className="h-3.5 w-3.5 text-muted-foreground" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center gap-2 cursor-pointer p-2.5 rounded-xl border border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-all">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Choisir un fichier…</span>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".pdf,.jpg,.jpeg,.png,.webp"
+                  onChange={handleFileChange}
+                />
+              </label>
+            )}
+          </div>
         </CardContent>
       </Card>
 
-      {/* Localisation synchronisée — #7 fix: Zone is now editable */}
+      {/* Localisation — Zone editable */}
       <Card className="rounded-xl border-2">
         <CardContent className="p-3 space-y-2">
           <h4 className="text-sm font-semibold flex items-center gap-1.5">
@@ -370,7 +439,6 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
             <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Province</span><span className="font-medium">{province || '—'}</span></div>
             <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Ville</span><span className="font-medium">{ville || '—'}</span></div>
             <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Commune</span><span className="font-medium">{parcelData?.commune || '—'}</span></div>
-            {/* #7 fix: Zone selector instead of read-only */}
             <div className="p-1.5">
               <Label className="text-[10px] text-muted-foreground">Zone</Label>
               <Select value={zoneType} onValueChange={(v) => setZoneType(v as 'urban' | 'rural')}>
@@ -403,9 +471,9 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
             <Select value={constructionType} onValueChange={(v) => setConstructionType(v as 'en_dur' | 'semi_dur' | 'en_paille')}>
               <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="en_dur">En dur (béton, briques, ciment)</SelectItem>
-                <SelectItem value="semi_dur">Semi-dur (matériaux mixtes)</SelectItem>
-                <SelectItem value="en_paille">En paille / bois (traditionnel)</SelectItem>
+                {Object.entries(CONSTRUCTION_SELECT_LABELS).map(([key, label]) => (
+                  <SelectItem key={key} value={key}>{label}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -445,7 +513,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         </CardContent>
       </Card>
 
-      {/* Exercice fiscal — #1 fix: Clean penalty display */}
+      {/* Exercice fiscal + penalty via shared component */}
       <Card className="rounded-xl border-2">
         <CardContent className="p-3 space-y-3">
           <h4 className="text-sm font-semibold">Exercice fiscal</h4>
@@ -460,17 +528,11 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
               </SelectContent>
             </Select>
           </div>
-          {monthsLate > 0 && (
-            <Alert className="rounded-lg border-destructive/30 bg-destructive/5">
-              <AlertDescription className="text-xs text-destructive">
-                {/* #1 fix: Display penalty percentage correctly without redundancy */}
-                Retard de {monthsLate} mois (échéance: 30 juin {fiscalYear}) — Pénalité: {Math.min(monthsLate * 2, 24)}%
-                {monthsLate > 3 && ` + majoration 25%`}
-              </AlertDescription>
-            </Alert>
-          )}
         </CardContent>
       </Card>
+
+      {/* #24 fix: Use shared TaxPenaltySection with 'building' type */}
+      <TaxPenaltySection fiscalYear={fiscalYear} taxType="building" />
 
       {/* Aperçu */}
       {canCalculate && (

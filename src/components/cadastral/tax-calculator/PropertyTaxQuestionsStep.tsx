@@ -122,8 +122,13 @@ const PropertyTaxQuestionsStep: React.FC<PropertyTaxQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section: Localisation — shared component */}
-      <TaxLocationSection input={input} parcelData={parcelData} />
+      {/* Section: Localisation — #4 fix: pass setInput and zoneAutoDetected for editability */}
+      <TaxLocationSection
+        input={input}
+        setInput={setInput}
+        parcelData={parcelData}
+        zoneAutoDetected={zoneAutoDetected}
+      />
 
       {/* Section: Détails de la construction — shared component */}
       <ConstructionDetailsSection
