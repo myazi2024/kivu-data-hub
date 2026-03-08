@@ -506,6 +506,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       toast.error('Erreur lors de la soumission');
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
