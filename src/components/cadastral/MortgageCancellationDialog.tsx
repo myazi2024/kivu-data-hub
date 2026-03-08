@@ -1239,7 +1239,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </>
         ) : (
           <>
-            <CreditCard className="mr-2 h-4 w-4" />
+            <Phone className="mr-2 h-4 w-4" />
             Payer {formatCurrency(totalAmount)} et soumettre
           </>
         )}
