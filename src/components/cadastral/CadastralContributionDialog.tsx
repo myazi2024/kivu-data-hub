@@ -37,11 +37,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import confetti from 'canvas-confetti';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { QuickAuthDialog } from './QuickAuthDialog';
-import MobileMoneyPayment from '@/components/payment/MobileMoneyPayment';
-import { CartItem } from '@/hooks/useCart';
 import { useContributionConfig } from '@/hooks/useContributionConfig';
 import { ParcelMapPreview } from './ParcelMapPreview';
-import { PermitPaymentDialog } from './PermitPaymentDialog';
 import { useMapConfig } from '@/hooks/useMapConfig';
 import SuggestivePicklist from './SuggestivePicklist';
 
@@ -70,9 +67,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const [showExitConfirmation, setShowExitConfirmation] = useState(false);
   const formDirtyRef = useRef(false);
   const isClosingAfterSuccessRef = useRef(false);
-  const [showPermitPayment, setShowPermitPayment] = useState(false);
-  const [savedContributionId, setSavedContributionId] = useState<string | null>(null);
-  const [savedPermitRequestData, setSavedPermitRequestData] = useState<any>(null);
   const [showQuickAuth, setShowQuickAuth] = useState(false);
   const [pendingSubmission, setPendingSubmission] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -1062,11 +1056,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         return null;
       }
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: signedData, error: signedError } = await supabase.storage
         .from('cadastral-documents')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
 
-      return publicUrl;
+      if (signedError || !signedData?.signedUrl) {
+        console.error('Signed URL error:', signedError);
+        return null;
+      }
+
+      return signedData.signedUrl;
     } catch (error) {
       console.error('Error uploading file:', error);
       return null;
@@ -1959,7 +1958,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
 
   // Calculer la valeur CCC estimée (similaire au backend calculate_ccc_value)
-  const calculateCCCValue = () => {
+  const calculateCCCValue = useMemo(() => {
     let totalFields = 0;
     let filledFields = 0;
     
@@ -2059,7 +2058,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields,
       totalFields
     };
-  };
+  }, [formData, currentOwners, buildingPermits, permitRequest, gpsCoordinates, previousOwners, taxRecords, mortgageRecords, ownerDocFile, titleDocFiles]);
 
   // Calculer les détails de progression avec points et badges
   const calculateProgressDetails = () => {
@@ -2329,9 +2328,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // Reset form data
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
-    setShowPermitPayment(false);
-    setSavedContributionId(null);
-    setSavedPermitRequestData(null);
     setShowQuickAuth(false);
     setPendingSubmission(false);
     setUploading(false);
@@ -2469,115 +2465,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     onOpenChange(false);
   };
 
-  // Dialogue de paiement de permis
-  if (showPermitPayment && savedPermitRequestData) {
-    const permitType = savedPermitRequestData.permitType;
-    const servicePrice = permitType === 'construction' ? 150 : 200;
-    const serviceName = permitType === 'construction' 
-      ? 'Autorisation de bâtir' 
-      : 'Autorisation de régularisation';
-    
-    const cartItem: CartItem = {
-      id: `permit-${Date.now()}`,
-      title: serviceName,
-      price: servicePrice,
-      description: `Demande de ${serviceName.toLowerCase()} pour la parcelle ${parcelNumber}`
-    };
-    
-    return (
-      <Dialog open={open} onOpenChange={handleClose}>
-        <DialogPrimitive.Portal>
-          <DialogPrimitive.Overlay 
-            className="fixed inset-0 z-[10000] bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" 
-          />
-          <DialogPrimitive.Content
-            className={cn(
-              "fixed left-[50%] top-[50%] z-[10000] grid w-[calc(100%-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-2xl duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%] rounded-xl sm:max-w-lg overflow-y-auto max-h-[90vh]"
-            )}
-          >
-            <div className="space-y-4 sm:space-y-6">
-              <div className="text-center space-y-2">
-                <DialogPrimitive.Title className="text-xl sm:text-2xl font-semibold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                  Paiement du {serviceName}
-                </DialogPrimitive.Title>
-                <DialogPrimitive.Description className="text-sm text-muted-foreground">
-                  Finalisez le paiement pour traiter votre demande de permis
-                </DialogPrimitive.Description>
-              </div>
-              
-              {/* Détails de la demande */}
-              <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Service</span>
-                  <span className="font-semibold">{serviceName}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Parcelle</span>
-                  <span className="font-semibold">{parcelNumber}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-muted-foreground">Demandeur</span>
-                  <span className="font-semibold">{savedPermitRequestData.applicantName}</span>
-                </div>
-                <div className="h-px bg-border my-2" />
-                <div className="flex justify-between items-center text-lg">
-                  <span className="font-semibold">Total à payer</span>
-                  <span className="font-bold text-primary">${servicePrice} USD</span>
-                </div>
-              </div>
-              
-              {/* Message informatif */}
-              <div className="bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
-                    <p className="font-semibold">À propos du traitement de votre demande</p>
-                    <p className="text-xs">
-                      Une fois le paiement effectué, votre demande sera traitée par nos services dans un délai de 5 à 10 jours ouvrables. 
-                      Vous recevrez une notification avec le reçu de paiement et les prochaines étapes.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Composant de paiement */}
-              <div className="border rounded-lg p-4">
-                <MobileMoneyPayment
-                  item={cartItem}
-                  currency="USD"
-                  onPaymentSuccess={() => {
-                    toast({
-                      title: "Paiement effectué",
-                      description: "Votre demande de permis sera traitée dans les plus brefs délais.",
-                    });
-                    setShowPermitPayment(false);
-                    setShowSuccess(true);
-                  }}
-                />
-              </div>
-              
-              {/* Option pour payer plus tard */}
-              <div className="text-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    setShowPermitPayment(false);
-                    setShowSuccess(true);
-                  }}
-                  className="text-sm"
-                >
-                  Payer plus tard
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Vous pourrez effectuer le paiement depuis votre espace client
-                </p>
-              </div>
-            </div>
-          </DialogPrimitive.Content>
-        </DialogPrimitive.Portal>
-      </Dialog>
-    );
-  }
 
   if (showSuccess) {
     return (
@@ -5129,13 +5016,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </h3>
                       <div className="flex items-baseline gap-1">
                         <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
-                          ${calculateCCCValue().value.toFixed(2)}
+                          ${calculateCCCValue.value.toFixed(2)}
                         </span>
                         <span className="text-xs text-amber-700 dark:text-amber-300">/ $5.00</span>
                       </div>
                     </div>
                   </div>
-                  {calculateCCCValue().value < 5 && (
+                  {calculateCCCValue.value < 5 && (
                     <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1">
                       <Info className="h-3 w-3 flex-shrink-0" />
                       <span>Complétez plus de champs pour maximiser votre CCC</span>
@@ -5476,7 +5363,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               })()}
 
               {/* Message de motivation */}
-              {calculateCCCValue().value < 5 && (
+              {calculateCCCValue.value < 5 && (
                 <Card className="rounded-2xl shadow-sm border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
                   <CardContent className="p-3">
                     <p className="text-xs text-blue-800 dark:text-blue-200 flex items-start gap-1.5">
@@ -5604,20 +5491,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
     {/* Bouton WhatsApp flottant */}
     {open && <WhatsAppFloatingButton />}
-    
-    {/* Dialog de paiement du permis */}
-    {showPermitPayment && savedContributionId && savedPermitRequestData && (
-      <PermitPaymentDialog
-        open={showPermitPayment}
-        onOpenChange={setShowPermitPayment}
-        contributionId={savedContributionId}
-        permitType={savedPermitRequestData.permitType}
-        onPaymentSuccess={() => {
-          setShowPermitPayment(false);
-          setShowSuccess(true);
-        }}
-      />
-    )}
 
     {/* Dialog de confirmation de fermeture */}
     <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
