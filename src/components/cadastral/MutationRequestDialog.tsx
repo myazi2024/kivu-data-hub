@@ -1865,27 +1865,40 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
       <div className="space-y-2">
         <Label className="text-xs font-medium">Mode de paiement</Label>
-        <div className="grid grid-cols-2 gap-1.5">
-          <Button
-            variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setPaymentMethod('mobile_money')}
-            className="h-8 text-xs rounded-lg"
-          >
-            Mobile Money
-          </Button>
-          <Button
-            variant={paymentMethod === 'bank_card' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setPaymentMethod('bank_card')}
-            className="h-8 text-xs rounded-lg"
-          >
-            Carte bancaire
-          </Button>
-        </div>
+        {!hasAnyPaymentMethod ? (
+          <Alert className="rounded-lg border-destructive/20 bg-destructive/10">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <AlertDescription className="text-xs text-destructive">
+              Aucun moyen de paiement actif n'est disponible pour le moment.
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <div className={`grid ${availableMethods.hasMobileMoney && availableMethods.hasBankCard ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5`}>
+            {availableMethods.hasMobileMoney && (
+              <Button
+                variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPaymentMethod('mobile_money')}
+                className="h-8 text-xs rounded-lg"
+              >
+                Mobile Money
+              </Button>
+            )}
+            {availableMethods.hasBankCard && (
+              <Button
+                variant={paymentMethod === 'bank_card' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setPaymentMethod('bank_card')}
+                className="h-8 text-xs rounded-lg"
+              >
+                Carte bancaire
+              </Button>
+            )}
+          </div>
+        )}
       </div>
 
-      {paymentMethod === 'mobile_money' && (
+      {paymentMethod === 'mobile_money' && availableMethods.hasMobileMoney && (
         <div className="space-y-2">
           <div className="space-y-1">
             <Label className="text-[10px]">Opérateur</Label>
@@ -1894,19 +1907,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 <SelectValue placeholder="Sélectionner..." />
               </SelectTrigger>
               <SelectContent>
-                {availableMethods.enabledProviders.mobileMoneyProviders.length > 0 ? (
-                  availableMethods.enabledProviders.mobileMoneyProviders.map(provider => (
-                    <SelectItem key={provider} value={provider} className="text-xs">
-                      {provider === 'airtel' ? 'Airtel Money' : provider === 'orange' ? 'Orange Money' : provider === 'mpesa' ? 'M-Pesa' : provider}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <>
-                    <SelectItem value="airtel" className="text-xs">Airtel Money</SelectItem>
-                    <SelectItem value="orange" className="text-xs">Orange Money</SelectItem>
-                    <SelectItem value="mpesa" className="text-xs">M-Pesa</SelectItem>
-                  </>
-                )}
+                {enabledMobileProviders.map(provider => (
+                  <SelectItem key={provider} value={provider} className="text-xs">
+                    {PROVIDER_LABELS[provider] || provider}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
