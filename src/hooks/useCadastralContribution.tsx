@@ -40,7 +40,7 @@ export interface CadastralContributionData {
   }>;
   previousPermitNumber?: string; // ✅ NOUVEAU: pour régularisation
   
-  // Demande de permis de construire (nouveau)
+  // Demande d'autorisation de bâtir (nouveau)
   permitRequest?: {
     permitType: 'construction' | 'regularization';
     hasExistingConstruction: boolean;
