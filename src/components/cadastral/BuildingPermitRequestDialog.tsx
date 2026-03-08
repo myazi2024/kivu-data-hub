@@ -60,7 +60,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const isMobile = useIsMobile();
+  const isMobile = (typeof window !== 'undefined' && window.innerWidth < 768);
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
   const abortControllerRef = useRef<AbortController | null>(null);
   
