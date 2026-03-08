@@ -64,8 +64,8 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
   {
     id: '5',
     key: 'permit_add',
-    label: 'Ajouter Permis',
-    description: 'Pour une nouvelle construction',
+    label: 'Ajouter une autorisation',
+    description: 'Bâtir ou régulariser',
     isActive: true,
     isVisible: true,
     displayOrder: 5,
