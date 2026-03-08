@@ -953,10 +953,10 @@ const AdminMutationRequests: React.FC = () => {
                     <span className="text-muted-foreground">Montant payé</span>
                     <span className="font-bold text-primary">${Number(selectedRequest.total_amount_usd).toFixed(2)}</span>
                   </div>
-                  {safeProposedChanges(selectedRequest).market_value_usd && (
+                  {selectedRequest.proposed_changes && (selectedRequest.proposed_changes as any).market_value_usd && (
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Valeur vénale</span>
-                      <span>${Number(safeProposedChanges(selectedRequest).market_value_usd).toLocaleString()}</span>
+                      <span>${Number((selectedRequest.proposed_changes as any).market_value_usd).toLocaleString()}</span>
                     </div>
                   )}
                   {selectedRequest.justification && (
