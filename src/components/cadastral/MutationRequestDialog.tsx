@@ -1349,7 +1349,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       <Alert className="text-left py-2 rounded-lg">
         <AlertDescription className="text-[10px]">Conservez votre numéro de référence. Vous recevrez une notification lors du traitement.</AlertDescription>
       </Alert>
-      <Button onClick={handleClose} className="w-full h-8 text-xs rounded-lg">Fermer</Button>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => { handleClose(); window.location.href = '/user-dashboard?tab=mutations'; }} className="flex-1 h-8 text-xs rounded-lg">
+          Voir mes demandes
+        </Button>
+        <Button onClick={handleClose} className="flex-1 h-8 text-xs rounded-lg">Fermer</Button>
+      </div>
     </div>
   );
 
