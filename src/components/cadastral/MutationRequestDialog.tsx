@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,15 @@ import { supabase } from '@/integrations/supabase/client';
 import RealEstateExpertiseRequestDialog from './RealEstateExpertiseRequestDialog';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SectionHelpPopover from './SectionHelpPopover';
+import MutationLateFeeSection from './mutation/MutationLateFeeSection';
+import {
+  MUTATION_TYPES,
+  LEGAL_STATUS_OPTIONS,
+  REQUESTER_TYPES,
+  PROVIDER_LABELS,
+  isTransferMutation as checkIsTransfer,
+  hasLateFees as checkHasLateFees,
+} from './mutation/MutationConstants';
 
 interface MutationRequestDialogProps {
   parcelNumber: string;
@@ -37,9 +46,9 @@ interface MutationRequestDialogProps {
     commune?: string;
     quartier?: string;
     current_owner_name?: string;
-    title_issue_date?: string; // Date de délivrance du titre foncier depuis CCC
-    owner_acquisition_date?: string; // Date d'acquisition par le propriétaire actuel
-    is_title_in_current_owner_name?: boolean; // Le titre est-il au nom du propriétaire actuel?
+    title_issue_date?: string;
+    owner_acquisition_date?: string;
+    is_title_in_current_owner_name?: boolean;
   };
   trigger?: React.ReactNode;
   open?: boolean;
@@ -53,34 +62,6 @@ type RequiredDocument = {
   label: string;
   required: boolean;
   handledByExpertiseCertificate?: boolean;
-};
-
-// Types de mutation alignés avec le formulaire CCC
-const MUTATION_TYPES = [
-  { value: 'vente', label: 'Vente', description: 'Transfert de propriété suite à une vente' },
-  { value: 'donation', label: 'Donation', description: 'Transfert gratuit de propriété' },
-  { value: 'succession', label: 'Succession', description: 'Transfert suite à un héritage' },
-  { value: 'expropriation', label: 'Expropriation', description: 'Transfert par décision administrative' },
-  { value: 'echange', label: 'Échange', description: 'Échange de propriétés' },
-  { value: 'correction', label: 'Correction d\'erreur', description: 'Correction des données existantes' },
-  { value: 'mise_a_jour', label: 'Mise à jour', description: 'Actualisation des informations' }
-];
-
-// Statut juridique aligné avec le formulaire CCC
-const LEGAL_STATUS_OPTIONS = [
-  { value: 'personne_physique', label: 'Personne physique' },
-  { value: 'personne_morale', label: 'Personne morale' }
-];
-
-const REQUESTER_TYPES = [
-  { value: 'proprietaire', label: 'Propriétaire actuel' },
-  { value: 'mandataire', label: 'Mandataire/Représentant' }
-];
-
-const PROVIDER_LABELS: Record<string, string> = {
-  airtel: 'Airtel Money',
-  orange: 'Orange Money',
-  mpesa: 'M-Pesa',
 };
 
 const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
@@ -106,11 +87,11 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [step, setStep] = useState<Step>('form');
   const [createdRequest, setCreatedRequest] = useState<MutationRequest | null>(null);
   
-  // Form state - aligné avec CCC
+  // Form state
   const [mutationType, setMutationType] = useState('vente');
   const [requesterType, setRequesterType] = useState('proprietaire');
   
-  // Bénéficiaire (nouveau propriétaire pour transferts)
+  // Bénéficiaire
   const [beneficiaryLegalStatus, setBeneficiaryLegalStatus] = useState('personne_physique');
   const [beneficiaryLastName, setBeneficiaryLastName] = useState('');
   const [beneficiaryFirstName, setBeneficiaryFirstName] = useState('');
@@ -149,13 +130,13 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const enabledMobileProviders = availableMethods.enabledProviders.mobileMoneyProviders;
   const hasAnyPaymentMethod = availableMethods.hasMobileMoney || availableMethods.hasBankCard;
 
-  // Vérifier si c'est un type de mutation avec transfert
-  const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
+  // Derived booleans — memoized
+  const isTransferMutation = useMemo(() => checkIsTransfer(mutationType), [mutationType]);
+  const showLateFees = useMemo(() => checkHasLateFees(mutationType), [mutationType]);
 
-  // Récupérer automatiquement les données CCC (date titre + date acquisition) en UNE SEULE requête
+  // Récupérer automatiquement les données CCC
   useEffect(() => {
     const fetchParcelDates = async () => {
-      // Utiliser les props si déjà fournies
       const hasTitleDate = !!parcelData?.title_issue_date;
       const hasAcquisitionDate = !!parcelData?.owner_acquisition_date;
 
@@ -171,7 +152,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       if (hasTitleDate && hasAcquisitionDate) return;
 
       try {
-        // Requête unique sur les contributions validées
         const { data: contribution } = await supabase
           .from('cadastral_contributions')
           .select('title_issue_date, current_owner_since')
@@ -190,7 +170,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           setOwnerAcquisitionDateAutoDetected(true);
         }
 
-        // Si toujours pas trouvé, chercher dans la table des parcelles
         const needTitle = !hasTitleDate && !contribution?.title_issue_date;
         const needAcquisition = !hasAcquisitionDate && !contribution?.current_owner_since;
 
@@ -221,34 +200,25 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   }, [open, parcelNumber, parcelData?.title_issue_date, parcelData?.owner_acquisition_date]);
 
-  // Calculer l'âge du titre à partir de sa date de délivrance
   const calculateTitleAgeFromDate = (dateString: string) => {
     const issueDate = new Date(dateString);
     const today = new Date();
     const yearsElapsed = differenceInDays(today, issueDate) / 365;
-    
-    if (yearsElapsed >= 10) {
-      setTitleAge('10_or_more');
-    } else {
-      setTitleAge('less_than_10');
-    }
+    setTitleAge(yearsElapsed >= 10 ? '10_or_more' : 'less_than_10');
     setTitleAgeAutoDetected(true);
   };
 
-  // Calculer les frais de retard de mutation
-  // Selon la Note circulaire n°1.441/SG/AFF.F/003/2016 du 07 décembre 2016, le délai légal est de 20 jours
-  const calculateLateFees = () => {
+  // Memoized: late fee calculation — only for types that support late fees
+  const lateFeesCalculation = useMemo(() => {
+    if (!showLateFees) return { days: 0, fee: 0, applicable: false, capped: false };
     const dateToUse = ownerAcquisitionDate || manualAcquisitionDate;
     if (!dateToUse) return { days: 0, fee: 0, applicable: false, capped: false };
     
     const acquisitionDate = new Date(dateToUse);
     const today = new Date();
     const totalDaysElapsed = differenceInDays(today, acquisitionDate);
-    
     const daysAfterGracePeriod = Math.max(0, totalDaysElapsed - LEGAL_GRACE_PERIOD_DAYS);
-    
     const rawFee = daysAfterGracePeriod * DAILY_LATE_FEE_USD;
-    // Plafond légal
     const cappedFee = Math.min(rawFee, LATE_FEE_CAP_USD);
     
     return {
@@ -257,45 +227,29 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       applicable: daysAfterGracePeriod > 0,
       capped: rawFee > LATE_FEE_CAP_USD
     };
-  };
+  }, [showLateFees, ownerAcquisitionDate, manualAcquisitionDate]);
 
-  const lateFeesCalculation = calculateLateFees();
+  const getMutationTypeDetails = () => MUTATION_TYPES.find(t => t.value === mutationType);
 
-  // Get current mutation type details
-  const getMutationTypeDetails = () => {
-    return MUTATION_TYPES.find(t => t.value === mutationType);
-  };
-
-  // Vérifier la validité du certificat d'expertise (6 mois)
-  const checkCertificateValidity = () => {
+  // Memoized: certificate validity
+  const certificateValidity = useMemo(() => {
     if (!expertiseCertificateDate) return { isValid: false, daysRemaining: 0, isExpired: false };
-    
     const issueDate = new Date(expertiseCertificateDate);
     const expiryDate = addMonths(issueDate, 6);
     const today = new Date();
     const daysRemaining = differenceInDays(expiryDate, today);
-    
-    return {
-      isValid: daysRemaining > 0,
-      daysRemaining: Math.max(0, daysRemaining),
-      isExpired: daysRemaining <= 0
-    };
-  };
+    return { isValid: daysRemaining > 0, daysRemaining: Math.max(0, daysRemaining), isExpired: daysRemaining <= 0 };
+  }, [expertiseCertificateDate]);
 
-  const certificateValidity = checkCertificateValidity();
-
-  // Calcul des frais de mutation basés sur la valeur vénale
-  // Circulaire n° 005/CAB/MIN/AFF.FONC/2013 et n°0076/2023
-  const calculateMutationFees = () => {
+  // Memoized: mutation fees calculation
+  const mutationFeesCalculation = useMemo(() => {
     const value = parseFloat(marketValueUsd) || 0;
-    const BANK_FEE_PERCENTAGE = 0.005; // 0.5% frais bancaires estimés
+    const BANK_FEE_PERCENTAGE = 0.005;
     
-    // Frais applicables uniquement si valeur >= 10000 USD
     if (value < 10000) {
       return { mutationFee: 0, bankFee: 0, total: 0, applicable: false, percentage: 0 };
     }
     
-    // 3% si titre < 10 ans, 1.5% si titre >= 10 ans
     const percentage = titleAge === '10_or_more' ? 0.015 : 0.03;
     const mutationFee = value * percentage;
     const bankFee = titleAge === '10_or_more' ? 0 : value * BANK_FEE_PERCENTAGE;
@@ -307,11 +261,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       applicable: true,
       percentage: percentage * 100
     };
-  };
+  }, [marketValueUsd, titleAge]);
 
-  const mutationFeesCalculation = calculateMutationFees();
-
-  // Initialize form with mandatory fees
+  // Initialize mandatory fees
   useEffect(() => {
     const mandatoryFeeIds = fees.filter(f => f.is_mandatory).map(f => f.id);
     setSelectedFees(mandatoryFeeIds);
@@ -319,87 +271,63 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   useEffect(() => {
     if (step !== 'payment') return;
-
     if (paymentMethod === 'mobile_money' && !availableMethods.hasMobileMoney && availableMethods.hasBankCard) {
       setPaymentMethod('bank_card');
       return;
     }
-
     if (paymentMethod === 'bank_card' && !availableMethods.hasBankCard && availableMethods.hasMobileMoney) {
       setPaymentMethod('mobile_money');
       return;
     }
-
     if (paymentMethod === 'mobile_money' && enabledMobileProviders.length > 0 && !paymentProvider) {
       setPaymentProvider(enabledMobileProviders[0]);
     }
-  }, [
-    step,
-    paymentMethod,
-    paymentProvider,
-    availableMethods.hasMobileMoney,
-    availableMethods.hasBankCard,
-    enabledMobileProviders,
-  ]);
+  }, [step, paymentMethod, paymentProvider, availableMethods.hasMobileMoney, availableMethods.hasBankCard, enabledMobileProviders]);
 
   const handleFeeToggle = (feeId: string, isMandatory: boolean) => {
     if (isMandatory) return;
-    setSelectedFees(prev => 
-      prev.includes(feeId) 
-        ? prev.filter(id => id !== feeId)
-        : [...prev, feeId]
-    );
+    setSelectedFees(prev => prev.includes(feeId) ? prev.filter(id => id !== feeId) : [...prev, feeId]);
   };
 
-  const getSelectedFeesDetails = () => {
+  const getSelectedFeesDetails = useCallback(() => {
     return fees.filter(f => selectedFees.includes(f.id));
-  };
+  }, [fees, selectedFees]);
 
-  const getTotalAmount = () => {
+  const getTotalAmount = useCallback(() => {
     const baseFees = getSelectedFeesDetails().reduce((sum, fee) => sum + fee.amount_usd, 0);
-    // Ajouter les frais de mutation calculés si applicables
-    const mutationFees = mutationFeesCalculation.applicable ? mutationFeesCalculation.total : 0;
-    // Ajouter les frais de retard si applicables
-    const lateFees = lateFeesCalculation.applicable ? lateFeesCalculation.fee : 0;
+    const mutationFees = isTransferMutation && mutationFeesCalculation.applicable ? mutationFeesCalculation.total : 0;
+    const lateFees = showLateFees && lateFeesCalculation.applicable ? lateFeesCalculation.fee : 0;
     return baseFees + mutationFees + lateFees;
-  };
+  }, [getSelectedFeesDetails, isTransferMutation, mutationFeesCalculation, showLateFees, lateFeesCalculation]);
 
-  // Gestion du fichier certificat d'expertise
+  // File handlers
   const handleExpertiseCertificateSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
-    
     const file = files[0];
-    const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
-    const isValidSize = file.size <= 10 * 1024 * 1024;
-    
-    if (!isValid) {
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
       toast.error('Format non supporté (images ou PDF uniquement)');
       return;
     }
-    if (!isValidSize) {
+    if (file.size > 10 * 1024 * 1024) {
       toast.error('Fichier trop volumineux (max 10MB)');
       return;
     }
-    
     setExpertiseCertificateFile(file);
     if (expertiseCertificateInputRef.current) expertiseCertificateInputRef.current.value = '';
   };
 
-  // Gestion des fichiers
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    
     const newFiles = Array.from(files);
     const validFiles = newFiles.filter(file => {
       const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
-      const isValidSize = file.size <= 10 * 1024 * 1024; // 10MB max
+      const isValidSize = file.size <= 10 * 1024 * 1024;
       if (!isValid) toast.error(`${file.name}: Format non supporté (images ou PDF)`);
       if (!isValidSize) toast.error(`${file.name}: Fichier trop volumineux (max 10MB)`);
       return isValid && isValidSize;
     });
-    
     setAttachedFiles(prev => [...prev, ...validFiles]);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -410,26 +338,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   const uploadFiles = async (): Promise<string[]> => {
     if (attachedFiles.length === 0) return [];
-    
     setUploadingFiles(true);
     const urls: string[] = [];
-    
     try {
       for (const file of attachedFiles) {
         const fileExt = file.name.split('.').pop();
         const fileName = `mutation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
         const filePath = `mutation-documents/${user?.id}/${fileName}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('cadastral-documents')
-          .upload(filePath, file);
-        
+        const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
         if (uploadError) throw uploadError;
-        
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         urls.push(data.publicUrl);
       }
-      
       return urls;
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -440,44 +360,22 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // Documents requis par type de mutation
-  const getRequiredDocuments = (): RequiredDocument[] => {
+  // Documents requis par type
+  const getRequiredDocuments = useCallback((): RequiredDocument[] => {
     const base: RequiredDocument[] = [
       { key: 'requester_id', label: 'Pièce d\'identité du demandeur', required: true },
     ];
-
     switch (mutationType) {
       case 'vente':
-        return [
-          ...base,
-          { key: 'sale_deed', label: 'Acte de vente notarié', required: true },
-          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
-        ];
+        return [...base, { key: 'sale_deed', label: 'Acte de vente notarié', required: true }, { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true }];
       case 'donation':
-        return [
-          ...base,
-          { key: 'donation_deed', label: 'Acte de donation notarié', required: true },
-          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
-        ];
+        return [...base, { key: 'donation_deed', label: 'Acte de donation notarié', required: true }, { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true }];
       case 'succession':
-        return [
-          ...base,
-          { key: 'inheritance_certificate', label: 'Certificat d\'héritage / Jugement supplétif', required: true },
-          { key: 'death_certificate', label: 'Acte de décès', required: true },
-          { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true },
-        ];
+        return [...base, { key: 'inheritance_certificate', label: 'Certificat d\'héritage / Jugement supplétif', required: true }, { key: 'death_certificate', label: 'Acte de décès', required: true }, { key: 'expertise_certificate', label: 'Certificat d\'expertise immobilière', required: true, handledByExpertiseCertificate: true }];
       case 'expropriation':
-        return [
-          ...base,
-          { key: 'expropriation_order', label: 'Arrêté d\'expropriation', required: true },
-          { key: 'compensation_report', label: 'PV d\'indemnisation', required: true },
-        ];
+        return [...base, { key: 'expropriation_order', label: 'Arrêté d\'expropriation', required: true }, { key: 'compensation_report', label: 'PV d\'indemnisation', required: true }];
       case 'echange':
-        return [
-          ...base,
-          { key: 'exchange_contract', label: 'Contrat d\'échange notarié', required: true },
-          { key: 'dual_expertise_certificate', label: 'Certificat d\'expertise des deux biens', required: true, handledByExpertiseCertificate: true },
-        ];
+        return [...base, { key: 'exchange_contract', label: 'Contrat d\'échange notarié', required: true }, { key: 'dual_expertise_certificate', label: 'Certificat d\'expertise des deux biens', required: true, handledByExpertiseCertificate: true }];
       case 'correction':
         return [...base, { key: 'correction_proof', label: 'Document justificatif de la correction', required: true }];
       case 'mise_a_jour':
@@ -485,25 +383,20 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       default:
         return base;
     }
-  };
+  }, [mutationType]);
 
-  const requiredSupportingDocuments = getRequiredDocuments().filter(
-    (doc) => doc.required && !doc.handledByExpertiseCertificate
+  const requiredSupportingDocuments = useMemo(() =>
+    getRequiredDocuments().filter(doc => doc.required && !doc.handledByExpertiseCertificate),
+    [getRequiredDocuments]
   );
 
   useEffect(() => {
-    const requiredDocsForType = getRequiredDocuments().filter(
-      (doc) => doc.required && !doc.handledByExpertiseCertificate
-    );
-
     setRequiredDocumentChecks((prev) => {
       const next: Record<string, boolean> = {};
-      requiredDocsForType.forEach((doc) => {
-        next[doc.key] = prev[doc.key] ?? false;
-      });
+      requiredSupportingDocuments.forEach((doc) => { next[doc.key] = prev[doc.key] ?? false; });
       return next;
     });
-  }, [mutationType]);
+  }, [requiredSupportingDocuments]);
 
   const validateForm = (): boolean => {
     if (isTransferMutation && (!beneficiaryLastName.trim() || (beneficiaryLegalStatus === 'personne_physique' && !beneficiaryFirstName.trim()))) {
@@ -511,33 +404,17 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       return false;
     }
     
-    // Valider le certificat d'expertise pour les mutations avec transfert
     if (isTransferMutation) {
       if (!hasExpertiseCertificate) {
         toast.error('Veuillez indiquer si vous avez un certificat d\'expertise immobilière');
         return false;
       }
       if (hasExpertiseCertificate === 'yes') {
-        if (!expertiseCertificateFile) {
-          toast.error('Veuillez joindre votre certificat d\'expertise immobilière');
-          return false;
-        }
-        if (!expertiseCertificateDate) {
-          toast.error('Veuillez renseigner la date de délivrance du certificat');
-          return false;
-        }
-        if (certificateValidity.isExpired) {
-          toast.error('Le certificat d\'expertise est expiré (valide 6 mois). Veuillez en demander un nouveau.');
-          return false;
-        }
-        if (!marketValueUsd || parseFloat(marketValueUsd) <= 0) {
-          toast.error('Veuillez renseigner la valeur vénale du bien');
-          return false;
-        }
-        if (parseFloat(marketValueUsd) >= 10000 && !titleAge) {
-          toast.error('Veuillez indiquer l\'ancienneté du titre foncier');
-          return false;
-        }
+        if (!expertiseCertificateFile) { toast.error('Veuillez joindre votre certificat d\'expertise immobilière'); return false; }
+        if (!expertiseCertificateDate) { toast.error('Veuillez renseigner la date de délivrance du certificat'); return false; }
+        if (certificateValidity.isExpired) { toast.error('Le certificat d\'expertise est expiré (valide 6 mois). Veuillez en demander un nouveau.'); return false; }
+        if (!marketValueUsd || parseFloat(marketValueUsd) <= 0) { toast.error('Veuillez renseigner la valeur vénale du bien'); return false; }
+        if (parseFloat(marketValueUsd) >= 10000 && !titleAge) { toast.error('Veuillez indiquer l\'ancienneté du titre foncier'); return false; }
       }
       if (hasExpertiseCertificate === 'no') {
         toast.error('Un certificat d\'expertise immobilière est requis pour procéder à la mutation. Veuillez d\'abord en demander un.');
@@ -545,20 +422,15 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       }
     }
 
-    const missingCheckedDocuments = requiredSupportingDocuments.filter(
-      (doc) => !requiredDocumentChecks[doc.key]
-    );
-
+    const missingCheckedDocuments = requiredSupportingDocuments.filter(doc => !requiredDocumentChecks[doc.key]);
     if (missingCheckedDocuments.length > 0) {
-      toast.error(`Veuillez confirmer les pièces requises : ${missingCheckedDocuments.map((doc) => doc.label).join(', ')}`);
+      toast.error(`Veuillez confirmer les pièces requises : ${missingCheckedDocuments.map(doc => doc.label).join(', ')}`);
       return false;
     }
-
     if (requiredSupportingDocuments.length > 0 && attachedFiles.length < requiredSupportingDocuments.length) {
       toast.error(`Ajoutez au moins ${requiredSupportingDocuments.length} document(s) justificatif(s) pour ce type de mutation.`);
       return false;
     }
-    
     return true;
   };
 
@@ -567,21 +439,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setStep('preview');
   };
 
-  // Bug #18: Upload du certificat d'expertise vers Supabase Storage
   const uploadExpertiseCertificate = async (): Promise<string | null> => {
     if (!expertiseCertificateFile || !user) return null;
-    
     try {
       const fileExt = expertiseCertificateFile.name.split('.').pop();
       const fileName = `expertise_cert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
       const filePath = `mutation-documents/${user.id}/certificates/${fileName}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('cadastral-documents')
-        .upload(filePath, expertiseCertificateFile);
-      
+      const { error: uploadError } = await supabase.storage.from('cadastral-documents').upload(filePath, expertiseCertificateFile);
       if (uploadError) throw uploadError;
-      
       const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
       return data.publicUrl;
     } catch (error: any) {
@@ -592,39 +457,30 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   };
 
   const handleSubmitForm = async () => {
-    // Upload des fichiers avant création
     let documentUrls: string[] = [];
     if (attachedFiles.length > 0) {
       documentUrls = await uploadFiles();
-      if (documentUrls.length === 0 && attachedFiles.length > 0) {
-        return; // Upload failed
-      }
+      if (documentUrls.length === 0 && attachedFiles.length > 0) return;
     }
 
-    // Bug #18: Upload du certificat d'expertise
     let expertiseCertificateUrl: string | null = null;
     if (isTransferMutation && expertiseCertificateFile) {
       expertiseCertificateUrl = await uploadExpertiseCertificate();
-      if (!expertiseCertificateUrl) {
-        return; // Upload failed
-      }
+      if (!expertiseCertificateUrl) return;
     }
 
     const fullBeneficiaryName = beneficiaryLegalStatus === 'personne_morale'
       ? beneficiaryLastName
       : [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
 
-    // Récupérer automatiquement les infos du profil utilisateur connecté
     const requesterName = profile?.full_name || user?.email || 'Utilisateur';
     const requesterEmail = profile?.email || user?.email || '';
 
-    // Description auto-générée basée sur le type de mutation
     const mutationDetails = getMutationTypeDetails();
     const autoDescription = isTransferMutation 
       ? `${mutationDetails?.label} - Transfert à ${fullBeneficiaryName}`
       : `${mutationDetails?.label} - ${mutationDetails?.description}`;
 
-    // Bug #1: Passer le total calculé complet (base + mutation + retard)
     const totalCalculated = getTotalAmount();
 
     const request = await createMutationRequest({
@@ -645,13 +501,13 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         expertise_certificate_date: expertiseCertificateDate || undefined,
         market_value_usd: marketValueUsd ? parseFloat(marketValueUsd) : undefined,
         title_age: titleAge,
-        mutation_fees: mutationFeesCalculation.applicable ? {
+        mutation_fees: isTransferMutation && mutationFeesCalculation.applicable ? {
           percentage: mutationFeesCalculation.percentage,
           mutation_fee: mutationFeesCalculation.mutationFee,
           bank_fee: mutationFeesCalculation.bankFee,
           total: mutationFeesCalculation.total
         } : undefined,
-        late_fees: lateFeesCalculation.applicable ? {
+        late_fees: showLateFees && lateFeesCalculation.applicable ? {
           days: lateFeesCalculation.days,
           fee: lateFeesCalculation.fee
         } : undefined
@@ -667,7 +523,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // Validation du numéro de téléphone congolais (Bug #5)
   const validatePhoneNumber = (phone: string): boolean => {
     const regex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
     return regex.test(phone.replace(/\s/g, ''));
@@ -675,54 +530,23 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   const handlePayment = async () => {
     if (!createdRequest) return;
-
     if (!hasAnyPaymentMethod) {
-      toast.error('Aucun moyen de paiement n’est disponible pour le moment.');
+      toast.error('Aucun moyen de paiement n\'est disponible pour le moment.');
       return;
     }
     
     setProcessingPayment(true);
-    
     try {
       if (paymentMethod === 'mobile_money') {
-        if (!availableMethods.hasMobileMoney) {
-          throw new Error('Le paiement Mobile Money est indisponible actuellement.');
-        }
+        if (!availableMethods.hasMobileMoney) throw new Error('Le paiement Mobile Money est indisponible actuellement.');
+        if (!enabledMobileProviders.length) throw new Error('Aucun opérateur Mobile Money actif n\'est configuré.');
+        if (!paymentProvider) { toast.error('Veuillez sélectionner un opérateur'); setProcessingPayment(false); return; }
+        if (!paymentPhone) { toast.error('Veuillez entrer votre numéro de téléphone'); setProcessingPayment(false); return; }
+        if (!validatePhoneNumber(paymentPhone)) { toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX'); setProcessingPayment(false); return; }
 
-        if (!enabledMobileProviders.length) {
-          throw new Error('Aucun opérateur Mobile Money actif n’est configuré.');
-        }
-
-        if (!paymentProvider) {
-          toast.error('Veuillez sélectionner un opérateur');
-          setProcessingPayment(false);
-          return;
-        }
-        if (!paymentPhone) {
-          toast.error('Veuillez entrer votre numéro de téléphone');
-          setProcessingPayment(false);
-          return;
-        }
-        if (!validatePhoneNumber(paymentPhone)) {
-          toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX');
-          setProcessingPayment(false);
-          return;
-        }
-
-        // Appel réel à l'Edge Function Mobile Money
-        const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
-          'process-mobile-money-payment',
-          {
-            body: {
-              payment_provider: paymentProvider,
-              phone_number: paymentPhone.replace(/\s/g, ''),
-              amount_usd: createdRequest.total_amount_usd,
-              payment_type: 'mutation_request',
-              invoice_id: createdRequest.id,
-            },
-          }
-        );
-
+        const { data: paymentResult, error: paymentError } = await supabase.functions.invoke('process-mobile-money-payment', {
+          body: { payment_provider: paymentProvider, phone_number: paymentPhone.replace(/\s/g, ''), amount_usd: createdRequest.total_amount_usd, payment_type: 'mutation_request', invoice_id: createdRequest.id },
+        });
         if (paymentError) throw paymentError;
 
         const txId = paymentResult?.transaction_id;
@@ -733,33 +557,15 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         }
 
         const success = await updatePaymentStatus(createdRequest.id, 'paid', txId || 'TXN-' + Date.now());
-        if (success) {
-          setStep('confirmation');
-          toast.success('Paiement effectué avec succès');
-        } else {
-          toast.error('Erreur lors de la mise à jour du paiement');
-        }
+        if (success) { setStep('confirmation'); toast.success('Paiement effectué avec succès'); }
+        else { toast.error('Erreur lors de la mise à jour du paiement'); }
       } else {
-        if (!availableMethods.hasBankCard) {
-          throw new Error('Le paiement par carte bancaire est indisponible actuellement.');
-        }
-
-        // Stripe - redirection vers la page de paiement
+        if (!availableMethods.hasBankCard) throw new Error('Le paiement par carte bancaire est indisponible actuellement.');
         const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
-          body: {
-            invoice_id: createdRequest.id,
-            payment_type: 'mutation_request',
-            amount_usd: createdRequest.total_amount_usd,
-          },
+          body: { invoice_id: createdRequest.id, payment_type: 'mutation_request', amount_usd: createdRequest.total_amount_usd },
         });
-
         if (stripeError) throw stripeError;
-
-        if (stripeSession?.url) {
-          window.location.href = stripeSession.url;
-          return; // Redirection en cours
-        }
-
+        if (stripeSession?.url) { window.location.href = stripeSession.url; return; }
         throw new Error('Session de paiement invalide');
       }
     } catch (error: any) {
@@ -775,7 +581,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setCreatedRequest(null);
     setMutationType('vente');
     setRequesterType('proprietaire');
-    setBeneficiaryLegalStatus('personne_physique'); // Bug #6: reset
+    setBeneficiaryLegalStatus('personne_physique');
     setBeneficiaryLastName('');
     setBeneficiaryFirstName('');
     setBeneficiaryMiddleName('');
@@ -798,14 +604,50 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     onOpenChange(false);
   };
 
-  // Get beneficiary full name for display
   const getBeneficiaryFullName = () => {
-    if (beneficiaryLegalStatus === 'personne_morale') {
-      return beneficiaryLastName;
-    }
+    if (beneficiaryLegalStatus === 'personne_morale') return beneficiaryLastName;
     return [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
   };
 
+  // =============== SHARED FEE SECTION (deduplicated) ===============
+  const renderAdminFeesSection = () => (
+    <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
+      <CardContent className="p-3 space-y-3">
+        <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+          <DollarSign className="h-4 w-4" />
+          Frais administratifs de mutation
+        </h4>
+        <div className="space-y-2">
+          {fees.length > 0 ? (
+            fees.map((fee) => {
+              const isSelected = selectedFees.includes(fee.id);
+              return (
+                <div
+                  key={fee.id}
+                  className={`flex items-start gap-3 p-3 rounded-xl transition-colors cursor-pointer ${isSelected ? 'bg-primary/5 border-2 border-primary/30' : 'bg-muted/30 border-2 border-transparent hover:border-muted'}`}
+                  onClick={() => handleFeeToggle(fee.id, fee.is_mandatory)}
+                >
+                  <Checkbox checked={isSelected} disabled={fee.is_mandatory} className="mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium">{fee.fee_name}</span>
+                      <span className="text-sm font-bold text-primary whitespace-nowrap">${fee.amount_usd.toFixed(2)}</span>
+                    </div>
+                    {fee.description && <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>}
+                    {fee.is_mandatory && <span className="text-[10px] text-muted-foreground italic">Obligatoire</span>}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <p className="text-xs text-muted-foreground">Aucun frais actif configuré.</p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  // =============== FORM STEP ===============
   const renderFormStep = () => (
     <ScrollArea className="h-[65vh] sm:h-[70vh]">
       <div className="space-y-4 pr-2">
@@ -832,10 +674,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         <div className="space-y-2">
           <Label className="text-sm font-semibold flex items-center gap-2">
             Type de mutation *
-            <SectionHelpPopover
-              title="Type de mutation"
-              description="Choisissez le type d'opération juridique : vente, donation, succession, etc. Ce choix détermine les documents requis et les frais applicables."
-            />
+            <SectionHelpPopover title="Type de mutation" description="Choisissez le type d'opération juridique : vente, donation, succession, etc. Ce choix détermine les documents requis et les frais applicables." />
           </Label>
           <Select value={mutationType} onValueChange={setMutationType}>
             <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
@@ -843,29 +682,21 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             </SelectTrigger>
             <SelectContent className="rounded-xl">
               {MUTATION_TYPES.map(type => (
-                <SelectItem key={type.value} value={type.value} className="text-sm py-2">
-                  {type.label}
-                </SelectItem>
+                <SelectItem key={type.value} value={type.value} className="text-sm py-2">{type.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground leading-relaxed">
-            {getMutationTypeDetails()?.description}
-          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{getMutationTypeDetails()?.description}</p>
         </div>
 
-        {/* Documents justificatifs - déplacé ici pour cohérence */}
+        {/* Documents justificatifs */}
         <Card className="border rounded-xl">
           <CardContent className="p-3 space-y-3">
             <h4 className="text-sm font-semibold flex items-center gap-2">
               <Upload className="h-4 w-4 text-muted-foreground" />
               Documents justificatifs
-              <SectionHelpPopover
-                title="Documents justificatifs"
-                description="Joignez les pièces justificatives nécessaires selon le type de mutation. Max 10MB par fichier."
-              />
+              <SectionHelpPopover title="Documents justificatifs" description="Joignez les pièces justificatives nécessaires selon le type de mutation. Max 10MB par fichier." />
             </h4>
-            {/* Liste des documents requis selon le type de mutation */}
             <div className="space-y-2">
               {getRequiredDocuments().map((doc) => {
                 const isCheckable = doc.required && !doc.handledByExpertiseCertificate;
@@ -875,23 +706,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                       {doc.required ? <AlertCircle className="h-3 w-3 flex-shrink-0" /> : <FileText className="h-3 w-3 flex-shrink-0" />}
                       {doc.label} {doc.required && '*'}
                       {doc.handledByExpertiseCertificate && (
-                        <span className="ml-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                          vérifié via certificat d'expertise
-                        </span>
+                        <span className="text-[10px] ml-1 text-green-600 dark:text-green-400">(section expertise ci-dessous)</span>
                       )}
                     </p>
-
                     {isCheckable && (
-                      <div className="mt-2 ml-4 flex items-center gap-2">
+                      <div className="flex items-center gap-2 mt-1.5">
                         <Checkbox
                           id={`doc-check-${doc.key}`}
-                          checked={requiredDocumentChecks[doc.key] || false}
-                          onCheckedChange={(checked) =>
-                            setRequiredDocumentChecks((prev) => ({ ...prev, [doc.key]: Boolean(checked) }))
-                          }
+                          checked={!!requiredDocumentChecks[doc.key]}
+                          onCheckedChange={(checked) => setRequiredDocumentChecks((prev) => ({ ...prev, [doc.key]: !!checked }))}
                         />
-                        <Label htmlFor={`doc-check-${doc.key}`} className="text-[11px] text-muted-foreground cursor-pointer">
-                          Je confirme avoir joint cette pièce
+                        <Label htmlFor={`doc-check-${doc.key}`} className="text-[10px] text-muted-foreground cursor-pointer">
+                          Je confirme disposer de ce document
                         </Label>
                       </div>
                     )}
@@ -899,42 +725,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 );
               })}
             </div>
-            
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,.pdf"
-              multiple
-              onChange={handleFileSelect}
-              className="hidden"
-            />
-            
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5"
-            >
+            <input ref={fileInputRef} type="file" accept="image/*,.pdf" multiple onChange={handleFileSelect} className="hidden" />
+            <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()} className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-primary hover:bg-primary/5">
               <Upload className="h-4 w-4 mr-2" />
               Ajouter des documents
             </Button>
-            
             {attachedFiles.length > 0 && (
               <div className="space-y-2">
                 {attachedFiles.map((file, index) => (
                   <div key={index} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
-                    {file.type.startsWith('image/') ? (
-                      <Image className="h-4 w-4 text-primary flex-shrink-0" />
-                    ) : (
-                      <FileText className="h-4 w-4 text-primary flex-shrink-0" />
-                    )}
+                    {file.type.startsWith('image/') ? <Image className="h-4 w-4 text-primary flex-shrink-0" /> : <FileText className="h-4 w-4 text-primary flex-shrink-0" />}
                     <span className="flex-1 truncate text-sm">{file.name}</span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeFile(index)}
-                      className="h-7 w-7 rounded-lg hover:bg-destructive/10"
-                    >
+                    <Button variant="ghost" size="icon" onClick={() => removeFile(index)} className="h-7 w-7 rounded-lg hover:bg-destructive/10">
                       <X className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -948,112 +750,66 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         <div className="space-y-2">
           <Label className="text-sm font-semibold flex items-center gap-2">
             Vous êtes
-            <SectionHelpPopover
-              title="Type de demandeur"
-              description="Indiquez si vous êtes le propriétaire actuel de la parcelle ou un mandataire agissant en son nom (avocat, notaire, représentant légal)."
-            />
+            <SectionHelpPopover title="Type de demandeur" description="Indiquez si vous êtes le propriétaire actuel de la parcelle ou un mandataire agissant en son nom." />
           </Label>
           <Select value={requesterType} onValueChange={setRequesterType}>
-            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="h-11 text-sm rounded-xl border-2 focus:border-primary"><SelectValue /></SelectTrigger>
             <SelectContent className="rounded-xl">
-              {REQUESTER_TYPES.map(type => (
-                <SelectItem key={type.value} value={type.value} className="text-sm py-2">
-                  {type.label}
-                </SelectItem>
-              ))}
+              {REQUESTER_TYPES.map(type => (<SelectItem key={type.value} value={type.value} className="text-sm py-2">{type.label}</SelectItem>))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Bénéficiaire (nouveau propriétaire) */}
+        {/* Bénéficiaire (transfert uniquement) */}
         {isTransferMutation && (
           <Card className="border-2 border-dashed rounded-xl">
             <CardContent className="p-3 space-y-3">
               <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-primary rounded-full" />
                 Nouveau propriétaire
-                <SectionHelpPopover
-                  title="Nouveau propriétaire"
-                  description="Renseignez l'identité complète du futur propriétaire. Pour une personne morale, indiquez la dénomination sociale. Ces informations figureront sur le nouveau titre."
-                />
+                <SectionHelpPopover title="Nouveau propriétaire" description="Renseignez l'identité complète du futur propriétaire." />
               </h4>
-              
               <div className="space-y-2">
                 <Label className="text-sm">Statut juridique</Label>
                 <Select value={beneficiaryLegalStatus} onValueChange={setBeneficiaryLegalStatus}>
-                  <SelectTrigger className="h-11 text-sm rounded-xl border-2">
-                    <SelectValue />
-                  </SelectTrigger>
+                  <SelectTrigger className="h-11 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    {LEGAL_STATUS_OPTIONS.map(status => (
-                      <SelectItem key={status.value} value={status.value} className="text-sm py-2">
-                        {status.label}
-                      </SelectItem>
-                    ))}
+                    {LEGAL_STATUS_OPTIONS.map(status => (<SelectItem key={status.value} value={status.value} className="text-sm py-2">{status.label}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
-              
               {beneficiaryLegalStatus === 'personne_physique' ? (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
                     <Label className="text-sm">Nom de famille *</Label>
-                    <Input
-                      value={beneficiaryLastName}
-                      onChange={(e) => setBeneficiaryLastName(e.target.value)}
-                      placeholder="Entrez le nom"
-                      className="h-11 text-sm rounded-xl border-2"
-                    />
+                    <Input value={beneficiaryLastName} onChange={(e) => setBeneficiaryLastName(e.target.value)} placeholder="Entrez le nom" className="h-11 text-sm rounded-xl border-2" />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1.5">
                       <Label className="text-sm">Post-nom</Label>
-                      <Input
-                        value={beneficiaryMiddleName}
-                        onChange={(e) => setBeneficiaryMiddleName(e.target.value)}
-                        placeholder="Post-nom"
-                        className="h-11 text-sm rounded-xl border-2"
-                      />
+                      <Input value={beneficiaryMiddleName} onChange={(e) => setBeneficiaryMiddleName(e.target.value)} placeholder="Post-nom" className="h-11 text-sm rounded-xl border-2" />
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-sm">Prénom *</Label>
-                      <Input
-                        value={beneficiaryFirstName}
-                        onChange={(e) => setBeneficiaryFirstName(e.target.value)}
-                        placeholder="Prénom"
-                        className="h-11 text-sm rounded-xl border-2"
-                      />
+                      <Input value={beneficiaryFirstName} onChange={(e) => setBeneficiaryFirstName(e.target.value)} placeholder="Prénom" className="h-11 text-sm rounded-xl border-2" />
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="space-y-1.5">
                   <Label className="text-sm">Dénomination sociale *</Label>
-                  <Input
-                    value={beneficiaryLastName}
-                    onChange={(e) => setBeneficiaryLastName(e.target.value)}
-                    placeholder="Nom de l'entreprise"
-                    className="h-11 text-sm rounded-xl border-2"
-                  />
+                  <Input value={beneficiaryLastName} onChange={(e) => setBeneficiaryLastName(e.target.value)} placeholder="Nom de l'entreprise" className="h-11 text-sm rounded-xl border-2" />
                 </div>
               )}
-              
               <div className="space-y-1.5">
                 <Label className="text-sm">Téléphone (optionnel)</Label>
-                <Input
-                  value={beneficiaryPhone}
-                  onChange={(e) => setBeneficiaryPhone(e.target.value)}
-                  placeholder="+243 XXX XXX XXX"
-                  className="h-11 text-sm rounded-xl border-2"
-                />
+                <Input value={beneficiaryPhone} onChange={(e) => setBeneficiaryPhone(e.target.value)} placeholder="+243 XXX XXX XXX" className="h-11 text-sm rounded-xl border-2" />
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Certificat d'expertise immobilière */}
+        {/* Certificat d'expertise immobilière (transfert uniquement) */}
         {isTransferMutation && (
           <Card className="border-2 border-amber-200 dark:border-amber-800 rounded-xl bg-amber-50/50 dark:bg-amber-950/20">
             <CardContent className="p-3 space-y-3">
@@ -1070,14 +826,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   </PopoverTrigger>
                   <PopoverContent className="w-72 bg-background border shadow-lg" align="start" sideOffset={5}>
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                        <Award className="h-4 w-4" />
-                        Information importante
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Un certificat d'expertise immobilière est requis pour les mutations. 
-                        Ce certificat est valable <strong>6 mois</strong> après sa date de délivrance.
-                      </p>
+                      <p className="text-sm font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2"><Award className="h-4 w-4" /> Information importante</p>
+                      <p className="text-xs text-muted-foreground">Un certificat d'expertise immobilière est requis pour les mutations. Ce certificat est valable <strong>6 mois</strong> après sa date de délivrance.</p>
                     </div>
                   </PopoverContent>
                 </Popover>
@@ -1085,11 +835,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Avez-vous déjà un certificat d'expertise immobilière ?</Label>
-                <RadioGroup 
-                  value={hasExpertiseCertificate || ''} 
-                  onValueChange={(value) => setHasExpertiseCertificate(value as 'yes' | 'no')}
-                  className="flex gap-4"
-                >
+                <RadioGroup value={hasExpertiseCertificate || ''} onValueChange={(value) => setHasExpertiseCertificate(value as 'yes' | 'no')} className="flex gap-4">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="yes" id="cert-yes" />
                     <Label htmlFor="cert-yes" className="text-sm cursor-pointer">Oui</Label>
@@ -1103,81 +849,38 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
               {hasExpertiseCertificate === 'yes' && (
                 <div className="space-y-3 pt-2 border-t border-amber-200 dark:border-amber-800">
-                  {/* Upload du certificat */}
                   <div className="space-y-1.5">
                     <Label className="text-sm">Certificat d'expertise *</Label>
-                    <input
-                      ref={expertiseCertificateInputRef}
-                      type="file"
-                      accept="image/*,.pdf"
-                      onChange={handleExpertiseCertificateSelect}
-                      className="hidden"
-                    />
-                    
+                    <input ref={expertiseCertificateInputRef} type="file" accept="image/*,.pdf" onChange={handleExpertiseCertificateSelect} className="hidden" />
                     {expertiseCertificateFile ? (
-                      <div className="flex items-center gap-2 p-2 bg-white dark:bg-card rounded-xl border-2 border-green-500/30">
-                        {expertiseCertificateFile.type.startsWith('image/') ? (
-                          <Image className="h-4 w-4 text-green-600 flex-shrink-0" />
-                        ) : (
-                          <FileText className="h-4 w-4 text-green-600 flex-shrink-0" />
-                        )}
+                      <div className="flex items-center gap-2 p-2 bg-background rounded-xl border-2 border-green-500/30">
+                        {expertiseCertificateFile.type.startsWith('image/') ? <Image className="h-4 w-4 text-green-600 flex-shrink-0" /> : <FileText className="h-4 w-4 text-green-600 flex-shrink-0" />}
                         <span className="flex-1 truncate text-sm">{expertiseCertificateFile.name}</span>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setExpertiseCertificateFile(null)}
-                          className="h-7 w-7 rounded-lg hover:bg-destructive/10"
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setExpertiseCertificateFile(null)} className="h-7 w-7 rounded-lg hover:bg-destructive/10"><X className="h-3.5 w-3.5" /></Button>
                       </div>
                     ) : (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => expertiseCertificateInputRef.current?.click()}
-                        className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                      >
+                      <Button type="button" variant="outline" onClick={() => expertiseCertificateInputRef.current?.click()} className="w-full h-11 text-sm rounded-xl border-2 border-dashed hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30">
                         <Upload className="h-4 w-4 mr-2" />
                         Ajouter le certificat (PDF ou image)
                       </Button>
                     )}
                   </div>
-
-                  {/* Date de délivrance */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm flex items-center gap-1.5">
-                      <Calendar className="h-3.5 w-3.5" />
-                      Date de délivrance *
-                    </Label>
-                    <Input
-                      type="date"
-                      value={expertiseCertificateDate}
-                      onChange={(e) => setExpertiseCertificateDate(e.target.value)}
-                      max={new Date().toISOString().split('T')[0]}
-                      className="h-11 text-sm rounded-xl border-2"
-                    />
-                    
+                    <Label className="text-sm flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> Date de délivrance *</Label>
+                    <Input type="date" value={expertiseCertificateDate} onChange={(e) => setExpertiseCertificateDate(e.target.value)} max={new Date().toISOString().split('T')[0]} className="h-11 text-sm rounded-xl border-2" />
                     {expertiseCertificateDate && (
                       certificateValidity.isExpired ? (
-                        <Alert className="bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-800 rounded-lg mt-2">
-                          <AlertTriangle className="h-4 w-4 text-red-600" />
-                          <AlertDescription className="text-xs text-red-700 dark:text-red-400">
-                            Ce certificat a expiré. Veuillez demander un nouveau certificat d'expertise.
-                          </AlertDescription>
+                        <Alert className="bg-destructive/10 border-destructive/20 rounded-lg mt-2">
+                          <AlertTriangle className="h-4 w-4 text-destructive" />
+                          <AlertDescription className="text-xs text-destructive">Ce certificat a expiré. Veuillez demander un nouveau certificat d'expertise.</AlertDescription>
                         </Alert>
                       ) : certificateValidity.daysRemaining <= 30 ? (
                         <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 rounded-lg mt-2">
                           <AlertTriangle className="h-4 w-4 text-amber-600" />
-                          <AlertDescription className="text-xs text-amber-700 dark:text-amber-400">
-                            Ce certificat expire dans {certificateValidity.daysRemaining} jours.
-                          </AlertDescription>
+                          <AlertDescription className="text-xs text-amber-700 dark:text-amber-400">Ce certificat expire dans {certificateValidity.daysRemaining} jours.</AlertDescription>
                         </Alert>
                       ) : (
-                        <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Certificat valide ({certificateValidity.daysRemaining} jours restants)
-                        </p>
+                        <p className="text-xs text-green-600 flex items-center gap-1 mt-1"><CheckCircle2 className="h-3 w-3" /> Certificat valide ({certificateValidity.daysRemaining} jours restants)</p>
                       )
                     )}
                   </div>
@@ -1189,17 +892,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-lg">
                     <FileSearch className="h-4 w-4 text-blue-600" />
                     <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
-                      Un certificat d'expertise immobilière est nécessaire pour procéder à la mutation.
-                      Vous pouvez en demander un en cliquant sur le bouton ci-dessous. Puis revenir plus tard sur ce formulaire pour finir votre demande de mutation.
+                      Un certificat d'expertise immobilière est nécessaire pour procéder à la mutation. Vous pouvez en demander un en cliquant ci-dessous.
                     </AlertDescription>
                   </Alert>
-                  
-                  <Button
-                    type="button"
-                    variant="seloger"
-                    onClick={() => setShowExpertiseDialog(true)}
-                    className="w-full h-11 text-sm rounded-xl"
-                  >
+                  <Button type="button" variant="seloger" onClick={() => setShowExpertiseDialog(true)} className="w-full h-11 text-sm rounded-xl">
                     <FileSearch className="h-4 w-4 mr-2" />
                     Demander un certificat
                     <ExternalLink className="h-3.5 w-3.5 ml-2" />
@@ -1207,102 +903,48 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 </div>
               )}
 
-              {/* Valeur vénale - affiché dès que certificat confirmé */}
+              {/* Valeur vénale */}
               {hasExpertiseCertificate === 'yes' && (
                 <div className="space-y-3 pt-2 border-t border-amber-200 dark:border-amber-800">
-                  {/* Valeur vénale */}
                   <div className="space-y-1.5">
-                    <Label className="text-sm font-medium flex items-center gap-1.5">
-                      <DollarSign className="h-3.5 w-3.5" />
-                      Valeur vénale du bien (USD) *
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Cette valeur doit correspondre à celle indiquée dans le certificat d'expertise.
-                    </p>
-                    <Input
-                      type="number"
-                      value={marketValueUsd}
-                      onChange={(e) => setMarketValueUsd(e.target.value)}
-                      placeholder="Ex: 50000"
-                      className="h-11 text-sm rounded-xl border-2"
-                      min="0"
-                    />
+                    <Label className="text-sm font-medium flex items-center gap-1.5"><DollarSign className="h-3.5 w-3.5" /> Valeur vénale du bien (USD) *</Label>
+                    <p className="text-xs text-muted-foreground">Cette valeur doit correspondre à celle indiquée dans le certificat d'expertise.</p>
+                    <Input type="number" value={marketValueUsd} onChange={(e) => setMarketValueUsd(e.target.value)} placeholder="Ex: 50000" className="h-11 text-sm rounded-xl border-2" min="0" />
                   </div>
 
-                  {/* Ancienneté du titre foncier */}
                   {parseFloat(marketValueUsd) >= 10000 && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <Label className="text-sm font-medium">Ancienneté du titre foncier *</Label>
                         {titleAgeAutoDetected && titleIssueDateFromCCC && (
-                          <span className="text-xs text-green-600 flex items-center gap-1">
-                            <CheckCircle2 className="h-3 w-3" />
-                            Auto-détecté
-                          </span>
+                          <span className="text-xs text-green-600 flex items-center gap-1"><CheckCircle2 className="h-3 w-3" /> Auto-détecté</span>
                         )}
                       </div>
-                      
                       {titleAgeAutoDetected && titleIssueDateFromCCC && (
                         <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 rounded-lg">
                           <CheckCircle2 className="h-4 w-4 text-green-600" />
                           <AlertDescription className="text-xs text-green-700 dark:text-green-400">
-                            Date de délivrance du titre : <strong>{format(new Date(titleIssueDateFromCCC), 'dd MMMM yyyy', { locale: fr })}</strong>
-                            <br />
-                            Le taux a été automatiquement déterminé selon les données CCC de la parcelle.
+                            Date de délivrance du titre : <strong>{format(new Date(titleIssueDateFromCCC), 'dd MMMM yyyy', { locale: fr })}</strong><br />Le taux a été automatiquement déterminé selon les données CCC de la parcelle.
                           </AlertDescription>
                         </Alert>
                       )}
-
-                      <p className="text-xs text-muted-foreground">
-                        Le taux des frais de mutation dépend de l'ancienneté du titre (Circulaire n° 005/CAB/MIN/AFF.FONC/2013).
-                      </p>
-                      <RadioGroup 
-                        value={titleAge || ''} 
-                        onValueChange={(value) => {
-                          setTitleAge(value as 'less_than_10' | '10_or_more');
-                          setTitleAgeAutoDetected(false); // L'utilisateur a manuellement changé
-                        }}
-                        className="flex flex-col gap-2"
-                      >
-                        <div className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50 ${titleAge === 'less_than_10' ? 'bg-primary/5 border border-primary/30' : ''}`}>
-                          <RadioGroupItem value="less_than_10" id="title-less-10" />
-                          <Label htmlFor="title-less-10" className="text-sm cursor-pointer flex-1">
-                            Moins de 10 ans
-                            <span className="block text-xs text-muted-foreground">Taux: 3% + frais bancaires</span>
-                          </Label>
+                      <RadioGroup value={titleAge || ''} onValueChange={(v) => { setTitleAge(v as 'less_than_10' | '10_or_more'); setTitleAgeAutoDetected(false); }} className="space-y-2">
+                        <div className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-colors ${titleAge === 'less_than_10' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
+                          <RadioGroupItem value="less_than_10" id="age-lt10" />
+                          <div>
+                            <Label htmlFor="age-lt10" className="text-sm font-medium cursor-pointer">Moins de 10 ans</Label>
+                            <p className="text-xs text-muted-foreground">Taux de mutation : 3%</p>
+                          </div>
                         </div>
-                        <div className={`flex items-center space-x-2 p-2 rounded-lg hover:bg-muted/50 ${titleAge === '10_or_more' ? 'bg-primary/5 border border-primary/30' : ''}`}>
-                          <RadioGroupItem value="10_or_more" id="title-10-more" />
-                          <Label htmlFor="title-10-more" className="text-sm cursor-pointer flex-1">
-                            10 ans ou plus
-                            <span className="block text-xs text-muted-foreground">Taux: 1.5% (sans frais bancaires)</span>
-                          </Label>
+                        <div className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-colors ${titleAge === '10_or_more' ? 'border-primary bg-primary/5' : 'border-muted'}`}>
+                          <RadioGroupItem value="10_or_more" id="age-gte10" />
+                          <div>
+                            <Label htmlFor="age-gte10" className="text-sm font-medium cursor-pointer">10 ans ou plus</Label>
+                            <p className="text-xs text-muted-foreground">Taux de mutation : 1.5% (sans frais bancaires)</p>
+                          </div>
                         </div>
                       </RadioGroup>
-
-                      {titleAge && mutationFeesCalculation.applicable && (
-                        <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 rounded-lg mt-2">
-                          <DollarSign className="h-4 w-4 text-green-600" />
-                          <AlertDescription className="text-xs text-green-700 dark:text-green-400">
-                            Les frais de mutation ont bien été calculés automatiquement selon l'ancienneté du titre.
-                            Le détail complet est affiché dans la section <strong>Frais liés à l'expertise immobilière</strong> ci-dessous.
-                          </AlertDescription>
-                        </Alert>
-                      )}
                     </div>
-                  )}
-
-                  {/* Message si valeur < 10000 USD */}
-                  {parseFloat(marketValueUsd) > 0 && parseFloat(marketValueUsd) < 10000 && (
-                    <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:border-blue-800 rounded-lg">
-                      <AlertCircle className="h-4 w-4 text-blue-600" />
-                      <AlertDescription className="text-xs text-blue-700 dark:text-blue-400">
-                        Les frais de mutation ne s'appliquent qu'aux biens d'une valeur vénale ≥ 10,000 USD.
-                        <p className="mt-1 text-[10px]">
-                          Réf: n°0076 CAB/MIN.AFF.FONC/ASM/TMM/2023 et 010/CAB/MIN.FINANCES/2023 du 08 Mai 2023
-                        </p>
-                      </AlertDescription>
-                    </Alert>
                   )}
                 </div>
               )}
@@ -1310,363 +952,81 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Card>
         )}
 
-        {/* Tout le contenu suivant ne s'affiche que si hasExpertiseCertificate === 'yes' pour les mutations avec transfert */}
-        {isTransferMutation && hasExpertiseCertificate === 'yes' && (
-          <>
-            {/* Frais liés au certificat d'expertise */}
-            <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Frais liés à l'expertise immobilière
-                </h4>
-                
-                <div className="space-y-2">
-                  {/* Frais obligatoires */}
-                  {fees.filter(f => f.is_mandatory).map((fee) => (
-                    <div 
-                      key={fee.id}
-                      className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
-                    >
-                      <Checkbox
-                        id={fee.id}
-                        checked={true}
-                        disabled={true}
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
-                            {fee.fee_name}
-                            <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
-                              obligatoire
-                            </span>
-                          </label>
-                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd.toFixed(2)}</span>
-                        </div>
-                        {fee.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+        {/* ===== Fees section (UNIFIED for all mutation types) ===== */}
+        {renderAdminFeesSection()}
 
-                  {/* Frais optionnels */}
-                  {fees.filter(f => !f.is_mandatory).map((fee) => (
-                    <div 
-                      key={fee.id}
-                      className={`flex items-start gap-3 p-3 rounded-xl transition-colors ${
-                        selectedFees.includes(fee.id) ? 'bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700' : 'bg-muted/30 border-2 border-transparent'
-                      }`}
-                    >
-                      <Checkbox
-                        id={fee.id}
-                        checked={selectedFees.includes(fee.id)}
-                        onCheckedChange={() => handleFeeToggle(fee.id, false)}
-                        className="mt-0.5"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
-                            {fee.fee_name}
-                          </label>
-                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd.toFixed(2)}</span>
-                        </div>
-                        {fee.description && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
-                  {/* Frais de mutation calculés */}
-                  {mutationFeesCalculation.applicable && titleAge && (
-                    <>
-                      <div 
-                        className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50 dark:bg-amber-950/30 border-2 border-amber-200 dark:border-amber-700"
-                      >
-                        <div className="p-1.5 bg-amber-100 dark:bg-amber-900/50 rounded-lg mt-0.5">
-                          <DollarSign className="h-4 w-4 text-amber-700 dark:text-amber-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-medium">
-                              Frais de mutation ({mutationFeesCalculation.percentage}%)
-                              <span className="ml-1.5 text-[10px] text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-1.5 py-0.5 rounded">
-                                calculé
-                              </span>
-                            </span>
-                            <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">
-                              ${mutationFeesCalculation.mutationFee.toFixed(2)}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Basé sur la valeur vénale de ${parseFloat(marketValueUsd).toLocaleString()} USD
-                          </p>
-                        </div>
-                      </div>
-
-                      {mutationFeesCalculation.bankFee > 0 && (
-                        <div 
-                          className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-100 dark:border-amber-800"
-                        >
-                          <div className="p-1.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg mt-0.5">
-                            <CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="text-sm font-medium">Frais bancaires (0.5%)</span>
-                              <span className="text-sm font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap">
-                                ${mutationFeesCalculation.bankFee.toFixed(2)}
-                              </span>
-                            </div>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              Commission bancaire estimée
-                            </p>
-                          </div>
-                        </div>
-                      )}
-
-                      <p className="text-[10px] text-muted-foreground px-1">
-                        Circulaire n° 005/CAB/MIN/AFF.FONC/2013 • n°0076/2023 et 010/CAB/MIN.FINANCES/2023
-                      </p>
-                    </>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Frais de retard de mutation hors délai légal */}
-            <Card className="border-2 border-orange-200 dark:border-orange-700 rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Traitement de mutation hors délai légal
-                  </h4>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-orange-600 hover:text-orange-700 hover:bg-orange-100">
-                        <HelpCircle className="h-3.5 w-3.5" />
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-80 bg-background border shadow-lg" align="start" sideOffset={5}>
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                          <AlertTriangle className="h-4 w-4" />
-                          Frais de retard de mutation
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Le non-respect du délai légal de mutation immobilière (20 jours) entraîne des frais supplémentaires pour faire aboutir la mutation.
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          <span className="font-medium">Référence :</span> Note circulaire n°1.441/SG/AFF.F/003/2016 du 07 décembre 2016
-                        </p>
-                        <p className="text-xs font-semibold text-orange-600 dark:text-orange-400">
-                          Tarif : 0,45 USD par jour à partir du 21ème jour après l'acquisition.
-                        </p>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
-                </div>
-
-                <div className="space-y-3">
-                  {/* Date d'acquisition du propriétaire */}
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-2">
-                      Date d'acquisition par le propriétaire actuel
-                      {ownerAcquisitionDateAutoDetected && (
-                        <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">
-                          détectée automatiquement
-                        </span>
-                      )}
-                    </Label>
-                    {ownerAcquisitionDate ? (
-                      <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-lg">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">
-                          {format(new Date(ownerAcquisitionDate), 'd MMMM yyyy', { locale: fr })}
-                        </span>
-                      </div>
-                    ) : (
-                      <Input
-                        type="date"
-                        max={new Date().toISOString().split('T')[0]}
-                        value={manualAcquisitionDate}
-                        onChange={(e) => setManualAcquisitionDate(e.target.value)}
-                        className="h-9 text-sm"
-                        placeholder="Sélectionnez la date d'acquisition"
-                      />
-                    )}
+        {/* Mutation fees (transfer types only) */}
+        {isTransferMutation && mutationFeesCalculation.applicable && (
+          <Card className="border-2 border-primary/20 rounded-xl">
+            <CardContent className="p-3 space-y-3">
+              <h4 className="text-sm font-semibold text-primary flex items-center gap-2">
+                <DollarSign className="h-4 w-4" />
+                Frais de mutation calculés
+              </h4>
+              <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 border-2 border-primary/20">
+                <div className="p-1.5 bg-primary/10 rounded-lg mt-0.5"><DollarSign className="h-4 w-4 text-primary" /></div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-medium">Frais de mutation ({mutationFeesCalculation.percentage}%)</span>
+                    <span className="text-sm font-bold text-primary whitespace-nowrap">${mutationFeesCalculation.mutationFee.toFixed(2)}</span>
                   </div>
-
-                  {/* Calcul des frais de retard */}
-                  {lateFeesCalculation.applicable && (
-                    <div className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-700">
-                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
-                        <Clock className="h-4 w-4 text-orange-700 dark:text-orange-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium">
-                            Frais de retard ({lateFeesCalculation.days} jours)
-                            <span className="ml-1.5 text-[10px] text-orange-700 dark:text-orange-400 bg-orange-100 dark:bg-orange-900/50 px-1.5 py-0.5 rounded">
-                              calculé
-                            </span>
-                          </span>
-                          <span className="text-sm font-bold text-orange-700 dark:text-orange-400 whitespace-nowrap">
-                            ${lateFeesCalculation.fee.toFixed(2)}
-                          </span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {lateFeesCalculation.days} jours × {DAILY_LATE_FEE_USD} USD/jour
-                          {lateFeesCalculation.capped && (
-                            <span className="block text-orange-600 font-medium mt-0.5">
-                              ⚠ Plafonné à ${LATE_FEE_CAP_USD} USD (plafond légal)
-                            </span>
-                          )}
-                        </p>
-                      </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">Basé sur la valeur vénale de ${parseFloat(marketValueUsd).toLocaleString()} USD</p>
+                </div>
+              </div>
+              {mutationFeesCalculation.bankFee > 0 && (
+                <div className="flex items-start gap-3 p-3 rounded-xl bg-amber-50/50 dark:bg-amber-950/20 border-2 border-amber-100 dark:border-amber-800">
+                  <div className="p-1.5 bg-amber-100/50 dark:bg-amber-900/30 rounded-lg mt-0.5"><CreditCard className="h-4 w-4 text-amber-600 dark:text-amber-500" /></div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-medium">Frais bancaires (0.5%)</span>
+                      <span className="text-sm font-bold text-amber-600 dark:text-amber-500 whitespace-nowrap">${mutationFeesCalculation.bankFee.toFixed(2)}</span>
                     </div>
-                  )}
+                    <p className="text-xs text-muted-foreground mt-0.5">Commission bancaire estimée</p>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Total à payer */}
-            <Card className="border rounded-xl">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
-                  <span className="font-semibold text-sm">Total à payer</span>
-                  <span className="text-xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Button 
-              onClick={handlePreview} 
-              className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
-              disabled={selectedFees.length === 0}
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Aperçu avant soumission
-            </Button>
-          </>
+              )}
+              <p className="text-[10px] text-muted-foreground px-1">Circulaire n° 005/CAB/MIN/AFF.FONC/2013 • n°0076/2023 et 010/CAB/MIN.FINANCES/2023</p>
+            </CardContent>
+          </Card>
         )}
 
-        {/* Pour les mutations non-transfert, afficher les frais administratifs + retard */}
-        {!isTransferMutation && (
-          <>
-            <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
-                  <DollarSign className="h-4 w-4" />
-                  Frais administratifs de mutation
-                </h4>
-
-                <div className="space-y-2">
-                  {getSelectedFeesDetails().length > 0 ? (
-                    getSelectedFeesDetails().map((fee) => (
-                      <div key={fee.id} className="flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2">
-                        <div>
-                          <p className="text-sm font-medium">{fee.fee_name}</p>
-                          {fee.description && <p className="text-xs text-muted-foreground">{fee.description}</p>}
-                        </div>
-                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${fee.amount_usd.toFixed(2)}</span>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Aucun frais actif configuré.</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-orange-200 dark:border-orange-700 rounded-xl">
-              <CardContent className="p-3 space-y-3">
-                <div className="flex items-center gap-2">
-                  <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    Traitement hors délai légal
-                  </h4>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground flex items-center gap-2">
-                      Date d'acquisition par le propriétaire actuel
-                      {ownerAcquisitionDateAutoDetected && (
-                        <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">
-                          détectée automatiquement
-                        </span>
-                      )}
-                    </Label>
-                    {ownerAcquisitionDate ? (
-                      <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-lg">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">
-                          {format(new Date(ownerAcquisitionDate), 'd MMMM yyyy', { locale: fr })}
-                        </span>
-                      </div>
-                    ) : (
-                      <Input
-                        type="date"
-                        max={new Date().toISOString().split('T')[0]}
-                        value={manualAcquisitionDate}
-                        onChange={(e) => setManualAcquisitionDate(e.target.value)}
-                        className="h-9 text-sm"
-                        placeholder="Sélectionnez la date d'acquisition"
-                      />
-                    )}
-                  </div>
-
-                  {lateFeesCalculation.applicable && (
-                    <div className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-700">
-                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
-                        <Clock className="h-4 w-4 text-orange-700 dark:text-orange-400" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium">Frais de retard ({lateFeesCalculation.days} jours)</span>
-                          <span className="text-sm font-bold text-orange-700 dark:text-orange-400 whitespace-nowrap">
-                            ${lateFeesCalculation.fee.toFixed(2)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Total à payer */}
-            <Card className="border rounded-xl">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
-                  <span className="font-semibold text-sm">Total à payer</span>
-                  <span className="text-xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Button 
-              onClick={handlePreview} 
-              className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
-              disabled={fees.length > 0 && selectedFees.length === 0}
-            >
-              <Eye className="h-4 w-4 mr-2" />
-              Aperçu avant soumission
-            </Button>
-          </>
+        {/* Late fees section — only for types that support it (NOT correction/mise_a_jour) */}
+        {showLateFees && (
+          <MutationLateFeeSection
+            ownerAcquisitionDate={ownerAcquisitionDate}
+            ownerAcquisitionDateAutoDetected={ownerAcquisitionDateAutoDetected}
+            manualAcquisitionDate={manualAcquisitionDate}
+            onManualAcquisitionDateChange={setManualAcquisitionDate}
+            lateFeesCalculation={lateFeesCalculation}
+          />
         )}
+
+        {/* Total à payer */}
+        <Card className="border rounded-xl">
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between p-3 bg-primary/10 rounded-xl">
+              <span className="font-semibold text-sm">Total à payer</span>
+              <span className="text-xl font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button 
+          onClick={handlePreview} 
+          className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
+          disabled={fees.length > 0 && selectedFees.length === 0}
+        >
+          <Eye className="h-4 w-4 mr-2" />
+          Aperçu avant soumission
+        </Button>
       </div>
     </ScrollArea>
   );
 
+  // =============== PREVIEW STEP ===============
   const renderPreviewStep = () => (
     <ScrollArea className="h-[65vh] sm:h-[70vh]">
       <div className="space-y-4 pr-2">
-        {/* Avertissement important */}
         <Alert className="border-destructive bg-destructive/10 rounded-xl">
           <AlertCircle className="h-4 w-4 text-destructive" />
           <AlertDescription className="text-sm text-destructive font-medium leading-relaxed">
@@ -1674,40 +1034,28 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </AlertDescription>
         </Alert>
 
-        {/* Récapitulatif */}
         <Card className="border-2 rounded-xl shadow-sm">
           <CardContent className="p-4 space-y-3">
-            {/* Parcelle */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Parcelle</span>
               <span className="font-mono font-bold text-sm">{parcelNumber}</span>
             </div>
-            
             {parcelData?.province && (
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Localisation</span>
-                <span className="text-sm text-right max-w-[60%]">
-                  {[parcelData.province, parcelData.ville, parcelData.commune].filter(Boolean).join(', ')}
-                </span>
+                <span className="text-sm text-right max-w-[60%]">{[parcelData.province, parcelData.ville, parcelData.commune].filter(Boolean).join(', ')}</span>
               </div>
             )}
-
             <Separator />
-            
-            {/* Type de mutation */}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Type de mutation</span>
               <span className="text-sm font-semibold">{getMutationTypeDetails()?.label}</span>
             </div>
-
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Demandeur</span>
-              <span className="text-sm">
-                {REQUESTER_TYPES.find(t => t.value === requesterType)?.label}
-              </span>
+              <span className="text-sm">{REQUESTER_TYPES.find(t => t.value === requesterType)?.label}</span>
             </div>
 
-            {/* Nouveau propriétaire si transfert */}
             {isTransferMutation && (
               <>
                 <Separator />
@@ -1719,9 +1067,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Statut</span>
-                    <span className="text-sm">
-                      {LEGAL_STATUS_OPTIONS.find(s => s.value === beneficiaryLegalStatus)?.label}
-                    </span>
+                    <span className="text-sm">{LEGAL_STATUS_OPTIONS.find(s => s.value === beneficiaryLegalStatus)?.label}</span>
                   </div>
                   {beneficiaryPhone && (
                     <div className="flex items-center justify-between">
@@ -1733,21 +1079,16 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               </>
             )}
 
-            {/* Documents */}
             {attachedFiles.length > 0 && (
               <>
                 <Separator />
                 <div className="space-y-2">
                   <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Documents joints</span>
                   <div className="space-y-1.5">
-                    {attachedFiles.map((file, index) => (
-                      <div key={index} className="flex items-center gap-2 text-sm">
-                        {file.type.startsWith('image/') ? (
-                          <Image className="h-4 w-4 text-primary" />
-                        ) : (
-                          <FileText className="h-4 w-4 text-primary" />
-                        )}
-                        <span className="truncate">{file.name}</span>
+                    {attachedFiles.map((file, i) => (
+                      <div key={i} className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl">
+                        {file.type.startsWith('image/') ? <Image className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4 text-primary" />}
+                        <span className="text-xs truncate">{file.name}</span>
                       </div>
                     ))}
                   </div>
@@ -1755,51 +1096,37 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               </>
             )}
 
-            {/* Frais */}
             <Separator />
+
+            {/* Frais détaillés */}
             <div className="space-y-2">
-              {getSelectedFeesDetails().length > 0 && (
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Détail des frais</span>
+              {getSelectedFeesDetails().map((fee) => (
+                <div key={fee.id} className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
+                  <span className="text-sm font-mono font-semibold">${fee.amount_usd.toFixed(2)}</span>
+                </div>
+              ))}
+              {isTransferMutation && mutationFeesCalculation.applicable && (
                 <>
-                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Frais liés à l'expertise</span>
-                  {getSelectedFeesDetails().map(fee => (
-                    <div key={fee.id} className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
-                      <span className="text-sm font-medium">${fee.amount_usd.toFixed(2)}</span>
-                    </div>
-                  ))}
-                </>
-              )}
-              
-              {/* Frais de mutation si applicables */}
-              {mutationFeesCalculation.applicable && titleAge && (
-                <>
-                  {getSelectedFeesDetails().length > 0 && <Separator className="my-1" />}
-                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Frais de mutation</span>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Frais ({mutationFeesCalculation.percentage}% de ${Number(marketValueUsd || 0).toFixed(2)})</span>
-                    <span className="text-sm font-medium">${mutationFeesCalculation.mutationFee.toFixed(2)}</span>
+                    <span className="text-sm text-muted-foreground">Frais de mutation ({mutationFeesCalculation.percentage}%)</span>
+                    <span className="text-sm font-mono font-semibold">${mutationFeesCalculation.mutationFee.toFixed(2)}</span>
                   </div>
                   {mutationFeesCalculation.bankFee > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Frais bancaires (0.5%)</span>
-                      <span className="text-sm font-medium">${mutationFeesCalculation.bankFee.toFixed(2)}</span>
+                      <span className="text-sm font-mono font-semibold">${mutationFeesCalculation.bankFee.toFixed(2)}</span>
                     </div>
                   )}
                 </>
               )}
-
-              {/* Bug #21: Frais de retard dans le récapitulatif */}
-              {lateFeesCalculation.applicable && (
-                <>
-                  <Separator className="my-1" />
-                  <span className="text-xs font-semibold text-orange-700 dark:text-orange-400 uppercase tracking-wide">Frais de retard</span>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Retard ({lateFeesCalculation.days} jours × 0,45$/j)</span>
-                    <span className="text-sm font-medium">${lateFeesCalculation.fee.toFixed(2)}</span>
-                  </div>
-                </>
+              {showLateFees && lateFeesCalculation.applicable && (
+                <div className="flex items-center justify-between text-orange-600">
+                  <span className="text-sm">Frais de retard ({lateFeesCalculation.days}j)</span>
+                  <span className="text-sm font-mono font-semibold">${lateFeesCalculation.fee.toFixed(2)}</span>
+                </div>
               )}
-              
               <div className="flex items-center justify-between pt-2 border-t-2">
                 <span className="text-sm font-bold">Total</span>
                 <span className="text-lg font-bold text-primary">${getTotalAmount().toFixed(2)}</span>
@@ -1810,35 +1137,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
         <Alert className="rounded-xl bg-muted/50">
           <Clock className="h-4 w-4" />
-          <AlertDescription className="text-sm">
-            Délai de traitement estimé: <strong>14 jours ouvrables</strong> après paiement.
-          </AlertDescription>
+          <AlertDescription className="text-sm">Délai de traitement estimé: <strong>14 jours ouvrables</strong> après paiement.</AlertDescription>
         </Alert>
 
         <div className="flex gap-2">
-          <Button 
-            variant="outline"
-            onClick={() => setStep('form')} 
-            className="flex-1 h-12 text-sm font-semibold rounded-xl"
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Modifier
+          <Button variant="outline" onClick={() => setStep('form')} className="flex-1 h-12 text-sm font-semibold rounded-xl">
+            <ArrowLeft className="h-4 w-4 mr-2" /> Modifier
           </Button>
-          <Button 
-            onClick={handleSubmitForm} 
-            className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg"
-            disabled={loading || uploadingFiles}
-          >
+          <Button onClick={handleSubmitForm} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg" disabled={loading || uploadingFiles}>
             {loading || uploadingFiles ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                {uploadingFiles ? 'Envoi...' : 'Création...'}
-              </>
+              <><Loader2 className="h-4 w-4 animate-spin mr-2" />{uploadingFiles ? 'Envoi...' : 'Création...'}</>
             ) : (
-              <>
-                <CreditCard className="h-4 w-4 mr-2" />
-                Payer ${getTotalAmount().toFixed(2)}
-              </>
+              <><CreditCard className="h-4 w-4 mr-2" /> Payer ${getTotalAmount().toFixed(2)}</>
             )}
           </Button>
         </div>
@@ -1846,6 +1156,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     </ScrollArea>
   );
 
+  // =============== PAYMENT STEP ===============
   const renderPaymentStep = () => (
     <div className="space-y-3">
       <Card className="bg-muted/50 border-0 rounded-lg">
@@ -1868,31 +1179,15 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         {!hasAnyPaymentMethod ? (
           <Alert className="rounded-lg border-destructive/20 bg-destructive/10">
             <AlertCircle className="h-4 w-4 text-destructive" />
-            <AlertDescription className="text-xs text-destructive">
-              Aucun moyen de paiement actif n'est disponible pour le moment.
-            </AlertDescription>
+            <AlertDescription className="text-xs text-destructive">Aucun moyen de paiement actif n'est disponible pour le moment.</AlertDescription>
           </Alert>
         ) : (
           <div className={`grid ${availableMethods.hasMobileMoney && availableMethods.hasBankCard ? 'grid-cols-2' : 'grid-cols-1'} gap-1.5`}>
             {availableMethods.hasMobileMoney && (
-              <Button
-                variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPaymentMethod('mobile_money')}
-                className="h-8 text-xs rounded-lg"
-              >
-                Mobile Money
-              </Button>
+              <Button variant={paymentMethod === 'mobile_money' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentMethod('mobile_money')} className="h-8 text-xs rounded-lg">Mobile Money</Button>
             )}
             {availableMethods.hasBankCard && (
-              <Button
-                variant={paymentMethod === 'bank_card' ? 'default' : 'outline'}
-                size="sm"
-                onClick={() => setPaymentMethod('bank_card')}
-                className="h-8 text-xs rounded-lg"
-              >
-                Carte bancaire
-              </Button>
+              <Button variant={paymentMethod === 'bank_card' ? 'default' : 'outline'} size="sm" onClick={() => setPaymentMethod('bank_card')} className="h-8 text-xs rounded-lg">Carte bancaire</Button>
             )}
           </div>
         )}
@@ -1903,123 +1198,72 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           <div className="space-y-1">
             <Label className="text-[10px]">Opérateur</Label>
             <Select value={paymentProvider} onValueChange={setPaymentProvider}>
-              <SelectTrigger className="h-8 text-xs rounded-lg">
-                <SelectValue placeholder="Sélectionner..." />
-              </SelectTrigger>
+              <SelectTrigger className="h-8 text-xs rounded-lg"><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
               <SelectContent>
                 {enabledMobileProviders.map(provider => (
-                  <SelectItem key={provider} value={provider} className="text-xs">
-                    {PROVIDER_LABELS[provider] || provider}
-                  </SelectItem>
+                  <SelectItem key={provider} value={provider} className="text-xs">{PROVIDER_LABELS[provider] || provider}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className="text-[10px]">Numéro de téléphone</Label>
-            <Input
-              value={paymentPhone}
-              onChange={(e) => setPaymentPhone(e.target.value)}
-              placeholder="+243..."
-              className="h-8 text-xs rounded-lg"
-            />
+            <Input value={paymentPhone} onChange={(e) => setPaymentPhone(e.target.value)} placeholder="+243..." className="h-8 text-xs rounded-lg" />
           </div>
         </div>
       )}
 
       <div className="flex gap-1.5 pt-2">
-        <Button 
-          variant="outline" 
-          onClick={() => setStep('preview')}
-          disabled={processingPayment}
-          className="flex-1 h-8 text-xs rounded-lg"
-        >
-          Retour
-        </Button>
-        <Button 
-          onClick={handlePayment}
-          disabled={processingPayment || !hasAnyPaymentMethod}
-          className="flex-1 h-8 text-xs rounded-lg"
-        >
-          {processingPayment ? (
-            <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
-              Paiement...
-            </>
-          ) : (
-            `Payer $${Number(createdRequest?.total_amount_usd || 0).toFixed(2)}`
-          )}
+        <Button variant="outline" onClick={() => setStep('preview')} disabled={processingPayment} className="flex-1 h-8 text-xs rounded-lg">Retour</Button>
+        <Button onClick={handlePayment} disabled={processingPayment || !hasAnyPaymentMethod} className="flex-1 h-8 text-xs rounded-lg">
+          {processingPayment ? (<><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />Paiement...</>) : (`Payer $${Number(createdRequest?.total_amount_usd || 0).toFixed(2)}`)}
         </Button>
       </div>
     </div>
   );
 
+  // =============== CONFIRMATION STEP ===============
   const renderConfirmationStep = () => (
     <div className="space-y-3 text-center py-2">
-      <div className="mx-auto w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+      <div className="mx-auto w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
         <CheckCircle2 className="h-6 w-6 text-green-600" />
       </div>
-      
       <div>
         <h3 className="font-semibold text-sm">Demande soumise avec succès</h3>
-        <p className="text-[10px] text-muted-foreground mt-1">
-          Votre demande sera traitée dans les 14 jours ouvrables
-        </p>
+        <p className="text-[10px] text-muted-foreground mt-1">Votre demande sera traitée dans les 14 jours ouvrables</p>
       </div>
-
       <Card className="bg-muted/50 border-0 text-left rounded-lg">
         <CardContent className="p-3 space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Hash className="h-3 w-3" />
-              Référence
-            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Hash className="h-3 w-3" /> Référence</div>
             <span className="font-mono font-bold text-xs">{createdRequest?.reference_number}</span>
           </div>
-          
           <Separator />
-          
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              Parcelle
-            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3 w-3" /> Parcelle</div>
             <span className="font-mono text-xs">{parcelNumber}</span>
           </div>
-          
           {parcelData?.province && (
             <div className="flex items-center justify-between">
               <span className="text-[10px] text-muted-foreground">Localisation</span>
               <span className="text-xs">{parcelData.province}, {parcelData.ville}</span>
             </div>
           )}
-          
           <Separator />
-          
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              Délai estimé
-            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock className="h-3 w-3" /> Délai estimé</div>
             <span className="text-xs">{createdRequest?.estimated_processing_days || 14} jours</span>
           </div>
-          
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-muted-foreground">Montant payé</span>
-            <span className="font-bold text-primary text-sm">${createdRequest?.total_amount_usd.toFixed(2)}</span>
+            <span className="font-bold text-primary text-sm">${Number(createdRequest?.total_amount_usd || 0).toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>
-
       <Alert className="text-left py-2 rounded-lg">
-        <AlertDescription className="text-[10px]">
-          Conservez votre numéro de référence. Vous recevrez une notification lors du traitement.
-        </AlertDescription>
+        <AlertDescription className="text-[10px]">Conservez votre numéro de référence. Vous recevrez une notification lors du traitement.</AlertDescription>
       </Alert>
-
-      <Button onClick={handleClose} className="w-full h-8 text-xs rounded-lg">
-        Fermer
-      </Button>
+      <Button onClick={handleClose} className="w-full h-8 text-xs rounded-lg">Fermer</Button>
     </div>
   );
 
@@ -2032,25 +1276,13 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // Reset showIntro when dialog opens
-  useEffect(() => {
-    if (open) {
-      setShowIntro(true);
-    }
-  }, [open]);
+  useEffect(() => { if (open) setShowIntro(true); }, [open]);
 
-  const handleIntroComplete = () => {
-    setShowIntro(false);
-  };
+  const handleIntroComplete = () => setShowIntro(false);
 
   if (showIntro && open) {
     return (
-      <FormIntroDialog
-        open={open}
-        onOpenChange={onOpenChange}
-        onContinue={handleIntroComplete}
-        config={FORM_INTRO_CONFIGS.mutation}
-      />
+      <FormIntroDialog open={open} onOpenChange={onOpenChange} onContinue={handleIntroComplete} config={FORM_INTRO_CONFIGS.mutation} />
     );
   }
 
@@ -2058,38 +1290,28 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
-          <DialogHeader className="pb-2">
-            <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <div className="p-1.5 bg-primary/10 rounded-lg">
-                <FileEdit className="h-4 w-4 text-primary" />
-              </div>
-              {getStepTitle()}
-            </DialogTitle>
-            {step === 'form' && (
-              <DialogDescription className="text-sm text-muted-foreground">
-                Remplissez le formulaire pour demander une mise à jour cadastrale
-              </DialogDescription>
-            )}
-          </DialogHeader>
-
-          {step === 'form' && renderFormStep()}
-          {step === 'preview' && renderPreviewStep()}
-          {step === 'payment' && renderPaymentStep()}
-          {step === 'confirmation' && renderConfirmationStep()}
-        </DialogContent>
-
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2 text-base font-bold">
+            <div className="p-1.5 bg-primary/10 rounded-lg"><FileEdit className="h-4 w-4 text-primary" /></div>
+            {getStepTitle()}
+          </DialogTitle>
+          {step === 'form' && (
+            <DialogDescription className="text-sm text-muted-foreground">Remplissez le formulaire pour demander une mise à jour cadastrale</DialogDescription>
+          )}
+        </DialogHeader>
+        {step === 'form' && renderFormStep()}
+        {step === 'preview' && renderPreviewStep()}
+        {step === 'payment' && renderPaymentStep()}
+        {step === 'confirmation' && renderConfirmationStep()}
+      </DialogContent>
       {open && step === 'form' && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de mutation." />}
-
-      {/* Dialog pour demande d'expertise immobilière */}
       <RealEstateExpertiseRequestDialog
         parcelNumber={parcelNumber}
         parcelId={parcelId}
         parcelData={parcelData}
         open={showExpertiseDialog}
         onOpenChange={setShowExpertiseDialog}
-        onSuccess={() => {
-          toast.success('Demande d\'expertise soumise ! Vous serez notifié une fois le certificat disponible.');
-        }}
+        onSuccess={() => toast.success('Demande d\'expertise soumise ! Vous serez notifié une fois le certificat disponible.')}
       />
     </Dialog>
   );
