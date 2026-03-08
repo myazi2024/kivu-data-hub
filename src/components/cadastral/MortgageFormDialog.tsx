@@ -623,14 +623,16 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           <Download className="h-4 w-4" />
           Télécharger le reçu PDF
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/user-dashboard')}
-          className="w-full h-11 rounded-xl gap-2"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Voir mes demandes
-        </Button>
+        {!embedded && (
+          <Button
+            variant="outline"
+            onClick={() => navigate('/user-dashboard')}
+            className="w-full h-11 rounded-xl gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Voir mes demandes
+          </Button>
+        )}
         <Button onClick={handleClose} className="w-full h-11 rounded-xl">
           Fermer
         </Button>
