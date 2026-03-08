@@ -506,6 +506,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const handleConfirmClose = () => {
     setShowCloseConfirmation(false);
+    // Reset ALL form state
     setFormData({
       requesterType: 'owner',
       requesterLastName: '',
@@ -524,6 +525,30 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setActiveTab('requester');
     setShowPayment(false);
     setShowSuccess(false);
+    // Reset request type & parcel
+    setRequestType('');
+    setParcelNumberSearch('');
+    setSelectedParcelNumber('');
+    setParcelValidated(false);
+    setParcelSearchResults([]);
+    // Reset GPS & dimensions
+    setGpsCoordinates([{ borne: 'Borne 1', lat: '', lng: '' }]);
+    setParcelSides([
+      { name: 'Côté Nord', length: '' },
+      { name: 'Côté Sud', length: '' },
+      { name: 'Côté Est', length: '' },
+      { name: 'Côté Ouest', length: '' }
+    ]);
+    setRoadSides([]);
+    // Reset valorisation
+    setConstructionType('');
+    setConstructionNature('');
+    setConstructionMaterials('');
+    setDeclaredUsage('');
+    setNationality('');
+    setOccupationDuration('');
+    setValorisationValidated(false);
+    setDeducedTitleType(null);
     onOpenChange(false);
   };
 
