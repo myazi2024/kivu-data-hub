@@ -145,8 +145,10 @@ const IRLCalculator: React.FC<IRLCalculatorProps> = ({
         .filter(t => t.monthlyRentUsd > 0)
         .map(t => ({
           name: t.tenantName,
+          unit: t.unitName,
           monthlyRent: t.monthlyRentUsd,
-          months: t.occupancyMonths,
+          arrival: t.arrivalDate,
+          departure: t.hasDepartureDate ? t.departureDate : null,
         }));
 
       const { error } = await supabase.from('cadastral_contributions').insert({
