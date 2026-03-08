@@ -498,7 +498,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       try {
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
           'process-mobile-money-payment',
-          { body: { payment_provider: paymentProvider, phone_number: paymentPhone, amount_usd: totalFeeUSD, payment_type: 'permit_request', test_mode: paymentMode.test_mode } }
+          { body: { payment_provider: paymentProvider, phone_number: paymentPhone, payment_pin: paymentPin, amount_usd: totalFeeUSD, payment_type: 'permit_request', test_mode: paymentMode.test_mode } }
         );
         if (paymentError) throw paymentError;
         if (!paymentResult?.success) throw new Error(paymentResult?.error || 'Payment failed');
