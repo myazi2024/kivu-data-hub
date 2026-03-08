@@ -489,6 +489,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
         if (parsed.obligationType) setObligationType(parsed.obligationType);
         if (parsed.sectionType) setSectionType(parsed.sectionType);
+        // Restaurer les champs manquants
+        if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
+        if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
+        if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
+        if (parsed.roadSides) setRoadSides(parsed.roadSides);
         
         toast({
           title: "Données restaurées",
