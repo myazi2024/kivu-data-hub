@@ -1787,12 +1787,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
     
-    // Marquer comme en cours de détection
-    const updated = [...gpsCoordinates];
-    updated[index] = { ...updated[index], detecting: true };
-    setGpsCoordinates(updated);
+    // Marquer comme en cours de détection via callback pour éviter les stale closures
+    setGpsCoordinates(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], detecting: true };
+      return updated;
+    });
     
-    // Afficher un toast informatif
     toast({
       title: "Détection en cours...",
       description: "Veuillez patienter pendant que nous obtenons votre position GPS",
@@ -1800,15 +1801,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const finalUpdate = [...gpsCoordinates];
-        finalUpdate[index] = {
-          ...finalUpdate[index],
-          lat: position.coords.latitude.toFixed(6),
-          lng: position.coords.longitude.toFixed(6),
-          detected: true,
-          detecting: false
-        };
-        setGpsCoordinates(finalUpdate);
+        // Utiliser le callback de setState pour toujours avoir l'état le plus récent
+        setGpsCoordinates(prev => {
+          const finalUpdate = [...prev];
+          finalUpdate[index] = {
+            ...finalUpdate[index],
+            lat: position.coords.latitude.toFixed(6),
+            lng: position.coords.longitude.toFixed(6),
+            detected: true,
+            detecting: false
+          };
+          return finalUpdate;
+        });
         
         toast({
           title: "Borne détectée",
@@ -1816,10 +1820,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         });
       },
       (error) => {
-        // Réinitialiser l'état de détection en cas d'erreur
-        const errorUpdate = [...gpsCoordinates];
-        errorUpdate[index] = { ...errorUpdate[index], detecting: false };
-        setGpsCoordinates(errorUpdate);
+        // Utiliser le callback pour éviter le stale closure
+        setGpsCoordinates(prev => {
+          const errorUpdate = [...prev];
+          errorUpdate[index] = { ...errorUpdate[index], detecting: false };
+          return errorUpdate;
+        });
         
         let errorMessage = "Impossible de récupérer votre position";
         
@@ -1843,8 +1849,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       },
       {
         enableHighAccuracy: true,
-        timeout: 30000, // 30 secondes pour permettre au GPS de se stabiliser
-        maximumAge: 5000 // Accepter une position récente (5 secondes) pour améliorer la performance
+        timeout: 30000,
+        maximumAge: 5000
       }
     );
   };
