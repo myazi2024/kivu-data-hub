@@ -118,7 +118,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
               <Button
                 variant={activeTab === 'report' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setActiveTab('report')}
+                onClick={() => handleTabSwitch('report')}
                 className="flex-1 h-10 rounded-xl text-sm font-semibold gap-1.5"
               >
                 <AlertTriangle className="h-4 w-4" />
@@ -127,7 +127,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
               <Button
                 variant={activeTab === 'lifting' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setActiveTab('lifting')}
+                onClick={() => handleTabSwitch('lifting')}
                 className="flex-1 h-10 rounded-xl text-sm font-semibold gap-1.5"
               >
                 <FileX2 className="h-4 w-4" />
