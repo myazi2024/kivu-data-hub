@@ -55,7 +55,7 @@ export function PermitRequestCard({ parcelNumber }: PermitRequestCardProps) {
 
           {/* Options */}
           <div className="space-y-2">
-            {/* Option: Permis de construire */}
+            {/* Option: Autorisation de bâtir */}
             <button
               type="button"
               onClick={() => handleNewPermitRequest('new')}
