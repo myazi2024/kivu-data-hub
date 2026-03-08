@@ -826,7 +826,7 @@ export const AdminExpertiseRequests: React.FC = () => {
 
       {/* Process Dialog */}
       <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Traiter la demande</DialogTitle>
             <DialogDescription>
