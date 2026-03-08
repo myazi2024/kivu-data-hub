@@ -88,11 +88,13 @@ export const cleanupUploadedFiles = async (filePaths: string[]): Promise<void> =
 };
 
 /**
- * Check for existing active disputes on a parcel to prevent duplicates
+ * Check for existing active disputes on a parcel to prevent duplicates.
+ * Now scoped to the reporting user to avoid blocking other users.
  */
 export const checkDuplicateDispute = async (
   parcelNumber: string,
-  disputeNature: string
+  disputeNature: string,
+  userId: string
 ): Promise<boolean> => {
   const { data } = await supabase
     .from('cadastral_land_disputes' as any)
@@ -100,7 +102,8 @@ export const checkDuplicateDispute = async (
     .eq('parcel_number', parcelNumber)
     .eq('dispute_nature', disputeNature)
     .eq('dispute_type', 'report')
-    .in('current_status', ['en_cours', 'en_resolution', 'demande_levee'])
+    .eq('reported_by', userId)
+    .in('current_status', ['en_cours', 'demande_levee', 'familial', 'conciliation_amiable', 'autorite_locale', 'arbitrage', 'tribunal', 'appel'])
     .limit(1) as any;
 
   return data && data.length > 0;
