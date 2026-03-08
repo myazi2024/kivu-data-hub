@@ -230,17 +230,14 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         throw error;
       }
 
-      // Step 4: Send notification (non-blocking, with error handling)
-      try {
-        await supabase.from('notifications').insert({
-          user_id: user.id,
-          title: `${title} soumise`,
-          message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumise avec succès.`,
-          type: 'success'
-        });
-      } catch (notifErr) {
-        console.warn('Notification insert failed (non-blocking):', notifErr);
-      }
+      // Step 4: Send notification (non-blocking, fire-and-forget)
+      supabase.from('notifications').insert({
+        user_id: user.id,
+        title: `${title} soumise`,
+        message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumise avec succès.`,
+      }).then(({ error: notifErr }) => {
+        if (notifErr) console.warn('Notification insert failed (non-blocking):', notifErr);
+      });
 
       setStep('confirmation');
       toast.success(`${title} enregistrée avec succès`);
