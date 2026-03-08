@@ -105,16 +105,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   }, [open, loadParcelData]);
 
-  // Fix #1: Draft prompt only shown once per dialog session
   useEffect(() => {
-    if (open && hasDraft && !draftPromptShownRef.current) {
+    if (open && draftLoaded && hasDraft && !draftPromptShownRef.current) {
       draftPromptShownRef.current = true;
       setShowDraftPrompt(true);
     }
     if (!open) {
       draftPromptShownRef.current = false;
+      setShowDraftPrompt(false);
     }
-  }, [open, hasDraft]);
+  }, [open, draftLoaded, hasDraft]);
 
   useEffect(() => {
     if (open && fees.length > 0 && !feesInitializedRef.current) {
