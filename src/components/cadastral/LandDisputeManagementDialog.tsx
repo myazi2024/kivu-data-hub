@@ -31,6 +31,8 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
   const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState<DisputeTab>('report');
   const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showTabSwitchConfirm, setShowTabSwitchConfirm] = useState(false);
+  const [pendingTab, setPendingTab] = useState<DisputeTab | null>(null);
 
   const handleIntroComplete = () => {
     setShowIntro(false);
@@ -51,6 +53,24 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
     } else {
       handleClose();
     }
+  };
+
+  const handleTabSwitch = (tab: DisputeTab) => {
+    if (tab === activeTab) return;
+    if (checkUnsavedChanges()) {
+      setPendingTab(tab);
+      setShowTabSwitchConfirm(true);
+    } else {
+      setActiveTab(tab);
+    }
+  };
+
+  const confirmTabSwitch = () => {
+    if (pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+    setShowTabSwitchConfirm(false);
   };
 
   const handleClose = () => {
@@ -98,7 +118,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
               <Button
                 variant={activeTab === 'report' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setActiveTab('report')}
+                onClick={() => handleTabSwitch('report')}
                 className="flex-1 h-10 rounded-xl text-sm font-semibold gap-1.5"
               >
                 <AlertTriangle className="h-4 w-4" />
@@ -107,7 +127,7 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
               <Button
                 variant={activeTab === 'lifting' ? 'default' : 'outline'}
                 size="sm"
-                onClick={() => setActiveTab('lifting')}
+                onClick={() => handleTabSwitch('lifting')}
                 className="flex-1 h-10 rounded-xl text-sm font-semibold gap-1.5"
               >
                 <FileX2 className="h-4 w-4" />
@@ -157,6 +177,24 @@ const LandDisputeManagementDialog: React.FC<LandDisputeManagementDialogProps> = 
             <AlertDialogCancel className="rounded-xl">Continuer la saisie</AlertDialogCancel>
             <AlertDialogAction onClick={handleClose} className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90">
               Quitter
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Tab switch confirmation dialog */}
+      <AlertDialog open={showTabSwitchConfirm} onOpenChange={setShowTabSwitchConfirm}>
+        <AlertDialogContent className="rounded-2xl z-[1300]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Changer d'onglet ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous avez des modifications non enregistrées dans l'onglet actuel. Vos données texte seront conservées en brouillon, mais les fichiers joints seront perdus.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-xl">Rester ici</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmTabSwitch} className="rounded-xl">
+              Changer d'onglet
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -24,6 +24,8 @@ import {
   validateFileCount,
   validateFile,
   getDisputeLiftingDraftKey,
+  DISPUTE_NATURES_MAP,
+  DISPUTE_STATUS_CONFIG,
 } from '@/utils/disputeUploadUtils';
 
 interface LandDisputeLiftingFormProps {
@@ -240,6 +242,7 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
 
   const handleSubmit = async () => {
     if (!user) { toast.error('Vous devez être connecté'); return; }
+    if (loading) return; // Guard against double-click
     setLoading(true);
 
     let uploadedPaths: string[] = [];
@@ -495,8 +498,8 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
               <CheckCircle2 className="h-4 w-4" /> Litige identifié
             </div>
             <div className="text-xs text-green-700 space-y-0.5">
-              <div>Nature : {disputeData.dispute_nature}</div>
-              <div>Statut : {disputeData.current_status}</div>
+              <div>Nature : {DISPUTE_NATURES_MAP[disputeData.dispute_nature] || disputeData.dispute_nature}</div>
+              <div>Statut : {DISPUTE_STATUS_CONFIG[disputeData.current_status]?.label || disputeData.current_status}</div>
               <div>Déclarant : {disputeData.declarant_name}</div>
             </div>
           </CardContent>
