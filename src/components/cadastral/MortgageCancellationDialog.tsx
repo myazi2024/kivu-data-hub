@@ -140,20 +140,9 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fix #25: Generate unique reference server-side with collision check
-  const generateUniqueReference = useCallback(async (): Promise<string> => {
-    let attempts = 0;
-    while (attempts < 5) {
-      const ref = `RAD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-      const { data } = await supabase
-        .from('cadastral_contributions')
-        .select('id')
-        .eq('change_justification', ref)
-        .maybeSingle();
-      if (!data) return ref;
-      attempts++;
-    }
-    return `RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
+  // Fix #3: Generate unique reference using crypto.randomUUID (no DB roundtrip, no collision with change_justification)
+  const generateUniqueReference = useCallback((): string => {
+    return `RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
   }, []);
 
   // Load parcel data
