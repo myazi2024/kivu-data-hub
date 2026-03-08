@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import DOMPurify from 'dompurify';
 import ProvinceTooltip from './ProvinceTooltip';
 import { ProvinceData } from '@/types/province';
 
