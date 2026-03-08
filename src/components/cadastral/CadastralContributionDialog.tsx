@@ -1571,12 +1571,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   const removeTaxRecord = (index: number) => {
     setTaxRecords(taxRecords.filter((_, i) => i !== index));
+    markDirty();
   };
 
   const updateTaxRecord = (index: number, field: string, value: string) => {
     const updated = [...taxRecords];
     updated[index] = { ...updated[index], [field]: value };
     setTaxRecords(updated);
+    markDirty();
   };
 
   const handleTaxFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
