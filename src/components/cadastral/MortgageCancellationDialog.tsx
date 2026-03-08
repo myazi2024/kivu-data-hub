@@ -1380,12 +1380,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
         <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
           <DialogHeader className="p-4 pb-2">
             <DialogTitle className="flex items-center gap-2 text-base font-bold">
-              <div className="p-1.5 bg-red-500/10 rounded-lg">
-                <FileX2 className="h-4 w-4 text-red-600" />
+              <div className="p-1.5 bg-destructive/10 rounded-lg">
+                <FileX2 className="h-4 w-4 text-destructive" />
               </div>
               Radiation d'hypothèque
             </DialogTitle>
@@ -1402,6 +1402,11 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </ScrollArea>
         </DialogContent>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
+      <QuickAuthDialog
+        open={showAuthDialog}
+        onOpenChange={setShowAuthDialog}
+        onAuthSuccess={() => setShowAuthDialog(false)}
+      />
     </Dialog>
   );
 };
