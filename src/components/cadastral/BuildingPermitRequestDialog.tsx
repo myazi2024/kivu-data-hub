@@ -403,14 +403,18 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
     if (error) throw error;
 
-    // Send notification
-    await supabase.from('notifications').insert({
-      user_id: user.id,
-      type: 'success',
-      title: 'Demande d\'autorisation soumise',
-      message: `Votre demande d'${requestType === 'new' ? 'autorisation de bâtir' : 'autorisation de régularisation'} pour la parcelle ${parcelNumber} a été soumise. Délai de traitement: 15-30 jours.`,
-      action_url: '/user-dashboard?tab=building-permits'
-    });
+    // Send notification (non-blocking, with error handling)
+    try {
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'success',
+        title: 'Demande d\'autorisation soumise',
+        message: `Votre demande d'${requestType === 'new' ? 'autorisation de bâtir' : 'autorisation de régularisation'} pour la parcelle ${parcelNumber} a été soumise. Délai de traitement: 15-30 jours.`,
+        action_url: '/user-dashboard?tab=building-permits'
+      });
+    } catch (notifErr) {
+      console.warn('Notification insert failed (non-blocking):', notifErr);
+    }
 
     return data.id;
   };
