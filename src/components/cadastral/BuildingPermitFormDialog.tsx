@@ -150,11 +150,13 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     const normalizedPermitNumber = normalizePermitNumber(permitRecord.permitNumber);
 
     try {
-      // Step 1: Check for duplicate permit number BEFORE upload
+      // Step 1: Check for duplicate permit number BEFORE upload (server-side filtered)
       const { data: existingContributions, error: dupError } = await supabase
         .from('cadastral_contributions')
         .select('id, building_permits')
-        .in('status', ['pending', 'approved']);
+        .eq('parcel_number', parcelNumber)
+        .in('status', ['pending', 'approved', 'verified'])
+        .not('building_permits', 'is', null);
 
       if (dupError) {
         console.error('Duplicate check error:', dupError);
@@ -170,7 +172,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         });
 
         if (isDuplicate) {
-          toast.error(`Le numéro d'autorisation ${normalizedPermitNumber} existe déjà dans le système`);
+          toast.error(`Le numéro d'autorisation ${normalizedPermitNumber} existe déjà pour cette parcelle`);
           setLoading(false);
           return;
         }
