@@ -531,7 +531,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         <QuickAuthDialog
           open={showAuthDialog}
           onOpenChange={setShowAuthDialog}
-          message="Connectez-vous pour enregistrer une hypothèque"
         />
       </>
     );
