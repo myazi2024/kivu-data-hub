@@ -305,7 +305,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     receiptFile: null
   }]);
   
-  // État pour le mode de permis de construire
+  // État pour le mode d'autorisation de bâtir
   const [permitMode, setPermitMode] = useState<'existing' | 'request'>('existing');
   
   // État pour gérer les permis de construire existants
