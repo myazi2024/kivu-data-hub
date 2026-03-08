@@ -269,15 +269,16 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
         throw error;
       }
 
-      // AFTER successful insert, update original dispute status (non-blocking)
+      // AFTER successful insert, update original dispute status (blocking - must succeed)
       if (disputeData?.id) {
-        try {
-          await supabase
-            .from('cadastral_land_disputes' as any)
-            .update({ current_status: 'demande_levee', updated_at: new Date().toISOString() } as any)
-            .eq('id', disputeData.id);
-        } catch (e) {
-          console.warn('Erreur mise à jour statut litige original:', e);
+        const { error: updateError } = await supabase
+          .from('cadastral_land_disputes' as any)
+          .update({ current_status: 'demande_levee', updated_at: new Date().toISOString() } as any)
+          .eq('id', disputeData.id);
+        
+        if (updateError) {
+          console.error('Erreur mise à jour statut litige original:', updateError);
+          toast.error('Le litige original n\'a pas pu être mis à jour. Contactez le support.');
         }
       }
 
