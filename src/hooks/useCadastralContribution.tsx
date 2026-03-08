@@ -27,7 +27,7 @@ export interface CadastralContributionData {
   declaredUsage?: string;
   constructionYear?: number; // Année de construction (si pas terrain nu)
   
-  // Permis de construire
+  // Autorisation de bâtir
   buildingPermits?: Array<{
     permitType: 'construction' | 'regularization';
     permitNumber: string;
