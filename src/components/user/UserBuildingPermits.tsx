@@ -64,7 +64,7 @@ export function UserBuildingPermits() {
       setPermits(data || []);
     } catch (error) {
       console.error('Error fetching building permits:', error);
-      toast.error("Erreur lors du chargement des demandes de permis");
+      toast.error("Erreur lors du chargement des demandes d'autorisation");
     } finally {
       setLoading(false);
     }

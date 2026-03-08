@@ -67,6 +67,9 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   const gradientTo = isConstruction ? 'to-blue-600' : 'to-green-600';
   const IconComponent = isConstruction ? Building2 : FileCheck;
 
+  // Normalize permit number: trim + uppercase
+  const normalizePermitNumber = (value: string): string => value.trim().toUpperCase();
+
   const updatePermit = (field: keyof PermitRecord, value: string | File | null) => {
     setPermitRecord(prev => ({ ...prev, [field]: value }));
   };
@@ -107,13 +110,15 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
   const validateForm = (): boolean => {
     if (!permitRecord.permitNumber || !permitRecord.issueDate || !permitRecord.issuingService) {
-      toast.error('Veuillez remplir les champs obligatoires: N° permis, Date, Service émetteur');
+      toast.error('Veuillez remplir les champs obligatoires: N° autorisation, Date, Service émetteur');
       return false;
     }
 
+    const normalized = normalizePermitNumber(permitRecord.permitNumber);
+
     // Validate permit number format
-    if (!PERMIT_NUMBER_REGEX.test(permitRecord.permitNumber)) {
-      toast.error('Format du N° permis invalide. Utilisez un format tel que PC-2024-001 ou AB/2024/00123');
+    if (!PERMIT_NUMBER_REGEX.test(normalized)) {
+      toast.error('Format du N° autorisation invalide. Utilisez un format tel que PC-2024-001 ou AB/2024/00123');
       return false;
     }
 
@@ -142,8 +147,36 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     let uploadedFilePath: string | null = null;
     let documentUrl: string | null = null;
 
+    const normalizedPermitNumber = normalizePermitNumber(permitRecord.permitNumber);
+
     try {
-      // Step 1: Upload file if present
+      // Step 1: Check for duplicate permit number BEFORE upload
+      const { data: existingContributions, error: dupError } = await supabase
+        .from('cadastral_contributions')
+        .select('id, building_permits')
+        .in('status', ['pending', 'approved']);
+
+      if (dupError) {
+        console.error('Duplicate check error:', dupError);
+        // Non-blocking: continue if duplicate check fails
+      } else if (existingContributions) {
+        const isDuplicate = existingContributions.some((contrib) => {
+          const permits = contrib.building_permits;
+          if (!Array.isArray(permits)) return false;
+          return permits.some((bp: any) => {
+            const existing = (bp.permitNumber || bp.permit_number || '').trim().toUpperCase();
+            return existing === normalizedPermitNumber;
+          });
+        });
+
+        if (isDuplicate) {
+          toast.error(`Le numéro d'autorisation ${normalizedPermitNumber} existe déjà dans le système`);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Step 2: Upload file if present (AFTER duplicate check)
       if (permitRecord.permitFile) {
         const fileExt = permitRecord.permitFile.name.split('.').pop();
         const fileName = `permit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -161,21 +194,10 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
       const calculatedStatus = computedStatus();
 
-      // Step 2: Check for duplicate permit number
-      const { data: existingPermits } = await supabase
-        .from('cadastral_contributions')
-        .select('id')
-        .eq('status', 'approved')
-        .contains('building_permits', JSON.stringify([{ permit_number: permitRecord.permitNumber }]))
-        .limit(1);
+      // Standardize permit_type: always use 'construction' or 'regularization' (EN)
+      const standardizedPermitType = permitType === 'regularisation' ? 'regularization' : 'construction';
 
-      if (existingPermits && existingPermits.length > 0) {
-        toast.error(`Le numéro de permis ${permitRecord.permitNumber} existe déjà dans le système`);
-        setLoading(false);
-        return;
-      }
-
-      // Step 3: Insert contribution
+      // Step 3: Insert contribution with camelCase JSON keys (matching PermitCard expectations)
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -185,14 +207,15 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           contribution_type: 'update',
           status: 'pending',
           building_permits: [{
-            permit_number: permitRecord.permitNumber,
-            issue_date: permitRecord.issueDate,
-            issuing_service: permitRecord.issuingService,
-            issuing_service_contact: permitRecord.issuingServiceContact,
-            validity_period_months: parseInt(permitRecord.validityPeriod) || 12,
-            administrative_status: calculatedStatus,
-            permit_type: permitType,
-            document_url: documentUrl
+            permitNumber: normalizedPermitNumber,
+            issueDate: permitRecord.issueDate,
+            issuingService: permitRecord.issuingService,
+            issuingServiceContact: permitRecord.issuingServiceContact,
+            validityMonths: parseInt(permitRecord.validityPeriod) || 12,
+            administrativeStatus: calculatedStatus,
+            permitType: standardizedPermitType,
+            documentUrl: documentUrl,
+            isCurrent: true
           }]
         });
 
@@ -208,8 +231,8 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       try {
         await supabase.from('notifications').insert({
           user_id: user.id,
-          title: `${title} soumis`,
-          message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumis avec succès.`,
+          title: `${title} soumise`,
+          message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumise avec succès.`,
           type: 'success'
         });
       } catch (notifErr) {
@@ -217,7 +240,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       }
 
       setStep('confirmation');
-      toast.success(`${title} enregistré avec succès`);
+      toast.success(`${title} enregistrée avec succès`);
     } catch (error: any) {
       console.error('Error:', error);
       toast.error('Erreur lors de l\'enregistrement');
@@ -246,7 +269,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       {/* Formulaire compact */}
       <div className="grid grid-cols-2 gap-2.5">
         <div className="space-y-1">
-          <Label className="text-xs font-medium">N° Permis *</Label>
+          <Label className="text-xs font-medium">N° Autorisation *</Label>
           <Input
             placeholder="ex: PC-2024-001"
             value={permitRecord.permitNumber}
@@ -317,10 +340,10 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       {/* Pièce jointe */}
       <div className="space-y-1.5 pt-2 border-t border-border/50">
         <Label className="text-xs font-medium flex items-center gap-1.5">
-          Document du permis (optionnel)
+          Document de l'autorisation (optionnel)
           <SectionHelpPopover
-            title="Document du permis"
-            description="Joignez une copie numérique de l'autorisation de bâtir (scan ou photo)."
+            title="Document de l'autorisation"
+            description="Joignez une copie numérique de l'autorisation (scan ou photo)."
           />
         </Label>
         {!permitRecord.permitFile ? (
@@ -332,7 +355,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
             className="gap-2 w-full text-xs h-9 rounded-xl border-dashed border-2"
           >
             <Plus className="h-3.5 w-3.5" />
-            Joindre le permis
+            Joindre l'autorisation
           </Button>
         ) : (
           <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
@@ -394,7 +417,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
             {[
               ['Type', title],
               ['Parcelle', parcelNumber],
-              ['N° Permis', permitRecord.permitNumber],
+              ['N° Autorisation', normalizePermitNumber(permitRecord.permitNumber)],
               ['Date délivrance', permitRecord.issueDate],
               ['Service émetteur', permitRecord.issuingService],
               ['Validité', `${permitRecord.validityPeriod} mois`],
@@ -441,9 +464,9 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         <CheckCircle2 className="h-7 w-7 text-green-600" />
       </div>
       <div>
-        <h3 className="text-base font-semibold">{title} enregistré</h3>
+        <h3 className="text-base font-semibold">{title} enregistrée</h3>
         <p className="text-xs text-muted-foreground mt-1">
-          Votre {title.toLowerCase()} pour la parcelle {parcelNumber} a été soumis avec succès.
+          Votre {title.toLowerCase()} pour la parcelle {parcelNumber} a été soumise avec succès.
         </p>
         <div className={`mt-2 p-2.5 rounded-xl border ${isConstruction ? 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800' : 'bg-green-50 dark:bg-green-950/30 border-green-200 dark:border-green-800'}`}>
           <p className={`text-[10px] ${isConstruction ? 'text-blue-700 dark:text-blue-300' : 'text-green-700 dark:text-green-300'}`}>
@@ -494,7 +517,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           {formContent}
         </div>
       </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'autorisation de bâtir." />}
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'autorisation." />}
     </Dialog>
   );
 };

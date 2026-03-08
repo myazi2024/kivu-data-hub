@@ -212,27 +212,34 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
           <div className="space-y-1.5 md:space-y-2">
             <h4 className="text-xs md:text-sm font-semibold flex items-center gap-1 md:gap-1.5">
               <CheckCircle2 className="h-3 w-3 md:h-4 md:w-4 shrink-0" />
-              Permis délivrés
+              Autorisations délivrées
             </h4>
             <div className="space-y-2">
-              {permit.building_permits.map((bp: any, index: number) => (
-                <div key={index} className="bg-muted/50 p-2 md:p-3 rounded-lg space-y-1.5 md:space-y-2 text-xs md:text-sm">
-                  <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
-                    <Badge variant="outline" className="text-[10px] md:text-xs">{bp.permitNumber}</Badge>
-                    {bp.isCurrent && <Badge className="text-[10px] md:text-xs bg-green-600">Actuel</Badge>}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2 text-[10px] md:text-xs">
-                    <div>
-                      <span className="text-muted-foreground">Délivré le:</span>
-                      <span className="ml-1 font-medium">
-                        {format(new Date(bp.issueDate), "dd/MM/yyyy")}
-                      </span>
+              {permit.building_permits.map((bp: any, index: number) => {
+                // Support both camelCase and snake_case keys for backward compatibility
+                const permitNum = bp.permitNumber || bp.permit_number || 'N/A';
+                const issDate = bp.issueDate || bp.issue_date;
+                const validMonths = bp.validityMonths || bp.validity_period_months || 12;
+                const current = bp.isCurrent || bp.is_current;
+
+                return (
+                  <div key={index} className="bg-muted/50 p-2 md:p-3 rounded-lg space-y-1.5 md:space-y-2 text-xs md:text-sm">
+                    <div className="flex flex-wrap items-center gap-1.5 md:gap-2">
+                      <Badge variant="outline" className="text-[10px] md:text-xs">{permitNum}</Badge>
+                      {current && <Badge className="text-[10px] md:text-xs bg-green-600">Actuelle</Badge>}
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Validité:</span>
-                      <span className="ml-1 font-medium">{bp.validityMonths} mois</span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 md:gap-2 text-[10px] md:text-xs">
+                      <div>
+                        <span className="text-muted-foreground">Délivré le:</span>
+                        <span className="ml-1 font-medium">
+                          {issDate ? format(new Date(issDate), "dd/MM/yyyy") : 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Validité:</span>
+                        <span className="ml-1 font-medium">{validMonths} mois</span>
+                      </div>
                     </div>
-                  </div>
                   <PermitDownloadButton permit={permit} className="w-full" />
                 </div>
               ))}
