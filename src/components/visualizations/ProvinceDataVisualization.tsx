@@ -26,6 +26,10 @@ import { TransactionVolumeVisualization } from './TransactionVolumeVisualization
 import { RentalYieldVisualization } from './RentalYieldVisualization';
 import { PropertyTypeVisualization } from './PropertyTypeVisualization';
 import { LandPressureVisualization } from './LandPressureVisualization';
+import { FiscalRevenueVisualization } from './FiscalRevenueVisualization';
+import { OwnershipRateVisualization } from './OwnershipRateVisualization';
+import { HousingAccessVisualization } from './HousingAccessVisualization';
+import { LandValueVisualization } from './LandValueVisualization';
 
 interface ProvinceDataVisualizationProps {
   provinces: ProvinceData[];
