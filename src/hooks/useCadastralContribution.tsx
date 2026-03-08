@@ -561,9 +561,10 @@ export const useCadastralContribution = () => {
         description: "Vos modifications ont été enregistrées avec succès.",
       });
 
-      // Clean localStorage
+      // Clean localStorage with correct key
       try {
-        localStorage.removeItem(`ccc_form_draft_${data.parcelNumber}`);
+        localStorage.removeItem(`cadastral_contribution_${data.parcelNumber}`);
+        localStorage.removeItem(`ccc_form_draft_${data.parcelNumber}`); // Legacy key cleanup
       } catch (storageError) {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }
