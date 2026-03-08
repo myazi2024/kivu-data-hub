@@ -1508,6 +1508,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       rightType: '',
       since: ''
     }]);
+    markDirty();
   };
 
   const removeCurrentOwner = (index: number) => {
