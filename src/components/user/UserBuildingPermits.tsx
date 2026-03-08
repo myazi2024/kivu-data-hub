@@ -52,11 +52,12 @@ export function UserBuildingPermits() {
     try {
       setLoading(true);
 
+      // Fetch both permit_request (demandes) AND update (enregistrements existants)
       const { data, error } = await supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user.id)
-        .not('permit_request_data', 'is', null)
+        .or('permit_request_data.not.is.null,contribution_type.eq.update')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
