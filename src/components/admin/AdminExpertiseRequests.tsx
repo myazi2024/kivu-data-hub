@@ -185,6 +185,9 @@ export const AdminExpertiseRequests: React.FC = () => {
         const expiryDate = new Date();
         expiryDate.setMonth(expiryDate.getMonth() + 6);
 
+        // Parse extended data from additional_notes
+        const { extendedData: extData } = parseExtendedData(selectedRequest.additional_notes);
+
         const pdfBlob = await generateExpertiseCertificatePDF({
           referenceNumber: selectedRequest.reference_number,
           parcelNumber: selectedRequest.parcel_number,
@@ -220,6 +223,7 @@ export const AdminExpertiseRequests: React.FC = () => {
           expertName: expertName || undefined,
           expertTitle: expertTitle || undefined,
           stampImageUrl: stampImageUrl || undefined,
+          extendedData: extData,
         });
 
         // Upload to Supabase Storage
