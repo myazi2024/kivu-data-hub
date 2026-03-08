@@ -4,9 +4,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePropertyTaxCalculator, TaxCalculationInput, TaxCalculationResult } from '@/hooks/usePropertyTaxCalculator';
 import PropertyTaxQuestionsStep from './tax-calculator/PropertyTaxQuestionsStep';
 import PropertyTaxSummaryStep from './tax-calculator/PropertyTaxSummaryStep';
+import TaxConfirmationStep from './tax-calculator/TaxConfirmationStep';
+import TaxHistorySection from './tax-calculator/TaxHistorySection';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { detectZoneType, isZoneAutoDetected, detectUsageType, detectConstructionType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
+import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants'; // #18 fix: use centralized validateNIF
 
 interface PropertyTaxCalculatorProps {
   parcelNumber: string;
@@ -15,7 +18,7 @@ interface PropertyTaxCalculatorProps {
   onOpenServiceCatalog?: () => void;
 }
 
-type CalcStep = 'questions' | 'summary';
+type CalcStep = 'questions' | 'summary' | 'confirmation'; // #3 fix: add confirmation step
 
 const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   parcelNumber, parcelId, parcelData, onOpenServiceCatalog
@@ -82,8 +85,9 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       toast.error('Veuillez renseigner votre Numéro d\'Impôt (NIF)');
       return;
     }
-    if (hasNif === true && nif.trim() && !/^[A-Za-z0-9]{6,15}$/.test(nif.trim())) {
-      toast.error('Format NIF invalide. Le NIF doit contenir entre 6 et 15 caractères alphanumériques (ex: A0123456B)');
+    // #18 fix: Use centralized validateNIF instead of inline regex
+    if (hasNif === true && nif.trim() && !validateNIF(nif)) {
+      toast.error(NIF_FORMAT_ERROR);
       return;
     }
     if (input.redevableIsDifferent && !input.redevableNom.trim()) {
@@ -99,6 +103,23 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
     const res = calculate(adjustedInput);
     setResult(res);
     setCalcStep('summary');
+  };
+
+  // #15 fix: Reset form after successful submission
+  const resetForm = () => {
+    setNif('');
+    setHasNif(null);
+    setIdDocumentFile(null);
+    setExemptionCertificateFile(null);
+    setInput(prev => ({
+      ...prev,
+      fiscalYear: currentYear,
+      selectedExemptions: [],
+      redevableIsDifferent: false,
+      redevableNom: '',
+      redevableNif: '',
+      redevableQualite: '',
+    }));
   };
 
   const handleSubmit = async () => {
@@ -198,7 +219,8 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       }).then(() => {});
 
       toast.success('Déclaration soumise avec succès');
-      setCalcStep('questions');
+      // #3 fix: Show confirmation step instead of going back to questions
+      setCalcStep('confirmation');
     } catch (error: any) {
       console.error('PropertyTax submit error:', error);
       toast.error('Erreur lors de la soumission de la déclaration');
@@ -212,6 +234,23 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
+    );
+  }
+
+  // #3 fix: Confirmation screen
+  if (calcStep === 'confirmation' && result) {
+    return (
+      <TaxConfirmationStep
+        parcelNumber={parcelNumber}
+        fiscalYear={input.fiscalYear}
+        taxType="Impôt foncier annuel"
+        totalAmount={result.grandTotal}
+        accentClass="bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
+        onClose={() => {
+          resetForm();
+          setCalcStep('questions');
+        }}
+      />
     );
   }
 
@@ -230,27 +269,33 @@ const PropertyTaxCalculator: React.FC<PropertyTaxCalculatorProps> = ({
   }
 
   return (
-    <PropertyTaxQuestionsStep
-      parcelNumber={parcelNumber}
-      parcelData={parcelData}
-      input={input}
-      setInput={setInput}
-      hasNoConstruction={hasNoConstruction}
-      setHasNoConstruction={setHasNoConstruction}
-      nif={nif}
-      setNif={setNif}
-      ownerName={ownerName}
-      setOwnerName={setOwnerName}
-      idDocumentFile={idDocumentFile}
-      setIdDocumentFile={setIdDocumentFile}
-      hasNif={hasNif}
-      setHasNif={setHasNif}
-      exemptionCertificateFile={exemptionCertificateFile}
-      setExemptionCertificateFile={setExemptionCertificateFile}
-      zoneAutoDetected={zoneAutoDetected}
-      onCalculate={handleCalculate}
-      onOpenServiceCatalog={onOpenServiceCatalog}
-    />
+    <div>
+      {/* #12 fix: Show tax history for this parcel */}
+      <div className="px-4 pt-3">
+        <TaxHistorySection parcelNumber={parcelNumber} taxTypeFilter="Impôt foncier annuel" />
+      </div>
+      <PropertyTaxQuestionsStep
+        parcelNumber={parcelNumber}
+        parcelData={parcelData}
+        input={input}
+        setInput={setInput}
+        hasNoConstruction={hasNoConstruction}
+        setHasNoConstruction={setHasNoConstruction}
+        nif={nif}
+        setNif={setNif}
+        ownerName={ownerName}
+        setOwnerName={setOwnerName}
+        idDocumentFile={idDocumentFile}
+        setIdDocumentFile={setIdDocumentFile}
+        hasNif={hasNif}
+        setHasNif={setHasNif}
+        exemptionCertificateFile={exemptionCertificateFile}
+        setExemptionCertificateFile={setExemptionCertificateFile}
+        zoneAutoDetected={zoneAutoDetected}
+        onCalculate={handleCalculate}
+        onOpenServiceCatalog={onOpenServiceCatalog}
+      />
+    </div>
   );
 };
 

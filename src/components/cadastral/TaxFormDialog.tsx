@@ -96,7 +96,6 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
       toast.error('Veuillez renseigner le Numéro d\'Impôt (NIF)');
       return false;
     }
-    // NIF regex validation
     if (!validateNIF(taxRecord.nif)) {
       toast.error(NIF_FORMAT_ERROR);
       return false;
@@ -105,7 +104,6 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
       toast.error('Veuillez remplir les champs obligatoires: Montant, Année');
       return false;
     }
-    // Prevent negative amounts
     const amount = parseFloat(taxRecord.taxAmount);
     if (isNaN(amount) || amount <= 0) {
       toast.error('Le montant doit être un nombre positif');
@@ -129,12 +127,13 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
     let uploadedFilePath: string | null = null;
 
     try {
-      // Check for duplicate: single optimized query
+      // Check for duplicate: single optimized query with contribution_type filter (#6 fix)
       const { data: existingContribs } = await supabase
         .from('cadastral_contributions')
         .select('id, tax_history')
         .eq('parcel_number', parcelNumber)
         .eq('user_id', user.id)
+        .eq('contribution_type', 'update')
         .neq('status', 'rejected');
 
       if (existingContribs && existingContribs.length > 0) {
@@ -282,6 +281,8 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
                 </SelectTrigger>
                 <SelectContent className="rounded-xl bg-popover">
                   <SelectItem value="Impôt foncier annuel">Impôt foncier</SelectItem>
+                  {/* #14 fix: Add "Taxe de bâtisse" option */}
+                  <SelectItem value="Taxe de bâtisse">Taxe de bâtisse</SelectItem>
                   <SelectItem value="Impôt sur les revenus locatifs">Revenus locatifs</SelectItem>
                   <SelectItem value="Taxe de superficie">Superficie</SelectItem>
                   <SelectItem value="Taxe de plus-value immobilière">Plus-value</SelectItem>
@@ -320,7 +321,6 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
                 value={taxRecord.taxAmount}
                 onChange={(e) => {
                   const val = e.target.value;
-                  // Prevent negative input
                   if (val === '' || parseFloat(val) >= 0) {
                     updateTax('taxAmount', val);
                   }
@@ -577,7 +577,8 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
           </div>
         </ScrollArea>
       </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de taxe foncière." />}
+      {/* #19 fix: Only render WhatsApp in standalone (non-embedded) mode */}
+      {open && !embedded && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de taxe foncière." />}
     </Dialog>
   );
 };

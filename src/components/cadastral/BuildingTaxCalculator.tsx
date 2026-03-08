@@ -15,13 +15,16 @@ import { supabase } from '@/integrations/supabase/client';
 import SectionHelpPopover from './SectionHelpPopover';
 import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants';
 import { SummaryRow, PlainRow } from './tax-calculator/SummaryRowComponents';
+import TaxConfirmationStep from './tax-calculator/TaxConfirmationStep';
+import TaxHistorySection from './tax-calculator/TaxHistorySection';
 import {
   getFiscalZoneCategory,
   FISCAL_ZONE_MULTIPLIERS,
   FISCAL_ZONE_LABELS,
   calculateBuildingTaxMonthsLate,
 } from '@/hooks/usePropertyTaxCalculator';
-import { checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
+// #16, #17 fix: Use centralized detection from taxSharedUtils
+import { detectZoneType, detectConstructionType, checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
 
 interface BuildingTaxCalculatorProps {
   parcelNumber: string;
@@ -30,7 +33,7 @@ interface BuildingTaxCalculatorProps {
   onOpenServiceCatalog?: () => void;
 }
 
-type CalcStep = 'questions' | 'summary';
+type CalcStep = 'questions' | 'summary' | 'confirmation'; // #2 fix
 
 const BUILDING_TAX_RATES: Record<string, Record<string, number>> = {
   urban: { en_dur: 500, semi_dur: 300, en_paille: 100 },
@@ -51,6 +54,8 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [loading, setLoading] = useState(false);
   const [exchangeRate, setExchangeRate] = useState(2800);
+  // #5 fix: Fetch building tax rates from DB config (fallback to hardcoded)
+  const [dbBuildingRates, setDbBuildingRates] = useState<Record<string, Record<string, number>> | null>(null);
 
   const [nif, setNif] = useState('');
   const [hasNif, setHasNif] = useState<boolean | null>(null);
@@ -60,29 +65,47 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     if (parcelData?.current_owner_name && !ownerName) setOwnerName(parcelData.current_owner_name);
   }, [parcelData?.current_owner_name]);
 
-  // Fetch exchange rate from config (fallback to 2800)
+  // Fetch exchange rate and building tax rates from config
   useEffect(() => {
-    const fetchRate = async () => {
+    const fetchConfig = async () => {
       const { data } = await supabase
         .from('cadastral_contribution_config')
-        .select('config_value')
-        .eq('config_key', 'cdf_usd_exchange_rate')
-        .eq('is_active', true)
-        .maybeSingle();
-      if (data?.config_value && typeof data.config_value === 'number') {
-        setExchangeRate(data.config_value as number);
-      } else if (data?.config_value && typeof (data.config_value as any).rate === 'number') {
-        setExchangeRate((data.config_value as any).rate);
+        .select('config_key, config_value')
+        .in('config_key', ['cdf_usd_exchange_rate', 'building_tax_rates'])
+        .eq('is_active', true);
+
+      if (data) {
+        for (const row of data) {
+          if (row.config_key === 'cdf_usd_exchange_rate') {
+            const val = row.config_value;
+            if (typeof val === 'number') setExchangeRate(val);
+            else if (typeof (val as any)?.rate === 'number') setExchangeRate((val as any).rate);
+          }
+          // #5 fix: Load building tax rates from DB if configured
+          if (row.config_key === 'building_tax_rates' && typeof val === 'object') {
+            try {
+              const rates = row.config_value as any;
+              if (rates?.urban && rates?.rural) {
+                setDbBuildingRates(rates);
+              }
+            } catch { /* use hardcoded fallback */ }
+          }
+        }
       }
     };
-    fetchRate();
+    fetchConfig();
   }, []);
 
-  const defaultZone = parcelNumber?.startsWith('SR') ? 'rural' : 'urban';
-  const defaultConstruction = parcelData?.construction_type === 'En dur' ? 'en_dur'
-    : parcelData?.construction_type === 'Semi-dur' ? 'semi_dur'
-    : parcelData?.construction_type === 'En paille' ? 'en_paille' : 'en_dur';
+  // Effective building tax rates: DB config or hardcoded fallback
+  const effectiveRates = dbBuildingRates || BUILDING_TAX_RATES;
 
+  // #16, #17 fix: Use centralized detection
+  const defaultZone = detectZoneType(parcelNumber, parcelData);
+  // #8 fix: Use detectConstructionType (returns null for unknown) with fallback to 'en_dur' only if parcel has construction
+  const detectedConstruction = detectConstructionType(parcelData);
+  const defaultConstruction = detectedConstruction || (parcelData?.construction_type && parcelData.construction_type !== 'Terrain nu' ? 'en_dur' : 'en_dur');
+
+  // #7 fix: Zone is now editable via a Select
   const [zoneType, setZoneType] = useState(defaultZone);
   const [constructionType, setConstructionType] = useState(defaultConstruction);
   const [areaSqm, setAreaSqm] = useState(Number(parcelData?.area_sqm) || 0);
@@ -106,7 +129,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
 
   // Memoized calculation
   const calculation = useMemo(() => {
-    const baseTaxRate = BUILDING_TAX_RATES[zoneType]?.[constructionType] || 0;
+    const baseTaxRate = effectiveRates[zoneType]?.[constructionType] || 0;
     const conditionMultiplier = buildingCondition === 'bon' ? 1.0 : buildingCondition === 'moyen' ? 0.75 : 0.5;
     const buildingAge = constructionYear ? currentYear - constructionYear : 0;
     const ageReduction = buildingAge > 20 ? 0.9 : 1.0;
@@ -114,7 +137,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     const baseTaxCDF = totalSurface * baseTaxRate * zoneMultiplier * conditionMultiplier * ageReduction;
     const baseTaxUSD = Math.round((baseTaxCDF / exchangeRate) * 100) / 100;
 
-    // Aligned penalty formula with usePropertyTaxCalculator: 2%/month capped at 24% + 25% majoration if > 3 months
+    // Penalty formula: 2%/month capped at 24% + 25% majoration if > 3 months
     const penaltyRate = Math.min(monthsLate * 2, 24) / 100;
     const majorationRate = monthsLate > 3 ? 0.25 : 0;
     const penaltyAmountUSD = Math.round(baseTaxUSD * penaltyRate * 100) / 100;
@@ -127,7 +150,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
       totalSurface, baseTaxCDF, baseTaxUSD,
       penaltyRate, majorationRate, penaltyAmountUSD, majorationAmountUSD, totalPenaltiesUSD, totalTaxUSD,
     };
-  }, [zoneType, constructionType, buildingCondition, constructionYear, currentYear, areaSqm, numberOfFloors, zoneMultiplier, exchangeRate, monthsLate]);
+  }, [zoneType, constructionType, buildingCondition, constructionYear, currentYear, areaSqm, numberOfFloors, zoneMultiplier, exchangeRate, monthsLate, effectiveRates]);
 
   const canCalculate = areaSqm > 0 && constructionType;
 
@@ -135,6 +158,15 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     if (!canCalculate) { toast.error('Renseignez la superficie et le type de construction'); return; }
     if (hasNif === true && nif && !validateNIF(nif)) { toast.error(NIF_FORMAT_ERROR); return; }
     setCalcStep('summary');
+  };
+
+  // #15 fix: Reset form
+  const resetForm = () => {
+    setNif('');
+    setHasNif(null);
+    setFiscalYear(currentYear);
+    setBuildingCondition('bon');
+    setNumberOfFloors(1);
   };
 
   const handleSubmit = async () => {
@@ -187,7 +219,8 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
       }).then(() => {});
 
       toast.success('Déclaration soumise avec succès');
-      setCalcStep('questions');
+      // #2 fix: Show confirmation instead of going back
+      setCalcStep('confirmation');
     } catch (error: any) {
       console.error('Error:', error);
       toast.error('Erreur lors de la soumission');
@@ -195,6 +228,23 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
       setLoading(false);
     }
   };
+
+  // #2 fix: Confirmation screen
+  if (calcStep === 'confirmation') {
+    return (
+      <TaxConfirmationStep
+        parcelNumber={parcelNumber}
+        fiscalYear={fiscalYear}
+        taxType="Taxe de bâtisse"
+        totalAmount={calculation.totalTaxUSD}
+        accentClass="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300"
+        onClose={() => {
+          resetForm();
+          setCalcStep('questions');
+        }}
+      />
+    );
+  }
 
   if (calcStep === 'summary') {
     return (
@@ -266,6 +316,9 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         </div>
       </div>
 
+      {/* #12 fix: Tax history */}
+      <TaxHistorySection parcelNumber={parcelNumber} taxTypeFilter="Taxe de bâtisse" />
+
       <Alert className="rounded-xl bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800">
         <Info className="h-4 w-4 text-amber-600" />
         <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
@@ -308,18 +361,29 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         </CardContent>
       </Card>
 
-      {/* Localisation synchronisée */}
+      {/* Localisation synchronisée — #7 fix: Zone is now editable */}
       <Card className="rounded-xl border-2">
         <CardContent className="p-3 space-y-2">
           <h4 className="text-sm font-semibold flex items-center gap-1.5">
             <MapPin className="h-4 w-4" /> Localisation
-            <Lock className="h-3 w-3 text-muted-foreground" />
           </h4>
           <div className="grid grid-cols-2 gap-2 text-xs">
             <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Province</span><span className="font-medium">{province || '—'}</span></div>
             <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Ville</span><span className="font-medium">{ville || '—'}</span></div>
             <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Commune</span><span className="font-medium">{parcelData?.commune || '—'}</span></div>
-            <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Zone</span><span className="font-medium">{zoneType === 'urban' ? 'Urbaine' : 'Rurale'}</span></div>
+            {/* #7 fix: Zone selector instead of read-only */}
+            <div className="p-1.5">
+              <Label className="text-[10px] text-muted-foreground">Zone</Label>
+              <Select value={zoneType} onValueChange={setZoneType}>
+                <SelectTrigger className="h-7 text-xs rounded-lg border">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="urban">Urbaine</SelectItem>
+                  <SelectItem value="rural">Rurale</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="p-1.5 bg-muted/50 rounded-lg text-xs flex justify-between">
             <span className="text-muted-foreground">Catégorie fiscale</span>
@@ -382,7 +446,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
         </CardContent>
       </Card>
 
-      {/* Exercice fiscal */}
+      {/* Exercice fiscal — #1 fix: Clean penalty display */}
       <Card className="rounded-xl border-2">
         <CardContent className="p-3 space-y-3">
           <h4 className="text-sm font-semibold">Exercice fiscal</h4>
@@ -400,8 +464,9 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           {monthsLate > 0 && (
             <Alert className="rounded-lg border-destructive/30 bg-destructive/5">
               <AlertDescription className="text-xs text-destructive">
-                Retard de {monthsLate} mois — Pénalité: {(calculation.penaltyRate * 100).toFixed(0)}%
-                {calculation.majorationRate > 0 && ` + majoration 25%`}
+                {/* #1 fix: Display penalty percentage correctly without redundancy */}
+                Retard de {monthsLate} mois (échéance: 30 juin {fiscalYear}) — Pénalité: {Math.min(monthsLate * 2, 24)}%
+                {monthsLate > 3 && ` + majoration 25%`}
               </AlertDescription>
             </Alert>
           )}
