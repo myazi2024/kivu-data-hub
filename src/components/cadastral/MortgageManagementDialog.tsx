@@ -51,7 +51,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
           .from('cadastral_mortgages')
           .select('id')
           .eq('parcel_id', parcelId)
-          .eq('mortgage_status', 'active')
+          .in('mortgage_status', ['active', 'en_defaut', 'renegociee'])
           .limit(1);
         if (!error) {
           setHasActiveMortgage((data?.length ?? 0) > 0);
