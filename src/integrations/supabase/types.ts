@@ -1703,13 +1703,20 @@ export type Database = {
           circonscription_fonciere: string | null
           collectivite: string | null
           commune: string | null
+          construction_materials: string | null
+          construction_nature: string | null
+          construction_type: string | null
           created_at: string
+          declared_usage: string | null
+          deduced_title_type: string | null
           estimated_processing_days: number | null
           fee_items: Json
           gps_coordinates: Json | null
           groupement: string | null
           id: string
           is_owner_same_as_requester: boolean | null
+          nationality: string | null
+          occupation_duration: string | null
           owner_first_name: string | null
           owner_id_document_url: string | null
           owner_last_name: string | null
@@ -1726,6 +1733,7 @@ export type Database = {
           quartier: string | null
           reference_number: string
           rejection_reason: string | null
+          request_type: string | null
           requester_email: string | null
           requester_first_name: string
           requester_id_document_url: string | null
@@ -1737,6 +1745,7 @@ export type Database = {
           reviewed_by: string | null
           road_bordering_sides: Json | null
           section_type: string
+          selected_parcel_number: string | null
           status: string
           territoire: string | null
           total_amount_usd: number
@@ -1752,13 +1761,20 @@ export type Database = {
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
+          construction_materials?: string | null
+          construction_nature?: string | null
+          construction_type?: string | null
           created_at?: string
+          declared_usage?: string | null
+          deduced_title_type?: string | null
           estimated_processing_days?: number | null
           fee_items?: Json
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
           is_owner_same_as_requester?: boolean | null
+          nationality?: string | null
+          occupation_duration?: string | null
           owner_first_name?: string | null
           owner_id_document_url?: string | null
           owner_last_name?: string | null
@@ -1775,6 +1791,7 @@ export type Database = {
           quartier?: string | null
           reference_number: string
           rejection_reason?: string | null
+          request_type?: string | null
           requester_email?: string | null
           requester_first_name: string
           requester_id_document_url?: string | null
@@ -1786,6 +1803,7 @@ export type Database = {
           reviewed_by?: string | null
           road_bordering_sides?: Json | null
           section_type: string
+          selected_parcel_number?: string | null
           status?: string
           territoire?: string | null
           total_amount_usd?: number
@@ -1801,13 +1819,20 @@ export type Database = {
           circonscription_fonciere?: string | null
           collectivite?: string | null
           commune?: string | null
+          construction_materials?: string | null
+          construction_nature?: string | null
+          construction_type?: string | null
           created_at?: string
+          declared_usage?: string | null
+          deduced_title_type?: string | null
           estimated_processing_days?: number | null
           fee_items?: Json
           gps_coordinates?: Json | null
           groupement?: string | null
           id?: string
           is_owner_same_as_requester?: boolean | null
+          nationality?: string | null
+          occupation_duration?: string | null
           owner_first_name?: string | null
           owner_id_document_url?: string | null
           owner_last_name?: string | null
@@ -1824,6 +1849,7 @@ export type Database = {
           quartier?: string | null
           reference_number?: string
           rejection_reason?: string | null
+          request_type?: string | null
           requester_email?: string | null
           requester_first_name?: string
           requester_id_document_url?: string | null
@@ -1835,6 +1861,7 @@ export type Database = {
           reviewed_by?: string | null
           road_bordering_sides?: Json | null
           section_type?: string
+          selected_parcel_number?: string | null
           status?: string
           territoire?: string | null
           total_amount_usd?: number

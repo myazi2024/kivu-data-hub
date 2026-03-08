@@ -1,16 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-
-export interface LandTitleFee {
-  id: string;
-  fee_name: string;
-  description: string | null;
-  amount_usd: number;
-  is_mandatory: boolean;
-  is_active: boolean;
-  display_order: number;
-}
 
 export interface LandTitleRequestData {
   // Type de demande
@@ -56,8 +46,12 @@ export interface LandTitleRequestData {
   
   // Valorisation
   constructionType?: string;
+  constructionNature?: string;
+  constructionMaterials?: string;
   declaredUsage?: string;
   deducedTitleType?: string;
+  nationality?: string;
+  occupationDuration?: string;
   
   // Documents
   proofOfOwnershipFile?: File | null;
@@ -70,124 +64,94 @@ export interface LandTitleRequestData {
   totalAmountOverride?: number;
 }
 
+const uploadDocument = async (file: File, folder: string): Promise<string | null> => {
+  try {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+    
+    const { error: uploadError } = await supabase.storage
+      .from('land-title-documents')
+      .upload(fileName, file);
+
+    if (uploadError) {
+      const { error: publicUploadError } = await supabase.storage
+        .from('public')
+        .upload(`land-titles/${fileName}`, file);
+        
+      if (publicUploadError) throw publicUploadError;
+      
+      const { data: publicUrlData } = supabase.storage
+        .from('public')
+        .getPublicUrl(`land-titles/${fileName}`);
+      return publicUrlData.publicUrl;
+    }
+
+    const { data: urlData } = supabase.storage
+      .from('land-title-documents')
+      .getPublicUrl(fileName);
+    return urlData.publicUrl;
+  } catch (error) {
+    console.error('Error uploading document:', error);
+    return null;
+  }
+};
+
 export const useLandTitleRequest = () => {
   const [loading, setLoading] = useState(false);
-  const [fees, setFees] = useState<LandTitleFee[]>([]);
-  const [loadingFees, setLoadingFees] = useState(true);
 
-  const fetchFees = useCallback(async () => {
-    try {
-      setLoadingFees(true);
-      const { data, error } = await supabase
-        .from('land_title_fees_config')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      setFees(data || []);
-    } catch (error) {
-      console.error('Error fetching land title fees:', error);
-      toast.error('Erreur lors du chargement des frais');
-    } finally {
-      setLoadingFees(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchFees();
-  }, [fetchFees]);
-
-  const calculateTotal = useCallback((selectedFeeIds: string[]): number => {
-    return fees
-      .filter(fee => fee.is_mandatory || selectedFeeIds.includes(fee.id))
-      .reduce((total, fee) => total + fee.amount_usd, 0);
-  }, [fees]);
-
-  const getMandatoryFees = useCallback((): LandTitleFee[] => {
-    return fees.filter(fee => fee.is_mandatory);
-  }, [fees]);
-
-  const getOptionalFees = useCallback((): LandTitleFee[] => {
-    return fees.filter(fee => !fee.is_mandatory);
-  }, [fees]);
-
-  const uploadDocument = async (file: File, folder: string): Promise<string | null> => {
-    try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('land-title-documents')
-        .upload(fileName, file);
-
-      if (uploadError) {
-        // Bucket might not exist, try creating in public bucket
-        const { error: publicUploadError } = await supabase.storage
-          .from('public')
-          .upload(`land-titles/${fileName}`, file);
-          
-        if (publicUploadError) throw publicUploadError;
-        
-        const { data: publicUrlData } = supabase.storage
-          .from('public')
-          .getPublicUrl(`land-titles/${fileName}`);
-        return publicUrlData.publicUrl;
-      }
-
-      const { data: urlData } = supabase.storage
-        .from('land-title-documents')
-        .getPublicUrl(fileName);
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Error uploading document:', error);
-      return null;
-    }
-  };
-
-  const submitRequest = async (data: LandTitleRequestData): Promise<{ success: boolean; requestId?: string; referenceNumber?: string }> => {
+  const submitRequest = async (
+    data: LandTitleRequestData,
+    feeItems: Array<{ id: string; name: string; amount: number; is_mandatory: boolean }> = []
+  ): Promise<{ success: boolean; requestId?: string; referenceNumber?: string }> => {
     setLoading(true);
     try {
-      // Upload documents
+      // 1. Upload documents FIRST (before any payment)
       let requesterIdDocUrl: string | null = null;
       let ownerIdDocUrl: string | null = null;
       let proofOfOwnershipUrl: string | null = null;
 
       if (data.requesterIdDocumentFile) {
         requesterIdDocUrl = await uploadDocument(data.requesterIdDocumentFile, 'requester-id');
+        if (!requesterIdDocUrl) {
+          toast.error("Échec de l'upload de la pièce d'identité du demandeur");
+          return { success: false };
+        }
       }
 
       if (data.ownerIdDocumentFile && !data.isOwnerSameAsRequester) {
         ownerIdDocUrl = await uploadDocument(data.ownerIdDocumentFile, 'owner-id');
+        if (!ownerIdDocUrl) {
+          toast.error("Échec de l'upload de la pièce d'identité du propriétaire");
+          return { success: false };
+        }
       }
 
       if (data.proofOfOwnershipFile) {
         proofOfOwnershipUrl = await uploadDocument(data.proofOfOwnershipFile, 'proof-of-ownership');
+        if (!proofOfOwnershipUrl) {
+          toast.error("Échec de l'upload de la preuve de propriété");
+          return { success: false };
+        }
       }
 
-      // Build fee items - use dynamic fees if available
-      const totalAmount = data.totalAmountOverride ?? calculateTotal(data.selectedFees);
-      
-      const feeItems = fees
-        .filter(fee => fee.is_mandatory || data.selectedFees.includes(fee.id))
-        .map(fee => ({
-          id: fee.id,
-          name: fee.fee_name,
-          amount: fee.amount_usd,
-          is_mandatory: fee.is_mandatory
-        }));
-
-      // Get current user
+      // 2. Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         toast.error('Vous devez être connecté pour soumettre une demande');
         return { success: false };
       }
 
+      const totalAmount = data.totalAmountOverride ?? 0;
+
+      // 3. Insert into DB - reference_number is auto-generated by trigger
       const { data: insertedData, error } = await supabase
         .from('land_title_requests')
         .insert([{
           user_id: user.id,
+          // Request type & parcel
+          request_type: data.requestType || 'initial',
+          selected_parcel_number: data.selectedParcelNumber || null,
+          // Requester
           requester_type: data.requesterType,
           requester_last_name: data.requesterLastName,
           requester_first_name: data.requesterFirstName,
@@ -195,6 +159,7 @@ export const useLandTitleRequest = () => {
           requester_phone: data.requesterPhone,
           requester_email: data.requesterEmail || null,
           requester_id_document_url: requesterIdDocUrl,
+          // Owner
           is_owner_same_as_requester: data.isOwnerSameAsRequester,
           owner_last_name: data.isOwnerSameAsRequester ? null : data.ownerLastName,
           owner_first_name: data.isOwnerSameAsRequester ? null : data.ownerFirstName,
@@ -202,6 +167,7 @@ export const useLandTitleRequest = () => {
           owner_legal_status: data.isOwnerSameAsRequester ? null : data.ownerLegalStatus,
           owner_phone: data.isOwnerSameAsRequester ? null : data.ownerPhone,
           owner_id_document_url: ownerIdDocUrl,
+          // Location
           section_type: data.sectionType,
           province: data.province,
           ville: data.ville || null,
@@ -213,14 +179,27 @@ export const useLandTitleRequest = () => {
           groupement: data.groupement || null,
           village: data.village || null,
           circonscription_fonciere: data.circonscriptionFonciere || null,
+          // Technical
           area_sqm: data.areaSqm || null,
           gps_coordinates: data.gpsCoordinates || null,
           parcel_sides: data.parcelSides || null,
           road_bordering_sides: data.roadBorderingSides || null,
+          // Valorisation
+          construction_type: data.constructionType || null,
+          construction_nature: data.constructionNature || null,
+          construction_materials: data.constructionMaterials || null,
+          declared_usage: data.declaredUsage || null,
+          deduced_title_type: data.deducedTitleType || null,
+          nationality: data.nationality || null,
+          occupation_duration: data.occupationDuration || null,
+          // Documents
           proof_of_ownership_url: proofOfOwnershipUrl,
+          // Fees
           fee_items: feeItems,
-          total_amount_usd: totalAmount
-        }] as any)
+          total_amount_usd: totalAmount,
+          // Status
+          payment_status: 'pending'
+        } as any])
         .select('id, reference_number')
         .single();
 
@@ -243,12 +222,6 @@ export const useLandTitleRequest = () => {
 
   return {
     loading,
-    fees,
-    loadingFees,
-    fetchFees,
-    calculateTotal,
-    getMandatoryFees,
-    getOptionalFees,
     submitRequest
   };
 };

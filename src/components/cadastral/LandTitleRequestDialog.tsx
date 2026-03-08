@@ -374,7 +374,14 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   }, [formData.territoire, formData.province]);
 
   const handleInputChange = (field: keyof LandTitleRequestData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const updated = { ...prev, [field]: value };
+      // Derive isOwnerSameAsRequester from requesterType
+      if (field === 'requesterType') {
+        updated.isOwnerSameAsRequester = value === 'owner';
+      }
+      return updated;
+    });
     
     // Reset dependent fields
     if (field === 'sectionType') {
@@ -465,20 +472,34 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   };
 
   const handlePaymentSuccess = async () => {
+    // Build fee items from the calculated dynamic fees
+    const feeItems = calculatedFeesResult.fees.map(fee => ({
+      id: fee.id,
+      name: fee.fee_name,
+      amount: fee.final_amount,
+      is_mandatory: fee.is_mandatory
+    }));
+
     const result = await submitRequest({
       ...formData,
       requestType,
       selectedParcelNumber,
+      isOwnerSameAsRequester: formData.requesterType === 'owner',
       constructionType,
+      constructionNature,
+      constructionMaterials,
       declaredUsage,
       deducedTitleType: deducedTitleType?.type || '',
+      nationality,
+      occupationDuration,
       requesterIdDocumentFile: requesterIdFile,
       ownerIdDocumentFile: ownerIdFile,
       proofOfOwnershipFile: proofOfOwnershipFile,
       gpsCoordinates: gpsCoordinates,
       parcelSides: parcelSides,
+      roadBorderingSides: roadSides,
       totalAmountOverride: totalAmount
-    });
+    }, feeItems);
     
     if (result.success) {
       setSavedReferenceNumber(result.referenceNumber || '');
@@ -506,6 +527,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
 
   const handleConfirmClose = () => {
     setShowCloseConfirmation(false);
+    // Reset ALL form state
     setFormData({
       requesterType: 'owner',
       requesterLastName: '',
@@ -524,6 +546,30 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     setActiveTab('requester');
     setShowPayment(false);
     setShowSuccess(false);
+    // Reset request type & parcel
+    setRequestType('');
+    setParcelNumberSearch('');
+    setSelectedParcelNumber('');
+    setParcelValidated(false);
+    setParcelSearchResults([]);
+    // Reset GPS & dimensions
+    setGpsCoordinates([{ borne: 'Borne 1', lat: '', lng: '' }]);
+    setParcelSides([
+      { name: 'Côté Nord', length: '' },
+      { name: 'Côté Sud', length: '' },
+      { name: 'Côté Est', length: '' },
+      { name: 'Côté Ouest', length: '' }
+    ]);
+    setRoadSides([]);
+    // Reset valorisation
+    setConstructionType('');
+    setConstructionNature('');
+    setConstructionMaterials('');
+    setDeclaredUsage('');
+    setNationality('');
+    setOccupationDuration('');
+    setValorisationValidated(false);
+    setDeducedTitleType(null);
     onOpenChange(false);
   };
 
