@@ -226,9 +226,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
         uploadedPaths = uploadResult.paths;
       }
 
-      // Determine the status to persist
-      const persistedStatus = hasResolutionStarted && resolutionLevel ? resolutionLevel : 'en_cours';
-
+      // Always persist as 'en_cours'; resolution_level is stored separately
       const { error } = await supabase
         .from('cadastral_land_disputes' as any)
         .insert({
