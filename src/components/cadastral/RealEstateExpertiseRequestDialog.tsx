@@ -2044,16 +2044,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       erosionRiskZone && 'Zone d\'érosion'
     ].filter(Boolean) as string[];
 
-    const ORIENTATION_LABELS: Record<string, string> = {
-      nord: 'Nord',
-      nord_est: 'Nord-Est',
-      est: 'Est',
-      sud_est: 'Sud-Est',
-      sud: 'Sud',
-      sud_ouest: 'Sud-Ouest',
-      ouest: 'Ouest',
-      nord_ouest: 'Nord-Ouest'
-    };
+    // Use centralized labels (no local duplicate)
 
     return (
       <div className="flex flex-col" style={{ maxHeight: isMobile ? '75vh' : '70vh' }}>
