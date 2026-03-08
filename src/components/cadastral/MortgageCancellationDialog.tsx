@@ -370,6 +370,8 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const uploadDocuments = async (): Promise<string[]> => {
     const urls: string[] = [];
+    const failedUploads: string[] = [];
+    
     for (const file of formData.supportingDocuments) {
       const fileExt = file.name.split('.').pop();
       const fileName = `cancellation_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -379,11 +381,19 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         .from('cadastral-documents')
         .upload(filePath, file);
       
-      if (!error) {
+      if (error) {
+        console.error(`Failed to upload ${file.name}:`, error);
+        failedUploads.push(file.name);
+      } else {
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         urls.push(data.publicUrl);
       }
     }
+    
+    if (failedUploads.length > 0) {
+      toast.warning(`${failedUploads.length} document(s) n'ont pas pu être téléversés: ${failedUploads.join(', ')}`);
+    }
+    
     return urls;
   };
 
