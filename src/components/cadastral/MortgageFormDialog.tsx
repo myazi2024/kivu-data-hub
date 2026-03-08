@@ -2,14 +2,13 @@ import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Save } from 'lucide-react';
+import { Save, Download } from 'lucide-react';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Loader2, Landmark, CheckCircle2, X, Plus, ArrowLeft, FileText, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -17,6 +16,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SectionHelpPopover from './SectionHelpPopover';
 import { QuickAuthDialog } from './QuickAuthDialog';
+import { generateMortgageReceiptPDF } from '@/utils/generateMortgageReceiptPDF';
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
@@ -60,7 +60,10 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const isSubmittingRef = useRef(false);
+  const draftPromptShownRef = useRef(false);
   const { hasDraft, loadDraft, clearDraft, autoSave } = useMortgageDraft('registration', parcelNumber, open);
+  // Fix #7: Store submission reference for PDF receipt
+  const [submissionReference, setSubmissionReference] = useState('');
   
   const [mortgageRecord, setMortgageRecord] = useState<MortgageRecord>({
     mortgageAmount: '',
@@ -74,9 +77,13 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Draft: check on open
+  // Fix #1: Draft prompt shown once per session
   useEffect(() => {
-    if (open && hasDraft) setShowDraftPrompt(true);
+    if (open && hasDraft && !draftPromptShownRef.current) {
+      draftPromptShownRef.current = true;
+      setShowDraftPrompt(true);
+    }
+    if (!open) draftPromptShownRef.current = false;
   }, [open, hasDraft]);
 
   // Draft: auto-save
@@ -120,7 +127,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     updateMortgage('receiptFile', null);
   };
 
-  // Fix #10: Server-side validation for contract date (not just HTML max)
   const validateForm = (): boolean => {
     const amount = parseFloat(mortgageRecord.mortgageAmount);
     if (!mortgageRecord.mortgageAmount || isNaN(amount) || amount <= 0) {
@@ -142,7 +148,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       toast.error('Veuillez indiquer la date du contrat');
       return false;
     }
-    // Fix #10: Validate contract date is not in the future
     const contractDate = new Date(mortgageRecord.contractDate);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -150,7 +155,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       toast.error('La date du contrat ne peut pas être dans le futur');
       return false;
     }
-    // Fix #3: Block submission if parcelId is missing
     if (!parcelId) {
       toast.error('Identifiant de parcelle manquant. Veuillez relancer la recherche.');
       return false;
@@ -167,7 +171,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     setStep('preview');
   };
 
-  // Fix #6: Check ONLY for mortgage_registration pending contributions (not generic 'update')
   const checkExistingPending = async (): Promise<boolean> => {
     if (!user) return false;
     
@@ -177,7 +180,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_registration')
-      .in('status', ['pending', 'in_review']);
+      .in('status', ['pending']);
     
     return (data?.length ?? 0) > 0;
   };
@@ -197,6 +200,9 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       const hasPending = await checkExistingPending();
       if (hasPending) {
         toast.error('Une demande d\'hypothèque est déjà en cours de traitement pour cette parcelle.');
+        // Fix #5: Ensure loading is reset
+        setLoading(false);
+        isSubmittingRef.current = false;
         return;
       }
 
@@ -220,7 +226,10 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         documentUrl = data.publicUrl;
       }
 
-      // Fix #7: Use specific contribution_type for mortgage registration
+      // Fix #7: Generate a reference for the registration
+      const regReference = `HYP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+
+      // Fix #9: Include declared mortgage_status in submission
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -230,6 +239,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           contribution_type: 'mortgage_registration',
           status: 'pending',
           mortgage_history: [{
+            request_reference_number: regReference,
             mortgage_amount_usd: parseFloat(mortgageRecord.mortgageAmount),
             duration_months: mortgageRecord.duration ? parseInt(mortgageRecord.duration) : null,
             creditor_name: mortgageRecord.creditorName.trim(),
@@ -242,17 +252,18 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
       if (error) throw error;
 
-      // Fix #4: Notification with error handling (table may not be in TS types)
+      // Audit log instead of phantom notifications table
       try {
-        await (supabase as any).from('notifications').insert({
+        await supabase.from('audit_logs').insert({
+          action: 'mortgage_registration_submitted',
           user_id: user.id,
-          title: 'Hypothèque soumise',
-          message: `Votre déclaration d'hypothèque pour la parcelle ${parcelNumber} a été soumise avec succès.`,
-          type: 'success'
+          table_name: 'cadastral_contributions',
+          new_values: { parcel_number: parcelNumber, reference: regReference } as any,
         });
       } catch { /* Non-blocking */ }
 
       clearDraft();
+      setSubmissionReference(regReference);
       setStep('confirmation');
       toast.success('Hypothèque enregistrée avec succès');
     } catch (error: any) {
@@ -275,13 +286,44 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       mortgageStatus: 'active',
       receiptFile: null
     });
+    setSubmissionReference('');
     isSubmittingRef.current = false;
+    draftPromptShownRef.current = false;
     onOpenChange(false);
   };
 
   const statusLabel = useMemo(() => {
     return STATUS_LABELS[mortgageRecord.mortgageStatus] || mortgageRecord.mortgageStatus;
   }, [mortgageRecord.mortgageStatus]);
+
+  // Fix #7: PDF receipt for registration too
+  const handleDownloadRegistrationReceipt = async () => {
+    try {
+      const blob = await generateMortgageReceiptPDF({
+        type: 'registration',
+        requestReference: submissionReference,
+        parcelNumber,
+        requesterName: user?.email || 'N/A',
+        totalAmountPaid: 0,
+        fees: [],
+        date: mortgageRecord.contractDate || new Date().toISOString(),
+        mortgageData: {
+          creditorName: mortgageRecord.creditorName,
+          amount: parseFloat(mortgageRecord.mortgageAmount),
+          contractDate: mortgageRecord.contractDate,
+        },
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `recu-hypotheque-${submissionReference}.pdf`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success('Reçu téléchargé');
+    } catch {
+      toast.error('Erreur lors de la génération du reçu');
+    }
+  };
 
   const renderFormStep = () => (
     <div className="space-y-4">
@@ -541,6 +583,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     </div>
   );
 
+  // Fix #7: Registration confirmation with PDF receipt download
   const renderConfirmationStep = () => (
     <div className="space-y-4 text-center py-6">
       <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
@@ -551,6 +594,9 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         <p className="text-sm text-muted-foreground mt-1">
           Votre déclaration d'hypothèque pour la parcelle {parcelNumber} a été soumise avec succès.
         </p>
+        {submissionReference && (
+          <p className="text-xs font-mono text-primary mt-2">Réf: {submissionReference}</p>
+        )}
         <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
           <p className="text-xs text-amber-700 dark:text-amber-300">
             🎁 Un <strong>code CCC</strong> sera généré après validation par l'administration. 
@@ -559,7 +605,15 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        {/* Fix #23: useNavigate instead of window.location.href */}
+        {/* Fix #7: PDF receipt for registration */}
+        <Button
+          variant="outline"
+          onClick={handleDownloadRegistrationReceipt}
+          className="w-full h-11 rounded-xl gap-2"
+        >
+          <Download className="h-4 w-4" />
+          Télécharger le reçu PDF
+        </Button>
         <Button
           variant="outline"
           onClick={() => navigate('/user-dashboard')}
@@ -578,7 +632,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   if (embedded) {
     return (
       <>
-        {/* Fix #19: WhatsApp removed from embedded - parent handles it */}
         <div className="overflow-y-auto h-full px-4 pb-4">
           {step === 'form' && renderFormStep()}
           {step === 'preview' && renderPreviewStep()}
@@ -606,15 +659,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           </DialogDescription>
         </DialogHeader>
         
-        <ScrollArea className="flex-1 max-h-[calc(90vh-80px)]">
-          <div className="p-4">
-            {step === 'form' && renderFormStep()}
-            {step === 'preview' && renderPreviewStep()}
-            {step === 'confirmation' && renderConfirmationStep()}
-          </div>
-        </ScrollArea>
+        <div className="flex-1 max-h-[calc(90vh-80px)] overflow-y-auto p-4">
+          {step === 'form' && renderFormStep()}
+          {step === 'preview' && renderPreviewStep()}
+          {step === 'confirmation' && renderConfirmationStep()}
+        </div>
       </DialogContent>
-      {/* Fix #19: WhatsApp removed - parent dialog handles it */}
       <QuickAuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
