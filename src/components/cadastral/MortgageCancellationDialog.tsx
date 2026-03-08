@@ -230,9 +230,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       const amount = parseFloat(formData.settlementAmount);
       if (isNaN(amount) || amount < 0) { toast.error('Le montant de règlement ne peut pas être négatif'); return false; }
     }
-    // Fix #13: Validate requester phone format if provided
+    // Validate requester phone format if provided
     if (formData.requesterPhone.trim() && !PHONE_REGEX_DRC.test(formData.requesterPhone.replace(/\s/g, ''))) {
       toast.error('Le numéro de téléphone du demandeur est invalide (format RDC attendu)');
+      return false;
+    }
+    if (formData.requesterEmail.trim() && !EMAIL_REGEX.test(formData.requesterEmail.trim())) {
+      toast.error("L'email du demandeur est invalide");
       return false;
     }
     if (formData.supportingDocuments.length === 0) { toast.error('Veuillez joindre au moins un document justificatif'); return false; }
