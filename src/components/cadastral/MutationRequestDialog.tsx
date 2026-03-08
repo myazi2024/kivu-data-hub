@@ -368,8 +368,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // Documents requis par type
-  const getRequiredDocuments = useCallback((): RequiredDocument[] => {
+  // Documents requis par type — single useMemo (no intermediate useCallback)
+  const allRequiredDocuments = useMemo((): RequiredDocument[] => {
     const base: RequiredDocument[] = [
       { key: 'requester_id', label: 'Pièce d\'identité du demandeur', required: true },
     ];
@@ -394,11 +394,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   }, [mutationType]);
 
   const requiredSupportingDocuments = useMemo(() =>
-    getRequiredDocuments().filter(doc => doc.required && !doc.handledByExpertiseCertificate),
-    [getRequiredDocuments]
+    allRequiredDocuments.filter(doc => doc.required && !doc.handledByExpertiseCertificate),
+    [allRequiredDocuments]
   );
-
-  const allRequiredDocuments = useMemo(() => getRequiredDocuments(), [getRequiredDocuments]);
 
   useEffect(() => {
     setRequiredDocumentChecks((prev) => {
