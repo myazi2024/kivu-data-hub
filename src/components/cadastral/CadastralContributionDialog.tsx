@@ -1670,7 +1670,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setBuildingPermits(updated);
   };
 
-  // Logiques dépendantes pour les permis de construire
+  // Logiques dépendantes pour les autorisations de bâtir
   const getPermitTypeRestrictions = () => {
     const restrictions = {
       blockedInExisting: null as 'construction' | 'regularization' | null,
