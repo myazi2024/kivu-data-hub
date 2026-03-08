@@ -1363,12 +1363,19 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   if (embedded) {
     return (
-      <div className="overflow-y-auto h-full px-4 pb-4">
-        {step === 'form' && renderFormStep()}
-        {step === 'review' && renderReviewStep()}
-        {step === 'payment' && renderPaymentStep()}
-        {step === 'confirmation' && renderConfirmationStep()}
-      </div>
+      <>
+        <div className="overflow-y-auto h-full px-4 pb-4">
+          {step === 'form' && renderFormStep()}
+          {step === 'review' && renderReviewStep()}
+          {step === 'payment' && renderPaymentStep()}
+          {step === 'confirmation' && renderConfirmationStep()}
+        </div>
+        <QuickAuthDialog
+          open={showAuthDialog}
+          onOpenChange={setShowAuthDialog}
+          onAuthSuccess={() => setShowAuthDialog(false)}
+        />
+      </>
     );
   }
 
