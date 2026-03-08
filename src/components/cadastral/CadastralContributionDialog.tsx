@@ -1609,7 +1609,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setMortgageRecords(updated);
   };
   
-  // Fonctions pour gérer les permis de construire
+  // Fonctions pour gérer les autorisations de bâtir
   const addBuildingPermit = () => {
     const lastPermit = buildingPermits[buildingPermits.length - 1];
     
