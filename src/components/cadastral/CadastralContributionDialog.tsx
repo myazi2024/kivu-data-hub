@@ -5046,7 +5046,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     {/* Affichage du statut du permis */}
                     {formData.constructionType !== 'Terrain nu' && (
                       <div className="pt-1 border-t border-border/50">
-                        <div className="font-medium">Permis de construire:</div>
+                        <div className="font-medium">Autorisation de bâtir:</div>
                         {permitMode === 'existing' && buildingPermits.some(p => p.permitNumber) ? (
                           // L'utilisateur a des permis existants
                           buildingPermits.filter(p => p.permitNumber).map((permit, idx) => (

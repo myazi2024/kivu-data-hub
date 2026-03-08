@@ -451,7 +451,7 @@ const AdvancedSearchFilters: React.FC<AdvancedSearchFiltersProps> = ({
                       onCheckedChange={(checked) => onFiltersChange({ hasBuildingPermit: checked as boolean })}
                       className="h-4 w-4"
                     />
-                    <Label htmlFor="permit" className="text-sm cursor-pointer flex-1">Avec permis de construire</Label>
+                    <Label htmlFor="permit" className="text-sm cursor-pointer flex-1">Avec autorisation de bâtir</Label>
                   </div>
                   <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-background/50 hover:bg-background/80 cursor-pointer transition-colors">
                     <Checkbox 

@@ -304,8 +304,8 @@ export default function AdminPermitFeesConfig() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="construction">Permis de construire</SelectItem>
-                  <SelectItem value="regularization">Permis de régularisation</SelectItem>
+                  <SelectItem value="construction">Autorisation de bâtir</SelectItem>
+                  <SelectItem value="regularization">Autorisation de régularisation</SelectItem>
                 </SelectContent>
               </Select>
             </div>

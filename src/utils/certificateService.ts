@@ -42,11 +42,11 @@ const DEFAULT_TEMPLATES: Record<CertificateType, Partial<CertificateTemplate>> =
   },
   permis_construire: {
     certificate_type: 'permis_construire',
-    template_name: 'Permis de Construire',
+    template_name: 'Autorisation de Bâtir',
     header_title: 'RÉPUBLIQUE DÉMOCRATIQUE DU CONGO',
     header_organization: "BUREAU D'INFORMATION CADASTRALE (BIC)",
     header_subtitle: "Service d'Urbanisme et Habitat",
-    body_text: "PERMIS DE CONSTRUIRE\nLe présent permis autorise le bénéficiaire à réaliser les travaux de construction sur la parcelle référencée ci-dessous.",
+    body_text: "AUTORISATION DE BÂTIR\nLa présente autorisation autorise le bénéficiaire à réaliser les travaux de construction sur la parcelle référencée ci-dessous.",
     footer_text: "Ce permis est valide pour une durée de 36 mois à compter de sa date d'émission.",
     legal_text: "La construction doit respecter les normes urbanistiques en vigueur. Tout changement doit faire l'objet d'une nouvelle demande.",
     signature_name: '',

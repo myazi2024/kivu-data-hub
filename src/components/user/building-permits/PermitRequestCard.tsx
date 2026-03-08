@@ -73,7 +73,7 @@ export function PermitRequestCard({ parcelNumber }: PermitRequestCardProps) {
               <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
             </button>
 
-            {/* Option: Permis de régularisation */}
+            {/* Option: Autorisation de régularisation */}
             <button
               type="button"
               onClick={() => handleNewPermitRequest('regularization')}

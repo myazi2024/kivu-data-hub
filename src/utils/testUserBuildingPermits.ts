@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
  * 5. Les statuts des demandes
  */
 export async function testUserBuildingPermits() {
-  console.log("=== Test de validation: Gestion des permis de construire ===\n");
+  console.log("=== Test de validation: Gestion des autorisations de bâtir ===\n");
   
   const results = {
     timestamp: new Date().toISOString(),
