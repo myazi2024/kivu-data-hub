@@ -146,6 +146,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
 
+  const enabledMobileProviders = availableMethods.enabledProviders.mobileMoneyProviders;
+  const hasAnyPaymentMethod = availableMethods.hasMobileMoney || availableMethods.hasBankCard;
+
   // Vérifier si c'est un type de mutation avec transfert
   const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
 
