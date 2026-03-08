@@ -206,6 +206,9 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   const validateForm = (): boolean => {
     if (!disputeNature) { toast.error('Veuillez sélectionner la nature du litige'); return false; }
     if (!disputeStartDate) { toast.error('Veuillez indiquer la date de début du litige'); return false; }
+    // Programmatic future date validation
+    const today = new Date().toISOString().split('T')[0];
+    if (disputeStartDate > today) { toast.error('La date de début ne peut pas être dans le futur'); return false; }
     if (currentStatus === 'en_resolution' && !resolutionLevel) { toast.error('Veuillez indiquer le niveau de résolution'); return false; }
     if (!declarantName.trim() || declarantName.trim().length < 3) { toast.error('Le nom du déclarant doit contenir au moins 3 caractères'); return false; }
     if (!declarantQuality) { toast.error('Veuillez indiquer votre qualité'); return false; }
