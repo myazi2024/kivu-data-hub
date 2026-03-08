@@ -437,6 +437,41 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       toast.error('Veuillez renseigner le nom du nouveau propriétaire');
       return false;
     }
+    
+    // Bug #9: Valider le certificat d'expertise pour les mutations avec transfert
+    if (isTransferMutation) {
+      if (!hasExpertiseCertificate) {
+        toast.error('Veuillez indiquer si vous avez un certificat d\'expertise immobilière');
+        return false;
+      }
+      if (hasExpertiseCertificate === 'yes') {
+        if (!expertiseCertificateFile) {
+          toast.error('Veuillez joindre votre certificat d\'expertise immobilière');
+          return false;
+        }
+        if (!expertiseCertificateDate) {
+          toast.error('Veuillez renseigner la date de délivrance du certificat');
+          return false;
+        }
+        if (certificateValidity.isExpired) {
+          toast.error('Le certificat d\'expertise est expiré (valide 6 mois). Veuillez en demander un nouveau.');
+          return false;
+        }
+        if (!marketValueUsd || parseFloat(marketValueUsd) <= 0) {
+          toast.error('Veuillez renseigner la valeur vénale du bien');
+          return false;
+        }
+        if (parseFloat(marketValueUsd) >= 10000 && !titleAge) {
+          toast.error('Veuillez indiquer l\'ancienneté du titre foncier');
+          return false;
+        }
+      }
+      if (hasExpertiseCertificate === 'no') {
+        toast.error('Un certificat d\'expertise immobilière est requis pour procéder à la mutation. Veuillez d\'abord en demander un.');
+        return false;
+      }
+    }
+    
     return true;
   };
 
