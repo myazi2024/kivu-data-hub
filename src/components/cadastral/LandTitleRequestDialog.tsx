@@ -448,7 +448,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     return true;
   };
 
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     if (!user) {
       setShowQuickAuth(true);
       return;
@@ -463,11 +463,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       return;
     }
 
-    setShowPayment(true);
-  };
-
-  const handlePaymentSuccess = async () => {
-    // Build fee items from the calculated dynamic fees
+    // SECURE FLOW: Create DB record FIRST, then show payment
     const feeItems = calculatedFeesResult.fees.map(fee => ({
       id: fee.id,
       name: fee.fee_name,
@@ -475,7 +471,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       is_mandatory: fee.is_mandatory
     }));
 
-    const result = await submitRequest({
+    const result = await createPendingRequest({
       ...formData,
       requestType,
       selectedParcelNumber,
@@ -495,12 +491,21 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
       roadBorderingSides: roadSides,
       totalAmountOverride: totalAmount
     }, feeItems);
-    
-    if (result.success) {
+
+    if (result.success && result.requestId) {
+      setSavedRequestId(result.requestId);
       setSavedReferenceNumber(result.referenceNumber || '');
-      setShowPayment(false);
-      setShowSuccess(true);
+      setShowPayment(true);
     }
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Payment succeeded — mark the pre-created request as paid
+    if (savedRequestId) {
+      await markRequestPaid(savedRequestId);
+    }
+    setShowPayment(false);
+    setShowSuccess(true);
   };
 
   const handleCloseRequest = () => {
