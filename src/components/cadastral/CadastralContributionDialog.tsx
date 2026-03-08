@@ -1997,7 +1997,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const hasOwnershipHistory = previousOwners.some(o => o.name && o.startDate);
     if (hasOwnershipHistory) filledFields += 1;
     
-    if (formData.boundaryHistory && formData.boundaryHistory.length > 0) filledFields += 1;
+    // boundaryHistory n'a pas d'UI de saisie - toujours 0 en front-end
+    // Le backend vérifie boundary_history dans la contribution
     
     const hasTaxHistory = taxRecords.some(t => t.taxAmount && t.taxYear);
     if (hasTaxHistory) filledFields += 1;
