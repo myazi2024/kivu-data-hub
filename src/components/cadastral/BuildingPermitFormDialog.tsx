@@ -283,7 +283,13 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     resetAndClose();
   };
 
-  const calculatedStatus = computedStatus();
+  // Inline validation hint for permit number
+  const permitNumberHint = useMemo(() => {
+    if (!permitRecord.permitNumber) return null;
+    const normalized = normalizePermitNumber(permitRecord.permitNumber);
+    if (PERMIT_NUMBER_REGEX.test(normalized)) return null;
+    return 'Format attendu: XX-YYYY-NNN (ex: PC-2024-001)';
+  }, [permitRecord.permitNumber]);
 
   const renderFormStep = () => (
     <div className="space-y-3">
