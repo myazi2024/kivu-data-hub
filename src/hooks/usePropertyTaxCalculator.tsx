@@ -112,13 +112,28 @@ export const calculateIRLMonthsLate = (fiscalYear: number): number => {
 // Backward-compatible alias
 export const calculateMonthsLate = calculatePropertyTaxMonthsLate;
 
-export const getLatePenaltyInfo = (fiscalYear: number, taxType: 'property' | 'irl' = 'property') => {
-  const monthsLate = taxType === 'irl'
-    ? calculateIRLMonthsLate(fiscalYear)
-    : calculatePropertyTaxMonthsLate(fiscalYear);
-  const deadlineStr = taxType === 'irl'
-    ? `28 février ${fiscalYear}`
-    : `31 mars ${fiscalYear}`;
+/**
+ * #24 fix: Support 'building' tax type in getLatePenaltyInfo with June 30 deadline.
+ */
+export const getLatePenaltyInfo = (fiscalYear: number, taxType: 'property' | 'irl' | 'building' = 'property') => {
+  let monthsLate: number;
+  let deadlineStr: string;
+
+  switch (taxType) {
+    case 'irl':
+      monthsLate = calculateIRLMonthsLate(fiscalYear);
+      deadlineStr = `28 février ${fiscalYear}`;
+      break;
+    case 'building':
+      monthsLate = calculateBuildingTaxMonthsLate(fiscalYear);
+      deadlineStr = `30 juin ${fiscalYear}`;
+      break;
+    default:
+      monthsLate = calculatePropertyTaxMonthsLate(fiscalYear);
+      deadlineStr = `31 mars ${fiscalYear}`;
+      break;
+  }
+
   const isLate = monthsLate > 0;
   const penaltyRate = Math.min(monthsLate * 2, 24);
   const hasSurcharge = monthsLate > 3;
@@ -150,22 +165,42 @@ export const ROOFING_TYPES = [
   { value: 'autre', label: 'Autre' },
 ];
 
+/**
+ * #1 fix: Fallback rates when property_tax_rates_config is empty/missing.
+ * Based on DRC fiscal legislation (Ord.-loi n°69-006).
+ */
+const FALLBACK_PROPERTY_TAX_RATES: TaxRate[] = [
+  // Urban residential
+  { id: 'fb-ur-dur', tax_category: 'impot_foncier', zone_type: 'urban', usage_type: 'residential', construction_type: 'en_dur', rate_percentage: 0, base_amount_usd: 5, area_multiplier: 0.05, description: 'Fallback' },
+  { id: 'fb-ur-semi', tax_category: 'impot_foncier', zone_type: 'urban', usage_type: 'residential', construction_type: 'semi_dur', rate_percentage: 0, base_amount_usd: 3, area_multiplier: 0.03, description: 'Fallback' },
+  { id: 'fb-ur-paille', tax_category: 'impot_foncier', zone_type: 'urban', usage_type: 'residential', construction_type: 'en_paille', rate_percentage: 0, base_amount_usd: 1, area_multiplier: 0.01, description: 'Fallback' },
+  { id: 'fb-ur-null', tax_category: 'impot_foncier', zone_type: 'urban', usage_type: 'residential', construction_type: null, rate_percentage: 0, base_amount_usd: 2, area_multiplier: 0.02, description: 'Fallback terrain nu' },
+  // Urban commercial
+  { id: 'fb-uc-dur', tax_category: 'impot_foncier', zone_type: 'urban', usage_type: 'commercial', construction_type: 'en_dur', rate_percentage: 0, base_amount_usd: 10, area_multiplier: 0.10, description: 'Fallback' },
+  { id: 'fb-uc-null', tax_category: 'impot_foncier', zone_type: 'urban', usage_type: 'commercial', construction_type: null, rate_percentage: 0, base_amount_usd: 5, area_multiplier: 0.05, description: 'Fallback' },
+  // Rural residential
+  { id: 'fb-rr-dur', tax_category: 'impot_foncier', zone_type: 'rural', usage_type: 'residential', construction_type: 'en_dur', rate_percentage: 0, base_amount_usd: 2, area_multiplier: 0.02, description: 'Fallback' },
+  { id: 'fb-rr-semi', tax_category: 'impot_foncier', zone_type: 'rural', usage_type: 'residential', construction_type: 'semi_dur', rate_percentage: 0, base_amount_usd: 1.5, area_multiplier: 0.015, description: 'Fallback' },
+  { id: 'fb-rr-paille', tax_category: 'impot_foncier', zone_type: 'rural', usage_type: 'residential', construction_type: 'en_paille', rate_percentage: 0, base_amount_usd: 0.5, area_multiplier: 0.005, description: 'Fallback' },
+  { id: 'fb-rr-null', tax_category: 'impot_foncier', zone_type: 'rural', usage_type: 'residential', construction_type: null, rate_percentage: 0, base_amount_usd: 1, area_multiplier: 0.01, description: 'Fallback' },
+  // IRL rates (22% standard)
+  { id: 'fb-irl-urban', tax_category: 'impot_revenu_locatif', zone_type: 'urban', usage_type: 'residential', construction_type: null, rate_percentage: 22, base_amount_usd: 0, area_multiplier: 0, description: 'IRL 22%' },
+  { id: 'fb-irl-rural', tax_category: 'impot_revenu_locatif', zone_type: 'rural', usage_type: 'residential', construction_type: null, rate_percentage: 22, base_amount_usd: 0, area_multiplier: 0, description: 'IRL 22%' },
+  { id: 'fb-irl-urban-com', tax_category: 'impot_revenu_locatif', zone_type: 'urban', usage_type: 'commercial', construction_type: null, rate_percentage: 22, base_amount_usd: 0, area_multiplier: 0, description: 'IRL 22%' },
+];
+
 export interface TaxCalculationInput {
   zoneType: 'urban' | 'rural';
   usageType: 'residential' | 'commercial' | 'industrial' | 'agricultural' | 'mixed';
   constructionType: 'en_dur' | 'semi_dur' | 'en_paille' | null;
   areaSqm: number;
   fiscalYear: number;
-  // Province/ville for zone-specific rates
   province: string;
   ville: string;
-  // Construction details
   constructionYear: number | null;
   numberOfFloors: number;
   roofingType: string;
-  // Exemptions
   selectedExemptions: ExemptionCheckType[];
-  // Contribuable / Redevable
   redevableIsDifferent: boolean;
   redevableNom: string;
   redevableNif: string;
@@ -174,36 +209,35 @@ export interface TaxCalculationInput {
   isRented: boolean;
   monthlyRentUsd: number;
   occupancyMonths: number;
-  // IRL deduction
   applyDeduction30: boolean;
+  /**
+   * #9 fix: Direct annual rental income override.
+   * When set, this is used instead of monthlyRentUsd * occupancyMonths.
+   * Eliminates the occupancyMonths=1 hack in IRLCalculator.
+   */
+  annualRentalIncomeOverride?: number;
   // Late payment
   monthsLate: number; // auto-calculated, kept for backward compat
 }
 
 export interface TaxCalculationResult {
-  // Fiscal zone
   fiscalZoneCategory: FiscalZoneCategory;
   fiscalZoneMultiplier: number;
-  // Impôt foncier
   baseTax: number;
   areaComponent: number;
   zoneAdjustedTax: number;
   totalPropertyTax: number;
-  // Exemptions
   isExempt: boolean;
   exemptionReasons: string[];
-  // IRL
   annualRentalIncome: number;
   deduction30Amount: number;
   taxableRentalIncome: number;
   irlRate: number;
   irlAmount: number;
-  // Penalties
   penaltyRate: number;
   penaltyAmount: number;
   majorationAmount: number;
   totalPenalties: number;
-  // Combined
   totalTax: number;
   fees: { name: string; amount: number; description: string | null }[];
   totalFees: number;
@@ -213,16 +247,16 @@ export interface TaxCalculationResult {
   appliedExemptions: string[];
 }
 
-// #10 fix: Module-level cache with TTL (5 minutes) to allow refreshing
+// Module-level cache with TTL (5 minutes)
 let _cachedRates: TaxRate[] | null = null;
 let _cachedFees: PaymentFee[] | null = null;
 let _cachedExemptions: TaxExemption[] | null = null;
 let _fetchPromise: Promise<void> | null = null;
 let _cacheTimestamp: number = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 const isCacheValid = () => {
-  return _cachedRates && _cachedFees && _cachedExemptions && (Date.now() - _cacheTimestamp < CACHE_TTL_MS);
+  return _cachedRates && _cachedFees !== null && _cachedExemptions !== null && (Date.now() - _cacheTimestamp < CACHE_TTL_MS);
 };
 
 export const invalidateTaxConfigCache = () => {
@@ -254,37 +288,44 @@ export const usePropertyTaxCalculator = () => {
     const fetchConfig = async () => {
       if (!_fetchPromise) {
         _fetchPromise = (async () => {
-          // #11 fix: Use property_tax_rates_config (exists) and gracefully handle
-          // missing tables for fees/exemptions by catching errors
+          /**
+           * #2 fix: Query property_tax_rates_config; if empty/error, use fallback rates.
+           * #3 fix: Don't query non-existent tables (tax_payment_fees_config, tax_exemptions_config).
+           * Instead, query cadastral_contribution_config for fee/exemption settings.
+           */
           const ratesRes = await supabase
             .from('property_tax_rates_config')
             .select('*')
             .eq('is_active', true)
             .order('display_order');
 
-          _cachedRates = (ratesRes.data as any[]) || [];
-
-          // These tables may not exist yet — graceful fallback
-          try {
-            const feesRes = await supabase
-              .from('tax_payment_fees_config' as any)
-              .select('*')
-              .eq('is_active', true)
-              .order('display_order');
-            _cachedFees = (feesRes.data as any[]) || [];
-          } catch {
-            _cachedFees = [];
+          if (ratesRes.error || !ratesRes.data || ratesRes.data.length === 0) {
+            console.warn('⚠️ property_tax_rates_config empty or missing, using fallback rates');
+            _cachedRates = FALLBACK_PROPERTY_TAX_RATES;
+          } else {
+            _cachedRates = ratesRes.data as any[];
           }
 
-          try {
-            const exemptionsRes = await supabase
-              .from('tax_exemptions_config' as any)
-              .select('*')
-              .eq('is_active', true)
-              .order('display_order');
-            _cachedExemptions = (exemptionsRes.data as any[]) || [];
-          } catch {
-            _cachedExemptions = [];
+          // #3 fix: Fees and exemptions from cadastral_contribution_config (existing table)
+          // instead of non-existent tax_payment_fees_config / tax_exemptions_config
+          _cachedFees = [];
+          _cachedExemptions = [];
+
+          const configRes = await supabase
+            .from('cadastral_contribution_config')
+            .select('config_key, config_value')
+            .in('config_key', ['tax_payment_fees', 'tax_exemptions'])
+            .eq('is_active', true);
+
+          if (configRes.data) {
+            for (const row of configRes.data) {
+              if (row.config_key === 'tax_payment_fees' && Array.isArray(row.config_value)) {
+                _cachedFees = row.config_value as any[];
+              }
+              if (row.config_key === 'tax_exemptions' && Array.isArray(row.config_value)) {
+                _cachedExemptions = row.config_value as any[];
+              }
+            }
           }
 
           _cacheTimestamp = Date.now();
@@ -355,6 +396,10 @@ export const usePropertyTaxCalculator = () => {
       r.zone_type === input.zoneType &&
       r.usage_type === input.usageType &&
       r.construction_type === null
+    ) || rates.find(r =>
+      r.tax_category === 'impot_foncier' &&
+      r.zone_type === input.zoneType &&
+      r.construction_type === null
     ) || null;
 
     const baseTax = matchedRate?.base_amount_usd || 0;
@@ -371,8 +416,11 @@ export const usePropertyTaxCalculator = () => {
     let irlAmount = 0;
     let matchedIrlRate: TaxRate | null = null;
 
-    if (input.isRented && input.monthlyRentUsd > 0) {
-      annualRentalIncome = input.monthlyRentUsd * (input.occupancyMonths || 12);
+    if (input.isRented && (input.monthlyRentUsd > 0 || (input.annualRentalIncomeOverride && input.annualRentalIncomeOverride > 0))) {
+      // #9 fix: Use annualRentalIncomeOverride if provided, otherwise compute from monthly
+      annualRentalIncome = input.annualRentalIncomeOverride && input.annualRentalIncomeOverride > 0
+        ? input.annualRentalIncomeOverride
+        : input.monthlyRentUsd * (input.occupancyMonths || 12);
 
       // 30% flat deduction for maintenance costs (art. 13, Ord.-loi n°69-009)
       if (input.applyDeduction30) {

@@ -105,8 +105,14 @@ const IRLQuestionsStep: React.FC<IRLQuestionsStepProps> = ({
         </CardContent>
       </Card>
 
-      {/* Section: Localisation — shared component */}
-      <TaxLocationSection input={input} parcelData={parcelData} showArea={false} />
+      {/* Section: Localisation — #4 fix: pass setInput and zoneAutoDetected */}
+      <TaxLocationSection
+        input={input}
+        setInput={setInput}
+        parcelData={parcelData}
+        showArea={false}
+        zoneAutoDetected={zoneAutoDetected}
+      />
 
       {/* Section: Détails de la construction — shared component */}
       <ConstructionDetailsSection

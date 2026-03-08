@@ -7,12 +7,31 @@ import SectionHelpPopover from '../SectionHelpPopover';
 
 interface TaxPenaltySectionProps {
   fiscalYear: number;
-  taxType: 'property' | 'irl';
+  /** #24 fix: Now supports 'building' tax type with June 30 deadline */
+  taxType: 'property' | 'irl' | 'building';
 }
+
+const TAX_TYPE_LABELS: Record<string, string> = {
+  property: 'impôt foncier',
+  irl: 'IRL',
+  building: 'taxe de bâtisse',
+};
+
+const TAX_TYPE_HELP: Record<string, string> = {
+  property: "Janvier : constat. Avant le 1er février : dépôt de la déclaration. Janvier–mars : paiement. Au-delà du 31 mars : pénalités de retard (2% par mois, plafonnées à 24%). Majoration de 25% au-delà de 3 mois.",
+  irl: "L'IRL est exigible au 1er trimestre. À Kinshasa, l'échéance est fixée au 28 février. Après cette date : intérêts de 2%/mois (max 24%) et majoration de 25% au-delà de 3 mois.",
+  building: "La taxe de bâtisse est un impôt provincial annuel. L'échéance de paiement est fixée au 30 juin. Après cette date : intérêts de 2%/mois (max 24%) et majoration de 25% au-delà de 3 mois.",
+};
+
+const TAX_TYPE_TITLE: Record<string, string> = {
+  property: 'Calendrier fiscal — RDC',
+  irl: 'Calendrier IRL — DGRK',
+  building: 'Calendrier taxe de bâtisse — Province',
+};
 
 const TaxPenaltySection: React.FC<TaxPenaltySectionProps> = ({ fiscalYear, taxType }) => {
   const info = getLatePenaltyInfo(fiscalYear, taxType);
-  const isIRL = taxType === 'irl';
+  const typeLabel = TAX_TYPE_LABELS[taxType] || taxType;
 
   return (
     <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
@@ -21,12 +40,8 @@ const TaxPenaltySection: React.FC<TaxPenaltySectionProps> = ({ fiscalYear, taxTy
           <Clock className="h-3.5 w-3.5" />
           Retard de paiement
           <SectionHelpPopover
-            title={isIRL ? 'Calendrier IRL — DGRK' : 'Calendrier fiscal — RDC'}
-            description={
-              isIRL
-                ? "L'IRL est exigible au 1er trimestre. À Kinshasa, l'échéance est fixée au 28 février. Après cette date : intérêts de 2%/mois (max 24%) et majoration de 25% au-delà de 3 mois."
-                : "Janvier : constat. Avant le 1er février : dépôt de la déclaration. Janvier–mars : paiement. Au-delà du 31 mars : pénalités de retard (2% par mois, plafonnées à 24%). Majoration de 25% au-delà de 3 mois."
-            }
+            title={TAX_TYPE_TITLE[taxType] || 'Calendrier fiscal'}
+            description={TAX_TYPE_HELP[taxType] || TAX_TYPE_HELP.property}
           />
         </Label>
 
@@ -36,7 +51,7 @@ const TaxPenaltySection: React.FC<TaxPenaltySectionProps> = ({ fiscalYear, taxTy
             <div>
               <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Pas de retard</p>
               <p className="text-xs text-muted-foreground">
-                Échéance {isIRL ? 'IRL' : 'impôt foncier'} : {info.deadlineStr}
+                Échéance {typeLabel} : {info.deadlineStr}
               </p>
             </div>
           </div>
