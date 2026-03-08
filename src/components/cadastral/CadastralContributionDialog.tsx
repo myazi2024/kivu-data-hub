@@ -5363,7 +5363,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
               })()}
 
               {/* Message de motivation */}
-              {calculateCCCValue().value < 5 && (
+              {calculateCCCValue.value < 5 && (
                 <Card className="rounded-2xl shadow-sm border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20">
                   <CardContent className="p-3">
                     <p className="text-xs text-blue-800 dark:text-blue-200 flex items-start gap-1.5">
