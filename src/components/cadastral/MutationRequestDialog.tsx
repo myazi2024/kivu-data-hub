@@ -499,7 +499,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       if (!expertiseCertificateUrl) { setIsSubmitting(false); return; }
     }
 
-    const fullBeneficiaryName = getBeneficiaryFullName();
+    const fullBeneficiaryName = beneficiaryFullName;
     const requesterName = profile?.full_name || user?.email || 'Utilisateur';
     const requesterEmail = profile?.email || user?.email || '';
 
