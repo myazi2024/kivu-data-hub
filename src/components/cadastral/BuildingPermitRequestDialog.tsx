@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, CheckCircle2, AlertCircle, ArrowLeft, CalendarIcon, Clock, MapPin, CreditCard, Loader2, Smartphone, Shield, Plus, X, FileText, Upload, Info } from 'lucide-react';
+import { Building2, CheckCircle2, AlertCircle, ArrowLeft, CalendarIcon, Clock, MapPin, CreditCard, Loader2, Smartphone, Shield, Plus, X, FileText, Upload, Info, Copy } from 'lucide-react';
 import { CartItem } from '@/hooks/useCart';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -78,16 +78,17 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
   const [savedContributionId, setSavedContributionId] = useState<string | null>(null);
+  const [savedTransactionId, setSavedTransactionId] = useState<string | null>(null);
   
   // Dynamic fees from permit_fees_config
   const [dynamicFees, setDynamicFees] = useState<FeeItem[]>([]);
   const [feesLoading, setFeesLoading] = useState(false);
+  const [feesSource, setFeesSource] = useState<'config' | 'fallback'>('config');
 
-  // Payment state
+  // Payment state — NO PIN collected (security fix)
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [paymentProvider, setPaymentProvider] = useState('');
   const [paymentPhone, setPaymentPhone] = useState('');
-  const [paymentPin, setPaymentPin] = useState('');
   const [availableProviders, setAvailableProviders] = useState<Array<{ value: string; label: string; prefix: string; color: string }>>([]);
 
   // Attachments
@@ -108,6 +109,18 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     };
   }, []);
 
+  // Sync requestType when hasExistingConstruction prop changes
+  useEffect(() => {
+    if (hasExistingConstruction) {
+      setRequestType('regularization');
+    }
+  }, [hasExistingConstruction]);
+
+  // Fallback fees when permit_fees_config is empty
+  const FALLBACK_FEES: FeeItem[] = requestType === 'new'
+    ? [{ id: 'fallback_1', fee_name: 'Frais d\'instruction', amount_usd: 75, description: 'Tarif standard (barème par défaut)', is_mandatory: true }]
+    : [{ id: 'fallback_2', fee_name: 'Frais de régularisation', amount_usd: 120, description: 'Tarif majoré (barème par défaut)', is_mandatory: true }];
+
   // Load fees from permit_fees_config
   useEffect(() => {
     const loadFees = async () => {
@@ -122,11 +135,20 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           .order('display_order');
 
         if (error) throw error;
-        setDynamicFees((data || []) as FeeItem[]);
+        
+        if (data && data.length > 0) {
+          setDynamicFees(data as FeeItem[]);
+          setFeesSource('config');
+        } else {
+          // Use fallback fees transparently
+          setDynamicFees(FALLBACK_FEES);
+          setFeesSource('fallback');
+        }
       } catch (err) {
         console.error('Error loading permit fees:', err);
-        // Fallback fees if config unavailable
-        setDynamicFees([]);
+        // Use fallback fees on error
+        setDynamicFees(FALLBACK_FEES);
+        setFeesSource('fallback');
       } finally {
         setFeesLoading(false);
       }
@@ -267,17 +289,9 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     return reasonsRequiringPermit.includes(formData.regularizationReason);
   };
 
-  // ========== FEE CALCULATION (from config, with fallback) ==========
-  const areaSqm = parseFloat(formData.plannedArea) || 0;
-
-  // Fallback fees when permit_fees_config is empty
-  const FALLBACK_FEES: FeeItem[] = requestType === 'new'
-    ? [{ id: 'fallback_1', fee_name: 'Frais d\'instruction', amount_usd: 75, description: 'Tarif standard', is_mandatory: true }]
-    : [{ id: 'fallback_2', fee_name: 'Frais de régularisation', amount_usd: 120, description: 'Tarif majoré', is_mandatory: true }];
-
-  const activeFees = dynamicFees.length > 0 ? dynamicFees : FALLBACK_FEES;
-
-  // Calculate total from active fees
+  // ========== FEE CALCULATION ==========
+  // activeFees always has values (config or fallback)
+  const activeFees = dynamicFees;
   const totalFeeUSD = activeFees.reduce((sum, fee) => sum + fee.amount_usd, 0);
 
   const feeBreakdown = activeFees.map(fee => ({
@@ -319,7 +333,41 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     return baseFields.every(f => f) && formData.startDate;
   };
 
-  const handlePreview = () => {
+  // ========== DUPLICATE REQUEST DETECTION ==========
+  const checkDuplicateRequest = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    try {
+      const { data, error } = await supabase
+        .from('cadastral_contributions')
+        .select('id, created_at, status')
+        .eq('parcel_number', parcelNumber)
+        .eq('user_id', user.id)
+        .eq('contribution_type', 'permit_request')
+        .in('status', ['pending', 'approved'])
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        const existing = data[0];
+        const statusLabel = existing.status === 'pending' ? 'en attente de traitement' : 'approuvée';
+        toast({
+          title: 'Demande déjà existante',
+          description: `Vous avez déjà une demande d'autorisation ${statusLabel} pour cette parcelle (créée le ${format(new Date(existing.created_at), 'dd/MM/yyyy', { locale: fr })}). Veuillez attendre son traitement avant d'en soumettre une nouvelle.`,
+          variant: 'destructive',
+        });
+        return true;
+      }
+      return false;
+    } catch (err) {
+      console.warn('Duplicate check failed (non-blocking):', err);
+      return false;
+    }
+  };
+
+  const handlePreview = async () => {
     if (!isFormValid()) {
       toast({
         title: "Formulaire incomplet",
@@ -328,6 +376,11 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       });
       return;
     }
+
+    // Check for duplicate before proceeding
+    const isDuplicate = await checkDuplicateRequest();
+    if (isDuplicate) return;
+
     setStep('preview');
   };
 
@@ -357,6 +410,22 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     }
 
     return uploadedUrls;
+  };
+
+  // Cleanup orphaned files from storage
+  const cleanupUploadedFiles = async (uploadedUrls: Record<string, string>) => {
+    if (!user) return;
+    for (const [, url] of Object.entries(uploadedUrls)) {
+      try {
+        // Extract file path from public URL
+        const match = url.match(/cadastral-documents\/(.+)$/);
+        if (match) {
+          await supabase.storage.from('cadastral-documents').remove([match[1]]);
+        }
+      } catch (err) {
+        console.warn('Failed to cleanup orphaned file:', err);
+      }
+    }
   };
 
   // Save permit request to cadastral_contributions
@@ -392,6 +461,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       attachments: uploadedUrls,
       totalFeePaid: totalFeeUSD,
       feeBreakdown: feeBreakdown,
+      feesSource: feesSource,
       transactionId: transactionId || null,
     };
 
@@ -415,13 +485,13 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
     if (error) throw error;
 
-    // Send notification (non-blocking, with error handling)
+    // Send notification (non-blocking)
     try {
       await supabase.from('notifications').insert({
         user_id: user.id,
         type: 'success',
         title: 'Demande d\'autorisation soumise',
-        message: `Votre demande d'${requestType === 'new' ? 'autorisation de bâtir' : 'autorisation de régularisation'} pour la parcelle ${parcelNumber} a été soumise. Délai de traitement: 15-30 jours.`,
+        message: `Votre demande d'${requestType === 'new' ? 'autorisation de bâtir' : 'autorisation de régularisation'} pour la parcelle ${parcelNumber} a été soumise. Référence: ${data.id.slice(0, 8).toUpperCase()}. Délai de traitement: 15-30 jours.`,
         action_url: '/user-dashboard?tab=building-permits'
       });
     } catch (notifErr) {
@@ -491,6 +561,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
         setStep('confirmation');
         toast({ title: "Demande enregistrée", description: "Votre demande a été enregistrée avec succès" });
       } catch (err: any) {
+        // Cleanup orphaned files on DB save failure
+        await cleanupUploadedFiles(uploadedUrls);
         toast({ title: 'Erreur', description: err.message || 'Impossible d\'enregistrer la demande', variant: 'destructive' });
       } finally {
         setProcessingPayment(false);
@@ -498,10 +570,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       return;
     }
 
-    // Step 3: Process payment
+    // Step 3: Process payment (NO PIN sent — provider handles PIN via USSD push)
     if (paymentMethod === 'mobile_money') {
-      if (!paymentProvider || !paymentPhone || paymentPin.length < 4) {
-        toast({ title: 'Champs requis', description: 'Veuillez remplir tous les champs de paiement (code PIN min. 4 chiffres).', variant: 'destructive' });
+      if (!paymentProvider || !paymentPhone) {
+        toast({ title: 'Champs requis', description: 'Veuillez sélectionner un opérateur et entrer votre numéro de téléphone.', variant: 'destructive' });
         setProcessingPayment(false);
         return;
       }
@@ -514,11 +586,12 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       try {
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
           'process-mobile-money-payment',
-          { body: { payment_provider: paymentProvider, phone_number: paymentPhone, payment_pin: paymentPin, amount_usd: totalFeeUSD, payment_type: 'permit_request', test_mode: paymentMode.test_mode } }
+          { body: { payment_provider: paymentProvider, phone_number: paymentPhone, amount_usd: totalFeeUSD, payment_type: 'permit_request', test_mode: paymentMode.test_mode } }
         );
         if (paymentError) throw paymentError;
         if (!paymentResult?.success) throw new Error(paymentResult?.error || 'Payment failed');
 
+        setSavedTransactionId(paymentResult.transaction_id);
         await pollTransaction(paymentResult.transaction_id, controller.signal);
 
         // Step 4: Save to DB after successful payment
@@ -533,6 +606,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             description: `Votre paiement (ID: ${paymentResult.transaction_id}) est confirmé. Contactez le support pour finaliser l'enregistrement.`,
             variant: 'destructive',
           });
+          // Do NOT cleanup files here — payment succeeded, support will reconcile
           setStep('confirmation');
           setProcessingPayment(false);
           return;
@@ -543,12 +617,19 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       } catch (err: any) {
         if (err.message !== 'Paiement annulé') {
           console.error('Payment error:', err);
+          // Cleanup orphaned files on payment failure
+          await cleanupUploadedFiles(uploadedUrls);
           toast({ title: 'Erreur de paiement', description: err?.message || "Une erreur s'est produite", variant: 'destructive' });
+        } else {
+          // User cancelled — cleanup
+          await cleanupUploadedFiles(uploadedUrls);
         }
       } finally {
         setProcessingPayment(false);
       }
     } else {
+      // Cleanup files since bank card not yet supported
+      await cleanupUploadedFiles(uploadedUrls);
       toast({ title: 'Carte bancaire', description: 'Le paiement par carte bancaire sera bientôt disponible.' });
       setProcessingPayment(false);
     }
@@ -559,6 +640,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setStep('form');
     setShowIntro(true);
     setSavedContributionId(null);
+    setSavedTransactionId(null);
     setFormData({
       constructionType: '', constructionNature: '', declaredUsage: '', plannedArea: '',
       numberOfFloors: '1', estimatedCost: '', applicantName: '', applicantPhone: '',
@@ -568,7 +650,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       roofingType: '', numberOfRooms: '', waterSupply: '', electricitySupply: '',
     });
     setAttachments({ architectural_plans: null, id_document: null, property_title: null, environmental_study: null, site_photos: null, other: null });
-    setPaymentProvider(''); setPaymentPhone(''); setPaymentPin(''); setPaymentMethod('mobile_money');
+    setPaymentProvider(''); setPaymentPhone(''); setPaymentMethod('mobile_money');
     onOpenChange(false);
   };
 
@@ -947,8 +1029,6 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-sm text-muted-foreground">Chargement des frais...</span>
               </div>
-            ) : dynamicFees.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-2">Aucun frais configuré. Contactez l'administration.</p>
             ) : (
               <>
                 {feeBreakdown.map((fee, i) => (
@@ -965,6 +1045,11 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                   <span className="text-sm font-bold">Total</span>
                   <span className="text-lg font-bold text-primary">${totalFeeUSD.toFixed(2)} USD</span>
                 </div>
+                {feesSource === 'fallback' && (
+                  <p className="text-[10px] text-muted-foreground italic">
+                    * Tarification par défaut. Le montant final sera confirmé par l'administration.
+                  </p>
+                )}
               </>
             )}
           </CardContent>
@@ -1117,12 +1202,15 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                       <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Étapes à suivre :</p>
                       <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-0.5">
                         <li>• Vérifiez la notification sur votre téléphone</li>
-                        <li>• Saisissez votre code PIN</li>
+                        <li>• Saisissez votre code PIN sur votre téléphone</li>
                         <li>• Confirmez la transaction</li>
                       </ul>
                     </div>
                   </div>
                 </div>
+                <Button variant="outline" size="sm" onClick={() => { abortControllerRef.current?.abort(); setProcessingPayment(false); }} className="rounded-xl">
+                  Annuler le paiement
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -1181,13 +1269,14 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <Label className="text-[10px] text-muted-foreground">Numéro de téléphone</Label>
               <PhoneNumberInput value={paymentPhone} onChange={setPaymentPhone} placeholder="97 123 4567" disabled={!paymentProvider} />
             </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] text-muted-foreground">Code secret</Label>
-              <div className="relative">
-                <Shield className="absolute left-3 top-1/2 transform -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input type="tel" inputMode="numeric" pattern="[0-9]*" placeholder="Votre code PIN" value={paymentPin} onChange={(e) => setPaymentPin(e.target.value.replace(/[^0-9]/g, ''))} className="h-9 pl-9 text-xs rounded-lg" />
-              </div>
-            </div>
+            
+            {/* Security notice — PIN is entered on the phone, not here */}
+            <Alert className="rounded-xl bg-blue-50/50 dark:bg-blue-900/10 border-blue-200/50 dark:border-blue-800/50">
+              <Shield className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+              <AlertDescription className="text-[10px] text-blue-700 dark:text-blue-300">
+                Vous recevrez une notification push de votre opérateur. Saisissez votre code PIN directement sur votre téléphone pour confirmer le paiement.
+              </AlertDescription>
+            </Alert>
           </div>
         )}
 
@@ -1204,7 +1293,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           <Button variant="outline" onClick={() => setStep('preview')} disabled={processingPayment} className="flex-1 h-10 text-xs rounded-xl">
             <ArrowLeft className="h-3.5 w-3.5 mr-1.5" /> Retour
           </Button>
-          <Button onClick={handlePayment} disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone || !paymentPin))} className="flex-1 h-10 text-xs rounded-xl">
+          <Button onClick={handlePayment} disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) || paymentMethod === 'bank_card'} className="flex-1 h-10 text-xs rounded-xl">
             Payer ${totalFeeUSD.toFixed(2)}
           </Button>
         </div>
@@ -1217,45 +1306,83 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     );
   };
 
-  const renderConfirmationStep = () => (
-    <div className="py-4 space-y-4 text-center">
-      <div className="relative inline-flex items-center justify-center p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
-        <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
-        <CheckCircle2 className="h-8 w-8 text-green-600 relative" />
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast({ title: 'Copié', description: 'Référence copiée dans le presse-papiers' });
+    }).catch(() => {});
+  };
+
+  const renderConfirmationStep = () => {
+    const referenceId = savedContributionId ? savedContributionId.slice(0, 8).toUpperCase() : null;
+
+    return (
+      <div className="py-4 space-y-4 text-center">
+        <div className="relative inline-flex items-center justify-center p-3 bg-green-100 dark:bg-green-900/30 rounded-full">
+          <div className="absolute inset-0 bg-green-500/20 blur-xl rounded-full" />
+          <CheckCircle2 className="h-8 w-8 text-green-600 relative" />
+        </div>
+        <div>
+          <h3 className="font-semibold text-base">Demande soumise avec succès</h3>
+          <p className="text-xs text-muted-foreground mt-1">Votre demande sera traitée dans les 15 à 30 jours ouvrables</p>
+        </div>
+        <Card className="bg-muted/50 border-0 text-left rounded-lg">
+          <CardContent className="p-3 space-y-2">
+            {referenceId && (
+              <>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><FileText className="h-3 w-3" />Référence</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono font-bold text-xs text-primary">{referenceId}</span>
+                    <button onClick={() => copyToClipboard(referenceId)} className="p-0.5 hover:bg-muted rounded">
+                      <Copy className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+                <Separator />
+              </>
+            )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />Parcelle</div>
+              <span className="font-mono font-bold text-xs">{parcelNumber}</span>
+            </div>
+            <Separator />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Building2 className="h-3 w-3" />Type</div>
+              <span className="text-xs">{requestTypeLabel}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock className="h-3 w-3" />Délai estimé</div>
+              <span className="text-xs">15-30 jours</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground">Montant payé</span>
+              <span className="font-bold text-primary text-sm">${totalFeeUSD.toFixed(2)} USD</span>
+            </div>
+            {savedTransactionId && (
+              <>
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] text-muted-foreground">Transaction</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-[10px]">{savedTransactionId.slice(0, 12)}...</span>
+                    <button onClick={() => copyToClipboard(savedTransactionId)} className="p-0.5 hover:bg-muted rounded">
+                      <Copy className="h-3 w-3 text-muted-foreground" />
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        <Alert className="text-left py-2 rounded-lg">
+          <AlertDescription className="text-[10px]">
+            Conservez votre numéro de référence{referenceId ? ` (${referenceId})` : ''}. Vous recevrez une notification lors du traitement de votre demande.
+          </AlertDescription>
+        </Alert>
+        <Button onClick={handleClose} className="w-full h-10 text-sm rounded-xl">Fermer</Button>
       </div>
-      <div>
-        <h3 className="font-semibold text-base">Demande soumise avec succès</h3>
-        <p className="text-xs text-muted-foreground mt-1">Votre demande sera traitée dans les 15 à 30 jours ouvrables</p>
-      </div>
-      <Card className="bg-muted/50 border-0 text-left rounded-lg">
-        <CardContent className="p-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><MapPin className="h-3 w-3" />Parcelle</div>
-            <span className="font-mono font-bold text-xs">{parcelNumber}</span>
-          </div>
-          <Separator />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Building2 className="h-3 w-3" />Type</div>
-            <span className="text-xs">{requestTypeLabel}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock className="h-3 w-3" />Délai estimé</div>
-            <span className="text-xs">15-30 jours</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-muted-foreground">Montant payé</span>
-            <span className="font-bold text-primary text-sm">${totalFeeUSD.toFixed(2)} USD</span>
-          </div>
-        </CardContent>
-      </Card>
-      <Alert className="text-left py-2 rounded-lg">
-        <AlertDescription className="text-[10px]">
-          Vous recevrez une notification par email et SMS lors du traitement de votre demande.
-        </AlertDescription>
-      </Alert>
-      <Button onClick={handleClose} className="w-full h-10 text-sm rounded-xl">Fermer</Button>
-    </div>
-  );
+    );
+  };
 
   useEffect(() => {
     if (open) setShowIntro(true);
