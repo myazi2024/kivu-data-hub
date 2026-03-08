@@ -137,7 +137,50 @@ export const useCadastralContribution = () => {
   const { user } = useAuth();
 
   // Shared payload builder to avoid duplication between insert and update
+  // Converts camelCase nested JSON to snake_case for DB trigger compatibility
   const buildContributionPayload = (data: CadastralContributionData) => {
+    // Convert ownership history to snake_case for DB trigger
+    const ownershipHistorySnake = data.ownershipHistory?.map(o => ({
+      owner_name: o.ownerName,
+      legal_status: o.legalStatus,
+      ownership_start_date: o.startDate,
+      ownership_end_date: o.endDate || null,
+      mutation_type: o.mutationType || null,
+      ownership_document_url: null
+    })) || null;
+
+    // Convert tax history to snake_case for DB trigger
+    const taxHistorySnake = data.taxHistory?.map(t => ({
+      tax_year: t.taxYear,
+      amount_usd: t.amountUsd,
+      payment_status: t.paymentStatus,
+      payment_date: t.paymentDate || null,
+      receipt_document_url: t.receiptUrl || null
+    })) || null;
+
+    // Convert mortgage history to snake_case for DB trigger
+    const mortgageHistorySnake = data.mortgageHistory?.map(m => ({
+      mortgage_amount_usd: m.mortgageAmountUsd,
+      duration_months: m.durationMonths,
+      creditor_name: m.creditorName,
+      creditor_type: m.creditorType,
+      contract_date: m.contractDate,
+      mortgage_status: m.mortgageStatus
+    })) || null;
+
+    // Convert building permits to snake_case for DB trigger
+    const buildingPermitsSnake = data.buildingPermits?.map(p => ({
+      permit_type: p.permitType,
+      permit_number: p.permitNumber,
+      issuing_service: p.issuingService,
+      issue_date: p.issueDate,
+      validity_period_months: p.validityMonths,
+      administrative_status: p.administrativeStatus,
+      issuing_service_contact: p.issuingServiceContact || null,
+      permit_document_url: p.attachmentUrl || null,
+      is_current: true
+    })) || null;
+
     const payload: any = {
       parcel_number: data.parcelNumber,
       parcel_type: data.parcelType,
@@ -163,7 +206,7 @@ export const useCadastralContribution = () => {
       construction_nature: data.constructionNature,
       construction_year: data.constructionYear || null,
       declared_usage: data.declaredUsage,
-      building_permits: data.buildingPermits,
+      building_permits: buildingPermitsSnake,
       previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
       province: data.province,
       ville: data.ville,
@@ -176,10 +219,10 @@ export const useCadastralContribution = () => {
       village: data.village,
       circonscription_fonciere: data.circonscriptionFonciere,
       gps_coordinates: data.gpsCoordinates,
-      ownership_history: data.ownershipHistory,
+      ownership_history: ownershipHistorySnake,
       boundary_history: data.boundaryHistory,
-      tax_history: data.taxHistory,
-      mortgage_history: data.mortgageHistory,
+      tax_history: taxHistorySnake,
+      mortgage_history: mortgageHistorySnake,
       whatsapp_number: data.whatsappNumber,
       owner_document_url: data.ownerDocumentUrl,
       property_title_document_url: data.titleDocumentUrl,
