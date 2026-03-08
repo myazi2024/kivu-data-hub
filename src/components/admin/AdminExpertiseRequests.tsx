@@ -633,36 +633,114 @@ export const AdminExpertiseRequests: React.FC = () => {
                 <Separator />
 
                 {/* Infos bien */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
-                    <Building className="h-4 w-4" />
-                    Informations du bien
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Année de construction</Label>
-                      <p>{selectedRequest.construction_year || '-'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Surface bâtie</Label>
-                      <p>{selectedRequest.total_built_area_sqm ? `${selectedRequest.total_built_area_sqm} m²` : '-'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">État</Label>
-                      <p>{selectedRequest.property_condition || '-'}</p>
-                    </div>
-                    <div>
-                      <Label className="text-xs text-muted-foreground">Qualité</Label>
-                      <p>{selectedRequest.construction_quality || '-'}</p>
-                    </div>
-                  </div>
-                  {selectedRequest.property_description && (
-                    <div className="mt-2">
-                      <Label className="text-xs text-muted-foreground">Description</Label>
-                      <p className="text-sm">{selectedRequest.property_description}</p>
-                    </div>
-                  )}
-                </div>
+                {(() => {
+                  const { userNotes, extendedData } = parseExtendedData(selectedRequest.additional_notes);
+                  return (
+                    <>
+                      <div>
+                        <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                          <Building className="h-4 w-4" />
+                          Informations du bien
+                        </h4>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          {extendedData.construction_type && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Type de construction</Label>
+                              <p>{CONSTRUCTION_TYPE_LABELS[extendedData.construction_type] || extendedData.construction_type}</p>
+                            </div>
+                          )}
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Année de construction</Label>
+                            <p>{selectedRequest.construction_year || '-'}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Surface bâtie</Label>
+                            <p>{selectedRequest.total_built_area_sqm ? `${selectedRequest.total_built_area_sqm} m²` : '-'}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">État</Label>
+                            <p>{CONDITION_LABELS[selectedRequest.property_condition || ''] || selectedRequest.property_condition || '-'}</p>
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Qualité</Label>
+                            <p>{QUALITY_LABELS[selectedRequest.construction_quality || ''] || selectedRequest.construction_quality || '-'}</p>
+                          </div>
+                          {extendedData.number_of_rooms && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Nombre de pièces</Label>
+                              <p>{extendedData.number_of_rooms}</p>
+                            </div>
+                          )}
+                          {extendedData.number_of_bedrooms && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Chambres</Label>
+                              <p>{extendedData.number_of_bedrooms}</p>
+                            </div>
+                          )}
+                          {extendedData.number_of_bathrooms && (
+                            <div>
+                              <Label className="text-xs text-muted-foreground">Salles de bain</Label>
+                              <p>{extendedData.number_of_bathrooms}</p>
+                            </div>
+                          )}
+                        </div>
+                        {selectedRequest.property_description && (
+                          <div className="mt-2">
+                            <Label className="text-xs text-muted-foreground">Description</Label>
+                            <p className="text-sm">{selectedRequest.property_description}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Matériaux & Position (extended data) */}
+                      {(extendedData.wall_material || extendedData.roof_material || extendedData.building_position) && (
+                        <>
+                          <Separator />
+                          <div>
+                            <h4 className="text-sm font-semibold mb-2">Matériaux & Emplacement</h4>
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                              {extendedData.wall_material && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Murs</Label>
+                                  <p>{WALL_LABELS[extendedData.wall_material] || extendedData.wall_material}</p>
+                                </div>
+                              )}
+                              {extendedData.roof_material && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Toiture</Label>
+                                  <p>{ROOF_LABELS[extendedData.roof_material] || extendedData.roof_material}</p>
+                                </div>
+                              )}
+                              {extendedData.sound_environment && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Environnement sonore</Label>
+                                  <p>{SOUND_LABELS[extendedData.sound_environment] || extendedData.sound_environment}</p>
+                                </div>
+                              )}
+                              {selectedRequest.road_access_type && (
+                                <div>
+                                  <Label className="text-xs text-muted-foreground">Accès routier</Label>
+                                  <p>{ROAD_LABELS[selectedRequest.road_access_type] || selectedRequest.road_access_type}</p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      {/* Notes utilisateur */}
+                      {userNotes && (
+                        <>
+                          <Separator />
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Notes de l'utilisateur</Label>
+                            <p className="text-sm mt-1 bg-muted/50 p-2 rounded-lg">{userNotes}</p>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {/* Résultat si complété */}
                 {selectedRequest.status === 'completed' && (
