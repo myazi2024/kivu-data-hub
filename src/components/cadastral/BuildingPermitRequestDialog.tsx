@@ -241,7 +241,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const totalFeeUSD = Math.round((permitFeeUSD + urbanismTaxUSD + bicAdminFeeUSD + bankFeeUSD) * 100) / 100;
 
   const feeBreakdown = [
-    { label: requestType === 'new' ? 'Frais de permis de construire' : 'Frais de permis de régularisation', amount: permitFeeUSD },
+    { label: requestType === 'new' ? 'Frais d\'autorisation de bâtir' : 'Frais d\'autorisation de régularisation', amount: permitFeeUSD },
     { label: `Taxe d'urbanisme (${areaSqm ? areaSqm.toLocaleString('fr-FR') : '0'} m²)`, amount: urbanismTaxUSD, detail: `${urbanismTaxCDF.toLocaleString('fr-FR')} CDF` },
     { label: 'Frais administratifs BIC', amount: bicAdminFeeUSD },
     { label: 'Frais bancaires', amount: bankFeeUSD },
