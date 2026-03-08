@@ -24,6 +24,10 @@ import { ResponsiveTable, ResponsiveTableHeader, ResponsiveTableBody, Responsive
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { generateExpertiseCertificatePDF } from '@/utils/generateExpertiseCertificatePDF';
+import { 
+  QUALITY_LABELS, CONDITION_LABELS, CONSTRUCTION_TYPE_LABELS, 
+  WALL_LABELS, ROOF_LABELS, ROAD_LABELS, SOUND_LABELS, STATUS_LABELS 
+} from '@/constants/expertiseLabels';
 
 interface ExpertiseRequest {
   id: string;
@@ -57,35 +61,6 @@ interface ExpertiseRequest {
   updated_at: string;
 }
 
-// Label maps for human-readable display in admin
-const QUALITY_LABELS: Record<string, string> = {
-  luxe: 'Luxe / Haut standing',
-  standard: 'Standard / Moyen standing',
-  economique: 'Économique / Social',
-};
-const CONDITION_LABELS: Record<string, string> = {
-  neuf: 'Neuf (< 2 ans)', bon: 'Bon état', moyen: 'État moyen', mauvais: 'Mauvais état', a_renover: 'À rénover',
-};
-const CONSTRUCTION_TYPE_LABELS: Record<string, string> = {
-  villa: 'Villa / Maison individuelle', appartement: 'Appartement', immeuble: 'Immeuble / Bâtiment',
-  duplex: 'Duplex / Triplex', studio: 'Studio', commercial: 'Local commercial',
-  entrepot: 'Entrepôt / Hangar', terrain_nu: 'Terrain nu', autre: 'Autre',
-};
-const WALL_LABELS: Record<string, string> = {
-  beton: 'Béton armé', briques_cuites: 'Briques cuites', briques_adobe: 'Briques adobe',
-  parpaings: 'Parpaings / Blocs', bois: 'Bois', tole: 'Tôles métalliques', mixte: 'Mixte',
-};
-const ROOF_LABELS: Record<string, string> = {
-  tole_bac: 'Tôle bac / Ondulée', tuiles: 'Tuiles', dalle_beton: 'Dalle béton',
-  ardoise: 'Ardoise', chaume: 'Chaume / Paille', autre: 'Autre',
-};
-const ROAD_LABELS: Record<string, string> = {
-  asphalte: 'Route asphaltée', terre: 'Route en terre', piste: 'Piste / Sentier',
-};
-const SOUND_LABELS: Record<string, string> = {
-  tres_calme: 'Très calme', calme: 'Calme', modere: 'Modéré', bruyant: 'Bruyant', tres_bruyant: 'Très bruyant',
-};
-
 // Helper to parse extended data from additional_notes JSON
 const parseExtendedData = (additionalNotes?: string): { userNotes: string; extendedData: Record<string, any> } => {
   if (!additionalNotes) return { userNotes: '', extendedData: {} };
@@ -100,14 +75,7 @@ const parseExtendedData = (additionalNotes?: string): { userNotes: string; exten
   }
 };
 
-// Status config kept for dialog display only
-const statusLabels: Record<string, string> = {
-  pending: 'En attente',
-  assigned: 'Assigné',
-  in_progress: 'En cours',
-  completed: 'Terminé',
-  rejected: 'Rejeté',
-};
+// Status config uses centralized labels
 
 export const AdminExpertiseRequests: React.FC = () => {
   const { user } = useAuth();
@@ -416,7 +384,7 @@ export const AdminExpertiseRequests: React.FC = () => {
                   r.parcel_number,
                   r.requester_name,
                   r.requester_email || '',
-                  statusLabels[r.status] || r.status,
+                  STATUS_LABELS[r.status] || r.status,
                   r.market_value_usd?.toString() || '',
                   format(new Date(r.created_at), 'dd/MM/yyyy'),
                 ])
@@ -772,8 +740,42 @@ export const AdminExpertiseRequests: React.FC = () => {
                     </>
                   );
                 })()}
+                 {/* Documents joints */}
+                 {selectedRequest.supporting_documents && selectedRequest.supporting_documents.length > 0 && (
+                   <>
+                     <Separator />
+                     <div>
+                       <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                         <FileText className="h-4 w-4" />
+                         Documents & Photos ({selectedRequest.supporting_documents.length})
+                       </h4>
+                       <div className="grid grid-cols-3 gap-2">
+                         {selectedRequest.supporting_documents.map((url, idx) => {
+                           const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                           return (
+                             <a
+                               key={idx}
+                               href={url}
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               className="block border rounded-lg overflow-hidden hover:ring-2 ring-primary transition-all"
+                             >
+                               {isImage ? (
+                                 <img src={url} alt={`Document ${idx + 1}`} className="w-full h-20 object-cover" />
+                               ) : (
+                                 <div className="flex items-center justify-center h-20 bg-muted">
+                                   <FileText className="h-6 w-6 text-muted-foreground" />
+                                 </div>
+                               )}
+                             </a>
+                           );
+                         })}
+                       </div>
+                     </div>
+                   </>
+                 )}
 
-                {/* Résultat si complété */}
+                 {/* Résultat si complété */}
                 {selectedRequest.status === 'completed' && (
                   <>
                     <Separator />

@@ -300,8 +300,9 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   // === NOTES & DOCUMENTS ===
   const [additionalNotes, setAdditionalNotes] = useState('');
   const [parcelDocuments, setParcelDocuments] = useState<File[]>([]);
-  const [constructionImages, setConstructionImages] = useState<File[]>([]);
-  const [uploadingFiles, setUploadingFiles] = useState(false);
+   const [constructionImages, setConstructionImages] = useState<File[]>([]);
+   const [constructionImageUrls, setConstructionImageUrls] = useState<string[]>([]);
+   const [uploadingFiles, setUploadingFiles] = useState(false);
 
   // Fetch expertise fees on mount
   useEffect(() => {
@@ -398,9 +399,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     return () => { cancelled = true; };
   }, [open, showIntro, user?.id, existingCertificate?.id]);
 
-  const getTotalAmount = () => {
-    return fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
-  };
+   const getTotalAmount = () => {
+     const total = fees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+     return Math.max(total, 0);
+   };
+
+   const isPaymentValid = () => {
+     return fees.length > 0 && getTotalAmount() > 0;
+   };
 
   // Fonctions pour la mesure du bruit avec microphone
   const getSoundLevelFromDecibels = useCallback((db: number): string => {
@@ -511,17 +517,24 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       return isValid && isValidSize;
     });
     
-    setConstructionImages(prev => [...prev, ...validFiles]);
-    if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
-  };
+   const newUrls = validFiles.map(f => URL.createObjectURL(f));
+     setConstructionImages(prev => [...prev, ...validFiles]);
+     setConstructionImageUrls(prev => [...prev, ...newUrls]);
+     if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+   };
 
   const removeParcelDoc = (index: number) => {
     setParcelDocuments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const removeConstructionImage = (index: number) => {
-    setConstructionImages(prev => prev.filter((_, i) => i !== index));
-  };
+   const removeConstructionImage = (index: number) => {
+     // Revoke object URL to prevent memory leak
+     if (constructionImageUrls[index]) {
+       URL.revokeObjectURL(constructionImageUrls[index]);
+     }
+     setConstructionImages(prev => prev.filter((_, i) => i !== index));
+     setConstructionImageUrls(prev => prev.filter((_, i) => i !== index));
+   };
 
   const uploadFiles = async (): Promise<{ parcelDocs: string[], constructionImages: string[] }> => {
     const result = { parcelDocs: [] as string[], constructionImages: [] as string[] };
@@ -724,25 +737,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
 
         if (mmError) throw mmError;
 
-        // Poll transaction status instead of fixed wait
-        const txId = paymentResult?.transaction_id;
-        if (txId) {
-          let attempts = 0;
-          const maxAttempts = 15;
-          let completed = false;
-          while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const { data: tx } = await supabase
-              .from('payment_transactions')
-              .select('status')
-              .eq('id', txId)
-              .single();
-            if (tx?.status === 'completed') { completed = true; break; }
-            if (tx?.status === 'failed') throw new Error('Le paiement a échoué');
-            attempts++;
-          }
-          if (!completed) throw new Error('Délai de paiement dépassé');
-        }
+         // Poll transaction status
+         const txId = paymentResult?.transaction_id;
+         if (txId) {
+           const { pollTransactionStatus } = await import('@/utils/pollTransactionStatus');
+           const result = await pollTransactionStatus(txId);
+           if (result === 'failed') throw new Error('Le paiement a échoué');
+           if (result === 'timeout') throw new Error('Délai de paiement dépassé');
+         }
 
         await supabase
           .from('expertise_payments')
@@ -840,25 +842,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         });
         if (mmError) throw mmError;
 
-        // Poll transaction status
-        const txId = mmResult?.transaction_id;
-        if (txId) {
-          let attempts = 0;
-          const maxAttempts = 15;
-          let completed = false;
-          while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const { data: tx } = await supabase
-              .from('payment_transactions')
-              .select('status')
-              .eq('id', txId)
-              .single();
-            if (tx?.status === 'completed') { completed = true; break; }
-            if (tx?.status === 'failed') throw new Error('Le paiement a échoué');
-            attempts++;
-          }
-          if (!completed) throw new Error('Délai de paiement dépassé');
-        }
+         // Poll transaction status
+         const txId = mmResult?.transaction_id;
+         if (txId) {
+           const { pollTransactionStatus } = await import('@/utils/pollTransactionStatus');
+           const result = await pollTransactionStatus(txId);
+           if (result === 'failed') throw new Error('Le paiement a échoué');
+           if (result === 'timeout') throw new Error('Délai de paiement dépassé');
+         }
 
         await supabase.from('expertise_payments').update({
           status: 'completed',
@@ -978,10 +969,12 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
     setErosionRiskZone(false);
     setNearbyAmenities([]);
 
-    // Documents
-    setAdditionalNotes('');
-    setParcelDocuments([]);
-    setConstructionImages([]);
+     // Documents - revoke all object URLs before clearing
+     setAdditionalNotes('');
+     setParcelDocuments([]);
+     constructionImageUrls.forEach(url => URL.revokeObjectURL(url));
+     setConstructionImages([]);
+     setConstructionImageUrls([]);
 
     // Payment
     setPaymentMethod('mobile_money');
@@ -1948,11 +1941,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   <div className="grid grid-cols-3 gap-2">
                     {constructionImages.map((file, index) => (
                       <div key={index} className="relative group">
-                        <div className="aspect-square rounded-lg overflow-hidden bg-muted">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={file.name}
-                            className="w-full h-full object-cover"
+                         <div className="aspect-square rounded-lg overflow-hidden bg-muted">
+                           <img
+                             src={constructionImageUrls[index] || ''}
+                             alt={file.name}
+                             className="w-full h-full object-cover"
                           />
                         </div>
                         <Button
@@ -2868,7 +2861,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         <Button 
           variant="seloger"
           onClick={handlePayment}
-          disabled={processingPayment || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
+          disabled={processingPayment || !isPaymentValid() || (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone))}
           className="flex-1 h-10 rounded-2xl text-sm font-semibold"
         >
           {processingPayment ? (
