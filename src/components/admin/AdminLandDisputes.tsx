@@ -149,7 +149,7 @@ const AdminLandDisputes: React.FC = () => {
     }
   };
 
-  const filteredDisputes = React.useMemo(() => {
+  const filteredDisputes = useMemo(() => {
     let result = disputes;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -171,8 +171,15 @@ const AdminLandDisputes: React.FC = () => {
   const totalPages = Math.ceil(filteredDisputes.length / itemsPerPage);
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const getStatusBadge = (status: string) => {
-    return <Badge variant={getStatusVariant(status)} className="text-[10px]">{getStatusLabel(status)}</Badge>;
+  // Find related disputes (cross-navigation)
+  const getRelatedDisputes = (dispute: LandDispute): LandDispute[] => {
+    return disputes.filter(d =>
+      d.id !== dispute.id &&
+      d.parcel_number === dispute.parcel_number && (
+        d.lifting_request_reference === dispute.reference_number ||
+        dispute.lifting_request_reference === d.reference_number
+      )
+    );
   };
 
   const stats = {
