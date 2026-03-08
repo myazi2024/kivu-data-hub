@@ -316,7 +316,21 @@ serve(async (req) => {
         payment_method: 'bank_card',
         payment_provider: 'stripe',
       }).eq('id', invoice_id);
-    }
+    } else if (payment_type === 'mutation_request' && invoice_id) {
+      await supabaseService.from("payment_transactions").insert({
+        user_id: user.id,
+        invoice_id: invoice_id,
+        payment_method: 'bank_card',
+        provider: 'stripe',
+        amount_usd: amount_usd!,
+        status: 'pending',
+        transaction_reference: session.id,
+        metadata: {
+          stripe_session_id: session.id,
+          payment_type: 'mutation_request',
+          mutation_request_id: invoice_id,
+        }
+      });
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
