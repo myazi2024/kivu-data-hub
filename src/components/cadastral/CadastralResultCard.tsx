@@ -718,7 +718,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </Card>
                 )}
 
-                {/* Historique des permis de construire - Mobile First */}
+                {/* Historique des autorisations de bâtir - Mobile First */}
                 {building_permits.filter(permit => !permit.is_current).length > 0 && (
                   <Card className="border-0 bg-gradient-to-br from-background to-orange-50">
                     <CardContent className="p-3">
