@@ -216,6 +216,12 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       return;
     }
 
+    if (!parcelId) {
+      setReferenceValid(false);
+      setReferenceError('Impossible de valider: identifiant de parcelle manquant.');
+      return;
+    }
+
     setValidatingReference(true);
     setReferenceError(null);
 
