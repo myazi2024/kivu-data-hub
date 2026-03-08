@@ -240,6 +240,7 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
 
   const handleSubmit = async () => {
     if (!user) { toast.error('Vous devez être connecté'); return; }
+    if (loading) return; // Guard against double-click
     setLoading(true);
 
     let uploadedPaths: string[] = [];
