@@ -723,37 +723,22 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       if (paymentError) throw paymentError;
 
       if (certPaymentMethod === 'mobile_money') {
-        const { data: mmResult, error: mmError } = await supabase.functions.invoke('process-mobile-money-payment', {
-          body: {
-            payment_provider: certPaymentProvider,
-            phone_number: certPaymentPhone,
-            amount_usd: certificateAccessFee,
-            payment_type: 'certificate_access',
-            invoice_id: paymentRecord.id
-          }
+        const { processExpertiseMobileMoneyPayment } = await import('@/utils/expertisePaymentHelper');
+        await processExpertiseMobileMoneyPayment({
+          provider: certPaymentProvider,
+          phone: certPaymentPhone,
+          amountUsd: certificateAccessFee,
+          paymentType: 'certificate_access',
+          paymentRecordId: paymentRecord.id,
         });
-        if (mmError) throw mmError;
-
-         // Poll transaction status
-         const txId = mmResult?.transaction_id;
-         if (txId) {
-           const { pollTransactionStatus } = await import('@/utils/pollTransactionStatus');
-           const result = await pollTransactionStatus(txId);
-           if (result === 'failed') throw new Error('Le paiement a échoué');
-           if (result === 'timeout') throw new Error('Délai de paiement dépassé');
-         }
-
-        await supabase.from('expertise_payments').update({
-          status: 'completed',
-          paid_at: new Date().toISOString(),
-          transaction_id: mmResult?.transaction_id || 'TXN-' + Date.now()
-        }).eq('id', paymentRecord.id);
       } else {
-        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
-          body: { invoice_id: paymentRecord.id, payment_type: 'certificate_access', amount_usd: certificateAccessFee }
+        const { processExpertiseStripePayment } = await import('@/utils/expertisePaymentHelper');
+        const redirected = await processExpertiseStripePayment({
+          paymentRecordId: paymentRecord.id,
+          paymentType: 'certificate_access',
+          amountUsd: certificateAccessFee,
         });
-        if (stripeError) throw stripeError;
-        if (stripeSession?.url) { window.location.href = stripeSession.url; return; }
+        if (redirected) return;
       }
 
       setHasCertificateAccess(true);
