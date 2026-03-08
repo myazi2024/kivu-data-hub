@@ -2256,16 +2256,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   const handleClose = () => {
+    // Reset form data
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
     setShowPermitPayment(false);
+    setSavedContributionId(null);
     setSavedPermitRequestData(null);
     setShowQuickAuth(false);
     setPendingSubmission(false);
+    setUploading(false);
     setOwnerDocFile(null);
     setTitleDocFiles([]);
     setSectionType('');
     setSectionTypeAutoDetected(false);
+    setActiveTab('general');
+    setHasShownConfetti(false);
+    
+    // Reset ownership
+    setOwnershipMode('unique');
+    setLeaseYears(0);
     setPreviousOwners([{
       name: '',
       legalStatus: 'Personne physique',
@@ -2289,6 +2298,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       rightType: '',
       since: ''
     }]);
+    
+    // Reset obligations
+    setHasMortgage(null);
     setTaxRecords([{
       taxType: 'Taxe foncière',
       taxYear: '',
@@ -2307,14 +2319,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       receiptFile: null
     }]);
     setObligationType('taxes');
+    
+    // Reset location
     setParcelSides([
       { name: 'Côté Nord', length: '' },
       { name: 'Côté Sud', length: '' },
       { name: 'Côté Est', length: '' },
       { name: 'Côté Ouest', length: '' }
     ]);
+    setAvailableVilles([]);
+    setAvailableCommunes([]);
+    setAvailableTerritoires([]);
+    setAvailableCollectivites([]);
     setAvailableQuartiers([]);
     setAvailableAvenues([]);
+    setAvailableConstructionNatures([]);
+    setAvailableDeclaredUsages([]);
+    setRoadSides([]);
+    
+    // Reset permits
+    setPermitMode('existing');
     setBuildingPermits([{
       permitType: 'construction',
       permitNumber: '',
@@ -2325,13 +2349,52 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       issuingServiceContact: '',
       attachmentFile: null
     }]);
-    setGpsCoordinates([{
-      borne: 'Borne 1',
-      lat: '',
-      lng: ''
-    }]);
+    setPermitRequest({
+      permitType: 'construction',
+      hasExistingConstruction: false,
+      constructionDescription: '',
+      plannedUsage: '',
+      estimatedArea: '',
+      applicantName: '',
+      applicantPhone: '',
+      applicantEmail: '',
+      selectedOwnerIndex: -1,
+      numberOfFloors: '',
+      buildingMaterials: '',
+      architecturalPlanImages: [],
+      constructionYear: '',
+      regularizationReason: '',
+      originalPermitNumber: '',
+      previousPermitNumber: '',
+      constructionPhotos: []
+    });
+    
+    // Reset GPS
+    setGpsCoordinates([]);
+    
+    // Reset all warning states
     setShowRequiredFieldsPopover(false);
     setHighlightRequiredFields(false);
+    setShowOwnerWarning(false);
+    setHighlightIncompleteOwner(false);
+    setShowPermitWarning(false);
+    setHighlightIncompletePermit(false);
+    setShowPreviousOwnerWarning(false);
+    setHighlightIncompletePreviousOwner(false);
+    setHighlightSuperficie(false);
+    setShowGPSWarning(false);
+    setShowTaxWarning(false);
+    setHighlightIncompleteTax(false);
+    setShowMortgageWarning(false);
+    setHighlightIncompleteMortgage(false);
+    setShowCurrentOwnerRequiredWarning(false);
+    setShowPermitTypeBlockedWarning(false);
+    setPermitTypeBlockedMessage('');
+    setShowAreaMismatchWarning(false);
+    setAreaMismatchMessage('');
+    setShouldBlinkSuperficie(false);
+    setShowUsageLockedWarning(false);
+    
     onOpenChange(false);
   };
 
