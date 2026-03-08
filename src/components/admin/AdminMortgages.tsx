@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { RefreshCw, Building, Eye, DollarSign, Clock, CheckCircle2, Search, Download, XCircle, FileX2, Landmark, AlertTriangle } from 'lucide-react';
+import { RefreshCw, Building, Eye, DollarSign, Clock, CheckCircle2, Search, Download, XCircle, FileX2, Landmark, AlertTriangle, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { usePagination } from '@/hooks/usePagination';
@@ -19,6 +19,7 @@ import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge, StatusType } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
 import { formatCurrency } from '@/utils/formatters';
+import { generateMortgageReference, normalizeMortgageStatus } from '@/utils/mortgageReferences';
 
 interface Mortgage {
   id: string;
