@@ -28,38 +28,7 @@ import {
   QUALITY_LABELS, CONDITION_LABELS, CONSTRUCTION_TYPE_LABELS, 
   WALL_LABELS, ROOF_LABELS, ROAD_LABELS, SOUND_LABELS, STATUS_LABELS 
 } from '@/constants/expertiseLabels';
-
-interface ExpertiseRequest {
-  id: string;
-  reference_number: string;
-  user_id: string;
-  parcel_number: string;
-  property_description?: string;
-  construction_year?: number;
-  construction_quality?: string;
-  number_of_floors?: number;
-  total_built_area_sqm?: number;
-  property_condition?: string;
-  has_water_supply: boolean;
-  has_electricity: boolean;
-  has_sewage_system: boolean;
-  road_access_type?: string;
-  additional_notes?: string;
-  supporting_documents: string[];
-  requester_name: string;
-  requester_phone?: string;
-  requester_email?: string;
-  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'rejected';
-  payment_status: 'pending' | 'paid' | 'failed';
-  assigned_to?: string;
-  market_value_usd?: number;
-  certificate_url?: string;
-  certificate_issue_date?: string;
-  processing_notes?: string;
-  rejection_reason?: string;
-  created_at: string;
-  updated_at: string;
-}
+import type { ExpertiseRequest } from '@/types/expertise';
 
 // Helper to parse extended data from additional_notes JSON
 const parseExtendedData = (additionalNotes?: string): { userNotes: string; extendedData: Record<string, any> } => {
