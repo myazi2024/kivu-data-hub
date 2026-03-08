@@ -337,11 +337,11 @@ const AdminMutationRequests: React.FC = () => {
       )
     },
     {
-      key: 'requester_name',
-      header: 'Demandeur',
+      key: 'mutation_type',
+      header: 'Type',
       priority: 3,
       render: (request: MutationRequest) => (
-        <span className="text-xs">{request.requester_name}</span>
+        <span className="text-xs">{getMutationTypeLabel(request.mutation_type)}</span>
       )
     },
     {
@@ -349,7 +349,7 @@ const AdminMutationRequests: React.FC = () => {
       header: 'Montant',
       priority: 4,
       render: (request: MutationRequest) => (
-        <span className="text-xs font-semibold">${request.total_amount_usd}</span>
+        <span className="text-xs font-semibold">${Number(request.total_amount_usd).toFixed(2)}</span>
       )
     },
     {
