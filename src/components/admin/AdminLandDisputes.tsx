@@ -340,7 +340,7 @@ const AdminLandDisputes: React.FC = () => {
                     <div><span className="text-muted-foreground text-xs">Parcelle</span><p className="font-mono font-bold">{selectedDispute.parcel_number}</p></div>
                     <div><span className="text-muted-foreground text-xs">Type</span><p>{selectedDispute.dispute_type === 'report' ? 'Signalement' : 'Levée'}</p></div>
                     <div><span className="text-muted-foreground text-xs">Nature</span><p>{DISPUTE_NATURES_MAP[selectedDispute.dispute_nature] || selectedDispute.dispute_nature}</p></div>
-                    <div><span className="text-muted-foreground text-xs">Statut</span><div>{getStatusBadge(selectedDispute.current_status)}</div></div>
+                    <div><span className="text-muted-foreground text-xs">Statut</span><div><DisputeStatusBadge status={selectedDispute.current_status} /></div></div>
                     {selectedDispute.dispute_start_date && <div><span className="text-muted-foreground text-xs">Début litige</span><p>{new Date(selectedDispute.dispute_start_date).toLocaleDateString('fr-FR')}</p></div>}
                     {selectedDispute.resolution_level && <div><span className="text-muted-foreground text-xs">Niveau résolution</span><p className="capitalize">{selectedDispute.resolution_level.replace(/_/g, ' ')}</p></div>}
                   </div>
