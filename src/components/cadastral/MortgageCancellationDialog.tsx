@@ -1251,14 +1251,28 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             </Select>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Numéro de téléphone</Label>
+              <Label className="text-xs">Numéro de téléphone *</Label>
               <Input
                 value={paymentPhone}
                 onChange={(e) => setPaymentPhone(e.target.value)}
-                placeholder="+243..."
+                placeholder="+243XXXXXXXXX"
                 className="h-10 rounded-xl"
               />
+              <p className="text-[10px] text-muted-foreground">Format: +243XXXXXXXXX ou 0XXXXXXXXX</p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {paymentMethod === 'bank_card' && (
+        <Card className="rounded-2xl border-amber-200 dark:border-amber-800">
+          <CardContent className="p-4">
+            <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-800 rounded-xl">
+              <Info className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
+                Le paiement par carte bancaire sera disponible prochainement. Veuillez sélectionner Mobile Money pour le moment.
+              </AlertDescription>
+            </Alert>
           </CardContent>
         </Card>
       )}
