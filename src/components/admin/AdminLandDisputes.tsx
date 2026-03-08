@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,19 +10,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, RefreshCw } from 'lucide-react';
+import { Scale, Search, Eye, FileText, ChevronLeft, ChevronRight, User, RefreshCw, Link2 } from 'lucide-react';
 import { sendDisputeNotification } from '@/utils/disputeUploadUtils';
 import {
   LandDispute,
   DISPUTE_NATURES_MAP,
-  DISPUTE_STATUS_CONFIG,
   LIFTING_REASONS_MAP,
   DECLARANT_QUALITIES_MAP,
   PARTY_ROLES_MAP,
-  getStatusVariant,
   getStatusLabel,
 } from '@/utils/disputeSharedTypes';
 import DisputeDocumentLinks from '@/components/cadastral/DisputeDocumentLinks';
+import DisputeStatusBadge from '@/components/cadastral/DisputeStatusBadge';
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'Tous les statuts' },
