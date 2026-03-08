@@ -549,12 +549,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // FIX: Broadened phone validation - accepts international formats
+  // Phone validation — accepts international formats with country code
   const validatePhoneNumber = (phone: string): boolean => {
-    const cleaned = phone.replace(/\s/g, '');
-    // Accept DRC (+243/0), and generic international formats (+XX...)
-    const regex = /^(\+?\d{1,4})\d{7,12}$/;
-    return regex.test(cleaned);
+    const cleaned = phone.replace(/[\s\-()]/g, '');
+    // Must start with + and country code (1-3 digits), followed by 7-12 digits
+    // Or start with 0 for local DRC numbers (9 digits after 0)
+    const internationalRegex = /^\+[1-9]\d{0,2}\d{7,12}$/;
+    const localRegex = /^0\d{9}$/;
+    return internationalRegex.test(cleaned) || localRegex.test(cleaned);
   };
 
   const handlePayment = async () => {
