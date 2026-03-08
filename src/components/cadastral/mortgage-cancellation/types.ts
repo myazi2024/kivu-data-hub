@@ -59,7 +59,8 @@ export const REQUESTER_QUALITIES = [
 ];
 
 export const PHONE_REGEX_DRC = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
-export const ACTIVE_MORTGAGE_STATUSES = ['active'];
+export const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+export const ACTIVE_MORTGAGE_STATUSES = ['active', 'en_defaut', 'renegociee'];
 export const MAX_DOCUMENTS = 5;
 
 export interface MortgageFee {
