@@ -1938,7 +1938,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </Button>
         <Button 
           onClick={handlePayment}
-          disabled={processingPayment}
+          disabled={processingPayment || !hasAnyPaymentMethod}
           className="flex-1 h-8 text-xs rounded-lg"
         >
           {processingPayment ? (
@@ -1947,7 +1947,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               Paiement...
             </>
           ) : (
-            'Payer'
+            `Payer $${Number(createdRequest?.total_amount_usd || 0).toFixed(2)}`
           )}
         </Button>
       </div>
