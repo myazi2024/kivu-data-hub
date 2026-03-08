@@ -262,13 +262,20 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     return reasonsRequiringPermit.includes(formData.regularizationReason);
   };
 
-  // ========== FEE CALCULATION (from config) ==========
+  // ========== FEE CALCULATION (from config, with fallback) ==========
   const areaSqm = parseFloat(formData.plannedArea) || 0;
 
-  // Calculate total from dynamic fees
-  const totalFeeUSD = dynamicFees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+  // Fallback fees when permit_fees_config is empty
+  const FALLBACK_FEES: FeeItem[] = requestType === 'new'
+    ? [{ id: 'fallback_1', fee_name: 'Frais d\'instruction', amount_usd: 75, description: 'Tarif standard', is_mandatory: true }]
+    : [{ id: 'fallback_2', fee_name: 'Frais de régularisation', amount_usd: 120, description: 'Tarif majoré', is_mandatory: true }];
 
-  const feeBreakdown = dynamicFees.map(fee => ({
+  const activeFees = dynamicFees.length > 0 ? dynamicFees : FALLBACK_FEES;
+
+  // Calculate total from active fees
+  const totalFeeUSD = activeFees.reduce((sum, fee) => sum + fee.amount_usd, 0);
+
+  const feeBreakdown = activeFees.map(fee => ({
     label: fee.fee_name,
     amount: fee.amount_usd,
     detail: fee.description || undefined
