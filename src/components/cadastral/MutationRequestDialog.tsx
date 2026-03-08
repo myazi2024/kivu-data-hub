@@ -1257,7 +1257,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                           <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
                             {fee.fee_name}
                           </label>
-                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
+                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd.toFixed(2)}</span>
                         </div>
                         {fee.description && (
                           <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
