@@ -917,7 +917,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           <TabsTrigger value="documents" className="text-xs rounded-lg">Documents</TabsTrigger>
         </TabsList>
 
-        <ScrollArea className="h-[50vh] sm:h-[55vh] mt-3">
+        <div className="mt-3">
           {/* === ONGLET GÉNÉRAL === */}
           <TabsContent value="general" className="space-y-3 pr-2 mt-0">
             {/* Notification importance des données exactes */}
@@ -1874,7 +1874,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
               </AlertDescription>
             </Alert>
           </TabsContent>
-        </ScrollArea>
+        </div>
       </Tabs>
 
       <Button 
@@ -3037,7 +3037,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           )}
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] overflow-y-auto">
+        <ScrollArea className="h-[calc(90vh-120px)]">
           {step === 'form' && existingCertificate ? renderExistingCertificateBlock() : (
             <>
               {step === 'form' && (
