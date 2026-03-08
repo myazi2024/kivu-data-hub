@@ -24,34 +24,7 @@ import MortgageRequestDetailsDialog from './mortgage/MortgageRequestDetailsDialo
 import { ApproveConfirmDialog, RejectDialog, ReturnDialog } from './mortgage/MortgageAdminDialogs';
 import { getMortgageStatusType, getCreditorTypeLabel, getRequestTypeLabel } from './mortgage/mortgageHelpers';
 
-interface Mortgage {
-  id: string;
-  parcel_id: string;
-  creditor_name: string;
-  creditor_type: string;
-  mortgage_amount_usd: number;
-  mortgage_status: string;
-  contract_date: string;
-  duration_months: number;
-  created_at: string;
-  parcel_number?: string;
-  reference_number?: string;
-}
-
-interface MortgageRequest {
-  id: string;
-  parcel_number: string;
-  contribution_type: string;
-  mortgage_history: any[];
-  status: string;
-  created_at: string;
-  user_id: string;
-  original_parcel_id?: string;
-  rejection_reason?: string | null;
-  change_justification?: string | null;
-  // Fix #7: Separate field for return notes
-  return_notes?: string | null;
-}
+import type { Mortgage, MortgageRequest } from './mortgage/mortgageTypes';
 
 const AdminMortgages = () => {
   const { user } = useAuth();
