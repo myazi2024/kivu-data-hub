@@ -11,12 +11,24 @@ export const useRealEstateExpertise = () => {
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState<ExpertiseRequest[]>([]);
 
-  const generateReferenceNumber = () => {
+  const generateReferenceNumber = async (): Promise<string> => {
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    const random = Math.random().toString(36).substring(2, 8).toUpperCase();
-    return `EXP-${year}${month}-${random}`;
+    let attempts = 0;
+    while (attempts < 5) {
+      const random = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const ref = `EXP-${year}${month}-${random}`;
+      const { data } = await supabase
+        .from('real_estate_expertise_requests')
+        .select('id')
+        .eq('reference_number', ref)
+        .maybeSingle();
+      if (!data) return ref;
+      attempts++;
+    }
+    // Fallback with timestamp for guaranteed uniqueness
+    return `EXP-${year}${month}-${Date.now().toString(36).toUpperCase()}`;
   };
 
   const fetchUserRequests = useCallback(async () => {
