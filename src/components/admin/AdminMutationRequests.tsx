@@ -145,6 +145,12 @@ const AdminMutationRequests: React.FC = () => {
   const handleProcessRequest = async () => {
     if (!selectedRequest || !user) return;
 
+    // Server-side validation: only process paid requests
+    if (selectedRequest.payment_status !== 'paid') {
+      toast.error('Impossible de traiter une demande non payée.');
+      return;
+    }
+
     // FIX: Validate rejection reason is not just whitespace
     if (processAction === 'reject' && !rejectionReason.trim()) {
       toast.error('Veuillez indiquer un motif de rejet valide.');
