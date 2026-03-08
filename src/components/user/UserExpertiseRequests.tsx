@@ -51,10 +51,15 @@ export const UserExpertiseRequests: React.FC = () => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const getCertificateValidity = (issueDate?: string) => {
+  const getCertificateValidity = (issueDate?: string, expiryDate?: string) => {
     if (!issueDate) return null;
-    const expiry = new Date(issueDate);
-    expiry.setMonth(expiry.getMonth() + 6);
+    let expiry: Date;
+    if (expiryDate) {
+      expiry = new Date(expiryDate);
+    } else {
+      expiry = new Date(issueDate);
+      expiry.setMonth(expiry.getMonth() + 6);
+    }
     const days = Math.ceil((expiry.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
     return { isValid: days > 0, daysRemaining: Math.max(0, days) };
   };
