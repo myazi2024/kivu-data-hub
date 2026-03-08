@@ -917,7 +917,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           <TabsTrigger value="documents" className="text-xs rounded-lg">Documents</TabsTrigger>
         </TabsList>
 
-        <ScrollArea className="h-[50vh] sm:h-[55vh] mt-3">
+        <div className="mt-3">
           {/* === ONGLET GÉNÉRAL === */}
           <TabsContent value="general" className="space-y-3 pr-2 mt-0">
             {/* Notification importance des données exactes */}
