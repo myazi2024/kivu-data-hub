@@ -1186,7 +1186,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             if (permit.attachmentFile) {
               attachmentUrl = await uploadFile(permit.attachmentFile, 'building-permits');
               if (!attachmentUrl) {
-                throw new Error('Erreur lors du téléchargement du permis de construire');
+                throw new Error('Erreur lors du téléchargement de l\'autorisation de bâtir');
               }
             }
             return {
