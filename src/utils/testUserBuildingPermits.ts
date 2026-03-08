@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Test de validation pour la fonctionnalité de gestion des permis de construire
+ * Test de validation pour la fonctionnalité de gestion des autorisations de bâtir
  * dans l'espace utilisateur.
  * 
  * Ce test vérifie:
