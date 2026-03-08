@@ -241,7 +241,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const totalFeeUSD = Math.round((permitFeeUSD + urbanismTaxUSD + bicAdminFeeUSD + bankFeeUSD) * 100) / 100;
 
   const feeBreakdown = [
-    { label: requestType === 'new' ? 'Frais de permis de construire' : 'Frais de permis de régularisation', amount: permitFeeUSD },
+    { label: requestType === 'new' ? 'Frais d\'autorisation de bâtir' : 'Frais d\'autorisation de régularisation', amount: permitFeeUSD },
     { label: `Taxe d'urbanisme (${areaSqm ? areaSqm.toLocaleString('fr-FR') : '0'} m²)`, amount: urbanismTaxUSD, detail: `${urbanismTaxCDF.toLocaleString('fr-FR')} CDF` },
     { label: 'Frais administratifs BIC', amount: bicAdminFeeUSD },
     { label: 'Frais bancaires', amount: bankFeeUSD },
@@ -384,7 +384,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   const cartItem: CartItem = {
     id: 'building-permit-request',
-    title: requestType === 'new' ? 'Permis de construire' : 'Permis de régularisation',
+    title: requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation',
     price: totalFeeUSD,
     description: `Parcelle: ${parcelNumber}`
   };
@@ -394,7 +394,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       case 'preview': return 'Aperçu de la demande';
       case 'payment': return 'Paiement';
       case 'confirmation': return 'Confirmation';
-      default: return requestType === 'new' ? 'Permis de construire' : 'Permis de régularisation';
+      default: return requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
     }
   };
 
@@ -422,14 +422,14 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <div className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-colors cursor-pointer ${requestType === 'new' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}>
                 <RadioGroupItem value="new" id="new" />
                 <Label htmlFor="new" className="flex-1 cursor-pointer">
-                  <div className="font-medium text-sm">Nouveau permis de construire</div>
+                  <div className="font-medium text-sm">Nouvelle autorisation de bâtir</div>
                   <div className="text-xs text-muted-foreground">Construction à venir</div>
                 </Label>
               </div>
               <div className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-colors cursor-pointer ${requestType === 'regularization' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}>
                 <RadioGroupItem value="regularization" id="regularization" />
                 <Label htmlFor="regularization" className="flex-1 cursor-pointer">
-                  <div className="font-medium text-sm">Permis de régularisation</div>
+                  <div className="font-medium text-sm">Autorisation de régularisation</div>
                   <div className="text-xs text-muted-foreground">Construction existante sans autorisation</div>
                 </Label>
               </div>
@@ -1076,7 +1076,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           {step === 'payment' && renderPaymentStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande de permis de construire." />}
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande d'autorisation de bâtir." />}
     </Dialog>
   );
 };

@@ -48,7 +48,7 @@ const PROPERTY_EXEMPTION_DETAILS: Record<string, { legalBasis: string; condition
       'L\'exonération est temporaire et prend fin automatiquement après 5 ans',
       'La date d\'achèvement doit être justifiée par un document officiel',
     ],
-    requiredDocs: ['Permis de construire avec date d\'achèvement', 'PV de réception des travaux'],
+    requiredDocs: ['Autorisation de bâtir avec date d\'achèvement', 'PV de réception des travaux'],
   },
   surface_moins_50m2: {
     legalBasis: 'Art. 8, alinéa 4 de l\'Ordonnance-loi n°69-006',

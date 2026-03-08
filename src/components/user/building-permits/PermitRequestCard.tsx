@@ -55,7 +55,7 @@ export function PermitRequestCard({ parcelNumber }: PermitRequestCardProps) {
 
           {/* Options */}
           <div className="space-y-2">
-            {/* Option: Permis de construire */}
+            {/* Option: Autorisation de bâtir */}
             <button
               type="button"
               onClick={() => handleNewPermitRequest('new')}
@@ -65,7 +65,7 @@ export function PermitRequestCard({ parcelNumber }: PermitRequestCardProps) {
                 <Building2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="flex-1 text-left">
-                <h4 className="text-sm font-medium text-foreground">Permis de construire</h4>
+                <h4 className="text-sm font-medium text-foreground">Autorisation de bâtir</h4>
                 <p className="text-[10px] text-muted-foreground leading-tight">
                   Nouvelle construction ou projet futur
                 </p>
@@ -73,7 +73,7 @@ export function PermitRequestCard({ parcelNumber }: PermitRequestCardProps) {
               <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all" />
             </button>
 
-            {/* Option: Permis de régularisation */}
+            {/* Option: Autorisation de régularisation */}
             <button
               type="button"
               onClick={() => handleNewPermitRequest('regularization')}
@@ -83,7 +83,7 @@ export function PermitRequestCard({ parcelNumber }: PermitRequestCardProps) {
                 <FileEdit className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1 text-left">
-                <h4 className="text-sm font-medium text-foreground">Permis de régularisation</h4>
+                <h4 className="text-sm font-medium text-foreground">Autorisation de régularisation</h4>
                 <p className="text-[10px] text-muted-foreground leading-tight">
                   Construction existante à régulariser
                 </p>

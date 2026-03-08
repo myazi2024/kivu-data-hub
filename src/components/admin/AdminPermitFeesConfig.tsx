@@ -169,9 +169,9 @@ export default function AdminPermitFeesConfig() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Permis de construire */}
+          {/* Autorisation de bâtir */}
           <div>
-            <h3 className="text-lg font-semibold mb-3">Permis de construire</h3>
+            <h3 className="text-lg font-semibold mb-3">Autorisation de bâtir</h3>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -225,9 +225,9 @@ export default function AdminPermitFeesConfig() {
             </Table>
           </div>
 
-          {/* Permis de régularisation */}
+          {/* Autorisation de régularisation */}
           <div>
-            <h3 className="text-lg font-semibold mb-3">Permis de régularisation</h3>
+            <h3 className="text-lg font-semibold mb-3">Autorisation de régularisation</h3>
             <Table>
               <TableHeader>
                 <TableRow>
@@ -304,8 +304,8 @@ export default function AdminPermitFeesConfig() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="construction">Permis de construire</SelectItem>
-                  <SelectItem value="regularization">Permis de régularisation</SelectItem>
+                  <SelectItem value="construction">Autorisation de bâtir</SelectItem>
+                  <SelectItem value="regularization">Autorisation de régularisation</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -43,7 +43,7 @@ export function PermitTimeline({ permit }: PermitTimelineProps) {
         date: permit.verified_at || permit.reviewed_at,
         status: "approved",
         title: "Permis délivré",
-        description: "Votre permis de construire a été délivré avec succès",
+        description: "Votre autorisation de bâtir a été délivrée avec succès",
       });
     } else if (permit.status === "rejected" && permit.rejection_date) {
       events.push({

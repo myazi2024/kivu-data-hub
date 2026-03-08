@@ -271,38 +271,38 @@ export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
     buttonLabel: 'Soumettre la demande de radiation'
   },
   permit_add: {
-    title: 'Enregistrement d\'un permis de construire',
-    subtitle: 'Ajout d\'un permis existant à votre dossier',
-    aboutService: 'L\'enregistrement d\'un permis de construire permet d\'ajouter officiellement à votre dossier parcellaire un permis de construire déjà obtenu auprès des autorités compétentes. Cette démarche assure la traçabilité administrative de votre construction et facilite les futures transactions immobilières.',
+    title: 'Enregistrement d\'une autorisation de bâtir',
+    subtitle: 'Ajout d\'une autorisation existante à votre dossier',
+    aboutService: 'L\'enregistrement d\'une autorisation de bâtir permet d\'ajouter officiellement à votre dossier parcellaire une autorisation de bâtir déjà obtenue auprès des autorités compétentes. Cette démarche assure la traçabilité administrative de votre construction et facilite les futures transactions immobilières.',
     estimatedTime: '1 à 3 minutes',
     processingTime: '2 à 5 jours ouvrables',
     requiredInfo: [
-      'Numéro officiel du permis de construire tel qu\'indiqué sur le document',
-      'Date exacte de délivrance du permis par l\'autorité compétente',
+      'Numéro officiel de l\'autorisation de bâtir tel qu\'indiqué sur le document',
+      'Date exacte de délivrance de l\'autorisation par l\'autorité compétente',
       'Nom du service émetteur (Mairie, Division de l\'Urbanisme, etc.)',
-      'Scan ou photo lisible du document original du permis'
+      'Scan ou photo lisible du document original de l\'autorisation'
     ],
-    userResponsibility: 'Vous certifiez être détenteur d\'un permis de construire authentique et valide, délivré par l\'autorité administrative compétente. L\'enregistrement de faux documents ou de permis falsifiés constitue un délit passible de sanctions pénales.',
+    userResponsibility: 'Vous certifiez être détenteur d\'une autorisation de bâtir authentique et valide, délivrée par l\'autorité administrative compétente. L\'enregistrement de faux documents ou d\'autorisations falsifiées constitue un délit passible de sanctions pénales.',
     helpInfo: [
       'Le système vérifie automatiquement le format et la validité des informations saisies',
       'Vous pouvez prévisualiser votre saisie avant confirmation',
       'Une assistance technique est disponible 24h/24 via WhatsApp'
     ],
-    buttonLabel: 'Enregistrer le permis'
+    buttonLabel: 'Enregistrer l\'autorisation'
   },
   permit_regularization: {
-    title: 'Permis de régularisation',
+    title: 'Autorisation de régularisation',
     subtitle: 'Régularisation d\'une construction existante',
-    aboutService: 'Le permis de régularisation permet de mettre en conformité administrative une construction réalisée sans autorisation préalable ou dont les travaux ont dépassé le cadre du permis initial. Cette procédure est essentielle pour éviter les sanctions et sécuriser juridiquement votre propriété.',
+    aboutService: 'L\'autorisation de régularisation permet de mettre en conformité administrative une construction réalisée sans autorisation préalable ou dont les travaux ont dépassé le cadre de l\'autorisation initiale. Cette procédure est essentielle pour éviter les sanctions et sécuriser juridiquement votre propriété.',
     estimatedTime: '1 à 3 minutes',
     processingTime: '10 à 20 jours ouvrables',
     requiredInfo: [
-      'Numéro du permis de régularisation obtenu auprès de l\'administration',
-      'Date de délivrance du permis de régularisation',
+      'Numéro de l\'autorisation de régularisation obtenue auprès de l\'administration',
+      'Date de délivrance de l\'autorisation de régularisation',
       'Identification du service ayant procédé à la régularisation',
       'Documents justificatifs (procès-verbal de constatation, attestation de conformité)'
     ],
-    userResponsibility: 'Vous reconnaissez que la construction concernée a été réalisée antérieurement à l\'obtention d\'un permis et sollicitez sa régularisation administrative. Vous vous engagez à vous conformer aux prescriptions éventuelles formulées par l\'administration dans le cadre de cette régularisation.',
+    userResponsibility: 'Vous reconnaissez que la construction concernée a été réalisée antérieurement à l\'obtention d\'une autorisation et sollicitez sa régularisation administrative. Vous vous engagez à vous conformer aux prescriptions éventuelles formulées par l\'administration dans le cadre de cette régularisation.',
     helpInfo: [
       'Un guide complet vous explique la procédure de régularisation étape par étape',
       'Le calcul des éventuelles pénalités est effectué selon le barème officiel',
@@ -331,9 +331,9 @@ export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
     buttonLabel: 'Enregistrer le paiement'
   },
   permit_request: {
-    title: 'Demande de permis de construire',
+    title: 'Demande d\'autorisation de bâtir',
     subtitle: 'Soumission d\'une nouvelle demande',
-    aboutService: 'La demande de permis de construire est une procédure obligatoire préalable à tout projet de construction en République Démocratique du Congo. Ce document administratif atteste que votre projet respecte les règles d\'urbanisme, de sécurité et d\'environnement en vigueur dans votre zone géographique.',
+    aboutService: 'La demande d\'autorisation de bâtir est une procédure obligatoire préalable à tout projet de construction en République Démocratique du Congo. Ce document administratif atteste que votre projet respecte les règles d\'urbanisme, de sécurité et d\'environnement en vigueur dans votre zone géographique.',
     estimatedTime: '1 à 3 minutes',
     processingTime: '15 à 30 jours ouvrables',
     requiredInfo: [

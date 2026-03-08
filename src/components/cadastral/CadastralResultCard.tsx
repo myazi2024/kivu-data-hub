@@ -656,7 +656,7 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                           </div>
                         )}
                         
-                        {/* Informations du permis de construire actuel intégrées */}
+                        {/* Informations de l'autorisation de bâtir actuelle intégrées */}
                         {building_permits.filter(permit => permit.is_current).map((permit) => {
                           const issueDate = new Date(permit.issue_date);
                           const validityEndDate = new Date(issueDate.getTime() + permit.validity_period_months * 30 * 24 * 60 * 60 * 1000);
@@ -718,13 +718,13 @@ const CadastralResultCard: React.FC<CadastralResultCardProps> = ({ result, onClo
                   </Card>
                 )}
 
-                {/* Historique des permis de construire - Mobile First */}
+                {/* Historique des autorisations de bâtir - Mobile First */}
                 {building_permits.filter(permit => !permit.is_current).length > 0 && (
                   <Card className="border-0 bg-gradient-to-br from-background to-orange-50">
                     <CardContent className="p-3">
                       <h4 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-primary">
                         <Clock className="h-3 w-3" />
-                        Historique de permis de construire
+                        Historique des autorisations de bâtir
                         <Badge variant="outline" className="text-xs h-4 ml-1">
                           {building_permits.filter(permit => !permit.is_current).length} ancien{building_permits.filter(permit => !permit.is_current).length > 1 ? 's' : ''}
                         </Badge>

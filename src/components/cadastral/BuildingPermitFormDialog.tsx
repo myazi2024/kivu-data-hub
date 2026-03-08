@@ -63,7 +63,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const isConstruction = permitType === 'construction';
-  const title = isConstruction ? 'Permis de construire' : 'Permis de régularisation';
+  const title = isConstruction ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
   const iconColor = isConstruction ? 'text-blue-600' : 'text-green-600';
   const bgColor = isConstruction ? 'bg-blue-500/10' : 'bg-green-500/10';
   const gradientFrom = isConstruction ? 'from-blue-500' : 'from-green-500';
@@ -274,7 +274,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           Document du permis (optionnel)
           <SectionHelpPopover
             title="Document du permis"
-            description="Joignez une copie numérique du permis de construire (scan ou photo)."
+            description="Joignez une copie numérique de l'autorisation de bâtir (scan ou photo)."
           />
         </Label>
         {!permitRecord.permitFile ? (
@@ -439,7 +439,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           </DialogTitle>
           <DialogDescription className="text-xs">
             {isConstruction 
-              ? 'Enregistrez un nouveau permis de construire'
+              ? 'Enregistrez une nouvelle autorisation de bâtir'
               : 'Régularisez une construction existante'}
           </DialogDescription>
         </DialogHeader>
@@ -448,7 +448,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           {formContent}
         </div>
       </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire de permis de construire." />}
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'autorisation de bâtir." />}
     </Dialog>
   );
 };

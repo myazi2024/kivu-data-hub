@@ -27,7 +27,7 @@ export interface CadastralContributionData {
   declaredUsage?: string;
   constructionYear?: number; // Année de construction (si pas terrain nu)
   
-  // Permis de construire
+  // Autorisation de bâtir
   buildingPermits?: Array<{
     permitType: 'construction' | 'regularization';
     permitNumber: string;
@@ -40,7 +40,7 @@ export interface CadastralContributionData {
   }>;
   previousPermitNumber?: string; // ✅ NOUVEAU: pour régularisation
   
-  // Demande de permis de construire (nouveau)
+  // Demande d'autorisation de bâtir (nouveau)
   permitRequest?: {
     permitType: 'construction' | 'regularization';
     hasExistingConstruction: boolean;
@@ -50,11 +50,11 @@ export interface CadastralContributionData {
     applicantName: string;
     applicantPhone: string;
     applicantEmail?: string;
-    // Champs spécifiques permis de construire
+    // Champs spécifiques autorisation de bâtir
     numberOfFloors?: string;
     buildingMaterials?: string;
     architecturalPlanImages?: string[]; // URLs après upload
-    // Champs spécifiques permis de régularisation
+    // Champs spécifiques autorisation de régularisation
     constructionYear?: string;
     regularizationReason?: string; // ✅ Correction orthographe pour matcher le Dialog
     originalPermitNumber?: string;

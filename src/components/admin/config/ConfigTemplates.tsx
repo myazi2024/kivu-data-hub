@@ -58,7 +58,7 @@ const TEMPLATES = {
         previousOwners: { label: 'Anciens propriétaires', enabled: true, order: 4 },
         dimensions: { label: 'Dimensions', enabled: true, order: 5 },
         gps: { label: 'Coordonnées GPS', enabled: true, order: 6 },
-        buildingPermits: { label: 'Permis de construire', enabled: true, order: 7 },
+        buildingPermits: { label: 'Autorisation de bâtir', enabled: true, order: 7 },
         taxes: { label: 'Taxes', enabled: true, order: 8 },
         mortgages: { label: 'Hypothèques', enabled: true, order: 9 }
       },

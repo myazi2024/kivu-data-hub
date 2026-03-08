@@ -155,7 +155,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
     }
     
-    // ===== VALIDATION DU PERMIS DE CONSTRUIRE =====
+    // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
     // LOGIQUE DE DÉPENDANCE:
     // 1. Si constructionType === "Terrain nu" → Pas de validation permis (terrain nu = valide sans permis)
     // 2. Si constructionType !== "Terrain nu" ET permitMode === "request" (Pas de permis) → Valide, "Pas de permis" est une donnée valide
@@ -305,10 +305,10 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     receiptFile: null
   }]);
   
-  // État pour le mode de permis de construire
+  // État pour le mode d'autorisation de bâtir
   const [permitMode, setPermitMode] = useState<'existing' | 'request'>('existing');
   
-  // État pour gérer les permis de construire existants
+  // État pour gérer les autorisations de bâtir existantes
   const [buildingPermits, setBuildingPermits] = useState<Array<{
     permitType: 'construction' | 'regularization';
     permitNumber: string;
@@ -340,11 +340,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     applicantPhone: '',
     applicantEmail: '',
     selectedOwnerIndex: -1, // Index du propriétaire sélectionné
-    // Champs spécifiques permis de construire
+    // Champs spécifiques autorisation de bâtir
     numberOfFloors: '',
     buildingMaterials: '',
     architecturalPlanImages: [] as File[],
-    // Champs spécifiques permis de régularisation
+    // Champs spécifiques autorisation de régularisation
     constructionYear: '',
     regularizationReason: '',
     originalPermitNumber: '',
@@ -1186,7 +1186,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             if (permit.attachmentFile) {
               attachmentUrl = await uploadFile(permit.attachmentFile, 'building-permits');
               if (!attachmentUrl) {
-                throw new Error('Erreur lors du téléchargement du permis de construire');
+                throw new Error('Erreur lors du téléchargement de l\'autorisation de bâtir');
               }
             }
             return {
@@ -1609,7 +1609,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setMortgageRecords(updated);
   };
   
-  // Fonctions pour gérer les permis de construire
+  // Fonctions pour gérer les autorisations de bâtir
   const addBuildingPermit = () => {
     const lastPermit = buildingPermits[buildingPermits.length - 1];
     
@@ -1670,7 +1670,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setBuildingPermits(updated);
   };
 
-  // Logiques dépendantes pour les permis de construire
+  // Logiques dépendantes pour les autorisations de bâtir
   const getPermitTypeRestrictions = () => {
     const restrictions = {
       blockedInExisting: null as 'construction' | 'regularization' | null,
@@ -1693,8 +1693,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.constructionType === 'Terrain nu') {
       restrictions.blockedInExisting = 'regularization';
       restrictions.blockedInRequest = 'regularization';
-      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" que c'est un terrain nu. Un terrain nu n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
-      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" que c'est un "terrain nu". Un terrain nu n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
+      restrictions.messageExisting = `Vous avez indiqué dans "Type de construction" que c'est un terrain nu. Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Type de construction" que c'est un "terrain nu". Un terrain nu n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxExisting = today.toISOString().split('T')[0];
       return restrictions;
@@ -1704,21 +1704,21 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.constructionNature === 'Précaire') {
       restrictions.blockedInExisting = 'regularization';
       restrictions.blockedInRequest = 'regularization';
-      restrictions.messageExisting = `Vous avez indiqué dans "Nature de construction" que c'est une construction précaire. Une construction précaire n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
-      restrictions.messageRequest = `Vous avez indiqué dans "Nature de construction" que c'est une construction "Précaire". Une construction précaire n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
+      restrictions.messageExisting = `Vous avez indiqué dans "Nature de construction" que c'est une construction précaire. Une construction précaire n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Nature de construction" que c'est une construction "Précaire". Une construction précaire n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxExisting = today.toISOString().split('T')[0];
       return restrictions;
     }
 
     // Logique 3: Si type de construction ≠ "terrain nu"
-    // Les deux options (Permis de construire et Permis de régularisation) restent disponibles
+    // Les deux options (Autorisation de bâtir et Autorisation de régularisation) restent disponibles
     if (formData.constructionType && formData.constructionType !== 'Terrain nu') {
-      // Dates pour permis de construire: 3 ans passé - 1 mois avant aujourd'hui
+      // Dates pour autorisation de bâtir: 3 ans passé - 1 mois avant aujourd'hui
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxExisting = oneMonthAgo.toISOString().split('T')[0];
       
-      // Dates pour permis de régularisation: 3 ans passé - aujourd'hui
+      // Dates pour autorisation de régularisation: 3 ans passé - aujourd'hui
       restrictions.dateMinRegularization = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxRegularization = today.toISOString().split('T')[0];
     }
@@ -1924,7 +1924,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.constructionNature) filledFields += 1;
     if (formData.declaredUsage) filledFields += 1;
     
-    // SECTION 3: Permis de construire (3 champs)
+    // SECTION 3: Autorisation de bâtir (3 champs)
     totalFields += 3;
     const hasValidPermits = buildingPermits.some(p => p.permitNumber && p.issuingService);
     if (hasValidPermits) filledFields += 1;
@@ -2318,8 +2318,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const permitType = savedPermitRequestData.permitType;
     const servicePrice = permitType === 'construction' ? 150 : 200;
     const serviceName = permitType === 'construction' 
-      ? 'Permis de construire' 
-      : 'Permis de régularisation';
+      ? 'Autorisation de bâtir' 
+      : 'Autorisation de régularisation';
     
     const cartItem: CartItem = {
       id: `permit-${Date.now()}`,
@@ -3428,7 +3428,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             </Card>
 
             
-            {/* Section Permis de construire - Simplifié - Masquée si Terrain nu */}
+            {/* Section Autorisation de bâtir - Simplifié - Masquée si Terrain nu */}
             {formData.constructionType !== 'Terrain nu' && (
             <Card className="max-w-[360px] mx-auto rounded-2xl shadow-md border-border/50 overflow-hidden">
               <CardContent className="p-3 space-y-3">
@@ -5046,7 +5046,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                     {/* Affichage du statut du permis */}
                     {formData.constructionType !== 'Terrain nu' && (
                       <div className="pt-1 border-t border-border/50">
-                        <div className="font-medium">Permis de construire:</div>
+                        <div className="font-medium">Autorisation de bâtir:</div>
                         {permitMode === 'existing' && buildingPermits.some(p => p.permitNumber) ? (
                           // L'utilisateur a des permis existants
                           buildingPermits.filter(p => p.permitNumber).map((permit, idx) => (

@@ -103,7 +103,7 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
           <div className="bg-muted/50 p-2 md:p-3 rounded-lg">
             <span className="text-[10px] md:text-xs text-muted-foreground">Type de demande:</span>
             <p className="font-medium text-xs md:text-sm mt-0.5">
-              {isRegularization ? "Permis de régularisation" : "Permis de construire"}
+              {isRegularization ? "Autorisation de régularisation" : "Autorisation de bâtir"}
             </p>
           </div>
         )}

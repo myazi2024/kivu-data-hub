@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Test de validation pour la fonctionnalité de gestion des permis de construire
+ * Test de validation pour la fonctionnalité de gestion des autorisations de bâtir
  * dans l'espace utilisateur.
  * 
  * Ce test vérifie:
@@ -12,7 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
  * 5. Les statuts des demandes
  */
 export async function testUserBuildingPermits() {
-  console.log("=== Test de validation: Gestion des permis de construire ===\n");
+  console.log("=== Test de validation: Gestion des autorisations de bâtir ===\n");
   
   const results = {
     timestamp: new Date().toISOString(),
