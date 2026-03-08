@@ -464,7 +464,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  const getBeneficiaryFullName = useCallback(() => {
+  // Derived value — useMemo (not useCallback, since this is a computed string)
+  const beneficiaryFullName = useMemo(() => {
     if (beneficiaryLegalStatus === 'personne_morale') return beneficiaryLastName;
     return [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
   }, [beneficiaryLegalStatus, beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName]);
