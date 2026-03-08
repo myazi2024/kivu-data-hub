@@ -480,12 +480,45 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setStep('preview');
   };
 
+  // Bug #18: Upload du certificat d'expertise vers Supabase Storage
+  const uploadExpertiseCertificate = async (): Promise<string | null> => {
+    if (!expertiseCertificateFile || !user) return null;
+    
+    try {
+      const fileExt = expertiseCertificateFile.name.split('.').pop();
+      const fileName = `expertise_cert_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const filePath = `mutation-documents/${user.id}/certificates/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('cadastral-documents')
+        .upload(filePath, expertiseCertificateFile);
+      
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
+      return data.publicUrl;
+    } catch (error: any) {
+      console.error('Expertise certificate upload error:', error);
+      toast.error('Erreur lors de l\'envoi du certificat d\'expertise');
+      return null;
+    }
+  };
+
   const handleSubmitForm = async () => {
     // Upload des fichiers avant création
     let documentUrls: string[] = [];
     if (attachedFiles.length > 0) {
       documentUrls = await uploadFiles();
       if (documentUrls.length === 0 && attachedFiles.length > 0) {
+        return; // Upload failed
+      }
+    }
+
+    // Bug #18: Upload du certificat d'expertise
+    let expertiseCertificateUrl: string | null = null;
+    if (isTransferMutation && expertiseCertificateFile) {
+      expertiseCertificateUrl = await uploadExpertiseCertificate();
+      if (!expertiseCertificateUrl) {
         return; // Upload failed
       }
     }
@@ -504,11 +537,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       ? `${mutationDetails?.label} - Transfert à ${fullBeneficiaryName}`
       : `${mutationDetails?.label} - ${mutationDetails?.description}`;
 
+    // Bug #1: Passer le total calculé complet (base + mutation + retard)
+    const totalCalculated = getTotalAmount();
+
     const request = await createMutationRequest({
       parcel_number: parcelNumber,
       parcel_id: parcelId,
-      mutation_type: mutationType as any,
-      requester_type: requesterType as any,
+      mutation_type: mutationType,
+      requester_type: requesterType,
       requester_name: requesterName,
       requester_phone: '',
       requester_email: requesterEmail,
@@ -517,10 +553,25 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       proposed_changes: { 
         description: autoDescription,
         beneficiary_legal_status: isTransferMutation ? beneficiaryLegalStatus : undefined,
-        supporting_documents: documentUrls
+        supporting_documents: documentUrls,
+        expertise_certificate_url: expertiseCertificateUrl,
+        expertise_certificate_date: expertiseCertificateDate || undefined,
+        market_value_usd: marketValueUsd ? parseFloat(marketValueUsd) : undefined,
+        title_age: titleAge,
+        mutation_fees: mutationFeesCalculation.applicable ? {
+          percentage: mutationFeesCalculation.percentage,
+          mutation_fee: mutationFeesCalculation.mutationFee,
+          bank_fee: mutationFeesCalculation.bankFee,
+          total: mutationFeesCalculation.total
+        } : undefined,
+        late_fees: lateFeesCalculation.applicable ? {
+          days: lateFeesCalculation.days,
+          fee: lateFeesCalculation.fee
+        } : undefined
       },
       justification: '',
-      selected_fees: getSelectedFeesDetails()
+      selected_fees: getSelectedFeesDetails(),
+      total_amount_override: totalCalculated
     });
 
     if (request) {
