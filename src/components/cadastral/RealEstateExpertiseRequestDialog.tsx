@@ -1993,25 +1993,23 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </ScrollArea>
       </Tabs>
 
-      {activeTab === 'documents' && (
-        <Button 
-          onClick={handleProceedToSummary} 
-          className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg mt-3"
-          disabled={loading || uploadingFiles || loadingFees}
-        >
-          {loadingFees ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Chargement...
-            </>
-          ) : (
-            <>
-              <Receipt className="h-4 w-4 mr-2" />
-              Récapitulatif
-            </>
-          )}
-        </Button>
-      )}
+      <Button 
+        onClick={handleProceedToSummary} 
+        className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg mt-3"
+        disabled={loading || uploadingFiles || loadingFees}
+      >
+        {loadingFees ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            Chargement...
+          </>
+        ) : (
+          <>
+            <Receipt className="h-4 w-4 mr-2" />
+            Récapitulatif
+          </>
+        )}
+      </Button>
     </div>
   );
 
