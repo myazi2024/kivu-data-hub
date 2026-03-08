@@ -509,14 +509,19 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   };
 
   const handleCloseRequest = () => {
-    // If user has entered any data, show confirmation
+    // Comprehensive check for any user-entered data
     const hasData = formData.requesterLastName || 
                    formData.requesterFirstName || 
                    formData.requesterPhone ||
                    formData.province ||
+                   formData.sectionType ||
+                   constructionType ||
+                   nationality ||
                    requesterIdFile || 
                    ownerIdFile || 
-                   proofOfOwnershipFile;
+                   proofOfOwnershipFile ||
+                   gpsCoordinates.some(c => c.lat || c.lng) ||
+                   requestType;
     
     if (hasData) {
       setShowCloseConfirmation(true);
