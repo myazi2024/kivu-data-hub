@@ -187,12 +187,12 @@ export function UserBuildingPermits() {
             <PermitSection
               title="Délivrés"
               permits={constructionByStatus.approved}
-              emptyMessage="Aucun permis délivré"
+              emptyMessage="Aucune autorisation délivrée"
             />
             <PermitSection
               title="Refusés"
               permits={constructionByStatus.rejected}
-              emptyMessage="Aucun permis refusé"
+              emptyMessage="Aucune autorisation refusée"
               onAppealClick={handleAppealClick}
             />
           </TabsContent>
