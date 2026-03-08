@@ -1280,31 +1280,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                         </div>
                       </RadioGroup>
 
-                      {/* Affichage des frais calculés */}
                       {titleAge && mutationFeesCalculation.applicable && (
                         <Alert className="bg-green-50 border-green-200 dark:bg-green-950/30 dark:border-green-800 rounded-lg mt-2">
                           <DollarSign className="h-4 w-4 text-green-600" />
                           <AlertDescription className="text-xs text-green-700 dark:text-green-400">
-                            <strong>Frais de mutation calculés:</strong>
-                            <div className="mt-1 space-y-0.5">
-                              <div className="flex justify-between">
-                                <span>Frais de mutation ({mutationFeesCalculation.percentage}%)</span>
-                               <span className="font-mono">${mutationFeesCalculation.mutationFee.toFixed(2)}</span>
-                              </div>
-                              {mutationFeesCalculation.bankFee > 0 && (
-                                <div className="flex justify-between">
-                                  <span>Frais bancaires (0.5%)</span>
-                                  <span className="font-mono">${mutationFeesCalculation.bankFee.toFixed(2)}</span>
-                                </div>
-                              )}
-                              <div className="flex justify-between font-bold pt-1 border-t border-green-300 dark:border-green-700">
-                                <span>Total frais de mutation</span>
-                                <span className="font-mono">${mutationFeesCalculation.total.toFixed(2)}</span>
-                              </div>
-                            </div>
-                            <p className="mt-2 text-[10px] text-green-600 dark:text-green-500">
-                              Réf: n°0076 CAB/MIN.AFF.FONC/ASM/TMM/2023 et 010/CAB/MIN.FINANCES/2023
-                            </p>
+                            Les frais de mutation ont bien été calculés automatiquement selon l'ancienneté du titre.
+                            Le détail complet est affiché dans la section <strong>Frais liés à l'expertise immobilière</strong> ci-dessous.
                           </AlertDescription>
                         </Alert>
                       )}
