@@ -112,8 +112,10 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
         </DialogHeader>
 
         <div className="overflow-y-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 200px)' }}>
+          {/* key={activeTab} forces full re-mount on tab switch, preventing state bleeding */}
           {activeTab === 'foncier' && (
             <PropertyTaxCalculator
+              key="foncier"
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
@@ -122,6 +124,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
           )}
           {activeTab === 'batisse' && (
             <BuildingTaxCalculator
+              key="batisse"
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
@@ -130,6 +133,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
           )}
           {activeTab === 'irl' && (
             <IRLCalculator
+              key="irl"
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               parcelData={parcelData}
@@ -138,6 +142,7 @@ const TaxManagementDialog: React.FC<TaxManagementDialogProps> = ({
           )}
           {activeTab === 'add' && (
             <TaxFormDialog
+              key="add"
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               open={true}

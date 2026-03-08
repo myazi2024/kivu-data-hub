@@ -7,7 +7,6 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Loader2, Receipt, CheckCircle2, Upload, X, Plus, Info, ArrowLeft, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -15,6 +14,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import SectionHelpPopover from './SectionHelpPopover';
+import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants';
 
 interface TaxFormDialogProps {
   parcelNumber: string;
@@ -96,8 +96,19 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
       toast.error('Veuillez renseigner le Numéro d\'Impôt (NIF)');
       return false;
     }
+    // NIF regex validation
+    if (!validateNIF(taxRecord.nif)) {
+      toast.error(NIF_FORMAT_ERROR);
+      return false;
+    }
     if (!taxRecord.taxAmount || !taxRecord.taxYear) {
       toast.error('Veuillez remplir les champs obligatoires: Montant, Année');
+      return false;
+    }
+    // Prevent negative amounts
+    const amount = parseFloat(taxRecord.taxAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Le montant doit être un nombre positif');
       return false;
     }
     return true;
@@ -115,8 +126,43 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
     }
 
     setLoading(true);
+    let uploadedFilePath: string | null = null;
+
     try {
-      // Upload du fichier si présent
+      // Check for duplicate: same parcel, same type, same year
+      const { data: existingContributions } = await supabase
+        .from('cadastral_contributions')
+        .select('id')
+        .eq('parcel_number', parcelNumber)
+        .eq('user_id', user.id)
+        .neq('status', 'rejected');
+
+      // Filter by tax_history content (type + year) client-side
+      if (existingContributions && existingContributions.length > 0) {
+        // Fetch full data to check tax_history
+        const { data: fullContribs } = await supabase
+          .from('cadastral_contributions')
+          .select('id, tax_history')
+          .eq('parcel_number', parcelNumber)
+          .eq('user_id', user.id)
+          .neq('status', 'rejected');
+
+        const isDuplicate = fullContribs?.some(c => {
+          const history = c.tax_history as any[];
+          return history?.some((h: any) =>
+            h.tax_type === taxRecord.taxType &&
+            String(h.tax_year) === taxRecord.taxYear
+          );
+        });
+
+        if (isDuplicate) {
+          toast.error(`Une déclaration "${taxRecord.taxType}" pour l'année ${taxRecord.taxYear} existe déjà pour cette parcelle.`);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Upload file if present
       let documentUrl = null;
       if (taxRecord.receiptFile) {
         const fileExt = taxRecord.receiptFile.name.split('.').pop();
@@ -128,12 +174,13 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
           .upload(filePath, taxRecord.receiptFile);
         
         if (uploadError) throw uploadError;
+        uploadedFilePath = filePath;
         
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         documentUrl = data.publicUrl;
       }
 
-      // Créer l'enregistrement de la taxe via une contribution
+      // Insert contribution
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -152,15 +199,21 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
           }]
         });
 
-      if (error) throw error;
+      if (error) {
+        // Cleanup orphaned file if DB insert fails
+        if (uploadedFilePath) {
+          await supabase.storage.from('cadastral-documents').remove([uploadedFilePath]);
+        }
+        throw error;
+      }
 
-      // Créer une notification
-      await supabase.from('notifications').insert({
+      // Fire-and-forget notification
+      supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Taxe enregistrée',
         message: `Votre déclaration de taxe pour la parcelle ${parcelNumber} (${taxRecord.taxYear}) a été soumise avec succès.`,
-        type: 'success'
-      });
+        type: 'info'
+      }).then(() => {});
 
       setStep('confirmation');
       toast.success('Taxe enregistrée avec succès');
@@ -191,37 +244,20 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-4">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                <Receipt className="h-4 w-4 text-purple-600" />
-              </div>
-              <div>
-                <Label className="text-base font-semibold flex items-center gap-1.5">
-                  Taxe foncière
-                  <SectionHelpPopover
-                    title="Taxe foncière"
-                    description="Enregistrez le paiement d'une taxe foncière pour cette parcelle. Précisez le type de taxe, l'année fiscale concernée et le montant payé."
-                  />
-                </Label>
-                <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-xl bg-purple-500/10 flex items-center justify-center">
+              <Receipt className="h-4 w-4 text-purple-600" />
             </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full">
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 rounded-xl" align="end">
-                <div className="space-y-2 text-xs">
-                  <h4 className="font-semibold text-sm">Déclaration fiscale</h4>
-                  <p className="text-muted-foreground">
-                    Enregistrez le paiement d'une taxe foncière pour prouver la conformité fiscale de cette parcelle.
-                  </p>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <div>
+              <Label className="text-base font-semibold flex items-center gap-1.5">
+                Taxe foncière
+                <SectionHelpPopover
+                  title="Taxe foncière"
+                  description="Enregistrez le paiement d'une taxe foncière pour cette parcelle. Précisez le type de taxe, l'année fiscale concernée et le montant payé."
+                />
+              </Label>
+              <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
+            </div>
           </div>
 
           {/* NIF */}
@@ -231,11 +267,15 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
               value={taxRecord.nif}
               onChange={(e) => updateTax('nif', e.target.value)}
               placeholder="Ex: A0123456B"
-              className="h-10 text-sm rounded-xl"
+              className={`h-10 text-sm rounded-xl ${taxRecord.nif && !validateNIF(taxRecord.nif) ? 'border-destructive' : ''}`}
             />
-            <p className="text-xs text-muted-foreground">
-              Numéro d'identification fiscale du contribuable
-            </p>
+            {taxRecord.nif && !validateNIF(taxRecord.nif) ? (
+              <p className="text-xs text-destructive">{NIF_FORMAT_ERROR}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                6-15 caractères alphanumériques
+              </p>
+            )}
           </div>
 
           {/* Formulaire */}
@@ -283,11 +323,22 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
               <Label className="text-sm font-medium">Montant (USD) *</Label>
               <Input
                 type="number"
+                min={0.01}
+                step="0.01"
                 placeholder="150"
                 value={taxRecord.taxAmount}
-                onChange={(e) => updateTax('taxAmount', e.target.value)}
-                className="h-10 text-sm rounded-xl"
+                onChange={(e) => {
+                  const val = e.target.value;
+                  // Prevent negative input
+                  if (val === '' || parseFloat(val) >= 0) {
+                    updateTax('taxAmount', val);
+                  }
+                }}
+                className={`h-10 text-sm rounded-xl ${taxRecord.taxAmount && parseFloat(taxRecord.taxAmount) <= 0 ? 'border-destructive' : ''}`}
               />
+              {taxRecord.taxAmount && parseFloat(taxRecord.taxAmount) <= 0 && (
+                <p className="text-xs text-destructive">Le montant doit être positif</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm font-medium">Statut</Label>
