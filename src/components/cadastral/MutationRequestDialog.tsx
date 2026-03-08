@@ -1568,7 +1568,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   {getSelectedFeesDetails().map(fee => (
                     <div key={fee.id} className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
-                      <span className="text-sm font-medium">${fee.amount_usd}</span>
+                      <span className="text-sm font-medium">${fee.amount_usd.toFixed(2)}</span>
                     </div>
                   ))}
                 </>
