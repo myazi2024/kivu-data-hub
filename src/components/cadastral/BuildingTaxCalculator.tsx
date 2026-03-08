@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,12 @@ import { supabase } from '@/integrations/supabase/client';
 import SectionHelpPopover from './SectionHelpPopover';
 import { validateNIF, NIF_FORMAT_ERROR } from './tax-calculator/taxFormConstants';
 import { SummaryRow, PlainRow } from './tax-calculator/SummaryRowComponents';
+import {
+  getFiscalZoneCategory,
+  FISCAL_ZONE_MULTIPLIERS,
+  FISCAL_ZONE_LABELS,
+  calculatePropertyTaxMonthsLate,
+} from '@/hooks/usePropertyTaxCalculator';
 
 interface BuildingTaxCalculatorProps {
   parcelNumber: string;
@@ -30,12 +36,6 @@ const BUILDING_TAX_RATES: Record<string, Record<string, number>> = {
   rural: { en_dur: 300, semi_dur: 150, en_paille: 50 },
 };
 
-const ZONE_MULTIPLIER: Record<string, number> = {
-  'Kinshasa': 1.5, 'Lubumbashi': 1.3, 'Goma': 1.2, 'Bukavu': 1.2, 'Kisangani': 1.1,
-};
-
-const CDF_TO_USD = 2800;
-
 const CONSTRUCTION_LABELS: Record<string, string> = {
   en_dur: 'En dur (béton, briques)',
   semi_dur: 'Semi-dur (mixte)',
@@ -49,6 +49,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const currentYear = new Date().getFullYear();
   const [calcStep, setCalcStep] = useState<CalcStep>('questions');
   const [loading, setLoading] = useState(false);
+  const [exchangeRate, setExchangeRate] = useState(2800);
 
   const [nif, setNif] = useState('');
   const [hasNif, setHasNif] = useState<boolean | null>(null);
@@ -57,6 +58,24 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   useEffect(() => {
     if (parcelData?.current_owner_name && !ownerName) setOwnerName(parcelData.current_owner_name);
   }, [parcelData?.current_owner_name]);
+
+  // Fetch exchange rate from config (fallback to 2800)
+  useEffect(() => {
+    const fetchRate = async () => {
+      const { data } = await supabase
+        .from('cadastral_contribution_config')
+        .select('config_value')
+        .eq('config_key', 'cdf_usd_exchange_rate')
+        .eq('is_active', true)
+        .maybeSingle();
+      if (data?.config_value && typeof data.config_value === 'number') {
+        setExchangeRate(data.config_value as number);
+      } else if (data?.config_value && typeof (data.config_value as any).rate === 'number') {
+        setExchangeRate((data.config_value as any).rate);
+      }
+    };
+    fetchRate();
+  }, []);
 
   const defaultZone = parcelNumber?.startsWith('SR') ? 'rural' : 'urban';
   const defaultConstruction = parcelData?.construction_type === 'En dur' ? 'en_dur'
@@ -70,25 +89,45 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const [numberOfFloors, setNumberOfFloors] = useState(1);
   const [constructionYear, setConstructionYear] = useState<number | null>(parcelData?.construction_year || null);
   const [buildingCondition, setBuildingCondition] = useState('bon');
-  const [monthsLate, setMonthsLate] = useState(0);
 
   useEffect(() => {
     if (parcelData?.area_sqm && !areaSqm) setAreaSqm(Number(parcelData.area_sqm));
   }, [parcelData?.area_sqm]);
 
-  // Calculation
-  const baseTaxRate = BUILDING_TAX_RATES[zoneType]?.[constructionType] || 0;
+  // Use centralized fiscal zone logic
   const ville = parcelData?.ville || '';
-  const zoneMultiplier = ZONE_MULTIPLIER[ville] || 1.0;
-  const conditionMultiplier = buildingCondition === 'bon' ? 1.0 : buildingCondition === 'moyen' ? 0.75 : 0.5;
-  const buildingAge = constructionYear ? currentYear - constructionYear : 0;
-  const ageReduction = buildingAge > 20 ? 0.9 : 1.0;
-  const totalSurface = areaSqm * (numberOfFloors || 1);
-  const baseTaxCDF = totalSurface * baseTaxRate * zoneMultiplier * conditionMultiplier * ageReduction;
-  const baseTaxUSD = Math.round((baseTaxCDF / CDF_TO_USD) * 100) / 100;
-  const penaltyRate = monthsLate > 3 ? Math.min(monthsLate * 2, 48) / 100 + 0.25 : Math.min(monthsLate * 2, 48) / 100;
-  const penaltyAmountUSD = Math.round(baseTaxUSD * penaltyRate * 100) / 100;
-  const totalTaxUSD = Math.round((baseTaxUSD + penaltyAmountUSD) * 100) / 100;
+  const province = parcelData?.province || '';
+  const fiscalZoneCategory = getFiscalZoneCategory(province, ville || null, zoneType as 'urban' | 'rural');
+  const zoneMultiplier = FISCAL_ZONE_MULTIPLIERS[fiscalZoneCategory];
+
+  // Auto-calculate months late using centralized function
+  const monthsLate = useMemo(() => calculatePropertyTaxMonthsLate(fiscalYear), [fiscalYear]);
+
+  // Memoized calculation
+  const calculation = useMemo(() => {
+    const baseTaxRate = BUILDING_TAX_RATES[zoneType]?.[constructionType] || 0;
+    const conditionMultiplier = buildingCondition === 'bon' ? 1.0 : buildingCondition === 'moyen' ? 0.75 : 0.5;
+    const buildingAge = constructionYear ? currentYear - constructionYear : 0;
+    const ageReduction = buildingAge > 20 ? 0.9 : 1.0;
+    const totalSurface = areaSqm * (numberOfFloors || 1);
+    const baseTaxCDF = totalSurface * baseTaxRate * zoneMultiplier * conditionMultiplier * ageReduction;
+    const baseTaxUSD = Math.round((baseTaxCDF / exchangeRate) * 100) / 100;
+
+    // Aligned penalty formula with usePropertyTaxCalculator: 2%/month capped at 24% + 25% majoration if > 3 months
+    const penaltyRate = Math.min(monthsLate * 2, 24) / 100;
+    const majorationRate = monthsLate > 3 ? 0.25 : 0;
+    const penaltyAmountUSD = Math.round(baseTaxUSD * penaltyRate * 100) / 100;
+    const majorationAmountUSD = Math.round(baseTaxUSD * majorationRate * 100) / 100;
+    const totalPenaltiesUSD = penaltyAmountUSD + majorationAmountUSD;
+    const totalTaxUSD = Math.round((baseTaxUSD + totalPenaltiesUSD) * 100) / 100;
+
+    return {
+      baseTaxRate, conditionMultiplier, buildingAge, ageReduction,
+      totalSurface, baseTaxCDF, baseTaxUSD,
+      penaltyRate, majorationRate, penaltyAmountUSD, majorationAmountUSD, totalPenaltiesUSD, totalTaxUSD,
+    };
+  }, [zoneType, constructionType, buildingCondition, constructionYear, currentYear, areaSqm, numberOfFloors, zoneMultiplier, exchangeRate, monthsLate]);
+
   const canCalculate = areaSqm > 0 && constructionType;
 
   const handleCalculate = () => {
@@ -101,14 +140,49 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     if (!user) { toast.error('Vous devez être connecté'); return; }
     setLoading(true);
     try {
-      await supabase.from('notifications').insert({
-        user_id: user.id, title: 'Déclaration taxe de bâtisse',
-        message: `Déclaration taxe de bâtisse pour ${parcelNumber} (exercice ${fiscalYear}). Montant: ${totalTaxUSD.toFixed(2)} USD.`,
-        type: 'success', action_url: '/user-dashboard'
+      // Persist to cadastral_contributions (was missing — critical fix)
+      const { error } = await supabase.from('cadastral_contributions').insert({
+        parcel_number: parcelNumber,
+        original_parcel_id: parcelId || null,
+        user_id: user.id,
+        contribution_type: 'update',
+        status: 'pending',
+        tax_history: [{
+          tax_type: 'Taxe de bâtisse',
+          tax_year: fiscalYear,
+          amount_usd: calculation.totalTaxUSD,
+          base_amount_cdf: calculation.baseTaxCDF,
+          construction_type: constructionType,
+          zone_type: zoneType,
+          building_condition: buildingCondition,
+          total_surface: calculation.totalSurface,
+          floors: numberOfFloors,
+          construction_year: constructionYear,
+          penalty_amount_usd: calculation.totalPenaltiesUSD,
+          payment_status: 'En attente',
+          nif: hasNif ? nif : null,
+        }],
       });
+
+      if (error) throw error;
+
+      // Fire-and-forget notification
+      supabase.from('notifications').insert({
+        user_id: user.id,
+        title: 'Déclaration taxe de bâtisse',
+        message: `Déclaration taxe de bâtisse pour ${parcelNumber} (exercice ${fiscalYear}). Montant: ${calculation.totalTaxUSD.toFixed(2)} USD.`,
+        type: 'info',
+        action_url: '/user-dashboard',
+      }).then(() => {});
+
       toast.success('Déclaration soumise avec succès');
       setCalcStep('questions');
-    } catch (error: any) { toast.error('Erreur lors de la soumission'); } finally { setLoading(false); }
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error('Erreur lors de la soumission');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (calcStep === 'summary') {
@@ -123,6 +197,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
             <div className="flex items-center gap-2">
               <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Exercice {fiscalYear}</Badge>
               <Badge variant="outline" className="text-xs">{zoneType === 'urban' ? 'Urbain' : 'Rural'}</Badge>
+              <Badge variant="outline" className="text-xs">{FISCAL_ZONE_LABELS[fiscalZoneCategory]}</Badge>
             </div>
             <Separator />
             <h4 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Identification</h4>
@@ -134,21 +209,27 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
             <SummaryRow label="Construction" value={CONSTRUCTION_LABELS[constructionType] || constructionType} />
             <SummaryRow label="Superficie au sol" value={`${areaSqm.toLocaleString('fr-FR')} m²`} />
             <SummaryRow label="Étages" value={String(numberOfFloors || 1)} />
-            <SummaryRow label="Surface imposable" value={`${totalSurface.toLocaleString('fr-FR')} m²`} bold />
+            <SummaryRow label="Surface imposable" value={`${calculation.totalSurface.toLocaleString('fr-FR')} m²`} bold />
             {constructionYear && <SummaryRow label="Année construction" value={String(constructionYear)} />}
             <SummaryRow label="État" value={buildingCondition === 'bon' ? 'Bon' : buildingCondition === 'moyen' ? 'Moyen' : 'Mauvais'} />
             <Separator />
             <h4 className="font-semibold text-xs uppercase tracking-wide text-muted-foreground">Calcul</h4>
-            <PlainRow label="Taux de base" value={`${baseTaxRate} CDF/m²`} />
-            {zoneMultiplier !== 1.0 && <PlainRow label={`Coeff. ${ville}`} value={`×${zoneMultiplier}`} />}
-            {conditionMultiplier !== 1.0 && <PlainRow label="Réduction état" value={`×${conditionMultiplier}`} />}
-            {ageReduction !== 1.0 && <PlainRow label="Réduction ancienneté" value="×0.90" />}
-            <SummaryRow label="Taxe de base" value={`${baseTaxCDF.toLocaleString('fr-FR')} CDF ≈ ${baseTaxUSD.toFixed(2)} USD`} />
-            {penaltyAmountUSD > 0 && <PlainRow label={`Pénalité (${monthsLate} mois)`} value={`+${penaltyAmountUSD.toFixed(2)} USD`} />}
+            <PlainRow label="Taux de base" value={`${calculation.baseTaxRate} CDF/m²`} />
+            {zoneMultiplier !== 1.0 && <PlainRow label={`Coeff. zone (${FISCAL_ZONE_LABELS[fiscalZoneCategory]})`} value={`×${zoneMultiplier}`} />}
+            {calculation.conditionMultiplier !== 1.0 && <PlainRow label="Réduction état" value={`×${calculation.conditionMultiplier}`} />}
+            {calculation.ageReduction !== 1.0 && <PlainRow label="Réduction ancienneté" value="×0.90" />}
+            <PlainRow label="Taux de change" value={`1 USD = ${exchangeRate.toLocaleString('fr-FR')} CDF`} />
+            <SummaryRow label="Taxe de base" value={`${calculation.baseTaxCDF.toLocaleString('fr-FR')} CDF ≈ ${calculation.baseTaxUSD.toFixed(2)} USD`} />
+            {calculation.penaltyAmountUSD > 0 && (
+              <PlainRow label={`Pénalité (${monthsLate} mois × 2%, max 24%)`} value={`+${calculation.penaltyAmountUSD.toFixed(2)} USD`} />
+            )}
+            {calculation.majorationAmountUSD > 0 && (
+              <PlainRow label="Majoration (25%)" value={`+${calculation.majorationAmountUSD.toFixed(2)} USD`} />
+            )}
             <Separator />
             <div className="flex justify-between py-2">
               <span className="font-bold text-base">Total dû</span>
-              <span className="font-bold text-base text-primary">{totalTaxUSD.toFixed(2)} USD</span>
+              <span className="font-bold text-base text-primary">{calculation.totalTaxUSD.toFixed(2)} USD</span>
             </div>
           </CardContent>
         </Card>
@@ -199,7 +280,15 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           {hasNif === true && (
             <div className="space-y-1.5">
               <Label className="text-sm">NIF</Label>
-              <Input value={nif} onChange={(e) => setNif(e.target.value)} placeholder="Ex: A0123456B" className="h-10 text-sm rounded-xl" />
+              <Input
+                value={nif}
+                onChange={(e) => setNif(e.target.value)}
+                placeholder="Ex: A0123456B"
+                className={`h-10 text-sm rounded-xl ${nif && !validateNIF(nif) ? 'border-destructive' : ''}`}
+              />
+              {nif && !validateNIF(nif) && (
+                <p className="text-xs text-destructive">{NIF_FORMAT_ERROR}</p>
+              )}
             </div>
           )}
           {hasNif === false && (
@@ -216,10 +305,14 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
             <Lock className="h-3 w-3 text-muted-foreground" />
           </h4>
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Province</span><span className="font-medium">{parcelData?.province || '—'}</span></div>
-            <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Ville</span><span className="font-medium">{parcelData?.ville || '—'}</span></div>
+            <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Province</span><span className="font-medium">{province || '—'}</span></div>
+            <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Ville</span><span className="font-medium">{ville || '—'}</span></div>
             <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Commune</span><span className="font-medium">{parcelData?.commune || '—'}</span></div>
             <div className="flex justify-between p-1.5 bg-muted/50 rounded-lg"><span className="text-muted-foreground">Zone</span><span className="font-medium">{zoneType === 'urban' ? 'Urbaine' : 'Rurale'}</span></div>
+          </div>
+          <div className="p-1.5 bg-muted/50 rounded-lg text-xs flex justify-between">
+            <span className="text-muted-foreground">Catégorie fiscale</span>
+            <span className="font-medium">{FISCAL_ZONE_LABELS[fiscalZoneCategory]}</span>
           </div>
         </CardContent>
       </Card>
@@ -245,17 +338,17 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-1.5">
               <Label className="text-sm">Superficie (m²)</Label>
-              <Input type="number" value={areaSqm || ''} onChange={(e) => setAreaSqm(Number(e.target.value))} className="h-10 text-sm rounded-xl border-2" disabled={!!parcelData?.area_sqm} />
+              <Input type="number" min={0} value={areaSqm || ''} onChange={(e) => setAreaSqm(Math.max(0, Number(e.target.value)))} className="h-10 text-sm rounded-xl border-2" disabled={!!parcelData?.area_sqm} />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm">Nombre d'étages</Label>
-              <Input type="number" min={1} value={numberOfFloors} onChange={(e) => setNumberOfFloors(Number(e.target.value) || 1)} className="h-10 text-sm rounded-xl border-2" />
+              <Input type="number" min={1} value={numberOfFloors} onChange={(e) => setNumberOfFloors(Math.max(1, Number(e.target.value) || 1))} className="h-10 text-sm rounded-xl border-2" />
             </div>
           </div>
-          {totalSurface > 0 && (
+          {calculation.totalSurface > 0 && (
             <div className="flex items-center justify-between text-sm bg-amber-50 dark:bg-amber-900/20 p-2 rounded-lg">
               <span className="text-muted-foreground">Surface imposable</span>
-              <span className="font-bold">{totalSurface.toLocaleString('fr-FR')} m²</span>
+              <span className="font-bold">{calculation.totalSurface.toLocaleString('fr-FR')} m²</span>
             </div>
           )}
           <div className="grid grid-cols-2 gap-2">
@@ -282,27 +375,22 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
       <Card className="rounded-xl border-2">
         <CardContent className="p-3 space-y-3">
           <h4 className="text-sm font-semibold">Exercice fiscal</h4>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1.5">
-              <Label className="text-sm">Année</Label>
-              <Select value={String(fiscalYear)} onValueChange={(v) => setFiscalYear(Number(v))}>
-                <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 5 }, (_, i) => currentYear - i).map(y => (
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-sm">Mois de retard</Label>
-              <Input type="number" min={0} max={24} value={monthsLate} onChange={(e) => setMonthsLate(Number(e.target.value) || 0)} className="h-10 text-sm rounded-xl border-2" />
-            </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm">Année</Label>
+            <Select value={String(fiscalYear)} onValueChange={(v) => setFiscalYear(Number(v))}>
+              <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 5 }, (_, i) => currentYear - i).map(y => (
+                  <SelectItem key={y} value={String(y)}>{y}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {monthsLate > 0 && (
             <Alert className="rounded-lg border-destructive/30 bg-destructive/5">
               <AlertDescription className="text-xs text-destructive">
-                Pénalité: {(penaltyRate * 100).toFixed(0)}% ({monthsLate > 3 ? 'dont 25% de majoration' : `${monthsLate}×2%`})
+                Retard de {monthsLate} mois — Pénalité: {(calculation.penaltyRate * 100).toFixed(0)}%
+                {calculation.majorationRate > 0 && ` + majoration 25%`}
               </AlertDescription>
             </Alert>
           )}
@@ -319,16 +407,16 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Taxe de base</span>
-              <span>{baseTaxCDF.toLocaleString('fr-FR')} CDF ≈ {baseTaxUSD.toFixed(2)} USD</span>
+              <span>{calculation.baseTaxCDF.toLocaleString('fr-FR')} CDF ≈ {calculation.baseTaxUSD.toFixed(2)} USD</span>
             </div>
-            {penaltyAmountUSD > 0 && (
+            {calculation.totalPenaltiesUSD > 0 && (
               <div className="flex justify-between text-destructive">
-                <span>Pénalités</span><span>+{penaltyAmountUSD.toFixed(2)} USD</span>
+                <span>Pénalités</span><span>+{calculation.totalPenaltiesUSD.toFixed(2)} USD</span>
               </div>
             )}
             <Separator />
             <div className="flex justify-between font-bold">
-              <span>Total estimé</span><span className="text-primary">{totalTaxUSD.toFixed(2)} USD</span>
+              <span>Total estimé</span><span className="text-primary">{calculation.totalTaxUSD.toFixed(2)} USD</span>
             </div>
           </CardContent>
         </Card>
