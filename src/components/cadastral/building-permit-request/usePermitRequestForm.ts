@@ -156,10 +156,10 @@ export const usePermitRequestForm = ({ parcelNumber, hasExistingConstruction }: 
     if (requestType === 'regularization') {
       const regFields = [formData.constructionDate, formData.currentState, formData.regularizationReason];
       if (requiresOriginalPermit() && !formData.originalPermitNumber) return false;
-      return baseFields.every(f => f) && regFields.every(f => f);
+      return baseFields.every(f => !!f) && regFields.every(f => !!f);
     }
 
-    return baseFields.every(f => f) && formData.startDate;
+    return baseFields.every(f => !!f) && !!formData.startDate;
   }, [formData, attachments, requestType, requiresOriginalPermit]);
 
   // Duplicate detection (includes 'returned' status — fix #6)
