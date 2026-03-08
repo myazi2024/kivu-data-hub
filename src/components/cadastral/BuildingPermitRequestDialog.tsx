@@ -958,7 +958,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           </CardContent>
         </Card>
 
-        <Button onClick={handlePreview} className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg" disabled={!isFormValid() || feesLoading || dynamicFees.length === 0}>
+    <Button onClick={handlePreview} className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg" disabled={!isFormValid() || feesLoading}>
           Aperçu avant soumission
         </Button>
       </div>

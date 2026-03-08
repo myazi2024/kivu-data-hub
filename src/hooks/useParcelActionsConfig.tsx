@@ -24,6 +24,8 @@ export interface ParcelAction {
 }
 
 // Configuration par défaut des actions (fallback si Supabase échoue)
+// NOTE: 'permit_regularization' removed — unified into 'permit_add' which opens
+// BuildingPermitManagementDialog with both tabs (Bâtir + Régularisation)
 const DEFAULT_ACTIONS: ParcelAction[] = [
   {
     id: '1',
@@ -65,22 +67,10 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
     id: '5',
     key: 'permit_add',
     label: 'Ajouter une autorisation',
-    description: 'Bâtir ou régulariser',
+    description: 'Autorisation de bâtir ou de régularisation',
     isActive: true,
     isVisible: true,
     displayOrder: 5,
-    badge: { type: 'none' },
-    requiresAuth: true,
-    category: 'permit'
-  },
-  {
-    id: '6',
-    key: 'permit_regularization',
-    label: 'Autorisation de régularisation',
-    description: 'Régulariser une construction existante',
-    isActive: true,
-    isVisible: true,
-    displayOrder: 6,
     badge: { type: 'none' },
     requiresAuth: true,
     category: 'permit'
@@ -187,12 +177,12 @@ export const useParcelActionsConfig = () => {
 
       if (error) {
         console.error('Error fetching parcel actions config:', error);
-        // Fallback vers les valeurs par défaut
         setActions(DEFAULT_ACTIONS);
       } else if (data && data.length > 0) {
-        setActions(data.map(mapDbToParcelAction));
+        // Filter out the deprecated 'permit_regularization' entry from DB results
+        const mapped = data.map(mapDbToParcelAction).filter(a => a.key !== 'permit_regularization');
+        setActions(mapped);
       } else {
-        // Si la table est vide, utiliser les valeurs par défaut
         setActions(DEFAULT_ACTIONS);
       }
     } catch (e) {
@@ -203,33 +193,21 @@ export const useParcelActionsConfig = () => {
     }
   }, []);
 
-  // Charger la configuration au montage
   useEffect(() => {
     fetchConfig();
 
-    // Écouter les changements en temps réel depuis Supabase
     const channel = supabase
       .channel('parcel_actions_config_changes')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'parcel_actions_config'
-        },
-        () => {
-          // Recharger la config quand il y a des changements
-          fetchConfig();
-        }
+        { event: '*', schema: 'public', table: 'parcel_actions_config' },
+        () => { fetchConfig(); }
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [fetchConfig]);
 
-  // Sauvegarder une action dans Supabase
   const updateAction = useCallback(async (actionId: string, updates: Partial<ParcelAction>) => {
     try {
       const currentAction = actions.find(a => a.id === actionId);
@@ -237,8 +215,6 @@ export const useParcelActionsConfig = () => {
 
       const updatedAction = { ...currentAction, ...updates };
       const dbData = mapParcelActionToDb(updatedAction);
-      
-      // Supprimer l'id du payload car on l'utilise dans le WHERE
       const { id: _, ...updatePayload } = dbData;
 
       const { error } = await supabase
@@ -250,7 +226,6 @@ export const useParcelActionsConfig = () => {
         console.error('Error updating action:', error);
         toast.error('Erreur lors de la mise à jour');
       } else {
-        // Mettre à jour l'état local optimistically
         setActions(prev => prev.map(a => a.id === actionId ? updatedAction : a));
       }
     } catch (e) {
@@ -259,10 +234,8 @@ export const useParcelActionsConfig = () => {
     }
   }, [actions]);
 
-  // Sauvegarder toute la configuration
   const saveConfig = useCallback(async (newActions: ParcelAction[]) => {
     try {
-      // Mettre à jour chaque action
       for (const action of newActions) {
         const dbData = mapParcelActionToDb(action);
         const { id: _, ...updatePayload } = dbData;
@@ -286,22 +259,18 @@ export const useParcelActionsConfig = () => {
     }
   }, []);
 
-  // Get action by key
   const getAction = useCallback((key: string) => {
     return actions.find(a => a.key === key);
   }, [actions]);
 
-  // Get visible and active actions sorted by displayOrder
   const getVisibleActions = useCallback(() => {
     return actions
       .filter(a => a.isVisible && a.isActive)
       .sort((a, b) => a.displayOrder - b.displayOrder);
   }, [actions]);
 
-  // Reset to defaults
   const resetToDefaults = useCallback(async () => {
     try {
-      // Supprimer toutes les entrées existantes et réinsérer les valeurs par défaut
       for (const defaultAction of DEFAULT_ACTIONS) {
         const matchingAction = actions.find(a => a.key === defaultAction.key);
         if (matchingAction) {

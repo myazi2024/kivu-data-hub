@@ -6,11 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Building2, FileCheck, CheckCircle2, Upload, X, Plus, Info, ArrowLeft, FileText } from 'lucide-react';
+import { Loader2, Building2, FileCheck, CheckCircle2, Plus, X, ArrowLeft, FileText } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { BuildingPermitIssuingServiceSelect } from './BuildingPermitIssuingServiceSelect';
@@ -33,9 +30,11 @@ interface PermitRecord {
   issuingService: string;
   issuingServiceContact: string;
   validityPeriod: string;
-  administrativeStatus: string;
   permitFile: File | null;
 }
+
+// Permit number format validation: PC-YYYY-XXXXX or similar
+const PERMIT_NUMBER_REGEX = /^[A-Z]{2,4}[-/]\d{4}[-/]\d{3,6}$/i;
 
 const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   parcelNumber,
@@ -45,7 +44,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
   onOpenChange,
   embedded = false
 }) => {
-  const isMobile = useIsMobile();
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
@@ -56,7 +54,6 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     issuingService: '',
     issuingServiceContact: '',
     validityPeriod: '12',
-    administrativeStatus: 'Valide',
     permitFile: null
   });
 
@@ -72,6 +69,16 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
   const updatePermit = (field: keyof PermitRecord, value: string | File | null) => {
     setPermitRecord(prev => ({ ...prev, [field]: value }));
+  };
+
+  // Calculate administrative status automatically from issue date + validity
+  const computedStatus = (): string => {
+    if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'En cours';
+    const issueDate = new Date(permitRecord.issueDate);
+    const validityMonths = parseInt(permitRecord.validityPeriod) || 12;
+    const expiryDate = new Date(issueDate);
+    expiryDate.setMonth(expiryDate.getMonth() + validityMonths);
+    return expiryDate > new Date() ? 'Valide' : 'Expiré';
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -103,6 +110,20 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       toast.error('Veuillez remplir les champs obligatoires: N° permis, Date, Service émetteur');
       return false;
     }
+
+    // Validate permit number format
+    if (!PERMIT_NUMBER_REGEX.test(permitRecord.permitNumber)) {
+      toast.error('Format du N° permis invalide. Utilisez un format tel que PC-2024-001 ou AB/2024/00123');
+      return false;
+    }
+
+    // Validate date is not in the future
+    const issueDate = new Date(permitRecord.issueDate);
+    if (issueDate > new Date()) {
+      toast.error('La date de délivrance ne peut pas être dans le futur');
+      return false;
+    }
+
     return true;
   };
 
@@ -118,23 +139,43 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     }
 
     setLoading(true);
+    let uploadedFilePath: string | null = null;
+    let documentUrl: string | null = null;
+
     try {
-      let documentUrl = null;
+      // Step 1: Upload file if present
       if (permitRecord.permitFile) {
         const fileExt = permitRecord.permitFile.name.split('.').pop();
         const fileName = `permit_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-        const filePath = `permit-documents/${user.id}/${fileName}`;
+        uploadedFilePath = `permit-documents/${user.id}/${fileName}`;
         
         const { error: uploadError } = await supabase.storage
           .from('cadastral-documents')
-          .upload(filePath, permitRecord.permitFile);
+          .upload(uploadedFilePath, permitRecord.permitFile);
         
         if (uploadError) throw uploadError;
         
-        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
+        const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(uploadedFilePath);
         documentUrl = data.publicUrl;
       }
 
+      const calculatedStatus = computedStatus();
+
+      // Step 2: Check for duplicate permit number
+      const { data: existingPermits } = await supabase
+        .from('cadastral_contributions')
+        .select('id')
+        .eq('status', 'approved')
+        .contains('building_permits', JSON.stringify([{ permit_number: permitRecord.permitNumber }]))
+        .limit(1);
+
+      if (existingPermits && existingPermits.length > 0) {
+        toast.error(`Le numéro de permis ${permitRecord.permitNumber} existe déjà dans le système`);
+        setLoading(false);
+        return;
+      }
+
+      // Step 3: Insert contribution
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -149,20 +190,31 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
             issuing_service: permitRecord.issuingService,
             issuing_service_contact: permitRecord.issuingServiceContact,
             validity_period_months: parseInt(permitRecord.validityPeriod) || 12,
-            administrative_status: permitRecord.administrativeStatus,
+            administrative_status: calculatedStatus,
             permit_type: permitType,
             document_url: documentUrl
           }]
         });
 
-      if (error) throw error;
+      if (error) {
+        // Cleanup orphaned file if DB insert failed
+        if (uploadedFilePath) {
+          await supabase.storage.from('cadastral-documents').remove([uploadedFilePath]).catch(() => {});
+        }
+        throw error;
+      }
 
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        title: `${title} soumis`,
-        message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumis avec succès.`,
-        type: 'success'
-      });
+      // Step 4: Send notification (non-blocking, with error handling)
+      try {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          title: `${title} soumis`,
+          message: `Votre ${title.toLowerCase()} pour la parcelle ${parcelNumber} a été soumis avec succès.`,
+          type: 'success'
+        });
+      } catch (notifErr) {
+        console.warn('Notification insert failed (non-blocking):', notifErr);
+      }
 
       setStep('confirmation');
       toast.success(`${title} enregistré avec succès`);
@@ -182,11 +234,12 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       issuingService: '',
       issuingServiceContact: '',
       validityPeriod: '12',
-      administrativeStatus: 'Valide',
       permitFile: null
     });
     onOpenChange(false);
   };
+
+  const calculatedStatus = computedStatus();
 
   const renderFormStep = () => (
     <div className="space-y-3">
@@ -250,21 +303,14 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           </Select>
         </div>
         <div className="space-y-1">
-          <Label className="text-xs font-medium">Statut</Label>
-          <Select
-            value={permitRecord.administrativeStatus}
-            onValueChange={(value) => updatePermit('administrativeStatus', value)}
-          >
-            <SelectTrigger className="h-9 text-sm rounded-xl">
-              <SelectValue placeholder="Statut" />
-            </SelectTrigger>
-            <SelectContent className="rounded-xl bg-popover">
-              <SelectItem value="Valide">Valide</SelectItem>
-              <SelectItem value="En cours">En cours</SelectItem>
-              <SelectItem value="Expiré">Expiré</SelectItem>
-              <SelectItem value="Suspendu">Suspendu</SelectItem>
-            </SelectContent>
-          </Select>
+          <Label className="text-xs font-medium">Statut (auto)</Label>
+          <div className={`h-9 flex items-center px-3 rounded-xl border text-sm font-medium ${
+            calculatedStatus === 'Valide' ? 'bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800' :
+            calculatedStatus === 'Expiré' ? 'bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800' :
+            'bg-muted text-muted-foreground border-border'
+          }`}>
+            {calculatedStatus}
+          </div>
         </div>
       </div>
 
@@ -352,7 +398,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
               ['Date délivrance', permitRecord.issueDate],
               ['Service émetteur', permitRecord.issuingService],
               ['Validité', `${permitRecord.validityPeriod} mois`],
-              ['Statut', permitRecord.administrativeStatus],
+              ['Statut', calculatedStatus],
             ].map(([label, value], i, arr) => (
               <div key={label} className={`flex justify-between py-1.5 ${i < arr.length - 1 ? 'border-b border-border/30' : ''}`}>
                 <span className="text-muted-foreground">{label}</span>

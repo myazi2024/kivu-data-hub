@@ -58,7 +58,7 @@ const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogPro
               </div>
             </div>
             <DialogTitle className="text-base font-bold text-center">
-              Ajouter un permis
+              Ajouter une autorisation
             </DialogTitle>
             <DialogDescription className="text-xs text-muted-foreground text-center">
               Parcelle: <span className="font-mono font-semibold text-foreground">{parcelNumber}</span>
@@ -74,7 +74,7 @@ const BuildingPermitManagementDialog: React.FC<BuildingPermitManagementDialogPro
               className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
             >
               <Building2 className="h-3.5 w-3.5" />
-              Construire
+              Bâtir
             </Button>
             <Button
               variant={activeTab === 'regularisation' ? 'default' : 'outline'}
