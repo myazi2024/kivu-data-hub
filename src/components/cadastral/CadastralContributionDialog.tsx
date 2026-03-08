@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { Button } from '@/components/ui/button';
@@ -66,6 +67,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const isMobile = useIsMobile();
   const dialogContentRef = React.useRef<HTMLDivElement>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showExitConfirmation, setShowExitConfirmation] = useState(false);
+  const formDirtyRef = useRef(false);
+  const isClosingAfterSuccessRef = useRef(false);
   const [showPermitPayment, setShowPermitPayment] = useState(false);
   const [savedContributionId, setSavedContributionId] = useState<string | null>(null);
   const [savedPermitRequestData, setSavedPermitRequestData] = useState<any>(null);
@@ -420,7 +424,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   const STORAGE_KEY = `cadastral_contribution_${parcelNumber}`;
 
   // Fonction pour sauvegarder les données dans localStorage
-  const saveFormDataToStorage = () => {
+  const saveFormDataToStorage = useCallback(() => {
     const dataToSave = {
       formData,
       currentOwners,
@@ -447,6 +451,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       parcelSides,
       obligationType,
       sectionType,
+      // Champs manquants ajoutés
+      hasMortgage,
+      ownershipMode,
+      leaseYears,
+      roadSides,
       timestamp: new Date().toISOString()
     };
     
@@ -458,7 +467,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     } catch (error) {
       console.error('Erreur lors de la sauvegarde des données:', error);
     }
-  };
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, permitMode, buildingPermits, permitRequest, gpsCoordinates, parcelSides, obligationType, sectionType, hasMortgage, ownershipMode, leaseYears, roadSides, STORAGE_KEY]);
 
   // Fonction pour charger les données depuis localStorage
   const loadFormDataFromStorage = () => {
@@ -480,6 +489,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         if (parsed.parcelSides) setParcelSides(parsed.parcelSides);
         if (parsed.obligationType) setObligationType(parsed.obligationType);
         if (parsed.sectionType) setSectionType(parsed.sectionType);
+        // Restaurer les champs manquants
+        if (parsed.hasMortgage !== undefined) setHasMortgage(parsed.hasMortgage);
+        if (parsed.ownershipMode) setOwnershipMode(parsed.ownershipMode);
+        if (parsed.leaseYears !== undefined) setLeaseYears(parsed.leaseYears);
+        if (parsed.roadSides) setRoadSides(parsed.roadSides);
         
         toast({
           title: "Données restaurées",
@@ -532,23 +546,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     return () => clearInterval(autoSaveInterval);
   }, [open, user, formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, parcelSides]);
 
-  // Sauvegarder les données quand le dialogue se ferme
-  useEffect(() => {
-    if (!open && formData.parcelNumber) {
-      // Sauvegarder uniquement si des données ont été renseignées
-      const hasData = Object.keys(formData).length > 1 || 
-                     currentOwners.some(o => o.lastName || o.firstName) ||
-                     previousOwners.some(o => o.name) ||
-                     taxRecords.some(t => t.taxAmount) ||
-                     mortgageRecords.some(m => m.mortgageAmount) ||
-                     buildingPermits.some(p => p.permitNumber) ||
-                     gpsCoordinates.some(g => g.lat || g.lng);
-      
-      if (hasData) {
-        saveFormDataToStorage();
-      }
-    }
-  }, [open]);
+  // NOTE: Draft is saved BEFORE resetting state in handleClose/handleAttemptClose.
+  // We no longer save on !open to avoid the race condition where reset state overwrites the draft.
 
   // Détecter automatiquement le type de section à partir du préfixe du numéro de parcelle
   useEffect(() => {
@@ -609,14 +608,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Auto-remplir "Ancien #2" avec le nom du propriétaire actuel quand le titre n'est pas à son nom
   // Le propriétaire actuel est aussi l'ancien propriétaire #2 dans la chaîne (il a acquis du vendeur inscrit sur le titre)
+  // NOTE: Only auto-creates/updates if the second entry is empty or was auto-filled.
+  // This avoids overwriting user-deleted entries.
   useEffect(() => {
     if (formData.isTitleInCurrentOwnerName === false) {
       const firstCurrentOwner = currentOwners[0];
       if (firstCurrentOwner?.lastName && firstCurrentOwner?.firstName) {
         const currentOwnerFullName = [firstCurrentOwner.lastName, firstCurrentOwner.middleName, firstCurrentOwner.firstName].filter(Boolean).join(' ');
         
-        // Ensure we have at least 2 previous owners
-        if (previousOwners.length < 2) {
+        // Only create the 2nd entry if exactly 1 exists (initial state)
+        if (previousOwners.length === 1) {
           setPreviousOwners(prev => [...prev, {
             name: currentOwnerFullName,
             legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
@@ -628,16 +629,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             endDate: '',
             mutationType: 'Vente'
           }]);
-        } else if (previousOwners[1]) {
-          // Update existing second previous owner
-          const updated = [...previousOwners];
-          updated[1] = {
-            ...updated[1],
-            name: currentOwnerFullName,
-            legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
-            startDate: firstCurrentOwner.since || '',
-          };
-          setPreviousOwners(updated);
+        } else if (previousOwners.length >= 2 && previousOwners[1]) {
+          // Only update if the name matches what we would have auto-filled (don't overwrite manual edits)
+          const existingName = previousOwners[1].name;
+          const wasAutoFilled = !existingName || existingName === currentOwnerFullName || 
+            existingName === [firstCurrentOwner.lastName, firstCurrentOwner.middleName, firstCurrentOwner.firstName].filter(Boolean).join(' ');
+          
+          if (wasAutoFilled) {
+            const updated = [...previousOwners];
+            updated[1] = {
+              ...updated[1],
+              name: currentOwnerFullName,
+              legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
+              startDate: firstCurrentOwner.since || '',
+            };
+            setPreviousOwners(updated);
+          }
         }
       }
     }
@@ -963,6 +970,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   }, [permitMode, currentOwners]);
 
   const handleInputChange = (field: keyof CadastralContributionData, value: any) => {
+    formDirtyRef.current = true;
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -1076,6 +1084,29 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       setShowQuickAuth(true);
       setPendingSubmission(true);
       return;
+    }
+
+    // Vérification de contribution dupliquée (même parcelle, en attente)
+    if (!editingContributionId) {
+      const authenticatedUserId = user?.id || session?.user?.id;
+      if (authenticatedUserId) {
+        const { data: existingContrib } = await supabase
+          .from('cadastral_contributions')
+          .select('id, status')
+          .eq('parcel_number', formData.parcelNumber)
+          .eq('user_id', authenticatedUserId)
+          .in('status', ['pending', 'returned'])
+          .maybeSingle();
+        
+        if (existingContrib) {
+          toast({
+            title: "Contribution existante",
+            description: `Vous avez déjà une contribution ${existingContrib.status === 'returned' ? 'à corriger' : 'en attente'} pour cette parcelle. Veuillez la modifier depuis votre tableau de bord.`,
+            variant: "destructive"
+          });
+          return;
+        }
+      }
     }
 
     // Validation centralisée - utilise getMissingFields() pour cohérence
@@ -1328,6 +1359,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (result?.success) {
         // Effacer les données sauvegardées après une soumission réussie
         clearSavedFormData();
+        formDirtyRef.current = false;
+        isClosingAfterSuccessRef.current = true;
         
         // Afficher le succès directement (pas de page de paiement permis)
         setShowSuccess(true);
@@ -1989,7 +2022,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     const hasOwnershipHistory = previousOwners.some(o => o.name && o.startDate);
     if (hasOwnershipHistory) filledFields += 1;
     
-    if (formData.boundaryHistory && formData.boundaryHistory.length > 0) filledFields += 1;
+    // boundaryHistory n'a pas d'UI de saisie - toujours 0 en front-end
+    // Le backend vérifie boundary_history dans la contribution
     
     const hasTaxHistory = taxRecords.some(t => t.taxAmount && t.taxYear);
     if (hasTaxHistory) filledFields += 1;
@@ -2261,7 +2295,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }, 250);
   };
 
+  // Attempt to close: check for unsaved changes first
+  const handleAttemptClose = useCallback(() => {
+    // If closing after success or no dirty data, close immediately
+    if (isClosingAfterSuccessRef.current || showSuccess || !formDirtyRef.current) {
+      handleClose();
+      return;
+    }
+    
+    // Check if any meaningful data was entered
+    const hasData = Object.keys(formData).length > 1 || 
+                   currentOwners.some(o => o.lastName || o.firstName) ||
+                   previousOwners.some(o => o.name) ||
+                   taxRecords.some(t => t.taxAmount) ||
+                   mortgageRecords.some(m => m.mortgageAmount) ||
+                   buildingPermits.some(p => p.permitNumber) ||
+                   gpsCoordinates.some(g => g.lat || g.lng);
+    
+    if (hasData) {
+      // Save draft before showing confirmation
+      saveFormDataToStorage();
+      setShowExitConfirmation(true);
+    } else {
+      handleClose();
+    }
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, showSuccess, saveFormDataToStorage]);
+
   const handleClose = () => {
+    // Reset dirty flag
+    formDirtyRef.current = false;
+    isClosingAfterSuccessRef.current = false;
+    
     // Reset form data
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
@@ -2277,6 +2341,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setSectionTypeAutoDetected(false);
     setActiveTab('general');
     setHasShownConfetti(false);
+    setShowExitConfirmation(false);
     
     // Reset ownership
     setOwnershipMode('unique');
@@ -2578,7 +2643,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleClose}>
+      <Dialog open={open} onOpenChange={handleAttemptClose}>
       <DialogContent 
         ref={dialogContentRef} 
         className="sm:max-w-xl w-[calc(100%-1rem)] max-w-[380px] sm:max-w-xl max-h-[92vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-2xl z-[9999]"
@@ -5553,6 +5618,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }}
       />
     )}
+
+    {/* Dialog de confirmation de fermeture */}
+    <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
+      <AlertDialogContent className="z-[10001]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Modifications non enregistrées</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vous avez des données non soumises. Vos données ont été sauvegardées en brouillon et seront restaurées à votre prochaine visite.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Continuer l'édition</AlertDialogCancel>
+          <AlertDialogAction onClick={handleClose}>
+            Fermer quand même
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 };

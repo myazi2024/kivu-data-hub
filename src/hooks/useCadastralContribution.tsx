@@ -495,18 +495,29 @@ export const useCadastralContribution = () => {
         updated_at: new Date().toISOString(),
       };
 
-      const { error: updateError } = await supabase
+      const { data: updateData, error: updateError } = await supabase
         .from('cadastral_contributions')
         .update(contributionPayload)
         .eq('id', contributionId)
         .eq('user_id', authenticatedUserId)
-        .in('status', ['pending', 'returned']); // Allow updating pending AND returned contributions
+        .in('status', ['pending', 'returned']) // Allow updating pending AND returned contributions
+        .select('id');
 
       if (updateError) {
         console.error('Erreur lors de la mise à jour:', updateError);
         toast({
           title: "Erreur de mise à jour",
           description: updateError.message || "Impossible de modifier votre contribution. Veuillez réessayer.",
+          variant: "destructive",
+        });
+        return { success: false };
+      }
+
+      // Vérifier qu'au moins une ligne a été affectée
+      if (!updateData || updateData.length === 0) {
+        toast({
+          title: "Mise à jour impossible",
+          description: "Cette contribution ne peut plus être modifiée (elle a peut-être déjà été approuvée ou rejetée).",
           variant: "destructive",
         });
         return { success: false };
