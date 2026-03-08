@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,17 +10,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, FileX2, CheckCircle2, Upload, X, Info, ArrowLeft, FileText, AlertTriangle, Calendar, DollarSign, Award, CreditCard, Phone, Hash, Image, MapPin, User, Building, FileCheck, ExternalLink } from 'lucide-react';
+import { Loader2, FileX2, CheckCircle2, Upload, X, Info, ArrowLeft, FileText, AlertTriangle, Calendar, DollarSign, Award, Phone, Hash, Image, MapPin, User, Building, FileCheck, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { QuickAuthDialog } from './QuickAuthDialog';
-import { useMortgageFees, type MortgageCancellationFee } from '@/hooks/useMortgageFees';
+import { useMortgageFees } from '@/hooks/useMortgageFees';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
+import { formatCurrency, formatDateFr as formatDate } from '@/utils/formatters';
 
 interface MortgageCancellationDialogProps {
   parcelNumber: string;
