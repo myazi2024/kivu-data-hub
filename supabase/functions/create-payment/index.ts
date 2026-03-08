@@ -331,6 +331,7 @@ serve(async (req) => {
           mutation_request_id: invoice_id,
         }
       });
+    }
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
