@@ -2270,7 +2270,37 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     }, 250);
   };
 
+  // Attempt to close: check for unsaved changes first
+  const handleAttemptClose = useCallback(() => {
+    // If closing after success or no dirty data, close immediately
+    if (isClosingAfterSuccessRef.current || showSuccess || !formDirtyRef.current) {
+      handleClose();
+      return;
+    }
+    
+    // Check if any meaningful data was entered
+    const hasData = Object.keys(formData).length > 1 || 
+                   currentOwners.some(o => o.lastName || o.firstName) ||
+                   previousOwners.some(o => o.name) ||
+                   taxRecords.some(t => t.taxAmount) ||
+                   mortgageRecords.some(m => m.mortgageAmount) ||
+                   buildingPermits.some(p => p.permitNumber) ||
+                   gpsCoordinates.some(g => g.lat || g.lng);
+    
+    if (hasData) {
+      // Save draft before showing confirmation
+      saveFormDataToStorage();
+      setShowExitConfirmation(true);
+    } else {
+      handleClose();
+    }
+  }, [formData, currentOwners, previousOwners, taxRecords, mortgageRecords, buildingPermits, gpsCoordinates, showSuccess, saveFormDataToStorage]);
+
   const handleClose = () => {
+    // Reset dirty flag
+    formDirtyRef.current = false;
+    isClosingAfterSuccessRef.current = false;
+    
     // Reset form data
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
@@ -2286,6 +2316,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     setSectionTypeAutoDetected(false);
     setActiveTab('general');
     setHasShownConfetti(false);
+    setShowExitConfirmation(false);
     
     // Reset ownership
     setOwnershipMode('unique');
