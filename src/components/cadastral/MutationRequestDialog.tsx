@@ -675,11 +675,24 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
 
   const handlePayment = async () => {
     if (!createdRequest) return;
+
+    if (!hasAnyPaymentMethod) {
+      toast.error('Aucun moyen de paiement n’est disponible pour le moment.');
+      return;
+    }
     
     setProcessingPayment(true);
     
     try {
       if (paymentMethod === 'mobile_money') {
+        if (!availableMethods.hasMobileMoney) {
+          throw new Error('Le paiement Mobile Money est indisponible actuellement.');
+        }
+
+        if (!enabledMobileProviders.length) {
+          throw new Error('Aucun opérateur Mobile Money actif n’est configuré.');
+        }
+
         if (!paymentProvider) {
           toast.error('Veuillez sélectionner un opérateur');
           setProcessingPayment(false);
@@ -727,6 +740,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           toast.error('Erreur lors de la mise à jour du paiement');
         }
       } else {
+        if (!availableMethods.hasBankCard) {
+          throw new Error('Le paiement par carte bancaire est indisponible actuellement.');
+        }
+
         // Stripe - redirection vers la page de paiement
         const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
           body: {
