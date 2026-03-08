@@ -296,6 +296,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       receiptFile: null
     });
     setSubmissionReference('');
+    setShowSubmitConfirm(false);
     isSubmittingRef.current = false;
     draftPromptShownRef.current = false;
     onOpenChange(false);
