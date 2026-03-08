@@ -489,58 +489,11 @@ export const useCadastralContribution = () => {
     setLoading(true);
 
     try {
-      // Build update payload (same as insert but for update)
-      const contributionPayload: any = {
-        parcel_number: data.parcelNumber,
-        parcel_type: data.parcelType, // Type de parcelle (SU/SR)
-        property_title_type: data.propertyTitleType,
-        lease_type: data.leaseType,
-        title_reference_number: data.titleReferenceNumber,
-        title_issue_date: data.titleIssueDate, // Date de délivrance du titre foncier
-        current_owners_details: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners 
-          : null,
-        current_owner_name: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
-          : undefined,
-        current_owner_legal_status: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners[0].legalStatus 
-          : undefined,
-        current_owner_since: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners[0].since 
-          : undefined,
-        area_sqm: data.areaSqm,
-        parcel_sides: data.parcelSides,
-        construction_type: data.constructionType,
-        construction_nature: data.constructionNature,
-        construction_year: data.constructionYear || null,
-        declared_usage: data.declaredUsage,
-        building_permits: data.buildingPermits,
-        previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
-        province: data.province,
-        ville: data.ville,
-        commune: data.commune,
-        quartier: data.quartier,
-        avenue: data.avenue,
-        territoire: data.territoire,
-        collectivite: data.collectivite,
-        groupement: data.groupement,
-        village: data.village,
-        circonscription_fonciere: data.circonscriptionFonciere,
-        gps_coordinates: data.gpsCoordinates,
-        ownership_history: data.ownershipHistory,
-        boundary_history: data.boundaryHistory,
-        tax_history: data.taxHistory,
-        mortgage_history: data.mortgageHistory,
-        whatsapp_number: data.whatsappNumber,
-        owner_document_url: data.ownerDocumentUrl,
-        property_title_document_url: data.titleDocumentUrl,
+      // Build update payload using shared builder
+      const contributionPayload = {
+        ...buildContributionPayload(data),
         updated_at: new Date().toISOString(),
       };
-
-      if (data.permitRequest) {
-        contributionPayload.permit_request_data = data.permitRequest;
-      }
 
       const { error: updateError } = await supabase
         .from('cadastral_contributions')
