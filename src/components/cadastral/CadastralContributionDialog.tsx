@@ -1336,6 +1336,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (result?.success) {
         // Effacer les données sauvegardées après une soumission réussie
         clearSavedFormData();
+        formDirtyRef.current = false;
+        isClosingAfterSuccessRef.current = true;
         
         // Afficher le succès directement (pas de page de paiement permis)
         setShowSuccess(true);
