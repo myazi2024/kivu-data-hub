@@ -291,18 +291,18 @@ export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
     buttonLabel: 'Enregistrer l\'autorisation'
   },
   permit_regularization: {
-    title: 'Permis de régularisation',
+    title: 'Autorisation de régularisation',
     subtitle: 'Régularisation d\'une construction existante',
-    aboutService: 'Le permis de régularisation permet de mettre en conformité administrative une construction réalisée sans autorisation préalable ou dont les travaux ont dépassé le cadre du permis initial. Cette procédure est essentielle pour éviter les sanctions et sécuriser juridiquement votre propriété.',
+    aboutService: 'L\'autorisation de régularisation permet de mettre en conformité administrative une construction réalisée sans autorisation préalable ou dont les travaux ont dépassé le cadre de l\'autorisation initiale. Cette procédure est essentielle pour éviter les sanctions et sécuriser juridiquement votre propriété.',
     estimatedTime: '1 à 3 minutes',
     processingTime: '10 à 20 jours ouvrables',
     requiredInfo: [
-      'Numéro du permis de régularisation obtenu auprès de l\'administration',
-      'Date de délivrance du permis de régularisation',
+      'Numéro de l\'autorisation de régularisation obtenue auprès de l\'administration',
+      'Date de délivrance de l\'autorisation de régularisation',
       'Identification du service ayant procédé à la régularisation',
       'Documents justificatifs (procès-verbal de constatation, attestation de conformité)'
     ],
-    userResponsibility: 'Vous reconnaissez que la construction concernée a été réalisée antérieurement à l\'obtention d\'un permis et sollicitez sa régularisation administrative. Vous vous engagez à vous conformer aux prescriptions éventuelles formulées par l\'administration dans le cadre de cette régularisation.',
+    userResponsibility: 'Vous reconnaissez que la construction concernée a été réalisée antérieurement à l\'obtention d\'une autorisation et sollicitez sa régularisation administrative. Vous vous engagez à vous conformer aux prescriptions éventuelles formulées par l\'administration dans le cadre de cette régularisation.',
     helpInfo: [
       'Un guide complet vous explique la procédure de régularisation étape par étape',
       'Le calcul des éventuelles pénalités est effectué selon le barème officiel',
