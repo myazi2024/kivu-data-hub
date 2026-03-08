@@ -133,112 +133,74 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  // Récupérer automatiquement la date du titre depuis les données CCC
+  // Récupérer automatiquement les données CCC (date titre + date acquisition) en UNE SEULE requête
   useEffect(() => {
-    const fetchTitleIssueDate = async () => {
-      // Si la date est déjà fournie dans les props
-      if (parcelData?.title_issue_date) {
-        setTitleIssueDateFromCCC(parcelData.title_issue_date);
-        calculateTitleAgeFromDate(parcelData.title_issue_date);
-        return;
+    const fetchParcelDates = async () => {
+      // Utiliser les props si déjà fournies
+      const hasTitleDate = !!parcelData?.title_issue_date;
+      const hasAcquisitionDate = !!parcelData?.owner_acquisition_date;
+
+      if (hasTitleDate) {
+        setTitleIssueDateFromCCC(parcelData!.title_issue_date!);
+        calculateTitleAgeFromDate(parcelData!.title_issue_date!);
+      }
+      if (hasAcquisitionDate) {
+        setOwnerAcquisitionDate(parcelData!.owner_acquisition_date!);
+        setOwnerAcquisitionDateAutoDetected(true);
       }
 
-      // Sinon, chercher dans les contributions CCC validées ou la table des parcelles
+      if (hasTitleDate && hasAcquisitionDate) return;
+
       try {
-        // D'abord chercher dans les contributions validées
+        // Requête unique sur les contributions validées
         const { data: contribution } = await supabase
           .from('cadastral_contributions')
-          .select('title_issue_date')
+          .select('title_issue_date, current_owner_since')
           .eq('parcel_number', parcelNumber)
           .eq('status', 'approved')
-          .not('title_issue_date', 'is', null)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
 
-        if (contribution?.title_issue_date) {
+        if (!hasTitleDate && contribution?.title_issue_date) {
           setTitleIssueDateFromCCC(contribution.title_issue_date);
           calculateTitleAgeFromDate(contribution.title_issue_date);
-          return;
+        }
+        if (!hasAcquisitionDate && contribution?.current_owner_since) {
+          setOwnerAcquisitionDate(contribution.current_owner_since);
+          setOwnerAcquisitionDateAutoDetected(true);
         }
 
-        // Sinon chercher dans la table des parcelles
-        const { data: parcel } = await supabase
-          .from('cadastral_parcels')
-          .select('title_issue_date')
-          .eq('parcel_number', parcelNumber)
-          .not('title_issue_date', 'is', null)
-          .limit(1)
-          .single();
+        // Si toujours pas trouvé, chercher dans la table des parcelles
+        const needTitle = !hasTitleDate && !contribution?.title_issue_date;
+        const needAcquisition = !hasAcquisitionDate && !contribution?.current_owner_since;
 
-        if (parcel?.title_issue_date) {
-          setTitleIssueDateFromCCC(parcel.title_issue_date);
-          calculateTitleAgeFromDate(parcel.title_issue_date);
+        if (needTitle || needAcquisition) {
+          const { data: parcel } = await supabase
+            .from('cadastral_parcels')
+            .select('title_issue_date, current_owner_since')
+            .eq('parcel_number', parcelNumber)
+            .limit(1)
+            .single();
+
+          if (needTitle && parcel?.title_issue_date) {
+            setTitleIssueDateFromCCC(parcel.title_issue_date);
+            calculateTitleAgeFromDate(parcel.title_issue_date);
+          }
+          if (needAcquisition && parcel?.current_owner_since) {
+            setOwnerAcquisitionDate(parcel.current_owner_since);
+            setOwnerAcquisitionDateAutoDetected(true);
+          }
         }
       } catch (error) {
-        // Pas de date trouvée, l'utilisateur devra la saisir manuellement
-        console.log('Aucune date de délivrance du titre trouvée');
+        console.log('Aucune donnée de date trouvée dans le CCC');
       }
     };
 
     if (open && parcelNumber) {
-      fetchTitleIssueDate();
+      fetchParcelDates();
     }
-  }, [open, parcelNumber, parcelData?.title_issue_date]);
-
-  // Vérifier si c'est un type de mutation avec transfert (déclaré avant utilisation)
-  const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
-
-  // Récupérer automatiquement la date d'acquisition du propriétaire depuis CCC
-  useEffect(() => {
-    const fetchOwnerAcquisitionDate = async () => {
-      // Si la date est déjà fournie dans les props
-      if (parcelData?.owner_acquisition_date) {
-        setOwnerAcquisitionDate(parcelData.owner_acquisition_date);
-        setOwnerAcquisitionDateAutoDetected(true);
-        return;
-      }
-
-      // Chercher dans les contributions CCC validées
-      try {
-        const { data: contribution } = await supabase
-          .from('cadastral_contributions')
-          .select('current_owner_since')
-          .eq('parcel_number', parcelNumber)
-          .eq('status', 'approved')
-          .not('current_owner_since', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (contribution?.current_owner_since) {
-          setOwnerAcquisitionDate(contribution.current_owner_since);
-          setOwnerAcquisitionDateAutoDetected(true);
-          return;
-        }
-
-        // Sinon chercher dans la table des parcelles
-        const { data: parcel } = await supabase
-          .from('cadastral_parcels')
-          .select('current_owner_since')
-          .eq('parcel_number', parcelNumber)
-          .not('current_owner_since', 'is', null)
-          .limit(1)
-          .single();
-
-        if (parcel?.current_owner_since) {
-          setOwnerAcquisitionDate(parcel.current_owner_since);
-          setOwnerAcquisitionDateAutoDetected(true);
-        }
-      } catch (error) {
-        console.log('Aucune date d\'acquisition du propriétaire trouvée');
-      }
-    };
-
-    if (open && parcelNumber && isTransferMutation) {
-      fetchOwnerAcquisitionDate();
-    }
-  }, [open, parcelNumber, parcelData?.owner_acquisition_date, isTransferMutation]);
+  }, [open, parcelNumber, parcelData?.title_issue_date, parcelData?.owner_acquisition_date]);
 
   // Calculer l'âge du titre à partir de sa date de délivrance
   const calculateTitleAgeFromDate = (dateString: string) => {
