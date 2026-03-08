@@ -1,4 +1,5 @@
 import React, { useState, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   embedded = false
 }) => {
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
@@ -96,6 +98,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     updateMortgage('receiptFile', null);
   };
 
+  // Fix #10: Server-side validation for contract date (not just HTML max)
   const validateForm = (): boolean => {
     const amount = parseFloat(mortgageRecord.mortgageAmount);
     if (!mortgageRecord.mortgageAmount || isNaN(amount) || amount <= 0) {
@@ -117,6 +120,19 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       toast.error('Veuillez indiquer la date du contrat');
       return false;
     }
+    // Fix #10: Validate contract date is not in the future
+    const contractDate = new Date(mortgageRecord.contractDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (contractDate > today) {
+      toast.error('La date du contrat ne peut pas être dans le futur');
+      return false;
+    }
+    // Fix #3: Block submission if parcelId is missing
+    if (!parcelId) {
+      toast.error('Identifiant de parcelle manquant. Veuillez relancer la recherche.');
+      return false;
+    }
     return true;
   };
 
@@ -129,21 +145,21 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     setStep('preview');
   };
 
+  // Fix #2: Check specifically for mortgage-related pending contributions
   const checkExistingPending = async (): Promise<boolean> => {
     if (!user) return false;
     
     const { data } = await supabase
       .from('cadastral_contributions')
-      .select('id')
+      .select('id, mortgage_history')
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
-      .eq('contribution_type', 'update')
+      .in('contribution_type', ['update', 'mortgage_registration'])
       .in('status', ['pending', 'in_review']);
     
-    // Filter for mortgage-related contributions (mortgage_history is not null)
-    // Since we can't easily filter JSONB via Supabase client, we check the count
-    // This is a best-effort check
-    return (data?.length ?? 0) > 0;
+    // Only block if there's a contribution that actually has mortgage_history data
+    const hasMortgagePending = data?.some(c => c.mortgage_history !== null) ?? false;
+    return hasMortgagePending;
   };
 
   const handleSubmit = async () => {
@@ -157,10 +173,10 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
     setLoading(true);
     try {
-      // Check for existing pending contribution
+      // Check for existing pending mortgage contribution
       const hasPending = await checkExistingPending();
       if (hasPending) {
-        toast.error('Une demande est déjà en cours de traitement pour cette parcelle. Consultez votre tableau de bord.');
+        toast.error('Une demande d\'hypothèque est déjà en cours de traitement pour cette parcelle.');
         return;
       }
 
@@ -175,20 +191,23 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           .from('cadastral-documents')
           .upload(filePath, mortgageRecord.receiptFile);
         
-        if (uploadError) throw uploadError;
+        if (uploadError) {
+          toast.error('Erreur lors du téléversement du document');
+          throw uploadError;
+        }
         
         const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
         documentUrl = data.publicUrl;
       }
 
-      // Créer l'enregistrement de l'hypothèque via une contribution
+      // Fix #7: Use specific contribution_type for mortgage registration
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
           parcel_number: parcelNumber,
           original_parcel_id: parcelId || null,
           user_id: user.id,
-          contribution_type: 'update',
+          contribution_type: 'mortgage_registration',
           status: 'pending',
           mortgage_history: [{
             mortgage_amount_usd: parseFloat(mortgageRecord.mortgageAmount),
@@ -203,7 +222,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
       if (error) throw error;
 
-      // Créer une notification (non-blocking)
+      // Notification (non-blocking)
       supabase.from('notifications').insert({
         user_id: user.id,
         title: 'Hypothèque soumise',
@@ -505,9 +524,10 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         </div>
       </div>
       <div className="flex flex-col gap-2">
+        {/* Fix #23: useNavigate instead of window.location.href */}
         <Button
           variant="outline"
-          onClick={() => window.location.href = '/user-dashboard'}
+          onClick={() => navigate('/user-dashboard')}
           className="w-full h-11 rounded-xl gap-2"
         >
           <ExternalLink className="h-4 w-4" />
@@ -523,11 +543,13 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   if (embedded) {
     return (
       <>
+        {/* Fix #15 & #20: WhatsApp in embedded + single scroll container */}
         <div className="overflow-y-auto h-full px-4 pb-4">
           {step === 'form' && renderFormStep()}
           {step === 'preview' && renderPreviewStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </div>
+        {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'hypothèque." />}
         <QuickAuthDialog
           open={showAuthDialog}
           onOpenChange={setShowAuthDialog}

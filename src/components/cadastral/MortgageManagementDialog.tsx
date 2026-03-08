@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Landmark, Plus, FileX2 } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import MortgageCancellationDialog from './MortgageCancellationDialog';
@@ -22,9 +21,12 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   open,
   onOpenChange
 }) => {
-  const isMobile = useIsMobile();
   const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState<MortgageTab>('add');
+
+  // Keys to force remount sub-dialogs on tab switch (fixes #4: state not reset)
+  const [addKey, setAddKey] = useState(0);
+  const [removeKey, setRemoveKey] = useState(0);
   
   // Ref to track if user clicked "Continue" vs dismissed the intro
   const introCompletedRef = useRef(false);
@@ -41,12 +43,24 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     setShowIntro(false);
   };
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setShowIntro(true);
     setActiveTab('add');
     introCompletedRef.current = false;
+    // Increment keys to force fresh state on next open
+    setAddKey(k => k + 1);
+    setRemoveKey(k => k + 1);
     onOpenChange(false);
-  };
+  }, [onOpenChange]);
+
+  // Fix #4: Reset sub-form state when switching tabs
+  const handleTabChange = useCallback((tab: MortgageTab) => {
+    if (tab === activeTab) return;
+    setActiveTab(tab);
+    // Force remount of the other tab's component
+    if (tab === 'add') setAddKey(k => k + 1);
+    else setRemoveKey(k => k + 1);
+  }, [activeTab]);
 
   // Show intro first
   if (open && showIntro) {
@@ -55,11 +69,9 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
         open={true}
         onOpenChange={(isOpen) => {
           if (!isOpen) {
-            // If continue was clicked, don't close parent — just let showIntro=false take effect
             if (introCompletedRef.current) {
               introCompletedRef.current = false;
             } else {
-              // User dismissed intro (Escape, overlay click) → close everything
               handleClose();
             }
           }
@@ -94,7 +106,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
             <Button
               variant={activeTab === 'add' ? 'default' : 'outline'}
               size="sm"
-              onClick={() => setActiveTab('add')}
+              onClick={() => handleTabChange('add')}
               className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
             >
               <Plus className="h-3.5 w-3.5" />
@@ -103,7 +115,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
             <Button
               variant={activeTab === 'remove' ? 'destructive' : 'outline'}
               size="sm"
-              onClick={() => setActiveTab('remove')}
+              onClick={() => handleTabChange('remove')}
               className="flex-1 h-9 rounded-xl text-xs font-semibold gap-1.5"
             >
               <FileX2 className="h-3.5 w-3.5" />
@@ -112,10 +124,11 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
           </div>
         </div>
 
-        {/* Render the selected form inline */}
-        <div className="overflow-auto flex-1 min-h-0" style={{ maxHeight: 'calc(85vh - 140px)' }}>
+        {/* Render the selected form inline — no double scroll */}
+        <div className="flex-1 min-h-0 overflow-hidden">
           {activeTab === 'add' ? (
             <MortgageFormDialog
+              key={`add-${addKey}`}
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               open={true}
@@ -126,6 +139,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
             />
           ) : (
             <MortgageCancellationDialog
+              key={`remove-${removeKey}`}
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               open={true}
