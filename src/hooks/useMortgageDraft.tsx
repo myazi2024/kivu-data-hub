@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { saveToLocalStorage, loadFromLocalStorage, removeFromLocalStorage } from '@/utils/localStorageManager';
 import { toast } from 'sonner';
+import { stripFileObjects } from '@/utils/mortgageReferences';
 
 interface DraftData {
   timestamp: string;
@@ -12,6 +13,7 @@ const DRAFT_KEY_PREFIX = 'mortgage_draft_';
 /**
  * Hook for saving/restoring mortgage form drafts to localStorage.
  * Supports both registration and cancellation forms.
+ * Fix #17: Centralized File-stripping logic via stripFileObjects utility.
  */
 export function useMortgageDraft(
   formType: 'registration' | 'cancellation',
@@ -35,7 +37,6 @@ export function useMortgageDraft(
 
     const result = loadFromLocalStorage<DraftData>(draftKey);
     if (result.success && result.data) {
-      // Check if draft is less than 7 days old
       const age = Date.now() - new Date(result.data.timestamp).getTime();
       const daysOld = age / (1000 * 60 * 60 * 24);
 
@@ -52,13 +53,11 @@ export function useMortgageDraft(
     setDraftLoaded(true);
   }, [draftKey, enabled, parcelNumber]);
 
+  // Fix #17: Single implementation of File-safe save
   const saveDraft = useCallback((formData: Record<string, any>) => {
     if (!enabled) return;
 
-    // Don't save File objects — strip them
-    const cleanData = { ...formData };
-    delete cleanData.supportingDocuments;
-    delete cleanData.receiptFile;
+    const cleanData = stripFileObjects(formData);
 
     const draft: DraftData = {
       timestamp: new Date().toISOString(),
@@ -96,10 +95,7 @@ export function useMortgageDraft(
   const autoSave = useCallback((formData: Record<string, any>) => {
     if (!enabled) return;
 
-    const cleanData = { ...formData };
-    delete cleanData.supportingDocuments;
-    delete cleanData.receiptFile;
-
+    const cleanData = stripFileObjects(formData);
     const currentSignature = JSON.stringify(cleanData);
     if (currentSignature === lastSavedSignatureRef.current) {
       return;
@@ -112,7 +108,7 @@ export function useMortgageDraft(
     autoSaveTimerRef.current = setTimeout(() => {
       saveDraft(formData);
       lastSavedSignatureRef.current = currentSignature;
-    }, 3000); // Auto-save after 3 seconds of inactivity
+    }, 3000);
   }, [enabled, saveDraft]);
 
   // Cleanup timer on unmount

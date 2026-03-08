@@ -28,7 +28,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   const [activeTab, setActiveTab] = useState<MortgageTab>('add');
   const introCompletedRef = useRef(false);
 
-  // Fix #24: Check if parcel has active mortgages for the radiation tab
   const [hasActiveMortgage, setHasActiveMortgage] = useState<boolean | null>(null);
   const [checkingMortgage, setCheckingMortgage] = useState(false);
 
@@ -73,14 +72,16 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
   const handleClose = useCallback(() => {
     setShowIntro(true);
     setActiveTab('add');
+    setHasActiveMortgage(null);
     introCompletedRef.current = false;
     onOpenChange(false);
   }, [onOpenChange]);
 
-  const handleTabChange = useCallback((tab: MortgageTab) => {
+  // Fix #23: Remove useless useCallback with activeTab dependency
+  const handleTabChange = (tab: MortgageTab) => {
     if (tab === activeTab) return;
     setActiveTab(tab);
-  }, [activeTab]);
+  };
 
   // Show intro first
   if (open && showIntro) {
@@ -158,7 +159,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
             />
           ) : (
             <>
-              {/* Warning if no active mortgage found */}
               {checkingMortgage && (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-5 w-5 animate-spin text-primary" />

@@ -15,13 +15,38 @@ export const generateMortgageReference = (prefix: 'HYP' | 'RAD', suffixLength = 
   return `${prefix}-${Date.now().toString(36).toUpperCase()}-${generateReferenceSuffix(suffixLength)}`;
 };
 
+// Fix #6: Comprehensive status normalization with all known variants
 export const normalizeMortgageStatus = (status?: string | null): string => {
   const normalized = (status || '').toLowerCase().trim();
 
-  if (['en défaut', 'en_defaut', 'defaulted'].includes(normalized)) return 'en_defaut';
-  if (['paid', 'paid_off', 'soldée', 'soldee'].includes(normalized)) return 'paid';
-  if (['renégociée', 'renegociee'].includes(normalized)) return 'renegociee';
-  if (['active', 'en cours'].includes(normalized)) return 'active';
+  // Active statuses
+  if (['active', 'en cours', 'en_cours'].includes(normalized)) return 'active';
+  // Default statuses
+  if (['en défaut', 'en_defaut', 'defaulted', 'default'].includes(normalized)) return 'en_defaut';
+  // Paid/settled statuses
+  if (['paid', 'paid_off', 'soldée', 'soldee', 'settled'].includes(normalized)) return 'paid';
+  // Renegotiated statuses
+  if (['renégociée', 'renegociee', 'renegotiated'].includes(normalized)) return 'renegociee';
+  // Request statuses (admin workflow)
+  if (['pending', 'en attente'].includes(normalized)) return 'pending';
+  if (['approved', 'approuvé', 'approuve'].includes(normalized)) return 'approved';
+  if (['rejected', 'rejeté', 'rejete'].includes(normalized)) return 'rejected';
+  if (['returned', 'renvoyé', 'renvoye'].includes(normalized)) return 'returned';
 
   return normalized;
+};
+
+/** Strip File objects from form data for serialization (used by draft system) */
+export const stripFileObjects = (formData: Record<string, any>): Record<string, any> => {
+  const cleanData = { ...formData };
+  // Remove all known File/FileList fields
+  for (const key of Object.keys(cleanData)) {
+    const val = cleanData[key];
+    if (val instanceof File) {
+      delete cleanData[key];
+    } else if (Array.isArray(val) && val.length > 0 && val[0] instanceof File) {
+      delete cleanData[key];
+    }
+  }
+  return cleanData;
 };

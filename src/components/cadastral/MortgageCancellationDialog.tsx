@@ -12,6 +12,7 @@ import { useMortgageDraft } from '@/hooks/useMortgageDraft';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
 import MortgageFlowContainer from './MortgageFlowContainer';
 import { generateMortgageReference } from '@/utils/mortgageReferences';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 import {
   CancellationFormStep,
@@ -48,11 +49,14 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const [selectedFees, setSelectedFees] = useState<string[]>([]);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  // Fix #15: Exit confirmation for unsaved data
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const isSubmittingRef = useRef(false);
   const feesInitializedRef = useRef(false);
-  // Fix #1: Track if draft prompt was already shown this session
   const draftPromptShownRef = useRef(false);
 
+  // Fix #1 & #5: Use ref to track if parcel data was loaded to avoid race conditions
+  const parcelDataLoadedRef = useRef(false);
   const [parcelData, setParcelData] = useState<ParcelData | null>(null);
   const [mortgageData, setMortgageData] = useState<MortgageData | null>(null);
   const [paymentProvider, setPaymentProvider] = useState('');
@@ -74,14 +78,17 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     comments: ''
   });
 
+  // Fix #1: Generate reference once per open, don't reset parcelData if already loaded
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      parcelDataLoadedRef.current = false;
+      return;
+    }
     setRequestReferenceNumber(generateMortgageReference('RAD'));
-    setParcelData(null);
   }, [open]);
 
   const loadParcelData = useCallback(async () => {
-    if (!parcelId) return;
+    if (!parcelId || parcelDataLoadedRef.current) return;
     setLoadingData(true);
     try {
       const { data, error } = await supabase
@@ -90,7 +97,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         .eq('id', parcelId)
         .maybeSingle();
       if (error) throw error;
-      if (data) setParcelData(data);
+      if (data) {
+        setParcelData(data);
+        parcelDataLoadedRef.current = true;
+      }
     } catch {
       toast.error('Erreur lors du chargement des données de la parcelle');
     } finally {
@@ -98,7 +108,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   }, [parcelId]);
 
-  // Fix #1: Separate loadParcelData from draft check to avoid re-render loop
   useEffect(() => {
     if (open) {
       loadParcelData();
@@ -219,7 +228,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const selectedFeesDetails = useMemo(() => fees.filter(f => selectedFees.includes(f.id)), [selectedFees, fees]);
   const totalAmount = useMemo(() => selectedFeesDetails.reduce((sum, fee) => sum + fee.amount_usd, 0), [selectedFeesDetails]);
 
-  // Fix #13: Validate requester phone if provided
   const validateForm = (): boolean => {
     if (!formData.mortgageReferenceNumber.trim()) { toast.error("Veuillez indiquer le numéro de référence"); return false; }
     if (!referenceValid) { toast.error("Le numéro de référence n'est pas valide"); return false; }
@@ -230,7 +238,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       const amount = parseFloat(formData.settlementAmount);
       if (isNaN(amount) || amount < 0) { toast.error('Le montant de règlement ne peut pas être négatif'); return false; }
     }
-    // Validate requester phone format if provided
     if (formData.requesterPhone.trim() && !PHONE_REGEX_DRC.test(formData.requesterPhone.replace(/\s/g, ''))) {
       toast.error('Le numéro de téléphone du demandeur est invalide (format RDC attendu)');
       return false;
@@ -251,7 +258,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     setStep('review');
   };
 
-  // Fix #6: Report partial upload failures to user
   const uploadDocuments = async (): Promise<string[]> => {
     const urls: string[] = [];
     const failedFiles: string[] = [];
@@ -268,13 +274,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         urls.push(data.publicUrl);
       }
     }
-    // Fix #6: Warn user about partial failures
     if (failedFiles.length > 0 && urls.length > 0) {
       toast.warning(`${failedFiles.length} fichier(s) n'ont pas pu être téléversés: ${failedFiles.join(', ')}`);
     }
     return urls;
   };
 
+  // Fix #2: Include 'returned' status in check to prevent duplicate submissions
   const checkExistingCancellationRequest = async (): Promise<boolean> => {
     if (!user || !formData.mortgageReferenceNumber) return false;
     const { data } = await supabase
@@ -283,7 +289,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_cancellation')
-      .in('status', ['pending']);
+      .in('status', ['pending', 'returned']);
     return data?.some(c => {
       const history = c.mortgage_history as any[];
       return history?.some(h => h.mortgage_reference_number?.toUpperCase() === formData.mortgageReferenceNumber.toUpperCase());
@@ -316,7 +322,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
     const hasPending = await checkExistingCancellationRequest();
-    if (hasPending) { toast.error('Une demande de radiation est déjà en cours pour cette hypothèque.'); isSubmittingRef.current = false; return; }
+    if (hasPending) { toast.error('Une demande de radiation est déjà en cours ou renvoyée pour correction pour cette hypothèque.'); isSubmittingRef.current = false; return; }
     setLoading(true);
     try {
       const documentUrls = await uploadDocuments();
@@ -326,7 +332,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       if (!paymentResult.success) { isSubmittingRef.current = false; return; }
       setLoading(true);
 
-      // Fix #8: Store reason separately from comments
       const reasonLabel = CANCELLATION_REASONS.find(r => r.value === formData.reason)?.label || formData.reason;
 
       const { error } = await supabase.from('cadastral_contributions').insert({
@@ -335,7 +340,6 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
         user_id: user.id,
         contribution_type: 'mortgage_cancellation',
         status: 'pending',
-        // Fix #8: comments go in change_justification, reason is in mortgage_history
         change_justification: formData.comments || null,
         mortgage_history: [{
           type: 'cancellation_request',
@@ -364,7 +368,17 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       });
       if (error) throw error;
 
-      // Fix #20: Notification with proper error handling
+      // Fix #11: Create notification for user tracking
+      try {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          title: 'Demande de radiation soumise',
+          message: `Votre demande de radiation d'hypothèque (Réf: ${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise avec succès.`,
+          type: 'mortgage',
+          action_url: '/user-dashboard',
+        });
+      } catch { /* Non-blocking */ }
+
       try {
         await supabase.from('audit_logs').insert({
           action: 'mortgage_cancellation_submitted',
@@ -386,14 +400,30 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   };
 
+  // Fix #15: Check for unsaved data before closing
+  const hasFormData = (): boolean => {
+    return !!(formData.mortgageReferenceNumber || formData.requesterPhone || formData.requesterIdNumber || formData.comments || formData.supportingDocuments.length > 0);
+  };
+
   const handleClose = () => {
+    if (step === 'form' && hasFormData() && !showExitConfirm) {
+      setShowExitConfirm(true);
+      return;
+    }
+    performClose();
+  };
+
+  // Fix #5: Proper cleanup without race conditions
+  const performClose = () => {
     setStep('form');
     setReferenceValid(null);
     setReferenceError(null);
     setMortgageData(null);
     setParcelData(null);
+    parcelDataLoadedRef.current = false;
     setRequestReferenceNumber('');
     setShowDraftPrompt(false);
+    setShowExitConfirm(false);
     isSubmittingRef.current = false;
     draftPromptShownRef.current = false;
     setFormData({
@@ -461,7 +491,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           parcelNumber={parcelNumber} totalAmount={totalAmount}
           formData={{ reason: formData.reason, requesterName: formData.requesterName, cancellationDate: formData.cancellationDate }}
           parcelData={parcelData} mortgageData={mortgageData}
-          selectedFeesDetails={selectedFeesDetails} onClose={handleClose}
+          selectedFeesDetails={selectedFeesDetails} onClose={performClose}
         />
       )}
     </>
@@ -484,6 +514,23 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       >
         {renderContent()}
       </MortgageFlowContainer>
+
+      {/* Fix #15: Exit confirmation */}
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent className="rounded-2xl max-w-[340px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-sm">Quitter le formulaire ?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              Vous avez des données non sauvegardées. Voulez-vous vraiment quitter ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-xs">Rester</AlertDialogCancel>
+            <AlertDialogAction onClick={performClose} className="text-xs bg-destructive hover:bg-destructive/90">Quitter</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <QuickAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onAuthSuccess={() => setShowAuthDialog(false)} />
     </>
   );

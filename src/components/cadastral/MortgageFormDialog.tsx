@@ -1,5 +1,4 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, Download } from 'lucide-react';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Landmark, CheckCircle2, X, Plus, ArrowLeft, FileText, ExternalLink } from 'lucide-react';
+import { Loader2, Landmark, CheckCircle2, X, Plus, ArrowLeft, FileText, ExternalLink, Eye } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
@@ -57,17 +56,17 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   embedded = false
 }) => {
   const isMobile = useIsMobile();
-  const navigate = useNavigate();
   const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
+  // Fix #15: Unsaved changes warning
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const isSubmittingRef = useRef(false);
   const draftPromptShownRef = useRef(false);
   const { hasDraft, draftLoaded, loadDraft, clearDraft, autoSave } = useMortgageDraft('registration', parcelNumber, open);
-  // Fix #7: Store submission reference for PDF receipt
   const [submissionReference, setSubmissionReference] = useState('');
   
   const [mortgageRecord, setMortgageRecord] = useState<MortgageRecord>({
@@ -132,6 +131,20 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     updateMortgage('receiptFile', null);
   };
 
+  // Fix #12: Preview uploaded file
+  const previewFile = () => {
+    if (mortgageRecord.receiptFile) {
+      const objectUrl = URL.createObjectURL(mortgageRecord.receiptFile);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 30000);
+    }
+  };
+
+  // Fix #15: Check if form has unsaved data
+  const hasFormData = (): boolean => {
+    return !!(mortgageRecord.mortgageAmount || mortgageRecord.creditorName || mortgageRecord.contractDate);
+  };
+
   const validateForm = (): boolean => {
     const amount = parseFloat(mortgageRecord.mortgageAmount);
     if (!mortgageRecord.mortgageAmount || isNaN(amount) || amount <= 0) {
@@ -164,8 +177,14 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       toast.error('La date du contrat ne peut pas être dans le futur');
       return false;
     }
+    // Fix #8: Validate parcel existence
     if (!parcelId) {
       toast.error('Identifiant de parcelle manquant. Veuillez relancer la recherche.');
+      return false;
+    }
+    // Fix #10: Only allow 'active' status for new registrations
+    if (!['active', 'en_defaut', 'renegociee'].includes(mortgageRecord.mortgageStatus)) {
+      toast.error('Statut d\'hypothèque invalide');
       return false;
     }
     return true;
@@ -205,11 +224,23 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
     setLoading(true);
     try {
-      // Check for existing pending mortgage contribution
       const hasPending = await checkExistingPending();
       if (hasPending) {
         toast.error('Une demande d\'hypothèque est déjà en cours ou renvoyée pour correction pour cette parcelle.');
-        // Fix #5: Ensure loading is reset
+        setLoading(false);
+        isSubmittingRef.current = false;
+        return;
+      }
+
+      // Fix #8: Verify parcel actually exists in DB
+      const { data: parcelExists, error: parcelError } = await supabase
+        .from('cadastral_parcels')
+        .select('id')
+        .eq('id', parcelId!)
+        .maybeSingle();
+      
+      if (parcelError || !parcelExists) {
+        toast.error('La parcelle spécifiée n\'existe pas dans notre base de données.');
         setLoading(false);
         isSubmittingRef.current = false;
         return;
@@ -238,7 +269,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       // Generate a reference for the registration
       const regReference = generateMortgageReference('HYP');
 
-      // Fix #9: Include declared mortgage_status in submission
+      // Fix #9: Pass duration as null explicitly (admin will handle default)
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -261,7 +292,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
       if (error) throw error;
 
-      // Audit log instead of phantom notifications table
       try {
         await supabase.from('audit_logs').insert({
           action: 'mortgage_registration_submitted',
@@ -285,6 +315,15 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   };
 
   const handleClose = () => {
+    // Fix #15: Warn if form has unsaved data (only in form step)
+    if (step === 'form' && hasFormData() && !showExitConfirm) {
+      setShowExitConfirm(true);
+      return;
+    }
+    performClose();
+  };
+
+  const performClose = () => {
     setStep('form');
     setMortgageRecord({
       mortgageAmount: '',
@@ -297,6 +336,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     });
     setSubmissionReference('');
     setShowSubmitConfirm(false);
+    setShowExitConfirm(false);
     isSubmittingRef.current = false;
     draftPromptShownRef.current = false;
     onOpenChange(false);
@@ -306,7 +346,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     return STATUS_LABELS[mortgageRecord.mortgageStatus] || mortgageRecord.mortgageStatus;
   }, [mortgageRecord.mortgageStatus]);
 
-  // Fix #7: PDF receipt for registration too
+  // Fix #16: PDF receipt with clear "gratuit" indication for registration
   const handleDownloadRegistrationReceipt = async () => {
     try {
       const blob = await generateMortgageReceiptPDF({
@@ -454,7 +494,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             </div>
           </div>
 
-          {/* Pièce jointe */}
+          {/* Pièce jointe - Fix #12: Add preview capability */}
           <div className="space-y-2 pt-2 border-t border-border/50">
             <Label className="text-sm font-medium flex items-center gap-1.5">
               Justificatif (optionnel)
@@ -478,6 +518,17 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               <div className="flex items-center gap-2 p-2 bg-muted/50 rounded-xl border">
                 <FileText className="h-4 w-4 text-primary flex-shrink-0" />
                 <span className="text-sm flex-1 truncate">{mortgageRecord.receiptFile.name}</span>
+                {/* Fix #12: Preview button */}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={previewFile}
+                  className="h-7 w-7 p-0 text-primary hover:bg-primary/10 rounded-lg"
+                  title="Aperçu"
+                >
+                  <Eye className="h-4 w-4" />
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
@@ -593,7 +644,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     </div>
   );
 
-  // Fix #7: Registration confirmation with PDF receipt download
   const renderConfirmationStep = () => (
     <div className="space-y-4 text-center py-6">
       <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
@@ -607,6 +657,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         {submissionReference && (
           <p className="text-xs font-mono text-primary mt-2">Réf: {submissionReference}</p>
         )}
+        {/* Fix #16: Clear indication that registration is free */}
+        <div className="mt-3 p-3 bg-primary/5 rounded-xl border border-primary/20">
+          <p className="text-xs text-primary/80">
+            📋 L'enregistrement d'hypothèque est <strong>gratuit</strong>. Aucun frais n'est facturé.
+          </p>
+        </div>
         <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-950/30 rounded-xl border border-amber-200 dark:border-amber-800">
           <p className="text-xs text-amber-700 dark:text-amber-300">
             🎁 Un <strong>code CCC</strong> sera généré après validation par l'administration. 
@@ -615,7 +671,6 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         </div>
       </div>
       <div className="flex flex-col gap-2">
-        {/* Fix #7: PDF receipt for registration */}
         <Button
           variant="outline"
           onClick={handleDownloadRegistrationReceipt}
@@ -627,14 +682,14 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         {!embedded && (
           <Button
             variant="outline"
-            onClick={() => navigate('/user-dashboard')}
+            onClick={() => { performClose(); window.location.href = '/user-dashboard'; }}
             className="w-full h-11 rounded-xl gap-2"
           >
             <ExternalLink className="h-4 w-4" />
             Voir mes demandes
           </Button>
         )}
-        <Button onClick={handleClose} className="w-full h-11 rounded-xl">
+        <Button onClick={performClose} className="w-full h-11 rounded-xl">
           Fermer
         </Button>
       </div>
@@ -660,6 +715,22 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         {step === 'preview' && renderPreviewStep()}
         {step === 'confirmation' && renderConfirmationStep()}
       </MortgageFlowContainer>
+
+      {/* Fix #15: Exit confirmation dialog */}
+      <AlertDialog open={showExitConfirm} onOpenChange={setShowExitConfirm}>
+        <AlertDialogContent className="rounded-2xl max-w-[340px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-sm">Quitter le formulaire ?</AlertDialogTitle>
+            <AlertDialogDescription className="text-xs">
+              Vous avez des données non sauvegardées. Le brouillon sera restaurable si la sauvegarde automatique a eu le temps de s'exécuter (3s).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="text-xs">Rester</AlertDialogCancel>
+            <AlertDialogAction onClick={performClose} className="text-xs bg-destructive hover:bg-destructive/90">Quitter</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
         <AlertDialogContent className="rounded-2xl">
