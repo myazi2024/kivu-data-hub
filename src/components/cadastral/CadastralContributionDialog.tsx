@@ -2058,7 +2058,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       filledFields,
       totalFields
     };
-  };
+  }, [formData, currentOwners, buildingPermits, permitRequest, gpsCoordinates, previousOwners, taxRecords, mortgageRecords, ownerDocFile, titleDocFiles]);
 
   // Calculer les détails de progression avec points et badges
   const calculateProgressDetails = () => {
