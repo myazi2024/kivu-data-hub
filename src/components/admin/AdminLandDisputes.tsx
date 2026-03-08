@@ -292,7 +292,7 @@ const AdminLandDisputes: React.FC = () => {
                     </Badge>
                   </td>
                   <td className="p-3 text-xs hidden md:table-cell">{DISPUTE_NATURES_MAP[dispute.dispute_nature] || dispute.dispute_nature}</td>
-                  <td className="p-3">{getStatusBadge(dispute.current_status)}</td>
+                  <td className="p-3"><DisputeStatusBadge status={dispute.current_status} /></td>
                   <td className="p-3 text-xs hidden md:table-cell">{dispute.declarant_name}</td>
                   <td className="p-3 text-xs hidden md:table-cell">{new Date(dispute.created_at).toLocaleDateString('fr-FR')}</td>
                   <td className="p-3 text-center">
