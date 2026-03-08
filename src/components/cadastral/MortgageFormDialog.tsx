@@ -144,21 +144,19 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     setStep('preview');
   };
 
-  // Fix #2: Check specifically for mortgage-related pending contributions
+  // Fix #6: Check ONLY for mortgage_registration pending contributions (not generic 'update')
   const checkExistingPending = async (): Promise<boolean> => {
     if (!user) return false;
     
     const { data } = await supabase
       .from('cadastral_contributions')
-      .select('id, mortgage_history')
+      .select('id')
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
-      .in('contribution_type', ['update', 'mortgage_registration'])
+      .eq('contribution_type', 'mortgage_registration')
       .in('status', ['pending', 'in_review']);
     
-    // Only block if there's a contribution that actually has mortgage_history data
-    const hasMortgagePending = data?.some(c => c.mortgage_history !== null) ?? false;
-    return hasMortgagePending;
+    return (data?.length ?? 0) > 0;
   };
 
   const handleSubmit = async () => {
