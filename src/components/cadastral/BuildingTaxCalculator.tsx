@@ -400,7 +400,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
           </h4>
           <div className="space-y-1.5">
             <Label className="text-sm">Type de construction *</Label>
-            <Select value={constructionType} onValueChange={setConstructionType}>
+            <Select value={constructionType} onValueChange={(v) => setConstructionType(v as 'en_dur' | 'semi_dur' | 'en_paille')}>
               <SelectTrigger className="h-10 text-sm rounded-xl border-2"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="en_dur">En dur (béton, briques, ciment)</SelectItem>
