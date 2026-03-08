@@ -1311,17 +1311,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     </div>
   );
 
+  // Fix #19: Remove WhatsAppFloatingButton from embedded (parent handles it)
   if (embedded) {
     return (
       <>
-        {/* Fix #15 & #20: WhatsApp in embedded + single scroll */}
         <div className="overflow-y-auto h-full px-4 pb-4">
           {step === 'form' && renderFormStep()}
           {step === 'review' && renderReviewStep()}
           {step === 'payment' && renderPaymentStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </div>
-        {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
         <QuickAuthDialog
           open={showAuthDialog}
           onOpenChange={setShowAuthDialog}
