@@ -580,12 +580,28 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
+  // Validation du numéro de téléphone congolais (Bug #5)
+  const validatePhoneNumber = (phone: string): boolean => {
+    const regex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+    return regex.test(phone.replace(/\s/g, ''));
+  };
+
   const handlePayment = async () => {
     if (!createdRequest) return;
     
-    if (paymentMethod === 'mobile_money' && (!paymentProvider || !paymentPhone)) {
-      toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
-      return;
+    if (paymentMethod === 'mobile_money') {
+      if (!paymentProvider) {
+        toast.error('Veuillez sélectionner un opérateur');
+        return;
+      }
+      if (!paymentPhone) {
+        toast.error('Veuillez entrer votre numéro de téléphone');
+        return;
+      }
+      if (!validatePhoneNumber(paymentPhone)) {
+        toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX');
+        return;
+      }
     }
 
     setProcessingPayment(true);
