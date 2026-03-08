@@ -96,7 +96,7 @@ export const UserMutationRequests: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">Type</span>
-                      <span className="font-medium capitalize">{request.mutation_type.replace('_', ' ')}</span>
+                      <span className="font-medium capitalize">{request.mutation_type.replace(/_/g, ' ')}</span>
                     </div>
                     {request.beneficiary_name && (
                       <div className="flex items-center justify-between text-xs">
