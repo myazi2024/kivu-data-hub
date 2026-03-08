@@ -165,7 +165,9 @@ export const useLandTitleRequest = () => {
         proofOfOwnershipUrl = await uploadDocument(data.proofOfOwnershipFile, 'proof-of-ownership');
       }
 
-      // Build fee items
+      // Build fee items - use dynamic fees if available
+      const totalAmount = data.totalAmountOverride ?? calculateTotal(data.selectedFees);
+      
       const feeItems = fees
         .filter(fee => fee.is_mandatory || data.selectedFees.includes(fee.id))
         .map(fee => ({
@@ -174,8 +176,6 @@ export const useLandTitleRequest = () => {
           amount: fee.amount_usd,
           is_mandatory: fee.is_mandatory
         }));
-
-      const totalAmount = calculateTotal(data.selectedFees);
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
