@@ -257,24 +257,23 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   // Selon la Note circulaire n°1.441/SG/AFF.F/003/2016 du 07 décembre 2016, le délai légal est de 20 jours
   const calculateLateFees = () => {
     const dateToUse = ownerAcquisitionDate || manualAcquisitionDate;
-    if (!dateToUse) return { days: 0, fee: 0, applicable: false };
+    if (!dateToUse) return { days: 0, fee: 0, applicable: false, capped: false };
     
     const acquisitionDate = new Date(dateToUse);
     const today = new Date();
     const totalDaysElapsed = differenceInDays(today, acquisitionDate);
     
-    // Délai légal de 20 jours - les frais s'appliquent à partir du 21ème jour
-    const LEGAL_GRACE_PERIOD = 20;
-    const daysAfterGracePeriod = Math.max(0, totalDaysElapsed - LEGAL_GRACE_PERIOD);
+    const daysAfterGracePeriod = Math.max(0, totalDaysElapsed - LEGAL_GRACE_PERIOD_DAYS);
     
-    // Tarif: 0.45$ par jour après le délai légal
-    const DAILY_LATE_FEE = 0.45;
-    const lateFee = daysAfterGracePeriod * DAILY_LATE_FEE;
+    const rawFee = daysAfterGracePeriod * DAILY_LATE_FEE_USD;
+    // Plafond légal
+    const cappedFee = Math.min(rawFee, LATE_FEE_CAP_USD);
     
     return {
       days: daysAfterGracePeriod,
-      fee: Math.round(lateFee * 100) / 100,
-      applicable: daysAfterGracePeriod > 0
+      fee: Math.round(cappedFee * 100) / 100,
+      applicable: daysAfterGracePeriod > 0,
+      capped: rawFee > LATE_FEE_CAP_USD
     };
   };
 
