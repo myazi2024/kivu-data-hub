@@ -1,0 +1,1 @@
+UPDATE parcel_actions_config SET label = 'Ajouter une autorisation' WHERE action_key = 'permit_add';
