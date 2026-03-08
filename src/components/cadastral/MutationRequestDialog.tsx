@@ -248,10 +248,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     return { isValid: daysRemaining > 0, daysRemaining: Math.max(0, daysRemaining), isExpired: daysRemaining <= 0 };
   }, [hasExpertiseCertificate, expertiseCertificateDate]);
 
-  // Memoized: mutation fees calculation
+  // Memoized: mutation fees calculation (uses BANK_FEE_PERCENTAGE from constants)
   const mutationFeesCalculation = useMemo(() => {
     const value = parseFloat(marketValueUsd) || 0;
-    const BANK_FEE_PERCENTAGE = 0.005; // Commission bancaire réglementaire
     
     if (value < 10000) {
       return { mutationFee: 0, bankFee: 0, total: 0, applicable: false, percentage: 0 };
@@ -259,6 +258,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     
     const percentage = titleAge === '10_or_more' ? 0.015 : 0.03;
     const mutationFee = value * percentage;
+    // Titres de 10+ ans : frais bancaires exemptés (circulaire n°0076/2023)
     const bankFee = titleAge === '10_or_more' ? 0 : value * BANK_FEE_PERCENTAGE;
     
     return {
