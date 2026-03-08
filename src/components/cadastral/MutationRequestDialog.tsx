@@ -1125,7 +1125,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   <span className="text-xs font-semibold text-primary uppercase tracking-wide">Nouveau propriétaire</span>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Nom complet</span>
-                    <span className="text-sm font-medium max-w-[60%] text-right">{getBeneficiaryFullName()}</span>
+                    <span className="text-sm font-medium max-w-[60%] text-right">{beneficiaryFullName}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Statut</span>
