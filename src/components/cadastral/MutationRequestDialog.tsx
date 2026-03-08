@@ -1554,9 +1554,91 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </>
         )}
 
-        {/* Pour les mutations non-transfert, afficher directement le bouton preview */}
+        {/* Pour les mutations non-transfert, afficher les frais administratifs + retard */}
         {!isTransferMutation && (
           <>
+            <Card className="border-2 border-amber-200 dark:border-amber-700 rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <h4 className="text-sm font-semibold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  Frais administratifs de mutation
+                </h4>
+
+                <div className="space-y-2">
+                  {getSelectedFeesDetails().length > 0 ? (
+                    getSelectedFeesDetails().map((fee) => (
+                      <div key={fee.id} className="flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2">
+                        <div>
+                          <p className="text-sm font-medium">{fee.fee_name}</p>
+                          {fee.description && <p className="text-xs text-muted-foreground">{fee.description}</p>}
+                        </div>
+                        <span className="text-sm font-bold text-amber-700 dark:text-amber-400">${fee.amount_usd.toFixed(2)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Aucun frais actif configuré.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-orange-200 dark:border-orange-700 rounded-xl">
+              <CardContent className="p-3 space-y-3">
+                <div className="flex items-center gap-2">
+                  <h4 className="text-sm font-semibold text-orange-700 dark:text-orange-400 flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Traitement hors délai légal
+                  </h4>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground flex items-center gap-2">
+                      Date d'acquisition par le propriétaire actuel
+                      {ownerAcquisitionDateAutoDetected && (
+                        <span className="text-[10px] text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-1.5 py-0.5 rounded">
+                          détectée automatiquement
+                        </span>
+                      )}
+                    </Label>
+                    {ownerAcquisitionDate ? (
+                      <div className="flex items-center gap-2 p-2.5 bg-muted/50 rounded-lg">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">
+                          {format(new Date(ownerAcquisitionDate), 'd MMMM yyyy', { locale: fr })}
+                        </span>
+                      </div>
+                    ) : (
+                      <Input
+                        type="date"
+                        max={new Date().toISOString().split('T')[0]}
+                        value={manualAcquisitionDate}
+                        onChange={(e) => setManualAcquisitionDate(e.target.value)}
+                        className="h-9 text-sm"
+                        placeholder="Sélectionnez la date d'acquisition"
+                      />
+                    )}
+                  </div>
+
+                  {lateFeesCalculation.applicable && (
+                    <div className="flex items-start gap-3 p-3 rounded-xl transition-colors bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-200 dark:border-orange-700">
+                      <div className="p-1.5 bg-orange-100 dark:bg-orange-900/50 rounded-lg mt-0.5">
+                        <Clock className="h-4 w-4 text-orange-700 dark:text-orange-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium">Frais de retard ({lateFeesCalculation.days} jours)</span>
+                          <span className="text-sm font-bold text-orange-700 dark:text-orange-400 whitespace-nowrap">
+                            ${lateFeesCalculation.fee.toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Total à payer */}
             <Card className="border rounded-xl">
               <CardContent className="p-3">
@@ -1570,6 +1652,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             <Button 
               onClick={handlePreview} 
               className="w-full h-12 text-sm font-semibold rounded-xl shadow-lg"
+              disabled={fees.length > 0 && selectedFees.length === 0}
             >
               <Eye className="h-4 w-4 mr-2" />
               Aperçu avant soumission
