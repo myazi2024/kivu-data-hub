@@ -150,11 +150,13 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     const normalizedPermitNumber = normalizePermitNumber(permitRecord.permitNumber);
 
     try {
-      // Step 1: Check for duplicate permit number BEFORE upload
+      // Step 1: Check for duplicate permit number BEFORE upload (server-side filtered)
       const { data: existingContributions, error: dupError } = await supabase
         .from('cadastral_contributions')
         .select('id, building_permits')
-        .in('status', ['pending', 'approved']);
+        .eq('parcel_number', parcelNumber)
+        .in('status', ['pending', 'approved', 'verified'])
+        .not('building_permits', 'is', null);
 
       if (dupError) {
         console.error('Duplicate check error:', dupError);
@@ -170,7 +172,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
         });
 
         if (isDuplicate) {
-          toast.error(`Le numéro d'autorisation ${normalizedPermitNumber} existe déjà dans le système`);
+          toast.error(`Le numéro d'autorisation ${normalizedPermitNumber} existe déjà pour cette parcelle`);
           setLoading(false);
           return;
         }
@@ -249,7 +251,20 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
     }
   };
 
-  const handleClose = () => {
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = (): boolean => {
+    if (step === 'confirmation') return false;
+    return !!(
+      permitRecord.permitNumber ||
+      permitRecord.issueDate ||
+      permitRecord.issuingService ||
+      permitRecord.issuingServiceContact ||
+      permitRecord.permitFile ||
+      permitRecord.validityPeriod !== '12'
+    );
+  };
+
+  const resetAndClose = () => {
     setStep('form');
     setPermitRecord({
       permitNumber: '',
@@ -260,6 +275,14 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
       permitFile: null
     });
     onOpenChange(false);
+  };
+
+  const handleClose = () => {
+    if (hasUnsavedChanges()) {
+      const confirmed = window.confirm('Vous avez des modifications non enregistrées. Voulez-vous vraiment fermer ?');
+      if (!confirmed) return;
+    }
+    resetAndClose();
   };
 
   const calculatedStatus = computedStatus();
@@ -422,10 +445,17 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
               ['Service émetteur', permitRecord.issuingService],
               ['Validité', `${permitRecord.validityPeriod} mois`],
               ['Statut', calculatedStatus],
+              ['Date d\'expiration', (() => {
+                if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'N/A';
+                const d = new Date(permitRecord.issueDate);
+                d.setMonth(d.getMonth() + (parseInt(permitRecord.validityPeriod) || 12));
+                return d.toLocaleDateString('fr-FR');
+              })()],
+              ...(permitRecord.permitFile ? [['Document joint', permitRecord.permitFile.name]] : []),
             ].map(([label, value], i, arr) => (
-              <div key={label} className={`flex justify-between py-1.5 ${i < arr.length - 1 ? 'border-b border-border/30' : ''}`}>
-                <span className="text-muted-foreground">{label}</span>
-                <span className="font-medium text-right max-w-[55%]">{value}</span>
+              <div key={label as string} className={`flex justify-between py-1.5 ${i < arr.length - 1 ? 'border-b border-border/30' : ''}`}>
+                <span className="text-muted-foreground">{label as string}</span>
+                <span className="font-medium text-right max-w-[55%]">{value as string}</span>
               </div>
             ))}
           </div>

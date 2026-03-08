@@ -74,7 +74,10 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
     };
   };
 
-  const requestType = permit.permit_request_data?.requestType;
+  // Determine request type from permit_request_data or building_permits
+  const requestType = permit.permit_request_data?.requestType 
+    || (Array.isArray(permit.building_permits) && permit.building_permits[0]?.permitType) 
+    || 'construction';
   const isRegularization = requestType === 'regularization';
 
   return (
@@ -240,6 +243,18 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
                         <span className="ml-1 font-medium">{validMonths} mois</span>
                       </div>
                     </div>
+                    {/* Document link */}
+                    {(bp.documentUrl || bp.document_url) && (
+                      <a
+                        href={bp.documentUrl || bp.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[10px] md:text-xs text-primary underline hover:no-underline flex items-center gap-1"
+                      >
+                        <FileText className="h-3 w-3" />
+                        Voir le document
+                      </a>
+                    )}
                     <PermitDownloadButton permit={permit} className="w-full" />
                   </div>
                 );

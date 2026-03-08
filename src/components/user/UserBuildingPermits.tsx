@@ -52,16 +52,32 @@ export function UserBuildingPermits() {
     try {
       setLoading(true);
 
-      // Fetch both permit_request (demandes) AND update contributions with building_permits
-      const { data, error } = await supabase
+      // Fetch permit_request contributions
+      const { data: permitRequests, error: err1 } = await supabase
         .from('cadastral_contributions')
         .select('*')
         .eq('user_id', user.id)
-        .in('contribution_type', ['permit_request', 'update'])
+        .eq('contribution_type', 'permit_request')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setPermits(data || []);
+      if (err1) throw err1;
+
+      // Fetch update contributions that specifically have building_permits data
+      const { data: updateContribs, error: err2 } = await supabase
+        .from('cadastral_contributions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('contribution_type', 'update')
+        .not('building_permits', 'is', null)
+        .order('created_at', { ascending: false });
+
+      if (err2) throw err2;
+
+      // Merge both lists
+      const allPermits = [...(permitRequests || []), ...(updateContribs || [])];
+      // Sort by created_at descending
+      allPermits.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setPermits(allPermits);
     } catch (error) {
       console.error('Error fetching building permits:', error);
       toast.error("Erreur lors du chargement des demandes d'autorisation");
@@ -79,12 +95,23 @@ export function UserBuildingPermits() {
     fetchBuildingPermits();
   };
 
-  // Filtrer les permis par type
+  // Filtrer les permis par type - support both permit_request_data and building_permits entries
+  const getPermitRequestType = (p: BuildingPermitRequest): string => {
+    // From permit_request_data (new requests)
+    if (p.permit_request_data?.requestType) return p.permit_request_data.requestType;
+    // From building_permits JSON (manual registrations)
+    if (Array.isArray(p.building_permits) && p.building_permits.length > 0) {
+      const bpType = p.building_permits[0]?.permitType;
+      if (bpType === 'regularization') return 'regularization';
+    }
+    return 'construction';
+  };
+
   const constructionPermits = permits.filter(
-    p => p.permit_request_data?.requestType !== 'regularization'
+    p => getPermitRequestType(p) !== 'regularization'
   );
   const regularizationPermits = permits.filter(
-    p => p.permit_request_data?.requestType === 'regularization'
+    p => getPermitRequestType(p) === 'regularization'
   );
 
   // Fonction pour organiser les permis par statut
@@ -160,12 +187,12 @@ export function UserBuildingPermits() {
             <PermitSection
               title="Délivrés"
               permits={constructionByStatus.approved}
-              emptyMessage="Aucun permis délivré"
+              emptyMessage="Aucune autorisation délivrée"
             />
             <PermitSection
               title="Refusés"
               permits={constructionByStatus.rejected}
-              emptyMessage="Aucun permis refusé"
+              emptyMessage="Aucune autorisation refusée"
               onAppealClick={handleAppealClick}
             />
           </TabsContent>
@@ -179,12 +206,12 @@ export function UserBuildingPermits() {
             <PermitSection
               title="Délivrés"
               permits={regularizationByStatus.approved}
-              emptyMessage="Aucun permis délivré"
+              emptyMessage="Aucune autorisation délivrée"
             />
             <PermitSection
               title="Refusés"
               permits={regularizationByStatus.rejected}
-              emptyMessage="Aucun permis refusé"
+              emptyMessage="Aucune autorisation refusée"
               onAppealClick={handleAppealClick}
             />
           </TabsContent>
