@@ -1718,24 +1718,28 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   
   const removeBuildingPermit = (index: number) => {
     setBuildingPermits(buildingPermits.filter((_, i) => i !== index));
+    markDirty();
   };
   
   const updateBuildingPermit = (index: number, field: string, value: string) => {
     const updated = [...buildingPermits];
     updated[index] = { ...updated[index], [field]: value };
     setBuildingPermits(updated);
+    markDirty();
   };
 
   const updateBuildingPermitFile = (index: number, file: File | null) => {
     const updated = [...buildingPermits];
     updated[index] = { ...updated[index], attachmentFile: file };
     setBuildingPermits(updated);
+    markDirty();
   };
 
   const removeBuildingPermitFile = (index: number) => {
     const updated = [...buildingPermits];
     updated[index] = { ...updated[index], attachmentFile: null };
     setBuildingPermits(updated);
+    markDirty();
   };
 
   // Logiques dépendantes pour les autorisations de bâtir
