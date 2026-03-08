@@ -1795,7 +1795,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-muted-foreground">Montant payé</span>
-            <span className="font-bold text-primary text-sm">${createdRequest?.total_amount_usd}</span>
+            <span className="font-bold text-primary text-sm">${createdRequest?.total_amount_usd.toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>
