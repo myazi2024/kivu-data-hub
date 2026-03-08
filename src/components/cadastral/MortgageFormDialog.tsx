@@ -13,7 +13,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SectionHelpPopover from './SectionHelpPopover';
-import QuickAuthDialog from './QuickAuthDialog';
+import { QuickAuthDialog } from './QuickAuthDialog';
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
