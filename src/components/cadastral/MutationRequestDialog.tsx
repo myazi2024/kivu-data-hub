@@ -317,6 +317,31 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setSelectedFees(mandatoryFeeIds);
   }, [fees]);
 
+  useEffect(() => {
+    if (step !== 'payment') return;
+
+    if (paymentMethod === 'mobile_money' && !availableMethods.hasMobileMoney && availableMethods.hasBankCard) {
+      setPaymentMethod('bank_card');
+      return;
+    }
+
+    if (paymentMethod === 'bank_card' && !availableMethods.hasBankCard && availableMethods.hasMobileMoney) {
+      setPaymentMethod('mobile_money');
+      return;
+    }
+
+    if (paymentMethod === 'mobile_money' && enabledMobileProviders.length > 0 && !paymentProvider) {
+      setPaymentProvider(enabledMobileProviders[0]);
+    }
+  }, [
+    step,
+    paymentMethod,
+    paymentProvider,
+    availableMethods.hasMobileMoney,
+    availableMethods.hasBankCard,
+    enabledMobileProviders,
+  ]);
+
   const handleFeeToggle = (feeId: string, isMandatory: boolean) => {
     if (isMandatory) return;
     setSelectedFees(prev => 
