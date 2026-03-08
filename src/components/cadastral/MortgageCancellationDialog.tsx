@@ -356,6 +356,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   };
 
   const handleGoToReview = () => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
     if (!validateForm()) return;
     setStep('review');
   };
