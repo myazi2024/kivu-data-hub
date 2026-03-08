@@ -26,8 +26,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
 }) => {
   const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState<MortgageTab>('add');
-  const [addKey, setAddKey] = useState(0);
-  const [removeKey, setRemoveKey] = useState(0);
   const introCompletedRef = useRef(false);
 
   // Fix #24: Check if parcel has active mortgages for the radiation tab
