@@ -1698,9 +1698,19 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 <SelectValue placeholder="Sélectionner..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="airtel" className="text-xs">Airtel Money</SelectItem>
-                <SelectItem value="orange" className="text-xs">Orange Money</SelectItem>
-                <SelectItem value="mpesa" className="text-xs">M-Pesa</SelectItem>
+                {availableMethods.enabledProviders.mobileMoneyProviders.length > 0 ? (
+                  availableMethods.enabledProviders.mobileMoneyProviders.map(provider => (
+                    <SelectItem key={provider} value={provider} className="text-xs">
+                      {provider === 'airtel' ? 'Airtel Money' : provider === 'orange' ? 'Orange Money' : provider === 'mpesa' ? 'M-Pesa' : provider}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="airtel" className="text-xs">Airtel Money</SelectItem>
+                    <SelectItem value="orange" className="text-xs">Orange Money</SelectItem>
+                    <SelectItem value="mpesa" className="text-xs">M-Pesa</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
