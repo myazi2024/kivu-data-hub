@@ -384,7 +384,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
   const cartItem: CartItem = {
     id: 'building-permit-request',
-    title: requestType === 'new' ? 'Permis de construire' : 'Permis de régularisation',
+    title: requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation',
     price: totalFeeUSD,
     description: `Parcelle: ${parcelNumber}`
   };
