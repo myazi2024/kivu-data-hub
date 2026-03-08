@@ -422,7 +422,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <div className={`flex items-center space-x-3 p-3 rounded-xl border-2 transition-colors cursor-pointer ${requestType === 'new' ? 'border-primary bg-primary/5' : 'hover:bg-muted/50'}`}>
                 <RadioGroupItem value="new" id="new" />
                 <Label htmlFor="new" className="flex-1 cursor-pointer">
-                  <div className="font-medium text-sm">Nouveau permis de construire</div>
+                  <div className="font-medium text-sm">Nouvelle autorisation de bâtir</div>
                   <div className="text-xs text-muted-foreground">Construction à venir</div>
                 </Label>
               </div>
