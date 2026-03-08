@@ -26,8 +26,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
 }) => {
   const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState<MortgageTab>('add');
-  const [addKey, setAddKey] = useState(0);
-  const [removeKey, setRemoveKey] = useState(0);
   const introCompletedRef = useRef(false);
 
   // Fix #24: Check if parcel has active mortgages for the radiation tab
@@ -40,10 +38,10 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     }
   }, [open]);
 
-  // Check for active mortgages when dialog opens or parcelId changes
+  // Check for active mortgages only when the "Radiation" tab is active
   useEffect(() => {
     const checkActiveMortgages = async () => {
-      if (!open || !parcelId) {
+      if (!open || !parcelId || activeTab !== 'remove') {
         setHasActiveMortgage(null);
         return;
       }
@@ -65,7 +63,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
       }
     };
     checkActiveMortgages();
-  }, [open, parcelId]);
+  }, [open, parcelId, activeTab]);
 
   const handleIntroComplete = () => {
     introCompletedRef.current = true;
@@ -76,16 +74,11 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     setShowIntro(true);
     setActiveTab('add');
     introCompletedRef.current = false;
-    setAddKey(k => k + 1);
-    setRemoveKey(k => k + 1);
     onOpenChange(false);
   }, [onOpenChange]);
 
-  // Fix #11: Only reset the tab being LEFT
   const handleTabChange = useCallback((tab: MortgageTab) => {
     if (tab === activeTab) return;
-    if (activeTab === 'add') setAddKey(k => k + 1);
-    else setRemoveKey(k => k + 1);
     setActiveTab(tab);
   }, [activeTab]);
 
@@ -155,7 +148,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
         <div className="flex-1 min-h-0 overflow-hidden">
           {activeTab === 'add' ? (
             <MortgageFormDialog
-              key={`add-${addKey}`}
               parcelNumber={parcelNumber}
               parcelId={parcelId}
               open={true}
@@ -184,7 +176,6 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
                 </div>
               )}
               <MortgageCancellationDialog
-                key={`remove-${removeKey}`}
                 parcelNumber={parcelNumber}
                 parcelId={parcelId}
                 open={true}

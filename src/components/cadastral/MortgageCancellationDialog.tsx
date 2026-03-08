@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileX2, Save } from 'lucide-react';
@@ -11,6 +10,8 @@ import { QuickAuthDialog } from './QuickAuthDialog';
 import { useMortgageFees } from '@/hooks/useMortgageFees';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
+import MortgageFlowContainer from './MortgageFlowContainer';
+import { generateMortgageReference } from '@/utils/mortgageReferences';
 
 import {
   CancellationFormStep,
@@ -19,7 +20,7 @@ import {
   CancellationConfirmationStep,
 } from './mortgage-cancellation';
 import type { Step, CancellationRequest, ParcelData, MortgageData } from './mortgage-cancellation/types';
-import { CANCELLATION_REASONS, PHONE_REGEX_DRC, ACTIVE_MORTGAGE_STATUSES } from './mortgage-cancellation/types';
+import { CANCELLATION_REASONS, EMAIL_REGEX, PHONE_REGEX_DRC, ACTIVE_MORTGAGE_STATUSES } from './mortgage-cancellation/types';
 
 interface MortgageCancellationDialogProps {
   parcelNumber: string;
@@ -35,7 +36,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
   const { fees, loadingFees } = useMortgageFees();
-  const { hasDraft, loadDraft, clearDraft, autoSave } = useMortgageDraft('cancellation', parcelNumber, open);
+  const { hasDraft, draftLoaded, loadDraft, clearDraft, autoSave } = useMortgageDraft('cancellation', parcelNumber, open);
 
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
@@ -73,11 +74,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     comments: ''
   });
 
-  // Fix #2: Generate reference once on open, not as a dependency
   useEffect(() => {
-    if (open) {
-      setRequestReferenceNumber(`RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`);
-    }
+    if (!open) return;
+    setRequestReferenceNumber(generateMortgageReference('RAD'));
+    setParcelData(null);
   }, [open]);
 
   const loadParcelData = useCallback(async () => {
@@ -105,16 +105,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   }, [open, loadParcelData]);
 
-  // Fix #1: Draft prompt only shown once per dialog session
   useEffect(() => {
-    if (open && hasDraft && !draftPromptShownRef.current) {
+    if (open && draftLoaded && hasDraft && !draftPromptShownRef.current) {
       draftPromptShownRef.current = true;
       setShowDraftPrompt(true);
     }
     if (!open) {
       draftPromptShownRef.current = false;
+      setShowDraftPrompt(false);
     }
-  }, [open, hasDraft]);
+  }, [open, draftLoaded, hasDraft]);
 
   useEffect(() => {
     if (open && fees.length > 0 && !feesInitializedRef.current) {
@@ -137,10 +137,10 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   // Auto-save draft on form changes
   useEffect(() => {
-    if (open && step === 'form') {
+    if (open && draftLoaded && step === 'form') {
       autoSave(formData);
     }
-  }, [formData, open, step, autoSave]);
+  }, [formData, open, draftLoaded, step, autoSave]);
 
   const handleRestoreDraft = () => {
     const draftData = loadDraft();
@@ -230,9 +230,13 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       const amount = parseFloat(formData.settlementAmount);
       if (isNaN(amount) || amount < 0) { toast.error('Le montant de règlement ne peut pas être négatif'); return false; }
     }
-    // Fix #13: Validate requester phone format if provided
+    // Validate requester phone format if provided
     if (formData.requesterPhone.trim() && !PHONE_REGEX_DRC.test(formData.requesterPhone.replace(/\s/g, ''))) {
       toast.error('Le numéro de téléphone du demandeur est invalide (format RDC attendu)');
+      return false;
+    }
+    if (formData.requesterEmail.trim() && !EMAIL_REGEX.test(formData.requesterEmail.trim())) {
+      toast.error("L'email du demandeur est invalide");
       return false;
     }
     if (formData.supportingDocuments.length === 0) { toast.error('Veuillez joindre au moins un document justificatif'); return false; }
@@ -463,33 +467,25 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     </>
   );
 
-  if (embedded) {
-    return (
-      <>
-        <div className="overflow-y-auto h-full px-4 pb-4">
-          {renderContent()}
-        </div>
-        <QuickAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onAuthSuccess={() => setShowAuthDialog(false)} />
-      </>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[380px] max-h-[88vh]' : 'max-w-lg max-h-[85vh]'} rounded-2xl p-0 overflow-hidden`}>
-        <DialogHeader className="p-4 pb-2">
-          <DialogTitle className="flex items-center gap-2 text-base font-bold">
+    <>
+      <MortgageFlowContainer
+        open={open}
+        embedded={embedded}
+        isMobile={isMobile}
+        onClose={handleClose}
+        title={(
+          <>
             <div className="p-1.5 bg-destructive/10 rounded-lg"><FileX2 className="h-4 w-4 text-destructive" /></div>
             Radiation d'hypothèque
-          </DialogTitle>
-          <DialogDescription className="text-xs">Parcelle {parcelNumber}</DialogDescription>
-        </DialogHeader>
-        <div className={`${isMobile ? 'h-[calc(88vh-80px)]' : 'max-h-[calc(85vh-80px)]'} overflow-y-auto px-4 pb-4`}>
-          {renderContent()}
-        </div>
-      </DialogContent>
+          </>
+        )}
+        description={`Parcelle ${parcelNumber}`}
+      >
+        {renderContent()}
+      </MortgageFlowContainer>
       <QuickAuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} onAuthSuccess={() => setShowAuthDialog(false)} />
-    </Dialog>
+    </>
   );
 };
 

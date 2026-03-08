@@ -1,6 +1,5 @@
 import React, { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Save, Download } from 'lucide-react';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
@@ -17,6 +16,9 @@ import { supabase } from '@/integrations/supabase/client';
 import SectionHelpPopover from './SectionHelpPopover';
 import { QuickAuthDialog } from './QuickAuthDialog';
 import { generateMortgageReceiptPDF } from '@/utils/generateMortgageReceiptPDF';
+import { generateMortgageReference } from '@/utils/mortgageReferences';
+import MortgageFlowContainer from './MortgageFlowContainer';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
@@ -45,6 +47,8 @@ const STATUS_LABELS: Record<string, string> = {
   'renegociee': 'Renégociée',
 };
 
+const MAX_MORTGAGE_AMOUNT_USD = 1_000_000_000;
+
 const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   parcelNumber,
   parcelId,
@@ -54,14 +58,15 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const isSubmittingRef = useRef(false);
   const draftPromptShownRef = useRef(false);
-  const { hasDraft, loadDraft, clearDraft, autoSave } = useMortgageDraft('registration', parcelNumber, open);
+  const { hasDraft, draftLoaded, loadDraft, clearDraft, autoSave } = useMortgageDraft('registration', parcelNumber, open);
   // Fix #7: Store submission reference for PDF receipt
   const [submissionReference, setSubmissionReference] = useState('');
   
@@ -77,19 +82,19 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fix #1: Draft prompt shown once per session
+  // Draft prompt shown once per session
   useEffect(() => {
-    if (open && hasDraft && !draftPromptShownRef.current) {
+    if (open && draftLoaded && hasDraft && !draftPromptShownRef.current) {
       draftPromptShownRef.current = true;
       setShowDraftPrompt(true);
     }
     if (!open) draftPromptShownRef.current = false;
-  }, [open, hasDraft]);
+  }, [open, draftLoaded, hasDraft]);
 
   // Draft: auto-save
   useEffect(() => {
-    if (open && step === 'form') autoSave(mortgageRecord);
-  }, [mortgageRecord, open, step, autoSave]);
+    if (open && draftLoaded && step === 'form') autoSave(mortgageRecord);
+  }, [mortgageRecord, open, draftLoaded, step, autoSave]);
 
   const handleRestoreDraft = () => {
     const draftData = loadDraft();
@@ -133,6 +138,10 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       toast.error('Le montant de l\'hypothèque doit être supérieur à 0');
       return false;
     }
+    if (amount > MAX_MORTGAGE_AMOUNT_USD) {
+      toast.error(`Le montant dépasse la limite autorisée (${MAX_MORTGAGE_AMOUNT_USD.toLocaleString()} USD)`);
+      return false;
+    }
     if (mortgageRecord.duration) {
       const dur = parseInt(mortgageRecord.duration);
       if (isNaN(dur) || dur <= 0) {
@@ -173,15 +182,15 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   const checkExistingPending = async (): Promise<boolean> => {
     if (!user) return false;
-    
+
     const { data } = await supabase
       .from('cadastral_contributions')
       .select('id')
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_registration')
-      .in('status', ['pending']);
-    
+      .in('status', ['pending', 'returned']);
+
     return (data?.length ?? 0) > 0;
   };
 
@@ -199,7 +208,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       // Check for existing pending mortgage contribution
       const hasPending = await checkExistingPending();
       if (hasPending) {
-        toast.error('Une demande d\'hypothèque est déjà en cours de traitement pour cette parcelle.');
+        toast.error('Une demande d\'hypothèque est déjà en cours ou renvoyée pour correction pour cette parcelle.');
         // Fix #5: Ensure loading is reset
         setLoading(false);
         isSubmittingRef.current = false;
@@ -226,8 +235,8 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         documentUrl = data.publicUrl;
       }
 
-      // Fix #7: Generate a reference for the registration
-      const regReference = `HYP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+      // Generate a reference for the registration
+      const regReference = generateMortgageReference('HYP');
 
       // Fix #9: Include declared mortgage_status in submission
       const { error } = await supabase
@@ -287,6 +296,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       receiptFile: null
     });
     setSubmissionReference('');
+    setShowSubmitConfirm(false);
     isSubmittingRef.current = false;
     draftPromptShownRef.current = false;
     onOpenChange(false);
@@ -303,7 +313,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         type: 'registration',
         requestReference: submissionReference,
         parcelNumber,
-        requesterName: user?.email || 'N/A',
+        requesterName: profile?.full_name || profile?.email || user?.email || 'N/A',
         totalAmountPaid: 0,
         fees: [],
         date: mortgageRecord.contractDate || new Date().toISOString(),
@@ -573,7 +583,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           Modifier
         </Button>
         <Button
-          onClick={handleSubmit}
+          onClick={() => setShowSubmitConfirm(true)}
           disabled={loading}
           className="flex-1 h-11 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700"
         >
@@ -614,14 +624,16 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           <Download className="h-4 w-4" />
           Télécharger le reçu PDF
         </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/user-dashboard')}
-          className="w-full h-11 rounded-xl gap-2"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Voir mes demandes
-        </Button>
+        {!embedded && (
+          <Button
+            variant="outline"
+            onClick={() => navigate('/user-dashboard')}
+            className="w-full h-11 rounded-xl gap-2"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Voir mes demandes
+          </Button>
+        )}
         <Button onClick={handleClose} className="w-full h-11 rounded-xl">
           Fermer
         </Button>
@@ -629,48 +641,53 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     </div>
   );
 
-  if (embedded) {
-    return (
-      <>
-        <div className="overflow-y-auto h-full px-4 pb-4">
-          {step === 'form' && renderFormStep()}
-          {step === 'preview' && renderPreviewStep()}
-          {step === 'confirmation' && renderConfirmationStep()}
-        </div>
-        <QuickAuthDialog
-          open={showAuthDialog}
-          onOpenChange={setShowAuthDialog}
-          onAuthSuccess={() => setShowAuthDialog(false)}
-        />
-      </>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className={`${isMobile ? 'max-w-[95vw]' : 'max-w-md'} rounded-2xl p-0 gap-0 max-h-[90vh] overflow-hidden z-[1200]`}>
-        <DialogHeader className="p-4 pb-2 border-b">
-          <DialogTitle className="flex items-center gap-2 text-lg">
+    <>
+      <MortgageFlowContainer
+        open={open}
+        embedded={embedded}
+        isMobile={isMobile}
+        onClose={handleClose}
+        title={(
+          <>
             <Landmark className="h-5 w-5 text-amber-600" />
             Déclarer une hypothèque
-          </DialogTitle>
-          <DialogDescription className="text-xs">
-            Enregistrez une hypothèque active sur cette parcelle
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="flex-1 max-h-[calc(90vh-80px)] overflow-y-auto p-4">
-          {step === 'form' && renderFormStep()}
-          {step === 'preview' && renderPreviewStep()}
-          {step === 'confirmation' && renderConfirmationStep()}
-        </div>
-      </DialogContent>
+          </>
+        )}
+        description="Enregistrez une hypothèque active sur cette parcelle"
+      >
+        {step === 'form' && renderFormStep()}
+        {step === 'preview' && renderPreviewStep()}
+        {step === 'confirmation' && renderConfirmationStep()}
+      </MortgageFlowContainer>
+
+      <AlertDialog open={showSubmitConfirm} onOpenChange={setShowSubmitConfirm}>
+        <AlertDialogContent className="rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la soumission</AlertDialogTitle>
+            <AlertDialogDescription>
+              Cette demande sera envoyée à l'administration pour validation. Voulez-vous continuer ?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleSubmit}
+              disabled={loading}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Confirmer la soumission
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <QuickAuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
         onAuthSuccess={() => setShowAuthDialog(false)}
       />
-    </Dialog>
+    </>
   );
 };
 
