@@ -208,7 +208,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       // Check for existing pending mortgage contribution
       const hasPending = await checkExistingPending();
       if (hasPending) {
-        toast.error('Une demande d\'hypothèque est déjà en cours de traitement pour cette parcelle.');
+        toast.error('Une demande d\'hypothèque est déjà en cours ou renvoyée pour correction pour cette parcelle.');
         // Fix #5: Ensure loading is reset
         setLoading(false);
         isSubmittingRef.current = false;
