@@ -231,8 +231,8 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         documentUrl = data.publicUrl;
       }
 
-      // Fix #7: Generate a reference for the registration
-      const regReference = `HYP-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+      // Generate a reference for the registration
+      const regReference = generateMortgageReference('HYP');
 
       // Fix #9: Include declared mortgage_status in submission
       const { error } = await supabase
