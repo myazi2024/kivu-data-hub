@@ -51,7 +51,8 @@ interface RealEstateExpertiseRequestDialogProps {
 import type { ExpertiseFee } from '@/types/expertise';
 import {
   CONSTRUCTION_TYPE_LABELS, QUALITY_LABELS, CONDITION_LABELS,
-  ROAD_LABELS, WALL_LABELS, ROOF_LABELS, SOUND_LABELS
+  ROAD_LABELS, WALL_LABELS, ROOF_LABELS, SOUND_LABELS,
+  WINDOW_LABELS, FLOOR_LABELS
 } from '@/constants/expertiseLabels';
 
 // Derive select options from centralized labels

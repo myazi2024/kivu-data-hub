@@ -62,7 +62,30 @@ export const SOUND_LABELS: Record<string, string> = {
   tres_bruyant: 'Très bruyant',
 };
 
+export const WINDOW_LABELS: Record<string, string> = {
+  aluminium: 'Aluminium',
+  bois: 'Bois',
+  pvc: 'PVC',
+  fer: 'Fer forgé',
+  sans_fenetres: 'Sans fenêtres',
+};
+
+export const FLOOR_LABELS: Record<string, string> = {
+  carrelage: 'Carrelage',
+  ciment_lisse: 'Ciment lissé',
+  parquet: 'Parquet / Bois',
+  marbre: 'Marbre / Granit',
+  terre_battue: 'Terre battue',
+  autre: 'Autre',
+};
+
 export const STATUS_LABELS: Record<string, string> = {
+  pending: 'En attente',
+  assigned: 'Assigné',
+  in_progress: 'En cours',
+  completed: 'Terminé',
+  rejected: 'Rejeté',
+};
   pending: 'En attente',
   assigned: 'Assigné',
   in_progress: 'En cours',
