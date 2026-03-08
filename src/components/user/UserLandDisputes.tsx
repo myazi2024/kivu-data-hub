@@ -44,6 +44,8 @@ export const UserLandDisputes: React.FC = () => {
   const [disputes, setDisputes] = useState<LandDispute[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
   const [selectedDispute, setSelectedDispute] = useState<LandDispute | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
