@@ -155,7 +155,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       if (!formData.collectivite || formData.collectivite.trim() === '') missing.push({ field: 'collectivite', label: 'Collectivité', tab: 'location' });
     }
     
-    // ===== VALIDATION DU PERMIS DE CONSTRUIRE =====
+    // ===== VALIDATION DE L'AUTORISATION DE BÂTIR =====
     // LOGIQUE DE DÉPENDANCE:
     // 1. Si constructionType === "Terrain nu" → Pas de validation permis (terrain nu = valide sans permis)
     // 2. Si constructionType !== "Terrain nu" ET permitMode === "request" (Pas de permis) → Valide, "Pas de permis" est une donnée valide
