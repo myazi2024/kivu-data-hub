@@ -484,8 +484,8 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
 
     // Step 3: Process payment
     if (paymentMethod === 'mobile_money') {
-      if (!paymentProvider || !paymentPhone || !paymentPin) {
-        toast({ title: 'Champs requis', description: 'Veuillez remplir tous les champs de paiement.', variant: 'destructive' });
+      if (!paymentProvider || !paymentPhone || paymentPin.length < 4) {
+        toast({ title: 'Champs requis', description: 'Veuillez remplir tous les champs de paiement (code PIN min. 4 chiffres).', variant: 'destructive' });
         setProcessingPayment(false);
         return;
       }
