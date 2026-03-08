@@ -34,6 +34,7 @@ import {
   LEGAL_STATUS_OPTIONS,
   REQUESTER_TYPES,
   PROVIDER_LABELS,
+  BANK_FEE_PERCENTAGE,
   isTransferMutation as checkIsTransfer,
   hasLateFees as checkHasLateFees,
 } from './mutation/MutationConstants';
@@ -247,10 +248,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     return { isValid: daysRemaining > 0, daysRemaining: Math.max(0, daysRemaining), isExpired: daysRemaining <= 0 };
   }, [hasExpertiseCertificate, expertiseCertificateDate]);
 
-  // Memoized: mutation fees calculation
+  // Memoized: mutation fees calculation (uses BANK_FEE_PERCENTAGE from constants)
   const mutationFeesCalculation = useMemo(() => {
     const value = parseFloat(marketValueUsd) || 0;
-    const BANK_FEE_PERCENTAGE = 0.005; // Commission bancaire réglementaire
     
     if (value < 10000) {
       return { mutationFee: 0, bankFee: 0, total: 0, applicable: false, percentage: 0 };
@@ -258,6 +258,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     
     const percentage = titleAge === '10_or_more' ? 0.015 : 0.03;
     const mutationFee = value * percentage;
+    // Titres de 10+ ans : frais bancaires exemptés (circulaire n°0076/2023)
     const bankFee = titleAge === '10_or_more' ? 0 : value * BANK_FEE_PERCENTAGE;
     
     return {
@@ -367,8 +368,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // Documents requis par type
-  const getRequiredDocuments = useCallback((): RequiredDocument[] => {
+  // Documents requis par type — single useMemo (no intermediate useCallback)
+  const allRequiredDocuments = useMemo((): RequiredDocument[] => {
     const base: RequiredDocument[] = [
       { key: 'requester_id', label: 'Pièce d\'identité du demandeur', required: true },
     ];
@@ -393,11 +394,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   }, [mutationType]);
 
   const requiredSupportingDocuments = useMemo(() =>
-    getRequiredDocuments().filter(doc => doc.required && !doc.handledByExpertiseCertificate),
-    [getRequiredDocuments]
+    allRequiredDocuments.filter(doc => doc.required && !doc.handledByExpertiseCertificate),
+    [allRequiredDocuments]
   );
-
-  const allRequiredDocuments = useMemo(() => getRequiredDocuments(), [getRequiredDocuments]);
 
   useEffect(() => {
     setRequiredDocumentChecks((prev) => {
@@ -465,7 +464,8 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  const getBeneficiaryFullName = useCallback(() => {
+  // Derived value — useMemo (not useCallback, since this is a computed string)
+  const beneficiaryFullName = useMemo(() => {
     if (beneficiaryLegalStatus === 'personne_morale') return beneficiaryLastName;
     return [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
   }, [beneficiaryLegalStatus, beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName]);
@@ -481,7 +481,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     // Check for existing pending request on same parcel
     const hasPending = await checkExistingPendingRequest(parcelNumber);
     if (hasPending) {
-      toast.error('Une demande de mutation est déjà en cours pour cette parcelle. Veuillez attendre son traitement avant d\'en soumettre une nouvelle.');
+      toast.error('Vous avez déjà une demande de mutation en cours pour cette parcelle. Veuillez attendre son traitement avant d\'en soumettre une nouvelle.');
       return;
     }
 
@@ -499,7 +499,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       if (!expertiseCertificateUrl) { setIsSubmitting(false); return; }
     }
 
-    const fullBeneficiaryName = getBeneficiaryFullName();
+    const fullBeneficiaryName = beneficiaryFullName;
     const requesterName = profile?.full_name || user?.email || 'Utilisateur';
     const requesterEmail = profile?.email || user?.email || '';
 
@@ -513,7 +513,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       mutation_type: mutationType,
       requester_type: requesterType,
       requester_name: requesterName,
-      requester_phone: undefined, // FIX: Send undefined (→ null) instead of empty string
+      requester_phone: null, // Explicitly null, not empty string
       requester_email: requesterEmail,
       beneficiary_name: isTransferMutation ? fullBeneficiaryName : undefined,
       beneficiary_phone: isTransferMutation && beneficiaryPhone.trim() ? beneficiaryPhone.trim() : undefined,
@@ -549,12 +549,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  // FIX: Broadened phone validation - accepts international formats
+  // Phone validation — accepts international formats with country code
   const validatePhoneNumber = (phone: string): boolean => {
-    const cleaned = phone.replace(/\s/g, '');
-    // Accept DRC (+243/0), and generic international formats (+XX...)
-    const regex = /^(\+?\d{1,4})\d{7,12}$/;
-    return regex.test(cleaned);
+    const cleaned = phone.replace(/[\s\-()]/g, '');
+    // Must start with + and country code (1-3 digits), followed by 7-12 digits
+    // Or start with 0 for local DRC numbers (9 digits after 0)
+    const internationalRegex = /^\+[1-9]\d{0,2}\d{7,12}$/;
+    const localRegex = /^0\d{9}$/;
+    return internationalRegex.test(cleaned) || localRegex.test(cleaned);
   };
 
   const handlePayment = async () => {
@@ -1123,7 +1125,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   <span className="text-xs font-semibold text-primary uppercase tracking-wide">Nouveau propriétaire</span>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Nom complet</span>
-                    <span className="text-sm font-medium max-w-[60%] text-right">{getBeneficiaryFullName()}</span>
+                    <span className="text-sm font-medium max-w-[60%] text-right">{beneficiaryFullName}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Statut</span>
@@ -1212,22 +1214,29 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </Alert>
 
         <div className="flex gap-2">
-          {/* FIX: Disable "Modifier" if request already created to prevent duplicates */}
-          <Button 
-            variant="outline" 
-            onClick={() => setStep('form')} 
-            className="flex-1 h-12 text-sm font-semibold rounded-xl"
-            disabled={!!createdRequest}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Modifier
-          </Button>
-          <Button onClick={handleSubmitForm} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg" disabled={loading || uploadingFiles || isSubmitting}>
-            {loading || uploadingFiles || isSubmitting ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" />{uploadingFiles ? 'Envoi...' : 'Création...'}</>
-            ) : (
-              <><CreditCard className="h-4 w-4 mr-2" /> Payer ${totalAmount.toFixed(2)}</>
-            )}
-          </Button>
+          {createdRequest ? (
+            /* Request already created — only allow going to payment */
+            <Button onClick={() => setStep('payment')} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg">
+              <CreditCard className="h-4 w-4 mr-2" /> Procéder au paiement ${totalAmount.toFixed(2)}
+            </Button>
+          ) : (
+            <>
+              <Button 
+                variant="outline" 
+                onClick={() => setStep('form')} 
+                className="flex-1 h-12 text-sm font-semibold rounded-xl"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" /> Modifier
+              </Button>
+              <Button onClick={handleSubmitForm} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg" disabled={loading || uploadingFiles || isSubmitting}>
+                {loading || uploadingFiles || isSubmitting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />{uploadingFiles ? 'Envoi...' : 'Création...'}</>
+                ) : (
+                  <><CreditCard className="h-4 w-4 mr-2" /> Payer ${totalAmount.toFixed(2)}</>
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </ScrollArea>
@@ -1340,7 +1349,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       <Alert className="text-left py-2 rounded-lg">
         <AlertDescription className="text-[10px]">Conservez votre numéro de référence. Vous recevrez une notification lors du traitement.</AlertDescription>
       </Alert>
-      <Button onClick={handleClose} className="w-full h-8 text-xs rounded-lg">Fermer</Button>
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => { handleClose(); window.location.href = '/user-dashboard?tab=mutations'; }} className="flex-1 h-8 text-xs rounded-lg">
+          Voir mes demandes
+        </Button>
+        <Button onClick={handleClose} className="flex-1 h-8 text-xs rounded-lg">Fermer</Button>
+      </div>
     </div>
   );
 
@@ -1353,7 +1367,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  useEffect(() => { if (open) setShowIntro(true); }, [open]);
+  // Note: showIntro is already reset in handleClose, no need for a separate useEffect
 
   const handleIntroComplete = () => setShowIntro(false);
 

@@ -35,11 +35,23 @@ export const PROVIDER_LABELS: Record<string, string> = {
 /** Types de mutation impliquant un transfert de propriété */
 export const TRANSFER_MUTATION_TYPES = ['vente', 'donation', 'succession', 'expropriation', 'echange'];
 
-/** Types de mutation qui ne doivent PAS avoir de frais de retard */
-export const NO_LATE_FEE_TYPES = ['correction', 'mise_a_jour', 'expropriation', 'echange'];
+/**
+ * Types de mutation exemptés de frais de retard.
+ * Note : 'echange' n'est PAS exempté car un échange implique un transfert
+ * de propriété soumis au délai légal de 20 jours.
+ */
+export const NO_LATE_FEE_TYPES = ['correction', 'mise_a_jour', 'expropriation'];
 
 export const isTransferMutation = (type: string) => TRANSFER_MUTATION_TYPES.includes(type);
 export const hasLateFees = (type: string) => !NO_LATE_FEE_TYPES.includes(type);
+
+/**
+ * Commission bancaire réglementaire (0.5%).
+ * Applicable uniquement pour les titres de moins de 10 ans.
+ * Pour les titres de 10 ans et plus, les frais bancaires sont exemptés
+ * conformément à la circulaire n°0076/2023.
+ */
+export const BANK_FEE_PERCENTAGE = 0.005;
 
 export const getMutationTypeLabel = (type: string): string =>
   MUTATION_TYPE_LABELS[type] || type.replace(/_/g, ' ');

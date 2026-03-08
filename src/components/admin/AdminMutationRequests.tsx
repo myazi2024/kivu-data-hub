@@ -27,7 +27,7 @@ import { fr } from 'date-fns/locale';
 import { 
   FileEdit, Search, Eye, CheckCircle, XCircle, 
   Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
-  Settings, Plus, Trash2, Edit2, Save, Download, Filter
+  Settings, Plus, Trash2, Edit2, Save, Download, RotateCcw
 } from 'lucide-react';
 import { generateAndUploadCertificate } from '@/utils/certificateService';
 import { usePagination } from '@/hooks/usePagination';
@@ -145,6 +145,12 @@ const AdminMutationRequests: React.FC = () => {
   const handleProcessRequest = async () => {
     if (!selectedRequest || !user) return;
 
+    // Server-side validation: only process paid requests
+    if (selectedRequest.payment_status !== 'paid') {
+      toast.error('Impossible de traiter une demande non payée.');
+      return;
+    }
+
     // FIX: Validate rejection reason is not just whitespace
     if (processAction === 'reject' && !rejectionReason.trim()) {
       toast.error('Veuillez indiquer un motif de rejet valide.');
@@ -218,16 +224,18 @@ const AdminMutationRequests: React.FC = () => {
         }
       }
 
-      // Create notification for user
+      // Create notification for user — include processing notes for on_hold
+      const notificationMessage = processAction === 'approve'
+        ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
+        : processAction === 'reject'
+          ? `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif : ${rejectionReason.trim()}`
+          : `Votre demande ${selectedRequest.reference_number} a été mise en attente.${processingNotes.trim() ? ` Raison : ${processingNotes.trim()}` : ' Veuillez patienter.'}`;
+
       await supabase.from('notifications').insert({
         user_id: selectedRequest.user_id,
         type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : 'warning',
         title: `Demande de mutation ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'mise en attente'}`,
-        message: processAction === 'approve'
-          ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
-          : processAction === 'reject'
-            ? `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif : ${rejectionReason.trim()}`
-            : `Votre demande ${selectedRequest.reference_number} a été mise en attente.`,
+        message: notificationMessage,
         action_url: '/user-dashboard?tab=mutations'
       });
 
@@ -256,6 +264,8 @@ const AdminMutationRequests: React.FC = () => {
     }
 
     try {
+      const adminName = profile?.full_name || user?.email || 'Admin';
+
       if (editingFee) {
         const { error } = await supabase
           .from('mutation_fees_config')
@@ -269,9 +279,21 @@ const AdminMutationRequests: React.FC = () => {
           .eq('id', editingFee.id);
 
         if (error) throw error;
+
+        // Audit log for fee modification
+        await supabase.from('audit_logs').insert({
+          user_id: user?.id,
+          admin_name: adminName,
+          action: 'mutation_fee_updated',
+          table_name: 'mutation_fees_config',
+          record_id: editingFee.id,
+          old_values: { fee_name: editingFee.fee_name, amount_usd: editingFee.amount_usd, is_mandatory: editingFee.is_mandatory },
+          new_values: { fee_name: feeName.trim(), amount_usd: parsedAmount, is_mandatory: feeMandatory }
+        });
+
         toast.success('Frais modifié');
       } else {
-        const { error } = await supabase
+        const { data: newFee, error } = await supabase
           .from('mutation_fees_config')
           .insert({
             fee_name: feeName.trim(),
@@ -279,9 +301,22 @@ const AdminMutationRequests: React.FC = () => {
             description: feeDescription.trim() || null,
             is_mandatory: feeMandatory,
             display_order: fees.length + 1
-          });
+          })
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Audit log for fee creation
+        await supabase.from('audit_logs').insert({
+          user_id: user?.id,
+          admin_name: adminName,
+          action: 'mutation_fee_created',
+          table_name: 'mutation_fees_config',
+          record_id: newFee?.id,
+          new_values: { fee_name: feeName.trim(), amount_usd: parsedAmount, is_mandatory: feeMandatory }
+        });
+
         toast.success('Frais ajouté');
       }
 
@@ -294,21 +329,36 @@ const AdminMutationRequests: React.FC = () => {
     }
   };
 
-  const handleDeleteFee = async (feeId: string) => {
-    if (!confirm('Êtes-vous sûr de vouloir supprimer ce frais ?')) return;
+  const handleToggleFeeActive = async (feeId: string, currentlyActive: boolean) => {
+    const action = currentlyActive ? 'désactiver' : 'réactiver';
+    if (!confirm(`Êtes-vous sûr de vouloir ${action} ce frais ?`)) return;
 
     try {
+      const adminName = profile?.full_name || user?.email || 'Admin';
+
       const { error } = await supabase
         .from('mutation_fees_config')
-        .update({ is_active: false })
+        .update({ is_active: !currentlyActive, updated_at: new Date().toISOString() })
         .eq('id', feeId);
 
       if (error) throw error;
-      toast.success('Frais désactivé');
+
+      // Audit log for fee activation/deactivation
+      await supabase.from('audit_logs').insert({
+        user_id: user?.id,
+        admin_name: adminName,
+        action: currentlyActive ? 'mutation_fee_deactivated' : 'mutation_fee_reactivated',
+        table_name: 'mutation_fees_config',
+        record_id: feeId,
+        old_values: { is_active: currentlyActive },
+        new_values: { is_active: !currentlyActive }
+      });
+
+      toast.success(currentlyActive ? 'Frais désactivé' : 'Frais réactivé');
       fetchFees();
     } catch (error) {
-      console.error('Error deleting fee:', error);
-      toast.error('Erreur lors de la suppression');
+      console.error('Error toggling fee:', error);
+      toast.error(`Erreur lors de la ${action}`);
     }
   };
 
@@ -644,6 +694,7 @@ const AdminMutationRequests: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
+                {/* Active fees */}
                 {fees.filter(f => f.is_active).map((fee) => (
                   <div 
                     key={fee.id}
@@ -674,13 +725,47 @@ const AdminMutationRequests: React.FC = () => {
                         variant="ghost"
                         size="sm"
                         className="h-7 w-7 p-0 text-destructive"
-                        onClick={() => handleDeleteFee(fee.id)}
+                        onClick={() => handleToggleFeeActive(fee.id, true)}
+                        title="Désactiver"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
                   </div>
                 ))}
+
+                {/* Inactive fees — reactivation */}
+                {fees.filter(f => !f.is_active).length > 0 && (
+                  <>
+                    <Separator className="my-3" />
+                    <p className="text-xs font-medium text-muted-foreground">Frais désactivés</p>
+                    {fees.filter(f => !f.is_active).map((fee) => (
+                      <div 
+                        key={fee.id}
+                        className="flex items-center justify-between p-3 border rounded-lg opacity-60"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-sm line-through">{fee.fee_name}</span>
+                            <Badge variant="outline" className="text-[10px]">Inactif</Badge>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground text-sm">${Number(fee.amount_usd).toFixed(2)}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-green-600"
+                            onClick={() => handleToggleFeeActive(fee.id, false)}
+                            title="Réactiver"
+                          >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -693,7 +778,9 @@ const AdminMutationRequests: React.FC = () => {
           <DialogHeader>
             <DialogTitle className="text-sm">Détails de la demande</DialogTitle>
           </DialogHeader>
-          {selectedRequest && (
+          {selectedRequest && (() => {
+            const changes = safeProposedChanges(selectedRequest);
+            return (
             <ScrollArea className="max-h-[60vh]">
               <div className="space-y-4 pr-4">
                 <div className="grid grid-cols-2 gap-3">
@@ -737,7 +824,7 @@ const AdminMutationRequests: React.FC = () => {
                 <div>
                   <Label className="text-xs text-muted-foreground">Modifications demandées</Label>
                   <p className="text-sm mt-1">
-                    {safeProposedChanges(selectedRequest).description || 'Non spécifié'}
+                    {changes.description || 'Non spécifié'}
                   </p>
                 </div>
 
@@ -749,11 +836,11 @@ const AdminMutationRequests: React.FC = () => {
                 )}
 
                 {/* Documents joints */}
-                {Array.isArray(safeProposedChanges(selectedRequest).supporting_documents) && safeProposedChanges(selectedRequest).supporting_documents.length > 0 && (
+                {Array.isArray(changes.supporting_documents) && changes.supporting_documents.length > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Documents joints</Label>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {safeProposedChanges(selectedRequest).supporting_documents.map((url: string, i: number) => (
+                      {changes.supporting_documents.map((url: string, i: number) => (
                         <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
                           Document {i + 1}
                         </a>
@@ -763,18 +850,18 @@ const AdminMutationRequests: React.FC = () => {
                 )}
 
                 {/* Certificat d'expertise */}
-                {safeProposedChanges(selectedRequest).expertise_certificate_url && (
+                {changes.expertise_certificate_url && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
                     <div className="mt-1 space-y-1">
-                      <a href={safeProposedChanges(selectedRequest).expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
+                      <a href={changes.expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
                         Voir le certificat
                       </a>
-                      {safeProposedChanges(selectedRequest).market_value_usd && (
-                        <p className="text-xs">Valeur vénale: <strong>${Number(safeProposedChanges(selectedRequest).market_value_usd).toLocaleString()}</strong></p>
+                      {changes.market_value_usd && (
+                        <p className="text-xs">Valeur vénale: <strong>${Number(changes.market_value_usd).toLocaleString()}</strong></p>
                       )}
-                      {safeProposedChanges(selectedRequest).expertise_certificate_date && (
-                        <p className="text-xs text-muted-foreground">Date: {safeProposedChanges(selectedRequest).expertise_certificate_date}</p>
+                      {changes.expertise_certificate_date && (
+                        <p className="text-xs text-muted-foreground">Date: {changes.expertise_certificate_date}</p>
                       )}
                     </div>
                   </div>
@@ -793,25 +880,25 @@ const AdminMutationRequests: React.FC = () => {
                     </div>
                   ))}
 
-                  {safeProposedChanges(selectedRequest).mutation_fees && (
+                  {changes.mutation_fees && (
                     <>
                       <div className="flex justify-between text-xs">
-                        <span>Frais de mutation ({safeProposedChanges(selectedRequest).mutation_fees.percentage}%)</span>
-                        <span className="font-mono">${Number(safeProposedChanges(selectedRequest).mutation_fees.mutation_fee).toFixed(2)}</span>
+                        <span>Frais de mutation ({changes.mutation_fees.percentage}%)</span>
+                        <span className="font-mono">${Number(changes.mutation_fees.mutation_fee).toFixed(2)}</span>
                       </div>
-                      {Number(safeProposedChanges(selectedRequest).mutation_fees.bank_fee) > 0 && (
+                      {Number(changes.mutation_fees.bank_fee) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span>Frais bancaires</span>
-                          <span className="font-mono">${Number(safeProposedChanges(selectedRequest).mutation_fees.bank_fee).toFixed(2)}</span>
+                          <span className="font-mono">${Number(changes.mutation_fees.bank_fee).toFixed(2)}</span>
                         </div>
                       )}
                     </>
                   )}
 
-                  {safeProposedChanges(selectedRequest).late_fees && (
+                  {changes.late_fees && (
                     <div className="flex justify-between text-xs text-orange-600">
-                      <span>Retard ({safeProposedChanges(selectedRequest).late_fees.days}j)</span>
-                      <span className="font-mono">${Number(safeProposedChanges(selectedRequest).late_fees.fee).toFixed(2)}</span>
+                      <span>Retard ({changes.late_fees.days}j)</span>
+                      <span className="font-mono">${Number(changes.late_fees.fee).toFixed(2)}</span>
                     </div>
                   )}
 
@@ -833,7 +920,8 @@ const AdminMutationRequests: React.FC = () => {
                 </div>
               </div>
             </ScrollArea>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
@@ -865,10 +953,10 @@ const AdminMutationRequests: React.FC = () => {
                     <span className="text-muted-foreground">Montant payé</span>
                     <span className="font-bold text-primary">${Number(selectedRequest.total_amount_usd).toFixed(2)}</span>
                   </div>
-                  {safeProposedChanges(selectedRequest).market_value_usd && (
+                  {selectedRequest.proposed_changes && (selectedRequest.proposed_changes as any).market_value_usd && (
                     <div className="flex justify-between text-xs">
                       <span className="text-muted-foreground">Valeur vénale</span>
-                      <span>${Number(safeProposedChanges(selectedRequest).market_value_usd).toLocaleString()}</span>
+                      <span>${Number((selectedRequest.proposed_changes as any).market_value_usd).toLocaleString()}</span>
                     </div>
                   )}
                   {selectedRequest.justification && (

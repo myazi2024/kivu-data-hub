@@ -146,6 +146,14 @@ export const UserMutationRequests: React.FC = () => {
                     </Alert>
                   )}
 
+                  {/* Justification utilisateur */}
+                  {request.justification && (
+                    <div className="bg-accent/50 rounded-lg p-2 border border-accent">
+                      <p className="text-[10px] font-medium text-accent-foreground mb-0.5">Justification</p>
+                      <p className="text-[10px] text-muted-foreground">{request.justification}</p>
+                    </div>
+                  )}
+
                   {/* Processing notes */}
                   {request.processing_notes && (
                     <div className="bg-muted/50 rounded-lg p-2">
