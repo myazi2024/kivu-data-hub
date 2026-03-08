@@ -842,25 +842,14 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         });
         if (mmError) throw mmError;
 
-        // Poll transaction status
-        const txId = mmResult?.transaction_id;
-        if (txId) {
-          let attempts = 0;
-          const maxAttempts = 15;
-          let completed = false;
-          while (attempts < maxAttempts) {
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            const { data: tx } = await supabase
-              .from('payment_transactions')
-              .select('status')
-              .eq('id', txId)
-              .single();
-            if (tx?.status === 'completed') { completed = true; break; }
-            if (tx?.status === 'failed') throw new Error('Le paiement a échoué');
-            attempts++;
-          }
-          if (!completed) throw new Error('Délai de paiement dépassé');
-        }
+         // Poll transaction status
+         const txId = mmResult?.transaction_id;
+         if (txId) {
+           const { pollTransactionStatus } = await import('@/utils/pollTransactionStatus');
+           const result = await pollTransactionStatus(txId);
+           if (result === 'failed') throw new Error('Le paiement a échoué');
+           if (result === 'timeout') throw new Error('Délai de paiement dépassé');
+         }
 
         await supabase.from('expertise_payments').update({
           status: 'completed',
