@@ -1924,7 +1924,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.constructionNature) filledFields += 1;
     if (formData.declaredUsage) filledFields += 1;
     
-    // SECTION 3: Permis de construire (3 champs)
+    // SECTION 3: Autorisation de bâtir (3 champs)
     totalFields += 3;
     const hasValidPermits = buildingPermits.some(p => p.permitNumber && p.issuingService);
     if (hasValidPermits) filledFields += 1;
