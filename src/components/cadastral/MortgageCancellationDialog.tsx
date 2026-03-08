@@ -36,7 +36,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
   const { fees, loadingFees } = useMortgageFees();
-  const { hasDraft, loadDraft, clearDraft, autoSave } = useMortgageDraft('cancellation', parcelNumber, open);
+  const { hasDraft, draftLoaded, loadDraft, clearDraft, autoSave } = useMortgageDraft('cancellation', parcelNumber, open);
 
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
