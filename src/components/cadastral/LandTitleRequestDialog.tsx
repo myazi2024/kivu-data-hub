@@ -439,6 +439,9 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
         return false;
       }
     }
+
+    // Check valorisation validated
+    if (!valorisationValidated) return false;
     
     return true;
   };
