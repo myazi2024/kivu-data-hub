@@ -129,25 +129,16 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
     let uploadedFilePath: string | null = null;
 
     try {
-      // Check for duplicate: same parcel, same type, same year
-      const { data: existingContributions } = await supabase
+      // Check for duplicate: single optimized query
+      const { data: existingContribs } = await supabase
         .from('cadastral_contributions')
-        .select('id')
+        .select('id, tax_history')
         .eq('parcel_number', parcelNumber)
         .eq('user_id', user.id)
         .neq('status', 'rejected');
 
-      // Filter by tax_history content (type + year) client-side
-      if (existingContributions && existingContributions.length > 0) {
-        // Fetch full data to check tax_history
-        const { data: fullContribs } = await supabase
-          .from('cadastral_contributions')
-          .select('id, tax_history')
-          .eq('parcel_number', parcelNumber)
-          .eq('user_id', user.id)
-          .neq('status', 'rejected');
-
-        const isDuplicate = fullContribs?.some(c => {
+      if (existingContribs && existingContribs.length > 0) {
+        const isDuplicate = existingContribs.some(c => {
           const history = c.tax_history as any[];
           return history?.some((h: any) =>
             h.tax_type === taxRecord.taxType &&
@@ -474,9 +465,15 @@ const TaxFormDialog: React.FC<TaxFormDialogProps> = ({
               <span>{taxRecord.paymentStatus}</span>
             </div>
             {taxRecord.paymentDate && (
-              <div className="flex justify-between py-2">
+              <div className="flex justify-between py-2 border-b">
                 <span className="text-muted-foreground">Date paiement</span>
                 <span>{taxRecord.paymentDate}</span>
+              </div>
+            )}
+            {taxRecord.receiptFile && (
+              <div className="flex justify-between py-2">
+                <span className="text-muted-foreground">Reçu joint</span>
+                <span className="text-xs font-medium text-primary truncate max-w-[180px]">{taxRecord.receiptFile.name}</span>
               </div>
             )}
           </div>

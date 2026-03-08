@@ -19,8 +19,9 @@ import {
   getFiscalZoneCategory,
   FISCAL_ZONE_MULTIPLIERS,
   FISCAL_ZONE_LABELS,
-  calculatePropertyTaxMonthsLate,
+  calculateBuildingTaxMonthsLate,
 } from '@/hooks/usePropertyTaxCalculator';
+import { checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
 
 interface BuildingTaxCalculatorProps {
   parcelNumber: string;
@@ -101,7 +102,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const zoneMultiplier = FISCAL_ZONE_MULTIPLIERS[fiscalZoneCategory];
 
   // Auto-calculate months late using centralized function
-  const monthsLate = useMemo(() => calculatePropertyTaxMonthsLate(fiscalYear), [fiscalYear]);
+  const monthsLate = useMemo(() => calculateBuildingTaxMonthsLate(fiscalYear), [fiscalYear]);
 
   // Memoized calculation
   const calculation = useMemo(() => {
@@ -140,7 +141,17 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
     if (!user) { toast.error('Vous devez être connecté'); return; }
     setLoading(true);
     try {
-      // Persist to cadastral_contributions (was missing — critical fix)
+      // Duplicate check
+      const isDuplicate = await checkDuplicateTaxSubmission(
+        supabase, parcelNumber, user.id, 'Taxe de bâtisse', fiscalYear
+      );
+      if (isDuplicate) {
+        toast.error(`Une déclaration "Taxe de bâtisse" pour l'exercice ${fiscalYear} existe déjà pour cette parcelle.`);
+        setLoading(false);
+        return;
+      }
+
+      // Persist to cadastral_contributions
       const { error } = await supabase.from('cadastral_contributions').insert({
         parcel_number: parcelNumber,
         original_parcel_id: parcelId || null,
