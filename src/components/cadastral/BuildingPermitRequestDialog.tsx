@@ -1076,7 +1076,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           {step === 'payment' && renderPaymentStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande de permis de construire." />}
+      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la demande d'autorisation de bâtir." />}
     </Dialog>
   );
 };

@@ -331,9 +331,9 @@ export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
     buttonLabel: 'Enregistrer le paiement'
   },
   permit_request: {
-    title: 'Demande de permis de construire',
+    title: 'Demande d\'autorisation de bâtir',
     subtitle: 'Soumission d\'une nouvelle demande',
-    aboutService: 'La demande de permis de construire est une procédure obligatoire préalable à tout projet de construction en République Démocratique du Congo. Ce document administratif atteste que votre projet respecte les règles d\'urbanisme, de sécurité et d\'environnement en vigueur dans votre zone géographique.',
+    aboutService: 'La demande d\'autorisation de bâtir est une procédure obligatoire préalable à tout projet de construction en République Démocratique du Congo. Ce document administratif atteste que votre projet respecte les règles d\'urbanisme, de sécurité et d\'environnement en vigueur dans votre zone géographique.',
     estimatedTime: '1 à 3 minutes',
     processingTime: '15 à 30 jours ouvrables',
     requiredInfo: [
