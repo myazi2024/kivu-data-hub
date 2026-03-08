@@ -1704,8 +1704,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (formData.constructionNature === 'Précaire') {
       restrictions.blockedInExisting = 'regularization';
       restrictions.blockedInRequest = 'regularization';
-      restrictions.messageExisting = `Vous avez indiqué dans "Nature de construction" que c'est une construction précaire. Une construction précaire n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
-      restrictions.messageRequest = `Vous avez indiqué dans "Nature de construction" que c'est une construction "Précaire". Une construction précaire n'a pas besoin d'un permis de régularisation, mais plutôt d'un permis de construire.`;
+      restrictions.messageExisting = `Vous avez indiqué dans "Nature de construction" que c'est une construction précaire. Une construction précaire n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
+      restrictions.messageRequest = `Vous avez indiqué dans "Nature de construction" que c'est une construction "Précaire". Une construction précaire n'a pas besoin d'une autorisation de régularisation, mais plutôt d'une autorisation de bâtir.`;
       restrictions.dateMinExisting = threeYearsAgo.toISOString().split('T')[0];
       restrictions.dateMaxExisting = today.toISOString().split('T')[0];
       return restrictions;
