@@ -305,6 +305,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     setHasResolutionStarted(false);
     setResolutionLevel('');
     setResolutionDetails('');
+    setDeclarantName('');
+    setDeclarantPhone('');
+    setDeclarantEmail('');
+    setDeclarantQuality('proprietaire');
     setParties([{ name: '', phone: '', role: 'defendeur', relationship: '' }]);
     setDocuments([]);
     setCertifyAccuracy(false);
