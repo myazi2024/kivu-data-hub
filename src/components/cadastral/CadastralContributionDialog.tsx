@@ -608,14 +608,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   // Auto-remplir "Ancien #2" avec le nom du propriétaire actuel quand le titre n'est pas à son nom
   // Le propriétaire actuel est aussi l'ancien propriétaire #2 dans la chaîne (il a acquis du vendeur inscrit sur le titre)
+  // NOTE: Only auto-creates/updates if the second entry is empty or was auto-filled.
+  // This avoids overwriting user-deleted entries.
   useEffect(() => {
     if (formData.isTitleInCurrentOwnerName === false) {
       const firstCurrentOwner = currentOwners[0];
       if (firstCurrentOwner?.lastName && firstCurrentOwner?.firstName) {
         const currentOwnerFullName = [firstCurrentOwner.lastName, firstCurrentOwner.middleName, firstCurrentOwner.firstName].filter(Boolean).join(' ');
         
-        // Ensure we have at least 2 previous owners
-        if (previousOwners.length < 2) {
+        // Only create the 2nd entry if exactly 1 exists (initial state)
+        if (previousOwners.length === 1) {
           setPreviousOwners(prev => [...prev, {
             name: currentOwnerFullName,
             legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
@@ -627,16 +629,22 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
             endDate: '',
             mutationType: 'Vente'
           }]);
-        } else if (previousOwners[1]) {
-          // Update existing second previous owner
-          const updated = [...previousOwners];
-          updated[1] = {
-            ...updated[1],
-            name: currentOwnerFullName,
-            legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
-            startDate: firstCurrentOwner.since || '',
-          };
-          setPreviousOwners(updated);
+        } else if (previousOwners.length >= 2 && previousOwners[1]) {
+          // Only update if the name matches what we would have auto-filled (don't overwrite manual edits)
+          const existingName = previousOwners[1].name;
+          const wasAutoFilled = !existingName || existingName === currentOwnerFullName || 
+            existingName === [firstCurrentOwner.lastName, firstCurrentOwner.middleName, firstCurrentOwner.firstName].filter(Boolean).join(' ');
+          
+          if (wasAutoFilled) {
+            const updated = [...previousOwners];
+            updated[1] = {
+              ...updated[1],
+              name: currentOwnerFullName,
+              legalStatus: firstCurrentOwner.legalStatus || 'Personne physique',
+              startDate: firstCurrentOwner.since || '',
+            };
+            setPreviousOwners(updated);
+          }
         }
       }
     }
