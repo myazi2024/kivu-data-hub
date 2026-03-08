@@ -48,6 +48,13 @@ interface MutationRequestDialogProps {
 
 type Step = 'form' | 'preview' | 'payment' | 'confirmation';
 
+type RequiredDocument = {
+  key: string;
+  label: string;
+  required: boolean;
+  handledByExpertiseCertificate?: boolean;
+};
+
 // Types de mutation alignés avec le formulaire CCC
 const MUTATION_TYPES = [
   { value: 'vente', label: 'Vente', description: 'Transfert de propriété suite à une vente' },
@@ -69,6 +76,12 @@ const REQUESTER_TYPES = [
   { value: 'proprietaire', label: 'Propriétaire actuel' },
   { value: 'mandataire', label: 'Mandataire/Représentant' }
 ];
+
+const PROVIDER_LABELS: Record<string, string> = {
+  airtel: 'Airtel Money',
+  orange: 'Orange Money',
+  mpesa: 'M-Pesa',
+};
 
 const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   parcelNumber,
