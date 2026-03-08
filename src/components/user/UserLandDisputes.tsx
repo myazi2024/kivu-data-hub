@@ -75,14 +75,23 @@ export const UserLandDisputes: React.FC = () => {
   };
 
   const filteredDisputes = React.useMemo(() => {
-    if (!searchQuery.trim()) return disputes;
-    const q = searchQuery.toLowerCase();
-    return disputes.filter(d =>
-      d.parcel_number.toLowerCase().includes(q) ||
-      d.reference_number.toLowerCase().includes(q) ||
-      d.declarant_name.toLowerCase().includes(q)
-    );
-  }, [disputes, searchQuery]);
+    let result = disputes;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(d =>
+        d.parcel_number.toLowerCase().includes(q) ||
+        d.reference_number.toLowerCase().includes(q) ||
+        d.declarant_name.toLowerCase().includes(q)
+      );
+    }
+    if (statusFilter !== 'all') {
+      result = result.filter(d => d.current_status === statusFilter);
+    }
+    if (typeFilter !== 'all') {
+      result = result.filter(d => d.dispute_type === typeFilter);
+    }
+    return result;
+  }, [disputes, searchQuery, statusFilter, typeFilter]);
 
   const totalPages = Math.ceil(filteredDisputes.length / itemsPerPage);
   const paginatedDisputes = filteredDisputes.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
