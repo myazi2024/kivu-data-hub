@@ -1056,11 +1056,16 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         return null;
       }
 
-      const { data: { publicUrl } } = supabase.storage
+      const { data: signedData, error: signedError } = await supabase.storage
         .from('cadastral-documents')
-        .getPublicUrl(filePath);
+        .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 year
 
-      return publicUrl;
+      if (signedError || !signedData?.signedUrl) {
+        console.error('Signed URL error:', signedError);
+        return null;
+      }
+
+      return signedData.signedUrl;
     } catch (error) {
       console.error('Error uploading file:', error);
       return null;
