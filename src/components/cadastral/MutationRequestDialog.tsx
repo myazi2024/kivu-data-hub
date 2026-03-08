@@ -481,7 +481,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     // Check for existing pending request on same parcel
     const hasPending = await checkExistingPendingRequest(parcelNumber);
     if (hasPending) {
-      toast.error('Une demande de mutation est déjà en cours pour cette parcelle. Veuillez attendre son traitement avant d\'en soumettre une nouvelle.');
+      toast.error('Vous avez déjà une demande de mutation en cours pour cette parcelle. Veuillez attendre son traitement avant d\'en soumettre une nouvelle.');
       return;
     }
 
