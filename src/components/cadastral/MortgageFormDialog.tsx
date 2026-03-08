@@ -562,6 +562,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       <QuickAuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}
+        onAuthSuccess={() => setShowAuthDialog(false)}
       />
     </Dialog>
   );
