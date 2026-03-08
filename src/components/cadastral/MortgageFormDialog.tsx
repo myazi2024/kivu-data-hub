@@ -93,8 +93,8 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
   // Draft: auto-save
   useEffect(() => {
-    if (open && step === 'form') autoSave(mortgageRecord);
-  }, [mortgageRecord, open, step, autoSave]);
+    if (open && draftLoaded && step === 'form') autoSave(mortgageRecord);
+  }, [mortgageRecord, open, draftLoaded, step, autoSave]);
 
   const handleRestoreDraft = () => {
     const draftData = loadDraft();
