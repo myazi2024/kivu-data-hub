@@ -439,7 +439,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
           </DialogTitle>
           <DialogDescription className="text-xs">
             {isConstruction 
-              ? 'Enregistrez un nouveau permis de construire'
+              ? 'Enregistrez une nouvelle autorisation de bâtir'
               : 'Régularisez une construction existante'}
           </DialogDescription>
         </DialogHeader>
