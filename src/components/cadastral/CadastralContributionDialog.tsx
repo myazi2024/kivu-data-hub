@@ -5016,7 +5016,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </h3>
                       <div className="flex items-baseline gap-1">
                         <span className="text-xl font-bold text-amber-600 dark:text-amber-400">
-                          ${calculateCCCValue().value.toFixed(2)}
+                          ${calculateCCCValue.value.toFixed(2)}
                         </span>
                         <span className="text-xs text-amber-700 dark:text-amber-300">/ $5.00</span>
                       </div>
