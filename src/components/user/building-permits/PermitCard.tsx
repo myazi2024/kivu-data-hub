@@ -74,7 +74,10 @@ export function PermitCard({ permit, onAppealClick }: PermitCardProps) {
     };
   };
 
-  const requestType = permit.permit_request_data?.requestType;
+  // Determine request type from permit_request_data or building_permits
+  const requestType = permit.permit_request_data?.requestType 
+    || (Array.isArray(permit.building_permits) && permit.building_permits[0]?.permitType) 
+    || 'construction';
   const isRegularization = requestType === 'regularization';
 
   return (
