@@ -18,6 +18,7 @@ import { generateMortgageReceiptPDF } from '@/utils/generateMortgageReceiptPDF';
 import { generateMortgageReference } from '@/utils/mortgageReferences';
 import MortgageFlowContainer from './MortgageFlowContainer';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useNavigate } from 'react-router-dom';
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
