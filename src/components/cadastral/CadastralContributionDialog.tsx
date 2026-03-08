@@ -138,6 +138,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       missing.push({ field: 'province', label: 'Province', tab: 'location' });
     }
     
+    // Superficie obligatoire
+    if (!formData.areaSqm || Number(formData.areaSqm) <= 0) {
+      missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
+    }
+    
     // Type de section obligatoire - vérifier si vide ou non défini
     const isSectionTypeEmpty = !sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale');
     if (isSectionTypeEmpty) {
@@ -640,35 +645,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   useEffect(() => {
     const sides = parcelSides.filter(s => s.length && parseFloat(s.length) > 0);
     
-    if (sides.length < 3) return;
+    if (sides.length < 2) return;
 
-    // Pour une forme rectangulaire simple (4 côtés)
-    if (sides.length === 4) {
-      const lengths = sides.map(s => parseFloat(s.length));
-      
-      // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
-      // Indices : 0=Nord, 1=Sud, 2=Est, 3=Ouest
-      const isRectangle = (
-        Math.abs(lengths[0] - lengths[1]) < 0.1 &&  // Nord ≈ Sud
-        Math.abs(lengths[2] - lengths[3]) < 0.1     // Est ≈ Ouest
-      );
-      
-      if (isRectangle) {
-        // Rectangle: côté Nord × côté Est
-        const area = lengths[0] * lengths[2];
-        handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-        return;
-      }
-      
-      // Si pas un rectangle parfait, utiliser la formule de Brahmagupta
-      const s = (lengths[0] + lengths[1] + lengths[2] + lengths[3]) / 2;
-      const area = Math.sqrt(
-        (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]) * (s - lengths[3])
-      );
-      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
-      return;
-    }
-    
     // Pour 2 côtés (forme rectangulaire simplifiée)
     if (sides.length === 2) {
       const length1 = parseFloat(sides[0].length);
@@ -682,12 +660,44 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     if (sides.length === 3) {
       const lengths = sides.map(s => parseFloat(s.length));
       const s = (lengths[0] + lengths[1] + lengths[2]) / 2;
-      const area = Math.sqrt(s * (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]));
+      const heronValue = s * (s - lengths[0]) * (s - lengths[1]) * (s - lengths[2]);
+      if (heronValue <= 0) return; // Triangle invalide
+      const area = Math.sqrt(heronValue);
+      handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+      return;
+    }
+
+    // Pour 4 côtés
+    if (sides.length === 4) {
+      const lengths = sides.map(s => parseFloat(s.length));
+      
+      // Pour un rectangle : Nord/Sud sont opposés et Est/Ouest sont opposés
+      const isRectangle = (
+        Math.abs(lengths[0] - lengths[1]) < 0.1 &&
+        Math.abs(lengths[2] - lengths[3]) < 0.1
+      );
+      
+      if (isRectangle) {
+        const area = lengths[0] * lengths[2];
+        handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
+        return;
+      }
+      
+      // Pour un quadrilatère non rectangulaire, diviser en 2 triangles (diagonale = côtés opposés)
+      // Approximation via 2 triangles : (0,1,diag) et (2,3,diag)
+      // Diagonale estimée avec formule du parallélogramme
+      const a = lengths[0], b = lengths[2], c = lengths[1], d = lengths[3];
+      const s = (a + b + c + d) / 2;
+      // Formule de Brahmagupta avec angle moyen (approximation pour quadrilatère quelconque)
+      // Utilise cos²(θ) ≈ 0 (θ ≈ 90°) comme approximation pessimiste
+      const brahmVal = (s - a) * (s - b) * (s - c) * (s - d);
+      if (brahmVal <= 0) return;
+      const area = Math.sqrt(brahmVal);
       handleInputChange('areaSqm', parseFloat(area.toFixed(2)));
       return;
     }
     
-    // Pour plus de 4 côtés, utiliser une approximation
+    // Pour plus de 4 côtés, utiliser une approximation polygone régulier
     if (sides.length > 4) {
       const lengths = sides.map(s => parseFloat(s.length));
       const perimeter = lengths.reduce((a, b) => a + b, 0);
@@ -1132,48 +1142,60 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }
       }
 
-      // Upload tax receipt files and transform data
-      const taxHistoryData = await Promise.all(
-        taxRecords.map(async (tax) => {
-          let receiptUrl = null;
-          if (tax.receiptFile) {
-            receiptUrl = await uploadFile(tax.receiptFile, 'tax-receipts');
-            if (!receiptUrl) {
-              throw new Error('Erreur lors du téléchargement du reçu de taxe');
+      // Upload tax receipt files and transform data - filter out empty/invalid records
+      const taxHistoryData = (await Promise.all(
+        taxRecords
+          .filter(tax => tax.taxYear && tax.taxAmount) // Skip empty records
+          .map(async (tax) => {
+            let receiptUrl = null;
+            if (tax.receiptFile) {
+              receiptUrl = await uploadFile(tax.receiptFile, 'tax-receipts');
+              if (!receiptUrl) {
+                throw new Error('Erreur lors du téléchargement du reçu de taxe');
+              }
             }
-          }
-          return {
-            taxYear: parseInt(tax.taxYear),
-            amountUsd: parseFloat(tax.taxAmount),
-            paymentStatus: tax.paymentStatus,
-            paymentDate: tax.paymentDate || undefined,
-            receiptUrl: receiptUrl || undefined,
-            taxType: tax.taxType
-          };
-        })
-      );
+            const parsedYear = parseInt(tax.taxYear);
+            const parsedAmount = parseFloat(tax.taxAmount);
+            // Guard against NaN values
+            if (isNaN(parsedYear) || isNaN(parsedAmount)) return null;
+            return {
+              taxYear: parsedYear,
+              amountUsd: parsedAmount,
+              paymentStatus: tax.paymentStatus,
+              paymentDate: tax.paymentDate || undefined,
+              receiptUrl: receiptUrl || undefined,
+              taxType: tax.taxType
+            };
+          })
+      )).filter(Boolean); // Remove nulls
 
-      // Upload mortgage receipt files and transform data
-      const mortgageHistoryData = await Promise.all(
-        mortgageRecords.map(async (mortgage) => {
-          let receiptUrl = null;
-          if (mortgage.receiptFile) {
-            receiptUrl = await uploadFile(mortgage.receiptFile, 'mortgage-documents');
-            if (!receiptUrl) {
-              throw new Error('Erreur lors du téléchargement du document d\'hypothèque');
+      // Upload mortgage receipt files and transform data - filter out empty/invalid records
+      const mortgageHistoryData = (await Promise.all(
+        mortgageRecords
+          .filter(m => m.mortgageAmount && m.duration && m.creditorName) // Skip empty records
+          .map(async (mortgage) => {
+            let receiptUrl = null;
+            if (mortgage.receiptFile) {
+              receiptUrl = await uploadFile(mortgage.receiptFile, 'mortgage-documents');
+              if (!receiptUrl) {
+                throw new Error('Erreur lors du téléchargement du document d\'hypothèque');
+              }
             }
-          }
-          return {
-            mortgageAmountUsd: parseFloat(mortgage.mortgageAmount),
-            durationMonths: parseInt(mortgage.duration),
-            creditorName: mortgage.creditorName,
-            creditorType: mortgage.creditorType,
-            contractDate: mortgage.contractDate,
-            mortgageStatus: mortgage.mortgageStatus,
-            receiptUrl: receiptUrl || undefined
-          };
-        })
-      );
+            const parsedAmount = parseFloat(mortgage.mortgageAmount);
+            const parsedDuration = parseInt(mortgage.duration);
+            // Guard against NaN values
+            if (isNaN(parsedAmount) || isNaN(parsedDuration)) return null;
+            return {
+              mortgageAmountUsd: parsedAmount,
+              durationMonths: parsedDuration,
+              creditorName: mortgage.creditorName,
+              creditorType: mortgage.creditorType,
+              contractDate: mortgage.contractDate,
+              mortgageStatus: mortgage.mortgageStatus,
+              receiptUrl: receiptUrl || undefined
+            };
+          })
+      )).filter(Boolean); // Remove nulls
       
       // Upload building permit files and transform data (only if existing mode)
       let buildingPermitsDataFinal = undefined;
@@ -1783,12 +1805,13 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       return;
     }
     
-    // Marquer comme en cours de détection
-    const updated = [...gpsCoordinates];
-    updated[index] = { ...updated[index], detecting: true };
-    setGpsCoordinates(updated);
+    // Marquer comme en cours de détection via callback pour éviter les stale closures
+    setGpsCoordinates(prev => {
+      const updated = [...prev];
+      updated[index] = { ...updated[index], detecting: true };
+      return updated;
+    });
     
-    // Afficher un toast informatif
     toast({
       title: "Détection en cours...",
       description: "Veuillez patienter pendant que nous obtenons votre position GPS",
@@ -1796,15 +1819,18 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const finalUpdate = [...gpsCoordinates];
-        finalUpdate[index] = {
-          ...finalUpdate[index],
-          lat: position.coords.latitude.toFixed(6),
-          lng: position.coords.longitude.toFixed(6),
-          detected: true,
-          detecting: false
-        };
-        setGpsCoordinates(finalUpdate);
+        // Utiliser le callback de setState pour toujours avoir l'état le plus récent
+        setGpsCoordinates(prev => {
+          const finalUpdate = [...prev];
+          finalUpdate[index] = {
+            ...finalUpdate[index],
+            lat: position.coords.latitude.toFixed(6),
+            lng: position.coords.longitude.toFixed(6),
+            detected: true,
+            detecting: false
+          };
+          return finalUpdate;
+        });
         
         toast({
           title: "Borne détectée",
@@ -1812,10 +1838,12 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         });
       },
       (error) => {
-        // Réinitialiser l'état de détection en cas d'erreur
-        const errorUpdate = [...gpsCoordinates];
-        errorUpdate[index] = { ...errorUpdate[index], detecting: false };
-        setGpsCoordinates(errorUpdate);
+        // Utiliser le callback pour éviter le stale closure
+        setGpsCoordinates(prev => {
+          const errorUpdate = [...prev];
+          errorUpdate[index] = { ...errorUpdate[index], detecting: false };
+          return errorUpdate;
+        });
         
         let errorMessage = "Impossible de récupérer votre position";
         
@@ -1839,8 +1867,8 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       },
       {
         enableHighAccuracy: true,
-        timeout: 30000, // 30 secondes pour permettre au GPS de se stabiliser
-        maximumAge: 5000 // Accepter une position récente (5 secondes) pour améliorer la performance
+        timeout: 30000,
+        maximumAge: 5000
       }
     );
   };
@@ -2234,16 +2262,25 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
   };
 
   const handleClose = () => {
+    // Reset form data
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
     setShowPermitPayment(false);
+    setSavedContributionId(null);
     setSavedPermitRequestData(null);
     setShowQuickAuth(false);
     setPendingSubmission(false);
+    setUploading(false);
     setOwnerDocFile(null);
     setTitleDocFiles([]);
     setSectionType('');
     setSectionTypeAutoDetected(false);
+    setActiveTab('general');
+    setHasShownConfetti(false);
+    
+    // Reset ownership
+    setOwnershipMode('unique');
+    setLeaseYears(0);
     setPreviousOwners([{
       name: '',
       legalStatus: 'Personne physique',
@@ -2267,6 +2304,9 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       rightType: '',
       since: ''
     }]);
+    
+    // Reset obligations
+    setHasMortgage(null);
     setTaxRecords([{
       taxType: 'Taxe foncière',
       taxYear: '',
@@ -2285,14 +2325,26 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       receiptFile: null
     }]);
     setObligationType('taxes');
+    
+    // Reset location
     setParcelSides([
       { name: 'Côté Nord', length: '' },
       { name: 'Côté Sud', length: '' },
       { name: 'Côté Est', length: '' },
       { name: 'Côté Ouest', length: '' }
     ]);
+    setAvailableVilles([]);
+    setAvailableCommunes([]);
+    setAvailableTerritoires([]);
+    setAvailableCollectivites([]);
     setAvailableQuartiers([]);
     setAvailableAvenues([]);
+    setAvailableConstructionNatures([]);
+    setAvailableDeclaredUsages([]);
+    setRoadSides([]);
+    
+    // Reset permits
+    setPermitMode('existing');
     setBuildingPermits([{
       permitType: 'construction',
       permitNumber: '',
@@ -2303,13 +2355,52 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       issuingServiceContact: '',
       attachmentFile: null
     }]);
-    setGpsCoordinates([{
-      borne: 'Borne 1',
-      lat: '',
-      lng: ''
-    }]);
+    setPermitRequest({
+      permitType: 'construction',
+      hasExistingConstruction: false,
+      constructionDescription: '',
+      plannedUsage: '',
+      estimatedArea: '',
+      applicantName: '',
+      applicantPhone: '',
+      applicantEmail: '',
+      selectedOwnerIndex: -1,
+      numberOfFloors: '',
+      buildingMaterials: '',
+      architecturalPlanImages: [],
+      constructionYear: '',
+      regularizationReason: '',
+      originalPermitNumber: '',
+      previousPermitNumber: '',
+      constructionPhotos: []
+    });
+    
+    // Reset GPS
+    setGpsCoordinates([]);
+    
+    // Reset all warning states
     setShowRequiredFieldsPopover(false);
     setHighlightRequiredFields(false);
+    setShowOwnerWarning(false);
+    setHighlightIncompleteOwner(false);
+    setShowPermitWarning(false);
+    setHighlightIncompletePermit(false);
+    setShowPreviousOwnerWarning(false);
+    setHighlightIncompletePreviousOwner(false);
+    setHighlightSuperficie(false);
+    setShowGPSWarning(false);
+    setShowTaxWarning(false);
+    setHighlightIncompleteTax(false);
+    setShowMortgageWarning(false);
+    setHighlightIncompleteMortgage(false);
+    setShowCurrentOwnerRequiredWarning(false);
+    setShowPermitTypeBlockedWarning(false);
+    setPermitTypeBlockedMessage('');
+    setShowAreaMismatchWarning(false);
+    setAreaMismatchMessage('');
+    setShouldBlinkSuperficie(false);
+    setShowUsageLockedWarning(false);
+    
     onOpenChange(false);
   };
 

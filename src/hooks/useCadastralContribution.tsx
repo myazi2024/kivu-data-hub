@@ -136,6 +136,62 @@ export const useCadastralContribution = () => {
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Shared payload builder to avoid duplication between insert and update
+  const buildContributionPayload = (data: CadastralContributionData) => {
+    const payload: any = {
+      parcel_number: data.parcelNumber,
+      parcel_type: data.parcelType,
+      property_title_type: data.propertyTitleType,
+      lease_type: data.leaseType,
+      title_reference_number: data.titleReferenceNumber,
+      title_issue_date: data.titleIssueDate,
+      current_owners_details: data.currentOwners && data.currentOwners.length > 0 
+        ? data.currentOwners 
+        : null,
+      current_owner_name: data.currentOwners && data.currentOwners.length > 0 
+        ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
+        : undefined,
+      current_owner_legal_status: data.currentOwners && data.currentOwners.length > 0 
+        ? data.currentOwners[0].legalStatus 
+        : undefined,
+      current_owner_since: data.currentOwners && data.currentOwners.length > 0 
+        ? data.currentOwners[0].since 
+        : undefined,
+      area_sqm: data.areaSqm,
+      parcel_sides: data.parcelSides,
+      construction_type: data.constructionType,
+      construction_nature: data.constructionNature,
+      construction_year: data.constructionYear || null,
+      declared_usage: data.declaredUsage,
+      building_permits: data.buildingPermits,
+      previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
+      province: data.province,
+      ville: data.ville,
+      commune: data.commune,
+      quartier: data.quartier,
+      avenue: data.avenue,
+      territoire: data.territoire,
+      collectivite: data.collectivite,
+      groupement: data.groupement,
+      village: data.village,
+      circonscription_fonciere: data.circonscriptionFonciere,
+      gps_coordinates: data.gpsCoordinates,
+      ownership_history: data.ownershipHistory,
+      boundary_history: data.boundaryHistory,
+      tax_history: data.taxHistory,
+      mortgage_history: data.mortgageHistory,
+      whatsapp_number: data.whatsappNumber,
+      owner_document_url: data.ownerDocumentUrl,
+      property_title_document_url: data.titleDocumentUrl,
+    };
+
+    if (data.permitRequest) {
+      payload.permit_request_data = data.permitRequest;
+    }
+
+    return payload;
+  };
+
   const submitContribution = async (data: CadastralContributionData) => {
     // Vérifier l'authentification via session Supabase pour plus de fiabilité
     const { data: { session } } = await supabase.auth.getSession();
@@ -271,68 +327,15 @@ export const useCadastralContribution = () => {
         return { success: false };
       }
 
-      // Soumettre la contribution
-      const contributionPayload: any = {
+      // Soumettre la contribution - utilise le payload partagé
+      const contributionPayload = {
+        ...buildContributionPayload(data),
         user_id: authenticatedUserId,
-        parcel_number: data.parcelNumber,
-        parcel_type: data.parcelType, // Type de parcelle (SU/SR)
-        property_title_type: data.propertyTitleType,
-        lease_type: data.leaseType,
-        title_reference_number: data.titleReferenceNumber,
-        title_issue_date: data.titleIssueDate, // Date de délivrance du titre foncier
-        
-        // ✅ NOUVEAU: Stocker les détails complets des propriétaires
-        current_owners_details: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners 
-          : null,
-        
-        // Conserver les anciens champs pour rétrocompatibilité (trigger les synchronisera automatiquement)
-        current_owner_name: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
-          : undefined,
-        current_owner_legal_status: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners[0].legalStatus 
-          : undefined,
-        current_owner_since: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners[0].since 
-          : undefined,
-        
-        area_sqm: data.areaSqm,
-        parcel_sides: data.parcelSides, // Dimensions exactes des côtés
-        construction_type: data.constructionType,
-        construction_nature: data.constructionNature,
-        construction_year: data.constructionYear || null,
-        declared_usage: data.declaredUsage,
-        building_permits: data.buildingPermits,
-        previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber, // ✅ Extraction depuis permitRequest si présent
-        province: data.province,
-        ville: data.ville,
-        commune: data.commune,
-        quartier: data.quartier,
-        avenue: data.avenue,
-        territoire: data.territoire,
-        collectivite: data.collectivite,
-        groupement: data.groupement,
-        village: data.village,
-        circonscription_fonciere: data.circonscriptionFonciere,
-        gps_coordinates: data.gpsCoordinates,
-        ownership_history: data.ownershipHistory,
-        boundary_history: data.boundaryHistory,
-        tax_history: data.taxHistory,
-        mortgage_history: data.mortgageHistory,
-        whatsapp_number: data.whatsappNumber,
-        owner_document_url: data.ownerDocumentUrl,
-        property_title_document_url: data.titleDocumentUrl,
         status: 'pending',
         is_suspicious: isSuspicious,
         fraud_score: fraudScore,
         fraud_reason: fraudReasons.length > 0 ? fraudReasons.join('; ') : null
       };
-
-      // Ajouter les données de demande de permis si présentes (stockées en JSONB)
-      if (data.permitRequest) {
-        contributionPayload.permit_request_data = data.permitRequest;
-      }
 
       const { data: contributionData, error: contributionError } = await supabase
         .from('cadastral_contributions')
@@ -388,9 +391,10 @@ export const useCadastralContribution = () => {
       // Recharger les codes CCC
       await fetchUserCodes();
 
-      // ✅ Nettoyer le localStorage SEULEMENT après confirmation complète
+      // ✅ Nettoyer le localStorage avec la clé correcte (même format que le Dialog)
       try {
-        localStorage.removeItem('ccc_form_draft');
+        localStorage.removeItem(`cadastral_contribution_${data.parcelNumber}`);
+        localStorage.removeItem('ccc_form_draft'); // Legacy key cleanup
       } catch (storageError) {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }
@@ -485,65 +489,18 @@ export const useCadastralContribution = () => {
     setLoading(true);
 
     try {
-      // Build update payload (same as insert but for update)
-      const contributionPayload: any = {
-        parcel_number: data.parcelNumber,
-        parcel_type: data.parcelType, // Type de parcelle (SU/SR)
-        property_title_type: data.propertyTitleType,
-        lease_type: data.leaseType,
-        title_reference_number: data.titleReferenceNumber,
-        title_issue_date: data.titleIssueDate, // Date de délivrance du titre foncier
-        current_owners_details: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners 
-          : null,
-        current_owner_name: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners.map(o => `${o.lastName}${o.middleName ? ' ' + o.middleName : ''} ${o.firstName}`).join('; ')
-          : undefined,
-        current_owner_legal_status: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners[0].legalStatus 
-          : undefined,
-        current_owner_since: data.currentOwners && data.currentOwners.length > 0 
-          ? data.currentOwners[0].since 
-          : undefined,
-        area_sqm: data.areaSqm,
-        parcel_sides: data.parcelSides,
-        construction_type: data.constructionType,
-        construction_nature: data.constructionNature,
-        construction_year: data.constructionYear || null,
-        declared_usage: data.declaredUsage,
-        building_permits: data.buildingPermits,
-        previous_permit_number: data.previousPermitNumber || data.permitRequest?.originalPermitNumber,
-        province: data.province,
-        ville: data.ville,
-        commune: data.commune,
-        quartier: data.quartier,
-        avenue: data.avenue,
-        territoire: data.territoire,
-        collectivite: data.collectivite,
-        groupement: data.groupement,
-        village: data.village,
-        circonscription_fonciere: data.circonscriptionFonciere,
-        gps_coordinates: data.gpsCoordinates,
-        ownership_history: data.ownershipHistory,
-        boundary_history: data.boundaryHistory,
-        tax_history: data.taxHistory,
-        mortgage_history: data.mortgageHistory,
-        whatsapp_number: data.whatsappNumber,
-        owner_document_url: data.ownerDocumentUrl,
-        property_title_document_url: data.titleDocumentUrl,
+      // Build update payload using shared builder
+      const contributionPayload = {
+        ...buildContributionPayload(data),
         updated_at: new Date().toISOString(),
       };
-
-      if (data.permitRequest) {
-        contributionPayload.permit_request_data = data.permitRequest;
-      }
 
       const { error: updateError } = await supabase
         .from('cadastral_contributions')
         .update(contributionPayload)
         .eq('id', contributionId)
         .eq('user_id', authenticatedUserId)
-        .eq('status', 'pending'); // Only allow updating pending contributions
+        .in('status', ['pending', 'returned']); // Allow updating pending AND returned contributions
 
       if (updateError) {
         console.error('Erreur lors de la mise à jour:', updateError);
@@ -560,9 +517,10 @@ export const useCadastralContribution = () => {
         description: "Vos modifications ont été enregistrées avec succès.",
       });
 
-      // Clean localStorage
+      // Clean localStorage with correct key
       try {
-        localStorage.removeItem(`ccc_form_draft_${data.parcelNumber}`);
+        localStorage.removeItem(`cadastral_contribution_${data.parcelNumber}`);
+        localStorage.removeItem(`ccc_form_draft_${data.parcelNumber}`); // Legacy key cleanup
       } catch (storageError) {
         console.warn('Impossible de nettoyer le localStorage:', storageError);
       }
