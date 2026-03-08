@@ -83,6 +83,15 @@ const BUILDING_POSITION_OPTIONS = toOptions(BUILDING_POSITION_LABELS);
 
 const ACCESSIBILITY_OPTIONS = toOptions(ACCESSIBILITY_LABELS);
 
+// Générer les options d'année (1950 à année actuelle)
+const YEAR_OPTIONS = Array.from(
+  { length: new Date().getFullYear() - 1950 + 1 },
+  (_, i) => {
+    const year = new Date().getFullYear() - i;
+    return { value: year.toString(), label: year.toString() };
+  }
+);
+
 const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialogProps> = ({
   parcelNumber,
   parcelId,
