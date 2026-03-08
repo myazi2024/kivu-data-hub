@@ -93,6 +93,30 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
       name: 'Pression foncière',
       icon: Map,
       description: 'Indice de tension entre demande et offre foncière'
+    },
+    {
+      id: 'fiscal-revenue',
+      name: 'Recettes fiscales',
+      icon: DollarSign,
+      description: 'Comparaison des recettes fiscales et locatives par province'
+    },
+    {
+      id: 'ownership-rate',
+      name: 'Taux de propriété',
+      icon: Users,
+      description: 'Répartition propriétaires vs locataires par province'
+    },
+    {
+      id: 'housing-access',
+      name: 'Accessibilité logement',
+      icon: Building,
+      description: 'Indice d\'accessibilité au logement et croissance des prix'
+    },
+    {
+      id: 'land-value',
+      name: 'Valeur foncière',
+      icon: Landmark,
+      description: 'Valeur foncière moyenne des parcelles et prix au m² par province'
     }
   ];
 
