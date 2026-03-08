@@ -400,13 +400,36 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
+  // Documents requis par type de mutation
+  const getRequiredDocuments = (): { label: string; required: boolean }[] => {
+    const base = [{ label: 'Pièce d\'identité du demandeur', required: true }];
+    switch (mutationType) {
+      case 'vente':
+        return [...base, { label: 'Acte de vente notarié', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+      case 'donation':
+        return [...base, { label: 'Acte de donation notarié', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+      case 'succession':
+        return [...base, { label: 'Certificat d\'héritage / Jugement supplétif', required: true }, { label: 'Acte de décès', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+      case 'expropriation':
+        return [...base, { label: 'Arrêté d\'expropriation', required: true }, { label: 'PV d\'indemnisation', required: true }];
+      case 'echange':
+        return [...base, { label: 'Contrat d\'échange notarié', required: true }, { label: 'Certificat d\'expertise des deux biens', required: true }];
+      case 'correction':
+        return [...base, { label: 'Document justificatif de la correction', required: true }];
+      case 'mise_a_jour':
+        return [...base, { label: 'Document attestant la mise à jour', required: false }];
+      default:
+        return base;
+    }
+  };
+
   const validateForm = (): boolean => {
     if (isTransferMutation && (!beneficiaryLastName.trim() || (beneficiaryLegalStatus === 'personne_physique' && !beneficiaryFirstName.trim()))) {
       toast.error('Veuillez renseigner le nom du nouveau propriétaire');
       return false;
     }
     
-    // Bug #9: Valider le certificat d'expertise pour les mutations avec transfert
+    // Valider le certificat d'expertise pour les mutations avec transfert
     if (isTransferMutation) {
       if (!hasExpertiseCertificate) {
         toast.error('Veuillez indiquer si vous avez un certificat d\'expertise immobilière');
@@ -438,6 +461,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         toast.error('Un certificat d\'expertise immobilière est requis pour procéder à la mutation. Veuillez d\'abord en demander un.');
         return false;
       }
+    }
+
+    // Valider les documents requis selon le type de mutation
+    const requiredDocs = getRequiredDocuments().filter(d => d.required);
+    if (requiredDocs.length > 0 && attachedFiles.length === 0 && !expertiseCertificateFile) {
+      const docNames = requiredDocs.map(d => d.label).join(', ');
+      toast.error(`Documents requis pour ce type de mutation : ${docNames}`);
+      return false;
     }
     
     return true;
