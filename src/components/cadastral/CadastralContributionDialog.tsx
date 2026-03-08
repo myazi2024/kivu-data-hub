@@ -2323,9 +2323,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
     // Reset form data
     setFormData({ parcelNumber: parcelNumber });
     setShowSuccess(false);
-    setShowPermitPayment(false);
-    setSavedContributionId(null);
-    setSavedPermitRequestData(null);
     setShowQuickAuth(false);
     setPendingSubmission(false);
     setUploading(false);
