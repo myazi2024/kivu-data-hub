@@ -1828,6 +1828,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       detected: false,
       detecting: false
     }]);
+    markDirty();
   };
   
   const removeGPSCoordinate = (index: number) => {
