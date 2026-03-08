@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FileX2, Save } from 'lucide-react';
@@ -11,6 +10,8 @@ import { QuickAuthDialog } from './QuickAuthDialog';
 import { useMortgageFees } from '@/hooks/useMortgageFees';
 import { useMortgageDraft } from '@/hooks/useMortgageDraft';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
+import MortgageFlowContainer from './MortgageFlowContainer';
+import { generateMortgageReference } from '@/utils/mortgageReferences';
 
 import {
   CancellationFormStep,
@@ -19,7 +20,7 @@ import {
   CancellationConfirmationStep,
 } from './mortgage-cancellation';
 import type { Step, CancellationRequest, ParcelData, MortgageData } from './mortgage-cancellation/types';
-import { CANCELLATION_REASONS, PHONE_REGEX_DRC, ACTIVE_MORTGAGE_STATUSES } from './mortgage-cancellation/types';
+import { CANCELLATION_REASONS, EMAIL_REGEX, PHONE_REGEX_DRC, ACTIVE_MORTGAGE_STATUSES } from './mortgage-cancellation/types';
 
 interface MortgageCancellationDialogProps {
   parcelNumber: string;
