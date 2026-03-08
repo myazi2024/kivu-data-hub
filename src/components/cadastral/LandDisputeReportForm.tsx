@@ -256,11 +256,11 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
 
       // Create CCC contribution (non-blocking)
       try {
-        await supabase
-          .from('cadastral_contributions')
-          .insert({
-            parcel_number: parcelNumber,
-            original_parcel_id: parcelId || null,
+          await supabase
+            .from('cadastral_contributions')
+            .insert({
+              parcel_number: parcelNumber,
+              original_parcel_id: parcelId || null as any,
             user_id: user.id,
             contribution_type: 'dispute_report',
             status: 'pending',
