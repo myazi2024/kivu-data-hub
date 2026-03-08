@@ -5022,7 +5022,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
                       </div>
                     </div>
                   </div>
-                  {calculateCCCValue().value < 5 && (
+                  {calculateCCCValue.value < 5 && (
                     <p className="text-xs text-amber-700 dark:text-amber-300 flex items-center gap-1">
                       <Info className="h-3 w-3 flex-shrink-0" />
                       <span>Complétez plus de champs pour maximiser votre CCC</span>
