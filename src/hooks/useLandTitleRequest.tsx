@@ -202,7 +202,7 @@ export const useLandTitleRequest = () => {
           fee_items: feeItems,
           total_amount_usd: totalAmount,
           payment_status: 'pending'
-        })
+        } as any])
         .select('id, reference_number')
         .single();
 
