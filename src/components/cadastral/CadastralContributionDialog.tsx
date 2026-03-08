@@ -138,6 +138,11 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
       missing.push({ field: 'province', label: 'Province', tab: 'location' });
     }
     
+    // Superficie obligatoire
+    if (!formData.areaSqm || Number(formData.areaSqm) <= 0) {
+      missing.push({ field: 'areaSqm', label: 'Superficie (m²)', tab: 'location' });
+    }
+    
     // Type de section obligatoire - vérifier si vide ou non défini
     const isSectionTypeEmpty = !sectionType || (sectionType !== 'urbaine' && sectionType !== 'rurale');
     if (isSectionTypeEmpty) {
