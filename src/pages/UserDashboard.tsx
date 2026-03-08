@@ -14,7 +14,8 @@ import { UserLandTitleRequests } from '@/components/user/UserLandTitleRequests';
 import { NotificationBell } from '@/components/user/NotificationBell';
 import { UserLandDisputes } from '@/components/user/UserLandDisputes';
 import { UserExpertiseRequests } from '@/components/user/UserExpertiseRequests';
-import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch } from 'lucide-react';
+import { UserMutationRequests } from '@/components/user/UserMutationRequests';
+import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
@@ -83,6 +84,13 @@ const UserDashboard = () => {
                   <span className="text-[10px] font-medium">Expertises</span>
                 </TabsTrigger>
                 <TabsTrigger 
+                  value="mutations" 
+                  className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
+                >
+                  <FileEdit className="h-4 w-4" />
+                  <span className="text-[10px] font-medium">Mutations</span>
+                </TabsTrigger>
+                <TabsTrigger 
                   value="disputes" 
                   className="flex flex-col items-center gap-0.5 py-2 px-3 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-xl transition-all"
                 >
@@ -128,6 +136,10 @@ const UserDashboard = () => {
 
             <TabsContent value="disputes" className="mt-4">
               <UserLandDisputes />
+            </TabsContent>
+
+            <TabsContent value="mutations" className="mt-4">
+              <UserMutationRequests />
             </TabsContent>
 
             <TabsContent value="invoices" className="mt-4">

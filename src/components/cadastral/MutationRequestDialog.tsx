@@ -18,7 +18,7 @@ import { useMutationRequest } from '@/hooks/useMutationRequest';
 import type { MutationFee, MutationRequest } from '@/types/mutation';
 import { LATE_FEE_CAP_USD, DAILY_LATE_FEE_USD, LEGAL_GRACE_PERIOD_DAYS } from '@/types/mutation';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
-import { useRealEstateExpertise } from '@/hooks/useRealEstateExpertise';
+import { usePaymentConfig } from '@/hooks/usePaymentConfig';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { format, differenceInDays, addMonths } from 'date-fns';
@@ -86,6 +86,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const isMobile = useIsMobile();
   const { user, profile } = useAuth();
   const { loading, fees, createMutationRequest, updatePaymentStatus } = useMutationRequest();
+  const { availableMethods } = usePaymentConfig();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [showIntro, setShowIntro] = useState(true);
@@ -132,112 +133,77 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const [paymentPhone, setPaymentPhone] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
 
-  // Récupérer automatiquement la date du titre depuis les données CCC
+  // Vérifier si c'est un type de mutation avec transfert
+  const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
+
+  // Récupérer automatiquement les données CCC (date titre + date acquisition) en UNE SEULE requête
   useEffect(() => {
-    const fetchTitleIssueDate = async () => {
-      // Si la date est déjà fournie dans les props
-      if (parcelData?.title_issue_date) {
-        setTitleIssueDateFromCCC(parcelData.title_issue_date);
-        calculateTitleAgeFromDate(parcelData.title_issue_date);
-        return;
+    const fetchParcelDates = async () => {
+      // Utiliser les props si déjà fournies
+      const hasTitleDate = !!parcelData?.title_issue_date;
+      const hasAcquisitionDate = !!parcelData?.owner_acquisition_date;
+
+      if (hasTitleDate) {
+        setTitleIssueDateFromCCC(parcelData!.title_issue_date!);
+        calculateTitleAgeFromDate(parcelData!.title_issue_date!);
+      }
+      if (hasAcquisitionDate) {
+        setOwnerAcquisitionDate(parcelData!.owner_acquisition_date!);
+        setOwnerAcquisitionDateAutoDetected(true);
       }
 
-      // Sinon, chercher dans les contributions CCC validées ou la table des parcelles
+      if (hasTitleDate && hasAcquisitionDate) return;
+
       try {
-        // D'abord chercher dans les contributions validées
+        // Requête unique sur les contributions validées
         const { data: contribution } = await supabase
           .from('cadastral_contributions')
-          .select('title_issue_date')
+          .select('title_issue_date, current_owner_since')
           .eq('parcel_number', parcelNumber)
           .eq('status', 'approved')
-          .not('title_issue_date', 'is', null)
           .order('created_at', { ascending: false })
           .limit(1)
           .single();
 
-        if (contribution?.title_issue_date) {
+        if (!hasTitleDate && contribution?.title_issue_date) {
           setTitleIssueDateFromCCC(contribution.title_issue_date);
           calculateTitleAgeFromDate(contribution.title_issue_date);
-          return;
+        }
+        if (!hasAcquisitionDate && contribution?.current_owner_since) {
+          setOwnerAcquisitionDate(contribution.current_owner_since);
+          setOwnerAcquisitionDateAutoDetected(true);
         }
 
-        // Sinon chercher dans la table des parcelles
-        const { data: parcel } = await supabase
-          .from('cadastral_parcels')
-          .select('title_issue_date')
-          .eq('parcel_number', parcelNumber)
-          .not('title_issue_date', 'is', null)
-          .limit(1)
-          .single();
+        // Si toujours pas trouvé, chercher dans la table des parcelles
+        const needTitle = !hasTitleDate && !contribution?.title_issue_date;
+        const needAcquisition = !hasAcquisitionDate && !contribution?.current_owner_since;
 
-        if (parcel?.title_issue_date) {
-          setTitleIssueDateFromCCC(parcel.title_issue_date);
-          calculateTitleAgeFromDate(parcel.title_issue_date);
+        if (needTitle || needAcquisition) {
+          const { data: parcel } = await supabase
+            .from('cadastral_parcels')
+            .select('title_issue_date, current_owner_since')
+            .eq('parcel_number', parcelNumber)
+            .limit(1)
+            .single();
+
+          if (needTitle && parcel?.title_issue_date) {
+            setTitleIssueDateFromCCC(parcel.title_issue_date);
+            calculateTitleAgeFromDate(parcel.title_issue_date);
+          }
+          if (needAcquisition && parcel?.current_owner_since) {
+            setOwnerAcquisitionDate(parcel.current_owner_since);
+            setOwnerAcquisitionDateAutoDetected(true);
+          }
         }
       } catch (error) {
-        // Pas de date trouvée, l'utilisateur devra la saisir manuellement
-        console.log('Aucune date de délivrance du titre trouvée');
+        console.log('Aucune donnée de date trouvée dans le CCC');
       }
     };
 
     if (open && parcelNumber) {
-      fetchTitleIssueDate();
+      fetchParcelDates();
     }
-  }, [open, parcelNumber, parcelData?.title_issue_date]);
-
-  // Vérifier si c'est un type de mutation avec transfert (déclaré avant utilisation)
-  const isTransferMutation = ['vente', 'donation', 'succession', 'expropriation', 'echange'].includes(mutationType);
-
-  // Récupérer automatiquement la date d'acquisition du propriétaire depuis CCC
-  useEffect(() => {
-    const fetchOwnerAcquisitionDate = async () => {
-      // Si la date est déjà fournie dans les props
-      if (parcelData?.owner_acquisition_date) {
-        setOwnerAcquisitionDate(parcelData.owner_acquisition_date);
-        setOwnerAcquisitionDateAutoDetected(true);
-        return;
-      }
-
-      // Chercher dans les contributions CCC validées
-      try {
-        const { data: contribution } = await supabase
-          .from('cadastral_contributions')
-          .select('current_owner_since')
-          .eq('parcel_number', parcelNumber)
-          .eq('status', 'approved')
-          .not('current_owner_since', 'is', null)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-
-        if (contribution?.current_owner_since) {
-          setOwnerAcquisitionDate(contribution.current_owner_since);
-          setOwnerAcquisitionDateAutoDetected(true);
-          return;
-        }
-
-        // Sinon chercher dans la table des parcelles
-        const { data: parcel } = await supabase
-          .from('cadastral_parcels')
-          .select('current_owner_since')
-          .eq('parcel_number', parcelNumber)
-          .not('current_owner_since', 'is', null)
-          .limit(1)
-          .single();
-
-        if (parcel?.current_owner_since) {
-          setOwnerAcquisitionDate(parcel.current_owner_since);
-          setOwnerAcquisitionDateAutoDetected(true);
-        }
-      } catch (error) {
-        console.log('Aucune date d\'acquisition du propriétaire trouvée');
-      }
-    };
-
-    if (open && parcelNumber && isTransferMutation) {
-      fetchOwnerAcquisitionDate();
-    }
-  }, [open, parcelNumber, parcelData?.owner_acquisition_date, isTransferMutation]);
+  }, [open, parcelNumber, parcelData?.title_issue_date, parcelData?.owner_acquisition_date]);
 
   // Calculer l'âge du titre à partir de sa date de délivrance
   const calculateTitleAgeFromDate = (dateString: string) => {
@@ -434,13 +400,36 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
+  // Documents requis par type de mutation
+  const getRequiredDocuments = (): { label: string; required: boolean }[] => {
+    const base = [{ label: 'Pièce d\'identité du demandeur', required: true }];
+    switch (mutationType) {
+      case 'vente':
+        return [...base, { label: 'Acte de vente notarié', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+      case 'donation':
+        return [...base, { label: 'Acte de donation notarié', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+      case 'succession':
+        return [...base, { label: 'Certificat d\'héritage / Jugement supplétif', required: true }, { label: 'Acte de décès', required: true }, { label: 'Certificat d\'expertise immobilière', required: true }];
+      case 'expropriation':
+        return [...base, { label: 'Arrêté d\'expropriation', required: true }, { label: 'PV d\'indemnisation', required: true }];
+      case 'echange':
+        return [...base, { label: 'Contrat d\'échange notarié', required: true }, { label: 'Certificat d\'expertise des deux biens', required: true }];
+      case 'correction':
+        return [...base, { label: 'Document justificatif de la correction', required: true }];
+      case 'mise_a_jour':
+        return [...base, { label: 'Document attestant la mise à jour', required: false }];
+      default:
+        return base;
+    }
+  };
+
   const validateForm = (): boolean => {
     if (isTransferMutation && (!beneficiaryLastName.trim() || (beneficiaryLegalStatus === 'personne_physique' && !beneficiaryFirstName.trim()))) {
       toast.error('Veuillez renseigner le nom du nouveau propriétaire');
       return false;
     }
     
-    // Bug #9: Valider le certificat d'expertise pour les mutations avec transfert
+    // Valider le certificat d'expertise pour les mutations avec transfert
     if (isTransferMutation) {
       if (!hasExpertiseCertificate) {
         toast.error('Veuillez indiquer si vous avez un certificat d\'expertise immobilière');
@@ -472,6 +461,14 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         toast.error('Un certificat d\'expertise immobilière est requis pour procéder à la mutation. Veuillez d\'abord en demander un.');
         return false;
       }
+    }
+
+    // Valider les documents requis selon le type de mutation
+    const requiredDocs = getRequiredDocuments().filter(d => d.required);
+    if (requiredDocs.length > 0 && attachedFiles.length === 0 && !expertiseCertificateFile) {
+      const docNames = requiredDocs.map(d => d.label).join(', ');
+      toast.error(`Documents requis pour ce type de mutation : ${docNames}`);
+      return false;
     }
     
     return true;
@@ -760,12 +757,18 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               Documents justificatifs
               <SectionHelpPopover
                 title="Documents justificatifs"
-                description="Joignez les pièces justificatives nécessaires : acte de vente notarié, certificat d'héritage, attestation de donation, etc. Max 10MB par fichier."
+                description="Joignez les pièces justificatives nécessaires selon le type de mutation. Max 10MB par fichier."
               />
             </h4>
-            <p className="text-xs text-muted-foreground">
-              Acte de vente, certificat, attestation... (max 10MB/fichier)
-            </p>
+            {/* Liste des documents requis selon le type de mutation */}
+            <div className="space-y-1">
+              {getRequiredDocuments().map((doc, idx) => (
+                <p key={idx} className={`text-xs flex items-center gap-1 ${doc.required ? 'text-orange-600 dark:text-orange-400' : 'text-muted-foreground'}`}>
+                  {doc.required ? <AlertCircle className="h-3 w-3 flex-shrink-0" /> : <FileText className="h-3 w-3 flex-shrink-0" />}
+                  {doc.label} {doc.required && '*'}
+                </p>
+              ))}
+            </div>
             
             <input
               ref={fileInputRef}
@@ -1156,17 +1159,17 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                             <div className="mt-1 space-y-0.5">
                               <div className="flex justify-between">
                                 <span>Frais de mutation ({mutationFeesCalculation.percentage}%)</span>
-                                <span className="font-mono">${mutationFeesCalculation.mutationFee}</span>
+                               <span className="font-mono">${mutationFeesCalculation.mutationFee.toFixed(2)}</span>
                               </div>
                               {mutationFeesCalculation.bankFee > 0 && (
                                 <div className="flex justify-between">
                                   <span>Frais bancaires (0.5%)</span>
-                                  <span className="font-mono">${mutationFeesCalculation.bankFee}</span>
+                                  <span className="font-mono">${mutationFeesCalculation.bankFee.toFixed(2)}</span>
                                 </div>
                               )}
                               <div className="flex justify-between font-bold pt-1 border-t border-green-300 dark:border-green-700">
                                 <span>Total frais de mutation</span>
-                                <span className="font-mono">${mutationFeesCalculation.total}</span>
+                                <span className="font-mono">${mutationFeesCalculation.total.toFixed(2)}</span>
                               </div>
                             </div>
                             <p className="mt-2 text-[10px] text-green-600 dark:text-green-500">
@@ -1228,7 +1231,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                               obligatoire
                             </span>
                           </label>
-                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
+                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd.toFixed(2)}</span>
                         </div>
                         {fee.description && (
                           <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
@@ -1256,7 +1259,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                           <label htmlFor={fee.id} className="text-sm font-medium cursor-pointer">
                             {fee.fee_name}
                           </label>
-                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd}</span>
+                          <span className="text-sm font-bold text-amber-700 dark:text-amber-400 whitespace-nowrap">${fee.amount_usd.toFixed(2)}</span>
                         </div>
                         {fee.description && (
                           <p className="text-xs text-muted-foreground mt-0.5">{fee.description}</p>
@@ -1567,7 +1570,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   {getSelectedFeesDetails().map(fee => (
                     <div key={fee.id} className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">{fee.fee_name}</span>
-                      <span className="text-sm font-medium">${fee.amount_usd}</span>
+                      <span className="text-sm font-medium">${fee.amount_usd.toFixed(2)}</span>
                     </div>
                   ))}
                 </>
@@ -1580,12 +1583,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                   <span className="text-xs font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wide">Frais de mutation</span>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Frais ({mutationFeesCalculation.percentage}% de ${marketValueUsd})</span>
-                    <span className="text-sm font-medium">${mutationFeesCalculation.mutationFee}</span>
+                    <span className="text-sm font-medium">${mutationFeesCalculation.mutationFee.toFixed(2)}</span>
                   </div>
                   {mutationFeesCalculation.bankFee > 0 && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Frais bancaires (0.5%)</span>
-                      <span className="text-sm font-medium">${mutationFeesCalculation.bankFee}</span>
+                      <span className="text-sm font-medium">${mutationFeesCalculation.bankFee.toFixed(2)}</span>
                     </div>
                   )}
                 </>
@@ -1640,7 +1643,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             ) : (
               <>
                 <CreditCard className="h-4 w-4 mr-2" />
-                Payer ${getTotalAmount()}
+                Payer ${getTotalAmount().toFixed(2)}
               </>
             )}
           </Button>
@@ -1660,7 +1663,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             </div>
             <div className="text-right">
               <p className="text-[10px] text-muted-foreground">Montant</p>
-              <p className="text-lg font-bold text-primary">${createdRequest?.total_amount_usd}</p>
+              <p className="text-lg font-bold text-primary">${createdRequest?.total_amount_usd.toFixed(2)}</p>
             </div>
           </div>
         </CardContent>
@@ -1697,9 +1700,19 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
                 <SelectValue placeholder="Sélectionner..." />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="airtel" className="text-xs">Airtel Money</SelectItem>
-                <SelectItem value="orange" className="text-xs">Orange Money</SelectItem>
-                <SelectItem value="mpesa" className="text-xs">M-Pesa</SelectItem>
+                {availableMethods.enabledProviders.mobileMoneyProviders.length > 0 ? (
+                  availableMethods.enabledProviders.mobileMoneyProviders.map(provider => (
+                    <SelectItem key={provider} value={provider} className="text-xs">
+                      {provider === 'airtel' ? 'Airtel Money' : provider === 'orange' ? 'Orange Money' : provider === 'mpesa' ? 'M-Pesa' : provider}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <>
+                    <SelectItem value="airtel" className="text-xs">Airtel Money</SelectItem>
+                    <SelectItem value="orange" className="text-xs">Orange Money</SelectItem>
+                    <SelectItem value="mpesa" className="text-xs">M-Pesa</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -1794,7 +1807,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-muted-foreground">Montant payé</span>
-            <span className="font-bold text-primary text-sm">${createdRequest?.total_amount_usd}</span>
+            <span className="font-bold text-primary text-sm">${createdRequest?.total_amount_usd.toFixed(2)}</span>
           </div>
         </CardContent>
       </Card>
