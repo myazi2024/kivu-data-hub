@@ -704,9 +704,16 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
   const handleCertificateAccessPayment = async () => {
     if (!user || !existingCertificate) return;
 
-    if (certPaymentMethod === 'mobile_money' && (!certPaymentProvider || !certPaymentPhone)) {
-      toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
-      return;
+    if (certPaymentMethod === 'mobile_money') {
+      if (!certPaymentProvider || !certPaymentPhone) {
+        toast.error('Veuillez sélectionner un opérateur et entrer votre numéro');
+        return;
+      }
+      const phoneRegex = /^(\+?243|0)(8[1-9]|9[0-9])\d{7}$/;
+      if (!phoneRegex.test(certPaymentPhone.replace(/\s/g, ''))) {
+        toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
+        return;
+      }
     }
 
     setProcessingCertPayment(true);

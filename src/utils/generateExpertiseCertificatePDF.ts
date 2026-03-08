@@ -36,6 +36,8 @@ export interface ExpertiseCertificateData {
   expertName?: string;
   expertTitle?: string;
   stampImageUrl?: string;
+  // Extended data from additional_notes JSON
+  extendedData?: Record<string, any>;
 }
 
 import { QUALITY_LABELS, CONDITION_LABELS, ROAD_LABELS } from '@/constants/expertiseLabels';
