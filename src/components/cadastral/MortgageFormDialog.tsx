@@ -58,14 +58,15 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 }) => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showDraftPrompt, setShowDraftPrompt] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const isSubmittingRef = useRef(false);
   const draftPromptShownRef = useRef(false);
-  const { hasDraft, loadDraft, clearDraft, autoSave } = useMortgageDraft('registration', parcelNumber, open);
+  const { hasDraft, draftLoaded, loadDraft, clearDraft, autoSave } = useMortgageDraft('registration', parcelNumber, open);
   // Fix #7: Store submission reference for PDF receipt
   const [submissionReference, setSubmissionReference] = useState('');
   
