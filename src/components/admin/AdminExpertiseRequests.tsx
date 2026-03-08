@@ -75,14 +75,7 @@ const parseExtendedData = (additionalNotes?: string): { userNotes: string; exten
   }
 };
 
-// Status config kept for dialog display only
-const statusLabels: Record<string, string> = {
-  pending: 'En attente',
-  assigned: 'Assigné',
-  in_progress: 'En cours',
-  completed: 'Terminé',
-  rejected: 'Rejeté',
-};
+// Status config uses centralized labels
 
 export const AdminExpertiseRequests: React.FC = () => {
   const { user } = useAuth();
