@@ -445,10 +445,17 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
               ['Service émetteur', permitRecord.issuingService],
               ['Validité', `${permitRecord.validityPeriod} mois`],
               ['Statut', calculatedStatus],
+              ['Date d\'expiration', (() => {
+                if (!permitRecord.issueDate || !permitRecord.validityPeriod) return 'N/A';
+                const d = new Date(permitRecord.issueDate);
+                d.setMonth(d.getMonth() + (parseInt(permitRecord.validityPeriod) || 12));
+                return d.toLocaleDateString('fr-FR');
+              })()],
+              ...(permitRecord.permitFile ? [['Document joint', permitRecord.permitFile.name]] : []),
             ].map(([label, value], i, arr) => (
-              <div key={label} className={`flex justify-between py-1.5 ${i < arr.length - 1 ? 'border-b border-border/30' : ''}`}>
-                <span className="text-muted-foreground">{label}</span>
-                <span className="font-medium text-right max-w-[55%]">{value}</span>
+              <div key={label as string} className={`flex justify-between py-1.5 ${i < arr.length - 1 ? 'border-b border-border/30' : ''}`}>
+                <span className="text-muted-foreground">{label as string}</span>
+                <span className="font-medium text-right max-w-[55%]">{value as string}</span>
               </div>
             ))}
           </div>

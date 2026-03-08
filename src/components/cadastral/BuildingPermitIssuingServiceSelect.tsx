@@ -112,7 +112,7 @@ const BuildingPermitIssuingServiceSelect: React.FC<BuildingPermitIssuingServiceS
         </Popover>
       </div>
       
-      <Select value={value} onValueChange={onValueChange}>
+      <Select value={value} onValueChange={(v) => { onValueChange(v); setSearchQuery(''); }}>
         <SelectTrigger>
           <SelectValue placeholder="Sélectionner le service émetteur" />
         </SelectTrigger>
