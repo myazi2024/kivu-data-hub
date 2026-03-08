@@ -517,9 +517,11 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
       return isValid && isValidSize;
     });
     
-    setConstructionImages(prev => [...prev, ...validFiles]);
-    if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
-  };
+   const newUrls = validFiles.map(f => URL.createObjectURL(f));
+     setConstructionImages(prev => [...prev, ...validFiles]);
+     setConstructionImageUrls(prev => [...prev, ...newUrls]);
+     if (constructionImagesInputRef.current) constructionImagesInputRef.current.value = '';
+   };
 
   const removeParcelDoc = (index: number) => {
     setParcelDocuments(prev => prev.filter((_, i) => i !== index));
