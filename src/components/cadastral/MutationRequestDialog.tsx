@@ -688,7 +688,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setBeneficiaryMiddleName('');
     setBeneficiaryPhone('');
     setAttachedFiles([]);
-    setUploadedFileUrls([]);
+    setRequiredDocumentChecks({});
     setHasExpertiseCertificate(null);
     setExpertiseCertificateFile(null);
     setExpertiseCertificateDate('');
