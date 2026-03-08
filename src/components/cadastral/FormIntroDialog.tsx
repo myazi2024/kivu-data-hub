@@ -271,24 +271,24 @@ export const FORM_INTRO_CONFIGS: Record<string, FormIntroConfig> = {
     buttonLabel: 'Soumettre la demande de radiation'
   },
   permit_add: {
-    title: 'Enregistrement d\'un permis de construire',
-    subtitle: 'Ajout d\'un permis existant à votre dossier',
-    aboutService: 'L\'enregistrement d\'un permis de construire permet d\'ajouter officiellement à votre dossier parcellaire un permis de construire déjà obtenu auprès des autorités compétentes. Cette démarche assure la traçabilité administrative de votre construction et facilite les futures transactions immobilières.',
+    title: 'Enregistrement d\'une autorisation de bâtir',
+    subtitle: 'Ajout d\'une autorisation existante à votre dossier',
+    aboutService: 'L\'enregistrement d\'une autorisation de bâtir permet d\'ajouter officiellement à votre dossier parcellaire une autorisation de bâtir déjà obtenue auprès des autorités compétentes. Cette démarche assure la traçabilité administrative de votre construction et facilite les futures transactions immobilières.',
     estimatedTime: '1 à 3 minutes',
     processingTime: '2 à 5 jours ouvrables',
     requiredInfo: [
-      'Numéro officiel du permis de construire tel qu\'indiqué sur le document',
-      'Date exacte de délivrance du permis par l\'autorité compétente',
+      'Numéro officiel de l\'autorisation de bâtir tel qu\'indiqué sur le document',
+      'Date exacte de délivrance de l\'autorisation par l\'autorité compétente',
       'Nom du service émetteur (Mairie, Division de l\'Urbanisme, etc.)',
-      'Scan ou photo lisible du document original du permis'
+      'Scan ou photo lisible du document original de l\'autorisation'
     ],
-    userResponsibility: 'Vous certifiez être détenteur d\'un permis de construire authentique et valide, délivré par l\'autorité administrative compétente. L\'enregistrement de faux documents ou de permis falsifiés constitue un délit passible de sanctions pénales.',
+    userResponsibility: 'Vous certifiez être détenteur d\'une autorisation de bâtir authentique et valide, délivrée par l\'autorité administrative compétente. L\'enregistrement de faux documents ou d\'autorisations falsifiées constitue un délit passible de sanctions pénales.',
     helpInfo: [
       'Le système vérifie automatiquement le format et la validité des informations saisies',
       'Vous pouvez prévisualiser votre saisie avant confirmation',
       'Une assistance technique est disponible 24h/24 via WhatsApp'
     ],
-    buttonLabel: 'Enregistrer le permis'
+    buttonLabel: 'Enregistrer l\'autorisation'
   },
   permit_regularization: {
     title: 'Permis de régularisation',
