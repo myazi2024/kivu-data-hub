@@ -94,8 +94,9 @@ export const useLandDataAnalytics = () => {
         totalsRes,
       ] = await Promise.all([
         // Parcels by province
-        supabase.rpc('get_parcels_by_province' as any).then(r => r).catch(() => ({ data: null })),
-        // Fallback: direct queries
+        // Parcels with all needed fields
+        supabase.from('cadastral_parcels').select('province, parcel_type, area_sqm, gps_coordinates').is('deleted_at', null),
+        // Title types
         supabase.from('cadastral_parcels').select('province, parcel_type, area_sqm, gps_coordinates').is('deleted_at', null),
         supabase.from('cadastral_parcels').select('declared_usage').is('deleted_at', null).not('declared_usage', 'is', null),
         supabase.from('cadastral_parcels').select('construction_nature').is('deleted_at', null).not('construction_nature', 'is', null),
