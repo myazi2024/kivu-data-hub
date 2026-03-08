@@ -224,16 +224,18 @@ const AdminMutationRequests: React.FC = () => {
         }
       }
 
-      // Create notification for user
+      // Create notification for user — include processing notes for on_hold
+      const notificationMessage = processAction === 'approve'
+        ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
+        : processAction === 'reject'
+          ? `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif : ${rejectionReason.trim()}`
+          : `Votre demande ${selectedRequest.reference_number} a été mise en attente.${processingNotes.trim() ? ` Raison : ${processingNotes.trim()}` : ' Veuillez patienter.'}`;
+
       await supabase.from('notifications').insert({
         user_id: selectedRequest.user_id,
         type: processAction === 'approve' ? 'success' : processAction === 'reject' ? 'error' : 'warning',
         title: `Demande de mutation ${processAction === 'approve' ? 'approuvée' : processAction === 'reject' ? 'rejetée' : 'mise en attente'}`,
-        message: processAction === 'approve'
-          ? `Votre demande ${selectedRequest.reference_number} a été approuvée. Le certificat est disponible dans votre espace.`
-          : processAction === 'reject'
-            ? `Votre demande ${selectedRequest.reference_number} a été rejetée. Motif : ${rejectionReason.trim()}`
-            : `Votre demande ${selectedRequest.reference_number} a été mise en attente.`,
+        message: notificationMessage,
         action_url: '/user-dashboard?tab=mutations'
       });
 
