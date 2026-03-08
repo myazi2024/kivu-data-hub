@@ -5595,6 +5595,24 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }}
       />
     )}
+
+    {/* Dialog de confirmation de fermeture */}
+    <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
+      <AlertDialogContent className="z-[10001]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Modifications non enregistrées</AlertDialogTitle>
+          <AlertDialogDescription>
+            Vous avez des données non soumises. Vos données ont été sauvegardées en brouillon et seront restaurées à votre prochaine visite.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Continuer l'édition</AlertDialogCancel>
+          <AlertDialogAction onClick={handleClose}>
+            Fermer quand même
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 };
