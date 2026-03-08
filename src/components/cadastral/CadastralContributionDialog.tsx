@@ -1136,48 +1136,60 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
         }
       }
 
-      // Upload tax receipt files and transform data
-      const taxHistoryData = await Promise.all(
-        taxRecords.map(async (tax) => {
-          let receiptUrl = null;
-          if (tax.receiptFile) {
-            receiptUrl = await uploadFile(tax.receiptFile, 'tax-receipts');
-            if (!receiptUrl) {
-              throw new Error('Erreur lors du téléchargement du reçu de taxe');
+      // Upload tax receipt files and transform data - filter out empty/invalid records
+      const taxHistoryData = (await Promise.all(
+        taxRecords
+          .filter(tax => tax.taxYear && tax.taxAmount) // Skip empty records
+          .map(async (tax) => {
+            let receiptUrl = null;
+            if (tax.receiptFile) {
+              receiptUrl = await uploadFile(tax.receiptFile, 'tax-receipts');
+              if (!receiptUrl) {
+                throw new Error('Erreur lors du téléchargement du reçu de taxe');
+              }
             }
-          }
-          return {
-            taxYear: parseInt(tax.taxYear),
-            amountUsd: parseFloat(tax.taxAmount),
-            paymentStatus: tax.paymentStatus,
-            paymentDate: tax.paymentDate || undefined,
-            receiptUrl: receiptUrl || undefined,
-            taxType: tax.taxType
-          };
-        })
-      );
+            const parsedYear = parseInt(tax.taxYear);
+            const parsedAmount = parseFloat(tax.taxAmount);
+            // Guard against NaN values
+            if (isNaN(parsedYear) || isNaN(parsedAmount)) return null;
+            return {
+              taxYear: parsedYear,
+              amountUsd: parsedAmount,
+              paymentStatus: tax.paymentStatus,
+              paymentDate: tax.paymentDate || undefined,
+              receiptUrl: receiptUrl || undefined,
+              taxType: tax.taxType
+            };
+          })
+      )).filter(Boolean); // Remove nulls
 
-      // Upload mortgage receipt files and transform data
-      const mortgageHistoryData = await Promise.all(
-        mortgageRecords.map(async (mortgage) => {
-          let receiptUrl = null;
-          if (mortgage.receiptFile) {
-            receiptUrl = await uploadFile(mortgage.receiptFile, 'mortgage-documents');
-            if (!receiptUrl) {
-              throw new Error('Erreur lors du téléchargement du document d\'hypothèque');
+      // Upload mortgage receipt files and transform data - filter out empty/invalid records
+      const mortgageHistoryData = (await Promise.all(
+        mortgageRecords
+          .filter(m => m.mortgageAmount && m.duration && m.creditorName) // Skip empty records
+          .map(async (mortgage) => {
+            let receiptUrl = null;
+            if (mortgage.receiptFile) {
+              receiptUrl = await uploadFile(mortgage.receiptFile, 'mortgage-documents');
+              if (!receiptUrl) {
+                throw new Error('Erreur lors du téléchargement du document d\'hypothèque');
+              }
             }
-          }
-          return {
-            mortgageAmountUsd: parseFloat(mortgage.mortgageAmount),
-            durationMonths: parseInt(mortgage.duration),
-            creditorName: mortgage.creditorName,
-            creditorType: mortgage.creditorType,
-            contractDate: mortgage.contractDate,
-            mortgageStatus: mortgage.mortgageStatus,
-            receiptUrl: receiptUrl || undefined
-          };
-        })
-      );
+            const parsedAmount = parseFloat(mortgage.mortgageAmount);
+            const parsedDuration = parseInt(mortgage.duration);
+            // Guard against NaN values
+            if (isNaN(parsedAmount) || isNaN(parsedDuration)) return null;
+            return {
+              mortgageAmountUsd: parsedAmount,
+              durationMonths: parsedDuration,
+              creditorName: mortgage.creditorName,
+              creditorType: mortgage.creditorType,
+              contractDate: mortgage.contractDate,
+              mortgageStatus: mortgage.mortgageStatus,
+              receiptUrl: receiptUrl || undefined
+            };
+          })
+      )).filter(Boolean); // Remove nulls
       
       // Upload building permit files and transform data (only if existing mode)
       let buildingPermitsDataFinal = undefined;
