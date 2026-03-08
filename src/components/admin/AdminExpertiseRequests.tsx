@@ -740,8 +740,42 @@ export const AdminExpertiseRequests: React.FC = () => {
                     </>
                   );
                 })()}
+                 {/* Documents joints */}
+                 {selectedRequest.supporting_documents && selectedRequest.supporting_documents.length > 0 && (
+                   <>
+                     <Separator />
+                     <div>
+                       <h4 className="text-sm font-semibold mb-2 flex items-center gap-2">
+                         <FileText className="h-4 w-4" />
+                         Documents & Photos ({selectedRequest.supporting_documents.length})
+                       </h4>
+                       <div className="grid grid-cols-3 gap-2">
+                         {selectedRequest.supporting_documents.map((url, idx) => {
+                           const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+                           return (
+                             <a
+                               key={idx}
+                               href={url}
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               className="block border rounded-lg overflow-hidden hover:ring-2 ring-primary transition-all"
+                             >
+                               {isImage ? (
+                                 <img src={url} alt={`Document ${idx + 1}`} className="w-full h-20 object-cover" />
+                               ) : (
+                                 <div className="flex items-center justify-center h-20 bg-muted">
+                                   <FileText className="h-6 w-6 text-muted-foreground" />
+                                 </div>
+                               )}
+                             </a>
+                           );
+                         })}
+                       </div>
+                     </div>
+                   </>
+                 )}
 
-                {/* Résultat si complété */}
+                 {/* Résultat si complété */}
                 {selectedRequest.status === 'completed' && (
                   <>
                     <Separator />
