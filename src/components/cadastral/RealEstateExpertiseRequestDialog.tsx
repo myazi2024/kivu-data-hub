@@ -2336,7 +2336,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
                   {facadeOrientation && (
                     <div className="flex justify-between text-xs py-1.5">
                       <span className="text-muted-foreground">Orientation façade</span>
-                      <span className="font-medium">{ORIENTATION_LABELS[facadeOrientation] || facadeOrientation}</span>
+                      <span className="font-medium">{FACADE_ORIENTATION_LABELS[facadeOrientation] || facadeOrientation}</span>
                     </div>
                   )}
                   {distanceFromRoad && (
