@@ -402,7 +402,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         urls.push(data.publicUrl);
       }
       
-      setUploadedFileUrls(urls);
       return urls;
     } catch (error: any) {
       console.error('Upload error:', error);
