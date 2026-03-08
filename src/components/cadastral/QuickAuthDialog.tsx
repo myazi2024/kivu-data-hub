@@ -31,13 +31,7 @@ export const QuickAuthDialog: React.FC<QuickAuthDialogProps> = ({
   const [fullName, setFullName] = useState('');
   const { toast } = useToast();
 
-  const cleanupAuthState = () => {
-    Object.keys(localStorage).forEach((key) => {
-      if (key.startsWith('supabase.auth.') || key.includes('sb-')) {
-        localStorage.removeItem(key);
-      }
-    });
-  };
+  // No destructive cleanup before sign-in to avoid race conditions
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
