@@ -1641,7 +1641,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             ) : (
               <>
                 <CreditCard className="h-4 w-4 mr-2" />
-                Payer ${getTotalAmount()}
+                Payer ${getTotalAmount().toFixed(2)}
               </>
             )}
           </Button>
