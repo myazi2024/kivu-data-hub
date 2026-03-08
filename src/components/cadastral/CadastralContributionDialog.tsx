@@ -2620,7 +2620,7 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   return (
     <>
-      <Dialog open={open} onOpenChange={handleClose}>
+      <Dialog open={open} onOpenChange={handleAttemptClose}>
       <DialogContent 
         ref={dialogContentRef} 
         className="sm:max-w-xl w-[calc(100%-1rem)] max-w-[380px] sm:max-w-xl max-h-[92vh] overflow-y-auto border-0 shadow-2xl p-0 rounded-2xl z-[9999]"
