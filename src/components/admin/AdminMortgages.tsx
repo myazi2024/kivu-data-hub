@@ -56,9 +56,10 @@ const AdminMortgages = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Fix #20: Select only required columns instead of *
       const { data: approvedData, error: approvedError } = await supabase
         .from('cadastral_mortgages')
-        .select('*, cadastral_parcels(parcel_number)')
+        .select('id, parcel_id, creditor_name, creditor_type, mortgage_amount_usd, mortgage_status, contract_date, duration_months, created_at, reference_number, cadastral_parcels(parcel_number)')
         .order('created_at', { ascending: false });
 
       if (approvedError) throw approvedError;
