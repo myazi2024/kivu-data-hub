@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,12 +8,21 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Upload, X, Info, CheckCircle2, Plus, Trash2, Scale, User, Phone, Mail, FileText, Calendar, AlertTriangle, Shield, Image } from 'lucide-react';
+import { Loader2, Upload, X, Info, CheckCircle2, Plus, Trash2, Scale, User, Phone, Mail, FileText, Calendar, AlertTriangle, Shield, Image, Copy } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import SectionHelpPopover from './SectionHelpPopover';
+import {
+  uploadDisputeFiles,
+  cleanupUploadedFiles,
+  checkDuplicateDispute,
+  sendDisputeNotification,
+  validateEmail,
+  validatePhone,
+  getDisputeReportDraftKey,
+} from '@/utils/disputeUploadUtils';
 
 interface LandDisputeReportFormProps {
   parcelNumber: string;
@@ -82,6 +91,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
   const [referenceNumber, setReferenceNumber] = useState('');
+  const [draftRestored, setDraftRestored] = useState(false);
   
   const [disputeNature, setDisputeNature] = useState('');
   const [disputeDescription, setDisputeDescription] = useState('');
@@ -93,7 +103,6 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   const [declarantName, setDeclarantName] = useState('');
   const [declarantPhone, setDeclarantPhone] = useState('');
   const [declarantEmail, setDeclarantEmail] = useState('');
-  const [declarantIdNumber, setDeclarantIdNumber] = useState('');
   const [declarantQuality, setDeclarantQuality] = useState('proprietaire');
   
   const [parties, setParties] = useState<Party[]>([{ name: '', phone: '', role: 'defendeur', relationship: '' }]);
@@ -101,18 +110,69 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   const [certifyAccuracy, setCertifyAccuracy] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const draftKey = getDisputeReportDraftKey(parcelNumber);
 
+  // Check if form has unsaved changes
+  const hasUnsavedChanges = useCallback(() => {
+    return disputeNature !== '' || disputeDescription !== '' || disputeStartDate !== '' || documents.length > 0;
+  }, [disputeNature, disputeDescription, disputeStartDate, documents]);
+
+  // Expose hasUnsavedChanges to parent via custom event
+  useEffect(() => {
+    const handler = (e: CustomEvent) => {
+      e.detail.hasChanges = hasUnsavedChanges();
+    };
+    window.addEventListener('check-dispute-report-changes', handler as EventListener);
+    return () => window.removeEventListener('check-dispute-report-changes', handler as EventListener);
+  }, [hasUnsavedChanges]);
+
+  // Save draft to localStorage
+  useEffect(() => {
+    if (step !== 'form') return;
+    const draftData = {
+      disputeNature, disputeDescription, disputeStartDate, currentStatus,
+      resolutionLevel, resolutionDetails, declarantName, declarantPhone,
+      declarantEmail, declarantQuality, parties,
+    };
+    if (disputeNature || disputeDescription || disputeStartDate) {
+      localStorage.setItem(draftKey, JSON.stringify(draftData));
+    }
+  }, [disputeNature, disputeDescription, disputeStartDate, currentStatus, resolutionLevel, resolutionDetails, declarantName, declarantPhone, declarantEmail, declarantQuality, parties, step, draftKey]);
+
+  // Restore draft on mount
   useEffect(() => {
     if (open) {
       const ref = `LIT-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
       setReferenceNumber(ref);
+
+      try {
+        const savedDraft = localStorage.getItem(draftKey);
+        if (savedDraft) {
+          const draft = JSON.parse(savedDraft);
+          setDisputeNature(draft.disputeNature || '');
+          setDisputeDescription(draft.disputeDescription || '');
+          setDisputeStartDate(draft.disputeStartDate || '');
+          setCurrentStatus(draft.currentStatus || 'en_cours');
+          setResolutionLevel(draft.resolutionLevel || '');
+          setResolutionDetails(draft.resolutionDetails || '');
+          setDeclarantName(draft.declarantName || '');
+          setDeclarantPhone(draft.declarantPhone || '');
+          setDeclarantEmail(draft.declarantEmail || '');
+          setDeclarantQuality(draft.declarantQuality || 'proprietaire');
+          if (draft.parties?.length) setParties(draft.parties);
+          setDraftRestored(true);
+          setTimeout(() => setDraftRestored(false), 3000);
+        }
+      } catch (e) {
+        console.warn('Erreur restauration brouillon:', e);
+      }
     }
-  }, [open]);
+  }, [open, draftKey]);
 
   useEffect(() => {
     if (profile) {
-      setDeclarantName(profile.full_name || '');
-      setDeclarantEmail(profile.email || '');
+      if (!declarantName) setDeclarantName(profile.full_name || '');
+      if (!declarantEmail) setDeclarantEmail(profile.email || '');
     }
   }, [profile]);
 
@@ -150,8 +210,10 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     if (!disputeNature) { toast.error('Veuillez sélectionner la nature du litige'); return false; }
     if (!disputeStartDate) { toast.error('Veuillez indiquer la date de début du litige'); return false; }
     if (currentStatus === 'en_resolution' && !resolutionLevel) { toast.error('Veuillez indiquer le niveau de résolution'); return false; }
-    if (!declarantName.trim()) { toast.error('Veuillez indiquer votre nom'); return false; }
+    if (!declarantName.trim() || declarantName.trim().length < 3) { toast.error('Le nom du déclarant doit contenir au moins 3 caractères'); return false; }
     if (!declarantQuality) { toast.error('Veuillez indiquer votre qualité'); return false; }
+    if (declarantEmail && !validateEmail(declarantEmail)) { toast.error('Adresse e-mail invalide'); return false; }
+    if (declarantPhone && !validatePhone(declarantPhone)) { toast.error('Numéro de téléphone invalide'); return false; }
     if (parties.length > 0 && !parties[0].name.trim()) { toast.error('Veuillez renseigner au moins une partie concernée'); return false; }
     if (!certifyAccuracy) { toast.error('Vous devez certifier l\'exactitude des informations'); return false; }
     return true;
@@ -165,17 +227,24 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   const handleSubmit = async () => {
     if (!user) { toast.error('Vous devez être connecté'); return; }
     setLoading(true);
+    
+    let uploadedPaths: string[] = [];
+    
     try {
-      const documentUrls: string[] = [];
-      for (const file of documents) {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `dispute_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
-        const filePath = `land-disputes/${user.id}/${fileName}`;
-        const { error } = await supabase.storage.from('cadastral-documents').upload(filePath, file);
-        if (!error) {
-          const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
-          documentUrls.push(data.publicUrl);
-        }
+      // Check for duplicate disputes
+      const isDuplicate = await checkDuplicateDispute(parcelNumber, disputeNature);
+      if (isDuplicate) {
+        toast.error('Un litige de même nature est déjà en cours sur cette parcelle.');
+        setLoading(false);
+        return;
+      }
+
+      // Upload files — throws on failure
+      let documentUrls: string[] = [];
+      if (documents.length > 0) {
+        const uploadResult = await uploadDisputeFiles(documents, user.id, 'dispute');
+        documentUrls = uploadResult.urls;
+        uploadedPaths = uploadResult.paths;
       }
 
       const { error } = await supabase
@@ -192,18 +261,21 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           resolution_level: resolutionLevel || null,
           resolution_details: resolutionDetails || null,
           declarant_name: declarantName,
-          declarant_phone: declarantPhone,
-          declarant_email: declarantEmail,
-          declarant_id_number: declarantIdNumber,
+          declarant_phone: declarantPhone || null,
+          declarant_email: declarantEmail || null,
           declarant_quality: declarantQuality,
           supporting_documents: documentUrls,
           dispute_start_date: disputeStartDate,
           reported_by: user.id,
         } as any);
 
-      if (error) throw error;
+      if (error) {
+        // Cleanup uploaded files on DB failure
+        await cleanupUploadedFiles(uploadedPaths);
+        throw error;
+      }
 
-      // Créer une contribution cadastrale pour que le signalement génère un code CCC
+      // Create CCC contribution (non-blocking)
       try {
         await supabase
           .from('cadastral_contributions')
@@ -218,22 +290,25 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
             whatsapp_number: declarantPhone || null,
           });
       } catch (contributionError) {
-        console.warn('Erreur lors de la création de la contribution CCC associée:', contributionError);
+        console.warn('Erreur contribution CCC:', contributionError);
       }
 
-      await supabase.from('notifications' as any).insert({
-        user_id: user.id,
-        title: 'Litige foncier signalé',
-        message: `Votre signalement de litige foncier (${referenceNumber}) pour la parcelle ${parcelNumber} a été enregistré avec succès. Une contribution CCC a été créée et vous recevrez un code CCC après validation.`,
-        type: 'success',
-        action_url: '/user-dashboard?tab=disputes'
-      });
+      // Non-blocking notification
+      await sendDisputeNotification(
+        user.id,
+        'Litige foncier signalé',
+        `Votre signalement de litige foncier (${referenceNumber}) pour la parcelle ${parcelNumber} a été enregistré avec succès.`,
+        '/user-dashboard?tab=disputes'
+      );
+
+      // Clear draft
+      localStorage.removeItem(draftKey);
 
       setStep('confirmation');
       toast.success('Litige foncier signalé avec succès');
     } catch (error: any) {
       console.error('Error:', error);
-      toast.error('Erreur lors de la soumission');
+      toast.error(error.message || 'Erreur lors de la soumission');
     } finally {
       setLoading(false);
     }
@@ -253,6 +328,11 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     onOpenChange(false);
   };
 
+  const copyReference = () => {
+    navigator.clipboard.writeText(referenceNumber);
+    toast.success('Référence copiée');
+  };
+
   if (!open) return null;
 
   // Confirmation step
@@ -269,7 +349,12 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           </p>
           <Card className="rounded-xl shadow-sm">
             <CardContent className="p-3 space-y-1.5">
-              <div className="flex justify-between text-sm"><span className="text-muted-foreground">Référence :</span><span className="font-mono font-bold">{referenceNumber}</span></div>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-muted-foreground">Référence :</span>
+                <button onClick={copyReference} className="flex items-center gap-1 font-mono font-bold hover:text-primary transition-colors">
+                  {referenceNumber} <Copy className="h-3 w-3" />
+                </button>
+              </div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Parcelle :</span><span className="font-mono">{parcelNumber}</span></div>
               <div className="flex justify-between text-sm"><span className="text-muted-foreground">Nature :</span><span>{DISPUTE_NATURES.find(n => n.value === disputeNature)?.label}</span></div>
             </CardContent>
@@ -277,7 +362,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           <Alert className="bg-blue-50 border-blue-200 rounded-xl">
             <Info className="h-4 w-4 text-blue-600" />
             <AlertDescription className="text-xs text-blue-800">
-              Conservez ce numéro de référence pour le suivi de votre dossier.
+              Conservez ce numéro de référence pour le suivi de votre dossier. Vous pouvez le retrouver dans votre tableau de bord.
             </AlertDescription>
           </Alert>
           <Button onClick={handleClose} className="w-full h-11 rounded-xl">Fermer</Button>
@@ -306,6 +391,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
               <div className="flex justify-between"><span className="text-muted-foreground">Début :</span><span>{disputeStartDate}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Statut :</span><span>{currentStatus === 'en_resolution' ? RESOLUTION_LEVELS.find(r => r.value === resolutionLevel)?.label : 'En cours'}</span></div>
               {disputeDescription && <div className="pt-1"><span className="text-muted-foreground">Description :</span><p className="mt-0.5">{disputeDescription}</p></div>}
+              {resolutionDetails && <div className="pt-1"><span className="text-muted-foreground">Détails résolution :</span><p className="mt-0.5">{resolutionDetails}</p></div>}
             </div>
           </CardContent>
         </Card>
@@ -317,6 +403,7 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
               <div className="flex justify-between"><span className="text-muted-foreground">Nom :</span><span>{declarantName}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Qualité :</span><span>{DECLARANT_QUALITIES.find(q => q.value === declarantQuality)?.label}</span></div>
               {declarantPhone && <div className="flex justify-between"><span className="text-muted-foreground">Téléphone :</span><span>{declarantPhone}</span></div>}
+              {declarantEmail && <div className="flex justify-between"><span className="text-muted-foreground">E-mail :</span><span>{declarantEmail}</span></div>}
             </div>
           </CardContent>
         </Card>
@@ -339,6 +426,9 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
           <CardContent className="p-3 space-y-2">
             <div className="flex items-center gap-2 text-sm font-semibold text-primary"><FileText className="h-4 w-4" /> Documents</div>
             <div className="text-sm text-muted-foreground">{documents.length} document(s) joint(s)</div>
+            {documents.map((file, i) => (
+              <div key={i} className="text-xs text-muted-foreground truncate">• {file.name}</div>
+            ))}
           </CardContent>
         </Card>
 
@@ -352,6 +442,16 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
   // Form step
   return (
     <div className="px-4 py-4 space-y-4">
+      {/* Draft restored indicator */}
+      {draftRestored && (
+        <Alert className="bg-blue-50 border-blue-200 rounded-xl">
+          <Info className="h-4 w-4 text-blue-600" />
+          <AlertDescription className="text-xs text-blue-800">
+            Brouillon restauré. Vos données précédentes ont été récupérées.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Avertissement important */}
       <Alert className="bg-amber-50 border-amber-300 rounded-xl">
         <AlertTriangle className="h-4 w-4 text-amber-600" />
