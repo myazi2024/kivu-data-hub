@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -24,7 +25,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { 
-  FileEdit, Search, Filter, Eye, CheckCircle, XCircle, Clock, 
+  FileEdit, Search, Eye, CheckCircle, XCircle, 
   Loader2, RefreshCw, DollarSign, MapPin, User, Calendar,
   Settings, Plus, Trash2, Edit2, Save, Download
 } from 'lucide-react';
@@ -33,12 +34,12 @@ import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/shared/PaginationControls';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { exportToCSV } from '@/utils/csvExport';
-import { getMutationTypeLabel } from '@/components/cadastral/mutation/MutationConstants';
+import { getMutationTypeLabel, MUTATION_STATUS_LABELS } from '@/components/cadastral/mutation/MutationConstants';
 
 import type { MutationFee, MutationRequest } from '@/types/mutation';
 
 const AdminMutationRequests: React.FC = () => {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const [activeTab, setActiveTab] = useState('requests');
   const [requests, setRequests] = useState<MutationRequest[]>([]);
   const [fees, setFees] = useState<MutationFee[]>([]);
@@ -107,8 +108,10 @@ const AdminMutationRequests: React.FC = () => {
   }, []);
 
   const filteredRequests = requests.filter(request => {
+    // #2: Null-safe reference_number access
+    const refNum = request.reference_number || '';
     const matchesSearch = 
-      request.reference_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      refNum.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.parcel_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       request.requester_name.toLowerCase().includes(searchQuery.toLowerCase());
     
@@ -120,23 +123,17 @@ const AdminMutationRequests: React.FC = () => {
   const pagination = usePagination(filteredRequests, { initialPageSize: 15 });
 
   const handleExportCSV = () => {
-    const statusLabels: Record<string, string> = {
-      pending: 'En attente',
-      in_review: 'En cours',
-      approved: 'Approuvée',
-      rejected: 'Rejetée',
-      on_hold: 'Suspendue'
-    };
     exportToCSV({
       filename: `mutations_${format(new Date(), 'yyyy-MM-dd')}.csv`,
-      headers: ['Référence', 'Parcelle', 'Demandeur', 'Montant USD', 'Paiement', 'Statut', 'Date'],
+      headers: ['Référence', 'Parcelle', 'Type', 'Demandeur', 'Montant USD', 'Paiement', 'Statut', 'Date'],
       data: filteredRequests.map(r => [
-        r.reference_number,
+        r.reference_number || '-',
         r.parcel_number,
+        getMutationTypeLabel(r.mutation_type),
         r.requester_name,
-        r.total_amount_usd.toString(),
+        Number(r.total_amount_usd).toFixed(2),
         r.payment_status === 'paid' ? 'Payé' : 'Non payé',
-        statusLabels[r.status] || r.status,
+        MUTATION_STATUS_LABELS[r.status] || r.status,
         format(new Date(r.created_at), 'dd/MM/yyyy'),
       ])
     });
@@ -155,6 +152,8 @@ const AdminMutationRequests: React.FC = () => {
         default: newStatus = 'pending';
       }
 
+      const adminName = profile?.full_name || user.email || 'Admin';
+
       const { error } = await supabase
         .from('mutation_requests')
         .update({
@@ -168,6 +167,21 @@ const AdminMutationRequests: React.FC = () => {
         .eq('id', selectedRequest.id);
 
       if (error) throw error;
+
+      // #15: Log to audit_logs
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        admin_name: adminName,
+        action: `mutation_request_${processAction}`,
+        table_name: 'mutation_requests',
+        record_id: selectedRequest.id,
+        old_values: { status: selectedRequest.status },
+        new_values: { 
+          status: newStatus, 
+          processing_notes: processingNotes || null,
+          rejection_reason: processAction === 'reject' ? rejectionReason : null
+        }
+      });
 
       // Auto-generate certificate on approval
       if (processAction === 'approve') {
@@ -184,9 +198,9 @@ const AdminMutationRequests: React.FC = () => {
             additionalData: { requestId: selectedRequest.id },
           },
           [
-            { label: 'Type mutation:', value: selectedRequest.mutation_type },
+            { label: 'Type mutation:', value: getMutationTypeLabel(selectedRequest.mutation_type) },
             { label: 'Bénéficiaire:', value: selectedRequest.beneficiary_name || 'N/A' },
-            { label: 'Montant payé:', value: `$${selectedRequest.total_amount_usd}` },
+            { label: 'Montant payé:', value: `$${Number(selectedRequest.total_amount_usd).toFixed(2)}` },
           ],
           user.id
         );
@@ -220,8 +234,14 @@ const AdminMutationRequests: React.FC = () => {
   };
 
   const handleSaveFee = async () => {
-    if (!feeName || !feeAmount) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+    if (!feeName.trim()) {
+      toast.error('Veuillez remplir le nom du frais');
+      return;
+    }
+    // #14: Validate fee amount is a valid positive number
+    const parsedAmount = parseFloat(feeAmount);
+    if (isNaN(parsedAmount) || parsedAmount <= 0) {
+      toast.error('Le montant doit être un nombre positif valide');
       return;
     }
 
@@ -230,9 +250,9 @@ const AdminMutationRequests: React.FC = () => {
         const { error } = await supabase
           .from('mutation_fees_config')
           .update({
-            fee_name: feeName,
-            amount_usd: parseFloat(feeAmount),
-            description: feeDescription || null,
+            fee_name: feeName.trim(),
+            amount_usd: parsedAmount,
+            description: feeDescription.trim() || null,
             is_mandatory: feeMandatory,
             updated_at: new Date().toISOString()
           })
@@ -244,9 +264,9 @@ const AdminMutationRequests: React.FC = () => {
         const { error } = await supabase
           .from('mutation_fees_config')
           .insert({
-            fee_name: feeName,
-            amount_usd: parseFloat(feeAmount),
-            description: feeDescription || null,
+            fee_name: feeName.trim(),
+            amount_usd: parsedAmount,
+            description: feeDescription.trim() || null,
             is_mandatory: feeMandatory,
             display_order: fees.length + 1
           });
@@ -305,7 +325,8 @@ const AdminMutationRequests: React.FC = () => {
       in_review: { variant: 'info', label: 'En cours' },
       approved: { variant: 'success', label: 'Approuvée' },
       rejected: { variant: 'destructive', label: 'Rejetée' },
-      on_hold: { variant: 'secondary', label: 'Suspendue' }
+      on_hold: { variant: 'secondary', label: 'Suspendue' },
+      cancelled: { variant: 'destructive', label: 'Annulée' },
     };
     return statusMap[status] || { variant: 'default', label: status };
   };
@@ -319,13 +340,19 @@ const AdminMutationRequests: React.FC = () => {
     return statusMap[status] || { variant: 'default', label: status };
   };
 
+  // Safe access helper for proposed_changes (#4)
+  const safeProposedChanges = (request: MutationRequest | null) => {
+    if (!request?.proposed_changes) return {} as Record<string, any>;
+    return request.proposed_changes;
+  };
+
   const columns = [
     {
       key: 'reference_number',
       header: 'Référence',
       priority: 1,
       render: (request: MutationRequest) => (
-        <span className="font-mono text-xs font-semibold">{request.reference_number}</span>
+        <span className="font-mono text-xs font-semibold">{request.reference_number || '-'}</span>
       )
     },
     {
@@ -415,12 +442,14 @@ const AdminMutationRequests: React.FC = () => {
     }
   ];
 
-  // Stats
+  // #11: Enhanced stats with rejected & cancelled counts
   const stats = {
     total: requests.length,
     pending: requests.filter(r => r.status === 'pending' || r.status === 'in_review').length,
     approved: requests.filter(r => r.status === 'approved').length,
-    revenue: requests.filter(r => r.payment_status === 'paid').reduce((sum, r) => sum + r.total_amount_usd, 0)
+    rejected: requests.filter(r => r.status === 'rejected').length,
+    cancelled: requests.filter(r => r.status === 'cancelled').length,
+    revenue: requests.filter(r => r.payment_status === 'paid').reduce((sum, r) => sum + Number(r.total_amount_usd), 0)
   };
 
   return (
@@ -449,7 +478,7 @@ const AdminMutationRequests: React.FC = () => {
         </TabsList>
 
         <TabsContent value="requests" className="space-y-4">
-          {/* Stats */}
+          {/* Stats - #11 enhanced */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card>
               <CardContent className="p-3">
@@ -477,7 +506,7 @@ const AdminMutationRequests: React.FC = () => {
             </Card>
           </div>
 
-          {/* Filters */}
+          {/* Filters - #10: Added cancelled status */}
           <div className="flex flex-col sm:flex-row gap-2">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -499,6 +528,7 @@ const AdminMutationRequests: React.FC = () => {
                 <SelectItem value="approved">Approuvée</SelectItem>
                 <SelectItem value="rejected">Rejetée</SelectItem>
                 <SelectItem value="on_hold">Suspendue</SelectItem>
+                <SelectItem value="cancelled">Annulée</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -618,7 +648,7 @@ const AdminMutationRequests: React.FC = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Details Dialog */}
+      {/* Details Dialog - #12: Shows request info for context */}
       <Dialog open={showDetailsDialog} onOpenChange={setShowDetailsDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -630,12 +660,17 @@ const AdminMutationRequests: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs text-muted-foreground">Référence</Label>
-                    <p className="font-mono font-bold">{selectedRequest.reference_number}</p>
+                    <p className="font-mono font-bold">{selectedRequest.reference_number || '-'}</p>
                   </div>
                   <div>
                     <Label className="text-xs text-muted-foreground">Parcelle</Label>
                     <p className="font-mono">{selectedRequest.parcel_number}</p>
                   </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs text-muted-foreground">Type de mutation</Label>
+                  <p className="font-medium">{getMutationTypeLabel(selectedRequest.mutation_type)}</p>
                 </div>
 
                 <Separator />
@@ -663,7 +698,7 @@ const AdminMutationRequests: React.FC = () => {
                 <div>
                   <Label className="text-xs text-muted-foreground">Modifications demandées</Label>
                   <p className="text-sm mt-1">
-                    {selectedRequest.proposed_changes?.description || 'Non spécifié'}
+                    {safeProposedChanges(selectedRequest).description || 'Non spécifié'}
                   </p>
                 </div>
 
@@ -674,12 +709,12 @@ const AdminMutationRequests: React.FC = () => {
                   </div>
                 )}
 
-                {/* Documents joints */}
-                {selectedRequest.proposed_changes?.supporting_documents?.length > 0 && (
+                {/* Documents joints - #4: safe access */}
+                {Array.isArray(safeProposedChanges(selectedRequest).supporting_documents) && safeProposedChanges(selectedRequest).supporting_documents.length > 0 && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Documents joints</Label>
                     <div className="flex flex-wrap gap-1 mt-1">
-                      {selectedRequest.proposed_changes.supporting_documents.map((url: string, i: number) => (
+                      {safeProposedChanges(selectedRequest).supporting_documents.map((url: string, i: number) => (
                         <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline">
                           Document {i + 1}
                         </a>
@@ -688,19 +723,19 @@ const AdminMutationRequests: React.FC = () => {
                   </div>
                 )}
 
-                {/* Certificat d'expertise */}
-                {selectedRequest.proposed_changes?.expertise_certificate_url && (
+                {/* Certificat d'expertise - #4: safe access */}
+                {safeProposedChanges(selectedRequest).expertise_certificate_url && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Certificat d'expertise</Label>
                     <div className="mt-1 space-y-1">
-                      <a href={selectedRequest.proposed_changes.expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
+                      <a href={safeProposedChanges(selectedRequest).expertise_certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary underline block">
                         Voir le certificat
                       </a>
-                      {selectedRequest.proposed_changes.market_value_usd && (
-                        <p className="text-xs">Valeur vénale: <strong>${selectedRequest.proposed_changes.market_value_usd.toLocaleString()}</strong></p>
+                      {safeProposedChanges(selectedRequest).market_value_usd && (
+                        <p className="text-xs">Valeur vénale: <strong>${Number(safeProposedChanges(selectedRequest).market_value_usd).toLocaleString()}</strong></p>
                       )}
-                      {selectedRequest.proposed_changes.expertise_certificate_date && (
-                        <p className="text-xs text-muted-foreground">Date: {selectedRequest.proposed_changes.expertise_certificate_date}</p>
+                      {safeProposedChanges(selectedRequest).expertise_certificate_date && (
+                        <p className="text-xs text-muted-foreground">Date: {safeProposedChanges(selectedRequest).expertise_certificate_date}</p>
                       )}
                     </div>
                   </div>
@@ -708,46 +743,46 @@ const AdminMutationRequests: React.FC = () => {
 
                 <Separator />
 
-                {/* Décomposition des frais */}
+                {/* Décomposition des frais - #3: all amounts with .toFixed(2) */}
                 <div className="space-y-2">
                   <Label className="text-xs text-muted-foreground font-semibold">Détail des frais</Label>
                   
                   {/* Fee items from request */}
-                  {selectedRequest.fee_items?.map((item: any, i: number) => (
+                  {Array.isArray(selectedRequest.fee_items) && selectedRequest.fee_items.map((item: any, i: number) => (
                     <div key={i} className="flex justify-between text-xs">
                       <span>{item.fee_name}</span>
-                      <span className="font-mono">${item.amount_usd}</span>
+                      <span className="font-mono">${Number(item.amount_usd).toFixed(2)}</span>
                     </div>
                   ))}
 
                   {/* Mutation fees */}
-                  {selectedRequest.proposed_changes?.mutation_fees && (
+                  {safeProposedChanges(selectedRequest).mutation_fees && (
                     <>
                       <div className="flex justify-between text-xs">
-                        <span>Frais de mutation ({selectedRequest.proposed_changes.mutation_fees.percentage}%)</span>
-                        <span className="font-mono">${selectedRequest.proposed_changes.mutation_fees.mutation_fee}</span>
+                        <span>Frais de mutation ({safeProposedChanges(selectedRequest).mutation_fees.percentage}%)</span>
+                        <span className="font-mono">${Number(safeProposedChanges(selectedRequest).mutation_fees.mutation_fee).toFixed(2)}</span>
                       </div>
-                      {selectedRequest.proposed_changes.mutation_fees.bank_fee > 0 && (
+                      {Number(safeProposedChanges(selectedRequest).mutation_fees.bank_fee) > 0 && (
                         <div className="flex justify-between text-xs">
                           <span>Frais bancaires</span>
-                          <span className="font-mono">${selectedRequest.proposed_changes.mutation_fees.bank_fee}</span>
+                          <span className="font-mono">${Number(safeProposedChanges(selectedRequest).mutation_fees.bank_fee).toFixed(2)}</span>
                         </div>
                       )}
                     </>
                   )}
 
                   {/* Late fees */}
-                  {selectedRequest.proposed_changes?.late_fees && (
+                  {safeProposedChanges(selectedRequest).late_fees && (
                     <div className="flex justify-between text-xs text-orange-600">
-                      <span>Retard ({selectedRequest.proposed_changes.late_fees.days}j)</span>
-                      <span className="font-mono">${selectedRequest.proposed_changes.late_fees.fee}</span>
+                      <span>Retard ({safeProposedChanges(selectedRequest).late_fees.days}j)</span>
+                      <span className="font-mono">${Number(safeProposedChanges(selectedRequest).late_fees.fee).toFixed(2)}</span>
                     </div>
                   )}
 
                   <Separator />
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-bold">Total</span>
-                    <span className="text-lg font-bold text-primary">${selectedRequest.total_amount_usd.toFixed(2)}</span>
+                    <span className="text-lg font-bold text-primary">${Number(selectedRequest.total_amount_usd).toFixed(2)}</span>
                   </div>
                 </div>
 
@@ -766,52 +801,80 @@ const AdminMutationRequests: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Process Dialog */}
+      {/* Process Dialog - #12: Shows request context */}
       <Dialog open={showProcessDialog} onOpenChange={setShowProcessDialog}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-sm">Traiter la demande</DialogTitle>
             <DialogDescription className="text-xs">
-              {selectedRequest?.reference_number}
+              {selectedRequest?.reference_number || '-'} — {selectedRequest ? getMutationTypeLabel(selectedRequest.mutation_type) : ''} — Parcelle {selectedRequest?.parcel_number}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label className="text-xs">Action</Label>
-              <Select value={processAction} onValueChange={(v: any) => setProcessAction(v)}>
-                <SelectTrigger className="h-9">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="approve">Approuver</SelectItem>
-                  <SelectItem value="reject">Rejeter</SelectItem>
-                  <SelectItem value="hold">Mettre en attente</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          {selectedRequest && (
+            <div className="space-y-4">
+              {/* #12: Quick context about the request */}
+              <Card className="bg-muted/50 border-0">
+                <CardContent className="p-3 space-y-1.5">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Demandeur</span>
+                    <span className="font-medium">{selectedRequest.requester_name}</span>
+                  </div>
+                  {selectedRequest.beneficiary_name && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Bénéficiaire</span>
+                      <span className="font-medium">{selectedRequest.beneficiary_name}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">Montant payé</span>
+                    <span className="font-bold text-primary">${Number(selectedRequest.total_amount_usd).toFixed(2)}</span>
+                  </div>
+                  {safeProposedChanges(selectedRequest).market_value_usd && (
+                    <div className="flex justify-between text-xs">
+                      <span className="text-muted-foreground">Valeur vénale</span>
+                      <span>${Number(safeProposedChanges(selectedRequest).market_value_usd).toLocaleString()}</span>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
 
-            {processAction === 'reject' && (
               <div className="space-y-2">
-                <Label className="text-xs">Motif du rejet *</Label>
+                <Label className="text-xs">Action</Label>
+                <Select value={processAction} onValueChange={(v: any) => setProcessAction(v)}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="approve">Approuver</SelectItem>
+                    <SelectItem value="reject">Rejeter</SelectItem>
+                    <SelectItem value="hold">Mettre en attente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {processAction === 'reject' && (
+                <div className="space-y-2">
+                  <Label className="text-xs">Motif du rejet *</Label>
+                  <Textarea
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    placeholder="Indiquez le motif du rejet..."
+                    className="min-h-[80px]"
+                  />
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label className="text-xs">Notes de traitement</Label>
                 <Textarea
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Indiquez le motif du rejet..."
-                  className="min-h-[80px]"
+                  value={processingNotes}
+                  onChange={(e) => setProcessingNotes(e.target.value)}
+                  placeholder="Notes internes..."
+                  className="min-h-[60px]"
                 />
               </div>
-            )}
-
-            <div className="space-y-2">
-              <Label className="text-xs">Notes de traitement</Label>
-              <Textarea
-                value={processingNotes}
-                onChange={(e) => setProcessingNotes(e.target.value)}
-                placeholder="Notes internes..."
-                className="min-h-[60px]"
-              />
             </div>
-          </div>
+          )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowProcessDialog(false)}>
               Annuler
@@ -827,7 +890,7 @@ const AdminMutationRequests: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Fee Dialog */}
+      {/* Fee Dialog - #22: Using shadcn Checkbox instead of native */}
       <Dialog open={showFeeDialog} onOpenChange={setShowFeeDialog}>
         <DialogContent>
           <DialogHeader>
@@ -853,6 +916,8 @@ const AdminMutationRequests: React.FC = () => {
                 onChange={(e) => setFeeAmount(e.target.value)}
                 placeholder="25.00"
                 className="h-9"
+                min="0"
+                step="0.01"
               />
             </div>
             <div className="space-y-2">
@@ -864,11 +929,10 @@ const AdminMutationRequests: React.FC = () => {
               />
             </div>
             <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
+              <Checkbox
                 id="mandatory"
                 checked={feeMandatory}
-                onChange={(e) => setFeeMandatory(e.target.checked)}
+                onCheckedChange={(checked) => setFeeMandatory(!!checked)}
               />
               <Label htmlFor="mandatory" className="text-xs cursor-pointer">
                 Frais obligatoire

@@ -134,6 +134,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const isTransferMutation = useMemo(() => checkIsTransfer(mutationType), [mutationType]);
   const showLateFees = useMemo(() => checkHasLateFees(mutationType), [mutationType]);
 
+  // #20: Memoized mutation type details
+  const mutationTypeDetails = useMemo(() => MUTATION_TYPES.find(t => t.value === mutationType), [mutationType]);
+
   // Récupérer automatiquement les données CCC
   useEffect(() => {
     const fetchParcelDates = async () => {
@@ -229,22 +232,20 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     };
   }, [showLateFees, ownerAcquisitionDate, manualAcquisitionDate]);
 
-  const getMutationTypeDetails = () => MUTATION_TYPES.find(t => t.value === mutationType);
-
-  // Memoized: certificate validity
+  // #9: Only compute certificate validity when user said 'yes'
   const certificateValidity = useMemo(() => {
-    if (!expertiseCertificateDate) return { isValid: false, daysRemaining: 0, isExpired: false };
+    if (hasExpertiseCertificate !== 'yes' || !expertiseCertificateDate) return { isValid: false, daysRemaining: 0, isExpired: false };
     const issueDate = new Date(expertiseCertificateDate);
     const expiryDate = addMonths(issueDate, 6);
     const today = new Date();
     const daysRemaining = differenceInDays(expiryDate, today);
     return { isValid: daysRemaining > 0, daysRemaining: Math.max(0, daysRemaining), isExpired: daysRemaining <= 0 };
-  }, [expertiseCertificateDate]);
+  }, [hasExpertiseCertificate, expertiseCertificateDate]);
 
   // Memoized: mutation fees calculation
   const mutationFeesCalculation = useMemo(() => {
     const value = parseFloat(marketValueUsd) || 0;
-    const BANK_FEE_PERCENTAGE = 0.005;
+    const BANK_FEE_PERCENTAGE = 0.005; // TODO: #5 - move to DB config
     
     if (value < 10000) {
       return { mutationFee: 0, bankFee: 0, total: 0, applicable: false, percentage: 0 };
@@ -269,6 +270,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setSelectedFees(mandatoryFeeIds);
   }, [fees]);
 
+  // #21: Only run payment method auto-selection on payment step
   useEffect(() => {
     if (step !== 'payment') return;
     if (paymentMethod === 'mobile_money' && !availableMethods.hasMobileMoney && availableMethods.hasBankCard) {
@@ -390,6 +392,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     [getRequiredDocuments]
   );
 
+  // #16: Memoize all required documents for the form display (avoid double call)
+  const allRequiredDocuments = useMemo(() => getRequiredDocuments(), [getRequiredDocuments]);
+
   useEffect(() => {
     setRequiredDocumentChecks((prev) => {
       const next: Record<string, boolean> = {};
@@ -427,8 +432,9 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       toast.error(`Veuillez confirmer les pièces requises : ${missingCheckedDocuments.map(doc => doc.label).join(', ')}`);
       return false;
     }
-    if (requiredSupportingDocuments.length > 0 && attachedFiles.length < requiredSupportingDocuments.length) {
-      toast.error(`Ajoutez au moins ${requiredSupportingDocuments.length} document(s) justificatif(s) pour ce type de mutation.`);
+    // #6: Require at least 1 file (not 1 per document - user may combine in a single PDF)
+    if (requiredSupportingDocuments.length > 0 && attachedFiles.length === 0) {
+      toast.error('Ajoutez au moins un document justificatif pour ce type de mutation.');
       return false;
     }
     return true;
@@ -456,6 +462,12 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
+  // #17: Single source of truth for beneficiary full name
+  const getBeneficiaryFullName = useCallback(() => {
+    if (beneficiaryLegalStatus === 'personne_morale') return beneficiaryLastName;
+    return [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
+  }, [beneficiaryLegalStatus, beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName]);
+
   const handleSubmitForm = async () => {
     let documentUrls: string[] = [];
     if (attachedFiles.length > 0) {
@@ -469,17 +481,15 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       if (!expertiseCertificateUrl) return;
     }
 
-    const fullBeneficiaryName = beneficiaryLegalStatus === 'personne_morale'
-      ? beneficiaryLastName
-      : [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
+    // #17: Use single function
+    const fullBeneficiaryName = getBeneficiaryFullName();
 
     const requesterName = profile?.full_name || user?.email || 'Utilisateur';
     const requesterEmail = profile?.email || user?.email || '';
 
-    const mutationDetails = getMutationTypeDetails();
     const autoDescription = isTransferMutation 
-      ? `${mutationDetails?.label} - Transfert à ${fullBeneficiaryName}`
-      : `${mutationDetails?.label} - ${mutationDetails?.description}`;
+      ? `${mutationTypeDetails?.label} - Transfert à ${fullBeneficiaryName}`
+      : `${mutationTypeDetails?.label} - ${mutationTypeDetails?.description}`;
 
     const totalCalculated = getTotalAmount();
 
@@ -489,7 +499,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       mutation_type: mutationType,
       requester_type: requesterType,
       requester_name: requesterName,
-      requester_phone: '',
+      requester_phone: profile?.phone || '', // #7: Use profile phone
       requester_email: requesterEmail,
       beneficiary_name: isTransferMutation ? fullBeneficiaryName : undefined,
       beneficiary_phone: isTransferMutation ? beneficiaryPhone : undefined,
@@ -576,8 +586,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
+  // #1: handleClose properly resets showIntro
   const handleClose = () => {
     setStep('form');
+    setShowIntro(true); // #1: Ensure intro shows on next open
     setCreatedRequest(null);
     setMutationType('vente');
     setRequesterType('proprietaire');
@@ -602,11 +614,6 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     setPaymentProvider('');
     setPaymentPhone('');
     onOpenChange(false);
-  };
-
-  const getBeneficiaryFullName = () => {
-    if (beneficiaryLegalStatus === 'personne_morale') return beneficiaryLastName;
-    return [beneficiaryLastName, beneficiaryMiddleName, beneficiaryFirstName].filter(Boolean).join(' ');
   };
 
   // =============== SHARED FEE SECTION (deduplicated) ===============
@@ -686,10 +693,10 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               ))}
             </SelectContent>
           </Select>
-          <p className="text-xs text-muted-foreground leading-relaxed">{getMutationTypeDetails()?.description}</p>
+          <p className="text-xs text-muted-foreground leading-relaxed">{mutationTypeDetails?.description}</p>
         </div>
 
-        {/* Documents justificatifs */}
+        {/* Documents justificatifs - #16: Use memoized allRequiredDocuments */}
         <Card className="border rounded-xl">
           <CardContent className="p-3 space-y-3">
             <h4 className="text-sm font-semibold flex items-center gap-2">
@@ -698,7 +705,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
               <SectionHelpPopover title="Documents justificatifs" description="Joignez les pièces justificatives nécessaires selon le type de mutation. Max 10MB par fichier." />
             </h4>
             <div className="space-y-2">
-              {getRequiredDocuments().map((doc) => {
+              {allRequiredDocuments.map((doc) => {
                 const isCheckable = doc.required && !doc.handledByExpertiseCertificate;
                 return (
                   <div key={doc.key} className="rounded-lg border p-2">
@@ -990,7 +997,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
           </Card>
         )}
 
-        {/* Late fees section — only for types that support it (NOT correction/mise_a_jour) */}
+        {/* Late fees section — only for types that support it (#8: NOT expropriation/echange/correction/mise_a_jour) */}
         {showLateFees && (
           <MutationLateFeeSection
             ownerAcquisitionDate={ownerAcquisitionDate}
@@ -1049,7 +1056,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
             <Separator />
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Type de mutation</span>
-              <span className="text-sm font-semibold">{getMutationTypeDetails()?.label}</span>
+              <span className="text-sm font-semibold">{mutationTypeDetails?.label}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Demandeur</span>
@@ -1276,18 +1283,19 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
+  // #1: Only set showIntro on open, handleClose already resets it
   useEffect(() => { if (open) setShowIntro(true); }, [open]);
 
   const handleIntroComplete = () => setShowIntro(false);
 
   if (showIntro && open) {
     return (
-      <FormIntroDialog open={open} onOpenChange={onOpenChange} onContinue={handleIntroComplete} config={FORM_INTRO_CONFIGS.mutation} />
+      <FormIntroDialog open={open} onOpenChange={handleClose} onContinue={handleIntroComplete} config={FORM_INTRO_CONFIGS.mutation} />
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) handleClose(); else onOpenChange(true); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className={`z-[1200] ${isMobile ? 'w-[92vw] max-w-[360px] max-h-[88vh] rounded-2xl' : 'max-w-md rounded-2xl'} p-4 overflow-hidden`}>
         <DialogHeader className="pb-2">

@@ -36,10 +36,20 @@ export const PROVIDER_LABELS: Record<string, string> = {
 export const TRANSFER_MUTATION_TYPES = ['vente', 'donation', 'succession', 'expropriation', 'echange'];
 
 /** Types de mutation qui ne doivent PAS avoir de frais de retard */
-export const NO_LATE_FEE_TYPES = ['correction', 'mise_a_jour'];
+export const NO_LATE_FEE_TYPES = ['correction', 'mise_a_jour', 'expropriation', 'echange'];
 
 export const isTransferMutation = (type: string) => TRANSFER_MUTATION_TYPES.includes(type);
 export const hasLateFees = (type: string) => !NO_LATE_FEE_TYPES.includes(type);
 
 export const getMutationTypeLabel = (type: string): string =>
   MUTATION_TYPE_LABELS[type] || type.replace(/_/g, ' ');
+
+/** Status labels for display */
+export const MUTATION_STATUS_LABELS: Record<string, string> = {
+  pending: 'En attente',
+  in_review: 'En cours',
+  approved: 'Approuvée',
+  rejected: 'Rejetée',
+  on_hold: 'Suspendue',
+  cancelled: 'Annulée',
+};

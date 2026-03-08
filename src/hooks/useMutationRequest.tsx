@@ -11,7 +11,7 @@ export const useMutationRequest = () => {
   const [loading, setLoading] = useState(false);
   const [fees, setFees] = useState<MutationFee[]>([]);
   const [userRequests, setUserRequests] = useState<MutationRequest[]>([]);
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { toast } = useToast();
 
   const fetchFees = useCallback(async () => {
@@ -97,7 +97,7 @@ export const useMutationRequest = () => {
         mutation_type: data.mutation_type,
         requester_type: data.requester_type,
         requester_name: data.requester_name,
-        requester_phone: data.requester_phone || null,
+        requester_phone: data.requester_phone || profile?.phone || null,
         requester_email: data.requester_email || null,
         beneficiary_name: data.beneficiary_name || null,
         beneficiary_phone: data.beneficiary_phone || null,
@@ -190,6 +190,15 @@ export const useMutationRequest = () => {
         .in('status', ['pending']); // only allow cancellation of pending requests
 
       if (error) throw error;
+
+      // Create notification for cancellation (#13)
+      await supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'warning',
+        title: 'Demande de mutation annulée',
+        message: 'Votre demande de mutation a été annulée avec succès.',
+        action_url: '/user-dashboard?tab=mutations'
+      });
 
       toast({
         title: "Demande annulée",
