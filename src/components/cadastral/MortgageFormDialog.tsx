@@ -47,6 +47,8 @@ const STATUS_LABELS: Record<string, string> = {
   'renegociee': 'Renégociée',
 };
 
+const MAX_MORTGAGE_AMOUNT_USD = 1_000_000_000;
+
 const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   parcelNumber,
   parcelId,
