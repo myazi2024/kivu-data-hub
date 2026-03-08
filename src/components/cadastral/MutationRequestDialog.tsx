@@ -1367,7 +1367,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
     }
   };
 
-  useEffect(() => { if (open) setShowIntro(true); }, [open]);
+  // Note: showIntro is already reset in handleClose, no need for a separate useEffect
 
   const handleIntroComplete = () => setShowIntro(false);
 
