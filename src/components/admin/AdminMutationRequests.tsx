@@ -592,7 +592,7 @@ const AdminMutationRequests: React.FC = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-primary">${fee.amount_usd}</span>
+                      <span className="font-bold text-primary">${Number(fee.amount_usd).toFixed(2)}</span>
                       <Button
                         variant="ghost"
                         size="sm"
