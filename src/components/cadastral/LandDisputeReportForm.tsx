@@ -237,8 +237,8 @@ const LandDisputeReportForm: React.FC<LandDisputeReportFormProps> = ({
     let uploadedPaths: string[] = [];
     
     try {
-      // Check for duplicate disputes
-      const isDuplicate = await checkDuplicateDispute(parcelNumber, disputeNature);
+      // Check for duplicate disputes (scoped to current user)
+      const isDuplicate = await checkDuplicateDispute(parcelNumber, disputeNature, user.id);
       if (isDuplicate) {
         toast.error('Un litige de même nature est déjà en cours sur cette parcelle.');
         setLoading(false);
