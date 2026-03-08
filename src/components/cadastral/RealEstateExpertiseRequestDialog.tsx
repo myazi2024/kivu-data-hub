@@ -2671,7 +2671,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
             </Button>
             <Button
               onClick={handleProceedToPayment}
-              disabled={requiredMissing.length > 0 || loadingFees}
+              disabled={requiredMissing.length > 0 || loadingFees || !isPaymentValid()}
               className="flex-1 h-10 rounded-xl bg-gradient-to-r from-primary to-primary/80 hover:opacity-90 shadow-md text-sm"
             >
               <DollarSign className="h-4 w-4 mr-1" />
