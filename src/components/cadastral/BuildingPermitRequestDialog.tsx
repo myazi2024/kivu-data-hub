@@ -5,8 +5,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogPortal,
-  DialogOverlay,
 } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -42,12 +40,17 @@ interface BuildingPermitRequestDialogProps {
   hasExistingConstruction?: boolean;
 }
 
-// CDF/USD exchange rate (approximate)
-const CDF_TO_USD = 2800;
-
 interface AttachmentFile {
   file: File;
   label: string;
+}
+
+interface FeeItem {
+  id: string;
+  fee_name: string;
+  amount_usd: number;
+  description: string | null;
+  is_mandatory: boolean;
 }
 
 const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = ({
@@ -60,6 +63,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   const { user } = useAuth();
   const isMobile = useIsMobile();
   const { paymentMode, availableMethods, isPaymentRequired } = usePaymentConfig();
+  const abortControllerRef = useRef<AbortController | null>(null);
   
   const [showIntro, setShowIntro] = useState(true);
   const [step, setStep] = useState<'form' | 'preview' | 'payment' | 'confirmation'>('form');
@@ -68,7 +72,12 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
   );
   const [loading, setLoading] = useState(false);
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [savedContributionId, setSavedContributionId] = useState<string | null>(null);
   
+  // Dynamic fees from permit_fees_config
+  const [dynamicFees, setDynamicFees] = useState<FeeItem[]>([]);
+  const [feesLoading, setFeesLoading] = useState(false);
+
   // Payment state
   const [paymentMethod, setPaymentMethod] = useState<'mobile_money' | 'bank_card'>('mobile_money');
   const [paymentProvider, setPaymentProvider] = useState('');
@@ -86,6 +95,39 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     other: null,
   });
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  // Cleanup abort controller on unmount
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
+  // Load fees from permit_fees_config
+  useEffect(() => {
+    const loadFees = async () => {
+      setFeesLoading(true);
+      try {
+        const permitType = requestType === 'new' ? 'construction' : 'regularization';
+        const { data, error } = await supabase
+          .from('permit_fees_config')
+          .select('*')
+          .eq('permit_type', permitType)
+          .eq('is_active', true)
+          .order('display_order');
+
+        if (error) throw error;
+        setDynamicFees((data || []) as FeeItem[]);
+      } catch (err) {
+        console.error('Error loading permit fees:', err);
+        // Fallback fees if config unavailable
+        setDynamicFees([]);
+      } finally {
+        setFeesLoading(false);
+      }
+    };
+    loadFees();
+  }, [requestType]);
 
   // Load payment providers
   useEffect(() => {
@@ -220,32 +262,17 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     return reasonsRequiringPermit.includes(formData.regularizationReason);
   };
 
-  // ========== FEE CALCULATION ==========
+  // ========== FEE CALCULATION (from config) ==========
   const areaSqm = parseFloat(formData.plannedArea) || 0;
-  const usage = formData.declaredUsage;
 
-  const getUrbanismTaxCDF = () => {
-    if (!areaSqm) return 0;
-    if (['Commerce', 'Bureau', 'Entrepôt'].includes(usage)) {
-      return areaSqm * 450; // Commercial/Industrial: ~400-500 CDF/m²
-    }
-    return areaSqm * 250; // Residential: ~200-300 CDF/m²
-  };
+  // Calculate total from dynamic fees
+  const totalFeeUSD = dynamicFees.reduce((sum, fee) => sum + fee.amount_usd, 0);
 
-  const urbanismTaxCDF = getUrbanismTaxCDF();
-  const urbanismTaxUSD = Math.round((urbanismTaxCDF / CDF_TO_USD) * 100) / 100;
-
-  const permitFeeUSD = requestType === 'new' ? 75 : 120;
-  const bicAdminFeeUSD = 15;
-  const bankFeeUSD = 2;
-  const totalFeeUSD = Math.round((permitFeeUSD + urbanismTaxUSD + bicAdminFeeUSD + bankFeeUSD) * 100) / 100;
-
-  const feeBreakdown = [
-    { label: requestType === 'new' ? 'Frais d\'autorisation de bâtir' : 'Frais d\'autorisation de régularisation', amount: permitFeeUSD },
-    { label: `Taxe d'urbanisme (${areaSqm ? areaSqm.toLocaleString('fr-FR') : '0'} m²)`, amount: urbanismTaxUSD, detail: `${urbanismTaxCDF.toLocaleString('fr-FR')} CDF` },
-    { label: 'Frais administratifs BIC', amount: bicAdminFeeUSD },
-    { label: 'Frais bancaires', amount: bankFeeUSD },
-  ];
+  const feeBreakdown = dynamicFees.map(fee => ({
+    label: fee.fee_name,
+    amount: fee.amount_usd,
+    detail: fee.description || undefined
+  }));
 
   const isFormValid = () => {
     const baseFields = [
@@ -257,6 +284,11 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       formData.applicantPhone,
       formData.projectDescription
     ];
+
+    // Check required attachments
+    if (!attachments.architectural_plans || !attachments.id_document) {
+      return false;
+    }
 
     if (requestType === 'regularization') {
       const regularizationFields = [
@@ -279,7 +311,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     if (!isFormValid()) {
       toast({
         title: "Formulaire incomplet",
-        description: "Veuillez remplir tous les champs obligatoires",
+        description: "Veuillez remplir tous les champs obligatoires et joindre les documents requis (plans architecturaux et pièce d'identité)",
         variant: "destructive"
       });
       return;
@@ -291,12 +323,112 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     setStep('payment');
   };
 
-  const pollTransaction = async (transactionId: string) => {
+  // Upload all attachments - returns map of key → URL
+  const uploadAttachments = async (): Promise<Record<string, string>> => {
+    if (!user) throw new Error('Non authentifié');
+    const uploadedUrls: Record<string, string> = {};
+
+    for (const [key, attachment] of Object.entries(attachments)) {
+      if (!attachment) continue;
+      const fileExt = attachment.file.name.split('.').pop();
+      const fileName = `permit_req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const filePath = `permit-requests/${user.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('cadastral-documents')
+        .upload(filePath, attachment.file);
+
+      if (uploadError) throw new Error(`Échec upload ${attachment.label}: ${uploadError.message}`);
+
+      const { data } = supabase.storage.from('cadastral-documents').getPublicUrl(filePath);
+      uploadedUrls[key] = data.publicUrl;
+    }
+
+    return uploadedUrls;
+  };
+
+  // Save permit request to cadastral_contributions
+  const savePermitRequest = async (uploadedUrls: Record<string, string>, transactionId?: string) => {
+    if (!user) throw new Error('Non authentifié');
+
+    const permitRequestData = {
+      requestType: requestType === 'new' ? 'construction' : 'regularization',
+      constructionType: formData.constructionType,
+      constructionNature: formData.constructionNature,
+      declaredUsage: formData.declaredUsage,
+      plannedArea: parseFloat(formData.plannedArea),
+      numberOfFloors: parseInt(formData.numberOfFloors) || 1,
+      estimatedCost: formData.estimatedCost ? parseFloat(formData.estimatedCost) : null,
+      applicantName: formData.applicantName,
+      applicantPhone: formData.applicantPhone,
+      applicantEmail: formData.applicantEmail,
+      applicantAddress: formData.applicantAddress,
+      projectDescription: formData.projectDescription,
+      startDate: formData.startDate || null,
+      estimatedDuration: formData.estimatedDuration || null,
+      constructionDate: formData.constructionDate || null,
+      currentState: formData.currentState || null,
+      complianceIssues: formData.complianceIssues || null,
+      regularizationReason: formData.regularizationReason || null,
+      originalPermitNumber: formData.originalPermitNumber || null,
+      architectName: formData.architectName || null,
+      architectLicense: formData.architectLicense || null,
+      roofingType: formData.roofingType || null,
+      numberOfRooms: formData.numberOfRooms || null,
+      waterSupply: formData.waterSupply || null,
+      electricitySupply: formData.electricitySupply || null,
+      attachments: uploadedUrls,
+      totalFeePaid: totalFeeUSD,
+      feeBreakdown: feeBreakdown,
+      transactionId: transactionId || null,
+    };
+
+    const { data, error } = await supabase
+      .from('cadastral_contributions')
+      .insert({
+        parcel_number: parcelNumber,
+        user_id: user.id,
+        contribution_type: 'permit_request',
+        status: 'pending',
+        permit_request_data: permitRequestData,
+        construction_type: formData.constructionType,
+        construction_nature: formData.constructionNature,
+        declared_usage: formData.declaredUsage,
+        area_sqm: parseFloat(formData.plannedArea) || null,
+        construction_year: formData.constructionDate ? new Date(formData.constructionDate).getFullYear() : null,
+        previous_permit_number: formData.originalPermitNumber || null,
+      })
+      .select('id')
+      .single();
+
+    if (error) throw error;
+
+    // Send notification
+    await supabase.from('notifications').insert({
+      user_id: user.id,
+      type: 'success',
+      title: 'Demande d\'autorisation soumise',
+      message: `Votre demande d'${requestType === 'new' ? 'autorisation de bâtir' : 'autorisation de régularisation'} pour la parcelle ${parcelNumber} a été soumise. Délai de traitement: 15-30 jours.`,
+      action_url: '/user-dashboard?tab=building-permits'
+    });
+
+    return data.id;
+  };
+
+  const pollTransaction = async (transactionId: string, signal: AbortSignal) => {
     let attempts = 0;
     const maxAttempts = 25;
 
     while (attempts < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      if (signal.aborted) throw new Error('Paiement annulé');
+
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, 2000);
+        const onAbort = () => { clearTimeout(timer); resolve(); };
+        signal.addEventListener('abort', onAbort, { once: true });
+      });
+
+      if (signal.aborted) throw new Error('Paiement annulé');
 
       const { data: transaction, error } = await supabase
         .from('payment_transactions')
@@ -324,42 +456,93 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       return;
     }
 
-    if (!isPaymentRequired()) {
-      setStep('confirmation');
-      toast({ title: "Demande enregistrée", description: "Votre demande de permis a été enregistrée avec succès" });
+    // Step 1: Upload files FIRST
+    let uploadedUrls: Record<string, string> = {};
+    try {
+      setProcessingPayment(true);
+      uploadedUrls = await uploadAttachments();
+    } catch (err: any) {
+      toast({ title: 'Erreur d\'upload', description: err.message || 'Échec du téléchargement des documents', variant: 'destructive' });
+      setProcessingPayment(false);
       return;
     }
 
+    // Step 2: If no payment required, save directly
+    if (!isPaymentRequired()) {
+      try {
+        const contributionId = await savePermitRequest(uploadedUrls);
+        setSavedContributionId(contributionId);
+        setStep('confirmation');
+        toast({ title: "Demande enregistrée", description: "Votre demande a été enregistrée avec succès" });
+      } catch (err: any) {
+        toast({ title: 'Erreur', description: err.message || 'Impossible d\'enregistrer la demande', variant: 'destructive' });
+      } finally {
+        setProcessingPayment(false);
+      }
+      return;
+    }
+
+    // Step 3: Process payment
     if (paymentMethod === 'mobile_money') {
       if (!paymentProvider || !paymentPhone || !paymentPin) {
         toast({ title: 'Champs requis', description: 'Veuillez remplir tous les champs de paiement.', variant: 'destructive' });
+        setProcessingPayment(false);
         return;
       }
 
+      // Cancel previous polling if any
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       try {
-        setProcessingPayment(true);
         const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
           'process-mobile-money-payment',
           { body: { payment_provider: paymentProvider, phone_number: paymentPhone, amount_usd: totalFeeUSD, payment_type: 'permit_request', test_mode: paymentMode.test_mode } }
         );
         if (paymentError) throw paymentError;
         if (!paymentResult?.success) throw new Error(paymentResult?.error || 'Payment failed');
-        await pollTransaction(paymentResult.transaction_id);
-        toast({ title: "Demande enregistrée", description: "Votre demande de permis a été enregistrée avec succès" });
+
+        await pollTransaction(paymentResult.transaction_id, controller.signal);
+
+        // Step 4: Save to DB after successful payment
+        try {
+          const contributionId = await savePermitRequest(uploadedUrls, paymentResult.transaction_id);
+          setSavedContributionId(contributionId);
+        } catch (dbError: any) {
+          // CRITICAL: Payment succeeded but DB save failed - show transaction ID for manual reconciliation
+          console.error('DB save failed after payment:', dbError);
+          toast({
+            title: 'Paiement confirmé — Erreur d\'enregistrement',
+            description: `Votre paiement (ID: ${paymentResult.transaction_id}) est confirmé. Contactez le support pour finaliser l'enregistrement.`,
+            variant: 'destructive',
+          });
+          setStep('confirmation');
+          setProcessingPayment(false);
+          return;
+        }
+
+        toast({ title: "Demande enregistrée", description: "Votre demande a été soumise avec succès" });
         setStep('confirmation');
       } catch (err: any) {
-        console.error('Payment error:', err);
-        toast({ title: 'Erreur de paiement', description: err?.message || "Une erreur s'est produite", variant: 'destructive' });
+        if (err.message !== 'Paiement annulé') {
+          console.error('Payment error:', err);
+          toast({ title: 'Erreur de paiement', description: err?.message || "Une erreur s'est produite", variant: 'destructive' });
+        }
       } finally {
         setProcessingPayment(false);
       }
     } else {
       toast({ title: 'Carte bancaire', description: 'Le paiement par carte bancaire sera bientôt disponible.' });
+      setProcessingPayment(false);
     }
   };
 
   const handleClose = () => {
+    abortControllerRef.current?.abort();
     setStep('form');
+    setShowIntro(true);
+    setSavedContributionId(null);
     setFormData({
       constructionType: '', constructionNature: '', declaredUsage: '', plannedArea: '',
       numberOfFloors: '1', estimatedCost: '', applicantName: '', applicantPhone: '',
@@ -382,9 +565,11 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
     { key: 'other', label: 'Autre document', required: false, help: 'Tout document complémentaire pertinent' },
   ];
 
+  const requestTypeLabel = requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
+
   const cartItem: CartItem = {
     id: 'building-permit-request',
-    title: requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation',
+    title: requestTypeLabel,
     price: totalFeeUSD,
     description: `Parcelle: ${parcelNumber}`
   };
@@ -394,7 +579,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
       case 'preview': return 'Aperçu de la demande';
       case 'payment': return 'Paiement';
       case 'confirmation': return 'Confirmation';
-      default: return requestType === 'new' ? 'Autorisation de bâtir' : 'Autorisation de régularisation';
+      default: return requestTypeLabel;
     }
   };
 
@@ -701,7 +886,10 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
                       variant="outline"
                       size="sm"
                       onClick={() => handleFileSelect(key, label)}
-                      className="gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2 justify-start"
+                      className={cn(
+                        "gap-2 w-full text-sm h-9 rounded-xl border-dashed border-2 justify-start",
+                        required && !attachments[key] && "border-destructive/50"
+                      )}
                     >
                       <Plus className="h-3.5 w-3.5 flex-shrink-0" />
                       <span className="truncate">{label}{required ? ' *' : ''}</span>
@@ -738,24 +926,35 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
               <Info className="h-4 w-4 text-primary" />
               Détail des frais
             </h4>
-            {feeBreakdown.map((fee, i) => (
-              <div key={i} className="flex items-center justify-between text-sm">
-                <div className="flex-1 min-w-0">
-                  <span className="text-muted-foreground text-xs">{fee.label}</span>
-                  {fee.detail && <span className="text-[10px] text-muted-foreground ml-1">({fee.detail})</span>}
-                </div>
-                <span className="font-medium ml-2">${fee.amount.toFixed(2)}</span>
+            {feesLoading ? (
+              <div className="flex items-center gap-2 py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">Chargement des frais...</span>
               </div>
-            ))}
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold">Total</span>
-              <span className="text-lg font-bold text-primary">${totalFeeUSD.toFixed(2)} USD</span>
-            </div>
+            ) : dynamicFees.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-2">Aucun frais configuré. Contactez l'administration.</p>
+            ) : (
+              <>
+                {feeBreakdown.map((fee, i) => (
+                  <div key={i} className="flex items-center justify-between text-sm">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-muted-foreground text-xs">{fee.label}</span>
+                      {fee.detail && <span className="text-[10px] text-muted-foreground ml-1">({fee.detail})</span>}
+                    </div>
+                    <span className="font-medium ml-2">${fee.amount.toFixed(2)}</span>
+                  </div>
+                ))}
+                <Separator />
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-bold">Total</span>
+                  <span className="text-lg font-bold text-primary">${totalFeeUSD.toFixed(2)} USD</span>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
 
-        <Button onClick={handlePreview} className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg" disabled={!isFormValid()}>
+        <Button onClick={handlePreview} className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg" disabled={!isFormValid() || feesLoading || dynamicFees.length === 0}>
           Aperçu avant soumission
         </Button>
       </div>
@@ -781,7 +980,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
             <Separator />
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Type</span>
-              <span className="text-sm font-semibold">{requestType === 'new' ? 'Nouveau permis' : 'Régularisation'}</span>
+              <span className="text-sm font-semibold">{requestTypeLabel}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Construction</span>
@@ -1021,7 +1220,7 @@ const BuildingPermitRequestDialog: React.FC<BuildingPermitRequestDialogProps> = 
           <Separator />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Building2 className="h-3 w-3" />Type</div>
-            <span className="text-xs">{requestType === 'new' ? 'Nouveau permis' : 'Régularisation'}</span>
+            <span className="text-xs">{requestTypeLabel}</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground"><Clock className="h-3 w-3" />Délai estimé</div>

@@ -64,8 +64,8 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
   {
     id: '5',
     key: 'permit_add',
-    label: 'Ajouter Permis',
-    description: 'Pour une nouvelle construction',
+    label: 'Ajouter une autorisation',
+    description: 'Bâtir ou régulariser',
     isActive: true,
     isVisible: true,
     displayOrder: 5,
@@ -76,7 +76,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
   {
     id: '6',
     key: 'permit_regularization',
-    label: 'Ajouter P. Régularisation',
+    label: 'Autorisation de régularisation',
     description: 'Régulariser une construction existante',
     isActive: true,
     isVisible: true,
@@ -100,7 +100,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
   {
     id: '8',
     key: 'permit_request',
-    label: 'Obtenir un permis',
+    label: 'Obtenir une autorisation',
     description: 'Demande d\'autorisation de bâtir',
     isActive: true,
     isVisible: true,

@@ -102,8 +102,8 @@ const ParcelActionsDropdown: React.FC<ParcelActionsDropdownProps> = ({
     .filter(a => a.isVisible && a.key !== 'permit_regularization')
     .sort((a, b) => a.displayOrder - b.displayOrder);
 
-  const getDisplayLabel = (action: ParcelAction) => action.key === 'permit_add' ? 'Ajouter un permis' : action.label;
-  const getDisplayDescription = (action: ParcelAction) => action.key === 'permit_add' ? 'Construire ou régulariser' : action.description;
+  const getDisplayLabel = (action: ParcelAction) => action.key === 'permit_add' ? 'Ajouter une autorisation' : action.label;
+  const getDisplayDescription = (action: ParcelAction) => action.key === 'permit_add' ? 'Bâtir ou régulariser' : action.description;
 
   const groupedActions: (ParcelAction | 'separator')[] = [];
   let lastCategory = '';
