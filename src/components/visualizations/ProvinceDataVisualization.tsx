@@ -136,6 +136,14 @@ const ProvinceDataVisualization: React.FC<ProvinceDataVisualizationProps> = ({
         return <PropertyTypeVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
       case 'land-pressure':
         return <LandPressureVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
+      case 'fiscal-revenue':
+        return <FiscalRevenueVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
+      case 'ownership-rate':
+        return <OwnershipRateVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
+      case 'housing-access':
+        return <HousingAccessVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
+      case 'land-value':
+        return <LandValueVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
       default:
         return <VacancyRateVisualization provinces={filteredProvinces} selectedProvince={selectedProvince} />;
     }
