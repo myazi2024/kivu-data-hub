@@ -1933,7 +1933,6 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           </Button>
         )}
       </div>
-      )}
     </div>
   );
 
