@@ -1644,12 +1644,14 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
   const removeMortgageRecord = (index: number) => {
     setMortgageRecords(mortgageRecords.filter((_, i) => i !== index));
+    markDirty();
   };
 
   const updateMortgageRecord = (index: number, field: string, value: string) => {
     const updated = [...mortgageRecords];
     updated[index] = { ...updated[index], [field]: value };
     setMortgageRecords(updated);
+    markDirty();
   };
 
   const handleMortgageFileChange = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
