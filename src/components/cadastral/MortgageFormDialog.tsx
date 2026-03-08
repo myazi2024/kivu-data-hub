@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
@@ -7,13 +7,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Loader2, Landmark, CheckCircle2, Upload, X, Plus, Info, ArrowLeft, FileText } from 'lucide-react';
+import { Loader2, Landmark, CheckCircle2, X, Plus, ArrowLeft, FileText, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import SectionHelpPopover from './SectionHelpPopover';
+import QuickAuthDialog from './QuickAuthDialog';
 
 interface MortgageFormDialogProps {
   parcelNumber: string;
@@ -35,6 +35,13 @@ interface MortgageRecord {
   receiptFile: File | null;
 }
 
+// Mapping statut interne → label affiché
+const STATUS_LABELS: Record<string, string> = {
+  'active': 'En cours',
+  'en_defaut': 'En défaut de paiement',
+  'renegociee': 'Renégociée',
+};
+
 const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   parcelNumber,
   parcelId,
@@ -46,6 +53,8 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('form');
   const [loading, setLoading] = useState(false);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const isSubmittingRef = useRef(false);
   
   const [mortgageRecord, setMortgageRecord] = useState<MortgageRecord>({
     mortgageAmount: '',
@@ -53,7 +62,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     creditorName: '',
     creditorType: 'Banque',
     contractDate: '',
-    mortgageStatus: 'Active',
+    mortgageStatus: 'active',
     receiptFile: null
   });
 
@@ -88,28 +97,75 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   };
 
   const validateForm = (): boolean => {
-    if (!mortgageRecord.mortgageAmount || !mortgageRecord.creditorName || !mortgageRecord.contractDate) {
-      toast.error('Veuillez remplir les champs obligatoires: Montant, Créancier, Date contrat');
+    const amount = parseFloat(mortgageRecord.mortgageAmount);
+    if (!mortgageRecord.mortgageAmount || isNaN(amount) || amount <= 0) {
+      toast.error('Le montant de l\'hypothèque doit être supérieur à 0');
+      return false;
+    }
+    if (mortgageRecord.duration) {
+      const dur = parseInt(mortgageRecord.duration);
+      if (isNaN(dur) || dur <= 0) {
+        toast.error('La durée doit être supérieure à 0 mois');
+        return false;
+      }
+    }
+    if (!mortgageRecord.creditorName.trim()) {
+      toast.error('Veuillez indiquer le nom du créancier');
+      return false;
+    }
+    if (!mortgageRecord.contractDate) {
+      toast.error('Veuillez indiquer la date du contrat');
       return false;
     }
     return true;
   };
 
   const handlePreview = () => {
+    if (!user) {
+      setShowAuthDialog(true);
+      return;
+    }
     if (!validateForm()) return;
     setStep('preview');
   };
 
+  const checkExistingPending = async (): Promise<boolean> => {
+    if (!user) return false;
+    
+    const { data } = await supabase
+      .from('cadastral_contributions')
+      .select('id')
+      .eq('parcel_number', parcelNumber)
+      .eq('user_id', user.id)
+      .eq('contribution_type', 'update')
+      .in('status', ['pending', 'in_review']);
+    
+    // Filter for mortgage-related contributions (mortgage_history is not null)
+    // Since we can't easily filter JSONB via Supabase client, we check the count
+    // This is a best-effort check
+    return (data?.length ?? 0) > 0;
+  };
+
   const handleSubmit = async () => {
     if (!user) {
-      toast.error('Vous devez être connecté');
+      setShowAuthDialog(true);
       return;
     }
+    
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
 
     setLoading(true);
     try {
+      // Check for existing pending contribution
+      const hasPending = await checkExistingPending();
+      if (hasPending) {
+        toast.error('Une demande est déjà en cours de traitement pour cette parcelle. Consultez votre tableau de bord.');
+        return;
+      }
+
       // Upload du fichier si présent
-      let documentUrl = null;
+      let documentUrl: string | null = null;
       if (mortgageRecord.receiptFile) {
         const fileExt = mortgageRecord.receiptFile.name.split('.').pop();
         const fileName = `mortgage_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -130,14 +186,14 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         .from('cadastral_contributions')
         .insert({
           parcel_number: parcelNumber,
-          original_parcel_id: parcelId,
+          original_parcel_id: parcelId || null,
           user_id: user.id,
           contribution_type: 'update',
           status: 'pending',
           mortgage_history: [{
             mortgage_amount_usd: parseFloat(mortgageRecord.mortgageAmount),
-            duration_months: parseInt(mortgageRecord.duration) || 0,
-            creditor_name: mortgageRecord.creditorName,
+            duration_months: mortgageRecord.duration ? parseInt(mortgageRecord.duration) : null,
+            creditor_name: mortgageRecord.creditorName.trim(),
             creditor_type: mortgageRecord.creditorType,
             contract_date: mortgageRecord.contractDate,
             mortgage_status: mortgageRecord.mortgageStatus,
@@ -153,7 +209,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         title: 'Hypothèque soumise',
         message: `Votre déclaration d'hypothèque pour la parcelle ${parcelNumber} a été soumise avec succès.`,
         type: 'success'
-      });
+      }).then(() => {}).catch(() => {}); // Non-blocking
 
       setStep('confirmation');
       toast.success('Hypothèque enregistrée avec succès');
@@ -162,6 +218,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       toast.error('Erreur lors de l\'enregistrement');
     } finally {
       setLoading(false);
+      isSubmittingRef.current = false;
     }
   };
 
@@ -173,48 +230,36 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
       creditorName: '',
       creditorType: 'Banque',
       contractDate: '',
-      mortgageStatus: 'Active',
+      mortgageStatus: 'active',
       receiptFile: null
     });
+    isSubmittingRef.current = false;
     onOpenChange(false);
   };
+
+  const statusLabel = useMemo(() => {
+    return STATUS_LABELS[mortgageRecord.mortgageStatus] || mortgageRecord.mortgageStatus;
+  }, [mortgageRecord.mortgageStatus]);
 
   const renderFormStep = () => (
     <div className="space-y-4">
       <Card className="rounded-2xl shadow-md border-border/50 overflow-hidden">
         <CardContent className="p-4 space-y-4">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <Landmark className="h-4 w-4 text-amber-600" />
-              </div>
-              <div>
-                <Label className="text-base font-semibold flex items-center gap-1.5">
-                  Nouvelle Hypothèque
-                  <SectionHelpPopover
-                    title="Déclaration d'hypothèque"
-                    description="Renseignez les détails de l'hypothèque : montant emprunté, durée, identité du créancier et date du contrat. Cette information sera publiquement consultable."
-                  />
-                </Label>
-                <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+              <Landmark className="h-4 w-4 text-amber-600" />
             </div>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-6 w-6 p-0 rounded-full">
-                  <Info className="h-4 w-4 text-muted-foreground" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72 rounded-xl" align="end">
-                <div className="space-y-2 text-xs">
-                  <h4 className="font-semibold text-sm">Déclaration d'hypothèque</h4>
-                  <p className="text-muted-foreground">
-                    Enregistrez une hypothèque active sur cette parcelle pour informer les futurs acquéreurs.
-                  </p>
-                </div>
-              </PopoverContent>
-            </Popover>
+            <div>
+              <Label className="text-base font-semibold flex items-center gap-1.5">
+                Nouvelle Hypothèque
+                <SectionHelpPopover
+                  title="Déclaration d'hypothèque"
+                  description="Renseignez les détails de l'hypothèque : montant emprunté, durée, identité du créancier et date du contrat. Cette information sera publiquement consultable après validation."
+                />
+              </Label>
+              <p className="text-xs text-muted-foreground">Parcelle: {parcelNumber}</p>
+            </div>
           </div>
 
           {/* Formulaire */}
@@ -224,6 +269,8 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               <Input
                 type="number"
                 placeholder="50000"
+                min="1"
+                step="0.01"
                 value={mortgageRecord.mortgageAmount}
                 onChange={(e) => updateMortgage('mortgageAmount', e.target.value)}
                 className="h-10 text-sm rounded-xl"
@@ -234,6 +281,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               <Input
                 type="number"
                 placeholder="120"
+                min="1"
                 value={mortgageRecord.duration}
                 onChange={(e) => updateMortgage('duration', e.target.value)}
                 className="h-10 text-sm rounded-xl"
@@ -292,9 +340,9 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
                   <SelectValue placeholder="Statut" />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl bg-popover">
-                  <SelectItem value="Active">En cours</SelectItem>
-                  <SelectItem value="En défaut">En défaut de paiement</SelectItem>
-                  <SelectItem value="Renégociée">Renégociée</SelectItem>
+                  <SelectItem value="active">En cours</SelectItem>
+                  <SelectItem value="en_defaut">En défaut de paiement</SelectItem>
+                  <SelectItem value="renegociee">Renégociée</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -387,10 +435,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
               <span className="text-muted-foreground">Montant</span>
               <span className="font-semibold">{parseFloat(mortgageRecord.mortgageAmount).toLocaleString()} USD</span>
             </div>
-            <div className="flex justify-between py-2 border-b">
-              <span className="text-muted-foreground">Durée</span>
-              <span>{mortgageRecord.duration} mois</span>
-            </div>
+            {mortgageRecord.duration && (
+              <div className="flex justify-between py-2 border-b">
+                <span className="text-muted-foreground">Durée</span>
+                <span>{mortgageRecord.duration} mois</span>
+              </div>
+            )}
             <div className="flex justify-between py-2 border-b">
               <span className="text-muted-foreground">Créancier</span>
               <span>{mortgageRecord.creditorName}</span>
@@ -405,8 +455,14 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
             </div>
             <div className="flex justify-between py-2">
               <span className="text-muted-foreground">Statut</span>
-              <span>{mortgageRecord.mortgageStatus === 'Active' ? 'En cours' : mortgageRecord.mortgageStatus}</span>
+              <span>{statusLabel}</span>
             </div>
+            {mortgageRecord.receiptFile && (
+              <div className="flex justify-between py-2 border-t">
+                <span className="text-muted-foreground">Justificatif</span>
+                <span className="text-xs truncate max-w-[150px]">{mortgageRecord.receiptFile.name}</span>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -448,19 +504,36 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           </p>
         </div>
       </div>
-      <Button onClick={handleClose} className="w-full h-11 rounded-xl">
-        Fermer
-      </Button>
+      <div className="flex flex-col gap-2">
+        <Button
+          variant="outline"
+          onClick={() => window.location.href = '/user-dashboard'}
+          className="w-full h-11 rounded-xl gap-2"
+        >
+          <ExternalLink className="h-4 w-4" />
+          Voir mes demandes
+        </Button>
+        <Button onClick={handleClose} className="w-full h-11 rounded-xl">
+          Fermer
+        </Button>
+      </div>
     </div>
   );
 
   if (embedded) {
     return (
-      <div className="overflow-y-auto h-full px-4 pb-4">
-        {step === 'form' && renderFormStep()}
-        {step === 'preview' && renderPreviewStep()}
-        {step === 'confirmation' && renderConfirmationStep()}
-      </div>
+      <>
+        <div className="overflow-y-auto h-full px-4 pb-4">
+          {step === 'form' && renderFormStep()}
+          {step === 'preview' && renderPreviewStep()}
+          {step === 'confirmation' && renderConfirmationStep()}
+        </div>
+        <QuickAuthDialog
+          open={showAuthDialog}
+          onOpenChange={setShowAuthDialog}
+          message="Connectez-vous pour enregistrer une hypothèque"
+        />
+      </>
     );
   }
 
@@ -486,6 +559,11 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
         </ScrollArea>
       </DialogContent>
       {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'hypothèque." />}
+      <QuickAuthDialog
+        open={showAuthDialog}
+        onOpenChange={setShowAuthDialog}
+        message="Connectez-vous pour enregistrer une hypothèque"
+      />
     </Dialog>
   );
 };
