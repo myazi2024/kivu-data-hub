@@ -311,9 +311,14 @@ const LandDisputeLiftingForm: React.FC<LandDisputeLiftingFormProps> = ({
     setStep('form');
     setDisputeReference('');
     setReferenceValid(null);
+    setReferenceError(null);
     setDisputeData(null);
     setLiftingReason('');
     setLiftingDetails('');
+    setRequesterName('');
+    setRequesterPhone('');
+    setRequesterEmail('');
+    setRequesterQuality('proprietaire');
     setDocuments([]);
     setCertifyAccuracy(false);
     setAllPartiesAgree(false);
