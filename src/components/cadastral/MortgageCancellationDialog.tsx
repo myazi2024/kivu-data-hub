@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,17 +10,15 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Loader2, FileX2, CheckCircle2, Upload, X, Info, ArrowLeft, FileText, AlertTriangle, Calendar, DollarSign, Award, CreditCard, Phone, Hash, Image, MapPin, User, Building, FileCheck, ExternalLink } from 'lucide-react';
+import { Loader2, FileX2, CheckCircle2, Upload, X, Info, ArrowLeft, FileText, AlertTriangle, Calendar, DollarSign, Award, Phone, Hash, Image, MapPin, User, Building, FileCheck, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
 import { QuickAuthDialog } from './QuickAuthDialog';
-import { useMortgageFees, type MortgageCancellationFee } from '@/hooks/useMortgageFees';
+import { useMortgageFees } from '@/hooks/useMortgageFees';
 import { pollTransactionStatus } from '@/utils/pollTransactionStatus';
+import { formatCurrency, formatDateFr as formatDate } from '@/utils/formatters';
 
 interface MortgageCancellationDialogProps {
   parcelNumber: string;
@@ -143,20 +140,9 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Fix #25: Generate unique reference server-side with collision check
-  const generateUniqueReference = useCallback(async (): Promise<string> => {
-    let attempts = 0;
-    while (attempts < 5) {
-      const ref = `RAD-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`;
-      const { data } = await supabase
-        .from('cadastral_contributions')
-        .select('id')
-        .eq('change_justification', ref)
-        .maybeSingle();
-      if (!data) return ref;
-      attempts++;
-    }
-    return `RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 4).toUpperCase()}`;
+  // Fix #3: Generate unique reference using crypto.randomUUID (no DB roundtrip, no collision with change_justification)
+  const generateUniqueReference = useCallback((): string => {
+    return `RAD-${Date.now().toString(36).toUpperCase()}-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
   }, []);
 
   // Load parcel data
@@ -179,16 +165,26 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     }
   }, [parcelId]);
 
-  // Fix #24: Proper useEffect with stable dependencies
+  // Fix #1 + #10: Separate data loading from fee initialization; don't reset fees on every reload
+  const feesInitializedRef = useRef(false);
+
   useEffect(() => {
     if (open) {
-      // Initialize mandatory fees
+      loadParcelData();
+      setRequestReferenceNumber(generateUniqueReference());
+    }
+  }, [open, loadParcelData, generateUniqueReference]);
+
+  useEffect(() => {
+    if (open && fees.length > 0 && !feesInitializedRef.current) {
       const mandatoryFeeIds = fees.filter(f => f.is_mandatory).map(f => f.id);
       setSelectedFees(mandatoryFeeIds);
-      loadParcelData();
-      generateUniqueReference().then(setRequestReferenceNumber);
+      feesInitializedRef.current = true;
     }
-  }, [open, fees, loadParcelData, generateUniqueReference]);
+    if (!open) {
+      feesInitializedRef.current = false;
+    }
+  }, [open, fees]);
 
   // Pre-fill with user profile
   useEffect(() => {
@@ -267,10 +263,27 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     return () => clearTimeout(timer);
   }, [formData.mortgageReferenceNumber, validateMortgageReference]);
 
+  // Fix #16: Limit max documents to 5
+  const MAX_DOCUMENTS = 5;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const newFiles = Array.from(files);
+
+    const currentCount = formData.supportingDocuments.length;
+    const remainingSlots = MAX_DOCUMENTS - currentCount;
+
+    if (remainingSlots <= 0) {
+      toast.error(`Maximum ${MAX_DOCUMENTS} documents autorisés`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const newFiles = Array.from(files).slice(0, remainingSlots);
+    if (newFiles.length < files.length) {
+      toast.warning(`Seuls ${remainingSlots} document(s) supplémentaire(s) accepté(s) (max ${MAX_DOCUMENTS})`);
+    }
+
     const validFiles = newFiles.filter(file => {
       const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
       const isValidSize = file.size <= 10 * 1024 * 1024;
@@ -347,6 +360,11 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
       toast.error("Vous devez confirmer avoir l'accord du créancier");
       return false;
     }
+    // Fix #8: Validate parcelId exists
+    if (!parcelId) {
+      toast.error('Identifiant de parcelle manquant. Veuillez relancer la recherche.');
+      return false;
+    }
     return true;
   };
 
@@ -387,75 +405,84 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     return urls;
   };
 
-  // Fix #8: Check for existing pending cancellation request
+  // Fix #9: Check for existing pending cancellation for the SAME mortgage reference
   const checkExistingCancellationRequest = async (): Promise<boolean> => {
     if (!user || !formData.mortgageReferenceNumber) return false;
     const { data } = await supabase
       .from('cadastral_contributions')
-      .select('id')
+      .select('id, mortgage_history')
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
       .eq('contribution_type', 'mortgage_cancellation')
       .in('status', ['pending', 'in_review']);
-    return (data?.length ?? 0) > 0;
+
+    // Only block if a pending cancellation targets the same mortgage reference
+    const hasSameMortgage = data?.some(c => {
+      const history = c.mortgage_history as any[];
+      return history?.some(h =>
+        h.mortgage_reference_number?.toUpperCase() === formData.mortgageReferenceNumber.toUpperCase()
+      );
+    }) ?? false;
+
+    return hasSameMortgage;
   };
 
-  // Fix #1: Real payment via Edge Function + polling
-  const processPayment = async (): Promise<boolean> => {
+  // Fix #7: Remove `as any` cast; Fix #12: Return transaction_id for linkage
+  const processPayment = async (): Promise<{ success: boolean; transactionId?: string }> => {
     setProcessingPayment(true);
     try {
       if (!paymentProvider) {
         toast.error('Veuillez sélectionner un opérateur Mobile Money');
-        return false;
+        return { success: false };
       }
       const cleanPhone = paymentPhone.replace(/\s/g, '');
       if (!cleanPhone) {
         toast.error('Veuillez renseigner votre numéro de téléphone');
-        return false;
+        return { success: false };
       }
       if (!PHONE_REGEX_DRC.test(cleanPhone)) {
         toast.error('Numéro de téléphone invalide. Format attendu: +243XXXXXXXXX ou 0XXXXXXXXX');
-        return false;
+        return { success: false };
       }
 
-      // Call the Edge Function
       const { data, error } = await supabase.functions.invoke('process-mobile-money-payment', {
         body: {
           payment_provider: paymentProvider,
           phone_number: cleanPhone,
           amount_usd: totalAmount,
-          payment_type: 'mortgage_cancellation' as any,
+          payment_type: 'mortgage_cancellation',
         }
       });
 
       if (error || !data?.success) {
         toast.error(data?.error || 'Erreur lors du paiement');
-        return false;
+        return { success: false };
       }
 
       toast.info('Confirmez le paiement sur votre téléphone...');
 
-      // Fix #17: Poll transaction status
       const result = await pollTransactionStatus(data.transaction_id);
       if (result === 'completed') {
         toast.success('Paiement confirmé');
-        return true;
+        return { success: true, transactionId: data.transaction_id };
       } else if (result === 'failed') {
         toast.error('Le paiement a échoué');
-        return false;
+        return { success: false };
       } else {
         toast.error('Délai d\'attente dépassé. Vérifiez votre téléphone et réessayez.');
-        return false;
+        return { success: false };
       }
     } catch (error) {
       console.error('Payment error:', error);
       toast.error('Erreur lors du paiement');
-      return false;
+      return { success: false };
     } finally {
       setProcessingPayment(false);
     }
   };
 
+  // Fix #2: Upload BEFORE payment to prevent paying without complete submission
+  // Fix #12: Store transaction_id in contribution for traceability
   const handleSubmit = async () => {
     if (!user) {
       setShowAuthDialog(true);
@@ -464,24 +491,35 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     if (isSubmittingRef.current) return;
     isSubmittingRef.current = true;
 
-    // Fix #8: Check for existing pending cancellation
+    // Check for existing pending cancellation for the same mortgage
     const hasPending = await checkExistingCancellationRequest();
     if (hasPending) {
-      toast.error('Une demande de radiation est déjà en cours pour cette parcelle.');
-      isSubmittingRef.current = false;
-      return;
-    }
-
-    const paymentSuccess = await processPayment();
-    if (!paymentSuccess) {
+      toast.error('Une demande de radiation est déjà en cours pour cette hypothèque.');
       isSubmittingRef.current = false;
       return;
     }
 
     setLoading(true);
     try {
+      // Step 1: Upload documents FIRST (before payment)
       const documentUrls = await uploadDocuments();
+      if (documentUrls.length === 0 && formData.supportingDocuments.length > 0) {
+        toast.error('Échec du téléversement des documents. Veuillez réessayer.');
+        isSubmittingRef.current = false;
+        setLoading(false);
+        return;
+      }
 
+      // Step 2: Process payment AFTER successful upload
+      setLoading(false); // Show payment processing state instead
+      const paymentResult = await processPayment();
+      if (!paymentResult.success) {
+        isSubmittingRef.current = false;
+        return;
+      }
+      setLoading(true);
+
+      // Step 3: Submit contribution with all data
       const { error } = await supabase
         .from('cadastral_contributions')
         .insert({
@@ -511,19 +549,23 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
             total_amount_paid: totalAmount,
             payment_method: 'mobile_money',
             payment_provider: paymentProvider,
+            payment_transaction_id: paymentResult.transactionId || null,
             submitted_at: new Date().toISOString()
           }] as any
         });
 
       if (error) throw error;
 
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Demande de radiation soumise',
-        message: `Votre demande de radiation d'hypothèque (${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise.`,
-        type: 'success',
-        action_url: '/user-dashboard'
-      });
+      // Fix #4: Notification with error handling (table may not be in TS types)
+      try {
+        await (supabase as any).from('notifications').insert({
+          user_id: user.id,
+          title: 'Demande de radiation soumise',
+          message: `Votre demande de radiation d'hypothèque (${requestReferenceNumber}) pour la parcelle ${parcelNumber} a été soumise.`,
+          type: 'success',
+          action_url: '/user-dashboard'
+        });
+      } catch { /* Non-blocking notification */ }
 
       setStep('confirmation');
       toast.success('Demande de radiation soumise avec succès');
@@ -563,17 +605,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     onOpenChange(false);
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD' }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'dd MMMM yyyy', { locale: fr });
-    } catch {
-      return dateString;
-    }
-  };
+  // Fix #21/#22: formatCurrency and formatDate imported from @/utils/formatters
 
   // ===================== FORM STEP =====================
   const renderFormStep = () => (
@@ -1207,7 +1239,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           </>
         ) : (
           <>
-            <CreditCard className="mr-2 h-4 w-4" />
+            <Phone className="mr-2 h-4 w-4" />
             Payer {formatCurrency(totalAmount)} et soumettre
           </>
         )}
@@ -1279,17 +1311,16 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     </div>
   );
 
+  // Fix #19: Remove WhatsAppFloatingButton from embedded (parent handles it)
   if (embedded) {
     return (
       <>
-        {/* Fix #15 & #20: WhatsApp in embedded + single scroll */}
         <div className="overflow-y-auto h-full px-4 pb-4">
           {step === 'form' && renderFormStep()}
           {step === 'review' && renderReviewStep()}
           {step === 'payment' && renderPaymentStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </div>
-        {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
         <QuickAuthDialog
           open={showAuthDialog}
           onOpenChange={setShowAuthDialog}
@@ -1320,7 +1351,7 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
           {step === 'confirmation' && renderConfirmationStep()}
         </ScrollArea>
       </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la radiation d'hypothèque." />}
+      {/* Fix #19: WhatsApp removed - parent dialog handles it */}
       <QuickAuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}

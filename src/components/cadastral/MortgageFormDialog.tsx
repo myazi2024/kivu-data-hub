@@ -1,7 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import WhatsAppFloatingButton from './WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -145,21 +144,19 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
     setStep('preview');
   };
 
-  // Fix #2: Check specifically for mortgage-related pending contributions
+  // Fix #6: Check ONLY for mortgage_registration pending contributions (not generic 'update')
   const checkExistingPending = async (): Promise<boolean> => {
     if (!user) return false;
     
     const { data } = await supabase
       .from('cadastral_contributions')
-      .select('id, mortgage_history')
+      .select('id')
       .eq('parcel_number', parcelNumber)
       .eq('user_id', user.id)
-      .in('contribution_type', ['update', 'mortgage_registration'])
+      .eq('contribution_type', 'mortgage_registration')
       .in('status', ['pending', 'in_review']);
     
-    // Only block if there's a contribution that actually has mortgage_history data
-    const hasMortgagePending = data?.some(c => c.mortgage_history !== null) ?? false;
-    return hasMortgagePending;
+    return (data?.length ?? 0) > 0;
   };
 
   const handleSubmit = async () => {
@@ -222,13 +219,15 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
 
       if (error) throw error;
 
-      // Notification (non-blocking)
-      supabase.from('notifications').insert({
-        user_id: user.id,
-        title: 'Hypothèque soumise',
-        message: `Votre déclaration d'hypothèque pour la parcelle ${parcelNumber} a été soumise avec succès.`,
-        type: 'success'
-      }).then(() => {});
+      // Fix #4: Notification with error handling (table may not be in TS types)
+      try {
+        await (supabase as any).from('notifications').insert({
+          user_id: user.id,
+          title: 'Hypothèque soumise',
+          message: `Votre déclaration d'hypothèque pour la parcelle ${parcelNumber} a été soumise avec succès.`,
+          type: 'success'
+        });
+      } catch { /* Non-blocking */ }
 
       setStep('confirmation');
       toast.success('Hypothèque enregistrée avec succès');
@@ -543,13 +542,12 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
   if (embedded) {
     return (
       <>
-        {/* Fix #15 & #20: WhatsApp in embedded + single scroll container */}
+        {/* Fix #19: WhatsApp removed from embedded - parent handles it */}
         <div className="overflow-y-auto h-full px-4 pb-4">
           {step === 'form' && renderFormStep()}
           {step === 'preview' && renderPreviewStep()}
           {step === 'confirmation' && renderConfirmationStep()}
         </div>
-        {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'hypothèque." />}
         <QuickAuthDialog
           open={showAuthDialog}
           onOpenChange={setShowAuthDialog}
@@ -580,7 +578,7 @@ const MortgageFormDialog: React.FC<MortgageFormDialogProps> = ({
           </div>
         </ScrollArea>
       </DialogContent>
-      {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec le formulaire d'hypothèque." />}
+      {/* Fix #19: WhatsApp removed - parent dialog handles it */}
       <QuickAuthDialog
         open={showAuthDialog}
         onOpenChange={setShowAuthDialog}

@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Landmark, Plus, FileX2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Landmark, Plus, FileX2, AlertTriangle, Loader2 } from 'lucide-react';
 import FormIntroDialog, { FORM_INTRO_CONFIGS } from './FormIntroDialog';
 import MortgageFormDialog from './MortgageFormDialog';
 import MortgageCancellationDialog from './MortgageCancellationDialog';
+import WhatsAppFloatingButton from './WhatsAppFloatingButton';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MortgageManagementDialogProps {
   parcelNumber: string;
@@ -23,20 +26,46 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
 }) => {
   const [showIntro, setShowIntro] = useState(true);
   const [activeTab, setActiveTab] = useState<MortgageTab>('add');
-
-  // Keys to force remount sub-dialogs on tab switch (fixes #4: state not reset)
   const [addKey, setAddKey] = useState(0);
   const [removeKey, setRemoveKey] = useState(0);
-  
-  // Ref to track if user clicked "Continue" vs dismissed the intro
   const introCompletedRef = useRef(false);
 
-  // Reset ref when dialog opens
+  // Fix #15: Check if parcel has active mortgages for the radiation tab
+  const [hasActiveMortgage, setHasActiveMortgage] = useState<boolean | null>(null);
+  const [checkingMortgage, setCheckingMortgage] = useState(false);
+
   useEffect(() => {
     if (open) {
       introCompletedRef.current = false;
     }
   }, [open]);
+
+  // Check for active mortgages when dialog opens or parcelId changes
+  useEffect(() => {
+    const checkActiveMortgages = async () => {
+      if (!open || !parcelId) {
+        setHasActiveMortgage(null);
+        return;
+      }
+      setCheckingMortgage(true);
+      try {
+        const { data, error } = await supabase
+          .from('cadastral_mortgages')
+          .select('id')
+          .eq('parcel_id', parcelId)
+          .eq('mortgage_status', 'active')
+          .limit(1);
+        if (!error) {
+          setHasActiveMortgage((data?.length ?? 0) > 0);
+        }
+      } catch {
+        setHasActiveMortgage(null);
+      } finally {
+        setCheckingMortgage(false);
+      }
+    };
+    checkActiveMortgages();
+  }, [open, parcelId]);
 
   const handleIntroComplete = () => {
     introCompletedRef.current = true;
@@ -47,19 +76,18 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
     setShowIntro(true);
     setActiveTab('add');
     introCompletedRef.current = false;
-    // Increment keys to force fresh state on next open
     setAddKey(k => k + 1);
     setRemoveKey(k => k + 1);
     onOpenChange(false);
   }, [onOpenChange]);
 
-  // Fix #4: Reset sub-form state when switching tabs
+  // Fix #24: Reset the tab being LEFT (not the one being entered)
   const handleTabChange = useCallback((tab: MortgageTab) => {
     if (tab === activeTab) return;
-    setActiveTab(tab);
-    // Force remount of the other tab's component
-    if (tab === 'add') setAddKey(k => k + 1);
+    // Reset the component being left
+    if (activeTab === 'add') setAddKey(k => k + 1);
     else setRemoveKey(k => k + 1);
+    setActiveTab(tab);
   }, [activeTab]);
 
   // Show intro first
@@ -124,7 +152,7 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
           </div>
         </div>
 
-        {/* Render the selected form inline — no double scroll */}
+        {/* Render the selected form inline */}
         <div className="flex-1 min-h-0 overflow-hidden">
           {activeTab === 'add' ? (
             <MortgageFormDialog
@@ -138,18 +166,40 @@ const MortgageManagementDialog: React.FC<MortgageManagementDialogProps> = ({
               embedded
             />
           ) : (
-            <MortgageCancellationDialog
-              key={`remove-${removeKey}`}
-              parcelNumber={parcelNumber}
-              parcelId={parcelId}
-              open={true}
-              onOpenChange={(isOpen) => {
-                if (!isOpen) handleClose();
-              }}
-              embedded
-            />
+            <>
+              {/* Fix #15: Show warning if no active mortgage found */}
+              {checkingMortgage && (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                </div>
+              )}
+              {!checkingMortgage && hasActiveMortgage === false && (
+                <div className="px-4 py-3">
+                  <Alert className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800 rounded-xl">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-xs text-amber-700 dark:text-amber-300">
+                      <strong>Aucune hypothèque active détectée</strong> sur cette parcelle.
+                      La radiation nécessite un numéro de référence d'hypothèque active.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              <MortgageCancellationDialog
+                key={`remove-${removeKey}`}
+                parcelNumber={parcelNumber}
+                parcelId={parcelId}
+                open={true}
+                onOpenChange={(isOpen) => {
+                  if (!isOpen) handleClose();
+                }}
+                embedded
+              />
+            </>
           )}
         </div>
+
+        {/* Fix #19: WhatsApp centralized in parent dialog */}
+        {open && <WhatsAppFloatingButton message="Bonjour, j'ai besoin d'aide avec la gestion d'hypothèque." />}
       </DialogContent>
     </Dialog>
   );
