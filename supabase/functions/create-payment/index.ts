@@ -10,7 +10,7 @@ const corsHeaders = {
 interface PaymentRequest {
   items?: string[]; // Publication IDs
   invoice_id?: string; // Cadastral invoice ID or expertise payment ID
-  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access';
+  payment_type: 'publications' | 'cadastral_service' | 'expertise_fee' | 'certificate_access' | 'mutation_request';
   amount_usd?: number; // For cadastral/expertise services
 }
 
