@@ -263,10 +263,27 @@ const MortgageCancellationDialog: React.FC<MortgageCancellationDialogProps> = ({
     return () => clearTimeout(timer);
   }, [formData.mortgageReferenceNumber, validateMortgageReference]);
 
+  // Fix #16: Limit max documents to 5
+  const MAX_DOCUMENTS = 5;
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
-    const newFiles = Array.from(files);
+
+    const currentCount = formData.supportingDocuments.length;
+    const remainingSlots = MAX_DOCUMENTS - currentCount;
+
+    if (remainingSlots <= 0) {
+      toast.error(`Maximum ${MAX_DOCUMENTS} documents autorisés`);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    const newFiles = Array.from(files).slice(0, remainingSlots);
+    if (newFiles.length < files.length) {
+      toast.warning(`Seuls ${remainingSlots} document(s) supplémentaire(s) accepté(s) (max ${MAX_DOCUMENTS})`);
+    }
+
     const validFiles = newFiles.filter(file => {
       const isValid = file.type.startsWith('image/') || file.type === 'application/pdf';
       const isValidSize = file.size <= 10 * 1024 * 1024;
