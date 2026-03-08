@@ -499,7 +499,7 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
       mutation_type: mutationType,
       requester_type: requesterType,
       requester_name: requesterName,
-      requester_phone: profile?.phone || '', // #7: Use profile phone
+      requester_phone: '', // #7: profile phone not available in Profile type
       requester_email: requesterEmail,
       beneficiary_name: isTransferMutation ? fullBeneficiaryName : undefined,
       beneficiary_phone: isTransferMutation ? beneficiaryPhone : undefined,

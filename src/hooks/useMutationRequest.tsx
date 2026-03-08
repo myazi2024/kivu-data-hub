@@ -97,7 +97,7 @@ export const useMutationRequest = () => {
         mutation_type: data.mutation_type,
         requester_type: data.requester_type,
         requester_name: data.requester_name,
-        requester_phone: data.requester_phone || profile?.phone || null,
+        requester_phone: data.requester_phone || null,
         requester_email: data.requester_email || null,
         beneficiary_name: data.beneficiary_name || null,
         beneficiary_phone: data.beneficiary_phone || null,
