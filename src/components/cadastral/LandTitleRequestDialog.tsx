@@ -69,6 +69,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const [showPayment, setShowPayment] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [savedReferenceNumber, setSavedReferenceNumber] = useState<string>('');
+  const [savedRequestId, setSavedRequestId] = useState<string>('');
   const [showCloseConfirmation, setShowCloseConfirmation] = useState(false);
   
   // Request type state
