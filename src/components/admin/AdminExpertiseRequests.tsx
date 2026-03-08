@@ -186,7 +186,31 @@ export const AdminExpertiseRequests: React.FC = () => {
     
     setProcessingNotes(request.processing_notes || '');
     setRejectionReason('');
+    setExpertName('');
+    setExpertTitle('L\'Expert Évaluateur Agréé');
+    setStampImageUrl('');
     setShowProcessDialog(true);
+  };
+
+  const handleUploadStamp = async (file: File) => {
+    setUploadingStamp(true);
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `stamps/stamp_${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('expertise-certificates')
+        .upload(path, file, { contentType: file.type, upsert: true });
+      if (uploadError) throw uploadError;
+      const { data: urlData } = supabase.storage
+        .from('expertise-certificates')
+        .getPublicUrl(path);
+      setStampImageUrl(urlData.publicUrl);
+      toast.success('Sceau uploadé avec succès');
+    } catch (err: any) {
+      toast.error(`Erreur upload: ${err.message}`);
+    } finally {
+      setUploadingStamp(false);
+    }
   };
 
   const handleProcessRequest = async () => {
