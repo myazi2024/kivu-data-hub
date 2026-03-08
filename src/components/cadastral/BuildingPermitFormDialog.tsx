@@ -119,7 +119,7 @@ const BuildingPermitFormDialog: React.FC<BuildingPermitFormDialogProps> = ({
 
     // Validate permit number format
     if (!PERMIT_NUMBER_REGEX.test(normalized)) {
-      toast.error('Format du N° autorisation invalide. Utilisez un format tel que PC-2024-001 ou AB/2024/00123');
+      toast.error('Format du N° autorisation invalide. Utilisez un format tel que PC-2024-001, AB/2024/00123 ou URB.2024.0001');
       return false;
     }
 
