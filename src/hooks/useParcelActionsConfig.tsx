@@ -76,7 +76,7 @@ const DEFAULT_ACTIONS: ParcelAction[] = [
   {
     id: '6',
     key: 'permit_regularization',
-    label: 'Ajouter P. Régularisation',
+    label: 'Autorisation de régularisation',
     description: 'Régulariser une construction existante',
     isActive: true,
     isVisible: true,
