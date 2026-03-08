@@ -102,7 +102,7 @@ const BuildingTaxCalculator: React.FC<BuildingTaxCalculatorProps> = ({
   const zoneMultiplier = FISCAL_ZONE_MULTIPLIERS[fiscalZoneCategory];
 
   // Auto-calculate months late using centralized function
-  const monthsLate = useMemo(() => calculatePropertyTaxMonthsLate(fiscalYear), [fiscalYear]);
+  const monthsLate = useMemo(() => calculateBuildingTaxMonthsLate(fiscalYear), [fiscalYear]);
 
   // Memoized calculation
   const calculation = useMemo(() => {
