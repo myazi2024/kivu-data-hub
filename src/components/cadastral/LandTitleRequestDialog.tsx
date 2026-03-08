@@ -408,14 +408,7 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
     }
   };
 
-  const toggleFee = (feeId: string) => {
-    setFormData(prev => ({
-      ...prev,
-      selectedFees: prev.selectedFees.includes(feeId)
-        ? prev.selectedFees.filter(id => id !== feeId)
-        : [...prev.selectedFees, feeId]
-    }));
-  };
+  // toggleFee removed — fees are now fully dynamic and non-toggleable
 
   const isFormValid = (): boolean => {
     // Check request type
