@@ -146,7 +146,7 @@ const AdminBuildingPermits = () => {
 
   const getTypeBadge = (type: string) => {
     return type === 'construction' ? (
-      <Badge variant="outline" className="bg-blue-50">Permis de construire</Badge>
+      <Badge variant="outline" className="bg-blue-50">Autorisation de bâtir</Badge>
     ) : (
       <Badge variant="outline" className="bg-orange-50">Régularisation</Badge>
     );
