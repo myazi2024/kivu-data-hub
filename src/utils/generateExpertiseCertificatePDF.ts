@@ -35,6 +35,27 @@ export interface ExpertiseCertificateData {
   approvedBy: string;
 }
 
+// Label maps for human-readable display
+const QUALITY_LABELS: Record<string, string> = {
+  luxe: 'Luxe / Haut standing',
+  standard: 'Standard / Moyen standing',
+  economique: 'Économique / Social',
+};
+
+const CONDITION_LABELS: Record<string, string> = {
+  neuf: 'Neuf (< 2 ans)',
+  bon: 'Bon état',
+  moyen: 'État moyen',
+  mauvais: 'Mauvais état',
+  a_renover: 'À rénover',
+};
+
+const ROAD_LABELS: Record<string, string> = {
+  asphalte: 'Route asphaltée',
+  terre: 'Route en terre',
+  piste: 'Piste / Sentier',
+};
+
 export async function generateExpertiseCertificatePDF(data: ExpertiseCertificateData): Promise<Blob> {
   const doc = new jsPDF();
   const pw = doc.internal.pageSize.getWidth();
@@ -114,11 +135,11 @@ export async function generateExpertiseCertificatePDF(data: ExpertiseCertificate
 
   if (data.propertyDescription) addRow('Description:', data.propertyDescription);
   if (data.constructionYear) addRow('Année construction:', data.constructionYear.toString());
-  if (data.constructionQuality) addRow('Qualité:', data.constructionQuality);
+  if (data.constructionQuality) addRow('Qualité:', QUALITY_LABELS[data.constructionQuality] || data.constructionQuality);
   if (data.numberOfFloors) addRow('Nombre d\'étages:', data.numberOfFloors.toString());
   if (data.totalBuiltAreaSqm) addRow('Surface bâtie:', `${data.totalBuiltAreaSqm} m²`);
-  if (data.propertyCondition) addRow('État:', data.propertyCondition);
-  if (data.roadAccessType) addRow('Accès routier:', data.roadAccessType);
+  if (data.propertyCondition) addRow('État:', CONDITION_LABELS[data.propertyCondition] || data.propertyCondition);
+  if (data.roadAccessType) addRow('Accès routier:', ROAD_LABELS[data.roadAccessType] || data.roadAccessType);
 
   // Equipments
   const equipments: string[] = [];
