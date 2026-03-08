@@ -467,11 +467,17 @@ const LandTitleRequestDialog: React.FC<LandTitleRequestDialogProps> = ({
   const handlePaymentSuccess = async () => {
     const result = await submitRequest({
       ...formData,
+      requestType,
+      selectedParcelNumber,
+      constructionType,
+      declaredUsage,
+      deducedTitleType: deducedTitleType?.type || '',
       requesterIdDocumentFile: requesterIdFile,
       ownerIdDocumentFile: ownerIdFile,
       proofOfOwnershipFile: proofOfOwnershipFile,
       gpsCoordinates: gpsCoordinates,
-      parcelSides: parcelSides
+      parcelSides: parcelSides,
+      totalAmountOverride: totalAmount
     });
     
     if (result.success) {
