@@ -14,7 +14,8 @@ import { UserLandTitleRequests } from '@/components/user/UserLandTitleRequests';
 import { NotificationBell } from '@/components/user/NotificationBell';
 import { UserLandDisputes } from '@/components/user/UserLandDisputes';
 import { UserExpertiseRequests } from '@/components/user/UserExpertiseRequests';
-import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch } from 'lucide-react';
+import { UserMutationRequests } from '@/components/user/UserMutationRequests';
+import { User, FileText, Building, CreditCard, Settings, ScrollText, Scale, FileSearch, FileEdit } from 'lucide-react';
 
 const UserDashboard = () => {
   const { user, loading } = useAuth();
