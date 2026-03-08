@@ -19,8 +19,9 @@ import {
   getFiscalZoneCategory,
   FISCAL_ZONE_MULTIPLIERS,
   FISCAL_ZONE_LABELS,
-  calculatePropertyTaxMonthsLate,
+  calculateBuildingTaxMonthsLate,
 } from '@/hooks/usePropertyTaxCalculator';
+import { checkDuplicateTaxSubmission } from './tax-calculator/taxSharedUtils';
 
 interface BuildingTaxCalculatorProps {
   parcelNumber: string;
