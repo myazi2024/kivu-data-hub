@@ -472,7 +472,7 @@ const AdminMutationRequests: React.FC = () => {
             <Card>
               <CardContent className="p-3">
                 <div className="text-xs text-muted-foreground">Revenus</div>
-                <div className="text-xl font-bold text-primary">${stats.revenue}</div>
+                <div className="text-xl font-bold text-primary">${stats.revenue.toFixed(2)}</div>
               </CardContent>
             </Card>
           </div>
