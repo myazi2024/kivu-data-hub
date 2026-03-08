@@ -1877,38 +1877,62 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
         </div>
       </Tabs>
 
-      {activeTab === 'documents' ? (
-        <Button 
-          onClick={handleProceedToSummary} 
-          className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg mt-3"
-          disabled={loading || uploadingFiles || loadingFees}
-        >
-          {loadingFees ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              Chargement...
-            </>
-          ) : (
-            <>
-              <Receipt className="h-4 w-4 mr-2" />
-              Récapitulatif
-            </>
-          )}
-        </Button>
-      ) : (
-        <Button 
-          onClick={() => {
-            const tabOrder = ['general', 'materiaux', 'environnement', 'documents'];
-            const currentIndex = tabOrder.indexOf(activeTab);
-            if (currentIndex < tabOrder.length - 1) {
-              setActiveTab(tabOrder[currentIndex + 1]);
-            }
-          }}
-          className="w-full h-11 text-sm font-semibold rounded-xl shadow-lg mt-3"
-        >
-          Suivant →
-        </Button>
-      )}
+      <div className="flex gap-3 mt-3">
+        {(activeTab === 'materiaux' || activeTab === 'environnement') && (
+          <Button 
+            variant="outline"
+            onClick={() => {
+              const tabOrder = ['general', 'materiaux', 'environnement', 'documents'];
+              const currentIndex = tabOrder.indexOf(activeTab);
+              setActiveTab(tabOrder[currentIndex - 1]);
+            }}
+            className="flex-1 h-11 text-sm font-semibold rounded-xl"
+          >
+            ← Précédent
+          </Button>
+        )}
+        {activeTab === 'documents' ? (
+          <div className="flex gap-3 flex-1">
+            <Button 
+              variant="outline"
+              onClick={() => setActiveTab('environnement')}
+              className="flex-1 h-11 text-sm font-semibold rounded-xl"
+            >
+              ← Précédent
+            </Button>
+            <Button 
+              onClick={handleProceedToSummary} 
+              className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg"
+              disabled={loading || uploadingFiles || loadingFees}
+            >
+              {loadingFees ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Chargement...
+                </>
+              ) : (
+                <>
+                  <Receipt className="h-4 w-4 mr-2" />
+                  Récapitulatif
+                </>
+              )}
+            </Button>
+          </div>
+        ) : (
+          <Button 
+            onClick={() => {
+              const tabOrder = ['general', 'materiaux', 'environnement', 'documents'];
+              const currentIndex = tabOrder.indexOf(activeTab);
+              if (currentIndex < tabOrder.length - 1) {
+                setActiveTab(tabOrder[currentIndex + 1]);
+              }
+            }}
+            className="flex-1 h-11 text-sm font-semibold rounded-xl shadow-lg"
+          >
+            Suivant →
+          </Button>
+        )}
+      </div>
     </div>
   );
 
