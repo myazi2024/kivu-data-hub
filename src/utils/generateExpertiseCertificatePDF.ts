@@ -33,6 +33,9 @@ export interface ExpertiseCertificateData {
   issueDate: string;
   expiryDate: string;
   approvedBy: string;
+  expertName?: string;
+  expertTitle?: string;
+  stampImageUrl?: string;
 }
 
 // Label maps for human-readable display
