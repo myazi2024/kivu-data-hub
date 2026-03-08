@@ -1214,22 +1214,29 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
         </Alert>
 
         <div className="flex gap-2">
-          {/* FIX: Disable "Modifier" if request already created to prevent duplicates */}
-          <Button 
-            variant="outline" 
-            onClick={() => setStep('form')} 
-            className="flex-1 h-12 text-sm font-semibold rounded-xl"
-            disabled={!!createdRequest}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" /> Modifier
-          </Button>
-          <Button onClick={handleSubmitForm} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg" disabled={loading || uploadingFiles || isSubmitting}>
-            {loading || uploadingFiles || isSubmitting ? (
-              <><Loader2 className="h-4 w-4 animate-spin mr-2" />{uploadingFiles ? 'Envoi...' : 'Création...'}</>
-            ) : (
-              <><CreditCard className="h-4 w-4 mr-2" /> Payer ${totalAmount.toFixed(2)}</>
-            )}
-          </Button>
+          {createdRequest ? (
+            /* Request already created — only allow going to payment */
+            <Button onClick={() => setStep('payment')} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg">
+              <CreditCard className="h-4 w-4 mr-2" /> Procéder au paiement ${totalAmount.toFixed(2)}
+            </Button>
+          ) : (
+            <>
+              <Button 
+                variant="outline" 
+                onClick={() => setStep('form')} 
+                className="flex-1 h-12 text-sm font-semibold rounded-xl"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" /> Modifier
+              </Button>
+              <Button onClick={handleSubmitForm} className="flex-1 h-12 text-sm font-semibold rounded-xl shadow-lg" disabled={loading || uploadingFiles || isSubmitting}>
+                {loading || uploadingFiles || isSubmitting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin mr-2" />{uploadingFiles ? 'Envoi...' : 'Création...'}</>
+                ) : (
+                  <><CreditCard className="h-4 w-4 mr-2" /> Payer ${totalAmount.toFixed(2)}</>
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </ScrollArea>
