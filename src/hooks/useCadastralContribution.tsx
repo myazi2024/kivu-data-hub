@@ -130,6 +130,12 @@ export interface ContributorCode {
   created_at: string;
 }
 
+export const useCadastralContribution = () => {
+  const [loading, setLoading] = useState(false);
+  const [codes, setCodes] = useState<ContributorCode[]>([]);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
   // Shared payload builder to avoid duplication between insert and update
   const buildContributionPayload = (data: CadastralContributionData) => {
     const payload: any = {
