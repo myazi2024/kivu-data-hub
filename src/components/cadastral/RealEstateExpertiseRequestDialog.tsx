@@ -3037,7 +3037,7 @@ const RealEstateExpertiseRequestDialog: React.FC<RealEstateExpertiseRequestDialo
           )}
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] overflow-y-auto">
+        <ScrollArea className="h-[calc(90vh-120px)]">
           {step === 'form' && existingCertificate ? renderExistingCertificateBlock() : (
             <>
               {step === 'form' && (
