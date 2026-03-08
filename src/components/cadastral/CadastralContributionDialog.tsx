@@ -5486,20 +5486,6 @@ const CadastralContributionDialog: React.FC<CadastralContributionDialogProps> = 
 
     {/* Bouton WhatsApp flottant */}
     {open && <WhatsAppFloatingButton />}
-    
-    {/* Dialog de paiement du permis */}
-    {showPermitPayment && savedContributionId && savedPermitRequestData && (
-      <PermitPaymentDialog
-        open={showPermitPayment}
-        onOpenChange={setShowPermitPayment}
-        contributionId={savedContributionId}
-        permitType={savedPermitRequestData.permitType}
-        onPaymentSuccess={() => {
-          setShowPermitPayment(false);
-          setShowSuccess(true);
-        }}
-      />
-    )}
 
     {/* Dialog de confirmation de fermeture */}
     <AlertDialog open={showExitConfirmation} onOpenChange={setShowExitConfirmation}>
