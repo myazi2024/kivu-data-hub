@@ -591,36 +591,78 @@ const MutationRequestDialog: React.FC<MutationRequestDialogProps> = ({
   const handlePayment = async () => {
     if (!createdRequest) return;
     
-    if (paymentMethod === 'mobile_money') {
-      if (!paymentProvider) {
-        toast.error('Veuillez sélectionner un opérateur');
-        return;
-      }
-      if (!paymentPhone) {
-        toast.error('Veuillez entrer votre numéro de téléphone');
-        return;
-      }
-      if (!validatePhoneNumber(paymentPhone)) {
-        toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX');
-        return;
-      }
-    }
-
     setProcessingPayment(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const success = await updatePaymentStatus(createdRequest.id, 'paid', 'PAY-' + Date.now());
-      
-      if (success) {
-        setStep('confirmation');
-        toast.success('Paiement effectué avec succès');
+      if (paymentMethod === 'mobile_money') {
+        if (!paymentProvider) {
+          toast.error('Veuillez sélectionner un opérateur');
+          setProcessingPayment(false);
+          return;
+        }
+        if (!paymentPhone) {
+          toast.error('Veuillez entrer votre numéro de téléphone');
+          setProcessingPayment(false);
+          return;
+        }
+        if (!validatePhoneNumber(paymentPhone)) {
+          toast.error('Numéro invalide. Format attendu : +243XXXXXXXXX ou 0XXXXXXXXX');
+          setProcessingPayment(false);
+          return;
+        }
+
+        // Appel réel à l'Edge Function Mobile Money
+        const { data: paymentResult, error: paymentError } = await supabase.functions.invoke(
+          'process-mobile-money-payment',
+          {
+            body: {
+              payment_provider: paymentProvider,
+              phone_number: paymentPhone.replace(/\s/g, ''),
+              amount_usd: createdRequest.total_amount_usd,
+              payment_type: 'mutation_request',
+              invoice_id: createdRequest.id,
+            },
+          }
+        );
+
+        if (paymentError) throw paymentError;
+
+        const txId = paymentResult?.transaction_id;
+        if (txId) {
+          const result = await pollTransactionStatus(txId);
+          if (result === 'failed') throw new Error('Le paiement a échoué');
+          if (result === 'timeout') throw new Error('Délai de paiement dépassé. Vérifiez votre transaction.');
+        }
+
+        const success = await updatePaymentStatus(createdRequest.id, 'paid', txId || 'TXN-' + Date.now());
+        if (success) {
+          setStep('confirmation');
+          toast.success('Paiement effectué avec succès');
+        } else {
+          toast.error('Erreur lors de la mise à jour du paiement');
+        }
       } else {
-        toast.error('Erreur lors de la mise à jour du paiement');
+        // Stripe - redirection vers la page de paiement
+        const { data: stripeSession, error: stripeError } = await supabase.functions.invoke('create-payment', {
+          body: {
+            invoice_id: createdRequest.id,
+            payment_type: 'mutation_request',
+            amount_usd: createdRequest.total_amount_usd,
+          },
+        });
+
+        if (stripeError) throw stripeError;
+
+        if (stripeSession?.url) {
+          window.location.href = stripeSession.url;
+          return; // Redirection en cours
+        }
+
+        throw new Error('Session de paiement invalide');
       }
-    } catch (error) {
-      toast.error('Erreur lors du paiement');
+    } catch (error: any) {
+      console.error('Payment error:', error);
+      toast.error(error.message || 'Erreur lors du paiement');
     } finally {
       setProcessingPayment(false);
     }
